@@ -43,6 +43,15 @@
                   <!-- <div class="d-flex justify-content-center mt-4">
                     <h2 class="text-warning"> Liste  des fournisseurs</h2>
                   </div> -->
+                  <!-- Sélection du nombre de lignes à afficher -->
+                  <div class="d-flex justify-content-between align-items-center mb-2 float-start">
+                    <label for="rowsPerPage" class="me-2">Afficher</label>
+                    <select id="rowsPerPage" class="form-select w-auto me-2" (change)="onRowsPerPageChange($event)">
+                      <option *ngFor="let option of [5, 10, 20, 50]" [value]="option">{{ option }}</option>
+                    </select>
+                    <span>lignes par page</span>
+                  </div>
+
                   <table class="table table-bordered table-hover">
                     <thead class="table-success">
                       <tr>
@@ -86,9 +95,14 @@
 
                 <!-- Pagination -->
                 <div class="d-flex justify-content-center align-items-center">
-                  <button class="btn btn-success" (click)="onPageChange(currentPageFournisseur-1,'Fournisseur')" [disabled] ="currentPageFournisseur ===1"><i class="bi bi-arrow-left-circle"></i></button>
-                  <span class="h3">{{ currentPageFournisseur }} / {{ filteredFournisseurs.length/totalPagesFournisseur }}</span>
-                  <button class="btn btn-success" (click)="onPageChange(currentPageFournisseur+1,'Fournisseur')" [disabled]="currentPageFournisseur* totalPagesFournisseur >= filteredFournisseurs.length"><i class="bi bi-arrow-right-circle"></i></button>
+                  <button class="btn btn-success" (click)="onPageChange(currentPageFournisseur-1,'Fournisseur')" [disabled]="currentPageFournisseur === 1">
+                    <i class="bi bi-arrow-left-circle"></i>
+                  </button>
+                  <span class="h3">{{ currentPageFournisseur }} / {{ getTotalPages(filteredFournisseurs) }}</span>
+                  <button class="btn btn-success" (click)="onPageChange(currentPageFournisseur+1,'Fournisseur')"
+                    [disabled]="currentPageFournisseur >= getTotalPages(filteredFournisseurs)">
+                    <i class="bi bi-arrow-right-circle"></i>
+                  </button>
                 </div>
               </div>
               <!-- Colonne droite (actions) -->
@@ -391,7 +405,7 @@
                   <tr>
                     <th>Type d'opération</th>
                     <th>Date et Heure</th>
-                    <th>Montant</th>
+                    <th>Montant payé</th>
                     <th>Agent opération</th>
                     <th>Actions</th>
                   </tr>
@@ -401,17 +415,17 @@
                     <tr>
                       <td>{{ operation.type }}</td>
                       <td>{{ operation.dateOperation | date:'dd/MM/yyyy HH:mm' }}</td>
-                      <td>{{ operation.montantTotal }} F CFA</td>
+                      <td>{{ operation.montantPaye }} F CFA</td>
                       <td>{{ operation.agentId || 'N/A' }}</td>
                       <td>
-                        <button class="btn btn-info" (click)="toggleDetails(i)">
+                        <button class="btn btn-info" (click)="toggleDetails(i,operation)">
                           <i class="bi bi-eye"></i> Détails
                         </button>
                       </td>
                     </tr>
 
                     <!-- Récupération du bon lié à l'opération -->
-                    <tr *ngIf="selectedBonIndex === i">
+                    <tr *ngIf="selectedBonIndexO === i">
                       <td colspan="6">
                         <div *ngIf="getBonByOperation(operation) as bon">
                           <div class="d-flex justify-content-end mb-2 mt-4">
@@ -482,7 +496,7 @@
                               </tr>
                             </thead>
                             <tbody>
-                              <tr *ngFor="let produit of operation.panier?.produits">
+                              <tr *ngFor="let produit of getBonByOperation(operation).panier?.produits">
                                 <td>{{ produit.designation }}</td>
                                 <td>{{ produit.quantite }}</td>
                                 <td>{{ produit.unite }}</td>
@@ -498,10 +512,10 @@
 
                           <!-- Informations récapitulatives -->
                           <div class="mt-3">
-                            <p><strong>Remise :</strong> {{ operation.remise || 0 }} F CFA</p>
-                            <p><strong>Net à Payer :</strong> {{ operation.netAPayer || bon.montantTotal }} F CFA</p>
-                            <p><strong>Avance :</strong> {{ operation.montantPaye || 0 }} F CFA</p>
-                            <p><strong>Reste :</strong> {{ operation.resteAPayer || 0 }} F CFA</p>
+                            <p><strong>Remise :</strong> {{ getBonByOperation(operation).remise || 0 }} F CFA</p>
+                            <p><strong>Net à Payer :</strong> {{ getBonByOperation(operation).netAPayer || bon.montantTotal }} F CFA</p>
+                            <!-- <p><strong>Avance :</strong> {{ operation.montantPaye || 0 }} F CFA</p> -->
+                            <p><strong>Reste :</strong> {{ getBonByOperation(operation).resteAPayer || 0 }} F CFA</p>
                           </div>
                         </div>
                       </td>
@@ -648,12 +662,21 @@
           <div class="d-flex justify-content-between mb-3">
             <input type="text" class="form-control w-25" [(ngModel)]="searchBonQuery" placeholder="Rechercher un bon ..." (input)="onSearchChangeBon()">
           </div>
+          <!-- Sélection du nombre de lignes à afficher -->
+          <div class="d-flex justify-content-between align-items-center mb-2 float-start">
+            <label for="rowsPerPage" class="me-2">Afficher</label>
+            <select id="rowsPerPage" class="form-select w-auto me-2" (change)="onRowsPerPageChange($event)">
+              <option *ngFor="let option of [5, 10, 20, 50]" [value]="option">{{ option }}</option>
+            </select>
+            <span>lignes par page</span>
+           </div>
+
           <table class="table table-striped">
             <thead>
               <tr>
                 <th>Nº Bon</th>
                 <th>Description</th>
-                <th>Montant</th>
+                <th>Montant Total</th>
                 <th>Fournisseur</th>
                 <th>Type</th>
                 <th>Actions</th>
@@ -665,26 +688,27 @@
                 <tr>
                   <td>{{ bon.numero }}</td>
                   <td>{{ bon.description }}</td>
-                  <td>{{ bon.montant }} F CFA</td>
+                  <td>{{ bon.montantTotal }} F CFA</td>
                   <td>{{ getFournisseurByOperation(bon).nomComplet }}</td>
                   <td>{{ bon.type }}</td>
                   <!-- <td *ngIf="bon.type === 'Commande'">{{ bon.statusCommande }}</td>
                   <td *ngIf="bon.type === 'Livraison'">{{ bon.statusLivraison }}</td>
                   <td *ngIf="bon.type === 'Retour'">{{ bon.statusRetour }}</td> -->
                   <td>
-                    <button class="btn btn-info" (click)="toggleDetails(i)">
+                    <button class="btn btn-info" (click)="toggleDetails(i,bon)">
                       <i class="bi bi-eye"></i>
                     </button>
                   </td>
                 </tr>
 
                 <!-- Détails du bon -->
-                <tr *ngIf="selectedBonIndex === i">
+                <tr *ngIf="selectedBonIndexB === i">
                   <td colspan="6">
                     <div *ngIf="bon">
                       <div class="d-flex justify-content-start align-items-center mb-2 me-5">
-                        <span class="me-3">💰 Total bon: <strong>{{ bon.montantTotal }} F CFA</strong></span>
-                        <span>💰 Total des produits: <strong>{{ bon.panier?.totalHT }} F CFA</strong></span>
+                        <span class="me-3">💰 Total des produits: <strong>{{ bon.panier?.totalHT }} F CFA</strong></span>
+                        <span class="me-3">💰 Remise: <strong>{{ bon.remise }} F CFA</strong></span>
+                        <span>💰 Net à payer: <strong>{{ bon.resteAPayer }} F CFA</strong></span>
                       </div>
 
                       <!-- Tableau des produits -->
@@ -698,7 +722,7 @@
                           </tr>
                         </thead>
                         <tbody>
-                          <tr *ngFor="let produit of bon.produits">
+                          <tr *ngFor="let produit of bon.panier.produits">
                             <td>{{ produit.designation }}</td>
                             <td>{{ produit.quantite }}</td>
                             <td>{{ produit.unite }}</td>
@@ -708,12 +732,12 @@
                       </table>
 
                       <!-- Informations récapitulatives -->
-                      <div class="mt-3">
+                      <!-- <div class="mt-3">
                         <p><strong>Remise :</strong> {{ bon.remise || 0 }} F CFA</p>
                         <p><strong>Net à Payer :</strong> {{ bon.netAPayer || bon.montantTotal }} F CFA</p>
                         <p><strong>Avance :</strong> {{ bon.montantPaye || 0 }} F CFA</p>
                         <p><strong>Reste :</strong> {{ bon.resteAPayer || 0 }} F CFA</p>
-                      </div>
+                      </div> -->
                     </div>
                   </td>
                 </tr>
@@ -723,10 +747,15 @@
 
 
           <!-- Pagination des Bons -->
-          <div class="d-flex justify-content-center align-items-center mt-3">
-            <button class="btn btn-success" (click)="onPageChange(currentPageBon-1,'Bon')" [disabled]="currentPageBon === 1"><i class="bi bi-arrow-left-circle"></i></button>
-            <span class="mx-3">{{ currentPageBon }} / {{ filteredBons.length / totalPagesBon }}</span>
-            <button class="btn btn-success" (click)="onPageChange(currentPageBon+1,'Bon')" [disabled]="currentPageBon*totalPagesBon >= filteredBons.length"><i class="bi bi-arrow-right-circle"></i></button>
+          <div class="d-flex justify-content-center align-items-center">
+            <button class="btn btn-success" (click)="onPageChange(currentPageBon-1,'Bon')" [disabled]="currentPageBon === 1">
+              <i class="bi bi-arrow-left-circle"></i>
+            </button>
+            <span class="h3">{{ currentPageBon }} / {{ getTotalPages(filteredBons) }}</span>
+            <button class="btn btn-success" (click)="onPageChange(currentPageBon+1,'Bon')"
+              [disabled]="currentPageBon >= getTotalPages(filteredBons)">
+              <i class="bi bi-arrow-right-circle"></i>
+            </button>
           </div>
         </div>
       </div>
@@ -740,11 +769,19 @@
           <div class="d-flex justify-content-between mb-3">
             <input type="text" class="form-control w-25" [(ngModel)]="searchPaiementQuery" placeholder="Rechercher un paiement..." (input)="onSearchChangePaiement()">
           </div>
+          <div class="d-flex justify-content-between align-items-center mb-2 float-start">
+            <label for="rowsPerPage" class="me-2">Afficher</label>
+            <select id="rowsPerPage" class="form-select w-auto me-2" (change)="onRowsPerPageChange($event)">
+              <option *ngFor="let option of [5, 10, 20, 50]" [value]="option">{{ option }}</option>
+            </select>
+            <span>lignes par page</span>
+           </div>
           <table class="table table-striped">
             <thead>
               <tr>
                 <th>Description</th>
                 <th>Montant</th>
+                <th>Date</th>
                 <th>Fournisseur</th>
                 <th>Méthode de Paiement</th>
                 <th>Actions</th>
@@ -755,19 +792,23 @@
               <tr >
                 <td>{{ paiement.description }}</td>
                 <td>{{ paiement.montant}} F CFA</td>
+                <td>{{ paiement.date | date:'dd/mm/yyy à HH:MM'}} </td>
                 <td>{{ getFournisseurByOperation(paiement).nomComplet}}</td>
                 <td>{{ paiement.methodePaiement }}</td>
                 <td>
-                  <button class="btn btn-info"><i class="bi bi-eye" (click)="toggleDetails(i)"></i></button>
+                  <button class="btn btn-info"><i class="bi bi-eye" (click)="toggleDetails(i,paiement)"></i></button>
                 </td>
               </tr>
               <!-- Détails du bon -->
-              <tr *ngIf="selectedBonIndex === i">
+              <tr *ngIf="selectedBonIndexP === i">
                 <td colspan="6">
                   <div *ngIf="paiement">
                     <div class="d-flex justify-content-start align-items-center mb-2 me-5">
-                      <span class="me-3">💰 Total bon: <strong>{{ getBonBypaiement(paiement).montant}} F CFA</strong></span>
+                      <span class="me-3">Numérobon: <strong>{{ getBonBypaiement(paiement).numero}}</strong></span>
+                      <span class="me-3">💰 Total bon: <strong>{{ getBonBypaiement(paiement).montantTotal}} F CFA</strong></span>
                       <span>💰 Total des produits: <strong>{{ getBonBypaiement(paiement).panier?.totalHT }} F CFA</strong></span>
+                      <span class="me-3">💰 Remise: <strong>{{ getBonBypaiement(paiement).remise}} F CFA</strong></span>
+                      <span>💰 Net à payer: <strong>{{ getBonBypaiement(paiement).netAPayer}} F CFA</strong></span>
                     </div>
 
                     <!-- Tableau des produits -->
@@ -781,7 +822,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let produit of getBonBypaiement(paiement).produits">
+                        <tr *ngFor="let produit of getBonBypaiement(paiement).panier.produits">
                           <td>{{ produit.designation }}</td>
                           <td>{{ produit.quantite }}</td>
                           <td>{{ produit.unite }}</td>
@@ -791,12 +832,12 @@
                     </table>
 
                     <!-- Informations récapitulatives -->
-                    <div class="mt-3">
+                    <!-- <div class="mt-3">
                       <p><strong>Remise :</strong> {{ getBonBypaiement(paiement).remise || 0 }} F CFA</p>
                       <p><strong>Net à Payer :</strong> {{ getBonBypaiement(paiement).netAPayer || getBonBypaiement(paiement).montantTotal }} F CFA</p>
                       <p><strong>Avance :</strong> {{ getBonBypaiement(paiement).montantPaye || 0 }} F CFA</p>
                       <p><strong>Reste :</strong> {{ getBonBypaiement(paiement).resteAPayer || 0 }} F CFA</p>
-                    </div>
+                    </div> -->
                   </div>
                 </td>
               </tr>
@@ -804,10 +845,15 @@
             </tbody>
           </table>
           <!-- Pagination des Paiements -->
-          <div class="d-flex justify-content-center align-items-center mt-3">
-            <button class="btn btn-success" (click)="onPageChange(currentPagePaiement-1,'Paiement')" [disabled]="currentPagePaiement === 1"><i class="bi bi-arrow-left-circle"></i></button>
-            <span class="mx-3">{{ currentPagePaiement }} / {{filteredPaiements.length / totalPagesPaiement }}</span>
-            <button class="btn btn-success" (click)="onPageChange(currentPagePaiement+1,'Paiement')" [disabled]="currentPagePaiement*totalPagesPaiement >= filteredPaiements.length"><i class="bi bi-arrow-right-circle"></i></button>
+          <div class="d-flex justify-content-center align-items-center">
+            <button class="btn btn-success" (click)="onPageChange(currentPagePaiement-1,'Paiement')" [disabled]="currentPagePaiement === 1">
+              <i class="bi bi-arrow-left-circle"></i>
+            </button>
+            <span class="h3">{{ currentPagePaiement }} / {{ getTotalPages(filteredPaiements) }}</span>
+            <button class="btn btn-success" (click)="onPageChange(currentPagePaiement+1,'Paiement')"
+              [disabled]="currentPagePaiement >= getTotalPages(filteredPaiements)">
+              <i class="bi bi-arrow-right-circle"></i>
+            </button>
           </div>
         </div>
       </div>

@@ -60,7 +60,10 @@ export class FournisseursComponent implements OnInit {
   panierDisabled = false;
   searchInput: string = '';
   filteredProduits: any[] = [];
-  selectedBonIndex: number | null = null;
+  selectedBonIndexF: number | null = null;
+  selectedBonIndexB: number | null = null;
+  selectedBonIndexP: number | null = null;
+  selectedBonIndexO: number | null = null;
   //panier!: FormArray;
 
 
@@ -84,6 +87,9 @@ export class FournisseursComponent implements OnInit {
   currentPageFournisseur: number = 1;
   totalPagesFournisseur: number = 2;
   typeBon:string='';
+
+  rowsPerPage: number = 5; // Nombre par défaut de lignes par page
+
 
 
 
@@ -280,12 +286,11 @@ export class FournisseursComponent implements OnInit {
           let prixUnitaire = Math.floor(Math.random() * 1000) + 500;
           let quantite = Math.floor(Math.random() * 5) + 1;
 
-
           const produit = {
             id: k + 1,
             designation: produitsDisponibles[Math.floor(Math.random() * produitsDisponibles.length)],
             quantite: quantite,
-            prixVenteUnitaire: prixUnitaire,
+            prixAchatUnitaire: prixUnitaire,
             famille:'',
             fournisseur:'',
             magasin:'',
@@ -304,12 +309,16 @@ export class FournisseursComponent implements OnInit {
           numero: `FB${i}${j}`,
           dateBon: new Date(),
           description: `Bon fournisseur ${j} du fournisseur ${i}`,
-          montant: Math.floor(Math.random() * 20000) + 2000,
-          statusBon: ['Payé', 'Impayé', 'Annulé'][Math.floor(Math.random() * 3)] as "Payé" | "Impayé" | "Annulé",
+          montantTotal: Math.floor(Math.random() * 20000) + 2000,
+          remise:Math.floor(Math.random() * 500) + 500,
+          netAPayer:Math.floor(Math.random() * 20000) + 2000 - Math.floor(Math.random() * 500) + 500,
+          resteAPayer:Math.floor(Math.random() * 10000) + 1000,
+          statutBon: bonstuatut[Math.floor(Math.random() * bonstuatut.length)],
           type: ['Livraison', 'Commande', 'Retour', 'Avoir'][Math.floor(Math.random() * 4)] as "Livraison" | "Commande" | "Retour" | "Avoir",
           numeroFacture: `F-FCT${i}${j}`,
           fournisseurId: fournisseur.id,
-          produits:panier.produits
+          //produits:panier.produits
+          panier:panier
         });
 
         const paiement = new Paiement({
@@ -330,13 +339,10 @@ export class FournisseursComponent implements OnInit {
           bonId: bon.id,
           paiementId: paiement.id,
           type: operationTypes[Math.floor(Math.random() * operationTypes.length)],
-          montantTotal: panier.totalTTC,
           montantPaye: paiement.montant,
-          resteAPayer: panier.totalTTC - paiement.montant,
           statut: panier.totalTTC - paiement.montant === 0 ? 'PAYE' : 'PARTIELLEMENT_PAYE',
           dateOperation: new Date(),
           moyenPaiement: methodePaiement[Math.floor(Math.random() * methodePaiement.length)],
-          panier: panier,
         });
 
         fournisseur.bons.push(bon);
@@ -518,8 +524,20 @@ resetFormPaiement() {
 
   this.paiementForm.reset();
   }
-  toggleDetails(index: number) {
-    this.selectedBonIndex = this.selectedBonIndex === index ? null : index;
+  toggleDetails(index: number, typeInstance: any) {
+    if (typeInstance instanceof Fournisseur) {
+      this.selectedBonIndexF = this.selectedBonIndexF === index ? null : index;
+    }
+    else if(typeInstance instanceof Bon){
+      this.selectedBonIndexB = this.selectedBonIndexB === index ? null : index;
+    }
+    else if(typeInstance instanceof Paiement){
+      this.selectedBonIndexP = this.selectedBonIndexP === index ? null : index;
+    }
+    else if(typeInstance instanceof Operation){
+      this.selectedBonIndexO = this.selectedBonIndexO === index ? null : index;
+    }
+
   }
 
   getBonByOperation(operation: Operation): any {
@@ -626,16 +644,29 @@ onPaiementFormSubmit(): void {
 
  // Méthodes pour la pagination
  get getPaginatedFournisseurs() {
-  return this.paginationService.paginate(this.filteredFournisseurs, this.currentPageFournisseur, this.totalPagesFournisseur);
+  return this.paginationService.paginate(this.filteredFournisseurs, this.currentPageFournisseur, this.rowsPerPage);
 }
 
 get getPaginatedBons() {
-    return this.paginationService.paginate(this.filteredBons, this.currentPageBon, this.totalPagesBon);
+    return this.paginationService.paginate(this.filteredBons, this.currentPageBon, this.rowsPerPage);
 }
 
 get getPaginatedPaiements() {
-    return this.paginationService.paginate(this.filteredPaiements, this.currentPagePaiement, this.totalPagesPaiement);
+    return this.paginationService.paginate(this.filteredPaiements, this.currentPagePaiement, this.rowsPerPage);
 }
+
+onRowsPerPageChange(event: any) {
+  this.rowsPerPage = Number(event.target.value);
+
+  // Réinitialiser les pages à 1 pour éviter un problème d'affichage
+  this.currentPageFournisseur = 1;
+  this.currentPageBon = 1;
+  this.currentPagePaiement = 1;
+
+  this.cdr.detectChanges(); // Forcer la mise à jour de la vue
+}
+
+
 
 /* get getPaginatedBonsBis() {
   return this.paginationService.paginate(this.filteredBonsBis, this.currentPageBonBis, 2);
@@ -1008,6 +1039,10 @@ openPaymentTrackingModal(bon: any): void {
   // Implémenter l'ouverture du modal pour suivre le paiement
   // Par exemple : this.modalService.open(bon);
   console.log('Ouvrir modal pour suivi de paiement du bon:', bon);
+}
+
+getTotalPages(list: any[]): number {
+  return Math.ceil(list.length / this.rowsPerPage);
 }
 
 }

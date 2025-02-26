@@ -9,11 +9,8 @@ export class Operation {
   paiementId?: number;
 
   type?: 'COMMANDE' | 'VERSEMENT' | 'FACTURE' | 'TICKET_CAISSE' | 'RETOUR' | 'AVOIR' | 'LIVRAISON';
-  montantTotal!: number;
-  remise?: number;
-  netAPayer!: number;
+
   montantPaye!: number;
-  resteAPayer!: number;
 
   moyenPaiement?: 'ESPECES' | 'MOBILE_MONEY' | 'CARTE_BANCAIRE' | 'VIREMENT' | 'CHEQUE';
 
@@ -25,13 +22,6 @@ export class Operation {
   numeroRetour?: string;
 
   statut!: 'PAYE' | 'PARTIELLEMENT_PAYE' | 'IMPAYE' | 'ANNULE';
-
-  panier?: {
-    produits: Produits[];
-    totalHT: number;
-    tva: number;
-    totalTTC: number;
-  };
 
   dateOperation: Date = new Date();
   commentaire?: string;

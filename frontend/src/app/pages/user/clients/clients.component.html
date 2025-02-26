@@ -387,8 +387,8 @@
                   <tr>
                     <td>{{ bon.type }}</td>
                     <td>{{ bon.dateOperation | date:'dd/MM/yyyy HH:mm' }}</td>
-                    <td>{{ bon.montantTotal }} F CFA</td>
-                    <td>{{ bon.netAPayer }} F CFA</td>
+                    <td>{{ getBonByOperation(bon).montantTotal }} F CFA</td>
+                    <td>{{ getBonByOperation(bon).netAPayer }} F CFA</td>
                     <td>{{ bon.numeroFacture || 'N/A' }}</td>
                     <td>
                       <button class="btn btn-info" (click)="toggleDetails(i)">
@@ -433,11 +433,11 @@
 
                       <!-- Informations récapitulatives -->
                       <div class="d-flex justify-content-start flex-column align-items-start">
-                        <p><strong>Total :</strong> {{ bon.montantTotal }} F CFA</p>
-                        <p><strong>Remise :</strong> {{ bon.remise }} F CFA</p>
-                        <p><strong>Net à Payer :</strong> {{ bon.netAPayer }} F CFA</p>
+                        <p><strong>Total :</strong> {{ getBonByOperation(bon).montantTotal }} F CFA</p>
+                        <p><strong>Remise :</strong> {{ getBonByOperation(bon).remise }} F CFA</p>
+                        <p><strong>Net à Payer :</strong> {{ getBonByOperation(bon).netAPayer }} F CFA</p>
                         <p><strong>Avance :</strong> {{ bon.montantPaye }} F CFA</p>
-                        <p><strong>Reste :</strong> {{ bon.resteAPayer }} F CFA</p>
+                        <p><strong>Reste :</strong> {{ getBonByOperation(bon).resteAPayer }} F CFA</p>
                         <p><strong>Compte :</strong> {{ "Bon" }} (le client doit encore {{ bon.type }} F CFA)</p>
                       </div>
                     </td>

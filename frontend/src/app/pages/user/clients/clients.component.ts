@@ -7,6 +7,7 @@ import { Bon } from '../../../modeles/bon.model';
 import { Paiement } from '../../../modeles/paiement.model';
 import { Operation } from '../../../modeles/operation.model';
 import { Panier } from '../../../modeles/panier.model';
+import { Produits } from '../../../modeles/produit.modele';
 
 
 @Component({
@@ -219,7 +220,8 @@ export class ClientsComponent implements OnInit {
       ];
       const operationTypes = ['COMMANDE', 'VERSEMENT', 'LIVRAISON','TICKET_CAISSE', 'RETOUR','AVOIR','FACTURE'] as const;
       const methodePaiement = ['ESPECES', 'MOBILE_MONEY' , 'CARTE_BANCAIRE' , 'VIREMENT' , 'CHEQUE'] as const;
-
+      const produitsDisponibles = ['Lait', 'Sucre', 'Riz', 'Farine', 'Huile', 'Pain', 'Fromage', 'Tomates', 'Jus', 'Café'];
+      const bonstuatut = ['brouillon', 'commandé', 'expédié', 'livré', 'validé', 'retourné', 'facturé', 'payé', 'annulé'] as const;
       // Génération des Clients
       for (let i = 1; i <= 10; i++) {
         const client = new Client({
@@ -236,54 +238,85 @@ export class ClientsComponent implements OnInit {
           paiements: [],
         });
 
-        for (let j = 1; j <= 5; j++) {
-          const bon = new Bon({
-            id: j,
-            numero: `B${i}${j}`,
-            dateBon: new Date(),
-            description: `Bon de commande ${j} du client ${i}`,
-            montant: Math.floor(Math.random() * 20000) + 2000,
-            statusBon: ['Payé', 'Impayé', 'Annulé'][Math.floor(Math.random() * 3)] as "Payé" | "Impayé" | "Annulé",
-            type: ['Livraison', 'Commande', 'Retour', 'Avoir'][Math.floor(Math.random() * 4)] as "Livraison" | "Commande" | "Retour" | "Avoir",
-            numeroFacture: `FACT${i}${j}`,
-            clientId: client.id,
-          });
 
-          const paiement = new Paiement({
-            id: j,
-            numero: `V${i}${j}`,
-            date: new Date(),
-            description: `Paiement ${j} du client ${i}`,
-            montant: Math.floor(Math.random() * 10000) + 500,
-            methodePaiement: ['Espèce', 'Carte', 'Mobile Money', 'Virement'][Math.floor(Math.random() * 4)],
-            clientId: client.id,
-            bonId: bon.id
-          });
 
-          const operation = new Operation({
-            id: j,
-            clientId: client.id,
-            bonId: bon.id,
-            paiementId: paiement.id,
-            type: operationTypes[Math.floor(Math.random() * operationTypes.length)],
-            montantTotal: bon.montant,
-            montantPaye: paiement.montant,
-            resteAPayer: bon.montant - paiement.montant,
-            statut: bon.montant - paiement.montant === 0 ? 'PAYE' : 'PARTIELLEMENT_PAYE',
-            dateOperation: new Date(),
-            moyenPaiement: methodePaiement[Math.floor(Math.random() * methodePaiement.length)],
-          });
+          // Création du panier avec 3 à 4 produits
+          const nombreProduits = Math.floor(Math.random() * 2) + 3;
+          const panier: {
+            produits: Produits[]; // 👈 Déclare le type explicitement ici !
+            totalHT: number;
+            tva: number;
+            totalTTC: number;
+          } = {
+            produits: [], // ✅ Plus d'erreur
+            totalHT: 0,
+            tva: 0,
+            totalTTC: 0,
+          };
 
-          const panier = new Panier({
-            id: j,
-            bonId: bon.id,
-            totalTTC: Math.floor(Math.random() * 5000) + 1000,
-            articles: [
-              { id: 1, designation: 'Produit A', quantite: 2, prixVenteUnitaire: 1000, famille:'',fournisseur:'',magasin:''},
-              { id: 2, designation: 'Produit B', quantite: 1, prixVenteUnitaire: 2000,famille:'',fournisseur:'',magasin:'' },
-              { id: 3, designation: 'Produit C', quantite: 3, prixVenteUnitaire: 1500,famille:'',fournisseur:'',magasin:'' }
-            ]
-          });
+          for (let k = 0; k < nombreProduits; k++) {
+            let prixUnitaire = Math.floor(Math.random() * 1000) + 500;
+            let quantite = Math.floor(Math.random() * 5) + 1;
+
+
+            const produit = {
+              id: k + 1,
+              designation: produitsDisponibles[Math.floor(Math.random() * produitsDisponibles.length)],
+              quantite: quantite,
+              prixVenteUnitaire: prixUnitaire,
+              famille:'',
+              fournisseur:'',
+              magasin:'',
+              unite: 'Unité',
+            };
+
+            panier.produits.push(produit);
+            panier.totalHT += prixUnitaire * quantite;
+          }
+
+          panier.tva = panier.totalHT * 0.18;
+          panier.totalTTC = panier.totalHT + panier.tva;
+
+
+          for (let j = 1; j <= 5; j++) {
+            const bon = new Bon({
+              id: j,
+              numero: `B${i}${j}`,
+              dateBon: new Date(),
+              description: `Bon de commande ${j} du client ${i}`,
+              montantTotal: Math.floor(Math.random() * 20000) + 2000,
+              remise:Math.floor(Math.random() * 500) + 500,
+              netAPayer:Math.floor(Math.random() * 20000) + 2000 - Math.floor(Math.random() * 500) + 500,
+              resteAPayer:Math.floor(Math.random() * 10000) + 1000,
+              statutBon: bonstuatut[Math.floor(Math.random() * bonstuatut.length)],
+              type: ['Livraison', 'Commande', 'Retour', 'Avoir'][Math.floor(Math.random() * 4)] as "Livraison" | "Commande" | "Retour" | "Avoir",
+              numeroFacture: `FACT${i}${j}`,
+              clientId: client.id,
+              panier: panier
+            });
+
+            const paiement = new Paiement({
+              id: j,
+              numero: `V${i}${j}`,
+              date: new Date(),
+              description: `Paiement ${j} du client ${i}`,
+              montant: Math.floor(Math.random() * 10000) + 500,
+              methodePaiement: ['Espèce', 'Carte', 'Mobile Money', 'Virement'][Math.floor(Math.random() * 4)],
+              clientId: client.id,
+              bonId: bon.id
+            });
+
+            const operation = new Operation({
+              id: j,
+              clientId: client.id,
+              bonId: bon.id,
+              paiementId: paiement.id,
+              type: operationTypes[Math.floor(Math.random() * operationTypes.length)],
+              montantPaye: paiement.montant,
+              statut: bon.montantTotal - paiement.montant === 0 ? 'PAYE' : 'PARTIELLEMENT_PAYE',
+              dateOperation: new Date(),
+              moyenPaiement: methodePaiement[Math.floor(Math.random() * methodePaiement.length)],
+            });
 
           client.bons.push(bon);
           client.paiements.push(paiement);
@@ -826,5 +859,8 @@ selectProduit(prod: any) {
   this.filtrerOperations();
   }
 
+  getBonByOperation(operation: Operation): any {
+    return this.filteredBons.find(bon => bon.id === operation.bonId) || null;
+  }
 
 }
