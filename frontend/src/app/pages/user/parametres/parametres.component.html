@@ -1,0 +1,387 @@
+<div class="container-fluid ">
+  <div class="d-flex justify-content-center">
+    <!-- Contact -->
+    <h1 class="fw-bold"> PARAMETRES ET CONFIGURATION</h1>
+  </div>
+  <hr>
+  <div class="d-flex align-items-start">
+    <div class="nav flex-column nav-pills me-5" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+      <button class="nav-link active" id="v-pills-general-tab" data-bs-toggle="pill" data-bs-target="#v-pills-general" type="button" role="tab" aria-controls="v-pills-general" aria-selected="true">Général</button>
+      <button class="nav-link" id="v-pills-utilisateurs-tab" data-bs-toggle="pill" data-bs-target="#v-pills-utilisateurs" type="button" role="tab" aria-controls="v-pills-utilisateurs" aria-selected="false">Utilisateurs</button>
+      <button class="nav-link" id="v-pills-droit-permission-tab" data-bs-toggle="pill" data-bs-target="#v-pills-droit-permission" type="button" role="tab" aria-controls="v-pills-droit-permission" aria-selected="false" droit-permission>Droits et permissions</button>
+      <!-- <button class="nav-link" id="v-pills-messages-tab" data-bs-toggle="pill" data-bs-target="#v-pills-messages" type="button" role="tab" aria-controls="v-pills-messages" aria-selected="false">Messages</button>
+      <button class="nav-link" id="v-pills-settings-tab" data-bs-toggle="pill" data-bs-target="#v-pills-settings" type="button" role="tab" aria-controls="v-pills-settings" aria-selected="false">Settings</button> -->
+    </div>
+    <div class="tab-content w-100" id="v-pills-tabContent">
+      <div class="tab-pane fade show active" id="v-pills-general" role="tabpanel" aria-labelledby="v-pills-general-tab" tabindex="0">
+        <h2>Informations générales de la structure</h2>
+        <form [formGroup]="generalForm" (ngSubmit)="onSubmitFormsSetting()">
+          <div class="d-flex justify-content-center">
+            <!-- Informations générales -->
+            <h3 class="mt-3 fw-bold">📌 Informations générales</h3>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label>Nom de la structure *</label>
+              <input type="text" class="form-control" formControlName="name" required />
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>Logo</label>
+              <input type="file" class="form-control" (change)="onFileChange($event)" />
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>Propriétaire *</label>
+              <input type="text" class="form-control" formControlName="owner" required />
+            </div>
+
+            <div class="col-md-4 mb-3">
+              <label>Nombre de magasins *</label>
+              <input type="number" class="form-control" formControlName="numStores" required />
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>Type de structure *</label>
+              <select class="form-control" formControlName="type">
+                <option value="boutique">Boutique</option>
+                <option value="alimentation">Alimentation Générale</option>
+                <option value="ferme">Ferme</option>
+              </select>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>Devise de transaction *</label>
+              <select class="form-control" formControlName="currency">
+                <option value="FCFA">FCFA</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+              </select>
+            </div>
+          </div>
+
+           <div class="d-flex justify-content-center">
+            <!-- Contact -->
+          <h3 class="mt-3 fw-bold">📞 Contact</h3>
+           </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label>Email *</label>
+              <input type="email" class="form-control" formControlName="email" required />
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>Téléphone *</label>
+              <input type="text" class="form-control" formControlName="phone" required />
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>Adresse *</label>
+              <input type="text" class="form-control" formControlName="address" required />
+            </div>
+          </div>
+          <div class="d-flex justify-content-center">
+            <!-- Informations fiscales et légales -->
+            <h3 class="mt-3 fw-bold">💼 Informations fiscales et légales</h3>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label>N° Identification Fiscale</label>
+              <input type="text" class="form-control" formControlName="nif" />
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>Registre de commerce</label>
+              <input type="text" class="form-control" formControlName="rc" />
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>Statut juridique</label>
+              <input type="text" class="form-control" formControlName="legalStatus" />
+            </div>
+          </div>
+          <div class="d-flex justify-content-center">
+            <!-- Informations bancaires et paiements -->
+            <h3 class="mt-3 fw-bold">🏦 Informations bancaires et paiements</h3>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label>Nom de la banque</label>
+              <input type="text" class="form-control" formControlName="bankName" />
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>Numéro de compte bancaire</label>
+              <input type="text" class="form-control" formControlName="bankAccount" />
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>Fournisseur Mobile Money</label>
+              <select class="form-control" formControlName="mobileMoney">
+                <option value="Orange Money">Orange Money</option>
+                <option value="Wave">Wave</option>
+                <option value="Free Money">Free Money</option>
+              </select>
+            </div>
+          </div>
+          <div class="d-flex justify-content-center">
+            <!-- Informations administratives -->
+            <h3 class="mt-3 fw-bold">🏢 Informations administratives</h3>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label>Nombre d'employés</label>
+              <input type="number" class="form-control" formControlName="employees" />
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>Responsable administratif</label>
+              <input type="text" class="form-control" formControlName="adminManager" />
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>Horaires d'ouverture</label>
+              <input type="text" class="form-control" formControlName="openingHours" />
+            </div>
+          </div>
+          <div class="d-flex justify-content-center">
+            <!-- Informations sur l'activité -->
+            <h3 class="mt-3 fw-bold">📅 Informations sur l'activité</h3>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label>Jours de fermeture</label>
+              <input type="text" class="form-control" formControlName="closingDays" />
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>Site web</label>
+              <input type="url" class="form-control" formControlName="website" />
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>Réseaux sociaux</label>
+              <input type="text" class="form-control" formControlName="socialMedia" />
+            </div>
+          </div>
+          <div class="d-flex justify-content-center">
+            <!-- Sécurité et assurances -->
+            <h3 class="mt-3 fw-bold">🔐 Sécurité et assurances</h3>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label>Personne de confiance</label>
+              <input type="text" class="form-control" formControlName="trustedPerson" />
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>Assurances souscrites</label>
+              <input type="text" class="form-control" formControlName="insurance" />
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>Date de création *</label>
+              <input type="date" class="form-control" formControlName="creationDate" required />
+            </div>
+          </div>
+          <div class="d-flex justify-content-center">
+            <!-- Description -->
+            <h3 class="mt-3 fw-bold">📝 Description</h3>
+          </div>
+          <div class="row">
+            <div class="col-md-12 mb-3">
+              <textarea class="form-control" rows="3" formControlName="description" placeholder="Ajoutez une description"></textarea>
+            </div>
+          </div>
+        <div class="d-flex justify-content-center">
+          <!-- Bouton d'action -->
+          <button type="submit" class="btn btn-success w-50 ">
+            {{ isEditMode ? 'Enregistrer les modifications' : 'Enregistrer les informations' }}
+          </button>
+        </div>
+        </form>
+
+      </div>
+      <div class="tab-pane fade" id="v-pills-utilisateurs" role="tabpanel" aria-labelledby="v-pills-utilisateurs-tab" tabindex="0">
+        <h1>Gestion des utilisateurs</h1>
+        <button class="btn btn-success mb-3 float-end" (click)="openModal(null)"><i class="bi bi-plus-circle me-2"></i>Nouveau utilisateur</button>
+
+        <table class="table table-bordered table-responsive">
+          <thead>
+            <tr>
+              <th>Nom</th>
+              <th>Téléphone</th>
+              <th>Email</th>
+              <th>Droit/Rôle</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let user of users">
+              <td>{{ user.nom }}</td>
+              <td>{{ user.telephone }}</td>
+              <td>{{ user.email }}</td>
+              <td>{{ user.role }}</td>
+              <td>
+                <span class="badge bg-success" *ngIf="user.status">Actif</span>
+                <span class="badge bg-danger" *ngIf="!user.status">Inactif</span>
+              </td>
+              <td>
+                <button class="btn btn-warning btn-sm" (click)="openModal(user)">Modifier</button>
+                <button class="btn btn-danger btn-sm" (click)="deleteUser(user.id)">Supprimer</button>
+                <button class="btn btn-secondary btn-sm" (click)="toggleStatus(user)">
+                  {{ user.status ? 'Désactiver' : 'Activer' }}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Modal d'ajout/modification -->
+        <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="modalLabel">{{ isEditMode ? 'Modifier' : 'Ajouter' }} un utilisateur</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <form [formGroup]="userForm" (ngSubmit)="onSubmitUser()">
+                  <div class="row">
+                    <div class="col-md-6 mb-3">
+                      <label>Nom</label>
+                      <input type="text" class="form-control" formControlName="nom" required />
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                      <label>Téléphone</label>
+                      <input type="text" class="form-control" formControlName="telephone" required />
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-md-6 mb-3">
+                      <label>Email</label>
+                      <input type="email" class="form-control" formControlName="email" required />
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                      <label>Droit/Rôle</label>
+                      <select class="form-control" formControlName="role">
+                        <option value="admin">Administrateur</option>
+                        <option value="manager">Gérant</option>
+                        <option value="cashier">Caissier</option>
+                        <option value="employee">Employé</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-md-6 mb-3">
+                      <label>Type d'utilisateur</label>
+                      <select class="form-control" formControlName="userType">
+                        <option value="proprietaire">Propriétaire</option>
+                        <option value="gerant">Gérant</option>
+                        <option value="caissier">Caissier</option>
+                        <option value="employe">Employé</option>
+                      </select>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                      <label>Statut</label>
+                      <select class="form-control" formControlName="status">
+                        <option [value]="true">Actif</option>
+                        <option [value]="false">Inactif</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-md-6 mb-3">
+                      <label>Mot de passe</label>
+                      <input type="password" class="form-control" formControlName="password" required />
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                      <label>Confirmer le mot de passe</label>
+                      <input type="password" class="form-control" formControlName="confirmPassword" required />
+                    </div>
+                  </div>
+
+                  <button type="submit" class="btn btn-success w-100">
+                    {{ isEditMode ? 'Modifier' : 'Enregistrer' }}
+                  </button>
+                </form>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-pane fade" id="v-pills-droit-permission" role="tabpanel" aria-labelledby="v-pills-droit-permission-tab" tabindex="0">
+
+        <h1>Gestion des droits et permissions</h1>
+
+        <button class="btn btn-success mb-2 float-end" (click)="openPermissionModal()"><i class="bi bi-plus-circle me-2"></i>Nouveau droit</button>
+
+        <table class="table table-bordered table-responsive">
+          <thead class="thead-dark">
+            <tr>
+              <th>Nom</th>
+              <th>Niveau</th>
+              <th>Type de permission</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let permission of permissions">
+              <td>{{ permission.name }}</td>
+              <td>{{ permission.level }}</td>
+              <td>{{ permission.type }}</td>
+              <td>
+                <button class="btn btn-warning btn-sm me-2" (click)="editPermission(permission)">
+                  Modifier
+                </button>
+                <button class="btn btn-danger btn-sm" (click)="deletePermission(permission.id)">
+                  Supprimer
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="modal fade" id="permissionModal" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">{{ isEditMode ? 'Modifier le Droit' : 'Ajouter un Droit' }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+
+              <div class="modal-body">
+                <form [formGroup]="permissionForm" (ngSubmit)="onSubmitDroit()">
+                  <div class="mb-3">
+                    <label>Nom du Droit</label>
+                    <input type="text" class="form-control" formControlName="name" required />
+                  </div>
+
+                  <div class="mb-3">
+                    <label>Niveau</label>
+                    <select class="form-control" formControlName="level">
+                      <option value="1">Basique</option>
+                      <option value="2">Intermédiaire</option>
+                      <option value="3">Avancé</option>
+                    </select>
+                  </div>
+
+                  <div class="mb-3">
+                    <label>Type de Permission</label>
+                    <select class="form-control" formControlName="type">
+                      <option value="view_only">Consultation uniquement</option>
+                      <option value="edit">Modification</option>
+                      <option value="delete">Suppression</option>
+                      <option value="manage_users">Gestion des utilisateurs</option>
+                      <option value="manage_settings">Accès aux configurations</option>
+                      <option value="full_access">Accès total</option>
+                    </select>
+                  </div>
+
+                  <button type="submit" class="btn btn-success w-100">
+                    {{ isEditMode ? 'Modifier' : 'Enregistrer' }}
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <!-- <div class="tab-pane fade" id="v-pills-messages" role="tabpanel" aria-labelledby="v-pills-messages-tab" tabindex="0">...</div>
+      <div class="tab-pane fade" id="v-pills-settings" role="tabpanel" aria-labelledby="v-pills-settings-tab" tabindex="0">...</div> -->
+    </div>
+  </div>
+  </div>

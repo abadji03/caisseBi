@@ -1,0 +1,131 @@
+<div class="container-fluid p-5" style="background-color: #eee;">
+<div class="container p-5 rounded-2" style="background-color: white;" >
+	<div class="text-black d-flex justify-content-center mb-5 py-3 rounded-2" style="width: 100%; height: 50px; font-size: 30px; font-weight: bold;">
+		 Résumé de votre commande
+	</div>
+	<hr>
+	<div class="row">
+		<div class="col">
+			<h2>Commande numero: ()</h2>
+			<p> (Nombre) articles: </p>
+		</div>
+		<div class="col d-flex justify-content-end">
+			<h2> Total commande: () </h2>
+		</div>
+	  </div>
+	<div class="row">
+		<div class="col">
+			<div class="rounded-5 info-prod">Produits commandés</div>
+			<div class="card" *ngFor="let product of dataArray$|async">
+				<div class="card-body">
+					<div class="d-flex justify-content-between">
+					  <div class="d-flex flex-row align-items-center">
+						<div>
+						  <img src="{{product.imageUrl}}"
+							class="img-fluid rounded-3" alt="Shopping item" style="width: 65px;">
+						</div>
+						<div class="ms-3">
+						  <h5 class="champ"> {{product.nomCourt}} </h5>
+						  <p class="small mb-0  champ"> {{product.nomComplet}} </p>
+						</div>
+					  </div>
+					  <div class="d-flex flex-row align-items-center">
+						<div style="width: 80px;">
+						  <h5 class="fw-normal mb-0 me-5">Qté: {{product.quantite}} </h5>
+						</div>
+						<div style="width: 80px;">
+						  <h5 class="price mb-0"> {{product.prix}} F CFA</h5>
+						</div>
+					  </div>
+					</div>
+				  </div>
+			</div>
+			<div class="d-flex justify-content-between">
+				<h5 class="champ">Sous-Total </h5>
+				<h3 class="fw-normal mb-0"> {{cartTotal$|async}} F CFA</h3>
+			</div>
+			<div class="d-flex justify-content-between">
+				<h5 class="champ">Frais de livraison </h5>
+				<h3 class="fw-normal mb-0">0.0 F CFA</h3>
+			</div>
+			<div class="d-flex justify-content-between">
+				<h5 class="champ">Réduction </h5>
+				<h3 class="fw-normal mb-0">0.0 F CFA</h3>
+			</div>
+
+			<div class="d-flex justify-content-between">
+				<h3 class="h2 text-uppercase"><b>Total </b></h3>
+				<h3 class="fw-normal mb-0 h2 text-uppercase"><b>  {{cartTotal$|async}} F CFA </b></h3>
+			</div>
+		</div>
+		<div class="col">
+			<div class="card">
+				<div class="card-header rounded-5">Information sur la commande</div>
+				<div class="card-body">
+					
+					<div class="d-flex justify-content-between">
+						<h5 class="champ">Numéro commande </h5>
+						<h3 class="fw-normal mb-0">(Numero)</h3>
+					</div>
+					<div class="d-flex justify-content-between">
+						<h5 class="champ">Date commande </h5>
+						<h3 class="fw-normal mb-0">(Date commande)</h3>
+					</div>
+					
+				  </div>
+			</div>
+			<div class="card">
+				<div class="card-header rounded-5">Informations personnelles</div>
+				<div class="card-body">
+					<div class="d-flex justify-content-between">
+						<h5 class="champ">Prénom et nom</h5>
+						<h3 class="fw-normal mb-0">Aliou BADJI</h3>
+					</div>
+					<div class="d-flex justify-content-between">
+						<h5 class="champ">Email </h5>
+						<h3 class="fw-normal mb-0">abadaji3992&commat;gmail.com</h3>
+					</div>
+					<div class="d-flex justify-content-between">
+						<h5 class="champ">Téléphone </h5>
+						<h3 class="fw-normal mb-0">+ 221 77 985 29 75</h3>
+					</div>
+					<div class="d-flex justify-content-between">
+						<h5 class="champ">Adresse de résidence </h5>
+						<h3 class="fw-normal mb-0">(Adresse de résidence)</h3>
+					</div>
+					
+				  </div>
+			</div>
+			<div class="card">
+				<div class="card-body">
+					<div class="card-header rounded-5">Destinataire commande</div>
+					<div class="d-flex justify-content-between">
+						<h5 class="champ">Prénom et nom</h5>
+						<h3 class="fw-normal mb-0">Aliou BADJI</h3>
+					</div>
+					<div class="d-flex justify-content-between">
+						<h5 class="champ">Email </h5>
+						<h3 class="fw-normal mb-0">abadaji3992&commat;gmail.com</h3>
+					</div>
+					<div class="d-flex justify-content-between">
+						<h5 class="champ">Téléphone </h5>
+						<h3 class="fw-normal mb-0">+ 221 77 985 29 75</h3>
+					</div>
+					<div class="d-flex justify-content-between">
+						<h5 class="champ">Adresse destinataire </h5>
+						<h3 class="fw-normal mb-0">(Adresse)</h3>
+					</div>
+				  </div>
+			</div>
+		</div>
+	  </div>
+	  <div class="row mt-5 p-5">
+		<div class="col d-flex justify-content-between">
+			<button class="btn btn-outline-danger rounded-4" style="width: 100%;font-weight: bold;" type="button">Annuler la commande</button>
+			<button class="btn btn-dark rounded-4" style="width: 100%; font-weight: bold;" type="button">Confirmer la commande</button>
+	  </div>
+ </div>
+</div>
+</div>
+<router-outlet></router-outlet>
+<!-- <app-footer-user></app-footer-user> -->

@@ -1,0 +1,212 @@
+/* Sidebar */
+.sidebar {
+  /* width: 250px; */
+  background-color: black;
+  color: white;
+  /* padding-top: 20px; */
+  /* position: fixed; */
+  height: 100vh;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  /* overflow-y: auto; */
+  transition: width 0.3s;
+}
+.sidebar.collapsed {
+  width: 70px;
+}
+.sidebar.collapsed .sidebar-header span,
+.sidebar.collapsed .sidebar-header h4 {
+  display: none;
+}
+
+.sidebar.collapsed .accordion-button span {
+  display: none;
+}
+
+.menu-toggle {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.col-10, .col-11 {
+  transition: all 0.3s;
+}
+
+.sidebar-header {
+  text-align: center;
+  margin-bottom: 30px;
+  border-radius: 10px;
+}
+
+.sidebar-header img {
+  border-radius: 50%;
+  margin-bottom: 10px;
+}
+
+.sidebar-header h4 {
+  font-size: 18px;
+  font-weight: bold;
+  color: white;
+}
+
+/* Conteneur principal */
+.main-content {
+  /*margin-left: 5px;  Laisser de la place pour la sidebar */
+  /* padding: 20px; */
+  /* width: 100%; */
+  /* overflow-y: auto; */
+  background-color: #ecf0f1;
+}
+
+/* Header */
+.header {
+  background-color: #ecf0f1; /* Même couleur que la section content */
+  padding: 20px;
+  box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between; /* Aligne le titre et le menu à droite */
+  align-items: center;
+}
+
+/* Titre dans le header */
+.header-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+/* Positionnement du groupe de boutons (profil et notifications) */
+.btn-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-left: auto; /* Place les éléments à droite */
+}
+
+.icon-notification {
+  font-size: 24px;
+  color: #2c3e50;
+  position: relative;
+}
+
+/* Badge de notification */
+.icon-notification .badge {
+  font-size: 12px;
+  top: -8px;
+  right: -8px;
+}
+
+/* Bouton de profil */
+#idMenu {
+  display: flex;
+  align-items: center;
+  border-radius: 30px;
+}
+
+/* Menu déroulant */
+.dropdown-menu {
+  border-radius: 5px;
+}
+
+.dropdown-menu li button {
+  padding: 10px;
+  background-color: #ecf0f1;
+  border: none;
+  width: 100%;
+  text-align: left;
+}
+
+.dropdown-menu li button:hover {
+  background-color: #bdc3c7;
+}
+
+/* Dashboard Overview */
+.dashboard-overview {
+  background-color: white;
+  margin-top: 0px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-top: 10px;
+}
+.accordion-item{
+  background-color: black;
+  border: none;
+}
+/* Style pour les boutons de la sidebar */
+.accordion-item button {
+  width: 100%;
+  padding: 5px;
+  text-align: left;
+  background-color: #34495e;
+  border: none;
+  color: #ecf0f1;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: all 0.3s;
+}
+.accordion-button::after {
+  display: none;
+}
+.no-arrow {
+  box-shadow: none;
+}
+
+
+.accordion-item button:hover {
+  background-color: white;
+  color: black;
+}
+
+.accordion-item button:focus {
+  outline: none;
+}
+
+/* Submenu et autres liens dans la sidebar */
+.accordion-body button {
+  background-color: white;
+  padding: 10px;
+  color: black;
+  border-radius: 5px;
+  margin-bottom: 5px;
+  width: 100%;
+}
+
+.accordion-body button:hover {
+  background-color: gray;
+  color: white;
+}
+
+/* Affichage et gestion du sous-menu de la sidebar */
+.collapse {
+  display: none;
+  margin-left: 10px;
+  margin-top: 10px;
+}
+
+.collapse.show {
+  display: block;
+}
+nav .active{
+  background-color: white;
+  color: black;
+  border: solid 1px;
+}
+ nav .accordion-body .active{
+  background-color: lightgray;
+  color: black;
+  border: solid 1px;
+}
+
+/* Style pour l'icône du chevron (flèche)
+.bi-chevron-down {
+  float: right;
+  transition: transform 0.3s;
+}
+
+button[aria-expanded="true"] .bi-chevron-down {
+  transform: rotate(180deg);
+}*/

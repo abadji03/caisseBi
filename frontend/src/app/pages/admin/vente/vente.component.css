@@ -1,0 +1,388 @@
+.carousel-2 p-carousel:hover .icon-nav {
+background-color: black;
+opacity: 2;
+font-weight: bold;
+font-size: 30px;
+color: white;
+visibility: visible;
+}
+.carousel-2 p-carousel .icon-nav {
+    opacity: 0;
+    visibility: hidden;
+}
+.carousel-1 .card{
+    height: 160px;
+    padding: 10px 5px;
+}
+/* ng-template[pTemplate = "previousicon"],ng-template[pTemplate = "nexticon"] {
+    width: 200px;
+    background-color: black;
+}
+.p-carousel .icon-nav{
+    width: 100%;
+    height: auto;
+}*/
+
+/* .p-carousel{
+    width: 100%;
+}  */
+
+.card-categorie {
+    display: flex;
+    vertical-align: middle;
+    align-items: center;
+    background-color: lightgray;
+}
+
+.card-product-categorie{
+    width: 150px;
+    height: 150px;
+    background-color: #fff;
+    border:none;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+
+}
+
+.card-product .card{
+
+    background-color: #fff;
+    border:none;
+    border-radius: 10px;
+    width: 200px;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+
+}
+
+.card-product .image-container{
+
+    position: relative;
+}
+
+.card-product .thumbnail-image{
+    border-radius: 10px !important;
+    width: 200px; /* You can set the dimensions to whatever you want */
+    height: 200px;
+    object-fit: cover;
+}
+
+
+.card-product .discount{
+
+    background-color: red;
+    padding-top: 1px;
+    padding-bottom: 1px;
+    padding-left: 4px;
+    padding-right: 4px;
+    font-size: 10px;
+    border-radius: 6px;
+    color: #fff;
+}
+
+.card-product .wishlist{
+
+    height: 25px;
+    width: 25px;
+    background-color: #eee;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    box-shadow:  0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+
+.card-product .first{
+
+    position: absolute;
+    width: 100%;
+    padding: 9px;
+}
+
+
+.card-product .dress-name{
+    font-size: 13px;
+    font-weight: bold;
+    width: 50%;
+}
+
+
+.card-product .new-price{
+    font-size: 13px;
+    font-weight: bold;
+    color: red;
+    
+}
+.card-product .old-price{
+    font-size: 8px;
+    font-weight: bold;
+    color: grey;
+    text-decoration: line-through;
+}
+
+
+.card-product .btn{
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    padding: 3px;
+}
+
+.card-product .creme{
+    background-color: #fff;
+    border: 2px solid grey;
+    
+
+}
+.card-product .creme:hover {
+    border: 3px solid grey;
+}
+
+.card-product .creme:focus {
+    background-color: grey;
+
+}
+
+
+.card-product .red{
+    background-color: #fff;
+    border: 2px solid red;
+    
+}
+
+
+.card-product .red:hover {
+    border: 3px solid red;
+}
+.card-product .red:focus {
+    background-color: red;
+}
+
+
+
+.card-product .blue{
+    background-color: #fff;
+    border: 2px solid #40C4FF;
+}
+
+.card-product .blue:hover {
+    border: 3px solid #40C4FF;
+}
+.card-product .blue:focus {
+    background-color: #40C4FF;
+}
+
+
+
+.card-product .item-size{
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1px solid grey;
+    color: grey;
+    font-size: 10px;
+    text-align: center;
+    align-items: center;
+    display: flex;
+    justify-content: center;
+}
+
+.card-product .rating-star {
+    padding: 10px;
+    align-items: center;
+}
+
+.card-product .rating-star mat-icon{
+    position: relative;
+    font-size: 16px ;
+    color: orange;
+    top: 4px;
+}
+.card-product .rating-number{
+    font-size: 12px;
+    color: grey;
+    vertical-align: middle;
+
+}
+.card-product .buy{
+    font-size: 13px;
+    color: purple;
+    width: 100%;
+    height: 30px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    color: white;
+    background-color: orange;
+
+}
+.card-product .buy mat-icon{
+    vertical-align: middle;
+}
+
+
+
+.card-product .voutchers{
+    background-color: #fff;
+    border:none;
+    border-radius: 10px;
+    width: 200px;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+    overflow: hidden;
+
+}
+.card-product .voutcher-divider{
+
+    display: flex;
+
+}
+.card-product .voutcher-left{
+    width: 60%
+}
+.card-product .voutcher-name{
+    color: grey;
+    font-size: 9px;
+    font-weight: 500;
+}
+.card-product .voutcher-code{
+    color: red;
+    font-size: 11px;
+    font-weight: bold;
+}
+.card-product .voutcher-right{
+    width: 40%;	 
+    background-color: orange;
+    color: #fff;
+}
+
+.card-product .discount-percent{
+    font-size: 12px;
+    font-weight: bold;
+    position: relative;
+    top: 5px;
+}
+.card-product .off{
+    font-size: 14px;
+    position: relative;
+    bottom: 5px;
+}
+
+
+/* ..................................... */
+.checkout-table {
+    border-top: 1px solid #F2F2F2;
+  }
+  
+ .checkout-table .table {
+    margin-bottom: 0;
+    border-top: 0;
+    border-bottom: 1px solid #F2F2F2;
+  }
+  
+.checkout-table .table tbody tr td {
+    border: 0;
+    border-bottom: 1px solid #F2F2F2;
+    /* padding: 12px; */
+    vertical-align: middle;
+  }
+  
+  .checkout-table .table tbody tr td.checkout-product {
+    min-width: 190px;
+    padding-right: 0;
+    text-align: left;
+  }
+  .checkout-table .table tbody tr td.checkout-quantity {
+    width: 100px;
+    /* padding-left: 5px;
+    padding-right: 5px; */
+  }
+  
+ /*  .checkout-table .table tbody tr td.checkout-price {
+    min-width: 80px;
+    width: 100px;
+    padding-left: 0;
+  } */
+  
+ .checkout-table .product-cart .product-thumb img {
+    width: 40px;
+  }
+  
+  .checkout-table .product-cart .product-content {
+    padding-left: 8px;
+  }
+  
+  .checkout-table .product-cart .product-content .title a {
+    font-weight: 400;
+    font-size: 18px;
+    line-height: 22px;
+    color: #000;
+    transition: all 0.3s linear;
+  }
+  
+   .checkout-table .product-cart .product-content .title a:hover {
+    color: #542DED;
+  }
+ 
+  .checkout-table .product-cart .product-content ul li {
+    display: block;
+  }
+  
+   .checkout-table .product-cart .product-content ul li + li {
+    margin-left: 8px;
+  }
+  
+  /* .checkout-table .product-cart .product-content ul li span {
+    font-weight: 300;
+    font-size: 13px;
+    line-height: 16px;
+    margin-top: 4px;
+    color: #7D7D7D;
+  } */
+ 
+  .checkout-table .product-cart .product-content ul li .delete {
+    font-size: 16px;
+    color: #FF4B22;
+    padding: 0;
+  }
+  
+  .checkout-table .product-quantity {
+    background-color: #fff;
+    overflow: hidden;
+    width: 100%;
+    border-radius: 4px;
+    display: inline-block;
+  }
+ .checkout-table .product-quantity button {
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    padding: 0;
+    font-size: 16px;
+    border: 0;
+    background-color: transparent;
+    transition: all 0.4s linear;
+    color: rgba(0, 0, 0, 0.8);
+  }
+  
+  .checkout-table .product-quantity button:hover {
+    color: #542DED;
+  }
+  .checkout-table .product-quantity input {
+    width: 40px;
+    height: 28px;
+    border: 0;
+    padding: 0 5px;
+    text-align: center;
+    font-weight: 700;
+    background-color: transparent;
+    color: #000;
+    font-size: 16px;
+  }
+  
+ .checkout-table .price {
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 22px;
+    color: #000;
+  }
+  

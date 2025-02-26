@@ -1,0 +1,336 @@
+<!-- content -->
+  <section class="bg-light pt-5">
+    <div class="container bg-white">
+      <div class="row gx-5">
+        <aside class="col-lg-6 py-3">
+          <div>
+            <!-- Tab panes -->
+            <div class="tab-content tab1 border border-2 rounded-5 w-100" style="height: 450px;">
+              <div class="tab-pane active mx-5 rounded-5" id="home" role="tabpanel" aria-labelledby="home-tab"><img src="./assets/best-product-1.jpg" /></div>
+              <div class="tab-pane mx-5 rounded-5" id="profile" role="tabpanel" aria-labelledby="profile-tab"><img src="./assets/best-product-2.jpg" /></div>
+              <div class="tab-pane mx-5 rounded-5" id="messages" role="tabpanel" aria-labelledby="messages-tab"><img src="./assets/best-product-3.jpg" /></div>
+              <div class="tab-pane mx-5 rounded-5" id="settings" role="tabpanel" aria-labelledby="settings-tab"><img src="./assets/best-product-4.jpg" /></div>
+            </div>
+            <!-- Nav tabs -->
+            <ul class="nav nav-tabs nav-justified nav-tab-product" id="myTab" role="tablist" >
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active d-flex align-items-center justify-content-center "id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button" role="tab" aria-controls="home" aria-selected="true"><img class="rounded-5" src="./assets/best-product-1.jpg" /></button>
+              </li>
+              <li class="nav-item " role="presentation">
+                <button class="nav-link d-flex align-items-center justify-content-center " id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab" aria-controls="profile" aria-selected="false"><img class="rounded-5" src="./assets/best-product-2.jpg" /></button>
+              </li>
+              <li class="nav-item " role="presentation">
+                <button class="nav-link d-flex align-items-center justify-content-center" id="messages-tab" data-bs-toggle="tab" data-bs-target="#messages" type="button" role="tab" aria-controls="messages" aria-selected="false"><img class="rounded-5" src="./assets/best-product-3.jpg" /></button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link d-flex align-items-center justify-content-center" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab" aria-controls="settings" aria-selected="false"><img class="rounded-5" src="./assets/best-product-4.jpg" /></button>
+              </li>
+            </ul>
+          </div>
+
+        </aside>
+        <main class="col-lg-6 py-3">
+          <div class="ps-lg-3">
+            <h1 class="title text-dark">
+             {{produitD.nomComplet}} <br />
+              {{produitD.nomCourt}}
+            </h1>
+            <div class="d-flex flex-column my-3">
+                <h4>
+                    Avis sur le produit
+                </h4>
+              <div class="mb-1 me-2">
+                <mat-icon class="text-warning">star</mat-icon>
+                <mat-icon class="text-warning">star</mat-icon>
+                <mat-icon class="text-warning">star</mat-icon>
+                <mat-icon class="text-warning">star</mat-icon>
+                <mat-icon>star</mat-icon>
+                <span>
+                  4.5
+                </span>
+              </div>
+              <div class="stock-product">
+                <h4 class="text-dark"><mat-icon >shopping_basket</mat-icon> Disponibilité <span class="text-success ms-2">(En stock)</span></h4>
+    
+              </div>
+            </div>
+  
+            <div class="d-flex align-items-center">
+                <h4>Prix actuel : 
+                  <span class="h5 pe-0">{{produitD.prix}} F CFA</span>
+                  <span class="text-muted h5  text-decoration-line-through">(600 F CFA)</span>
+                </h4>
+            </div>
+  <!-- 
+            <p>
+              Modern look and quality demo item is a streetwear-inspired collection that continues to break away from the conventions of mainstream fashion. Made in Italy, these black and brown clothing low-top shirts for
+              men.
+            </p>
+   -->
+            <div class="row">
+              <dt class="col-3">Reférence:</dt>
+              <dd class="col-9">(code de reférence du produit)</dd>
+  
+              <dt class="col-3">Etat</dt>
+              <dd class="col-9">(Nouveau, ajouter il y a....)</dd>
+
+              <dt class="col-3">Vendeur</dt>
+              <dd class="col-9">(Info sur le vendeur)</dd>
+            </div>
+  
+            <hr />
+  
+            <div class="row mb-4">
+              <!-- <div class="col-md-4 col-6">
+                <label class="mb-2">Size</label>
+                <select class="form-select border border-secondary" style="height: 35px;">
+                  <option>Small</option>
+                  <option>Medium</option>
+                  <option>Large</option>
+                </select>
+              </div> -->
+              <!-- col.// -->
+            <div class="d-flex align-items-center">
+                <label class="h6 px-2">Quantité :</label>
+                <div class="input-group div-qte" style="width: 180px;">
+                  <button class="btn btn-white border border-warning" (click)="onReduitOcc(produitD)" type="button" id="button-addon1" data-mdb-ripple-color="dark">
+                    <mat-icon [ngStyle]="{ 'color': 'black' }">remove_circle</mat-icon>
+                  </button>
+                  <input type="number" class="form-control text-center border border-warning" value="{{produitD.quantite}}" aria-label="Example text with button addon" aria-describedby="button-addon1" />
+                  <button class="btn btn-white border border-warning rounded-0" (click)="onAjoutOcc(produitD)" type="button" id="button-addon2" data-mdb-ripple-color="dark">
+                    <mat-icon [ngStyle]="{ 'color': 'black' }">add_circle </mat-icon>
+                  </button>
+                </div>
+                <label class="mb-2 mx-2 h6" *ngIf="produitD.categorie === 'Vétement'">Taille : </label>
+                <div class="col-md-2 mb-2" *ngIf="produitD.categorie === 'Vétement'">
+                  <select class="form-select fw-bold border border-secondary" style="height: 35px;">
+                    <option>S</option>
+                    <option>M</option>
+                    <option>XL</option>
+                    <option>XXL</option>
+                  </select>
+              </div>
+                
+                <div class="div-add-btn">
+                    <a type="button" (click)="onSelectedProduit(produitD)" class="btn btn-primary border border-white shadow-0 rounded-0 p-2" style="height: 45px; background-color: orange;"> <mat-icon>add_shopping_cart</mat-icon> Ajouter au panier </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  </section>
+  <!-- content -->
+  
+  <section class="bg-light border-top py-4">
+    <div class="container">
+      <div class="row gx-4">
+        <div class="col-lg-8 mb-4">
+          <div class="border rounded-2 bg-white">
+            <!-- Pills navs -->
+            <ul class="nav nav-pills nav-justified mb-3 nav-bottom" id="ex1" role="tablist">
+              <li class="nav-item d-flex" role="presentation">
+                <a class="nav-link d-flex align-items-center justify-content-center w-100 active" id="ex1-tab-1" data-bs-toggle="pill" href="#ex1-pills-1" role="tab" aria-controls="ex1-pills-1" aria-selected="true">Description</a>
+              </li>
+              <li class="nav-item d-flex" role="presentation">
+                <a class="nav-link d-flex align-items-center justify-content-center w-100" id="ex1-tab-2" data-bs-toggle="pill" href="#ex1-pills-2" role="tab" aria-controls="ex1-pills-2" aria-selected="false">Spécification</a>
+              </li>
+              <li class="nav-item d-flex" role="presentation">
+                <a class="nav-link d-flex align-items-center justify-content-center w-100" id="ex1-tab-3" data-bs-toggle="pill" href="#ex1-pills-3" role="tab" aria-controls="ex1-pills-3" aria-selected="false">Commentaires</a>
+              </li>
+              <li class="nav-item d-flex" role="presentation">
+                <a class="nav-link d-flex align-items-center justify-content-center w-100" id="ex1-tab-4" data-bs-toggle="pill" href="#ex1-pills-4" role="tab" aria-controls="ex1-pills-4" aria-selected="false">Autres</a>
+              </li>
+            </ul>
+            <!-- Pills navs -->
+  
+            <!-- Pills content -->
+            <div class="tab-content" id="ex1-content">
+              <div class="tab-pane fade show active" id="ex1-pills-1" role="tabpanel" aria-labelledby="ex1-tab-1">
+                <p>
+                  With supporting text below as a natural lead-in to additional content. Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
+                  enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
+                  pariatur.
+                </p>
+                <!-- <div class="row mb-2">
+                  <div class="col-12 col-md-6">
+                    <ul class="list-unstyled mb-0">
+                      <li><i class="fas fa-check text-success me-2"></i>Some great feature name here</li>
+                      <li><i class="fas fa-check text-success me-2"></i>Lorem ipsum dolor sit amet, consectetur</li>
+                      <li><i class="fas fa-check text-success me-2"></i>Duis aute irure dolor in reprehenderit</li>
+                      <li><i class="fas fa-check text-success me-2"></i>Optical heart sensor</li>
+                    </ul>
+                  </div>
+                  <div class="col-12 col-md-6 mb-0">
+                    <ul class="list-unstyled">
+                      <li><i class="fas fa-check text-success me-2"></i>Easy fast and ver good</li>
+                      <li><i class="fas fa-check text-success me-2"></i>Some great feature name here</li>
+                      <li><i class="fas fa-check text-success me-2"></i>Modern style and design</li>
+                    </ul>
+                  </div>
+                </div> -->
+               
+              </div>
+              <div class="tab-pane fade mb-2" id="ex1-pills-2" role="tabpanel" aria-labelledby="ex1-tab-2">
+                <table class="table border mt-3 mb-2">
+                    <tr>
+                      <th class="py-2">Display:</th>
+                      <td class="py-2">13.3-inch LED-backlit display with IPS</td>
+                    </tr>
+                    <tr>
+                      <th class="py-2">Processor capacity:</th>
+                      <td class="py-2">2.3GHz dual-core Intel Core i5</td>
+                    </tr>
+                    <tr>
+                      <th class="py-2">Camera quality:</th>
+                      <td class="py-2">720p FaceTime HD camera</td>
+                    </tr>
+                    <tr>
+                      <th class="py-2">Memory</th>
+                      <td class="py-2">8 GB RAM or 16 GB RAM</td>
+                    </tr>
+                    <tr>
+                      <th class="py-2">Graphics</th>
+                      <td class="py-2">Intel Iris Plus Graphics 640</td>
+                    </tr>
+                  </table>
+              </div>
+              <div class="tab-pane fade" id="ex1-pills-3" role="tabpanel" aria-labelledby="ex1-tab-3">
+                <h1 class="tab-title">Evaluation du produit</h1>
+                <div class="product-review">
+
+                    <div class="media d-flex justify-content-start rounded-2 p-3" >
+                        <!-- Avater -->
+                        <div class="d-flex flex-column p-3">
+                          <img src="./assets/avatar.jpg" alt="avater" width="90px" height="80px" class="mb-5">
+
+                          <div class="name mb-2">
+                            <h5> De: Aliou Badji</h5>
+                          </div>
+                        <div class="date">
+                          <p>Posté le: Mercredi 21, 2024</p>
+                        </div>
+                        </div>
+                        <div class="media-body rounded-3" style="width: 100%;">
+                            <!-- Ratings -->
+                            <div class="ratings">
+                                <ul class="list-inline">
+                                    <li class="list-inline-item">
+                                      <mat-icon>star</mat-icon>
+                                    </li>
+                                    <li class="list-inline-item">
+                                        <mat-icon>star</mat-icon>
+                                    </li>
+                                    <li class="list-inline-item">
+                                        <mat-icon>star</mat-icon>
+                                    </li>
+                                    <li class="list-inline-item">
+                                        <mat-icon>star</mat-icon>
+                                    </li>
+                                    <li class="list-inline-item">
+                                        <mat-icon>star</mat-icon>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="review-comment">
+                                <p>
+                                    Ceci est un commenataire sur le produit ci-dessus
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="review-submission">
+                        <h3 class="tab-title">Soumettre votre avis sur le produit</h3>
+                        <!-- Rate -->
+                        <div class="rate">
+                            <div class="starrr"></div>
+                        </div>
+                        <div class="review-submit">
+                            <form action="#" method="POST" class="row">
+                                <div class="col-lg-6 mb-3">
+                                    <input type="text" name="name" id="name" class="form-control" placeholder="Nom complet" required>
+                                </div>
+                                <div class="col-lg-6 mb-3">
+                                    <input type="email" name="email" id="email" class="form-control" placeholder="Email" required>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <textarea name="review" id="review" rows="6" class="form-control" placeholder="Message" required></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-main">Envoyer</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+              </div>
+              <div class="tab-pane fade mb-2" id="ex1-pills-4" role="tabpanel" aria-labelledby="ex1-tab-4">
+                Some other tab content or sample information now <br />
+                Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
+                aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui
+                officia deserunt mollit anim id est laborum.
+              </div>
+            </div>
+            <!-- Pills content -->
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="px-0 border rounded-2 shadow-0">
+            <div class="card">
+              <div class="card-header h4 d-flex justify-content-center" style="background-color: orange; font-weight: bold; color: white;">Produits similaires</div>
+              <div class="card-body">
+
+                <div class="d-flex mb-3 similar-products">
+                  <a href="#" class="me-3">
+                    <img src="./assets/best-product-1.jpg" style="min-width: 96px; height: 96px;" class="img-md img-thumbnail" />
+                  </a>
+                  <div class="info">
+                    <a href="#" class="nav-link mb-1">
+                      Nom complet <br />
+                      Nom court
+                    </a>
+                    <b class="text-dark"> 38.90 F CFA</b>
+                  </div>
+                </div>
+  
+                <div class="d-flex mb-3 similar-products">
+                  <a href="#" class="me-3">
+                    <img src="./assets/best-product-2.jpg" style="min-width: 96px; height: 96px;" class="img-md img-thumbnail" />
+                  </a>
+                  <div class="info">
+                    <a href="#" class="nav-link mb-1">
+                      Nom complet <br />
+                      Nom court
+                    </a>
+                    <b class="text-dark"> 29.50 F CFA</b>
+                  </div>
+                </div>
+  
+                <div class="d-flex mb-3 similar-products">
+                  <a href="#" class="me-3">
+                    <img src="./assets/best-product-3.jpg" style="min-width: 96px; height: 96px;" class="img-md img-thumbnail" />
+                  </a>
+                  <div class="info">
+                    <a href="#" class="nav-link mb-1"> Nom complet </a>
+                    <b class="text-dark"> 120.00 F CFA</b>
+                  </div>
+                </div>
+  
+                <div class="d-flex similar-products">
+                  <a href="#" class="me-3">
+                    <img src="./assets/best-product-4.jpg" style="min-width: 96px; height: 96px;" class="img-md img-thumbnail" />
+                  </a>
+                  <div class="info">
+                    <a href="#" class="nav-link mb-1"> Nom complet </a>
+                    <b class="text-dark"> 339.90 F CFA</b>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- <app-footer-user></app-footer-user> -->

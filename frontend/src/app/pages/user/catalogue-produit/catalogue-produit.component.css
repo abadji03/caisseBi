@@ -1,0 +1,81 @@
+.table-responsive {
+    overflow-y: auto; /* Pour activer la barre de défilement verticale */
+    overflow-x: auto; /* Pour activer la barre de défilement horizontale */
+    max-height: 450px; /* Hauteur maximale pour activer la barre de défilement */
+  }
+/* Appliquer une largeur personnalisée à la liste déroulante */
+.searchBy-select {
+  width: auto;               /* Largeur dynamique selon le contenu des options */
+  min-width: 100px;          /* Largeur minimale pour garantir qu'il ne soit pas trop petit */
+  max-width: 150px;          /* Largeur maximale pour éviter que le select devienne trop grand */
+  display: inline-block;     /* Permet de garder l'élément en ligne avec le champ de texte */
+  padding: 0.375rem 0.75rem; /* Améliore le padding pour une apparence plus soignée */
+  border-radius: 0.375rem;   /* Ajoute un léger arrondi aux coins */
+  font-size: 1rem;           /* Taille de police standard */
+  border: 1px solid #ced4da; /* Bordure grise de manière uniforme */
+  /* background-color: white;   Fond blanc pour le select */
+  background-color: green;
+
+}
+
+/* Option : ajuster le padding à l'intérieur des éléments option */
+.searchBy-select option {
+  padding: 0.375rem 0.75rem;
+  color: white;
+}
+.vertical-lines {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 24px; /* Ajuste selon la taille souhaitée */
+  }
+  .line {
+    width: 3px; /* Largeur de chaque ligne */
+    height: 8px; /* Hauteur des lignes */
+    background-color: black; /* Couleur des lignes */
+  }
+
+  /* Applique table-layout: auto pour laisser les colonnes s'ajuster à leur contenu */
+.table {
+  /* table-layout: auto !important; */
+  /* width: 100%;
+  border-collapse: collapse; */
+  width: 100%;
+  table-layout: fixed !important;
+  border-collapse: collapse;
+}
+
+/* Définir une largeur maximale sur chaque cellule et permettre un retour à la ligne */
+.table th, .table td {
+ /*  */
+  overflow: hidden;
+  width: 160px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-group-vertical{
+  margin-top: 20px;
+}
+
+/* Style pour le survol des lignes du tableau */
+.table tbody tr:hover {
+  background-color: #f0f0f0; /* Couleur de fond lors du survol */
+  cursor: pointer; /* Change le curseur pour indiquer que c'est interactif */
+}
+
+/* Style pour une ligne sélectionnée */
+.table tbody tr.selected {
+  background-color: #007bff; /* Couleur de fond de la ligne sélectionnée */
+  color: white; /* Changer la couleur du texte lors de la sélection */
+}
+
+
+/* Largeur spécifique pour certaines colonnes */
+.table .petit-colonne {
+  width: 40px;  /* 5% de la largeur totale */
+}
+
+
+
+

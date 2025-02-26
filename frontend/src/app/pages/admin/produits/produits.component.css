@@ -1,0 +1,45 @@
+.div-container {
+  font-family: 'Times New Roman', Times, serif;
+}
+.file-input {
+    display: none;
+  }
+
+.btn-class{
+    width: 150px;
+} 
+#app {
+  text-align: center;
+  color: #2c3e50;
+  margin-top: 60px;
+}
+#video {
+  background-color: #000000;
+}
+#canvas {
+  display: none;
+}
+li {
+  display: inline;
+  padding: 5px;
+}
+
+.table th{
+  text-align: start;
+  vertical-align: middle;
+  font-size: larger;
+}
+
+.table tr td{
+
+  font-size: 18px;
+}
+
+.table input {
+  width: 30px;
+  height: 30px;
+  color: black;
+  font-weight: 600;
+  outline: none;
+  padding: 8px;
+}

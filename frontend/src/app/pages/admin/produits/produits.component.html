@@ -1,0 +1,168 @@
+<div class="row container-fluid">
+    <div [ngClass]="isSidePanelVisible ? 'col-8' : 'col-12'" >
+        <div class="card p-0">
+            <div class="card-header bg-white border-0 m-0">
+                <div class="row">
+                    <div class="h3 fw-bold d-flex justify-content-center">
+                        Liste des produits
+                    </div>
+                    <div class="text-end">
+                        <button class="btn btn-sm btn-danger fw-bold" *ngIf="isCheckedCase" (click)="VerificationCheckedCase()">Supprimer les produits sélectionnées</button>                    </div>
+                </div>
+            </div>
+            <div class="card-body m-0">
+                <div class="row">
+                   <!--  <div class="col-3 pt-2" *ngFor="let product of productsList">
+                        <div class="card">
+                            <img class="card-img-top" style="height: 12.125rem !important" [src]="product.imageUrl" alt="Card image">
+                            <div class="card-body">
+                              <h4 class="card-title">{{product.nomCourt}}</h4>
+                              <p class="card-text">{{product.categorie}}</p>
+                              <a class="btn btn-primary" (click)="onEdit(product)">Edit</a>
+                              <a   class="btn btn-danger mx-2" (click)="removeById(product)">Delete</a>
+                            </div>
+                          </div>
+                    </div> -->
+                    <table class="table table-border align-middle mb-0 bg-white">
+                        <thead class="table-light text-uppercase" style="height: 100px;">
+                          <tr>
+                            <th>
+                                <input type="checkbox" id="checkAll" (click)="selectAllProd()">
+                                <label for="checkAll"></label>
+                            </th>
+                            <th>Produit</th>
+                            <th>Description</th>
+                            <th>Quantité</th>
+                            <th>Prix (F CFA)</th>
+                            <th>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr *ngFor="let product of productsList">
+                            <td>
+                                <input type="checkbox" id="check" name="checkCase" (click)="verifyCheckedCase()">
+                                <label for="check"></label>
+                            </td>
+                            <td>
+                              <div class="d-flex align-items-center">
+                                <img
+                                    src="{{product.imageUrl}}"
+                                    alt="{{product.nomCourt}}"
+                                    style="width: 150px; height: 150px"
+                                    class="rounded-2 me-3"
+                                    />
+                                <div>
+                                  <p class="fw-bold h4">{{product.nomComplet}}</p>
+                                  <p class="text-muted">Catégorie: {{product.categorie}}</p>
+                                  <p class="text-muted">Reférence : {{product.sku}}</p>
+                                  <p class="text-muted">Date d'ajout: {{product.dateCreation}}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td>
+                              <p class="fw-normal mb-1">{{product.description}}</p>                              
+                            </td>
+                            <td>
+                                <p class="fw-normal mb-1 h4">{{product.quantite}}</p>
+                                <p class="text-muted mb-0">(Unité)</p>
+                            </td>
+                            <td>
+                                <p class="fw-normal mb-1 h4">{{product.prix}} </p>
+                            </td>
+                            <td>
+                                <button type="button" (click)="onEdit(product)" class="btn btn-sm btn-success d-inline-flex justify-content-center">Modifier<mat-icon>edit</mat-icon></button>
+                                <button type="button" (click)="removeById(product)" class="btn btn-sm btn-danger d-inline-flex justify-content-center">Supprimer<mat-icon>delete</mat-icon></button>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-4" *ngIf="isSidePanelVisible">
+        <div class="card">
+            <div class="card-header bg-white">
+                <div class="row">
+                    <div class="col-6 h5 fw-bold">
+                       Mise à jour du produit
+                    </div>
+                    <div class="col-6  text-end">
+                        <button class="btn btn-sm btn-danger" (click)="closeSidePanel()">Fermer</button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <label for="">Reférence</label>
+                        <input type="text" [(ngModel)]="productObj.id" class="form-control">
+                    </div>
+                    <div class="col-6">
+                        <label for="">Nom complet</label>
+                        <input type="text" [(ngModel)]="productObj.nomComplet" class="form-control">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-6">
+                        <label for="">Nom court</label>
+                        <input type="text" [(ngModel)]="productObj.nomCourt" class="form-control">
+                    </div>
+                    <div class="col-6">
+                        <label for="">Prix</label>
+                        <input type="text" [(ngModel)]="productObj.prix" class="form-control">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-6">
+                        <label for="">Catégorie</label>
+                        <select [(ngModel)]="productObj.categorie" class="form-select">
+                            <option *ngFor="let cate of categoryList" [value]="cate.categoryId"> {{cate.categoryName}}</option>
+                        </select> 
+                    </div>
+                    <div class="col-6">
+                        <label for="">Délai de livraison</label>
+                        <input type="text" [(ngModel)]="productObj.deliveryTimeSpan" class="form-control">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <label for="">Description du produit</label>
+                        <textarea rows="4" class="form-control" [(ngModel)]="productObj.description"  ></textarea>
+                    </div> 
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <label for="">Image du produit</label>
+                        <!-- <input type="text" [(ngModel)]="productObj.imageUrl" class="form-control"> -->
+                        <input type="file" class="file-input"(change)="onFileSelected($event)" #fileUpload>
+
+                        <div class="file-upload">
+                            <button mat-mini-fab color="primary" class="btn-class d-inline-flex align-items-center p-1 rounded-2"(click)="fileUpload.click()">
+                                Choisir une image<mat-icon>attach_file</mat-icon>
+                            </button>
+                            {{fileName || "Aucune image sélection"}}
+                        </div>
+                        <!-- <div class="my-1 col-12">
+                            <button mat-mini-fab color="primary" class="btn-class d-inline-flex align-items-center p-1 rounded-2"(click)="openPanelVideo()">
+                                Prendre une photo<mat-icon>add_a_photo</mat-icon>
+                            </button>
+                        </div> -->
+                    </div>
+                    <div class="col-4">
+                        <img class="card-img-top" style="height: 12.125rem !important" [src]="localUrl" *ngIf="localUrl" alt="Card image">
+                    </div> 
+                </div>
+                <div class="row pt-2">
+                    <div class="col-6 text-center">
+                       <button class="btn btn-success" style="width: 100%;" (click)="closeSidePanel()">Annuler</button>
+                    </div>
+                    <div class="col-6 text-center">
+                        <!-- <button class="btn btn-success" *ngIf="productObj.id === 0" (click)="store(productObj)">Create Product</button> -->
+                        <button class="btn btn-primary" style="width: 100%;" (click)="onUpdate()">Mettre à jour le produit</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

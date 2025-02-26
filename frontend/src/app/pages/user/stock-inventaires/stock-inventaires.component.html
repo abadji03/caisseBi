@@ -1,0 +1,159 @@
+<div class="container mt-4">
+    <nav>
+      <div class="nav nav-tabs" id="nav-tab" role="tablist">
+        <a class="nav-link active" id="nav-inventaire-tab" data-bs-toggle="tab" href="#nav-inventaire" role="tab" aria-controls="nav-inventaire" aria-selected="true">Inventaire actuel</a>
+        <a class="nav-link" id="nav-quantites-tab" data-bs-toggle="tab" href="#nav-quantites" role="tab" aria-controls="nav-quantites" aria-selected="false">Quantités disponibles</a>
+        <a class="nav-link" id="nav-niveaux-tab" data-bs-toggle="tab" href="#nav-niveaux" role="tab" aria-controls="nav-niveaux" aria-selected="false">Niveaux de stock</a>
+        <a class="nav-link" id="nav-alertes-tab" data-bs-toggle="tab" href="#nav-alertes" role="tab" aria-controls="nav-alertes" aria-selected="false">Alertes de réapprovisionnement</a>
+        <a class="nav-link" id="nav-historique-tab" data-bs-toggle="tab" href="#nav-historique" role="tab" aria-controls="nav-historique" aria-selected="false">Historique</a>
+        <a class="nav-link" id="nav-périssables-tab" data-bs-toggle="tab" href="#nav-périssables" role="tab" aria-controls="nav-périssables" aria-selected="false">Produits périssables</a>
+      </div>
+    </nav>
+
+    <div class="tab-content mt-4" id="nav-tabContent">
+      <!-- Section Inventaire actuel -->
+      <div class="tab-pane fade show active" id="nav-inventaire" role="tabpanel" aria-labelledby="nav-inventaire-tab">
+        <h4>Inventaire actuel</h4>
+        <p>Liste des produits disponibles dans l'inventaire actuel...</p>
+        <!-- Implémentation de la liste des produits et de leur état -->
+          <table class="table">
+            <thead>
+              <tr>
+                <th scope="col">Produit</th>
+                <th scope="col">Magasin</th>
+                <th scope="col">Quantité</th>
+                <th scope="col">Périssable</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let produit of produits">
+                <td>{{ produit.nom }}</td>
+                <td>{{ produit.magasin }}</td>
+                <td>{{ produit.quantite }}</td>
+                <td>{{ produit.perissable ? 'Oui' : 'Non' }}</td>
+              </tr>
+            </tbody>
+          </table>
+      </div>
+
+      <!-- Section Quantités disponibles -->
+      <div class="tab-pane fade" id="nav-quantites" role="tabpanel" aria-labelledby="nav-quantites-tab">
+        <h4>Quantités disponibles</h4>
+        <p>Affichage des quantités disponibles pour chaque produit...</p>
+        <!-- Implémentation de la gestion des quantités -->
+          <table class="table">
+            <thead>
+              <tr>
+                <th scope="col">Produit</th>
+                <th scope="col">Quantité disponible</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let produit of produits">
+                <td>{{ produit.nom }}</td>
+                <td>{{ produit.quantite }}</td>
+              </tr>
+            </tbody>
+          </table>
+      </div>
+
+      <!-- Section Niveaux de stock -->
+      <div class="tab-pane fade" id="nav-niveaux" role="tabpanel" aria-labelledby="nav-niveaux-tab">
+        <h4>Niveaux de stock par magasin</h4>
+        <p>Affichage des niveaux de stock dans chaque magasin...</p>
+        <!-- Implémentation de la gestion des niveaux de stock par magasin -->
+          <table class="table">
+            <thead>
+              <tr>
+                <th scope="col">Produit</th>
+                <th scope="col">Magasin</th>
+                <th scope="col">Quantité</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let produit of produits">
+                <td>{{ produit.nom }}</td>
+                <td>{{ produit.magasin }}</td>
+                <td>{{ produit.quantite }}</td>
+              </tr>
+            </tbody>
+          </table>
+      </div>
+
+      <!-- Section Alertes de réapprovisionnement -->
+      <div class="tab-pane fade" id="nav-alertes" role="tabpanel" aria-labelledby="nav-alertes-tab">
+        <h4>Alertes de réapprovisionnement</h4>
+        <p>Liste des alertes de réapprovisionnement pour les produits...</p>
+        <!-- Implémentation de l'affichage des alertes de réapprovisionnement -->
+          <table class="table">
+            <thead>
+              <tr>
+                <th scope="col">Produit</th>
+                <th scope="col">Quantité restante</th>
+                <th scope="col">Seuil</th>
+                <th scope="col">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let alerte of alertes">
+                <td>{{ alerte.nom }}</td>
+                <td>{{ alerte.quantite }}</td>
+                <td>30</td>
+                <td><button class="btn btn-warning" (click)="envoyerAlerteReapprovisionnement()">Envoyer alerte</button></td>
+              </tr>
+            </tbody>
+          </table>
+      </div>
+
+      <!-- Section Historique des mouvements -->
+      <div class="tab-pane fade" id="nav-historique" role="tabpanel" aria-labelledby="nav-historique-tab">
+        <h4>Historique des mouvements de stock</h4>
+        <p>Liste des mouvements de stock (entrées et sorties)...</p>
+        <!-- Implémentation de l'historique des mouvements de stock -->
+          <table class="table">
+            <thead>
+              <tr>
+                <th scope="col">Date</th>
+                <th scope="col">Action</th>
+                <th scope="col">Produit</th>
+                <th scope="col">Quantité</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let mouvement of historique">
+                <td>{{ mouvement.date }}</td>
+                <td>{{ mouvement.action }}</td>
+                <td>{{ mouvement.produit }}</td>
+                <td>{{ mouvement.quantite }}</td>
+              </tr>
+            </tbody>
+          </table>
+      </div>
+
+      <!-- Section Produits périssables -->
+      <div class="tab-pane fade" id="nav-périssables" role="tabpanel" aria-labelledby="nav-périssables-tab">
+        <h4>Gestion des produits périssables</h4>
+        <p>Liste des produits périssables et leur gestion...</p>
+        <!-- Implémentation de la gestion des produits périssables -->
+          <table class="table">
+            <thead>
+              <tr>
+                <th scope="col">Produit</th>
+                <th scope="col">Date d'expiration</th>
+                <th scope="col">Quantité</th>
+                <th scope="col">Alerte</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let produit of getProduitsPerissables()">
+                <td>{{ produit.nom }}</td>
+                <!-- <td>{{ produit.dateExpiration | date:'short' }}</td> -->
+                 <td>Dtae d'expiration</td>
+                <td>{{ produit.quantite }}</td>
+                <td><button class="btn btn-danger">Gérer</button></td>
+              </tr>
+            </tbody>
+          </table>
+      </div>
+    </div>
+  </div>

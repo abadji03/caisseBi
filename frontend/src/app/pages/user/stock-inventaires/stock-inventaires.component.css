@@ -1,0 +1,23 @@
+.container {
+    max-width: 900px;
+  }
+
+  .nav-tabs .nav-link {
+    cursor: pointer;
+  }
+
+  .tab-content {
+    padding-top: 20px;
+  }
+
+  button {
+    width: 100%;
+  }
+
+  .table {
+    margin-top: 20px;
+  }
+
+  .table th, .table td {
+    text-align: center;
+  }

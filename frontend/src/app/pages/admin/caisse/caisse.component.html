@@ -1,0 +1,72 @@
+<div class="container-fluid">
+    <div class="row">
+        <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+            <li class="nav-item" role="presentation">
+              <a  class="nav-link active" id="pills-home-tab" data-bs-toggle="pill" href="#pills-home" type="button" role="tab" aria-controls="pills-home" aria-selected="true">Accueil</a>
+            </li>
+            <li class="nav-item" role="presentation">
+              <a class="nav-link" id="pills-profile-tab" data-bs-toggle="pill" href="#pills-profile" type="button" role="tab" aria-controls="pills-profile" aria-selected="false">Autre mode vente</a>
+            </li>
+            <li class="nav-item" role="presentation">
+              <a class="nav-link" id="pills-contact-tab" data-bs-toggle="pill" href="#pills-contact" type="button" role="tab" aria-controls="pills-contact" aria-selected="false">Vente journalier</a>
+            </li>
+            <li class="nav-item" role="presentation">
+              <a class="nav-link" id="pills-disabled-tab" data-bs-toggle="pill" href="#pills-disabled" type="button" role="tab" aria-controls="pills-disabled" aria-selected="false" disabled>Autres</a>
+            </li>
+          </ul>
+          <div class="tab-content" id="pills-tabContent">
+            <div class="tab-pane fade show active" id="pills-home" role="tabpanel" aria-labelledby="pills-home-tab" tabindex="0">
+            <app-vente> </app-vente>
+            </div>
+            <div class="tab-pane fade" id="pills-profile" role="tabpanel" aria-labelledby="pills-profile-tab" tabindex="0">
+                <app-vente-b> </app-vente-b>
+            </div>
+            <div class="tab-pane fade" id="pills-contact" role="tabpanel" aria-labelledby="pills-contact-tab" tabindex="0">
+                <!-- <app-enregistrement-produits> </app-enregistrement-produits> -->
+                <table class="table table-bordered">
+                  <thead>
+                    <tr>
+                      <th>ID Commande</th>
+                      <th>Heure</th>
+                      <th>Prix Total</th>
+                      <th>Produits</th>
+                      <th>Numéro Facture</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let commande of commandes">
+                      <td>{{ commande.id }}</td>
+                      <td>{{ commande.heure | date:'HH:mm:ss' }}</td>
+                      <td>{{ commande.prixTotal}} F CFA</td>
+                      <td>
+                        <button class="btn btn-info btn-sm" (click)="toggleDetails(commande)">
+                          <i class="bi bi-eye"></i> Voir Détails
+                        </button>
+                        <div *ngIf="commande.showDetails" class="mt-2">
+                          <ul>
+                            <li *ngFor="let produit of commande.produits">{{ produit }}</li>
+                          </ul>
+                        </div>
+                      </td>
+                      <td>{{ commande.numFacture }}</td>
+                      <td>
+                        <button class="btn btn-success btn-sm" (click)="imprimer(commande)">
+                          <i class="bi bi-printer"></i> Imprimer
+                        </button>
+                        <button class="btn btn-warning btn-sm" (click)="modifier(commande)">
+                          <i class="bi bi-pencil"></i> Modifier
+                        </button>
+                        <button class="btn btn-danger btn-sm" (click)="supprimer(commande)">
+                          <i class="bi bi-trash"></i> Supprimer
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+
+            </div>
+            <div class="tab-pane fade" id="pills-disabled" role="tabpanel" aria-labelledby="pills-disabled-tab" tabindex="0">Il s'agit d'un espace réservé au contenu associé à l'onglet Accueil . Cliquer sur un autre onglet fera basculer la visibilité de celui-ci pour le suivant. L'onglet JavaScript échange les classes pour contrôler la visibilité et le style du contenu. Vous pouvez l'utiliser avec des onglets, des pilules et toute autre .navnavigation optimisée.</div>
+          </div>
+    </div>
+</div>

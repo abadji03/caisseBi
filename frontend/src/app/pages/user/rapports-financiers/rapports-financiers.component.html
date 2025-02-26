@@ -1,0 +1,108 @@
+<div class="container mt-5">
+    <div class="row">
+      <!-- États financiers -->
+      <div class="col-md-6">
+        <h2>État Financier</h2>
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Bilan</h5>
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Actif</th>
+                  <th>Passif</th>
+                  <th>Capitaux Propres</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{{ etatFinancier.actif}} F CFA</td>
+                  <td>{{ etatFinancier.passif}} F CFA</td>
+                  <td>{{ etatFinancier.capitauxPropres}} F CFA</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compte de résultat -->
+      <div class="col-md-6">
+        <h2>Compte de Résultat</h2>
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Revenus et Charges</h5>
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Revenus</th>
+                  <th>Charges</th>
+                  <th>Bénéfice Net</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{{ compteResultat.revenus}} F CFA</td>
+                  <td>{{ compteResultat.charges}} F CFA</td>
+                  <td>{{ compteResultat.beneficeNet}} F CFA</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Flux de trésorerie -->
+    <div class="mt-5">
+      <h3>Flux de Trésorerie</h3>
+      <div class="row">
+        <div class="col-md-6">
+          <div style="display: block;">
+            <canvas baseChart
+              [data]="fluxTresorerieChartData"
+              [options]="fluxTresorerieChartOptions"
+              [type]="fluxTresorerieChartType">
+            </canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analyse des coûts et bénéfices -->
+    <div class="mt-5">
+      <h3>Analyse des Coûts et Bénéfices</h3>
+      <div class="row">
+        <div class="col-md-6">
+          <div style="display: block;">
+            <canvas baseChart
+              [data]="analyseCoutsBeneficesChartData"
+              [options]="analyseCoutsBeneficesChartOptions"
+              [type]="analyseCoutsBeneficesChartType">
+            </canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prévisions financières -->
+    <div class="mt-5">
+      <h3>Prévisions Financières</h3>
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Revenus Prévus</th>
+            <th>Charges Prévues</th>
+            <th>Bénéfice Prévu</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>{{ previsionsFinancieres.revenusPrevus}} F CFA</td>
+            <td>{{ previsionsFinancieres.chargesPrevisibles}} F CFA</td>
+            <td>{{ previsionsFinancieres.beneficePrevu}} F CFA</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>

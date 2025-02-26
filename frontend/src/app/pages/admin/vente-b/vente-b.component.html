@@ -1,0 +1,281 @@
+<div class="container">
+    <div class="card flex justify-content-center">
+        <div class="card-header bg-light">
+            <button class="btn btn-sm btn-dark" id="btnMode" (click)="setModeVente()">Vente simple</button>
+        </div>
+            <div class="card-body">
+                <div class="d-flex  justify-content-center" *ngIf="! vente_simple">
+                    <p-autoComplete
+                        [(ngModel)]="selectedCountry"
+                        [suggestions]="filteredCountries"
+                        (completeMethod)="filterCountry($event)"
+                        [showClear]= true
+                        placeholder="Taper un nom de produit....."
+                        [size]="65"
+                        field="nomComplet" />
+
+                    <button class="btn btn-sm btn-danger">Ajouter au panier</button>
+                </div>
+                <div class="row p-2" *ngIf="vente_simple">
+                    <div class="col-4">
+                        <label for="">Description</label>
+                        <input type="text" [(ngModel)]="selectedCountry" class="form-control" placeholder="EX: liste des produits ou services">
+                    </div>
+                    <div class="col-4">
+                        <label for="">Prix total transaction</label>
+                        <input type="text" [(ngModel)]="selectedCountry" class="form-control">
+                    </div>
+                    <div class="col-4 text-center mt-3">
+                        <button class="btn btn-success" style="width: 100%; height: 100%;">Valider</button>
+                    </div>
+                </div>
+                <div class="row d-flex justify-content-center mt-4" *ngIf="! vente_simple">
+                    <div class="d-flex justify-content-center">
+                    <h1>Liste des produits sélectionnés</h1>
+                    </div>
+                    <div class="checkout-table border border-2 rounded-2 col-10">
+                        <table class="table">
+                          <tbody>
+                            <tr *ngFor="let selectedProd of productList">
+                              <td class="checkout-product">
+                                <div class="product-cart d-flex">
+                                  <!-- <div class="product-thumb">
+                                    <img src="{{selectedProd.imageUrl}}" alt="Product">
+                                  </div> -->
+                                  <div class="product-content media-body">
+                                    <h5 class="title">
+                                      <a type="button">{{selectedProd.nomComplet}}</a>
+                                    </h5>
+                                    <ul>
+                                      <li><b>{{selectedProd.prix}} F CFA</b></li>
+                                      <!-- <li><span>SKU</span></li> -->
+                                      <!-- <li>
+                                        <a class="delete" href="#">
+                                          <a class="icon-btn btn-primary del" (click)="onDeleteInListePanier(selectedProd)" id="del">
+                                            <mat-icon [ngStyle]="{ 'color': 'red' }">delete</mat-icon>
+                                          </a>
+                                        </a>
+                                      </li> -->
+                                    </ul>
+                                  </div>
+                                </div>
+                              </td>
+                              <td class="checkout-quantity">
+                                <div class="product-quantity d-inline-flex">
+                                  <button  type="button" id="sub" class="sub">
+                                    <mat-icon [ngStyle]="{ 'color': 'orange' }">remove_circle</mat-icon>
+                                  </button>
+                                  <input type="text" value="{{selectedProd.quantite}}">
+                                  <button  type="button" id="add" class="add">
+                                    <mat-icon [ngStyle]="{ 'color': 'orange' }">add_circle </mat-icon>
+                                  </button>
+                                </div>
+                              </td>
+                              <td>
+                                <a class="delete ms-5" href="#">
+                                  <a class="icon-btn btn-primary del" id="del">
+                                    <mat-icon [ngStyle]="{ 'color': 'red' }">delete</mat-icon>
+                                  </a>
+                                </a>
+                              </td>
+                            </tr>
+
+                          </tbody>
+                        </table>
+                        <form class="card p-2">
+                          <div class="input-group">
+                            <input type="text" class="form-control" placeholder="Code promo">
+                            <button type="submit" class="btn btn-dark" style="font-weight: bold;">Appliquer</button>
+                          </div>
+                        </form>
+                        <div class="d-flex justify-content-between">
+                          <h3 class="champ">Sous-Total </h3>
+                          <h3 class="fw-normal mb-0"> {{cartTotal$|async}} F CFA</h3>
+                        </div>
+                        <!-- <div class="d-flex justify-content-between">
+                          <h5 class="champ">Frais de livraison </h5>
+                          <h3 class="fw-normal mb-0">0.0 F CFA</h3>
+                        </div> -->
+                        <div class="d-flex justify-content-between">
+                          <h3 class="champ">Réduction </h3>
+                          <h3 class="fw-normal mb-0">0.0 F CFA</h3>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                          <h3 class="h2 text-uppercase"><b>Total </b></h3>
+                          <h3 class="fw-normal mb-0 h2 text-uppercase"><b>  {{cartTotal$|async}} F CFA </b></h3>
+                        </div>
+                        <div class="row pt-2">
+                          <div class="col-6 text-center">
+                             <button class="btn btn-outline-danger" style="width: 100%;">Annuler la commande</button>
+                          </div>
+                          <div class="col-6 text-center">
+                              <button class="btn btn-dark" style="width: 100%;">Valider la commande</button>
+                          </div>
+                      </div>
+                      <div class="card mt-4">
+                        <div class="card-header">Informations sur le client</div>
+                        <div class="row">
+                            <div class="col-6">
+                                <label for="">Prenom client</label>
+                                <input type="text" class="form-control">
+                            </div>
+                            <div class="col-6">
+                                <label for="">Nom client</label>
+                                <input type="text" class="form-control">
+                            </div>
+                        </div>
+                        <div class="row">
+                          <div class="col-6">
+                              <label for="">Adresse client</label>
+                              <input type="text" class="form-control">
+                          </div>
+                          <div class="col-6">
+                              <label for="">Téléphone client</label>
+                              <input type="text" class="form-control">
+                          </div>
+                        </div>
+                      </div>
+                      <div class="row pt-2">
+                        <div class="col-6 text-center">
+                           <button class="btn btn-outline-dark" id="btnR" style="width: 100%;" (click)="voireFacture()">Visualiser la Facture</button>
+                        </div>
+                        <div class="col-6 text-center">
+                            <button class="btn btn-dark" style="width: 100%;">Imprimer le reçu</button>
+                        </div>
+                    </div>
+                    <div class="card" id="htmlData" *ngIf="showFacture">
+                      <div class="card-body">
+                        <div class="container mb-5 mt-3">
+                          <!-- <div class="row d-flex align-items-baseline">
+                            <div class="col-xl-9">
+                              <p style="color: #7e8d9f;font-size: 20px;">Invoice >> <strong>ID: #123-123</strong></p>
+                            </div>
+                            <div class="col-xl-3 float-end">
+                              <a data-mdb-button-init data-mdb-ripple-init class="btn btn-light text-capitalize border-0" data-mdb-ripple-color="dark"><i
+                                  class="fas fa-print text-primary"></i> Print</a>
+                              <a data-mdb-button-init data-mdb-ripple-init class="btn btn-light text-capitalize" data-mdb-ripple-color="dark"><i
+                                  class="far fa-file-pdf text-danger"></i> Export</a>
+                            </div>
+                            <hr>
+                          </div> -->
+
+                          <div class="container">
+                            <div class="col-md-12">
+                              <div class="text-center">
+                                <img src="./assets/hero-img-1.png" alt="fruit légumes" width="100px" height="100px">
+                                <h1 class="fw-bold mb-0">Nom boutique/Entreprise</h1>
+                                 <h5 class="mb-0">Slogan boutique/Entreprise</h5>
+                                  <h3 class="mb-0">Adresse boutique/Entreprise</h3>
+                                   <h3 >Téléphone boutique/Entreprise</h3>
+                              </div>
+
+                            </div>
+                            <hr>
+
+                            <div class="row">
+                              <div class="col-xl-8">
+                                <ul class="list-unstyled">
+                                  <li class="text-muted">A: <span style="color:#5d9fc5 ;">Aliou BADJI</span></li>
+                                  <li class="text-muted">Adresse : Thiaroye sur mer</li>
+                                  <li class="text-muted d-inline-flex justify-content-center align-items-center">Téléphone : (+221) 77 985 29 75</li>
+                                </ul>
+                              </div>
+                              <div class="col-xl-4">
+                                <ul class="list-unstyled">
+                                  <li class="text-muted"> <span class="fw-bold">Date:</span>#123-456</li>
+                                  <li class="text-muted"><span class="fw-bold">ID Facture: </span>Jun 23,2021</li>
+                                  <li class="text-muted"><span class="me-1 fw-bold">Status:</span><span class="badge bg-warning text-black fw-bold">
+                                      Unpaid</span></li>
+                                </ul>
+                              </div>
+                            </div>
+                            <div class="col-md-12">
+                              <div class="text-center">
+                                <h1 class="fw-bold mb-0 text-uppercase">Facture</h1>
+                              </div>
+
+                            </div>
+                            <div class="row my-2 mx-1 justify-content-center">
+                              <table class="table table-bordered">
+                                <thead class="table-dark">
+                                  <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Description</th>
+                                    <th scope="col">Qty</th>
+                                    <th scope="col">Unit Price</th>
+                                    <th scope="col">Amount</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr>
+                                    <th scope="row">1</th>
+                                    <td>Pro Package</td>
+                                    <td>4</td>
+                                    <td>$200</td>
+                                    <td>$800</td>
+                                  </tr>
+                                  <tr>
+                                    <th scope="row">2</th>
+                                    <td>Web hosting</td>
+                                    <td>1</td>
+                                    <td>$10</td>
+                                    <td>$10</td>
+                                  </tr>
+                                  <tr>
+                                    <th scope="row">3</th>
+                                    <td>Consulting</td>
+                                    <td>1 year</td>
+                                    <td>$300</td>
+                                    <td>$300</td>
+                                  </tr>
+                                  <!-- <tr>
+                                    <td rowspan="3" colspan="3"></td>
+                                    <td class="fw-medium">Sous-total</td>
+                                    <td></td>
+                                  </tr>
+                                  <tr>
+                                    <td class="fw-medium">Réduction</td>
+                                    <td></td>
+                                  </tr>
+                                  <tr>
+                                    <td class="text-uppercase bg-dark text-white">Total</td>
+                                    <td class="text-uppercase bg-dark text-white"></td>
+                                  </tr> -->
+                                </tbody>
+
+                              </table>
+                            </div>
+                            <div class="row">
+                              <div class="col-xl-8">
+                                <p class="ms-3">Add additional notes and payment information</p>
+
+                              </div>
+                              <div class="col-xl-3">
+                                <ul class="list-unstyled">
+                                  <li class="text-muted ms-3"><span class="text-black me-4">Sous-total</span>$1110</li>
+                                  <li class="text-muted ms-3 mt-2"><span class="text-black me-4">Réduction</span>$111</li>
+                                </ul>
+                                <p class="text-black float-start"><span class="text-black me-3"> Total facture</span><span
+                                    style="font-size: 25px;">$1221</span></p>
+                              </div>
+                            </div>
+                            <hr>
+                            <div class="row">
+                              <div class="col-xl-10">
+                                <p>Thank you for your purchase</p>
+                              </div>
+                              <div class="col-xl-2">
+                                <button type="button" data-mdb-button-init data-mdb-ripple-init class="btn btn-primary text-capitalize"
+                                  style="background-color:#60bdf3 ;">Pay Now</button>
+                              </div>
+                            </div>
+
+                          </div>
+                        </div>
+                      </div>
+            </div>
+                  </div>
+                </div>
+        </div>
+    </div>
+</div>

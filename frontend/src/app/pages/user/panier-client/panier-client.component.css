@@ -1,0 +1,46 @@
+@media (min-width: 1025px) {
+    .h-custom {
+    height: 100vh !important;
+    }
+    }
+
+.container {
+    font-family: 'Times New Roman', Times, serif;
+}
+
+.btn-retour {
+    background-color: black;
+    display: inline-flex;
+    font-size: 14px;
+    align-items:center;
+    color: white;
+    vertical-align: middle;
+}
+.btn-continue {
+    background-color: black;
+    display: inline-flex;
+    font-size: 14px;
+    color: white;
+    font-size: 18px;
+    vertical-align: middle;
+}
+.btn-continue mat-icon {
+    vertical-align: middle;
+}
+
+.card2 {
+    font-size: 18px; 
+    color: black;
+}
+
+.card2 .p1{
+    font-weight: bold;
+}
+
+.card1 h5{
+    font-size: 17px;
+}
+.card1 p{
+    font-size: 15px;
+}
+

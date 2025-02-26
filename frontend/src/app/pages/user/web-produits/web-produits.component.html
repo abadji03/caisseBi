@@ -1,0 +1,226 @@
+<!-- <div class="container-fluid bg-light py-4"> -->
+    <div class="container-fluid bg-white p-4">
+        <div class="p-5 mb-4 bg-light rounded-3">
+            <div class="container-fluid py-5 ">
+              <h1 class="display-5 fw-bold">Informations sur les livraisons des commandes</h1>
+              <p class="col-md-8 fs-4">Tous les commandes passées avant 117h00 seront seront
+                    dans le même jour.<br><br><br>
+                    Les commandes passées après 117h00 seront livrées le lendemain.<br><br><br>
+                    Si les produits commandés doivent être expédiés dépuis une adresse lointaine,
+                    la livraison se fera entre 3 ou 4 jours selon les circonstances du transport.
+                    <br><br><br>
+              </p>
+              <button class="btn btn-warning btn-lg" type="button">En savoir plus sur les livraisons</button>
+            </div>
+        </div>
+        <div class="row mb-2 carousel-1">
+            <div class="col-md-2 d-flex justify-content-center align-items-center bg-light">
+              <h1 class="mb-2 fw-bold h1 text-uppercase">Catégories</h1>
+            </div>
+            <div class="col-md-10 d-flex justify-content-start">
+              <div class="card border-0 mx-0">
+                <p-carousel [value]="categoryList" [numVisible]="4" [numScroll]="1" [circular]="true" [showNavigators]="false" [showIndicators]="false" [autoplayInterval]="4000">
+                  <ng-template let-categorie pTemplate="item">
+                    <div class="col-md-2 card-product-categorie d-flex flex-column mb-3" (click)="navigateToPRoductsCategory(categorie)">
+                        <img src="./assets/hero-img-1.png" class="rounded-2 py-2 px-3 img-fluid" alt="fruit légumes" width="130px" height="130px">
+                        <div class="d-flex justify-content-center">
+                          <a  class="btn fw-bold shadow-none bg-white">{{categorie}}</a>
+                        </div>
+                    </div>
+                  </ng-template>
+                </p-carousel>
+              </div>
+            </div>
+        </div>
+
+      <div class="row py-2 mx-0" *ngFor="let category of categoryProduitList">
+        <div class="row h-25 px-0 rounded-0 mx-0 bg-warning d-flex justify-content-between">
+
+          <div class="col">
+            <h4 class="mb-2">{{category.category}}</h4>
+          </div>
+
+          <div class="col d-flex justify-content-end">
+            <div class="card " style=" width: 100px; height: 100px">
+              <img src="./assets/featur-1.jpg" class="card-img-top" alt="fruit légumes" width="100px" height="140px">
+          </div>
+          </div>
+
+
+        </div>
+        <div class="row my-3">
+          <div class="col-2 p-0 card-categorie">
+            <div class="card rounded-0" style="width: 100%; height: 75%;">
+              <img src="./assets/hero-img-1.png" class="card-img-top" alt="fruit légumes" width="100%" height="140px">
+              <div class="card-body">
+                <a href="#" class="btn fw-bold shadow-none bg-white">{{category.category}}</a>
+                <h4 class="mb-2">Nombre d'articles <b> ({{category.products.length}})</b></h4>
+                <h5 class="mb-2">
+                  Bréve d'escription de la categorie
+                  Bréve d'escription de la categorie
+                  Bréve d'escription de la categorie
+                  Bréve d'escription de la categorie
+                </h5>
+              </div>
+          </div>
+        </div>
+          <div class="col-lg-10 d-flex justify-content-start carousel-2">
+            <p-carousel [value]="category.products" [numVisible]="3" [numScroll]="1" [showIndicators]="false" [showNavigators]="true" >
+
+              <ng-template pTemplate="previousicon">
+                <a type="button" class="d-flex border-0 rounded-1 icon-nav">
+                  <mat-icon>chevron_left</mat-icon>
+               </a>
+              </ng-template>
+              <ng-template let-product pTemplate="item">
+
+                <div class="col-md-4 card-product mx-3 my-2">
+                  <div class="card">
+
+                    <div class="image-container">
+
+                      <div class="first">
+
+                        <div class="d-flex justify-content-between align-items-center">
+
+                        <span class="discount">-25%</span>
+                        <span class="wishlist"><mat-icon>favorite_border</mat-icon></span>
+
+
+                          </div>
+                      </div>
+                      <a (click)="navigateToDetailsProduct(product.id)" type="button">
+                        <img [src]="product.imageUrl" class="img-fluid rounded thumbnail-image">
+                      </a>
+
+
+
+                    </div>
+
+
+                    <div class="product-detail-container p-2">
+
+                        <div class="d-flex justify-content-between align-items-center">
+
+                          <h5 class="dress-name">{{product.nomCourt}}</h5>
+
+                          <div class="d-flex flex-column mb-2">
+
+                            <span class="new-price">{{product.prix}} FCFA</span>
+                            <small class="old-price text-right">5.99F CFA</small>
+                          </div>
+
+                        </div>
+
+
+                        <div class="d-flex justify-content-between align-items-center pt-1">
+
+                          <div class="color-select d-flex ">
+
+                            <input type="button" name="grey" class="btn creme">
+                            <input type="button" name="red" class="btn red ml-2">
+                            <input type="button" name="blue" class="btn blue ml-2">
+
+                          </div>
+
+                          <div class="d-flex ">
+
+                            <span class="item-size mr-2 btn" type="button">S</span>
+                            <span class="item-size mr-2 btn" type="button">M</span>
+                            <span class="item-size btn" type="button">L</span>
+
+                          </div>
+
+
+                        </div>
+                        <div class="rating-star d-flex justify-content-center mx-2">
+                          <mat-icon >star</mat-icon>
+                          <mat-icon>star</mat-icon>
+                          <mat-icon>star</mat-icon>
+                          <mat-icon>star</mat-icon>
+                          <mat-icon >star</mat-icon>
+                          <span class="rating-number">4.8</span>
+                        </div>
+                          <!-- <span class="buy">Acheter +</span> -->
+                        <button (click)="onSelectedProduit(product)" class="buy d-flex justify-content-center btn border border-1 py-2 rounded-pill px-3">
+                            <mat-icon> add_shopping_cart</mat-icon>Ajouter au panier
+                          </button>
+
+                    </div>
+
+                  </div>
+                  <div class="mt-1">
+                    <div class="card voutchers">
+
+                      <div class="voutcher-divider">
+
+                        <div class="voutcher-left text-center">
+                          <span class="voutcher-name">Jour de surprise</span>
+                          <h5 class="voutcher-code">#Promotion</h5>
+
+                        </div>
+                        <div class="voutcher-right text-center border-left">
+                          <h5 class="discount-percent">20%</h5>
+                          <span class="off">De réduction</span>
+
+                        </div>
+
+                      </div>
+
+                    </div>
+
+                  </div>
+                </div>
+                <!-- <div class="col-3">
+                  <div class="card mx-2 p-3 bg-light border-2 shadow-sm" style="width: 250px; height: 400px;">
+                    <img [src]="product.imageUrl" class="card-img-top rounded-3 overflow-hidden" alt="fruit légumes" width="100px" height="200px">
+                    <div class="card-body align-items-center">
+                      <a href="#" class="h5">{{product.nomCourt}}</a>
+                          <div class="d-flex my-3">
+                              <mat-icon class="text-primary">star</mat-icon>
+                              <mat-icon class="text-primary">star</mat-icon>
+                              <mat-icon class="text-primary">star</mat-icon>
+                              <mat-icon class="text-primary">star</mat-icon>
+                              <mat-icon >star</mat-icon>
+                          </div>
+                          <h4 class="mb-3">{{product.prix}} F CFA</h4>
+                          <button (click)="onSelectedProduit(product)" class="btn btn-primary border border-secondary rounded-pill px-3 text-danger">
+                                          <mat-icon class="text-secondary"> add_shopping_cart</mat-icon>Add to cart</button>
+                    </div>
+                  </div>
+                </div> -->
+                  <!-- <div class="row align-items-center">
+                    <div class="col-3">
+                        <img [src]="product.imageUrl" class="img-fluid rounded-circle w-100" alt="">
+                        <div class="col-">
+                          <a href="#" class="h5">{{product.nomCourt}}</a>
+                          <div class="d-flex my-3">
+                              <mat-icon class="text-primary">star</mat-icon>
+                              <mat-icon class="text-primary">star</mat-icon>
+                              <mat-icon class="text-primary">star</mat-icon>
+                              <mat-icon class="text-primary">star</mat-icon>
+                              <mat-icon >star</mat-icon>
+                          </div>
+                          <h4 class="mb-3">{{product.prix}} F CFA</h4>
+                          <button (click)="onSelectedProduit(product)"
+                                          class="btn btn-primary border border-secondary rounded-pill px-3 text-danger">
+                                          <mat-icon class="text-secondary"> add_shopping_cart</mat-icon>Add to cart</button>
+                      </div>
+                    </div>
+                </div> -->
+              </ng-template>
+              <ng-template  pTemplate="nexticon">
+                <a type="button" class="d-flex border-0 rounded-1 icon-nav">
+                   <mat-icon>chevron_right</mat-icon>
+                </a>
+              </ng-template>
+          </p-carousel>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+<!-- </div> -->
+<router-outlet></router-outlet>
+<!-- <app-footer-user></app-footer-user> -->

@@ -1,0 +1,25 @@
+.container {
+    max-width: 900px;
+  }
+
+  .nav-tabs .nav-link {
+    cursor: pointer;
+  }
+
+  .table th, .table td {
+    text-align: center;
+  }
+
+  form {
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  button {
+    width: 100%;
+  }
+
+  h4 {
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+  }

@@ -1,0 +1,359 @@
+<div class="container-fluid mt-4">
+  <div class="d-flex justify-content-center">
+    <!-- Contact -->
+    <h1 class="fw-bold text-uppercase">Catalogue des produits</h1>
+  </div>
+  <hr>
+    <div class="row">
+      <!-- Colonne gauche (liste des produits) -->
+      <div [ngClass]="{ 'col-md-12': !isRowSelected, 'col-md-10': isRowSelected }">
+        <div class="d-flex justify-content-between mb-2">
+          <h1>Liste des produits</h1>
+          <div class="">
+            <button class="btn btn-info w-auto me-2" (click)="afficherFormCategorie()"><i class="bi bi-plus-circle me-2"></i>Nouvelle catégorie</button>
+            <button class="btn btn-success w-auto" id="btnAjout" (click)="openModal('ajouter')"><i class="bi bi-plus-circle text-white me-2"></i>Nouveau produit</button>
+            <div *ngIf="ajoutCategorie" class="mt-3">
+                <!-- Formulaire de recherche -->
+                    <form [formGroup]="categorieForm" (ngSubmit)="onSubmitCategorie()">
+                        <div class="input-group mb-3 w-auto d-flex align-items-start flex-column">
+                          <div class="mb-4">
+                            <label for="nom_categorie" class="form-label">Nom catégorie</label>
+                            <input type="text" class="form-control" id="nom_categorie" formControlName="nom_categorie" required />
+                          </div>
+
+                          <div class="mb-2">
+                            <label for="nom_categorie" class="form-label">Description catégorie</label>
+                            <textarea class="form-control" id="nom_categorie" formControlName="nom_categorie" required ></textarea>
+                          </div>
+                        </div>
+                          <button class="btn btn-success w-auto" type="submit" (click)="saveFormCategorie()"><i class="bi bi-save text-white me-2"></i> Enregistrer</button>
+                    </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between  ">
+            <div class="w-50">
+            <!-- Formulaire de recherche -->
+                    <div class="input-group mb-3 w-auto">
+                      <input
+                      type="text"
+                      class="form-control"
+                      [(ngModel)]="searchTerm"
+                      (ngModelChange)="onSearch()"
+                      name="searchTerm"
+                      placeholder="Rechercher par désignation, famille, fournisseur, etc...." />
+                    </div>
+            </div>
+            <div class="w-auto float-end">
+                <button class="btn btn-info w-auto me-1" data-bs-toggle="tooltip" title="Exporter les produits" (click)="onAction('Exporter')"><i class="bi bi-box-arrow-up-right me-2"></i></button>
+                <button class="btn btn-danger w-auto me-1" data-bs-toggle="tooltip" title="Importer des produits" (click)="onAction('Importer')"><i class="bi bi-box-arrow-in-right me-2"></i></button>
+                <button class="btn btn-light w-auto" data-bs-toggle="tooltip" title="Rafraîchir le tableau" (click)="onAction('Rafraîchir')"><i class="bi bi-arrow-clockwise me-2"></i></button>
+            </div>
+        </div>
+        <!-- Tableau des produits -->
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover">
+            <thead class="table-success">
+              <tr>
+                <!-- Colonne pour les cases à cocher -->
+                <th class="petit-colonne">
+                  <input type="checkbox" id="checkAll" (click)="selectAllProd()">
+                  <label for="checkAll"></label>
+                </th>
+                <!-- Colonne ID existante -->
+                <th class="petit-colonne">ID</th>
+
+                <!-- Colonne pour l'image du produit -->
+                <th>Image</th>
+
+                <!-- Autres colonnes -->
+                <th>Famille</th>
+                <th>Désignation</th>
+                <th>Fournisseur</th>
+                <th>Magasin</th>
+                <th>Quantité</th>
+                <th>Unité Stock</th>
+                <th>P.A.U</th>
+                <th>P.V.U</th>
+                <th>Date ajout</th>
+                <th>Agent</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let produit of paginatedProducts" (click)="onRowSelect(produit)">
+                <!-- Case à cocher pour chaque produit -->
+                <td class="petit-colonne">
+                  <input type="checkbox" id="check" name="checkCase" (click)="verifyCheckedCase()">
+                  <label for="check"></label>
+              </td>
+
+                <!-- ID -->
+                <td class="petit-colonne">{{ produit.id }}</td>
+
+                 <!-- Image du produit ou icône si pas d'image -->
+                 <td>
+                  <ng-container *ngIf="produit.image; else noImage">
+                    <img [src]="produit.image" alt="Image produit" width="50" height="50" />
+                  </ng-container>
+                  <ng-template #noImage>
+                    <i class="bi bi-camera-video-off" style="font-size: 24px;"></i>
+                  </ng-template>
+                </td>
+
+                <!-- Autres informations sur le produit -->
+                <td>{{ produit.famille }}</td>
+                <td>{{ produit.designation }}</td>
+                <td>{{ produit.fournisseur }}</td>
+                <td>{{ produit.magasin }}</td>
+                <td>{{ produit.quantite }}</td>
+                <td>{{ produit.unite }}</td>
+                <td>{{ produit.prixAchatUnitaire }}</td>
+                <td>{{ produit.prixVenteUnitaire }}</td>
+                <td>{{ produit.dateCreation | date:'short' }}</td>
+                <td>{{ produit.agent }}</td>
+                <td>{{ produit.description }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination d-flex justify-content-center align-items-center">
+            <button class="w-auto btn btn-success" (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 1"><i class="bi bi-arrow-left-circle fs-3"></i></button>
+            <span class="h3">{{ currentPage }}</span>
+            <button class="w-auto btn btn-success" (click)="onPageChange(currentPage + 1)" [disabled]="currentPage * itemsPerPage >= filteredProducts.length"><i class="bi bi-arrow-right-circle fs-3"></i></button>
+          </div>
+        <!-- <div class="d-flex justify-content-center">
+          <ul class="pagination">
+            <li class="page-item" [class.disabled]="currentPage === 1" (click)="onPageChange(currentPage - 1)">
+              <span class="page-link">Précédent</span>
+            </li>
+            <li class="page-item" [class.disabled]="currentPage === paginatedProducts.length" (click)="onPageChange(currentPage + 1)">
+              <span class="page-link">Suivant</span>
+            </li>
+          </ul>
+        </div> -->
+      </div>
+
+      <!-- Colonne droite (actions) -->
+      <div *ngIf="isRowSelected" class="col-md-2 bg-light">
+        <div class="float-end">
+            <button class="btn btn-danger w-auto float-end" (click)="closeActions()"><i class="bi bi-x-lg text-white"></i></button>
+        </div>
+        <div class="mt-2 float-start">
+          <h2>Action pour :</h2>
+          <p>Id: {{selectedProduits?.id}}</p>
+          <p>Nom: {{selectedProduits?.designation}}</p>
+        </div>
+        <div class="btn-group-vertical">
+          <button class="btn btn-secondary d-flex align-items-center" data-bs-toggle="tooltip" title="Cliquer pour ouvrir le formulaire" (click)="onAction('modifier')"><i class="bi bi-pencil text-white me-2"></i>Modifier</button>
+          <button class="btn btn-warning d-flex align-items-center text-white fw-bold" data-bs-toggle="tooltip" title="Mettre le produit en archive" (click)="onAction('archiver')"><i class="bi bi-archive me-2"></i>Archiver</button>
+          <button class="btn btn-success d-flex align-items-center" data-bs-toggle="tooltip" title="Ajouter de nouvelles entrées pour le produit" (click)="onAction('entree')"><mat-icon>arrow_downward</mat-icon>Entrée</button>
+          <button class="btn btn-danger d-flex align-items-center" data-bs-toggle="tooltip" title="Ajouter de nouvelles sorties pour le produit" (click)="onAction('sortie')"><mat-icon>arrow_upward </mat-icon>Sortie</button>
+          <button class="btn btn-primary d-flex align-items-center" data-bs-toggle="tooltip" title="Associer un code-barre au produit" (click)="onAction('code-barre')"><i class="bi bi-list text-white me-2"></i>code-barre</button>
+          <button class="btn btn-info d-flex align-items-center text-white  fw-bold" data-bs-toggle="tooltip" title="Asocier une image et une galerie au produit" (click)="onAction('image')"><i class="bi bi-camera-fill text-white me-2"></i>Image</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal fade" id="produitModal" tabindex="-1" aria-labelledby="produitModalLabel">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-success">
+          <h1 class="modal-title text-white" id="produitModalLabel">{{ getModalTitle() }}</h1>
+          <button type="button" class="btn-close bg-danger " data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg text-white"></i></button>
+        </div>
+        <div class="modal-body">
+          <!-- Formulaire réactif pour ajouter ou modifier un produit -->
+          <form [formGroup]="produitForm" (ngSubmit)="onSubmit()">
+
+            <div class="row mb-3">
+              <!-- Champs sur la même ligne -->
+              <div class="col-md-6">
+                <label for="designation" class="form-label">Désignation</label>
+                <input type="text" class="form-control" id="designation" formControlName="designation" required />
+              </div>
+              <div class="col-md-6">
+                <label for="famille" class="form-label">Famille / Catégorie</label>
+                <select class="form-select" id="famille" formControlName="famille" required>
+                  <option *ngFor="let famille of familles" [value]="famille">{{ famille }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <!-- Champs sur la même ligne -->
+              <div class="col-md-6">
+                <label for="fournisseur" class="form-label">Fournisseur</label>
+                <select class="form-select" id="fournisseur" formControlName="fournisseur" required>
+                  <option *ngFor="let fournisseur of fournisseurs" [value]="fournisseur">{{ fournisseur }}</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label for="magasin" class="form-label">Magasin</label>
+                <select class="form-select" id="magasin" formControlName="magasin" required>
+                  <option *ngFor="let magasin of magasins" [value]="magasin">{{ magasin }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div *ngIf="actionType ==='entree'" class="row mb-3">
+              <!-- Type entrée sur une seule ligne -->
+              <div class="col-md-6">
+                <label for="entree" class="form-label">Type entrée</label>
+                <select class="form-select" id="entree" formControlName="type_entree" required>
+                  <option *ngFor="let magasin of magasins" [value]="magasin">{{ magasin }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div *ngIf="actionType ==='sortie'" class="row mb-3">
+              <!-- Type sortie sur une seule ligne -->
+              <div class="col-md-6">
+                <label for="sortie" class="form-label">Type sortie</label>
+                <select class="form-select" id="sortie" formControlName="type_sortie" required>
+                  <option *ngFor="let magasin of magasins" [value]="magasin">{{ magasin }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <!-- Quantité et Unité sur la même ligne -->
+              <div class="col-md-6">
+                <label for="quantite" class="form-label">Quantité</label>
+                <input type="number" class="form-control" id="quantite" formControlName="quantite" required />
+              </div>
+              <div class="col-md-6">
+                <label for="unite" class="form-label">Unité de stockage</label>
+                <div class="d-flex align-items-center">
+                  <select class="form-select" id="unite" formControlName="unite" required>
+                    <option *ngFor="let optionunite of uniteOptions" [value]="optionunite">{{ optionunite }}</option>
+                  </select>
+                  <!-- Icône + pour ajouter une nouvelle unité -->
+                  <button type="button" class="btn btn-link ms-2" (click)="toggleNewUniteField()">
+                    <i class="bi bi-plus-circle"></i>
+                  </button>
+                </div>
+
+                <!-- Champ pour entrer la nouvelle unité, caché par défaut -->
+                <div *ngIf="isNewUniteVisible" class="mt-2">
+                  <label for="newUnite" class="form-label">Nouvelle Unité</label>
+                  <input type="text" class="form-control" id="newUnite" formControlName="newUnite" />
+                  <button type="button" class="btn btn-success mt-2" (click)="addNewUnite()">Ajouter</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <!-- Prix d'achat unitaire et Prix de vente unitaire sur la même ligne -->
+              <div class="col-md-6">
+                <label for="prixAchatUnitaire" class="form-label">Prix d'achat unitaire</label>
+                <input type="number" class="form-control" id="prixAchatUnitaire" formControlName="prixAchatUnitaire" required />
+              </div>
+              <div class="col-md-6">
+                <label for="prixVenteUnitaire" class="form-label">Prix de vente unitaire</label>
+                <input type="number" class="form-control" id="prixVenteUnitaire" formControlName="prixVenteUnitaire" required />
+              </div>
+            </div>
+
+            <!-- Description seul sur une ligne -->
+            <div class="mb-3">
+              <label for="description" class="form-label">Description / Commentaire</label>
+              <textarea class="form-control" id="description" formControlName="description"></textarea>
+            </div>
+
+            <!-- Nouveau champ Image -->
+            <div class="mb-3">
+              <label for="image" class="form-label">Image</label>
+              <input type="file" class="form-control" id="image" formControlName="image" accept="image/*" />
+            </div>
+
+            <!-- Nouveau champ Stockable -->
+            <div class="mb-3">
+              <label for="stockable" class="form-label">Type de produit</label>
+              <select class="form-select" id="stockable" formControlName="stockable" required>
+                <option value="produit">Produit stockable</option>
+                <option value="service">Service non stockable</option>
+              </select>
+            </div>
+
+            <!-- Bouton unique -->
+            <div class="mb-3 d-flex justify-content-center p-3">
+              <button type="submit" class="btn btn-success w-100" [disabled]="produitForm.invalid">{{ getButtonLabel() }}</button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+   <!-- Modal pour confirmer l'archivage -->
+   <div class="modal fade" id="confirmArchiveModal" tabindex="-1" aria-labelledby="confirmArchiveModalLabel">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-warning">
+          <h5 class="modal-title" id="confirmArchiveModalLabel">Confirmer l'archivage</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          Êtes-vous sûr de vouloir archiver ce produit ?
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-warning" data-bs-dismiss="modal" (click)="confirmArchiver()">Confirmer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal pour afficher ou générer un code-barre -->
+  <div class="modal fade" id="codeBarreModal" tabindex="-1" aria-labelledby="codeBarreModalLabel">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-primary">
+          <h5 class="modal-title" id="codeBarreModalLabel">Code-barre du produit</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div *ngIf="selectedProduits?.codeBarre; else noBarcode">
+            <p>Code-barre: {{ selectedProduits?.codeBarre }}</p>
+          </div>
+            <!-- Élément pour afficher le code-barres -->
+            <canvas id="barcode"></canvas>  <!-- Utilisation de canvas -->
+          <ng-template #noBarcode>
+            <p>Ce produit n'a pas de code-barre associé.</p>
+          </ng-template>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-success" (click)="generateBarcode()">Générer un code-barre</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal pour associer une image au produit -->
+  <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-info">
+          <h5 class="modal-title" id="imageModalLabel">Associer une image au produit</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Choisissez une image à associer à ce produit.</p>
+          <input type="file" (change)="onImageSelected($event)" accept="image/*">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-success" (click)="saveImage()">Associer l'image</button>
+        </div>
+      </div>
+    </div>
+  </div>
+

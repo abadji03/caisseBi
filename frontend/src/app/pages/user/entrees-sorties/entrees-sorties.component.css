@@ -1,0 +1,15 @@
+.container {
+    max-width: 800px;
+  }
+
+  .nav-tabs .nav-link {
+    cursor: pointer;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  button {
+    width: 100%;
+  }

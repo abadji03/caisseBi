@@ -1,0 +1,377 @@
+<div class="container-fluid mt-4">
+  <div class="row">
+    <!-- Liste des magasins -->
+    <div class="col-md-3">
+      <h4>Magasins</h4>
+      <ul class="list-group">
+        <li
+          *ngFor="let magasin of magasins"
+          class="list-group-item d-flex justify-content-between align-items-center"
+        >
+          <span>{{ magasin.nom }}</span>
+          <button
+            class="btn btn-sm btn-primary"
+            (click)="afficherDetailsMagasin(magasin)"
+            style="width: auto;"
+          >
+            Voir détails
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Détails des magasins -->
+    <div class="col-md-8" *ngIf="magasinSelectionne">
+      <h4>Nom : {{ magasinSelectionne.nom }}    Localisation : {{ magasinSelectionne.localisation }}</h4>
+      <nav>
+        <div class="nav nav-tabs" id="nav-tab" role="tablist">
+          <a
+            class="nav-link active"
+            id="nav-produits-tab"
+            data-bs-toggle="tab"
+            href="#nav-produits"
+            role="tab"
+            aria-controls="nav-produits"
+            aria-selected="true"
+          >
+            Produits
+          </a>
+          <a
+            class="nav-link"
+            id="nav-caisse-tab"
+            data-bs-toggle="tab"
+            href="#nav-caisse"
+            role="tab"
+            aria-controls="nav-caisse"
+            aria-selected="false"
+          >
+            Caisse
+          </a>
+          <a
+            class="nav-link"
+            id="nav-decaissements-tab"
+            data-bs-toggle="tab"
+            href="#nav-decaissements"
+            role="tab"
+            aria-controls="nav-decaissements"
+            aria-selected="false"
+          >
+            Décaissements
+          </a>
+          <a
+            class="nav-link"
+            id="nav-dettes-tab"
+            data-bs-toggle="tab"
+            href="#nav-dettes"
+            role="tab"
+            aria-controls="nav-dettes"
+            aria-selected="false"
+          >
+            Dettes
+          </a>
+        </div>
+      </nav>
+
+      <div class="tab-content mt-4" id="nav-tabContent">
+        <!-- Produits -->
+        <div
+          class="tab-pane fade show active"
+          id="nav-produits"
+          role="tabpanel"
+          aria-labelledby="nav-produits-tab"
+        >
+          <!-- Bouton pour ouvrir le modal de l'ajout d'un produit -->
+          <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#modalAjoutProduit">
+            Nouveau produit
+          </button>
+
+          <!-- Modal pour ajouter un produit -->
+          <div class="modal fade" id="modalAjoutProduit" tabindex="-1" aria-labelledby="modalAjoutProduitLabel" aria-hidden="true">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="modalAjoutProduitLabel">Ajouter un nouveau produit</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <form (ngSubmit)="ajouterProduit()">
+                    <div class="mb-3">
+                      <label for="refProduit" class="form-label">Référence/Désignation</label>
+                      <input type="text" class="form-control" id="refProduit" [(ngModel)]="nouveauProduit.ref" name="refProduit" required>
+                    </div>
+                    <div class="mb-3">
+                      <label for="prixUnitaire" class="form-label">Prix unitaire</label>
+                      <input type="number" class="form-control" id="prixUnitaire" [(ngModel)]="nouveauProduit.prixUnitaire" name="prixUnitaire" required>
+                    </div>
+                    <div class="mb-3">
+                      <label for="quantite" class="form-label">Quantité</label>
+                      <input type="number" class="form-control" id="quantite" [(ngModel)]="nouveauProduit.quantite" name="quantite" required>
+                    </div>
+                    <div class="mb-3">
+                      <label for="categorie" class="form-label">Catégorie</label>
+                      <input type="text" class="form-control" id="categorie" [(ngModel)]="nouveauProduit.categorie" name="categorie" required>
+                    </div>
+                    <div class="mb-3">
+                      <label for="dateEnregistrement" class="form-label">Date d'enregistrement</label>
+                      <input type="date" class="form-control" id="dateEnregistrement" [(ngModel)]="nouveauProduit.dateEnregistrement" name="dateEnregistrement" required>
+                    </div>
+                    <div class="mb-3">
+                      <label for="dateModification" class="form-label">Date de modification</label>
+                      <input type="date" class="form-control" id="dateModification" [(ngModel)]="nouveauProduit.dateModification" name="dateModification">
+                    </div>
+                    <div class="mb-3">
+                      <label for="disponibilite" class="form-label">Disponibilité/Stock</label>
+                      <input type="number" class="form-control" id="disponibilite" [(ngModel)]="nouveauProduit.disponibilite" name="disponibilite" required>
+                    </div>
+                    <div class="mb-3">
+                      <label for="codeBarre" class="form-label">Code barre</label>
+                      <input type="text" class="form-control" id="codeBarre" [(ngModel)]="nouveauProduit.codeBarre" name="codeBarre">
+                      <button type="button" class="btn btn-info mt-2" (click)="genererCodeBarre()">Générer un code-barre</button>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                      <button type="submit" class="btn btn-primary">Ajouter</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tableau des produits -->
+          <h5>Produits</h5>
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Référence</th>
+                <th>Nom</th>
+                <th>Quantité</th>
+                <th>Prix unitaire</th>
+                <th>Catégorie</th>
+                <th>Date d'enregistrement</th>
+                <th>Date de modification</th>
+                <th>Disponibilité</th>
+                <th>Code-barre</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let produit of getProduitsParMagasin(magasinSelectionne.nom); let i = index">
+                <td>{{ i + 1 }}</td>
+                <td>{{ produit.ref }}</td>
+                <td>{{ produit.nom }}</td>
+                <td>{{ produit.quantite }}</td>
+                <td>{{ produit.prixUnitaire}} F CFA</td>
+                <td>{{ produit.categorie }}</td>
+                <td>{{ produit.dateEnregistrement | date }}</td>
+                <td>{{ produit.dateModification | date }}</td>
+                <td>{{ produit.disponibilite }}</td>
+                <td>{{ produit.codeBarre }}</td>
+                <td>
+                  <button class="btn btn-primary btn-sm" (click)="modifierProduit(produit)">Modifier</button>
+                  <button class="btn btn-danger btn-sm" (click)="supprimerProduit(produit.id)">Supprimer</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Caisse -->
+        <div
+          class="tab-pane fade"
+          id="nav-caisse"
+          role="tabpanel"
+          aria-labelledby="nav-caisse-tab"
+        >
+          <h5>Gestion de la caisse</h5>
+          <!-- Ajoutez ici les différentes fonctionnalités de la caisse -->
+        </div>
+
+        <!-- Décaissements -->
+        <div
+          class="tab-pane fade"
+          id="nav-decaissements"
+          role="tabpanel"
+          aria-labelledby="nav-decaissements-tab"
+        >
+          <h5>Décaissements</h5>
+          <!-- Ajoutez ici le formulaire et la liste des décaissements -->
+           <!-- Formulaire d'ajout de décaissement -->
+          <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#modalAjoutDecaissement">
+            Nouveau décaissement
+          </button>
+
+          <!-- Modal pour ajouter un décaissement -->
+          <div class="modal fade" id="modalAjoutDecaissement" tabindex="-1" aria-labelledby="modalAjoutDecaissementLabel" aria-hidden="true">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="modalAjoutDecaissementLabel">Ajouter un décaissement</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <form (ngSubmit)="ajouterDecaissement()">
+                    <div class="mb-3">
+                      <label for="reference" class="form-label">Référence</label>
+                      <input type="text" class="form-control" id="reference" [(ngModel)]="nouveauDecaissement.reference" name="reference" required>
+                    </div>
+                    <div class="mb-3">
+                      <label for="montant" class="form-label">Montant</label>
+                      <input type="number" class="form-control" id="montant" [(ngModel)]="nouveauDecaissement.montant" name="montant" required>
+                    </div>
+                    <div class="mb-3">
+                      <label for="categorie" class="form-label">Catégorie</label>
+                      <select class="form-select" id="categorie" [(ngModel)]="nouveauDecaissement.categorie" name="categorie" required>
+                        <option value="Salaires">Salaires</option>
+                        <option value="Achats">Achats</option>
+                        <option value="Loyer">Loyer</option>
+                        <option value="Autre">Autre</option>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label for="date" class="form-label">Date</label>
+                      <input type="date" class="form-control" id="date" [(ngModel)]="nouveauDecaissement.date" name="date" required>
+                    </div>
+                    <div class="mb-3">
+                      <label for="commentaire" class="form-label">Commentaire</label>
+                      <textarea class="form-control" id="commentaire" [(ngModel)]="nouveauDecaissement.commentaire" name="commentaire"></textarea>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                      <button type="submit" class="btn btn-primary">Ajouter</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tableau des décaissements -->
+          <h5>Décaissements</h5>
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Référence</th>
+                <th>Montant</th>
+                <th>Date</th>
+                <th>Catégorie</th>
+                <th>Commentaire</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let decaissement of decaissements; let i = index">
+                <td>{{ i + 1 }}</td>
+                <td>{{ decaissement.reference }}</td>
+                <td>{{ decaissement.montant | currency }}</td>
+                <td>{{ decaissement.date | date: 'shortDate' }}</td>
+                <td>{{ decaissement.categorie }}</td>
+                <td>{{ decaissement.commentaire }}</td>
+                <td>
+                  <button class="btn btn-primary btn-sm" (click)="modifierDecaissement(decaissement)">Modifier</button>
+                  <button class="btn btn-danger btn-sm" (click)="supprimerDecaissement(decaissement.id)">Supprimer</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+        </div>
+
+        <!-- Dettes -->
+        <div
+          class="tab-pane fade"
+          id="nav-dettes"
+          role="tabpanel"
+          aria-labelledby="nav-dettes-tab"
+        >
+          <h5>Gestion des dettes</h5>
+          <!-- Ajoutez ici le formulaire et la liste des dettes -->
+           <!-- Bouton pour ajouter une nouvelle dette -->
+          <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#modalAjoutDette">
+            Nouvelle Dette
+          </button>
+
+          <!-- Modal pour ajouter ou modifier une dette -->
+          <div class="modal fade" id="modalAjoutDette" tabindex="-1" aria-labelledby="modalAjoutDetteLabel" aria-hidden="true">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="modalAjoutDetteLabel">Ajouter/Modifier une Dette</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <form (ngSubmit)="ajouterOuModifierDette()">
+                    <div class="mb-3">
+                      <label for="createur" class="form-label">Créancier</label>
+                      <input type="text" class="form-control" id="createur" [(ngModel)]="nouvelleDette.createur" name="createur" required>
+                    </div>
+                    <div class="mb-3">
+                      <label for="montantTotal" class="form-label">Montant Total</label>
+                      <input type="number" class="form-control" id="montantTotal" [(ngModel)]="nouvelleDette.montantTotal" name="montantTotal" required>
+                    </div>
+                    <div class="mb-3">
+                      <label for="montantPaye" class="form-label">Montant Payé</label>
+                      <input type="number" class="form-control" id="montantPaye" [(ngModel)]="nouvelleDette.montantPaye" name="montantPaye" required>
+                    </div>
+                    <div class="mb-3">
+                      <label for="dateEcheance" class="form-label">Date d'Échéance</label>
+                      <input type="date" class="form-control" id="dateEcheance" [(ngModel)]="nouvelleDette.dateEcheance" name="dateEcheance" required>
+                    </div>
+                    <div class="mb-3">
+                      <label for="datePaiement" class="form-label">Date de Paiement</label>
+                      <input type="date" class="form-control" id="datePaiement" [(ngModel)]="nouvelleDette.datePaiement" name="datePaiement">
+                    </div>
+                    <div class="mb-3">
+                      <label for="commentaire" class="form-label">Commentaire</label>
+                      <textarea class="form-control" id="commentaire" [(ngModel)]="nouvelleDette.commentaire" name="commentaire"></textarea>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                      <button type="submit" class="btn btn-primary">Ajouter/Modifier</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tableau des dettes -->
+          <h5>Liste des Dettes</h5>
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Créancier</th>
+                <th>Montant Total</th>
+                <th>Montant Payé</th>
+                <th>Montant Restant</th>
+                <th>Date d'Échéance</th>
+                <th>Date de Paiement</th>
+                <th>Commentaire</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let dette of dettes; let i = index">
+                <td>{{ i + 1 }}</td>
+                <td>{{ dette.createur }}</td>
+                <td>{{ dette.montantTotal | currency }}</td>
+                <td>{{ dette.montantPaye | currency }}</td>
+                <td>{{ dette.montantRestant | currency }}</td>
+                <td>{{ dette.dateEcheance | date: 'shortDate' }}</td>
+                <td>{{ dette.datePaiement | date: 'shortDate' }}</td>
+                <td>{{ dette.commentaire }}</td>
+                <td>
+                  <button class="btn btn-primary btn-sm" (click)="modifierDette(dette)">Modifier</button>
+                  <button class="btn btn-danger btn-sm" (click)="supprimerDette(dette.id)">Supprimer</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
