@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { Client} from '../../../modeles/clients.model';
 import { CommonModule } from '@angular/common';
 import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -31,6 +31,9 @@ export class ClientsComponent implements OnInit {
   searchInput: string = '';
   // Ajoutez cette variable dans votre composant pour gérer l'état du bouton
   panierDisabled = false;
+
+  // Assurez-vous d'avoir une liste de tous les bons
+  bons: any[] = []; // Remplir avec les bons correspondants
 
   typeBon: string = '';
   selectedClientId?: number; // Client sélectionné
@@ -84,6 +87,13 @@ export class ClientsComponent implements OnInit {
     currentPageClient: number = 1;
     totalPagesClient: number = 2;
 
+    rowsPerPage: number = 5; // Nombre par défaut de lignes par page
+
+    selectedBonIndexC: number | null = null;
+    selectedBonIndexB: number | null = null;
+    selectedBonIndexP: number | null = null;
+    selectedBonIndexO: number | null = null;
+
 
      produits = [
       { id: 1, nom: 'Lait', quantite: 10,uniteStock:'Sachets', prixUnitaire: 1000 },
@@ -91,7 +101,7 @@ export class ClientsComponent implements OnInit {
       { id: 3, nom: 'Couscous', quantite: 15,uniteStock:'Carton', prixUnitaire: 2000 }
     ];
 
-    constructor(private fb: FormBuilder, private paginationService: ApplicationService) {
+    constructor(private fb: FormBuilder, private paginationService: ApplicationService,private cdr: ChangeDetectorRef) {
 
       // Initialisation du formulaire réactif pour un client
       this.clientForm = this.fb.group({
@@ -525,15 +535,15 @@ export class ClientsComponent implements OnInit {
 
    // Méthodes pour la pagination
    get getPaginatedClients() {
-    return this.paginationService.paginate(this.filteredClients, this.currentPageClient, this.totalPagesClient);
+    return this.paginationService.paginate(this.filteredClients, this.currentPageClient, this.rowsPerPage);
   }
 
   get getPaginatedBons() {
-      return this.paginationService.paginate(this.filteredBons, this.currentPageBon, this.totalPagesBon);
+      return this.paginationService.paginate(this.filteredBons, this.currentPageBon, this.rowsPerPage);
   }
 
   get getPaginatedPaiements() {
-      return this.paginationService.paginate(this.filteredPaiements, this.currentPagePaiement, this.totalPagesPaiement);
+      return this.paginationService.paginate(this.filteredPaiements, this.currentPagePaiement, this.rowsPerPage);
   }
 
 
@@ -760,9 +770,6 @@ resetPanier() {
     }
   }); */
 }
-toggleDetails(index: number) {
-  this.selectedBonIndex = this.selectedBonIndex === index ? null : index;
-}
 // Méthode pour retourner un bon
 retournerBon(bon: any) {
   const confirmation = confirm(`Voulez-vous vraiment retourner le bon Nº ${bon.numero} ?`);
@@ -862,5 +869,140 @@ selectProduit(prod: any) {
   getBonByOperation(operation: Operation): any {
     return this.filteredBons.find(bon => bon.id === operation.bonId) || null;
   }
+
+  getTotalPages(list: any[]): number {
+    return Math.ceil(list.length / this.rowsPerPage);
+  }
+
+  onRowsPerPageChange(event: any) {
+    this.rowsPerPage = Number(event.target.value);
+
+    // Réinitialiser les pages à 1 pour éviter un problème d'affichage
+    this.currentPageClient = 1;
+    this.currentPageBon = 1;
+    this.currentPagePaiement = 1;
+
+    this.cdr.detectChanges(); // Forcer la mise à jour de la vue
+  }
+  getClientByOperation(operation: any): any {
+    // Vérifier si l'opération est de type Paiement
+    if (operation instanceof Paiement) {
+      return this.filteredClients.find(four => four.id === operation.clientId) || null;
+    }
+    else if (operation instanceof Bon){
+      return this.filteredClients.find(four => four.id === operation.clientId) || null;
+    }
+
+    // Autres cas
+    return this.filteredClients.find(four => four.id === operation.clientId) || null;
+  }
+
+    toggleDetails(index: number, typeInstance: any) {
+      if (typeInstance instanceof Client) {
+        this.selectedBonIndexC = this.selectedBonIndexC === index ? null : index;
+      }
+      else if(typeInstance instanceof Bon){
+        this.selectedBonIndexB = this.selectedBonIndexB === index ? null : index;
+      }
+      else if(typeInstance instanceof Paiement){
+        this.selectedBonIndexP = this.selectedBonIndexP === index ? null : index;
+      }
+      else if(typeInstance instanceof Operation){
+        this.selectedBonIndexO = this.selectedBonIndexO === index ? null : index;
+      }
+
+    }
+
+  getBonBypaiement(operation: Paiement): any {
+    return this.filteredBons.find(bon => bon.id === operation.bonId) || null;
+  }
+  // Fonction pour valider un bon
+validerBon(bon: any): void {
+  // Vérification si le bon peut être validé (par exemple, statut = 'livré')
+  if (bon.statut === 'livré') {
+    bon.statut = 'validé'; // Mise à jour du statut
+    // Sauvegarder dans la base de données ou API
+    this.updateBon(bon);
+    alert('Bon validé avec succès.');
+  } else {
+    alert('Le bon ne peut pas être validé dans cet état.');
+  }
+}
+
+// Fonction pour modifier un bon
+modifierBon(bon: any): void {
+  // Vérification si le bon peut être modifié (par exemple, statut = 'brouillon')
+  if (bon.statut === 'brouillon') {
+    // Logic to modify the bon data
+    //this.openEditModal(bon); // Ouvrir un modal pour modifier le bon
+  } else {
+    alert('Le bon ne peut pas être modifié dans cet état.');
+  }
+}
+
+// Fonction pour supprimer un bon
+supprimerBon(bon: any): void {
+  // Vérification du statut avant de supprimer
+  if (bon.statut === 'brouillon' || bon.statut === 'commandé') {
+    // Supprimer le bon
+    this.deleteBon(bon.id); // Appel à une fonction pour supprimer le bon
+    alert('Bon supprimé avec succès.');
+  } else {
+    alert('Le bon ne peut pas être supprimé dans cet état.');
+  }
+}
+
+// Fonction pour annuler un bon (seulement si validé et non facturé)
+annulerBon(bon: any): void {
+  if (bon.statut === 'validé' && !bon.facturé) {
+    bon.statut = 'annulé'; // Mise à jour du statut
+    this.updateBon(bon);
+    alert('Bon annulé.');
+  } else {
+    alert('Le bon ne peut pas être annulé.');
+  }
+}
+
+// Fonction pour facturer un bon
+facturerBon(bon: any): void {
+  if (bon.statut === 'validé' && !bon.facturé) {
+    bon.facturé = true; // Marquer comme facturé
+    this.updateBon(bon);
+    alert('Bon facturé.');
+  } else {
+    alert('Le bon ne peut pas être facturé.');
+  }
+}
+
+// Fonction pour suivre le paiement du bon
+suiviPaiement(bon: any): void {
+  if (bon.facturé && !bon.payé) {
+    // Logique pour suivre le paiement
+    //this.openPaymentTrackingModal(bon); // Ouvrir un modal pour suivre le paiement
+  } else {
+    alert('Aucun paiement à suivre.');
+  }
+}
+
+// Fonction pour imprimer le bon
+imprimerBon(bon: any): void {
+  // Logique d'impression du bon (ici, on simule l'impression)
+  window.print(); // Pour l'impression
+  alert('Bon envoyé à l\'impression.');
+}
+
+// Fonction pour mettre à jour un bon
+updateBon(bon: any): void {
+  // Implémenter la logique pour mettre à jour le bon dans la base de données ou via une API
+  // Par exemple : this.apiService.updateBon(bon).subscribe(response => { console.log(response); });
+  console.log('Bon mis à jour:', bon);
+}
+
+// Fonction pour supprimer un bon
+deleteBon(bonId: number): void {
+  // Implémenter la logique pour supprimer le bon via l'API ou dans la base de données
+  // Par exemple : this.apiService.deleteBon(bonId).subscribe(response => { console.log(response); });
+  console.log('Bon supprimé:', bonId);
+}
 
 }

@@ -1,7 +1,7 @@
 .table-responsive,.formBon {
     overflow-y: auto; /* Pour activer la barre de défilement verticale */
     overflow-x: auto; /* Pour activer la barre de défilement horizontale */
-    max-height: 450px; /* Hauteur maximale pour activer la barre de défilement */
+    /*max-height: 450px;  Hauteur maximale pour activer la barre de défilement */
   }
 
 

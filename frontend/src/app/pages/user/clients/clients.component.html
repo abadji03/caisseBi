@@ -10,7 +10,7 @@
       <button class="nav-link active" id="nav-client-tab" data-bs-toggle="tab" data-bs-target="#nav-client" type="button" role="tab" aria-controls="nav-client" aria-selected="true">Accueil</button>
       <button class="nav-link" id="nav-bons-tab" data-bs-toggle="tab" data-bs-target="#nav-bons" type="button" role="tab" aria-controls="nav-bons" aria-selected="false">Historique des bons</button>
       <button class="nav-link" id="nav-versement-tab" data-bs-toggle="tab" data-bs-target="#nav-versement" type="button" role="tab" aria-controls="nav-versement" aria-selected="false">Historique des versements</button>
-      <button class="nav-link" id="nav-dette-tab" data-bs-toggle="tab" data-bs-target="#nav-dette" type="button" role="tab" aria-controls="nav-dette" aria-selected="false" >Liste des dettes</button>
+      <!-- <button class="nav-link" id="nav-dette-tab" data-bs-toggle="tab" data-bs-target="#nav-dette" type="button" role="tab" aria-controls="nav-dette" aria-selected="false" >Liste des dettes</button> -->
       <button class="nav-link" id="nav-archives-tab" data-bs-toggle="tab" data-bs-target="#nav-archives" type="button" role="tab" aria-controls="nav-archives" aria-selected="false" >Archives</button>
     </div>
   </nav>
@@ -44,6 +44,14 @@
                 <!-- <div class="d-flex justify-content-center mt-4">
                   <h2 class="text-warning"> Liste  des clients</h2>
                 </div> -->
+                 <!-- Sélection du nombre de lignes à afficher -->
+                 <div class="d-flex justify-content-between align-items-center mb-2 float-start">
+                  <label for="rowsPerPage" class="me-2">Afficher</label>
+                  <select id="rowsPerPage" class="form-select w-auto me-2" (change)="onRowsPerPageChange($event)">
+                    <option *ngFor="let option of [5, 10, 20, 50]" [value]="option">{{ option }}</option>
+                  </select>
+                  <span>lignes par page</span>
+                </div>
                 <table class="table table-bordered table-hover">
                   <thead class="table-success">
                     <tr>
@@ -52,8 +60,8 @@
                       <th>Téléphone</th>
                       <th>plafond</th>
                       <!-- <th>Nº de Compte</th> -->
-                      <th>Montant à Payer</th>
-                      <th>Statut</th>
+                      <th>Montant à nous Payer</th>
+                      <th>Solde / Avoir</th>
                       <!-- <th>Bons</th>
                       <th>Transactions</th>
                       <th>Actions</th> -->
@@ -66,10 +74,11 @@
                       <td>{{ client.telephone }}</td>
                       <td>{{ client.plafond }} F CFA</td>
                       <!-- <td>{{ client.numeroCompte }}</td> -->
-                      <td>{{ client.montantAPayer }} F CFA</td>
+                      <td>{{ 0 }} F CFA</td>
                       <td>
-                        <span class="badge bg-success h2" *ngIf="client.statut">Actif</span>
-                        <span class="badge bg-danger h2" *ngIf="!client.statut">Inactif</span>
+                        {{ client.solde }} F CFA
+                        <!-- <span class="badge bg-success h2" *ngIf="client.statut">Actif</span>
+                        <span class="badge bg-danger h2" *ngIf="!client.statut">Inactif</span> -->
                       </td>
                       <!-- <td><button class="btn btn-link d-flex align-items-center" (click)="showBonDetails(client,'bon')"><i class="bi bi-eye"></i>Gèrer</button></td>
                       <td>
@@ -86,9 +95,14 @@
 
               <!-- Pagination -->
               <div class="d-flex justify-content-center align-items-center">
-                <button class="btn btn-success" (click)="onPageChange(currentPageClient-1,'Client')" [disabled] ="currentPageClient ===1"><i class="bi bi-arrow-left-circle"></i></button>
-                <span class="h3">{{ currentPageClient }} / {{filteredClients.length / totalPagesClient }}</span>
-                <button class="btn btn-success" (click)="onPageChange(currentPageClient+1,'Client')" [disabled]="currentPageClient* totalPagesClient >= filteredClients.length"><i class="bi bi-arrow-right-circle"></i></button>
+                <button class="btn btn-success" (click)="onPageChange(currentPageClient-1,'Client')" [disabled]="currentPageClient === 1">
+                  <i class="bi bi-arrow-left-circle"></i>
+                </button>
+                <span class="h3">{{ currentPageClient }} / {{ getTotalPages(filteredClients) }}</span>
+                <button class="btn btn-success" (click)="onPageChange(currentPageClient+1,'Client')"
+                  [disabled]="currentPageClient >= getTotalPages(filteredClients)">
+                  <i class="bi bi-arrow-right-circle"></i>
+                </button>
               </div>
             </div>
             <!-- Colonne droite (actions) -->
@@ -375,70 +389,156 @@
                 <tr>
                   <th>Type d'opération</th>
                   <th>Date et Heure</th>
-                  <th>Total Panier</th>
-                  <th>Total à Payer</th>
-                  <th>Nº Facture</th>
+                  <th>Montant payé</th>
+                  <th>Agent opération</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                <ng-container *ngFor="let bon of filteredOperations; let i = index">
-                  <!-- Ligne principale du bon -->
+                <ng-container *ngFor="let operation of filteredOperations; let i = index">
                   <tr>
-                    <td>{{ bon.type }}</td>
-                    <td>{{ bon.dateOperation | date:'dd/MM/yyyy HH:mm' }}</td>
-                    <td>{{ getBonByOperation(bon).montantTotal }} F CFA</td>
-                    <td>{{ getBonByOperation(bon).netAPayer }} F CFA</td>
-                    <td>{{ bon.numeroFacture || 'N/A' }}</td>
+                    <td>{{ operation.type }}</td>
+                    <td>{{ operation.dateOperation | date:'dd/MM/yyyy HH:mm' }}</td>
+                    <td>{{ operation.montantPaye }} F CFA</td>
+                    <td>{{ operation.agentId || 'N/A' }}</td>
                     <td>
-                      <button class="btn btn-info" (click)="toggleDetails(i)">
-                        <i class="bi bi-eye"></i>
+                      <button class="btn btn-info" (click)="toggleDetails(i,operation)">
+                        <i class="bi bi-eye"></i> Détails
                       </button>
                     </td>
                   </tr>
 
-                  <!-- Détails du bon (affichés uniquement si sélectionné) -->
-                  <tr *ngIf="selectedBonIndex === i">
+                  <!-- Récupération du bon lié à l'opération -->
+                  <tr *ngIf="selectedBonIndexO === i">
                     <td colspan="6">
-                      <!-- Boutons d'action -->
-                      <div class="d-flex justify-content-end mb-2">
-                        <button class="btn btn-primary me-2">🧾 Ticket Caisse</button>
-                        <button class="btn btn-success me-2">📄 Facture</button>
-                        <button class="btn btn-danger" (click)="retournerBon(bon)">🔄 Retourner</button>
-                      </div>
+                      <div *ngIf="getBonByOperation(operation) as bon">
 
-                      <!-- Tableau des produits -->
-                      <table class="table">
-                        <thead>
-                          <tr>
-                            <th>Produit</th>
-                            <th>Quantité</th>
-                            <th>Unité Stock</th>
-                            <th>Prix Unitaire</th>
-                            <th>Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr *ngFor="let produit of produits">
-                            <td>{{ produit.nom }}</td>
-                            <td>{{ produit.quantite }}</td>
-                            <td>{{ produit.uniteStock }}</td>
-                            <td>{{ produit.prixUnitaire }} F CFA</td>
-                            <td><button class="btn btn-danger">🗑</button></td>
-                          </tr>
-                        </tbody>
-                      </table>
+                          <div class="row mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h2 class="me-3">Détails du bon Nº:<b>{{ bon.numero }}</b></h2>
+                              <div class="">
+                              <!-- Bouton Valider (si bon livré mais pas encore validé) -->
+                              <!-- <button *ngIf="operation.type === 'LIVRAISON' && bon.statut === 'livré'"
+                                      class="btn btn-success me-2"
+                                      (click)="validerBon(bon)">
+                                ✅ Valider
+                              </button> -->
+                              <button
+                                      class="btn btn-success me-2"
+                                      (click)="validerBon(bon)">
+                                ✅ Valider
+                              </button>
 
-                      <hr>
+                              <!-- Modifier uniquement si brouillon -->
+                              <!-- <button *ngIf="operation.type === 'COMMANDE' && bon.statut === 'brouillon'"
+                                      class="btn btn-primary me-2"
+                                      (click)="modifierBon(bon)">
+                                ✏️ Modifier
+                              </button> -->
+                              <button
+                                      class="btn btn-primary me-2"
+                                      (click)="modifierBon(bon)">
+                                ✏️ Modifier
+                              </button>
 
-                      <!-- Informations récapitulatives -->
-                      <div class="d-flex justify-content-start flex-column align-items-start">
-                        <p><strong>Total :</strong> {{ getBonByOperation(bon).montantTotal }} F CFA</p>
-                        <p><strong>Remise :</strong> {{ getBonByOperation(bon).remise }} F CFA</p>
-                        <p><strong>Net à Payer :</strong> {{ getBonByOperation(bon).netAPayer }} F CFA</p>
-                        <p><strong>Avance :</strong> {{ bon.montantPaye }} F CFA</p>
-                        <p><strong>Reste :</strong> {{ getBonByOperation(bon).resteAPayer }} F CFA</p>
-                        <p><strong>Compte :</strong> {{ "Bon" }} (le client doit encore {{ bon.type }} F CFA)</p>
+                              <!-- Supprimer uniquement si brouillon ou commandé -->
+                              <!-- <button *ngIf="bon.statut === 'brouillon' || bon.statut === 'commandé'"
+                                      class="btn btn-danger me-2"
+                                      (click)="supprimerBon(bon)">
+                                🗑 Supprimer
+                              </button> -->
+                              <button
+                                      class="btn btn-danger me-2"
+                                      (click)="supprimerBon(bon)">
+                                🗑 Supprimer
+                              </button>
+
+                              <!-- Annuler uniquement si validé mais pas facturé -->
+                              <!-- <button *ngIf="bon.statut === 'validé' && !bon.facture"
+                                      class="btn btn-warning me-2"
+                                      (click)="annulerBon(bon)">
+                                ❌ Annuler
+                              </button> -->
+                              <button
+                                      class="btn btn-warning me-2"
+                                      (click)="annulerBon(bon)">
+                                ❌ Annuler
+                              </button>
+
+                              <!-- Facturer uniquement si validé et non facturé -->
+                              <!-- <button *ngIf="bon.statut === 'validé' && !bon.facture"
+                                      class="btn btn-success me-2"
+                                      (click)="facturerBon(bon)">
+                                📄 Facturer
+                              </button> -->
+                              <button
+                                      class="btn btn-success me-2"
+                                      (click)="facturerBon(bon)">
+                                📄 Facturer
+                              </button>
+
+                              <!-- Suivi Paiement uniquement si facturé mais pas payé -->
+                              <!-- <button *ngIf="bon.facture && !bon.paye"
+                                      class="btn btn-primary me-2"
+                                      (click)="suiviPaiement(bon)">
+                                💰 Suivi Paiement
+                              </button> -->
+                              <button *ngIf="bon.facture && !bon.paye"
+                                      class="btn btn-primary me-2"
+                                      (click)="suiviPaiement(bon)">
+                                💰 Suivi Paiement
+                              </button>
+                              <!-- Bouton Impression -->
+                              <button class="btn btn-secondary me-2" (click)="imprimerBon(bon)">
+                                🖨️ Imprimer
+                              </button>
+                            </div>
+                            </div>
+
+                            <div class="row mt-3">
+                              <div *ngIf="operation.type !== 'VERSEMENT'" class="d-flex justify-content-start align-items-center mb-2 me-5">
+                                <span class="me-3">💰 Total bon: <strong>{{ bon.montantTotal }} F CFA</strong></span>
+                                <span>💰 Total des produits: <strong>{{ bon.panier?.totalHT }} F CFA</strong></span>
+                              </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Tableau des produits -->
+                        <h3>Liste des Produits</h3>
+                        <table class="table">
+
+                          <thead>
+                            <tr>
+                              <th>Produit</th>
+                              <th>Quantité</th>
+                              <th>Unité Stock</th>
+                              <th>Prix Unitaire</th>
+                              <th>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr *ngFor="let produit of getBonByOperation(operation).panier?.produits">
+                              <td>{{ produit.designation }}</td>
+                              <td>{{ produit.quantite }}</td>
+                              <td>{{ produit.unite }}</td>
+                              <td>{{ produit.prixAchatUnitaire}} F CFA</td>
+                              <td>
+                                <button class="btn btn-danger" *ngIf="bon.statut === 'brouillon' || operation.type==='RETOUR'">
+                                  🗑 Supprimer
+                                </button>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+
+                        <!-- Informations récapitulatives -->
+                        <div class="mt-4">
+                          <p><strong>Remise :</strong> {{ getBonByOperation(operation).remise || 0 }} F CFA</p>
+                          <p><strong>Net à Payer :</strong> {{ getBonByOperation(operation).netAPayer || bon.montantTotal }} F CFA</p>
+                          <!-- <p><strong>Avance :</strong> {{ operation.montantPaye || 0 }} F CFA</p> -->
+                          <p><strong>Reste :</strong> {{ getBonByOperation(operation).resteAPayer || 0 }} F CFA</p>
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -561,40 +661,98 @@
         <div class="d-flex justify-content-between mb-3">
           <input type="text" class="form-control w-25" [(ngModel)]="searchBonQuery" placeholder="Rechercher un bon..." (input)="onSearchChangeBon()">
         </div>
-        <table class="table table-striped">
+        <!-- Sélection du nombre de lignes à afficher -->
+        <div class="d-flex justify-content-between align-items-center mb-2 float-start">
+          <label for="rowsPerPage" class="me-2">Afficher</label>
+          <select id="rowsPerPage" class="form-select w-auto me-2" (change)="onRowsPerPageChange($event)">
+            <option *ngFor="let option of [5, 10, 20, 50]" [value]="option">{{ option }}</option>
+          </select>
+          <span>lignes par page</span>
+         </div>
+         <table class="table table-striped">
           <thead>
             <tr>
               <th>Nº Bon</th>
               <th>Description</th>
-              <th>Montant</th>
+              <th>Montant Total</th>
+              <th>Client</th>
               <th>Type</th>
-              <th>Status</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let bon of getPaginatedBons">
-              <td>{{ bon.numero }}</td>
-              <td>{{ bon.description }}</td>
-              <td>{{ bon.montant}} F CFA</td>
-              <td>{{ bon.type }}</td>
-              <td *ngIf="bon.type === 'Commande'">{{ bon.statusCommande }}</td>
-              <td *ngIf="bon.type === 'Livraison'">{{ bon.statusLivraison }}</td>
-              <td *ngIf="bon.type === 'Retour'">{{ bon.statusRetour }}</td>
-              <td *ngIf="bon.type === 'Avoir'">{{ bon.statusBon }}</td>
-              <td>
-                <button class="btn btn-warning me-3"><i class="bi bi-pencil"></i></button>
-                <button class="btn btn-danger"><i class="bi bi-trash"></i></button>
-              </td>
-            </tr>
+            <ng-container *ngFor="let bon of getPaginatedBons; let i = index">
+              <!-- Ligne principale du bon -->
+              <tr>
+                <td>{{ bon.numero }}</td>
+                <td>{{ bon.description }}</td>
+                <td>{{ bon.montantTotal }} F CFA</td>
+                <td>{{ getClientByOperation(bon).nomComplet }}</td>
+                <td>{{ bon.type }}</td>
+                <!-- <td *ngIf="bon.type === 'Commande'">{{ bon.statusCommande }}</td>
+                <td *ngIf="bon.type === 'Livraison'">{{ bon.statusLivraison }}</td>
+                <td *ngIf="bon.type === 'Retour'">{{ bon.statusRetour }}</td> -->
+                <td>
+                  <button class="btn btn-info" (click)="toggleDetails(i,bon)">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                </td>
+              </tr>
+
+              <!-- Détails du bon -->
+              <tr *ngIf="selectedBonIndexB === i">
+                <td colspan="6">
+                  <div *ngIf="bon">
+                    <div class="d-flex justify-content-start align-items-center mb-2 me-5">
+                      <span class="me-3">💰 Total des produits: <strong>{{ bon.panier?.totalHT }} F CFA</strong></span>
+                      <span class="me-3">💰 Remise: <strong>{{ bon.remise }} F CFA</strong></span>
+                      <span>💰 Net à payer: <strong>{{ bon.resteAPayer }} F CFA</strong></span>
+                    </div>
+
+                    <!-- Tableau des produits -->
+                    <table class="table">
+                      <thead>
+                        <tr>
+                          <th>Produit</th>
+                          <th>Quantité</th>
+                          <th>Unité Stock</th>
+                          <th>Prix Unitaire</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let produit of bon.panier.produits">
+                          <td>{{ produit.designation }}</td>
+                          <td>{{ produit.quantite }}</td>
+                          <td>{{ produit.unite }}</td>
+                          <td>{{ produit.prixAchatUnitaire }} F CFA</td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    <!-- Informations récapitulatives -->
+                    <!-- <div class="mt-3">
+                      <p><strong>Remise :</strong> {{ bon.remise || 0 }} F CFA</p>
+                      <p><strong>Net à Payer :</strong> {{ bon.netAPayer || bon.montantTotal }} F CFA</p>
+                      <p><strong>Avance :</strong> {{ bon.montantPaye || 0 }} F CFA</p>
+                      <p><strong>Reste :</strong> {{ bon.resteAPayer || 0 }} F CFA</p>
+                    </div> -->
+                  </div>
+                </td>
+              </tr>
+            </ng-container>
           </tbody>
         </table>
 
         <!-- Pagination des Bons -->
-        <div class="d-flex justify-content-center align-items-center mt-3">
-          <button class="btn btn-success" (click)="onPageChange(currentPageBon-1,'Bon')" [disabled]="currentPageBon === 1"><i class="bi bi-arrow-left-circle"></i></button>
-          <span class="mx-3">{{ currentPageBon }} / {{filteredBons.length / totalPagesBon }}</span>
-          <button class="btn btn-success" (click)="onPageChange(currentPageBon+1,'Bon')" [disabled]="currentPageBon*totalPagesBon >= filteredBons.length"><i class="bi bi-arrow-right-circle"></i></button>
+        <div class="d-flex justify-content-center align-items-center">
+          <button class="btn btn-success" (click)="onPageChange(currentPageBon-1,'Bon')" [disabled]="currentPageBon === 1">
+            <i class="bi bi-arrow-left-circle"></i>
+          </button>
+          <span class="h3">{{ currentPageBon }} / {{ getTotalPages(filteredBons) }}</span>
+          <button class="btn btn-success" (click)="onPageChange(currentPageBon+1,'Bon')"
+            [disabled]="currentPageBon >= getTotalPages(filteredBons)">
+            <i class="bi bi-arrow-right-circle"></i>
+          </button>
         </div>
       </div>
     </div>
@@ -608,40 +766,145 @@
         <div class="d-flex justify-content-between mb-3">
           <input type="text" class="form-control w-25" [(ngModel)]="searchPaiementQuery" placeholder="Rechercher un paiement..." (input)="onSearchChangePaiement()">
         </div>
-        <table class="table table-striped">
+        <!-- Sélection du nombre de lignes à afficher -->
+        <div class="d-flex justify-content-between align-items-center mb-2 float-start">
+          <label for="rowsPerPage" class="me-2">Afficher</label>
+          <select id="rowsPerPage" class="form-select w-auto me-2" (change)="onRowsPerPageChange($event)">
+            <option *ngFor="let option of [5, 10, 20, 50]" [value]="option">{{ option }}</option>
+          </select>
+          <span>lignes par page</span>
+         </div>
+         <table class="table table-striped">
           <thead>
             <tr>
               <th>Description</th>
               <th>Montant</th>
+              <th>Date</th>
+              <th>Client</th>
               <th>Méthode de Paiement</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let paiement of getPaginatedPaiements">
+            <ng-container *ngFor="let paiement of getPaginatedPaiements; let i = index">
+            <tr >
               <td>{{ paiement.description }}</td>
               <td>{{ paiement.montant}} F CFA</td>
+              <td>{{ paiement.date | date:'dd/mm/yyy à HH:MM'}} </td>
+              <td>{{ getClientByOperation(paiement).nomComplet}}</td>
               <td>{{ paiement.methodePaiement }}</td>
               <td>
-                <button class="btn btn-warning me-4"><i class="bi bi-pencil"></i></button>
-                <button class="btn btn-danger"><i class="bi bi-trash"></i></button>
+                <button class="btn btn-info"><i class="bi bi-eye" (click)="toggleDetails(i,paiement)"></i></button>
+              </td>
+            </tr>
+            <!-- Détails du bon -->
+            <tr *ngIf="selectedBonIndexP === i">
+              <td colspan="6">
+                <div *ngIf="paiement">
+                  <div class="d-flex justify-content-start align-items-center mb-2 me-5">
+                    <span class="me-3">Numérobon: <strong>{{ getBonBypaiement(paiement).numero}}</strong></span>
+                    <span class="me-3">💰 Total bon: <strong>{{ getBonBypaiement(paiement).montantTotal}} F CFA</strong></span>
+                    <span>💰 Total des produits: <strong>{{ getBonBypaiement(paiement).panier?.totalHT }} F CFA</strong></span>
+                    <span class="me-3">💰 Remise: <strong>{{ getBonBypaiement(paiement).remise}} F CFA</strong></span>
+                    <span>💰 Net à payer: <strong>{{ getBonBypaiement(paiement).netAPayer}} F CFA</strong></span>
+                  </div>
+
+                  <!-- Tableau des produits -->
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th>Produit</th>
+                        <th>Quantité</th>
+                        <th>Unité Stock</th>
+                        <th>Prix Unitaire</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let produit of getBonBypaiement(paiement).panier.produits">
+                        <td>{{ produit.designation }}</td>
+                        <td>{{ produit.quantite }}</td>
+                        <td>{{ produit.unite }}</td>
+                        <td>{{ produit.prixAchatUnitaire }} F CFA</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <!-- Informations récapitulatives -->
+                  <!-- <div class="mt-3">
+                    <p><strong>Remise :</strong> {{ getBonBypaiement(paiement).remise || 0 }} F CFA</p>
+                    <p><strong>Net à Payer :</strong> {{ getBonBypaiement(paiement).netAPayer || getBonBypaiement(paiement).montantTotal }} F CFA</p>
+                    <p><strong>Avance :</strong> {{ getBonBypaiement(paiement).montantPaye || 0 }} F CFA</p>
+                    <p><strong>Reste :</strong> {{ getBonBypaiement(paiement).resteAPayer || 0 }} F CFA</p>
+                  </div> -->
+                </div>
+              </td>
+            </tr>
+          </ng-container>
+          </tbody>
+        </table>
+        <!-- Pagination des Paiements -->
+        <div class="d-flex justify-content-center align-items-center">
+          <button class="btn btn-success" (click)="onPageChange(currentPagePaiement-1,'Paiement')" [disabled]="currentPagePaiement === 1">
+            <i class="bi bi-arrow-left-circle"></i>
+          </button>
+          <span class="h3">{{ currentPagePaiement }} / {{ getTotalPages(filteredPaiements) }}</span>
+          <button class="btn btn-success" (click)="onPageChange(currentPagePaiement+1,'Paiement')"
+            [disabled]="currentPagePaiement >= getTotalPages(filteredPaiements)">
+            <i class="bi bi-arrow-right-circle"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    <!--<div class="tab-pane fade" id="nav-dette" role="tabpanel" aria-labelledby="nav-dette-tab" tabindex="0">
+        Résumé du Bon
+    </div> -->
+    <div class="tab-pane fade" id="nav-archives" role="tabpanel" aria-labelledby="nav-archives-tab" tabindex="0">
+
+      <!-- Tableau des fournisseurs archivés -->
+      <div class="table-responsive">
+        <div class="d-flex justify-content-center mt-4">
+          <h2 class="text-warning"> Liste  des clients archivés</h2>
+        </div>
+        <table class="table table-bordered table-hover">
+          <thead class="table-success">
+            <tr>
+              <th>Nom</th>
+              <th>Adresse</th>
+              <th>Téléphone</th>
+              <!-- <th>Banque</th>
+              <th>Nº de Compte</th>
+              <th>Montant à Payer</th> -->
+              <th>Statut</th>
+              <!-- <th>Bons</th>
+              <th>Transactions</th>
+              <th>Statut</th>-->
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let client of getPaginatedClients" (click)="onRowSelect(client)">
+              <td>{{ client.nomComplet }}</td>
+              <td>{{ client.adresse }}</td>
+              <td>{{ client.telephone }}</td>
+              <!-- <td>{{ fournisseur.banque }}</td>
+              <td>{{ fournisseur.numeroCompte }}</td>
+              <td>{{ fournisseur.montantApayer }} F CFA</td> -->
+              <td>
+                <!-- <span class="badge bg-success h2" *ngIf="fournisseur.statut">Actif</span> -->
+                <span class="badge bg-danger h2" *ngIf="!client.statut">Inactif</span>
+              </td>
+              <!-- <td><button class="btn btn-link d-flex align-items-center" (click)="showBonDetails(fournisseur,'bon')"><i class="bi bi-eye"></i>Gèrer</button></td>
+              <td>
+                <button class="btn btn-link d-flex align-items-center" (click)="showBonDetails(fournisseur,'paiement')"><i class="bi bi-eye"></i>Gérer</button>
+              </td>-->
+              <td class="d-flex justify-content-center">
+                <!-- <button class="btn btn-warning me-3" (click)="editFournisseur()"><i class="bi bi-pencil text-white"></i></button> -->
+                <button class="btn btn-warning" (click)="toggleStatut(client)"><i class="bi bi-check-circle-fill me-2"></i>Activer</button>
               </td>
             </tr>
           </tbody>
         </table>
-        <!-- Pagination des Paiements -->
-        <div class="d-flex justify-content-center align-items-center mt-3">
-          <button class="btn btn-success" (click)="onPageChange(currentPagePaiement-1,'Paiement')" [disabled]="currentPagePaiement === 1"><i class="bi bi-arrow-left-circle"></i></button>
-          <span class="mx-3">{{ currentPagePaiement }} / {{filteredPaiements.length / totalPagesPaiement }}</span>
-          <button class="btn btn-success" (click)="onPageChange(currentPagePaiement+1,'Paiement')" [disabled]="currentPagePaiement*totalPagesPaiement >= filteredPaiements.length"><i class="bi bi-arrow-right-circle"></i></button>
-        </div>
       </div>
-    </div>
-    <div class="tab-pane fade" id="nav-dette" role="tabpanel" aria-labelledby="nav-dette-tab" tabindex="0">
-       <!-- Résumé du Bon -->
-    </div>
-    <div class="tab-pane fade" id="nav-archives" role="tabpanel" aria-labelledby="nav-archives-tab" tabindex="0">
-
     </div>
   </div>
 

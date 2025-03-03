@@ -1,72 +1,232 @@
 <div class="container-fluid">
-    <div class="row">
-        <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
-            <li class="nav-item" role="presentation">
-              <a  class="nav-link active" id="pills-home-tab" data-bs-toggle="pill" href="#pills-home" type="button" role="tab" aria-controls="pills-home" aria-selected="true">Accueil</a>
-            </li>
-            <li class="nav-item" role="presentation">
-              <a class="nav-link" id="pills-profile-tab" data-bs-toggle="pill" href="#pills-profile" type="button" role="tab" aria-controls="pills-profile" aria-selected="false">Autre mode vente</a>
-            </li>
-            <li class="nav-item" role="presentation">
-              <a class="nav-link" id="pills-contact-tab" data-bs-toggle="pill" href="#pills-contact" type="button" role="tab" aria-controls="pills-contact" aria-selected="false">Vente journalier</a>
-            </li>
-            <li class="nav-item" role="presentation">
-              <a class="nav-link" id="pills-disabled-tab" data-bs-toggle="pill" href="#pills-disabled" type="button" role="tab" aria-controls="pills-disabled" aria-selected="false" disabled>Autres</a>
-            </li>
-          </ul>
-          <div class="tab-content" id="pills-tabContent">
-            <div class="tab-pane fade show active" id="pills-home" role="tabpanel" aria-labelledby="pills-home-tab" tabindex="0">
-            <app-vente> </app-vente>
-            </div>
-            <div class="tab-pane fade" id="pills-profile" role="tabpanel" aria-labelledby="pills-profile-tab" tabindex="0">
-                <app-vente-b> </app-vente-b>
-            </div>
-            <div class="tab-pane fade" id="pills-contact" role="tabpanel" aria-labelledby="pills-contact-tab" tabindex="0">
-                <!-- <app-enregistrement-produits> </app-enregistrement-produits> -->
-                <table class="table table-bordered">
-                  <thead>
-                    <tr>
-                      <th>ID Commande</th>
-                      <th>Heure</th>
-                      <th>Prix Total</th>
-                      <th>Produits</th>
-                      <th>Numéro Facture</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let commande of commandes">
-                      <td>{{ commande.id }}</td>
-                      <td>{{ commande.heure | date:'HH:mm:ss' }}</td>
-                      <td>{{ commande.prixTotal}} F CFA</td>
-                      <td>
-                        <button class="btn btn-info btn-sm" (click)="toggleDetails(commande)">
-                          <i class="bi bi-eye"></i> Voir Détails
-                        </button>
-                        <div *ngIf="commande.showDetails" class="mt-2">
-                          <ul>
-                            <li *ngFor="let produit of commande.produits">{{ produit }}</li>
-                          </ul>
-                        </div>
-                      </td>
-                      <td>{{ commande.numFacture }}</td>
-                      <td>
-                        <button class="btn btn-success btn-sm" (click)="imprimer(commande)">
-                          <i class="bi bi-printer"></i> Imprimer
-                        </button>
-                        <button class="btn btn-warning btn-sm" (click)="modifier(commande)">
-                          <i class="bi bi-pencil"></i> Modifier
-                        </button>
-                        <button class="btn btn-danger btn-sm" (click)="supprimer(commande)">
-                          <i class="bi bi-trash"></i> Supprimer
-                        </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
 
+  <!-- BANNIÈRE DU JOURNAL -->
+  <div class="alert alert-light d-flex justify-content-between align-items-center">
+    <h1>Journal du {{ dateJournal | date: 'dd/MM/yyyy' }}</h1>
+    <h3>Total de la caisse :<b>{{ totalCaisse}} F CFA </b></h3>
+    <button class="btn btn-success" (click)="nouvelleVente()">Nouvelle Vente</button>
+  </div>
+
+  <!-- Sélection ou ajout d'un client (caché par défaut) -->
+  <div *ngIf="showClientSection" class="card mb-3">
+    <div class="card-header">Informations sur le client</div>
+    <div class="card-body">
+      <div class="row">
+        <!-- Section Clients existants -->
+        <div class="col-md-3">
+          <h5>Clients existants</h5>
+          <input list="clientList" class="form-control mb-2" placeholder="Rechercher un client..."
+                 (input)="onSelectionClient($event)">
+          <datalist id="clientList">
+            <option *ngFor="let client of clients" [value]="client.nomComplet"></option>
+          </datalist>
+        </div>
+
+        <!-- Section Nouveau client -->
+        <div class="col-md-9">
+          <form [formGroup]="clientForm">
+            <h5 >Nouveau client</h5>
+            <div class="row">
+              <div class="col-md-3">
+                <input formControlName="nomComplet" class="form-control mb-2" placeholder="Nom complet">
+              </div>
+              <div class="col-md-2">
+                <input formControlName="telephone" class="form-control mb-2" placeholder="Téléphone">
+              </div>
+              <div class="col-md-3">
+                <input formControlName="email" class="form-control mb-2" placeholder="Email">
+              </div>
+              <div class="col-md-3">
+                <input formControlName="adresse" class="form-control mb-2" placeholder="Adresse">
+              </div>
+              <div class="col-md-1">
+                <button type="button" class="btn btn-success" (click)="ajouterClient()"><i class="bi bi-check"></i></button>
+              </div>
             </div>
-            <div class="tab-pane fade" id="pills-disabled" role="tabpanel" aria-labelledby="pills-disabled-tab" tabindex="0">Il s'agit d'un espace réservé au contenu associé à l'onglet Accueil . Cliquer sur un autre onglet fera basculer la visibilité de celui-ci pour le suivant. L'onglet JavaScript échange les classes pour contrôler la visibilité et le style du contenu. Vous pouvez l'utiliser avec des onglets, des pilules et toute autre .navnavigation optimisée.</div>
-          </div>
+          </form>
+        </div>
+      </div>
     </div>
+  </div>
+
+
+  <!-- Ajout des produits au panier (caché par défaut) -->
+  <div *ngIf="showPanierSection" class="card mb-3">
+    <div class="card-header">Ajout des Produits</div>
+    <div class="card-body">
+      <div class="mt-3 d-flex justify-content-center">
+        <h2>🛒 Panier</h2>
+      </div>
+
+      <div class="bg-secondary d-flex justify-content-between align-items-center mt-1 p-2 text-white">
+        <span>📌 Panier en cours...</span>
+        <span>📅 Heure: {{ currentTime }}</span>
+        <span>💰 Total panier : <strong>{{ totalPanier }} F CFA</strong></span>
+        <span>💰 Total à payer : <strong>{{ totalAPayer }} F CFA</strong></span>
+      </div>
+
+      <form [formGroup]="panierForm" (ngSubmit)="enregistrerBon()">
+        <div class="row mt-2">
+          <div class="col-md-3 searchChamp">
+            <input type="text" class="form-control" [(ngModel)]="searchInput"
+                   placeholder="Rechercher un produit..."
+                   (input)="filterProduits()" [ngModelOptions]="{standalone: true}">
+            <ul *ngIf="filteredProduits.length > 0 && searchInput" class="list-group position-absolute" style="width: 230px;">
+              <li *ngFor="let prod of filteredProduits" class="list-group-item list-group-item-action bg-info"
+                  (click)="selectProduit(prod)">
+                {{ prod.designation }}
+              </li>
+            </ul>
+          </div>
+
+          <div class="col-md-2">
+            <input type="number" class="form-control" formControlName="remise" placeholder="Remise">
+          </div>
+          <!-- <div class="col-md-2">
+            <input type="number" class="form-control" formControlName="avance" placeholder="Avancement">
+          </div> -->
+          <div class="col-md-2 d-flex align-items-center">
+            <input type="checkbox" class="form-check-input me-2" formControlName="inclureTVA" (change)="toggleTVA($event)">
+            <label class="form-check-label">Inclure TVA</label>
+          </div>
+          <div *ngIf="tvaInclu" class="col-md-2">
+            <select class="form-select" formControlName="tauxTVA" (change)="updateTVA()">
+              <option *ngFor="let taux of tauxTVAList" [value]="taux">{{ taux }}%</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <select class="form-select" formControlName="typePaiement">
+              <option value="" disabled selected>Mode de paiement</option>
+              <option value="caisse">Caisse</option>
+              <option value="mobile money">Mobile Money</option>
+              <option value="banque">Banque</option>
+              <option value="bon">Bon</option>
+            </select>
+          </div>
+
+          <!-- <div class="col-md-2">
+            <button *ngIf="!panierDisabled" type="button" class="btn btn-success me-2" (click)="disablePanier()">
+              <i class="bi bi-check"></i>
+            </button>
+            <button *ngIf="!panierDisabled" type="button" class="btn btn-danger me-2" (click)="resetPanier()">
+              <i class="bi bi-trash"></i>
+            </button>
+            <button *ngIf="panierDisabled" type="button" class="btn btn-warning" (click)="enablePanier()">
+              <i class="bi bi-pencil"></i>
+            </button>
+          </div> -->
+        </div>
+
+        <!-- Tableau du panier -->
+        <table class="table mt-2">
+          <thead>
+            <tr>
+              <th>Produit</th>
+              <th>Unité Stock</th>
+              <th>Quantité</th>
+              <th>Prix Unitaire</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody formArrayName="panier">
+            <tr *ngIf="panierArray.length === 0">
+              <td colspan="5" class="text-center text-muted">🛒 Panier vide</td>
+            </tr>
+            <tr *ngFor="let article of panierArray.controls; let i = index" [formGroupName]="i">
+              <td>
+                <input type="text" class="form-control" formControlName="produit" readonly>
+              </td>
+              <td>
+                <input type="text" class="form-control" formControlName="uniteStock" readonly>
+              </td>
+              <td>
+                <input type="number" class="form-control" formControlName="quantite">
+              </td>
+              <td>
+                <input type="number" class="form-control" formControlName="prixUnitaire">
+              </td>
+              <td>
+                <button type="button" class="btn btn-danger" (click)="removeArticle(i)">🗑</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+          <!-- Bouton de soumission -->
+          <div class="d-flex justify-content-center">
+            <button type="submit" class="btn btn-success w-25 me-3">💾 Enregistrer</button>
+            <button type="reset" class="btn btn-warning w-25"> ❌  Annuler</button>
+          </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Transactions journalières -->
+  <!-- <div class="card mb-3">
+    <div class="card-header">Transactions Journalières</div>
+    <ul class="list-group">
+      <li *ngFor="let transaction of paniers" class="list-group-item">
+        Vente #{{ transaction.id }} - Total: {{ transaction.totalTTC }} FCFA
+      </li>
+    </ul>
+  </div> -->
+
+  <!-- Transactions journalières -->
+<div class="card mb-3">
+  <div class="card-header">Transactions Journalières</div>
+  <ul class="list-group">
+    <li *ngFor="let transaction of paniers" class="list-group-item">
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex justify-content-between">
+          <span class="me-3">Vente Nº : <b>{{ transaction.id }}</b></span>
+          <span class="me-3">Date et heure : <b>{{ transaction.dateCreation | date: 'dd/mm/yyyy à HH:MM' }}</b></span>
+          <span class="me-3">Client :<b>{{ transaction.clientId }}</b></span>
+          <span>Total: <b>{{ transaction.totalTTC }} FCFA</b></span>
+        </div>
+
+        <div>
+          <button class="btn btn-info btn-sm me-2" (click)="afficherDetails(transaction)">
+            📝 Détails
+          </button>
+          <button *ngIf="transaction.statut !== 'ANNULE'" class="btn btn-danger btn-sm me-2" (click)="annulerPanier(transaction)">
+            🔄 Retourner
+          </button>
+          <button class="btn btn-success btn-sm" (click)="imprimerTicket(transaction)">
+            🖨 Imprimer
+          </button>
+        </div>
+      </div>
+
+      <!-- Affichage des détails du panier -->
+      <div *ngIf="transaction.detailsVisible" class="mt-3 p-3 border rounded bg-light">
+        <h5>Détails du panier</h5>
+        <p><strong>Date :</strong> {{ transaction.dateCreation | date: 'dd/MM/yyyy HH:mm' }}</p>
+        <p><strong>Statut :</strong> {{ transaction.statut }}</p>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Produit</th>
+              <th>Quantité</th>
+              <th>Prix Unitaire</th>
+              <th>Prix Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let article of transaction.articles">
+              <td>{{ article.designation }}</td>
+              <td>{{ article.quantite }}</td>
+              <td>{{ article.prixVenteUnitaire }} F CFA</td>
+              <td>{{ article.prixTotalVente }} F CFA</td>
+            </tr>
+          </tbody>
+        </table>
+        <p><strong>Total HT :</strong> {{ transaction.totalHT }} F CFA</p>
+        <p><strong>TVA (18%) :</strong> {{ transaction.tva }} F CFA</p>
+        <p><strong>Total TTC :</strong> {{ transaction.totalTTC }} F CFA</p>
+      </div>
+    </li>
+  </ul>
+</div>
+
+
 </div>

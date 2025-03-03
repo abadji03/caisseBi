@@ -9,7 +9,7 @@ export class Client {
   email?: string;
   telephone?: string;
   adresse!: string;
-  dateCreation: Date = new Date();
+  dateCreation?: Date ;
   dateMiseAJour?: Date;
   solde: number = 0;
   estEmploye: boolean = false;

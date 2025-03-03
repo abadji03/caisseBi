@@ -428,64 +428,101 @@
                     <tr *ngIf="selectedBonIndexO === i">
                       <td colspan="6">
                         <div *ngIf="getBonByOperation(operation) as bon">
-                          <div class="d-flex justify-content-end mb-2 mt-4">
-                            <div class="d-flex justify-content-start align-items-center mb-2 me-5">
+                          <div class="row mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h2 class="me-3">Détails du bon Nº:<b>{{ bon.numero }}</b></h2>
+                              <div class="">
                               <!-- Bouton Valider (si bon livré mais pas encore validé) -->
-                              <button *ngIf="operation.type === 'LIVRAISON' && bon.statut === 'livré'"
+                              <!-- <button *ngIf="operation.type === 'LIVRAISON' && bon.statut === 'livré'"
+                                      class="btn btn-success me-2"
+                                      (click)="validerBon(bon)">
+                                ✅ Valider
+                              </button> -->
+                              <button
                                       class="btn btn-success me-2"
                                       (click)="validerBon(bon)">
                                 ✅ Valider
                               </button>
 
                               <!-- Modifier uniquement si brouillon -->
-                              <button *ngIf="operation.type === 'COMMANDE' && bon.statut === 'brouillon'"
+                              <!-- <button *ngIf="operation.type === 'COMMANDE' && bon.statut === 'brouillon'"
+                                      class="btn btn-primary me-2"
+                                      (click)="modifierBon(bon)">
+                                ✏️ Modifier
+                              </button> -->
+                              <button
                                       class="btn btn-primary me-2"
                                       (click)="modifierBon(bon)">
                                 ✏️ Modifier
                               </button>
 
                               <!-- Supprimer uniquement si brouillon ou commandé -->
-                              <button *ngIf="bon.statut === 'brouillon' || bon.statut === 'commandé'"
+                              <!-- <button *ngIf="bon.statut === 'brouillon' || bon.statut === 'commandé'"
+                                      class="btn btn-danger me-2"
+                                      (click)="supprimerBon(bon)">
+                                🗑 Supprimer
+                              </button> -->
+                              <button
                                       class="btn btn-danger me-2"
                                       (click)="supprimerBon(bon)">
                                 🗑 Supprimer
                               </button>
 
                               <!-- Annuler uniquement si validé mais pas facturé -->
-                              <button *ngIf="bon.statut === 'validé' && !bon.facture"
+                              <!-- <button *ngIf="bon.statut === 'validé' && !bon.facture"
+                                      class="btn btn-warning me-2"
+                                      (click)="annulerBon(bon)">
+                                ❌ Annuler
+                              </button> -->
+                              <button
                                       class="btn btn-warning me-2"
                                       (click)="annulerBon(bon)">
                                 ❌ Annuler
                               </button>
 
                               <!-- Facturer uniquement si validé et non facturé -->
-                              <button *ngIf="bon.statut === 'validé' && !bon.facture"
+                              <!-- <button *ngIf="bon.statut === 'validé' && !bon.facture"
+                                      class="btn btn-success me-2"
+                                      (click)="facturerBon(bon)">
+                                📄 Facturer
+                              </button> -->
+                              <button
                                       class="btn btn-success me-2"
                                       (click)="facturerBon(bon)">
                                 📄 Facturer
                               </button>
 
                               <!-- Suivi Paiement uniquement si facturé mais pas payé -->
+                              <!-- <button *ngIf="bon.facture && !bon.paye"
+                                      class="btn btn-primary me-2"
+                                      (click)="suiviPaiement(bon)">
+                                💰 Suivi Paiement
+                              </button> -->
                               <button *ngIf="bon.facture && !bon.paye"
                                       class="btn btn-primary me-2"
                                       (click)="suiviPaiement(bon)">
                                 💰 Suivi Paiement
                               </button>
+                              <!-- Bouton Impression -->
+                              <button class="btn btn-secondary me-2" (click)="imprimerBon(bon)">
+                                🖨️ Imprimer
+                              </button>
+                            </div>
                             </div>
 
-                            <div *ngIf="operation.type !== 'VERSEMENT'" class="d-flex justify-content-start align-items-center mb-2 me-5">
-                              <span class="me-3">💰 Total bon: <strong>{{ bon.montantTotal }} F CFA</strong></span>
-                              <span>💰 Total des produits: <strong>{{ bon.panier?.totalHT }} F CFA</strong></span>
+                            <div class="row mt-3">
+                              <div *ngIf="operation.type !== 'VERSEMENT'" class="d-flex justify-content-start align-items-center mb-2 me-5">
+                                <span class="me-3">💰 Total bon: <strong>{{ bon.montantTotal }} F CFA</strong></span>
+                                <span>💰 Total des produits: <strong>{{ bon.panier?.totalHT }} F CFA</strong></span>
+                              </div>
                             </div>
 
-                            <!-- Bouton Impression -->
-                            <button class="btn btn-secondary me-2" (click)="imprimerBon(bon)">
-                              🖨️ Imprimer
-                            </button>
-                          </div>
+                        </div>
 
-                          <!-- Tableau des produits -->
-                          <table class="table">
+                        <!-- Tableau des produits -->
+                        <h3>Produits associés</h3>
+
+                        <table class="table">
                             <thead>
                               <tr>
                                 <th>Produit</th>

@@ -1,12 +1,29 @@
 import { Injectable } from '@angular/core';
 import {Observable, of } from 'rxjs';
+import { Panier } from '../modeles/panier.model';
+import { HttpClient } from '@angular/common/http';
 
 @Injectable({
   providedIn: 'root'
 })
 export class VentesService {
 
-  constructor() { }
+  private apiUrl = 'http://localhost:3000/api/ventes';
+
+  constructor(private http: HttpClient) {}
+
+  enregistrerVente(panier: Panier): Observable<any> {
+    return this.http.post<any>(this.apiUrl, panier);
+  }
+
+  getTotalCaisse(): Observable<number> {
+    return this.http.get<number>(`${this.apiUrl}/total-caisse`);
+  }
+
+  getTransactionsJournalieres(): Observable<Panier[]> {
+    return this.http.get<Panier[]>(`${this.apiUrl}/transactions`);
+  }
+
 
   // Exemple de données statiques ou récupérées d'une API
   getSalesHistory(): Observable<any> {
@@ -39,4 +56,5 @@ export class VentesService {
       ]
     });
   }
+
 }
