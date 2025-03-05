@@ -358,8 +358,12 @@ export class ClientsComponent implements OnInit {
     // Gestion de la recherche
     onSearchChange(): void {
       this.filteredClients = this.clients.filter(client =>
-        client.nomComplet.toLowerCase().includes(this.searchQuery.toLowerCase())
+        client.nomComplet.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+        client.adresse.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+        client.telephone?.toString().toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+        client.solde.toString().toLowerCase().includes(this.searchQuery.toLowerCase())
       );
+      this.currentPageClient =1;
     }
 
     // Ouvrir le modal d'ajout ou modification
@@ -572,10 +576,15 @@ export class ClientsComponent implements OnInit {
       this.bonForm.get('motifsRetour')?.updateValueAndValidity();
     } */
 
-  // Filtrer les bons
+  // Filtrer les bon
   onSearchChangeBon() {
     //if (this.selectedClient) {
-      this.filteredBons = this.allBons.filter(bon => bon.numero.includes(this.searchBonQuery) || bon.description.includes(this.searchBonQuery));
+      this.filteredBons = this.allBons.filter(bon => bon.numero.toLowerCase().includes(this.searchBonQuery.toLowerCase()) ||
+      bon.type.toLowerCase().includes(this.searchBonQuery.toLowerCase()) ||
+      bon.montantTotal.toString().toLowerCase().includes(this.searchBonQuery.toLowerCase())//||
+      //this.getFournisseurByOperation(bon).toLowerCase().includes(this.searchBonQuery)
+     );
+     this.currentPageBon =  1;
     //}
     //this.updateFilteredBons();
 
@@ -595,8 +604,15 @@ export class ClientsComponent implements OnInit {
   onSearchChangePaiement() {
     //this.updateFilteredPaiements();
     //if (this.selectedClient) {
-      this.filteredPaiements = this.allPaiements.filter(paiement => paiement.description.includes(this.searchPaiementQuery));
+      this.filteredPaiements = this.allPaiements.filter(paiement => paiement.description.toLocaleUpperCase().includes(this.searchPaiementQuery.toLowerCase()) ||
+      paiement.methodePaiement.toLowerCase().includes(this.searchPaiementQuery.toLowerCase()) ||
+      paiement.montant.toString().toLowerCase().includes(this.searchPaiementQuery.toLowerCase()) ||
+      new Date(paiement.date).toLocaleDateString().includes(this.searchPaiementQuery.toLowerCase()) //||
+      //this.getFournisseurByOperation(paiement).includes(this.searchPaiementQuery.toLowerCase())
+    );
+    this.currentPagePaiement = 1;
     //}
+
   }
 
 

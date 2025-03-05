@@ -12,7 +12,7 @@ import { ToastrService } from 'ngx-toastr';
 @Component({
   selector: 'app-categorie-produits',
   standalone: true,
-  imports: [CommonModule, FooterUserComponent, MatIconModule, CarouselModule],
+  imports: [CommonModule, MatIconModule, CarouselModule],
   templateUrl: './categorie-produits.component.html',
   styleUrl: './categorie-produits.component.css'
 })

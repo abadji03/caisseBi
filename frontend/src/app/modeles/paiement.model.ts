@@ -9,12 +9,16 @@
     avance ?:number;
     reste?:number;
     compte:'Bon'| 'Caisse'| 'Mobile Money'| 'Banque' = 'Caisse';
-    date?: Date;
+    date: Date = new Date();
     methodePaiement!: string;
     clientId?: number;
+    fournisseurID?: number;
     fournisseurId?: number; // Clé étrangère vers Fournisseur
     bonId?: number;
     dateMiseAJour?: Date;
+    panierId?:number;
+    typePaiement: 'fournisseur'| 'client' = 'client';
+
     fichier?:string;
 
     constructor(data?: Partial<Paiement>) {

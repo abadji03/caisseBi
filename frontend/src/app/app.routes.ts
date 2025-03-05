@@ -29,6 +29,7 @@ import { StockInventairesComponent } from './pages/user/stock-inventaires/stock-
 import { MagazinComponent } from './pages/user/magazin/magazin.component';
 import { GerantComponent } from './pages/user/gerant/gerant.component';
 import { CatalogueProduitComponent } from './pages/user/catalogue-produit/catalogue-produit.component';
+import { FinanceComponent } from './pages/user/finance/finance.component';
 
 export const routes: Routes = [
     {
@@ -111,6 +112,10 @@ export const routes: Routes = [
             {
                 path:'stock',
                 component:StockInventairesComponent
+            },
+            {
+                path:'finance',
+                component:FinanceComponent
             },
             {
                 path:'overview',

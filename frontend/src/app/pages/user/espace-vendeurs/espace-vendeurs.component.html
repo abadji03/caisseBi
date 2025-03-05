@@ -72,12 +72,35 @@
               </div>
             </div>
           </div>
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button no-arrow" data-bs-toggle="collapse" data-bs-target="#structure" aria-expanded="false" aria-controls="stockSubMenu">
+                <i class="bi bi-diagram-3"></i>
+                <span *ngIf="!isSidebarCollapsed">Structure/Entreprise</span>
+              </button>
+            </h2>
+            <div id="structure" class="accordion-collapse collapse" data-bs-parent="#accordionSidebar">
+              <div class="accordion-body">
+                <button class="nav-link" routerLink="/espace-vendeurs/magasins" routerLinkActive="active">Magasins</button>
+                <button class="nav-link" routerLink="/espace-vendeurs/gerant" routerLinkActive="active">Personnel</button>
+              </div>
+            </div>
+          </div>
 
           <div class="accordion-item">
             <h2 class="accordion-header">
               <button class="accordion-button no-arrow" routerLink="/espace-vendeurs/fournisseurs" routerLinkActive="active">
                 <i class="bi bi-truck"></i>
                 <span *ngIf="!isSidebarCollapsed">Fournisseurs</span>
+              </button>
+            </h2>
+          </div>
+
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button no-arrow" routerLink="/espace-vendeurs/finance" routerLinkActive="active">
+                <i class="bi bi-wallet"></i>
+                <span *ngIf="!isSidebarCollapsed">Finance</span>
               </button>
             </h2>
           </div>
