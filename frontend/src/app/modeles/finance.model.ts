@@ -7,6 +7,7 @@ export class Depense {
     description: string = "";
     paymentMode!: string;
     receipt?: string; // URL du fichier justificatif
+    magasinId?:number;
 
     constructor(data?: Partial<Depense>) {
       Object.assign(this, data);
@@ -21,6 +22,7 @@ export class Depense {
     description: string = "";
     paymentMode!: string;
     receipt?: string; // URL du fichier justificatif
+    magasinId?:number;
 
     constructor(data?: Partial<Recette>) {
       Object.assign(this, data);

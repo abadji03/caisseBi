@@ -18,6 +18,7 @@
     dateMiseAJour?: Date;
     panierId?:number;
     typePaiement: 'fournisseur'| 'client' = 'client';
+    magasinId?:number;
 
     fichier?:string;
 

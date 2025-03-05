@@ -12,6 +12,7 @@ export class Panier {
   dateCreation: Date = new Date();
   dateMiseAJour: Date = new Date();
   detailsVisible: boolean = false; // Permet de gérer l'affichage des détails
+  magasinId?:number;
   constructor(data?: Partial<Panier>) {
     Object.assign(this, data);
     this.calculerTotals();

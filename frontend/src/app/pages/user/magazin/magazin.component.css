@@ -1,20 +1,34 @@
-.container {
-    max-width: 900px;
-  }
+/* Style général des onglets */
+.nav-tabs .nav-link {
+  border-radius: 0.5rem;
+  padding: 10px 20px;
+  font-weight: 600;
+  transition: all 0.3s ease-in-out;
+  background-color: #f8f9fa; /* Couleur de fond claire */
+  color: #6c757d; /* Couleur du texte par défaut */
+  border: 1px solid transparent;
+}
 
-  .nav-tabs .nav-link {
-    cursor: pointer;
-  }
+/* Effet au survol (hover) */
+.nav-tabs .nav-link:hover {
+  background-color: #e9ecef; /* Fond léger au survol */
+  color: black; /* Texte bleu au survol */
+}
 
-  .table th, .table td {
-    text-align: center;
-  }
+/* Onglet actif */
+.nav-tabs .nav-link.active {
+  color: #fff; /* Texte blanc */
+  background-color:black; /* Couleur de fond bleu pour l'onglet actif */
+  border-color: black; /* Bordure bleue pour l'onglet actif */
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.4); /* Ombre portée subtile */
+}
 
-  form {
-    max-width: 500px;
-    margin: 0 auto;
-  }
+/* Espacement entre les onglets */
+.nav-tabs {
+  margin-bottom: 1rem; /* Espacement en dessous des onglets */
+}
 
-  button {
-    width: 100%;
-  }
+/* Style pour les titres des onglets (ajout de padding pour plus de lisibilité) */
+.nav-tabs .nav-link {
+  padding: 12px 20px;
+}
