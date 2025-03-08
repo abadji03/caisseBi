@@ -113,8 +113,8 @@ export class CaisseComponent implements OnInit {
     ];
 
     this.produits = [
-      { id: 1, designation: 'Lait Caillé', famille: 'Laitage', fournisseur: 'Lait Sénégal', magasin: 'Stock Principal', quantite: 100, unite: 'L', prixVenteUnitaire: 500, prixTotalVente: 500, description: 'Boisson lactée', codeBarre: '123456' },
-      { id: 2, designation: 'Thiakri', famille: 'Céréales', fournisseur: 'Entreprise Locale', magasin: 'Stock Principal', quantite: 50, unite: 'Kg', prixVenteUnitaire: 800, prixTotalVente: 800, description: 'Couscous sucré', codeBarre: '7891011' }
+      { id: 1, designation: 'Lait Caillé', famille: 'Laitage', fournisseurId: 1, magasinId: 1, quantite: 100, unite: 'L', prixVenteUnitaire: 500, prixTotalVente: 500, description: 'Boisson lactée', codeBarre: '123456' },
+      { id: 2, designation: 'Thiakri', famille: 'Céréales', fournisseurId: 2, magasinId: 2, quantite: 50, unite: 'Kg', prixVenteUnitaire: 800, prixTotalVente: 800, description: 'Couscous sucré', codeBarre: '7891011' }
     ];
   }
 
@@ -145,7 +145,7 @@ export class CaisseComponent implements OnInit {
 
   /** Filtrer les produits */
   filterProduits() {
-    this.filteredProduits = this.produits.filter(prod => prod.designation.toLowerCase().includes(this.searchInput.toLowerCase()));
+    this.filteredProduits = this.produits.filter(prod => prod.designation?.toLowerCase().includes(this.searchInput.toLowerCase()));
   }
 
   /** Sélectionner un produit */

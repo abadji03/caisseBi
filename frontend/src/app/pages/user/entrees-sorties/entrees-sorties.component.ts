@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
-import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Entree, Sortie } from '../../../modeles/entrees-sorties.model';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AnalyseEcart, MouvementsStock, Reconciliation } from '../../../modeles/entrees-sorties.model';
 @Component({
   selector: 'app-entrees-sorties',
   standalone:true,
@@ -11,226 +11,429 @@ import { Entree, Sortie } from '../../../modeles/entrees-sorties.model';
 })
 export class EntreesSortiesComponent implements OnInit {
 
+  pageSize: number = 5;
 
-  searchTextEntree: string = '';
-  currentPageEntree: number = 1;
-  searchTextSortie: string = '';
-  currentPageSortie: number = 1;
-  pageSize: number = 2;
-
-  entreeForm: FormGroup;
-  sortieForm: FormGroup;
-
-  entree : Entree = {
-    id: 0,
-    ref: '',
-    produit: 0,
-    quantite: 0,
-    prix_achatUnite: 0,
-    prix_achat_total: 0,
-    fournisseur: 0,
-    type_entree: '',
-    uniteStock: '',
-    nombre_articles: 0,
-    description: '',
-    dateEntree: new Date(),
-    datereation: new Date(),
-    heureCreation: new Date()
-  };
-
-  sortie : Sortie = {
-    id: 0,
-    ref: '',
-    produit: 0,
-    quantite: 0,
-    prix_venteUnite: 0,
-    prix_vente_total: 0,
-    fournisseur: 0,
-    type_sortie: '',
-    uniteStock: '',
-    nombre_articles: 0,
-    description: '',
-    dateSortie: new Date(),
-    dateCreationSortie: new Date(),
-    heureCreationSortie: new Date()
-  };
+  // Formulaire unique pour les mouvements de stock
+  mouvementForm: FormGroup;
+  mouvements: MouvementsStock[] = [];
+  filteredMouvements: MouvementsStock[] = [];
+  filteredEcarts: AnalyseEcart[] = [];
+  searchTextMouvement: string = '';
+  searchTextEcart:string = '';
+  currentPageMouvement: number = 1;
+  currentPageEcarts: number = 1;
+  currentPageReconcialiation: number = 1;
 
 
-  // Définir les tableaux avec les types appropriés
-  entrees: Entree[] = [];
-  sorties: Sortie[] = [];
+  // Ajoutez une variable pour gérer l'état du formulaire
+  isEditing = false;
+  currentMouvement: MouvementsStock | null = null; // Pour stocker le mouvement à éditer
 
 
-  // Modèle pour la réconciliation des flux de trésorerie
-  reconciliation = {
-    date: '',
-    montant: 0,
-    type: 'entrée' // 'entrée' ou 'sortie'
-  };
+  reconciliations: Reconciliation[] = [];
+  searchTextReconciliation: string = '';
+  filteredReconciliations: any[] = [];
+  analysesEcarts: AnalyseEcart[] = [];
+  reconciliationForm!: FormGroup;
+  isEditingReconciliation = false;
+  selectedReconciliation: Reconciliation | null = null;
+  historiqueSelectionne: { date: Date; ecart: number; note?: string }[] = [];
 
-   // Modèle pour l'analyse des écarts
-   analyse = {
-    date: '',
-    montant: 0,
-    type: 'positif' // 'positif' ou 'négatif'
-  };
-  constructor() {
+  detailsSelectionnes: { date: Date; ecart: number; corrige?: boolean }[] = [];
+
+
+
+
+  constructor(private cdr: ChangeDetectorRef, private fb: FormBuilder) {
     // Initialisation des formulaires réactifs
-    this.entreeForm = new FormGroup({
-      produit: new FormControl('', Validators.required),
+    this.mouvementForm = new FormGroup({
+      produitId: new FormControl('', Validators.required),
       quantite: new FormControl(0, [Validators.required, Validators.min(1)]),
       uniteStock: new FormControl('', Validators.required),
+      typeMouvement: new FormControl('', Validators.required), // 'entree' ou 'sortie'
       description: new FormControl('', Validators.required),
     });
 
-    this.sortieForm = new FormGroup({
-      produit: new FormControl('', Validators.required),
-      quantite: new FormControl(0, [Validators.required, Validators.min(1)]),
-      uniteStock: new FormControl('', Validators.required),
-      description: new FormControl('', Validators.required),
+    this.reconciliationForm = this.fb.group({
+      produitId: ['', Validators.required],
+      stockTheorique: ['', Validators.required],
+      stockPhysique: ['', Validators.required],
+      note: [''], // ✅ Champ optionnel
     });
+
   }
   ngOnInit() {
-    this.entrees =  [
-      new Entree(1, "REF123", 101, 50, 100, 5000, 200, "achat", "pièce", 100, "Commande d'approvisionnement", new Date('2025-01-20'), new Date('2025-01-20'), new Date('2025-01-20T10:30:00')),
-      new Entree(2, "REF124", 102, 20, 150, 3000, 150, "retour fournisseur", "carton", 50, "Retour de marchandises défectueuses", new Date('2025-01-21'), new Date('2025-01-21'), new Date('2025-01-21T11:00:00')),
-      new Entree(3, "REF125", 103, 100, 80, 8000, 180, "achat", "pièce", 200, "Réapprovisionnement des pièces détachées", new Date('2025-01-22'), new Date('2025-01-22'), new Date('2025-01-22T14:45:00')),
-      new Entree(4, "REF126", 104, 150, 75, 11250, 160, "achat", "pièce", 300, "Achat en gros pour stock", new Date('2025-01-23'), new Date('2025-01-23'), new Date('2025-01-23T16:00:00')),
-      new Entree(5, "REF127", 105, 75, 120, 9000, 170, "retour fournisseur", "boîte", 50, "Retour de produits non conformes", new Date('2025-01-24'), new Date('2025-01-24'), new Date('2025-01-24T08:30:00')),
+
+    this.mouvements = [
+      new MouvementsStock({ id: 1, ref: "REF123", produitId: 101, quantite: 50, prixUnitaire: 100, prixTotal: 5000, acteurId: 200, typeMouvement: "Entree", uniteStock: "pièce", nombreArticles: 100, description: "Commande d'approvisionnement", dateMouvement: new Date('2025-01-20'), dateCreation: new Date('2025-01-20'), heureCreation: new Date('2025-01-20T10:30:00') }),
+      new MouvementsStock({ id: 2, ref: "REF201", produitId: 201, quantite: 30, prixUnitaire: 200, prixTotal: 6000, acteurId: 250, typeMouvement: "Sortie", uniteStock: "pièce", nombreArticles: 60, description: "Vente de produits électroniques", dateMouvement: new Date('2025-01-20'), dateCreation: new Date('2025-01-20'), heureCreation: new Date('2025-01-20T11:00:00') }),
+      new MouvementsStock({ id: 3, ref: "REF305", produitId: 102, quantite: 20, prixUnitaire: 150, prixTotal: 3000, acteurId: 300, typeMouvement: "Entree", uniteStock: "carton", nombreArticles: 40, description: "Réception de marchandise", dateMouvement: new Date('2025-01-22'), dateCreation: new Date('2025-01-22'), heureCreation: new Date('2025-01-22T09:15:00') }),
+      new MouvementsStock({ id: 4, ref: "REF409", produitId: 202, quantite: 15, prixUnitaire: 500, prixTotal: 7500, acteurId: 350, typeMouvement: "Sortie", uniteStock: "pièce", nombreArticles: 30, description: "Livraison à un client", dateMouvement: new Date('2025-01-23'), dateCreation: new Date('2025-01-23'), heureCreation: new Date('2025-01-23T14:45:00') }),
+      new MouvementsStock({ id: 5, ref: "REF517", produitId: 103, quantite: 60, prixUnitaire: 80, prixTotal: 4800, acteurId: 400, typeMouvement: "Entree", uniteStock: "sachet", nombreArticles: 120, description: "Stock réapprovisionné", dateMouvement: new Date('2025-01-25'), dateCreation: new Date('2025-01-25'), heureCreation: new Date('2025-01-25T12:20:00') }),
+      new MouvementsStock({ id: 6, ref: "REF628", produitId: 203, quantite: 25, prixUnitaire: 350, prixTotal: 8750, acteurId: 450, typeMouvement: "Sortie", uniteStock: "pièce", nombreArticles: 50, description: "Vente en gros", dateMouvement: new Date('2025-01-26'), dateCreation: new Date('2025-01-26'), heureCreation: new Date('2025-01-26T16:10:00') }),
+      new MouvementsStock({ id: 7, ref: "REF731", produitId: 104, quantite: 10, prixUnitaire: 700, prixTotal: 7000, acteurId: 500, typeMouvement: "Entree", uniteStock: "unité", nombreArticles: 20, description: "Achat de matériel informatique", dateMouvement: new Date('2025-01-28'), dateCreation: new Date('2025-01-28'), heureCreation: new Date('2025-01-28T08:50:00') }),
+      new MouvementsStock({ id: 8, ref: "REF846", produitId: 204, quantite: 18, prixUnitaire: 250, prixTotal: 4500, acteurId: 550, typeMouvement: "Sortie", uniteStock: "paquet", nombreArticles: 36, description: "Expédition vers un magasin", dateMouvement: new Date('2025-01-29'), dateCreation: new Date('2025-01-29'), heureCreation: new Date('2025-01-29T13:30:00') }),
+      new MouvementsStock({ id: 9, ref: "REF952", produitId: 105, quantite: 40, prixUnitaire: 90, prixTotal: 3600, acteurId: 600, typeMouvement: "Entree", uniteStock: "lot", nombreArticles: 80, description: "Approvisionnement de stock", dateMouvement: new Date('2025-01-30'), dateCreation: new Date('2025-01-30'), heureCreation: new Date('2025-01-30T15:05:00') }),
+      new MouvementsStock({ id: 10, ref: "REF1057", produitId: 205, quantite: 22, prixUnitaire: 450, prixTotal: 9900, acteurId: 650, typeMouvement: "Sortie", uniteStock: "pièce", nombreArticles: 44, description: "Vente directe à un client", dateMouvement: new Date('2025-02-01'), dateCreation: new Date('2025-02-01'), heureCreation: new Date('2025-02-01T11:40:00') }),
     ];
 
-    this.sorties = [
-      new Sortie(1, "REF201", 201, 30, 200, 6000, 250, "vente", "pièce", 60, "Vente de produits électroniques", new Date('2025-01-20'), new Date('2025-01-20'), new Date('2025-01-20T11:00:00')),
-      new Sortie(2, "REF202", 202, 15, 300, 4500, 260, "vente", "pièce", 30, "Vente au client ABC", new Date('2025-01-21'), new Date('2025-01-21'), new Date('2025-01-21T13:00:00')),
-      new Sortie(3, "REF203", 203, 50, 100, 5000, 270, "vente", "carton", 100, "Vente en gros à un distributeur", new Date('2025-01-22'), new Date('2025-01-22'), new Date('2025-01-22T15:00:00')),
-      new Sortie(4, "REF204", 204, 70, 120, 8400, 280, "retour client", "boîte", 40, "Retour de produits défectueux par le client XYZ", new Date('2025-01-23'), new Date('2025-01-23'), new Date('2025-01-23T09:30:00')),
-      new Sortie(5, "REF205", 205, 40, 250, 10000, 290, "vente", "pièce", 80, "Vente de matériel informatique à une entreprise", new Date('2025-01-24'), new Date('2025-01-24'), new Date('2025-01-24T17:00:00')),
+    this.reconciliations = [
+      new Reconciliation({
+        id: 1, produitId: 101, stockTheorique: 50, stockPhysique: 48, ecart: -2,
+        dateReconciliation: new Date('2025-02-10'), responsable: "Alioune Ndiaye",
+        note: "Erreur d'inventaire",
+        historiqueEcart: [
+          { date: new Date('2025-02-08'), ecart: -1, note: "Première vérification" },
+          { date: new Date('2025-02-09'), ecart: -2, note: "Correction appliquée" }
+        ]
+      }),
+      new Reconciliation({
+        id: 2, produitId: 201, stockTheorique: 30, stockPhysique: 32, ecart: 2,
+        dateReconciliation: new Date('2025-02-12'), responsable: "Fatou Diop",
+        note: "Erreur de comptage",
+        historiqueEcart: [
+          { date: new Date('2025-02-11'), ecart: 1, note: "Vérification initiale" },
+          { date: new Date('2025-02-12'), ecart: 2, note: "Correction appliquée" }
+        ]
+      }),
+      new Reconciliation({
+        id: 3, produitId: 102, stockTheorique: 20, stockPhysique: 18, ecart: -2,
+        dateReconciliation: new Date('2025-02-15'), responsable: "Moussa Sow",
+        note: "Produit détérioré",
+        historiqueEcart: [
+          { date: new Date('2025-02-14'), ecart: -1, note: "Écart détecté" },
+          { date: new Date('2025-02-15'), ecart: -2, note: "Vérification finale" }
+        ]
+      }),
+      new Reconciliation({
+        id: 4, produitId: 202, stockTheorique: 15, stockPhysique: 14, ecart: -1,
+        dateReconciliation: new Date('2025-02-18'), responsable: "Awa Ba",
+        note: "Manque de stock",
+        historiqueEcart: [
+          { date: new Date('2025-02-17'), ecart: -1, note: "Réduction confirmée" }
+        ]
+      }),
+      new Reconciliation({
+        id: 5, produitId: 103, stockTheorique: 60, stockPhysique: 60, ecart: 0,
+        dateReconciliation: new Date('2025-02-20'), responsable: "Cheikh Faye",
+        note: "Stock exact",
+        historiqueEcart: []
+      }),
+      new Reconciliation({
+        id: 6, produitId: 203, stockTheorique: 25, stockPhysique: 22, ecart: -3,
+        dateReconciliation: new Date('2025-02-22'), responsable: "Mariama Ndiaye",
+        note: "Erreur de saisie",
+        historiqueEcart: [
+          { date: new Date('2025-02-21'), ecart: -2, note: "Première vérification" },
+          { date: new Date('2025-02-22'), ecart: -3, note: "Correction finale" }
+        ]
+      }),
+      new Reconciliation({
+        id: 7, produitId: 104, stockTheorique: 10, stockPhysique: 9, ecart: -1,
+        dateReconciliation: new Date('2025-02-25'), responsable: "Boubacar Diallo",
+        note: "Produit manquant",
+        historiqueEcart: [
+          { date: new Date('2025-02-24'), ecart: -1, note: "Inventaire vérifié" }
+        ]
+      }),
+      new Reconciliation({
+        id: 8, produitId: 204, stockTheorique: 18, stockPhysique: 19, ecart: 1,
+        dateReconciliation: new Date('2025-02-28'), responsable: "Adama Sy",
+        note: "Erreur positive",
+        historiqueEcart: [
+          { date: new Date('2025-02-27'), ecart: 1, note: "Ajout détecté" }
+        ]
+      }),
+      new Reconciliation({
+        id: 9, produitId: 105, stockTheorique: 40, stockPhysique: 37, ecart: -3,
+        dateReconciliation: new Date('2025-03-01'), responsable: "Ousmane Fall",
+        note: "Stock mal compté",
+        historiqueEcart: [
+          { date: new Date('2025-02-29'), ecart: -2, note: "Première vérification" },
+          { date: new Date('2025-03-01'), ecart: -3, note: "Confirmation" }
+        ]
+      }),
+      new Reconciliation({
+        id: 10, produitId: 205, stockTheorique: 22, stockPhysique: 23, ecart: 1,
+        dateReconciliation: new Date('2025-03-03'), responsable: "Aissatou Kane",
+        note: "Correction après comptage",
+        historiqueEcart: [
+          { date: new Date('2025-03-02'), ecart: 1, note: "Ajout détecté" }
+        ]
+      })
     ];
+
+    this.filteredReconciliations = [...this.reconciliations];
+
+    this.filteredMouvements =[... this.mouvements];
+    this.updateTable('mouvement');
+    this.updateTable('reconciliation');
+    /* console.log('Taille analyseEcart:',this.analysesEcarts.length);
+    console.log('Taille filteredEcart:',this.filteredEcarts.length); */
+    this.chargerAnalysesEcarts();
+    this.updateTable('ecart');
+
   }
 
-  get filteredEntrees() {
-    return this.entrees.filter(item =>
-      item.ref.toLowerCase().includes(this.searchTextEntree.toLowerCase())
-    );
-  }
-  get filteredSorties() {
-    return this.sorties.filter(item =>
-      item.ref.toLowerCase().includes(this.searchTextSortie.toLowerCase())
-    );
+  voirHistorique(reconciliation: Reconciliation) {
+    this.historiqueSelectionne = reconciliation.historiqueEcart || [];
+    const historiqueModal = new (window as any).bootstrap.Modal(document.getElementById('historiqueModal')!);
+    historiqueModal.show();
   }
 
-  get paginatedEntrees() {
-    const startIndex = (this.currentPageEntree - 1) * this.pageSize;
-    return this.filteredEntrees.slice(startIndex, startIndex + this.pageSize);
+  voirDetails(analyse: any) {
+    this.detailsSelectionnes = analyse.ecartsDetail || []; // Charge les détails
+    const detailsModal = new (window as any).bootstrap.Modal(document.getElementById('detailsModal')!);
+    detailsModal.show();
   }
 
-  get paginatedSorties() {
-    const startIndex = (this.currentPageSortie - 1) * this.pageSize;
-    return this.filteredSorties.slice(startIndex, startIndex + this.pageSize);
+  // Filtrage des mouvements
+updateTable(table:string) {
+  if(table ==='mouvement'){
+    this.filteredMouvements = this.mouvements.slice((this.currentPageMouvement - 1) * 10, this.currentPageMouvement * 10);
+  }
+  else if(table === 'reconciliation') {
+    this.filteredReconciliations = this.reconciliations.slice((this.currentPageReconcialiation - 1) * 10, this.currentPageReconcialiation * 10);
+  }
+  else if(table === 'ecart') {
+    this.filteredEcarts = this.analysesEcarts.slice((this.currentPageEcarts - 1) * 10, this.currentPageEcarts * 10);
+  }
+  else {
+    console.log('Pas de choix correspondant à la valeur de table')
+  }
+}
+
+// Gestion de la recherche
+onSearchChange(): void {
+  this.filteredMouvements = this.mouvements.filter(mvt =>
+    mvt.ref.toLowerCase().includes(this.searchTextMouvement.toLowerCase()) ||
+    mvt.typeMouvement.toLowerCase().includes(this.searchTextMouvement.toLowerCase()) ||
+    mvt.quantite?.toString().toLowerCase().includes(this.searchTextMouvement.toLowerCase()) ||
+    new Date (mvt.dateMouvement).toLocaleDateString().toLowerCase().includes(this.searchTextMouvement.toLowerCase())
+  );
+  this.currentPageMouvement =1;
+}
+onSearchChangeEcart(): void {
+  this.filteredEcarts = this.analysesEcarts.filter(ecart =>
+    ecart.produitId.toString().toLowerCase().includes(this.searchTextEcart.toLowerCase()) ||
+    new Date(ecart.dernierEcart).toLocaleDateString().toLowerCase().includes(this.searchTextEcart.toLowerCase()) ||
+    ecart.nombreReconciliations?.toString().toLowerCase().includes(this.searchTextEcart.toLowerCase())
+  );
+  this.currentPageEcarts =1;
+}
+onSearchReconciliation(): void {
+  const searchText = this.searchTextReconciliation.toLowerCase();
+  this.filteredReconciliations = this.reconciliations.filter(reconciliation =>
+    reconciliation.produitId.toString().toLowerCase().includes(searchText) ||
+    reconciliation.stockTheorique.toString().toLowerCase().includes(searchText) ||
+    reconciliation.stockPhysique.toString().toLowerCase().includes(searchText)
+  );
+  this.currentPageReconcialiation = 1;
+}
+get getPaginatedMouvements() {
+  return this.paginate(this.filteredMouvements, this.currentPageMouvement, this.pageSize);
+}
+
+get getPaginatedReconciliations() {
+  return this.paginate(this.filteredReconciliations, this.currentPageReconcialiation, this.pageSize);
+}
+
+get getPaginatedEcarts() {
+  return this.paginate(this.filteredEcarts, this.currentPageEcarts, this.pageSize);
+}
+
+
+paginate(data: any[], currentPage: number, itemsPerPage: number) {
+  const start = (currentPage - 1) * itemsPerPage;
+  return data.slice(start, start + itemsPerPage);
+}
+
+onPageChange(page: number, table: string) {
+  if(table ==='mouvement'){
+    this.currentPageMouvement = page;
+  }
+  else if(table === 'reconciliation') {
+    this.currentPageReconcialiation = page;
+  }
+  else if(table === 'ecart') {
+    this.currentPageEcarts = page;
+  }
+  else {
+    console.log('Pas de choix correspondant à la valeur de table')
   }
 
-  onPageChangeEntree(page: number) {
-    this.currentPageEntree = page;
+}
+
+getTotalPages(list: any[]): number {
+  return Math.ceil(list.length / this.pageSize);
+}
+
+// Suppression d'un mouvement
+supprimerMouvement(mouvement: MouvementsStock) {
+  const index = this.mouvements.indexOf(mouvement);
+  if (index > -1) {
+    this.mouvements.splice(index, 1);
+  }
+  console.log("Mouvement supprimé", mouvement);
+}
+
+// Méthode pour charger les données d'un mouvement dans le formulaire
+modifierMouvement(mouvement: MouvementsStock) {
+  // Changer le mode édition et stocker le mouvement à éditer
+  this.isEditing = true;
+  this.currentMouvement = mouvement;
+
+  // Remplir le formulaire avec les données du mouvement sélectionné
+  this.mouvementForm.patchValue(mouvement)
+
+  const modalElement = document.getElementById("mouvementModal");
+      if (modalElement) {
+        const modal = new (window as any).bootstrap.Modal(modalElement);
+        modal.show();
+      }
+}
+
+onRowsPerPageChange(event: any) {
+  this.pageSize = Number(event.target.value);
+
+this.currentPageMouvement =1;
+this.currentPageReconcialiation = 1;
+this.currentPageEcarts = 1;
+
+  this.cdr.detectChanges(); // Forcer la mise à jour de la vue
+}
+
+// Méthode pour enregistrer ou mettre à jour un mouvement
+enregistrerMouvement() {
+  if (this.mouvementForm.invalid) {
+    return; // Ne pas soumettre si le formulaire est invalide
   }
 
-  onPageChangeSortie(page: number) {
-    this.currentPageSortie = page;
-  }
+  const mouvementData = this.mouvementForm.value;
 
-   // Méthode pour enregistrer une entrée
-   enregistrerEntree() {
-    if (this.entreeForm.valid) {
-      const newEntree: Entree = { ...this.entreeForm.value, dateEntree: new Date(), heureCreation: new Date() };
-      this.entrees.push(newEntree);
-      console.log("Entrée enregistrée:", newEntree);
-      this.entreeForm.reset();
-    }
-  }
-
-  // Méthode pour enregistrer une sortie
-  enregistrerSortie() {
-    if (this.sortieForm.valid) {
-      const newSortie: Sortie = { ...this.sortieForm.value, dateSortie: new Date(), heureCreationSortie: new Date() };
-      this.sorties.push(newSortie);
-      console.log("Sortie enregistrée:", newSortie);
-      this.sortieForm.reset();
-    }
-  }
-
-  modifierEntree(entree:any) {
-    console.log("Modifier l'entrée", entree);
-    // Implémenter la logique de modification
-  }
-
-  modifierSortie(sortie:any) {
-    console.log("Modifier la sortie", sortie);
-    // Implémenter la logique de modification
-  }
-
-  supprimerEntree(entree:any) {
-    const index = this.entrees.indexOf(entree);
-    if (index > -1) {
-      this.entrees.splice(index, 1);
-    }
-    console.log("Entrée supprimée", entree);
-  }
-
-  supprimerSortie(sortie:any) {
-    const index = this.sorties.indexOf(sortie);
-    if (index > -1) {
-      this.sorties.splice(index, 1);
-    }
-    console.log("Sortie supprimée", sortie);
-  }
-
-  resetEntree() {
-    this.entree = {
-      id: 0,
-    ref: '',
-    produit: 0,
-    quantite: 0,
-    prix_achatUnite: 0,
-    prix_achat_total: 0,
-    fournisseur: 0,
-    type_entree: '',
-    uniteStock: '',
-    nombre_articles: 0,
-    description: '',
-    dateEntree: new Date(),
-    datereation: new Date(),
-    heureCreation: new Date()
+  if (this.isEditing && this.currentMouvement) {
+    // Si nous sommes en mode édition, mettez à jour le mouvement
+    const updatedMouvement = {
+      ...this.currentMouvement,
+      ...mouvementData, // Mettre à jour les champs du mouvement avec les nouvelles valeurs
+      id: this.currentMouvement.id // Conserver l'id
     };
+    // Mettez à jour votre tableau ou effectuez la logique de mise à jour ici
+    this.mouvements = this.mouvements.map(mouvement =>
+      mouvement.id === updatedMouvement.id ? updatedMouvement : mouvement
+    );
+  } else {
+    // Si nous ne sommes pas en mode édition, ajoutez un nouveau mouvement
+    const newMouvement = new MouvementsStock({
+      ...mouvementData,
+      id: this.mouvements.length + 1, // ID généré (vous pouvez ajuster selon votre logique)
+      ref: 'REF' + (this.mouvements.length + 1), // Exemple de référence
+      dateMouvement: new Date(), // Date actuelle du mouvement
+      dateCreation: new Date(),
+      heureCreation: new Date()
+    });
+    this.mouvements.push(newMouvement);
   }
 
-  resetSortie() {
-    this.sortie = {
-      id: 0,
-      ref: '',
-      produit: 0,
-      quantite: 0,
-      prix_venteUnite: 0,
-      prix_vente_total: 0,
-      fournisseur: 0,
-      type_sortie: '',
-      uniteStock: '',
-      nombre_articles: 0,
-      description: '',
-      dateSortie: new Date(),
-      dateCreationSortie: new Date(),
-      heureCreationSortie: new Date()
-    };
+  // Réinitialiser le formulaire et revenir au mode ajout
+  this.mouvementForm.reset();
+  this.isEditing = false;
+  this.currentMouvement = null;
+}
+
+
+ajouterMouvement(data: any): void {
+  // Logique pour ajouter un mouvement
+  console.log('Ajout du mouvement', data);
+}
+
+mettreAJourMouvement(data: any): void {
+  // Logique pour mettre à jour un mouvement
+  console.log('Mise à jour du mouvement', data);
+  // Vous pouvez ici appeler un service pour effectuer la mise à jour
+}
+
+enregistrerReconciliation() {
+  if (this.reconciliationForm.invalid) return;
+
+  const { produitId, stockTheorique, stockPhysique } = this.reconciliationForm.value;
+
+  if (this.isEditingReconciliation && this.selectedReconciliation) {
+    this.selectedReconciliation.produitId = produitId;
+    this.selectedReconciliation.stockTheorique = stockTheorique;
+    this.selectedReconciliation.stockPhysique = stockPhysique;
+    this.selectedReconciliation.ecart = stockPhysique - stockTheorique;
+  }
+  else {
+    // ✅ Création correcte d'une instance de `Reconciliation`
+    const nouvelleReconciliation = new Reconciliation({
+      id: this.reconciliations.length + 1,
+      produitId,
+      stockTheorique,
+      stockPhysique,
+      dateReconciliation: new Date(),
+    });
+
+    this.reconciliations.push(nouvelleReconciliation);
   }
 
-  // Méthode pour gérer la réconciliation des flux
-  reconsilierFlux() {
-    console.log("Réconciliation des flux...");
-    // Implémentation de la logique de réconciliation
-  }
+  this.reconciliationForm.reset();
+  this.isEditingReconciliation = false;
+  this.chargerAnalysesEcarts();
+}
 
-  // Méthode pour analyser les écarts
-  analyserEcarts() {
-    console.log("Analyse des écarts...");
-    // Implémentation de la logique d'analyse des écarts
-  }
+modifierReconciliation(reconciliation: Reconciliation) {
+  this.isEditingReconciliation = true;
+  this.selectedReconciliation = reconciliation;
+  this.reconciliationForm.patchValue(reconciliation);
+
+  const modalElement = document.getElementById("reconciliationModal");
+      if (modalElement) {
+        const modal = new (window as any).bootstrap.Modal(modalElement);
+        modal.show();
+      }
+}
+
+supprimerReconciliation(reconciliation: Reconciliation) {
+  this.reconciliations = this.reconciliations.filter(r => r.id !== reconciliation.id);
+  this.chargerAnalysesEcarts();
+}
+
+chargerAnalysesEcarts() {
+  const analysesMap = new Map<number, AnalyseEcart>();
+
+  this.reconciliations.forEach(reconciliation => {
+    let existing = analysesMap.get(reconciliation.produitId);
+
+    if (existing) {
+      existing.ecartTotal += reconciliation.ecart;
+      existing.nombreReconciliations = (existing.nombreReconciliations ?? 0) + 1;
+      existing.ecartsDetail?.push({
+        date: reconciliation.dateReconciliation,
+        ecart: reconciliation.ecart,
+        corrige: false // Ajoute un statut par défaut (ajuster si nécessaire)
+      });
+      existing.dernierEcart = reconciliation.dateReconciliation;
+    } else {
+      // ✅ Créer une instance de `AnalyseEcart`
+      existing = new AnalyseEcart({
+        produitId: reconciliation.produitId,
+        ecartTotal: reconciliation.ecart,
+        dernierEcart: reconciliation.dateReconciliation,
+        nombreReconciliations: 1,
+        ecartsDetail: [{
+          date: reconciliation.dateReconciliation,
+          ecart: reconciliation.ecart,
+          corrige: false
+        }]
+      });
+
+      analysesMap.set(reconciliation.produitId, existing);
+    }
+  });
+
+  this.analysesEcarts = Array.from(analysesMap.values());
+}
+
 
 }

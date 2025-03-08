@@ -1,229 +1,395 @@
 <div class="container-fluid mt-4">
   <nav>
     <div class="nav nav-tabs" id="nav-tab" role="tablist">
-      <a class="nav-link active" id="nav-entrees-tab" data-bs-toggle="tab" href="#nav-entrees" role="tab" aria-controls="nav-entrees" aria-selected="true">Entrées</a>
-      <a class="nav-link" id="nav-sorties-tab" data-bs-toggle="tab" href="#nav-sorties" role="tab" aria-controls="nav-sorties" aria-selected="false">Sorties</a>
+      <a class="nav-link active" id="nav-entrees-tab" data-bs-toggle="tab" href="#nav-entrees" role="tab" aria-controls="nav-entrees" aria-selected="true">Mouvements stock</a>
       <a class="nav-link" id="nav-reconciliation-tab" data-bs-toggle="tab" href="#nav-reconciliation" role="tab" aria-controls="nav-reconciliation" aria-selected="false">Réconciliation</a>
       <a class="nav-link" id="nav-analyse-tab" data-bs-toggle="tab" href="#nav-analyse" role="tab" aria-controls="nav-analyse" aria-selected="false">Analyse des écarts</a>
     </div>
   </nav>
 
   <div class="tab-content mt-4" id="nav-tabContent">
-    <!-- Section Entrées -->
     <div class="tab-pane fade show active" id="nav-entrees" role="tabpanel" aria-labelledby="nav-entrees-tab">
+      <div class="table-responsive">
       <div class="d-flex justify-content-between">
-        <input [(ngModel)]="searchTextEntree" type="text" placeholder="Rechercher une entrée..." class="form-control w-50 mb-3">
-        <button class="btn btn-primary mb-3 w-auto float-end" data-bs-toggle="modal" data-bs-target="#entreeModal"> <i class="bi bi-plus-circle me-1"></i>Nouvelle entrée</button>
-      </div>
-      <!-- Tableau des Entrées -->
-      <table class="table table-bordered table-hover">
-        <thead class="table-primary">
-          <tr>
-            <th>Référence/Produit</th>
-            <th>Quantité</th>
-            <th>Unité Stock</th>
-            <th>Date Entrée</th>
-            <th>Heure Entrée</th>
-            <th>Description</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let entree of paginatedEntrees">
-            <td>{{ entree.produit }}</td>
-            <td>{{ entree.quantite }}</td>
-            <td>{{ entree.uniteStock }}</td>
-            <td>{{ entree.dateEntree | date: 'yyyy-MM-dd' }}</td>
-            <td>{{ entree.heureCreation | date: 'HH:mm'}}</td>
-            <td>{{ entree.description}}</td>
-            <td>
-              <button class="btn btn-warning btn-sm w-auto h-auto" (click)="modifierEntree(entree)"><i class="bi bi-pencil text-dark"></i></button>
-              <button class="btn btn-danger btn-sm w-auto h-auto float-end" (click)="supprimerEntree(entree)"> <i class="bi bi-trash text-white"></i></button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="pagination d-flex justify-content-center align-items-center">
-        <button class="w-auto btn btn-primary" (click)="onPageChangeEntree(currentPageEntree - 1)" [disabled]="currentPageEntree === 1"><i class="bi bi-arrow-left-circle fs-3"></i></button>
-        <span class="h3">{{ currentPageEntree }}</span>
-        <button class="w-auto btn btn-primary" (click)="onPageChangeEntree(currentPageEntree + 1)" [disabled]="currentPageEntree * pageSize >= filteredEntrees.length"><i class="bi bi-arrow-right-circle fs-3"></i></button>
-      </div>
-
-      <!-- Modal pour Ajouter une Entrée -->
-      <!-- Modal pour Ajouter une Entrée -->
-      <div class="modal fade" id="entreeModal" tabindex="-1" aria-labelledby="entreeModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header d-flex justify-content-between">
-              <h2 class="modal-title" id="entreeModalLabel">Ajouter une nouvelle entrée</h2>
-              <button type="button" class="btn-close text-white w-auto bg-danger border border-3 px-2" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg text-white"></i></button>
-            </div>
-            <div class="modal-body">
-              <form [formGroup]="entreeForm" (ngSubmit)="enregistrerEntree()">
-                <div class="mb-3">
-                  <label for="produit" class="form-label">Produit</label>
-                  <input type="text" class="form-control" id="produit" formControlName="produit" required>
-                </div>
-                <div class="mb-3">
-                  <label for="quantite" class="form-label">Quantité</label>
-                  <input type="number" class="form-control" id="quantite" formControlName="quantite" required>
-                </div>
-                <div class="mb-3">
-                  <label for="uniteStock" class="form-label">Unité de Stock</label>
-                  <select class="form-select" id="uniteStock" formControlName="uniteStock" required>
-                    <option value="sac">Sac</option>
-                    <option value="sachets">Sachets</option>
-                    <option value="cartons">Cartons</option>
-                    <option value="autre">Autre</option>
-                  </select>
-                </div>
-                <div class="mb-3">
-                  <label for="description" class="form-label">Description</label>
-                  <textarea class="form-control" id="description" formControlName="description" required></textarea>
-                </div>
-                <div class="mb-3">
-                  <button type="submit" class="btn btn-primary">Enregistrer</button>
-                </div>
-              </form>
-            </div>
-          </div>
+          <input [(ngModel)]="searchTextMouvement" type="text" placeholder="Rechercher un mouvement..." class="form-control w-50 mb-3"  (input)="onSearchChange()">
+          <button class="btn btn-success mb-3 w-auto float-end" data-bs-toggle="modal" data-bs-target="#mouvementModal">
+            <i class="bi bi-plus-circle me-1"></i> Nouveau mouvement
+          </button>
         </div>
-      </div>
-    </div>
+        <!-- Sélection du nombre de lignes à afficher -->
+        <div class="d-flex justify-content-between align-items-center mb-2 float-end">
+            <label for="rowsPerPage" class="me-2">Afficher</label>
+            <select id="rowsPerPage" class="form-select w-auto me-2" (change)="onRowsPerPageChange($event)">
+              <option *ngFor="let option of [5, 10, 20, 50]" [value]="option">{{ option }}</option>
+            </select>
+            <span>lignes par page</span>
+          </div>
 
-    <!-- Section Sorties -->
-    <div class="tab-pane fade" id="nav-sorties" role="tabpanel" aria-labelledby="nav-sorties-tab">
-      <div class="d-flex justify-content-between">
-        <input [(ngModel)]="searchTextSortie" type="text" placeholder="Rechercher une sortie..." class="form-control w-50 mb-3">
-        <button class="btn btn-danger mb-3 w-auto float-end" data-bs-toggle="modal" data-bs-target="#sortieModal"> <i class="bi bi-plus-circle"></i> Nouvelle sortie</button>
-      </div>
-      <!-- Tableau des Sorties -->
-      <table class="table table-bordered table-hover">
-        <thead class=" table-danger">
-          <tr>
-            <th>Référence/Produit</th>
-            <th>Quantité</th>
-            <th>Unité Stock</th>
-            <th>Date Sortie</th>
-            <th>Heure Sortie</th>
-            <th>Description</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let sortie of paginatedSorties">
-            <td>{{ sortie.produit }}</td>
-            <td>{{ sortie.quantite }}</td>
-            <td>{{ sortie.uniteStock }}</td>
-            <td>{{ sortie.dateSortie | date: 'yyyy-MM-dd' }}</td>
-            <td>{{ sortie.heureCreationSortie | date: 'HH:mm' }}</td>
-            <td>{{ sortie.description}}</td>
-            <td>
-              <button class="btn btn-warning btn-sm w-auto" (click)="modifierSortie(sortie)"><i class="bi bi-pencil"></i></button>
-              <button class="btn btn-danger btn-sm float-end w-auto" (click)="supprimerSortie(sortie)"><i class="bi bi-trash"></i></button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="pagination d-flex justify-content-center align-items-center">
-        <button class="w-auto btn btn-danger" (click)="onPageChangeSortie(currentPageSortie - 1)" [disabled]="currentPageSortie === 1"><i class="bi bi-arrow-left-circle fs-3"></i></button>
-        <span class="h3">{{ currentPageSortie }}</span>
-        <button class="w-auto btn btn-danger" (click)="onPageChangeSortie(currentPageSortie + 1)" [disabled]="currentPageSortie * pageSize >= filteredSorties.length"><i class="bi bi-arrow-right-circle fs-3"></i></button>
+        <table class="table table-bordered table-hover">
+          <thead class="table-success">
+            <tr>
+              <th>Type</th>
+              <th>Référence</th>
+              <th>Produit</th>
+              <th>Quantité</th>
+              <th>Unité Stock</th>
+              <th>Date</th>
+              <th>Heure</th>
+              <th>Description</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let mouvement of getPaginatedMouvements">
+              <td>
+                <span class="badge" [ngClass]="{'bg-success': mouvement.typeMouvement === 'Entree', 'bg-danger': mouvement.typeMouvement === 'Sortie'}">
+                  {{ mouvement.typeMouvement }}
+                </span>
+              </td>
+              <td>{{ mouvement.ref }}</td>
+              <td>{{ mouvement.produitId }}</td>
+              <td>{{ mouvement.quantite }}</td>
+              <td>{{ mouvement.uniteStock }}</td>
+              <td>{{ mouvement.dateMouvement | date: 'yyyy-MM-dd' }}</td>
+              <td>{{ mouvement.heureCreation | date: 'HH:mm'}}</td>
+              <td>{{ mouvement.description }}</td>
+              <td>
+                <button class="btn btn-warning btn-sm w-auto h-auto" (click)="modifierMouvement(mouvement)">
+                  <i class="bi bi-pencil text-dark"></i>
+                </button>
+                <button class="btn btn-danger btn-sm w-auto h-auto float-end" (click)="supprimerMouvement(mouvement)">
+                  <i class="bi bi-trash text-white"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
-      <!-- Modal pour Ajouter une Sortie -->
-      <div class="modal fade" id="sortieModal" tabindex="-1" aria-labelledby="sortieModalLabel" aria-hidden="true">
+        <!-- Pagination -->
+        <div class="d-flex justify-content-center align-items-center">
+          <button class="btn btn-success w-auto" (click)="onPageChange(currentPageMouvement-1,'mouvement')" [disabled]="currentPageMouvement === 1">
+            <i class="bi bi-arrow-left-circle"></i>
+          </button>
+          <span class="h3">{{ currentPageMouvement }} / {{ getTotalPages(filteredMouvements) }}</span>
+          <button class="btn btn-success w-auto" (click)="onPageChange(currentPageMouvement+1,'mouvement')"
+            [disabled]="currentPageMouvement >= getTotalPages(filteredMouvements)">
+            <i class="bi bi-arrow-right-circle"></i>
+          </button>
+        </div>
+
+      <!-- Modal pour ajouter un mouvement -->
+      <!-- Modal pour Entrée -->
+      <div class="modal fade" id="mouvementModal" tabindex="-1" aria-labelledby="mouvementModalLabel" aria-hidden="true">
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header d-flex justify-content-between">
-              <h2 class="modal-title" id="sortieModalLabel">Ajouter une nouvelle sortie</h2>
-              <button type="button" class="btn-close w-auto bg-danger border border-3" data-bs-dismiss="modal" aria-label="Close">
+              <h2 class="modal-title" id="entreeModalLabel">{{ isEditing ? 'Modifier un mouvement' : 'Ajouter un nouveau mouvement' }}</h2>
+              <button type="button" class="w-auto bg-danger border border-3 px-2" data-bs-dismiss="modal" aria-label="Close">
                 <i class="bi bi-x-lg text-white"></i>
               </button>
             </div>
             <div class="modal-body">
-              <form [formGroup]="sortieForm" (ngSubmit)="enregistrerSortie()">
+              <form [formGroup]="mouvementForm" (ngSubmit)="enregistrerMouvement()">
+                <!-- Produit -->
                 <div class="mb-3">
-                  <label for="produit" class="form-label">Produit</label>
-                  <input type="text" class="form-control" id="produit" formControlName="produit" required>
+                  <label for="produitId" class="form-label">Produit</label>
+                  <input type="number" class="form-control" id="produitId" formControlName="produitId" required>
+                  <div *ngIf="mouvementForm.controls['produitId'].invalid && mouvementForm.controls['produitId'].touched" class="text-danger">
+                    Le produit est requis.
+                  </div>
                 </div>
+
+                <!-- Quantité -->
                 <div class="mb-3">
                   <label for="quantite" class="form-label">Quantité</label>
                   <input type="number" class="form-control" id="quantite" formControlName="quantite" required>
+                  <div *ngIf="mouvementForm.controls['quantite'].invalid && mouvementForm.controls['quantite'].touched" class="text-danger">
+                    La quantité est requise et doit être supérieure à 0.
+                  </div>
                 </div>
+
+                <!-- Unité de Stock -->
                 <div class="mb-3">
                   <label for="uniteStock" class="form-label">Unité de Stock</label>
-                  <select class="form-select" id="uniteStockSortie" formControlName="uniteStock" required>
+                  <select class="form-select" id="uniteStock" formControlName="uniteStock" required>
+                    <option value="" disabled selected>Choisir une unité</option>
                     <option value="sac">Sac</option>
                     <option value="sachets">Sachets</option>
                     <option value="cartons">Cartons</option>
                     <option value="autre">Autre</option>
                   </select>
+                  <div *ngIf="mouvementForm.controls['uniteStock'].invalid && mouvementForm.controls['uniteStock'].touched" class="text-danger">
+                    L'unité de stock est requise.
+                  </div>
                 </div>
+
+                <!-- Type de Mouvement -->
+                <div class="mb-3">
+                  <label for="typeMouvement" class="form-label">Type de Mouvement</label>
+                  <select class="form-select" id="type" formControlName="typeMouvement" required>
+                    <option value="" disabled selected>Choisir un mouvement</option>
+                    <option value="entree">Entrée</option>
+                    <option value="sortie">Sortie</option>
+                  </select>
+                  <div *ngIf="mouvementForm.controls['typeMouvement'].invalid && mouvementForm.controls['typeMouvement'].touched" class="text-danger">
+                    Le type de mouvement est requis.
+                  </div>
+                </div>
+
+                <!-- Description -->
                 <div class="mb-3">
                   <label for="description" class="form-label">Description</label>
                   <textarea class="form-control" id="description" formControlName="description" required></textarea>
+                  <div *ngIf="mouvementForm.controls['description'].invalid && mouvementForm.controls['description'].touched" class="text-danger">
+                    La description est requise.
+                  </div>
                 </div>
-                <div class="mb-3">
-                  <button type="submit" class="btn btn-danger" [disabled]="!sortieForm.valid">Enregistrer</button>
+
+                <!-- Bouton de soumission -->
+                <div class="d-flex justify-content-center">
+                  <button type="submit" class="btn btn-success me-4 w-25" [disabled]="mouvementForm.invalid">{{ isEditing ? 'Mettre à jour' : 'Enregistrer' }}</button>
+                  <button type="reset" class="btn btn-secondary w-25" data-bs-dismiss="modal" aria-label="Close">Annuler</button>
                 </div>
               </form>
             </div>
           </div>
         </div>
       </div>
+
     </div>
 
-    <!-- Sections Réconciliation et Analyse des écarts (inchangées) -->
+
     <div class="tab-pane fade" id="nav-reconciliation" role="tabpanel" aria-labelledby="nav-reconciliation-tab">
-      <h4>Réconciliation des flux de trésorerie</h4>
-      <div class="form-group">
-        <form (ngSubmit)="reconsilierFlux()">
-          <div class="mb-3">
-            <label for="fluxDate" class="form-label">Date des Flux</label>
-            <input type="date" class="form-control" id="fluxDate" [(ngModel)]="reconciliation.date" name="fluxDate" required>
-          </div>
-          <div class="mb-3">
-            <label for="montantFlux" class="form-label">Montant du flux</label>
-            <input type="number" class="form-control" id="montantFlux" [(ngModel)]="reconciliation.montant" name="montantFlux" required>
-          </div>
-          <div class="mb-3">
-            <label for="typeFlux" class="form-label">Type de Flux</label>
-            <select class="form-select" id="typeFlux" [(ngModel)]="reconciliation.type" name="typeFlux" required>
-              <option value="entrée">Entrée</option>
-              <option value="sortie">Sortie</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <button type="submit" class="btn btn-success">Réconcilier</button>
-          </div>
-        </form>
+
+      <div class="table-responsive">
+
+        <div class="d-flex justify-content-between">
+          <input [(ngModel)]="searchTextReconciliation" type="text" placeholder="Rechercher une réconciliation..." class="form-control w-50 mb-3" (input)="onSearchReconciliation()">
+          <button class="btn btn-success mb-3 w-auto" data-bs-toggle="modal" data-bs-target="#reconciliationModal">
+            <i class="bi bi-plus-circle me-1"></i> Nouvelle réconciliation
+          </button>
+        </div>
+        <!-- Sélection du nombre de lignes à afficher -->
+        <div class="d-flex justify-content-between align-items-center mb-2 float-end">
+          <label for="rowsPerPage1" class="me-2">Afficher</label>
+          <select id="rowsPerPage1" class="form-select w-auto me-2" (change)="onRowsPerPageChange($event)">
+            <option *ngFor="let option of [5, 10, 20, 50]" [value]="option">{{ option }}</option>
+          </select>
+          <span>lignes par page</span>
+        </div>
+        >
+        <table class="table table-bordered table-hover">
+          <thead class="table-success">
+            <tr>
+              <th>Produit</th>
+              <th>Stock Théorique</th>
+              <th>Stock Physique</th>
+              <th>Écart</th>
+              <th>Historique des écarts</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let reconciliation of getPaginatedReconciliations">
+              <td>{{ reconciliation.produitId }}</td>
+              <td>{{ reconciliation.stockTheorique }}</td>
+              <td>{{ reconciliation.stockPhysique }}</td>
+              <td [ngClass]="{'text-danger': reconciliation.ecart < 0, 'text-success': reconciliation.ecart >= 0}">
+                {{ reconciliation.ecart }}
+              </td>
+              <td class="d-flex justify-content-center">
+                <button class="btn btn-info btn-sm w-auto h-auto" (click)="voirHistorique(reconciliation)">
+                  <i class="bi bi-clock-history"></i>
+                </button>
+              </td>
+              <!-- <td>
+                <ul class="list-unstyled">
+                  <li *ngFor="let historique of reconciliation.historiqueEcart">
+                    <small>{{ historique.date | date:'yyyy-MM-dd HH:mm' }} : {{ historique.ecart }} ({{ historique.note || 'Pas de note' }})</small>
+                  </li>
+                </ul>
+              </td> -->
+              <td>
+                <button class="btn btn-warning btn-sm  w-auto me-3 h-auto" (click)="modifierReconciliation(reconciliation)">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-danger btn-sm w-auto h-auto" (click)="supprimerReconciliation(reconciliation)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+    </div>
+      <!-- Pagination -->
+      <div class="d-flex justify-content-center align-items-center">
+        <button class="btn btn-success w-auto" (click)="onPageChange(currentPageReconcialiation-1,'reconciliation')" [disabled]="currentPageReconcialiation === 1">
+          <i class="bi bi-arrow-left-circle"></i>
+        </button>
+        <span class="h3">{{ currentPageReconcialiation }} / {{ getTotalPages(filteredReconciliations) }}</span>
+        <button class="btn btn-success w-auto" (click)="onPageChange(currentPageReconcialiation+1,'reconciliation')"
+          [disabled]="currentPageReconcialiation >= getTotalPages(filteredReconciliations)">
+          <i class="bi bi-arrow-right-circle"></i>
+        </button>
       </div>
     </div>
+
+    <div class="modal fade" id="historiqueModal" tabindex="-1" aria-labelledby="historiqueModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header d-flex justify-content-between align-items-center">
+            <h3 class="modal-title">Historique des Écarts</h3>
+            <button type="button" class="w-auto bg-danger border border-3 px-2" data-bs-dismiss="modal" aria-label="Close">
+              <i class="bi bi-x-lg text-white"></i>
+            </button>
+          </div>
+          <div class="modal-body">
+            <ul class="list-group">
+              <li class="list-group-item" *ngFor="let historique of historiqueSelectionne">
+                <b>{{ historique.date | date:'yyyy-MM-dd HH:mm' }}</b> :
+                <span class="text-danger">{{ historique.ecart }}</span>
+                <br>
+                <small>{{ historique.note || 'Pas de note' }}</small>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Analyse des écarts -->
     <div class="tab-pane fade" id="nav-analyse" role="tabpanel" aria-labelledby="nav-analyse-tab">
-      <h4>Analyse des écarts</h4>
-      <div class="form-group">
-        <form (ngSubmit)="analyserEcarts()">
-          <div class="mb-3">
-            <label for="ecartDate" class="form-label">Date de l'écart</label>
-            <input type="date" class="form-control" id="ecartDate" [(ngModel)]="analyse.date" name="ecartDate" required>
+      <div class="table-responsive">
+          <div class="d-flex justify-content-between">
+            <input [(ngModel)]="searchTextEcart" type="text" placeholder="Rechercher un produit à analyser..." class="form-control w-50 mb-3"  (input)="onSearchChangeEcart()">
+            <!-- Sélection du nombre de lignes à afficher -->
+          <div class="d-flex justify-content-between align-items-center mb-2 float-end">
+              <label for="rowsPerPage" class="me-2">Afficher</label>
+              <select id="rowsPerPage" class="form-select w-auto me-2" (change)="onRowsPerPageChange($event)">
+                <option *ngFor="let option of [5, 10, 20, 50]" [value]="option">{{ option }}</option>
+              </select>
+              <span>lignes par page</span>
+            </div>
           </div>
-          <div class="mb-3">
-            <label for="montantEcarts" class="form-label">Montant de l'écart</label>
-            <input type="number" class="form-control" id="montantEcarts" [(ngModel)]="analyse.montant" name="montantEcarts" required>
-          </div>
-          <div class="mb-3">
-            <label for="typeEcart" class="form-label">Type d'écart</label>
-            <select class="form-select" id="typeEcart" [(ngModel)]="analyse.type" name="typeEcart" required>
-              <option value="positif">Positif</option>
-              <option value="négatif">Négatif</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <button type="submit" class="btn btn-warning">Analyser</button>
-          </div>
-        </form>
+
+        <table class="table table-bordered">
+          <thead class="table-success">
+            <tr>
+              <th>Produit</th>
+              <th>Écart Total</th>
+              <th>Dernière Réconciliation</th>
+              <th>Nombre de Réconciliations</th>
+              <th>Moyenne des Écarts</th>
+              <th>Taux de Correction (%)</th>
+              <th>Détails des Écarts</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let analyse of getPaginatedEcarts">
+              <td>{{ analyse.produitId }}</td>
+              <td [ngClass]="{'text-danger': analyse.ecartTotal < 0, 'text-success': analyse.ecartTotal >= 0}">
+                {{ analyse.ecartTotal }}
+              </td>
+              <td>{{ analyse.dernierEcart | date: 'yyyy-MM-dd' }}</td>
+              <td>{{ analyse.nombreReconciliations ?? '-' }}</td>
+              <td>{{ analyse.moyenneEcart?.toFixed(2) ?? '-' }}</td>
+              <td>{{ analyse.tauxCorrection?.toFixed(2) ?? '-' }}%</td>
+              <td class="text-center">
+                <button class="btn btn-info btn-sm" (click)="voirDetails(analyse)">
+                  <i class="bi bi-eye"></i> Détails
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+    </div>
+      <div class="d-flex justify-content-center align-items-center">
+        <button class="btn btn-success w-auto" (click)="onPageChange(currentPageEcarts-1,'ecart')" [disabled]="currentPageEcarts === 1">
+          <i class="bi bi-arrow-left-circle"></i>
+        </button>
+        <span class="h3">{{ currentPageEcarts }} / {{ getTotalPages(filteredEcarts) }}</span>
+        <button class="btn btn-success w-auto" (click)="onPageChange(currentPageEcarts+1,'ecart')"
+          [disabled]="currentPageEcarts >= getTotalPages(filteredEcarts)">
+          <i class="bi bi-arrow-right-circle"></i>
+        </button>
       </div>
     </div>
+
+    <!-- Modal des Détails des Écarts -->
+<div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header d-flex justify-content-between align-items-center">
+        <h3 class="modal-title">Détails des Écarts</h3>
+        <button type="button" class="w-auto text-white bg-danger border border-3 px-2" data-bs-dismiss="modal" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <ul class="list-group">
+          <li class="list-group-item" *ngFor="let detail of detailsSelectionnes">
+            <b>{{ detail.date | date:'yyyy-MM-dd HH:mm' }}</b> :
+            <span [ngClass]="{'text-danger': detail.ecart < 0, 'text-success': detail.ecart >= 0}">
+              {{ detail.ecart }}
+            </span>
+            <br>
+            <small *ngIf="detail.corrige; else nonCorrige" class="badge bg-success">Corrigé ✔️</small>
+            <ng-template #nonCorrige>
+              <span class="badge bg-warning">Non corrigé ❌</span>
+            </ng-template>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+    <!-- Modal de Réconciliation -->
+    <div class="modal fade" id="reconciliationModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header d-flex justify-content-between align-items-center">
+            <h2 class="modal-title">
+              {{ isEditingReconciliation ? 'Modifier Réconciliation' : 'Nouvelle Réconciliation' }}
+            </h2>
+            <button type="button" class="w-auto bg-danger text-white border border-3 px-2" data-bs-dismiss="modal" aria-label="Close">
+              <i class="bi bi-x-lg"></i> <!-- Icône de fermeture -->
+            </button>
+          </div>
+          <div class="modal-body">
+            <form [formGroup]="reconciliationForm" (ngSubmit)="enregistrerReconciliation()">
+              <div class="mb-3">
+                <label for="produitId" class="form-label">Produit</label>
+                <input type="number" class="form-control" id="produitId" formControlName="produitId" required>
+              </div>
+              <div class="mb-3">
+                <label for="stockTheorique" class="form-label">Stock Théorique</label>
+                <input type="number" class="form-control" id="stockTheorique" formControlName="stockTheorique" required>
+              </div>
+              <div class="mb-3">
+                <label for="stockPhysique" class="form-label">Stock Physique</label>
+                <input type="number" class="form-control" id="stockPhysique" formControlName="stockPhysique" required>
+              </div>
+              <!-- ✅ Nouveau champ "note" (optionnel) -->
+              <div class="mb-3">
+                <label for="note" class="form-label">Note (facultatif)</label>
+                <textarea class="form-control" id="note" formControlName="note" rows="3" placeholder="Ajoutez une note ici..."></textarea>
+              </div>
+              <div class="d-flex justify-content-center">
+                <button type="submit" class="btn btn-success me-3 w-25">
+                  {{ isEditingReconciliation ? 'Mettre à jour' : 'Enregistrer' }}
+                </button>
+                <button type="reset" class="btn btn-secondary w-25" data-bs-dismiss="modal" aria-label="Close">Annuler</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
   </div>
 </div>
