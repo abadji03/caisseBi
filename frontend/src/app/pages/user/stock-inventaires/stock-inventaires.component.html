@@ -17,7 +17,7 @@
         <!-- Implémentation de la liste des produits et de leur état -->
           <!-- Barre de recherche et sélection du nombre de lignes -->
           <div class="d-flex justify-content-between mb-2">
-            <input type="text" class="form-control w-50" placeholder="Rechercher par nom produit, magasin, quantité ...." [(ngModel)]="searchTerm" (input)="onSearchChange('depense')">
+            <input type="text" class="form-control w-50" placeholder="Rechercher par nom produit, magasin, quantité ...." [(ngModel)]="searchTerm" (input)="onSearchChange('inventaire')">
             <select class="form-select w-auto" (change)="setItemsPerPage($event)">
                 <option [value]="5">5 lignes</option>
                 <option [value]="10">10 lignes</option>
@@ -36,8 +36,8 @@
             <tbody>
               <tr *ngFor="let produit of getPaginatedInventaire">
                 <td>{{ produit.description }}</td>
-                <td>{{ produit.magasinId }}</td>
-                <td>{{ produit.quantite }}</td>
+                <td>{{ getNomMagasinByProduitId(produit.id, stocks,magasins)}}</td>
+                <td>{{ getQteById(produit.id, stocks) }}</td>
                 <td>{{ produit.perissable ? 'Oui' : 'Non' }}</td>
               </tr>
             </tbody>
@@ -62,7 +62,7 @@
         <!-- Implémentation de la gestion des quantités -->
           <!-- Barre de recherche et sélection du nombre de lignes -->
           <div class="d-flex justify-content-between mb-2">
-            <input type="text" class="form-control w-50" placeholder="Rechercher par nom produit, quantité ...." [(ngModel)]="searchTerm" (input)="onSearchChange('depense')">
+            <input type="text" class="form-control w-50" placeholder="Rechercher par nom produit, quantité ...." [(ngModel)]="searchTerm" (input)="onSearchChange('qteDisponible')">
             <select class="form-select w-auto" (change)="setItemsPerPage($event)">
                 <option [value]="5">5 lignes</option>
                 <option [value]="10">10 lignes</option>
@@ -79,7 +79,7 @@
             <tbody>
               <tr *ngFor="let produit of getPaginatedQtesDisponibles">
                 <td>{{ produit.designation }}</td>
-                <td>{{ produit.quantite }}</td>
+                <td>{{  getQteDisponibleById(produit.id, stocks)}}</td>
               </tr>
             </tbody>
           </table>
@@ -102,7 +102,7 @@
         <p>Affichage des niveaux de stock dans chaque magasin...</p> -->
          <!-- Barre de recherche et sélection du nombre de lignes -->
          <div class="d-flex justify-content-between mb-2">
-          <input type="text" class="form-control w-50" placeholder="Rechercher par nom produit, magasin, quantité ...." [(ngModel)]="searchTerm" (input)="onSearchChange('depense')">
+          <input type="text" class="form-control w-50" placeholder="Rechercher par nom produit, magasin, quantité ...." [(ngModel)]="searchTerm" (input)="onSearchChange('niveauStock')">
           <select class="form-select w-auto" (change)="setItemsPerPage($event)">
               <option [value]="5">5 lignes</option>
               <option [value]="10">10 lignes</option>
@@ -121,8 +121,8 @@
             <tbody>
               <tr *ngFor="let produit of getPaginatedNiveauStock">
                 <td>{{ produit.designation }}</td>
-                <td>{{ produit.magasinId }}</td>
-                <td>{{ produit.quantite }}</td>
+                <td>{{ getNomMagasinByProduitId(produit.id, stocks,magasins)}}</td>
+                <td>{{ getQteById(produit.id, stocks) }}</td>
               </tr>
             </tbody>
           </table>
@@ -145,7 +145,7 @@
         <p>Liste des alertes de réapprovisionnement pour les produits...</p> -->
          <!-- Barre de recherche et sélection du nombre de lignes -->
          <div class="d-flex justify-content-between mb-2">
-          <input type="text" class="form-control w-50" placeholder="Rechercher par nom produit, magasin, quantité ...." [(ngModel)]="searchTerm" (input)="onSearchChange('depense')">
+          <input type="text" class="form-control w-50" placeholder="Rechercher par nom produit, magasin, quantité ...." [(ngModel)]="searchTerm" (input)="onSearchChange('alerte')">
           <select class="form-select w-auto" (change)="setItemsPerPage($event)">
               <option [value]="5">5 lignes</option>
               <option [value]="10">10 lignes</option>
@@ -190,7 +190,7 @@
         <p>Liste des mouvements de stock (entrées et sorties)...</p> -->
          <!-- Barre de recherche et sélection du nombre de lignes -->
          <div class="d-flex justify-content-between mb-2">
-          <input type="text" class="form-control w-50" placeholder="Rechercher par nom produit, date, quantité ...." [(ngModel)]="searchTerm" (input)="onSearchChange('depense')">
+          <input type="text" class="form-control w-50" placeholder="Rechercher par nom produit, date, quantité ...." [(ngModel)]="searchTerm" (input)="onSearchChange('mouvement')">
           <select class="form-select w-auto" (change)="setItemsPerPage($event)">
               <option [value]="5">5 lignes</option>
               <option [value]="10">10 lignes</option>
@@ -235,7 +235,7 @@
         <p>Liste des produits périssables et leur gestion...</p> -->
          <!-- Barre de recherche et sélection du nombre de lignes -->
          <div class="d-flex justify-content-between mb-2">
-          <input type="text" class="form-control w-50" placeholder="Rechercher par nom produit, magasin, quantité ...." [(ngModel)]="searchTerm" (input)="onSearchChange('depense')">
+          <input type="text" class="form-control w-50" placeholder="Rechercher par nom produit, magasin, quantité ...." [(ngModel)]="searchTerm" (input)="onSearchChange('perissable')">
           <select class="form-select w-auto" (change)="setItemsPerPage($event)">
               <option [value]="5">5 lignes</option>
               <option [value]="10">10 lignes</option>

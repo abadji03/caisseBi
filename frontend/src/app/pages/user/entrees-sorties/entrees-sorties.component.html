@@ -47,11 +47,11 @@
                 </span>
               </td>
               <td>{{ mouvement.ref }}</td>
-              <td>{{ mouvement.produitId }}</td>
+              <td>{{ getNomProduitById (mouvement.produitId, produits) }}</td>
               <td>{{ mouvement.quantite }}</td>
-              <td>{{ mouvement.uniteStock }}</td>
+              <td>{{ getUniteProduitById (mouvement.produitId, produits) }}</td>
               <td>{{ mouvement.dateMouvement | date: 'yyyy-MM-dd' }}</td>
-              <td>{{ mouvement.heureCreation | date: 'HH:mm'}}</td>
+              <td>{{ mouvement.heureMouvement | date: 'HH:mm'}}</td>
               <td>{{ mouvement.description }}</td>
               <td>
                 <button class="btn btn-warning btn-sm w-auto h-auto" (click)="modifierMouvement(mouvement)">
@@ -192,7 +192,7 @@
           </thead>
           <tbody>
             <tr *ngFor="let reconciliation of getPaginatedReconciliations">
-              <td>{{ reconciliation.produitId }}</td>
+              <td>{{ getNomProduitById (reconciliation.produitId, produits) }}</td>
               <td>{{ reconciliation.stockTheorique }}</td>
               <td>{{ reconciliation.stockPhysique }}</td>
               <td [ngClass]="{'text-danger': reconciliation.ecart < 0, 'text-success': reconciliation.ecart >= 0}">
@@ -288,7 +288,7 @@
           </thead>
           <tbody>
             <tr *ngFor="let analyse of getPaginatedEcarts">
-              <td>{{ analyse.produitId }}</td>
+              <td>{{ getNomProduitById (analyse.produitId, produits) }}</td>
               <td [ngClass]="{'text-danger': analyse.ecartTotal < 0, 'text-success': analyse.ecartTotal >= 0}">
                 {{ analyse.ecartTotal }}
               </td>

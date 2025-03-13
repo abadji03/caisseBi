@@ -106,8 +106,8 @@
                 <td>{{ produit.famille }}</td>
                 <td>{{ produit.designation }}</td>
                 <td>{{ produit.fournisseurId }}</td>
-                <td>{{ produit.magasinId }}</td>
-                <td>{{ produit.quantite }}</td>
+                <td>{{ 0 }} à corriger</td>
+                <td>{{ 0 }} à corriger</td>
                 <td>{{ produit.unite }}</td>
                 <td>{{ produit.prixAchatUnitaire }}</td>
                 <td>{{ produit.prixVenteUnitaire }}</td>
@@ -191,12 +191,12 @@
                   <option *ngFor="let fournisseur of fournisseurs" [value]="fournisseur">{{ fournisseur }}</option>
                 </select>
               </div>
-              <div class="col-md-6">
+             <!--  <div class="col-md-6">
                 <label for="magasin" class="form-label">Magasin</label>
                 <select class="form-select" id="magasin" formControlName="magasin" required>
                   <option *ngFor="let magasin of magasins" [value]="magasin">{{ magasin }}</option>
                 </select>
-              </div>
+              </div> -->
             </div>
 
             <div *ngIf="actionType ==='entree'" class="row mb-3">
@@ -221,10 +221,10 @@
 
             <div class="row mb-3">
               <!-- Quantité et Unité sur la même ligne -->
-              <div class="col-md-6">
+              <!-- <div class="col-md-6">
                 <label for="quantite" class="form-label">Quantité</label>
                 <input type="number" class="form-control" id="quantite" formControlName="quantite" required />
-              </div>
+              </div> -->
               <div class="col-md-6">
                 <label for="unite" class="form-label">Unité de stockage</label>
                 <div class="d-flex align-items-center">

@@ -291,6 +291,7 @@ export class FournisseursComponent implements OnInit {
             designation: produitsDisponibles[Math.floor(Math.random() * produitsDisponibles.length)],
             quantite: quantite,
             prixAchatUnitaire: prixUnitaire,
+            prixVenteUnitaire: prixUnitaire,
             famille:'',
             fournisseur:'',
             magasin:'',

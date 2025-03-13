@@ -1,4 +1,4 @@
-
+/*
 
 export class Stock {
   public id!: number;
@@ -24,11 +24,41 @@ export class Stock {
     this.quantiteDisponible = (this.quantiteTotale || 0) - this.quantiteReservee;
     this.valeurTotaleStock = (this.dernierPrixAchat || 0) * (this.quantiteTotale || 0);
   }
-}
+} */
+
+  export class Stock {
+    public id!: number;
+    public produitId!: number; // Produit concerné
+    public magasinId!: number; // Magasin concerné
+    public quantiteTotale!: number; // Quantité totale en stock
+    public quantiteReservee: number = 0; // Quantité engagée pour des commandes
+    public seuilAlerte: number = 5; // Niveau minimum avant alerte
+    public seuilReapprovisionnement: number = 10; // Déclenche une commande d'achat
+    public stockSecurite: number = 5; // Quantité tampon pour éviter les ruptures
+    public dernierPrixAchat?: number; // Dernier prix d'achat connu
+    public datePeremption!: Date; // Pour les produits périssables
+    public statutStock: string = "En stock"; // État du stock ("En stock", "Rupture", etc.)
+    public dateDerniereMiseAJour: Date = new Date(); // Date de la dernière mise à jour
+
+    // 🔹 Propriétés calculées (non stockées en base)
+    public get quantiteDisponible(): number {
+      return this.quantiteTotale - this.quantiteReservee;
+    }
+
+    public get valeurTotaleStock(): number {
+      return (this.dernierPrixAchat || 0) * this.quantiteTotale;
+    }
+
+    constructor(data?: Partial<Stock>) {
+      Object.assign(this, data);
+      this.dateDerniereMiseAJour = new Date();
+    }
+  }
 
 
 
-export class MouvementsStock {
+
+/* export class MouvementsStock {
   public id!: number;
   public ref!: string; // Référence du mouvement
   public produitId!: number; // Produit concerné
@@ -49,6 +79,38 @@ export class MouvementsStock {
   constructor(data?: Partial<MouvementsStock>) {
     Object.assign(this, data);
     this.prixTotal = (this.prixUnitaire || 0) * (this.quantite || 0);
+  }
+}
+ */
+
+
+export class MouvementsStock {
+  public id!: number;
+  public ref!: string; // Référence unique du mouvement
+  public produitId!: number; // Produit concerné
+  public magasinId!: number; // Magasin concerné
+  public typeMouvement!: "Entree" | "Sortie" | "Transfert"; // Type de mouvement
+  public quantite!: number; // Quantité ajoutée ou retirée
+  public prixUnitaire!: number; // Prix unitaire d'achat ou de vente
+  public acteurId!: number; // Fournisseur (si achat) ou client (si vente)
+  public description?: string; // Détails sur le mouvement
+  public motif?: string; // Raison si ajustement (ex : Perte, Correction)
+  public dateMouvement: Date = new Date(); // Date du mouvement
+  public heureMouvement: Date = new Date(); // Heure de création
+
+
+
+  // 🔹 Propriétés calculées (non stockées en base)
+  public get prixTotal(): number {
+    return (this.prixUnitaire || 0) * this.quantite;
+  }
+
+  constructor(data?: Partial<MouvementsStock>) {
+    if (data) {
+      // Exclure prixTotal lors de l'assignation pour éviter l'erreur
+      const { prixTotal, ...rest } = data as any;
+      Object.assign(this, rest);
+    }
   }
 }
 

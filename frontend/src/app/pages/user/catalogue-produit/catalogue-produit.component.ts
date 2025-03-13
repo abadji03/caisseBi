@@ -172,83 +172,67 @@ export class CatalogueProduitComponent {
     loadMockData(): Produits[] {
       return [
         new Produits({
-          id: 1, famille: 'Electroménager', designation: 'Réfrigérateur', fournisseurId: 1, magasinId: 1,
-          quantite: 10, unite: 'Unités', prixAchatUnitaire: 100, prixTotalAchat: 1000, prixVenteUnitaire: 150,
+          id: 1, famille: 'Electroménager', designation: 'Réfrigérateur', fournisseurId: 1,  unite: 'Unités', prixAchatUnitaire: 100, prixTotalAchat: 1000, prixVenteUnitaire: 150,
           prixTotalVente: 1500, dateCreation: new Date(), agent: 'Agent 1', description: 'Réfrigérateur LG', codeBarre: '1234567890', image: ''
         }),
         new Produits({
-          id: 2, famille: 'Électronique', designation: 'Télévision', fournisseurId: 2, magasinId: 2,
-          quantite: 5, unite: 'Unités', prixAchatUnitaire: 200, prixTotalAchat: 1000, prixVenteUnitaire: 300,
+          id: 2, famille: 'Électronique', designation: 'Télévision', fournisseurId: 2,  unite: 'Unités', prixAchatUnitaire: 200, prixTotalAchat: 1000, prixVenteUnitaire: 300,
           prixTotalVente: 1500, dateCreation: new Date(), agent: 'Agent 2', description: 'Télévision Samsung', codeBarre: '2345678901', image: ''
         }),
         new Produits({
-          id: 3, famille: 'Vêtements', designation: 'T-shirt', fournisseurId: 3, magasinId: 1,
-          quantite: 15, unite: 'Unités', prixAchatUnitaire: 10, prixTotalAchat: 150, prixVenteUnitaire: 20,
+          id: 3, famille: 'Vêtements', designation: 'T-shirt', fournisseurId: 3,  unite: 'Unités', prixAchatUnitaire: 10, prixTotalAchat: 150, prixVenteUnitaire: 20,
           prixTotalVente: 300, dateCreation: new Date(), agent: 'Agent 3', description: 'T-shirt coton', codeBarre: '3456789012', image: ''
         }),
         new Produits({
-          id: 4, famille: 'Jouets', designation: 'Peluche', fournisseurId: 4, magasinId: 2,
-          quantite: 8, unite: 'Unités', prixAchatUnitaire: 50, prixTotalAchat: 400, prixVenteUnitaire: 70,
+          id: 4, famille: 'Jouets', designation: 'Peluche', fournisseurId: 4,  unite: 'Unités', prixAchatUnitaire: 50, prixTotalAchat: 400, prixVenteUnitaire: 70,
           prixTotalVente: 560, dateCreation: new Date(), agent: 'Agent 4', description: 'Peluche panda', codeBarre: '4567890123', image: ''
         }),
         new Produits({
-          id: 5, famille: 'Alimentation', designation: 'Céréales', fournisseurId:5, magasinId:1,
-          quantite: 25, unite: 'Unités', prixAchatUnitaire: 5, prixTotalAchat: 125, prixVenteUnitaire: 8,
+          id: 5, famille: 'Alimentation', designation: 'Céréales', fournisseurId:5,  unite: 'Unités', prixAchatUnitaire: 5, prixTotalAchat: 125, prixVenteUnitaire: 8,
           prixTotalVente: 200, dateCreation: new Date(), agent: 'Agent 5', description: 'Céréales nature', codeBarre: '5678901234', image: ''
         }),
         new Produits({
-          id: 6, famille: 'Électronique', designation: 'Smartphone', fournisseurId: 6, magasinId: 3,
-          quantite: 30, unite: 'Unités', prixAchatUnitaire: 500, prixTotalAchat: 3000, prixVenteUnitaire: 700,
+          id: 6, famille: 'Électronique', designation: 'Smartphone', fournisseurId: 6,  unite: 'Unités', prixAchatUnitaire: 500, prixTotalAchat: 3000, prixVenteUnitaire: 700,
           prixTotalVente: 3500, dateCreation: new Date(), agent: 'Agent 6', description: 'iPhone 14', codeBarre: '6789012345', image: ''
         }),
         new Produits({
-          id: 7, famille: 'Alimentation', designation: 'Pâtes', fournisseurId: 7, magasinId: 4,
-          quantite: 40, unite: 'Paquets', prixAchatUnitaire: 2, prixTotalAchat: 80, prixVenteUnitaire: 5,
+          id: 7, famille: 'Alimentation', designation: 'Pâtes', fournisseurId: 7,  unite: 'Paquets', prixAchatUnitaire: 2, prixTotalAchat: 80, prixVenteUnitaire: 5,
           prixTotalVente: 200, dateCreation: new Date(), agent: 'Agent 7', description: 'Pâtes Barilla', codeBarre: '7890123456', image: ''
         }),
         new Produits({
-          id: 8, famille: 'Vêtements', designation: 'Jeans', fournisseurId: 8, magasinId: 5,
-          quantite: 20, unite: 'Paires', prixAchatUnitaire: 30, prixTotalAchat: 600, prixVenteUnitaire: 50,
+          id: 8, famille: 'Vêtements', designation: 'Jeans', fournisseurId: 8,  unite: 'Paires', prixAchatUnitaire: 30, prixTotalAchat: 600, prixVenteUnitaire: 50,
           prixTotalVente: 1000, dateCreation: new Date(), agent: 'Agent 8', description: 'Jeans Levi\'s', codeBarre: '8901234567', image: ''
         }),
         new Produits({
-          id: 9, famille: 'Électronique', designation: 'Casque audio', fournisseurId: 9, magasinId: 2,
-          quantite: 15, unite: 'Unités', prixAchatUnitaire: 80, prixTotalAchat: 1200, prixVenteUnitaire: 100,
+          id: 9, famille: 'Électronique', designation: 'Casque audio', fournisseurId: 9, unite: 'Unités', prixAchatUnitaire: 80, prixTotalAchat: 1200, prixVenteUnitaire: 100,
           prixTotalVente: 1500, dateCreation: new Date(), agent: 'Agent 9', description: 'Casque Sony', codeBarre: '9012345678', image: ''
         }),
         new Produits({
-          id: 10, famille: 'Jouets', designation: 'Lego', fournisseurId: 10, magasinId: 10,
-          quantite: 35, unite: 'Boîtes', prixAchatUnitaire: 60, prixTotalAchat: 2100, prixVenteUnitaire: 100,
+          id: 10, famille: 'Jouets', designation: 'Lego', fournisseurId: 10, unite: 'Boîtes', prixAchatUnitaire: 60, prixTotalAchat: 2100, prixVenteUnitaire: 100,
           prixTotalVente: 3500, dateCreation: new Date(), agent: 'Agent 10', description: 'Lego Star Wars', codeBarre: '0123456789', image: ''
         }),
         new Produits({
-          id: 11, famille: 'Électronique', designation: 'Ordinateur portable', fournisseurId: 11, magasinId:11,
-          quantite: 25, unite: 'Unités', prixAchatUnitaire: 700, prixTotalAchat: 17500, prixVenteUnitaire: 850,
+          id: 11, famille: 'Électronique', designation: 'Ordinateur portable', fournisseurId: 11, unite: 'Unités', prixAchatUnitaire: 700, prixTotalAchat: 17500, prixVenteUnitaire: 850,
           prixTotalVente: 21250, dateCreation: new Date(), agent: 'Agent 11', description: 'MacBook Pro', codeBarre: '1234567891', image: ''
         }),
         new Produits({
-          id: 12, famille: 'Alimentation', designation: 'Café', fournisseurId: 12, magasinId: 12,
-          quantite: 60, unite: 'Paquets', prixAchatUnitaire: 4, prixTotalAchat: 240, prixVenteUnitaire: 6,
+          id: 12, famille: 'Alimentation', designation: 'Café', fournisseurId: 12, unite: 'Paquets', prixAchatUnitaire: 4, prixTotalAchat: 240, prixVenteUnitaire: 6,
           prixTotalVente: 360, dateCreation: new Date(), agent: 'Agent 12', description: 'Café Nespresso', codeBarre: '2345678902', image: ''
         }),
         new Produits({
-          id: 13, famille: 'Vêtements', designation: 'Chaussures', fournisseurId: 13, magasinId: 1,
-          quantite: 12, unite: 'Paires', prixAchatUnitaire: 50, prixTotalAchat: 600, prixVenteUnitaire: 70,
+          id: 13, famille: 'Vêtements', designation: 'Chaussures', fournisseurId: 13,  unite: 'Paires', prixAchatUnitaire: 50, prixTotalAchat: 600, prixVenteUnitaire: 70,
           prixTotalVente: 840, dateCreation: new Date(), agent: 'Agent 13', description: 'Nike Air Max', codeBarre: '3456789013', image: ''
         }),
         new Produits({
-          id: 14, famille: 'Jouets', designation: 'Puzzle', fournisseurId: 14, magasinId: 2,
-          quantite: 18, unite: 'Boîtes', prixAchatUnitaire: 15, prixTotalAchat: 270, prixVenteUnitaire: 25,
+          id: 14, famille: 'Jouets', designation: 'Puzzle', fournisseurId: 14,  unite: 'Boîtes', prixAchatUnitaire: 15, prixTotalAchat: 270, prixVenteUnitaire: 25,
           prixTotalVente: 450, dateCreation: new Date(), agent: 'Agent 14', description: 'Puzzle Ravensburger', codeBarre: '4567890124', image: ''
         }),
         new Produits({
-          id: 15, famille: 'Électronique', designation: 'Tablette', fournisseurId: 15, magasinId:  3,
-          quantite: 40, unite: 'Unités', prixAchatUnitaire: 300, prixTotalAchat: 12000, prixVenteUnitaire: 400,
+          id: 15, famille: 'Électronique', designation: 'Tablette', fournisseurId: 15, unite: 'Unités', prixAchatUnitaire: 300, prixTotalAchat: 12000, prixVenteUnitaire: 400,
           prixTotalVente: 16000, dateCreation: new Date(), agent: 'Agent 15', description: 'Samsung Galaxy Tab', codeBarre: '5678901235', image: ''
         }),
         new Produits({
-          id: 16, famille: 'Alimentation', designation: 'Jus de fruits', fournisseurId: 16, magasinId: 4,
-          quantite: 50, unite: 'Bouteilles', prixAchatUnitaire: 3, prixTotalAchat: 150, prixVenteUnitaire: 4,
+          id: 16, famille: 'Alimentation', designation: 'Jus de fruits', fournisseurId: 16,  unite: 'Bouteilles', prixAchatUnitaire: 3, prixTotalAchat: 150, prixVenteUnitaire: 4,
           prixTotalVente: 200, dateCreation: new Date(), agent: 'Agent 16', description: 'Jus d\'orange Tropicana', codeBarre: '6789012346', image: ''
         }),
         ]
@@ -277,8 +261,8 @@ export class CatalogueProduitComponent {
         // Vérification si le champ `name` ou `city` contient la valeur recherchée
         return produit.designation?.toLowerCase().includes(searchValue) ||
                produit.famille?.toLowerCase().includes(searchValue) ||
-               produit.fournisseurId?.toString().toLowerCase().includes(searchValue) ||
-               produit.magasinId?.toString().toLowerCase().includes(searchValue);
+               produit.fournisseurId?.toString().toLowerCase().includes(searchValue)
+              //  produit.magasinId?.toString().toLowerCase().includes(searchValue);
       });
     } else {
       // Si aucune recherche, on réinitialise la liste filtrée avec tous les produits
@@ -338,8 +322,8 @@ export class CatalogueProduitComponent {
             famille: this.selectedProduits.famille,  // Remplir la famille
             designation: this.selectedProduits.designation,  // Remplir la désignation
             fournisseur: this.selectedProduits.fournisseurId,  // Remplir le fournisseur
-            magasin: this.selectedProduits.magasinId,  // Remplir le magasin
-            quantite: this.selectedProduits.quantite,  // Remplir la quantité
+            // magasin: this.selectedProduits.magasinId,  // Remplir le magasin
+            // quantite: this.selectedProduits.quantite,  // Remplir la quantité
             type_entree: '',  // Réinitialiser si nécessaire (selon votre logique)
             type_sortie: '',  // Réinitialiser si nécessaire (selon votre logique)
             prixAchatUnitaire: this.selectedProduits.prixAchatUnitaire,  // Remplir prix d'achat unitaire

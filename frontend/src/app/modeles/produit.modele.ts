@@ -63,7 +63,7 @@ export class Produit {
     }
   } */
 
-  export class Produits {
+ /*  export class Produits {
     public id?: number;
     public famille?: string; // Catégorie du produit
     public designation!: string; // Nom du produit
@@ -108,4 +108,33 @@ export class Produit {
     this.valeurStock = (this.dernierPrixAchat || 0) * (this.quantite || 0);
 
     }
-  }
+  } */
+
+    export class Produits {
+      public id?: number;
+      public famille!: string; // Catégorie du produit
+      public designation!: string; // Nom du produit
+      public fournisseurId?: number; // ID du fournisseur
+      public unite!: string; // Unité de mesure (Carton, Pièce, Kg…)
+      public prixAchatUnitaire?: number; // Prix d'achat unitaire
+      public prixTotalAchat?: number; // Calculé : prixAchatUnitaire * quantite
+      public prixVenteUnitaire!: number; // Prix de vente unitaire
+      public prixTotalVente?: number; // Calculé : prixVenteUnitaire * quantite
+      public marge?: number; // Calculé dynamiquement : prixVenteUnitaire - prixAchatUnitaire
+      public perissable?: boolean = false; // Produit périssable ou non
+      public description?: string; // Détails du produit
+      public codeBarre?: string; // Code-barres du produit
+      public image?: string; // Image du produit
+      public dateCreation?: Date = new Date(); // Date d'ajout du produit
+      public agent?: string; // Personne qui a ajouté le produit
+      public dernierPrixAchat?: number; // Dernier prix d'achat connu
+
+      constructor(data?: Partial<Produits>) {
+        Object.assign(this, data);
+        this.marge = (this.prixVenteUnitaire || 0) - (this.prixAchatUnitaire || 0);
+        this.dateCreation = this.dateCreation ?? new Date();
+
+
+      }
+    }
+
