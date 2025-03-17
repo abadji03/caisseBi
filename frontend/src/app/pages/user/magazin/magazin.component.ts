@@ -278,7 +278,6 @@ loadMagasins(): Magasin[] {
         description: `Mouvement de type ${typeMouvement}`,
         motif: typeMouvement === "Sortie" ? "Vente" : typeMouvement === "Entree" ? "Achat" : "Transfert interne",
         dateMouvement: new Date(),
-        heureMouvement: new Date()
       }));
     }
 
@@ -687,6 +686,17 @@ transferer(stock: any) {
   this.quantite = 1;
   this.motif = '';
 }
+validerTransfert(transfert: Transfert) {
+  //console.log('Transfert validé :', transfertId);
+  if(transfert.statut === 'Validé') {
+    //alert('Le transfert est déjà validé');
+    console.log('Le transfert est déjà validé');
+    return;
+  }
+  transfert.statut = 'Validé';
+  console.log('Transfert validé :', transfert);
+}
+
 }
 
 

@@ -30,6 +30,7 @@ import { MagazinComponent } from './pages/user/magazin/magazin.component';
 import { GerantComponent } from './pages/user/gerant/gerant.component';
 import { CatalogueProduitComponent } from './pages/user/catalogue-produit/catalogue-produit.component';
 import { FinanceComponent } from './pages/user/finance/finance.component';
+import { RapportsComponent } from './pages/user/rapports/rapports.component';
 
 export const routes: Routes = [
     {
@@ -72,6 +73,10 @@ export const routes: Routes = [
             {
                 path:'rapports-financiers',
                 component:RapportsFinanciersComponent
+            },
+            {
+                path:'rapports',
+                component:RapportsComponent
             },
             {
                 path:'enregistrement-acteurs',

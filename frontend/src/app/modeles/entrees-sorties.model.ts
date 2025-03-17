@@ -96,7 +96,6 @@ export class MouvementsStock {
   public description?: string; // Détails sur le mouvement
   public motif?: string; // Raison si ajustement (ex : Perte, Correction)
   public dateMouvement: Date = new Date(); // Date du mouvement
-  public heureMouvement: Date = new Date(); // Heure de création
 
 
 

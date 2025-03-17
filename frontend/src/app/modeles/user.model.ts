@@ -1,19 +1,37 @@
 export class User {
-    id!: number;
-    nom!: string;
-    telephone!: number;
-    email!: string;
-    password!: string;
-    adresse!: string;
-    type_user!: string;
-    status!: boolean;
-    role!: boolean;
+  // Champs obligatoires
+  id!: number;
+  nom!: string;
+  telephone!: string;
+  email!: string;
+  password!: string;
+  typeUser!: string; // Ex : "Employé", "Gérant", "Caissier"
+  status!: boolean; // Actif ou inactif
+  role!: string; // Ex : "ADMIN", "CAISSIER", "GERANT"
 
-    constructor(data?: Partial<User>) {
+  // Champs optionnels
+  adresse?: string;
+  poste?: string; // Ex : "Caissier", "Gérant", "Employé"
+  dateCreation?: Date;
+  salaire?: number;
+  typeContrat?: string; // Ex : "CDI", "CDD", "Stage"
+  modePaiementSalaire?: string; // "Espèces", "Virement", "Mobile Money"
+  photoProfil?: string; // URL ou base64 de la photo
+  derniereConnexion?: Date;
+  historiqueConnexions?: { date: Date; ip: string }[];
+  historiqueActions?: { date: Date; action: string }[];
+
+  constructor(data?: Partial<User>) {
       Object.assign(this, data);
-    }
 
+      // Valeurs par défaut si non définies
+      this.dateCreation = this.dateCreation || new Date();
+      this.historiqueConnexions = this.historiqueConnexions || [];
+      this.historiqueActions = this.historiqueActions || [];
+  }
 }
+
+
 // models/utilisateur.model.ts
 export interface Utilisateur {
   id: number;

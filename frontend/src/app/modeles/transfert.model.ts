@@ -1,18 +1,21 @@
 export class Transfert {
-    id?: number;
-    reference!: string; // Identifiant unique du transfert
-    produitId!: number; // Produit transféré
-    quantite!: number; // Quantité transférée
-    magasinSource!: number; // Magasin d'origine
-    magasinDestination!: number; // Magasin de destination
-    dateTransfert!: Date; // Date du transfert
-    statut!: 'En attente' | 'Validé' | 'Refusé'; // Statut du transfert
-    motif?: string; // Motif du transfert (optionnel)
-    agentResponsable!: number; // Personne qui effectue le transfert
-    dateValidation?: Date; // Date de validation du transfert
-    agentValidation?: number; // Personne qui valide le transfert
+  public id?: number;
+  public reference!: string;
+  public produitId!: number;
+  public quantite!: number;
+  public magasinSource!: number;
+  public magasinDestination!: number;
+  public dateTransfert!: Date;
+  public statut!: "En attente" | "Validé" | "Refusé";
+  public motif?: string;
+  public agentResponsable!: number;
+  public dateValidation?: Date;
+  public agentValidation?: number;
+  public mouvementSortieId?: number; // ID du mouvement stock associé à la sortie
+  public mouvementEntreeId?: number; // ID du mouvement stock associé à l’entrée
 
-    constructor(data?: Partial<Transfert>) {
-      Object.assign(this, data);
-    }
+  constructor(data?: Partial<Transfert>) {
+    Object.assign(this, data);
+    this.dateTransfert = data?.dateTransfert ?? new Date(); // Date par défaut si absente
   }
+}

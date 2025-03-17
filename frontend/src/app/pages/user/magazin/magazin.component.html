@@ -1,51 +1,39 @@
 <div class="container-fluid mt-4">
-  <!-- Ajout du select pour les magasins -->
-  <div class="row mb-3">
-    <div class="d-flex justify-content-between">
-      <div class="col-md-8 d-flex flex-row align-items-center">
-        <label for="selectMagasin" class="form-label me-2"><b>Sélectionner un magasin :</b></label>
-        <select id="selectMagasin" class="form-select w-25" (change)="onMagasinChange($event)">
-          <option *ngFor="let magasin of magasins" [value]="magasin.id">{{ magasin.nom }}</option>
-        </select>
+    <!-- Ajout du select pour les magasins -->
+    <div class="row  mb-1">
+      <div class="col-md-10 alert alert-light ">
+        <div class="row d-flex justify-content-between align-items-center">
+            <div class="col-md-2">
+              <!-- <label for="selectMagasin" class="form-label me-2"><b>Sélectionner un magasin :</b></label> -->
+              <select id="selectMagasin" class="form-select w-auto" (change)="onMagasinChange($event)">
+                <option *ngFor="let magasin of magasins" [value]="magasin.id">{{ magasin.nom }}</option>
+              </select>
+            </div>
+            <div  *ngIf="magasinSelectionne" class="col-md-10">
+              <div class="d-flex justify-content-between align-items-center">
+                <!-- <span>Nom:<b>{{ magasinSelectionne.nom }}</b> </span> -->
+                <span>Localisation:<b>{{ magasinSelectionne.adresse }}</b> </span>
+                <span>Responsable: <b>{{ magasinSelectionne.responsableId }}</b> </span>
+                <!-- <span>Statut:<b>{{ magasinSelectionne.statut }}</b> </span> -->
+                <div>
+                  <button class="btn btn-sm btn-warning me-1 w-auto" (click)="preparerEditionMagasin(magasinSelectionne)" data-bs-toggle="modal" data-bs-target="#modalMagasin"><i class="bi bi-pencil"></i></button>
+                  <button class="btn btn-sm btn-danger w-auto" (click)="supprimerMagasin(magasinSelectionne.id)"><i class="bi bi-trash"></i></button>
+                </div>
+                <!--<span>Magasin:<b></b> </span> -->
+              </div>
+            </div>
+        </div>
       </div>
-        <button class="btn btn-success w-auto h-auto" (click)="nouveauMagasin()" data-bs-toggle="modal" data-bs-target="#modalMagasin">
+      <div class="col-md-2">
+        <button class="btn btn-success w-auto h-auto fw-bold" style="font-size: 14px;" (click)="nouveauMagasin()" data-bs-toggle="modal" data-bs-target="#modalMagasin">
           <i class="bi bi-plus-circle"></i> Nouveau magasin
         </button>
-    </div>
+      </div>
+
   </div>
   <div class="row">
-    <!-- Liste des magasins -->
-    <!-- <div class="col-md-2">
-      <h4>Magasins</h4>
-      <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#modalMagasin">
-        <i class="bi bi-plus-circle"></i> Nouveau
-      </button>
-      <ul class="list-group">
-        <li *ngFor="let magasin of magasins" class="list-group-item d-flex justify-content-between align-items-center">
-          <span class="me-1">{{ magasin.id }}</span>
-          <div>
-            <button class="btn btn-sm btn-primary me-1 w-auto" (click)="afficherDetailsMagasin(magasin)"><i class="bi bi-eye"></i></button>
-            <button class="btn btn-sm btn-warning me-1 w-auto" (click)="preparerEditionMagasin(magasin)" data-bs-toggle="modal" data-bs-target="#modalMagasin"><i class="bi bi-pencil"></i></button>
-            <button class="btn btn-sm btn-danger w-auto" (click)="supprimerMagasin(magasin.id)"><i class="bi bi-trash"></i></button>
-          </div>
-        </li>
-      </ul>
-    </div> -->
-
     <!-- Détails du magasin sélectionné -->
     <div class="col-md-12" *ngIf="magasinSelectionne">
-      <div class="alert alert-light d-flex justify-content-between align-items-center">
-        <span>Nom:<b>{{ magasinSelectionne.nom }}</b> </span>
-        <span>Localisation:<b>{{ magasinSelectionne.adresse }}</b> </span>
-        <span>Responsable: <b>{{ magasinSelectionne.responsableId }}</b> </span>
-         <span>Statut:<b>{{ magasinSelectionne.statut }}</b> </span>
-         <div>
-          <button class="btn btn-sm btn-warning me-1 w-auto" (click)="preparerEditionMagasin(magasinSelectionne)" data-bs-toggle="modal" data-bs-target="#modalMagasin"><i class="bi bi-pencil"></i></button>
-          <button class="btn btn-sm btn-danger w-auto" (click)="supprimerMagasin(magasinSelectionne.id)"><i class="bi bi-trash"></i></button>
-        </div>
-        <!--<span>Magasin:<b></b> </span> -->
-      </div>
-      <hr>
 
       <!-- Onglets de navigation -->
       <nav>
@@ -191,87 +179,87 @@
                   <option [value]="20">20 lignes</option>
               </select>
             </div>
-         <!-- Tableau des produits -->
-<!-- Tableau des produits -->
-    <table class="table table-bordered">
-      <thead class="table-dark">
-        <tr>
-          <th>Nom</th>
-          <th>Catégorie</th>
-          <th>Quantité en stock</th>
-          <th>Unité de stock</th>
-          <th>Prix d'achat</th>
-          <th>Prix de vente</th>
-          <th>Est périssable</th>
-          <th>Date péremption</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <ng-container *ngFor="let stock of getPaginatedStock; let i = index">
-        <tr>
-          <td>{{ stock.designation }}</td>
-          <td>{{ stock.famille }}</td>
-          <td>{{ getQteById(stock.id!, magasinSelectionne.stock ?? []) }}</td>
-          <td>{{ stock.unite }}</td>
-          <td>{{ stock.prixAchatUnitaire }} F CFA</td>
-          <td>{{ stock.prixVenteUnitaire }} F CFA</td>
-          <td>{{ stock.perissable ? 'Oui' : 'Non' }}</td>
-          <td>
-            <ng-container *ngIf="!stock.perissable; else datePeremption">
-              Aucune date
-            </ng-container>
-            <ng-template #datePeremption>
-              {{ getDatePeremtionProduitById(stock.id!, magasinSelectionne.stock ?? []) | date:'dd/MM/yyyy à HH:mm' }}
-            </ng-template>
-          </td>
-          <td>
-            <button class="btn btn-warning btn-sm" (click)="toggleForm(i)">
-              <i class="bi bi-arrow-left-right"></i> Transférer
-            </button>
-          </td>
-        </tr>
 
-        <!-- Ligne du formulaire de transfert -->
-        <tr *ngIf="showFormIndex !== null && showFormIndex === i">
-          <td colspan="9">
-            <table class="table table-borderless mb-0">
-              <tr>
-                <!-- Magasin Source -->
-                <td>
-                  <input type="text" class="form-control form-control-sm" [value]="magasinSelectionne.nom" disabled placeholder="Magasin Source">
-                </td>
-                <!-- Magasin Destinataire -->
-                <td>
-                  <select class="form-control form-control-sm" [(ngModel)]="magasinDestinataire" name="magasinDestinataire">
-                    <option [ngValue]="null" disabled>Choisir destinataire</option>
-                    <option *ngFor="let magasin of magasins" [value]="magasin.id">{{ magasin.nom }}</option>
-                  </select>
-                </td>
-                <!-- Quantité -->
-                <td>
-                  <input type="number" class="form-control form-control-sm" [(ngModel)]="quantite" min="1" name="quantite" placeholder="Quantité à transférer">
-                </td>
-                <!-- Motif -->
-                <td>
-                  <input type="text" class="form-control form-control-sm" [(ngModel)]="motif" name="motif" placeholder="Motif (optionnel)">
-                </td>
-                <!-- Boutons -->
-                <td>
-                  <button class="btn btn-success btn-sm" (click)="transferer(getPaginatedStock[showFormIndex])">
-                    <i class="bi bi-check-circle"></i> Transférer
-                  </button>
-                  <button class="btn btn-danger btn-sm ms-2" (click)="cancelForm()">
-                    <i class="bi bi-x-circle"></i> Annuler
-                  </button>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </ng-container>
-      </tbody>
-    </table>
+         <!-- Tableau des produits -->
+        <table class="table table-bordered">
+          <thead class="table-dark">
+            <tr>
+              <th>Nom</th>
+              <th>Catégorie</th>
+              <th>Quantité en stock</th>
+              <th>Unité de stock</th>
+              <th>Prix d'achat</th>
+              <th>Prix de vente</th>
+              <th>Est périssable</th>
+              <th>Date péremption</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <ng-container *ngFor="let stock of getPaginatedStock; let i = index">
+            <tr>
+              <td>{{ stock.designation }}</td>
+              <td>{{ stock.famille }}</td>
+              <td>{{ getQteById(stock.id!, magasinSelectionne.stock ?? []) }}</td>
+              <td>{{ stock.unite }}</td>
+              <td>{{ stock.prixAchatUnitaire }} F CFA</td>
+              <td>{{ stock.prixVenteUnitaire }} F CFA</td>
+              <td>{{ stock.perissable ? 'Oui' : 'Non' }}</td>
+              <td>
+                <ng-container *ngIf="!stock.perissable; else datePeremption">
+                  Aucune date
+                </ng-container>
+                <ng-template #datePeremption>
+                  {{ getDatePeremtionProduitById(stock.id!, magasinSelectionne.stock ?? []) | date:'dd/MM/yyyy à HH:mm' }}
+                </ng-template>
+              </td>
+              <td>
+                <button class="btn btn-warning btn-sm" (click)="toggleForm(i)">
+                  <i class="bi bi-arrow-left-right"></i> Transférer
+                </button>
+              </td>
+            </tr>
+
+            <!-- Ligne du formulaire de transfert -->
+            <tr *ngIf="showFormIndex !== null && showFormIndex === i">
+              <td colspan="9">
+                <table class="table table-borderless mb-0">
+                  <tr>
+                    <!-- Magasin Source -->
+                    <td>
+                      <input type="text" class="form-control form-control-sm" [value]="magasinSelectionne.nom" disabled placeholder="Magasin Source">
+                    </td>
+                    <!-- Magasin Destinataire -->
+                    <td>
+                      <select class="form-control form-control-sm" [(ngModel)]="magasinDestinataire" name="magasinDestinataire">
+                        <option [ngValue]="null" disabled>Choisir destinataire</option>
+                        <option *ngFor="let magasin of magasins" [value]="magasin.id">{{ magasin.nom }}</option>
+                      </select>
+                    </td>
+                    <!-- Quantité -->
+                    <td>
+                      <input type="number" class="form-control form-control-sm" [(ngModel)]="quantite" min="1" name="quantite" placeholder="Quantité à transférer">
+                    </td>
+                    <!-- Motif -->
+                    <td>
+                      <input type="text" class="form-control form-control-sm" [(ngModel)]="motif" name="motif" placeholder="Motif (optionnel)">
+                    </td>
+                    <!-- Boutons -->
+                    <td>
+                      <button class="btn btn-success btn-sm" (click)="transferer(getPaginatedStock[showFormIndex])">
+                        <i class="bi bi-check-circle"></i> Transférer
+                      </button>
+                      <button class="btn btn-danger btn-sm ms-2" (click)="cancelForm()">
+                        <i class="bi bi-x-circle"></i> Annuler
+                      </button>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </ng-container>
+          </tbody>
+        </table>
 
           <!-- Pagination -->
           <div class="d-flex justify-content-center align-items-center">
@@ -415,7 +403,7 @@
                   <td colspan="6">
                     <div class="p-3 border rounded">
                       <div class="d-flex flex-wrap gap-3 align-items-center">
-                        <h5 class="mb-0">Détails du Panier #{{ panier.id }}</h5>
+                        <!-- <h5 class="mb-0">Détails du Panier #{{ panier.id }}</h5> -->
                         <p class="mb-0"><strong>Client :</strong> {{ panier.clientId }}</p>
                         <p class="mb-0"><strong>Statut :</strong> {{ panier.statut }}</p>
                         <p class="mb-0"><strong>Total HT :</strong> {{ panier.totalHT }} F CFA</p>
@@ -424,7 +412,7 @@
                       </div>
 
                       <!-- Tableau des produits -->
-                      <h6 class="mt-3">Liste des Produits :</h6>
+                      <h3 class="mt-3">Liste des Produits :</h3>
                       <table class="table table-striped">
                         <thead class="table-light">
                           <tr>
@@ -463,7 +451,7 @@
             <i class="bi bi-arrow-right-circle"></i>
           </button>
         </div>
-        </div>
+      </div>
 
         <!-- Onglet Dépenses -->
         <div class="tab-pane fade" id="nav-decaissements" role="tabpanel">
@@ -654,7 +642,7 @@
                 <th>Magasin d'origine</th>
                 <th>Magasin de destination</th>
                 <th>Date</th>
-                <!-- <th>Actions</th> -->
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -665,10 +653,10 @@
                 <td>{{ getNomMagazin( transfert.magasinSource) }}</td>
                 <td>{{ getNomMagazin(transfert.magasinDestination) }}</td>
                 <td>{{ transfert.dateTransfert | date : 'dd/mm/yyyy à HH:mm' }}</td>
-                <!-- <td>
-                  <button class="btn btn-primary btn-sm">Voir</button>
-                  <button class="btn btn-danger btn-sm">Annuler</button>
-                </td> -->
+                <td>
+                  <button class="btn btn-dark btn-sm" [disabled]="transfert.statut === 'Validé'" (click)="validerTransfert(transfert)">Valider</button>
+                  <!-- <button class="btn btn-danger btn-sm">Annuler</button> -->
+                </td>
               </tr>
             </tbody>
           </table>
@@ -684,14 +672,18 @@
             </button>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+  </div>
 
 <!-- Modal d'ajout/modification de magasin -->
 <div class="modal fade" id="modalMagasin" tabindex="-1" aria-labelledby="modalMagasinLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="modalMagasinLabel">{{ modeEdition ? 'Modifier' : 'Ajouter' }} un magasin</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      <div class="modal-header d-flex justify-content-between">
+        <h2 class="modal-title" id="modalMagasinLabel">{{ modeEdition ? 'Modifier' : 'Ajouter' }} un magasin</h2>
+        <button type="button" class="btn btn-danger" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x"></i></button>
       </div>
       <div class="modal-body">
         <form [formGroup]="magasinForm" (ngSubmit)="modeEdition ? modifierMagasin() : ajouterMagasin()">
@@ -710,9 +702,9 @@
             <input type="number" class="form-control" id="responsableId" formControlName="responsableId" required>
           </div>
 
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-            <button type="submit" class="btn btn-primary" [disabled]="magasinForm.invalid">
+          <div class="modal-footer d-flex justify-content-center"  >
+            <button type="button" class="btn btn-secondary w-25" data-bs-dismiss="modal">Annuler</button>
+            <button type="submit" class="btn btn-success w-25" [disabled]="magasinForm.invalid">
               {{ modeEdition ? 'Modifier' : 'Ajouter' }}
             </button>
           </div>
