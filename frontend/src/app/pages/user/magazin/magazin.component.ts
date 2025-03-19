@@ -29,7 +29,6 @@ produits: Produits[] = [];
 
 
 magasinSelectionne: Magasin | null = null;
-magazinSelectionne: any;
 
 showFormIndex: number | null = null;
 magasinDestinataire: string | null = null;

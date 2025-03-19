@@ -26,6 +26,8 @@ export class Stock {
   }
 } */
 
+import { Produit, Produits } from "./produit.modele";
+
   export class Stock {
     public id!: number;
     public produitId!: number; // Produit concerné
@@ -36,11 +38,12 @@ export class Stock {
     public seuilReapprovisionnement: number = 10; // Déclenche une commande d'achat
     public stockSecurite: number = 5; // Quantité tampon pour éviter les ruptures
     public dernierPrixAchat?: number; // Dernier prix d'achat connu
+    public prixVenteUnitaire?: number; // Prix de vente unitaire
     public datePeremption!: Date; // Pour les produits périssables
     public statutStock: string = "En stock"; // État du stock ("En stock", "Rupture", etc.)
     public dateDerniereMiseAJour: Date = new Date(); // Date de la dernière mise à jour
 
-    // 🔹 Propriétés calculées (non stockées en base)
+    // 🔹 Propriétés calculées
     public get quantiteDisponible(): number {
       return this.quantiteTotale - this.quantiteReservee;
     }
@@ -49,9 +52,55 @@ export class Stock {
       return (this.dernierPrixAchat || 0) * this.quantiteTotale;
     }
 
+    public get valeurTotaleVente(): number {
+      return (this.prixVenteUnitaire || 0) * this.quantiteTotale;
+    }
+
     constructor(data?: Partial<Stock>) {
       Object.assign(this, data);
       this.dateDerniereMiseAJour = new Date();
+    }
+
+    // 🔹 Méthodes statiques pour les calculs globaux
+    public static calculerValeurTotaleStocks(stocks: Stock[]): number {
+      return stocks.reduce((total, stock) => total + stock.valeurTotaleStock, 0);
+    }
+
+    public static calculerValeurTotaleVente(stocks: Stock[]): number {
+      return stocks.reduce((total, stock) => total + stock.valeurTotaleVente, 0);
+    }
+
+    public static compterProduitsTotal(stocks: Stock[]): number {
+      return stocks.length;
+    }
+
+    public static compterProduitsUniques(stocks: Stock[]): number {
+      const produitsUniques = new Set(stocks.map(stock => stock.produitId));
+      return produitsUniques.size;
+    }
+
+    public static compterProduitsEnAlerte(stocks: Stock[]): number {
+      return stocks.filter(stock => stock.quantiteDisponible <= stock.seuilAlerte).length;
+    }
+
+    public static compterProduitsEnRupture(stocks: Stock[]): number {
+      return stocks.filter(stock => stock.quantiteDisponible === 0).length;
+    }
+
+    public static compterProduitsAReapprovisionner(stocks: Stock[]): number {
+      return stocks.filter(stock => stock.quantiteDisponible <= stock.seuilReapprovisionnement).length;
+    }
+
+    public static compterProduitsPerissables(stocks: Stock[], produits: Produits[]): number {
+      return stocks.filter(stock => {
+        const produit = produits.find(p => p.id === stock.produitId);
+        return produit?.perissable ?? false;
+      }).length;
+    }
+
+
+    public static compterProduitsEnSurstock(stocks: Stock[]): number {
+      return stocks.filter(stock => stock.quantiteDisponible > (stock.seuilReapprovisionnement + stock.stockSecurite)).length;
     }
   }
 

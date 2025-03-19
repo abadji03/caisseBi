@@ -111,7 +111,7 @@ export class Produit {
   } */
 
     export class Produits {
-      public id?: number;
+      public id: number=0;
       public famille!: string; // Catégorie du produit
       public designation!: string; // Nom du produit
       public fournisseurId?: number; // ID du fournisseur

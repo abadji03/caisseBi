@@ -8,13 +8,12 @@ import { ApplicationService } from '../../../services/application.service';
 import { ToastrService } from 'ngx-toastr';
 import { GroupeByCategory } from '../../user/web-produits/interface/produitsParCategorie.interface';
 import { FormsModule } from '@angular/forms';
-import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 @Component({
   selector: 'app-vente',
   standalone: true,
-  imports: [CommonModule,MatIconModule,RouterOutlet, CarouselModule, FormsModule],
+  imports: [CommonModule,MatIconModule,CarouselModule, FormsModule],
   templateUrl: './vente.component.html',
   styleUrl: './vente.component.css'
 })
@@ -52,7 +51,7 @@ export class VenteComponent {
 
   }
 
-createPDF(){
+/* createPDF(){
    const DATA = document.getElementById('htmlData') as HTMLElement;
   const doc: jsPDF = new jsPDF("p", "mm", "a4");
   if(DATA !== null) {
@@ -64,8 +63,8 @@ createPDF(){
      }
   });
   }
-}
-  public openPDF(): void {
+} */
+  /* public openPDF(): void {
     let DATA: any = document.getElementById('htmlData');
     html2canvas(DATA).then((canvas) => {
       let fileWidth = 208;
@@ -76,7 +75,7 @@ createPDF(){
       PDF.addImage(FILEURI, 'PNG', 0, position, fileWidth, fileHeight);
       PDF.save('angular-demo.pdf');
     });
-  }
+  } */
 
   showInfo(prod:Produit) {
     this.toastr.info('Le produit '+prod.nomCourt+' a été retiré du panier avec succés');

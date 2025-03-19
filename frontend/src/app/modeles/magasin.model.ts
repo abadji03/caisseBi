@@ -48,7 +48,7 @@ import { Transfert } from "./transfert.model";
     dateCreation?: Date;
     derniereMiseAJour?: Date;
     transferts?: Transfert[];
-    stock?: Stock[];             // Référence au stock du magasin
+    stock: Stock[] =[];             // Référence au stock du magasin
 
 
 
