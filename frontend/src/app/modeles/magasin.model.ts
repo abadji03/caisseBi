@@ -42,7 +42,7 @@ import { Transfert } from "./transfert.model";
     chiffreAffaires?: number;
     ventes?: Panier[];
     depenses?: Depense[];
-    mouvements?: MouvementsStock[];
+    mouvements: MouvementsStock[] =[];
     recettes?: Recette[];
     statut?: "Actif" | "Inactif";
     dateCreation?: Date;

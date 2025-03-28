@@ -270,7 +270,7 @@ loadMagasins(): Magasin[] {
         ref: `MV-${m}${i}`,
         produitId: produit.id!,
         magasinId: i,
-        typeMouvement: typeMouvement as "Entree" | "Sortie" | "Transfert",
+        typeMouvement: typeMouvement as "Entree" | "Sortie",
         quantite: Math.floor(Math.random() * 50) + 5,
         prixUnitaire: produit.prixAchatUnitaire,
         acteurId: Math.floor(Math.random() * 100), // Aléatoire : fournisseur ou client

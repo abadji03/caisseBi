@@ -1,33 +1,35 @@
 <div class="container-fluid">
-    <h3>Rapport des Stocks</h3>
+    <div class="d-flex justify-content-between align-items-center">
+      <h2 class="fw-bold"><i class="bi bi-bar-chart-line"></i> Rapport des Stocks</h2>
+      <button class="btn btn-outline-dark" (click)="exportToPDF()"><i class="bi bi-file-earmark-pdf"></i> Exporter PDF</button>
+    </div>
+
+  <hr class="border border-primary">
 
     <!-- Filtres -->
-    <div class="row mb-3">
-      <!--<div class="col-md-4">
-         <label>Catégorie :</label>
-        <select class="form-control" [(ngModel)]="categorie">
-          <option value="all">Toutes les catégorie</option>
-          <option *ngFor="let categorie of getCategories()" [value]="categorie">{{ categorie }}</option>
-        </select>
-      </div>-->
-      <!--<div class="col-md-4">
-         <label>Statut de stock :</label>
-        <select class="form-control" [(ngModel)]="statut">
-          <option value="all">Tous les statuts</option>
-          <option value="en_stock">En stock</option>
-          <option value="rupture">Rupture</option>
-          <option value="alerte">Alerte</option>
-        </select>
-      </div>-->
-      <div class="col-md-4" *ngIf="isAdmin">
-        <!-- <label>Succursale :</label> -->
-        <select class="form-control" [(ngModel)]="succursale" (change)="onMagasinSelect($event)">
-          <option value="all">Toutes les succursales</option>
-          <option *ngFor="let magasin of magasins" [value]="magasin.id">{{ magasin.nom }}</option>
-          <!-- Ajouter d'autres succursales ici -->
-        </select>
-      </div>
+    <div class="card p-3 mb-4 shadow-sm">
+        <h5 class="fw-bold"><i class="bi bi-funnel"></i> Filtres</h5>
+        <div class="row g-3 align-items-center">
+            <div class="col-md-4">
+                <label for="dateDebut" class="form-label fw-bold">Date de début :</label>
+                <input type="date" id="dateDebut" class="form-control" [(ngModel)]="dateDebut" (change)="filtrerDates()">
+            </div>
+
+            <div class="col-md-4">
+                <label for="dateFin" class="form-label fw-bold">Date de fin :</label>
+                <input type="date" id="dateFin" class="form-control" [(ngModel)]="dateFin" (change)="filtrerDates()">
+            </div>
+
+            <div class="col-md-4" *ngIf="isAdmin">
+                <label class="fw-bold">Succursale :</label>
+                <select class="form-control" (change)="onMagasinSelect($event)">
+                    <option value="-1">Toutes les succursales</option>
+                    <option *ngFor="let magasin of magasins" [value]="magasin.id">{{ magasin.nom }}</option>
+                </select>
+            </div>
+        </div>
     </div>
+
     <div class="rapport" id="rapport">
       <div id="rapport-pdf" class="text-center mb-4" style="display: none;">
         <h4 class="fw-bold">Rapport de Stock</h4>
@@ -44,107 +46,110 @@
 
 
     <!-- Vue d'Ensemble -->
+    <div class="bg-light d-flex justify-content-center align-items-center p-2">
+      <h3 class="fw-bold">Résumé du rapport de stock pour la période allant du {{dateDebut}} au {{dateFin}}</h3>
+    </div>
     <div class="row mb-4">
-      <div class="col-md-6 col-lg-4">
+      <div class="col-md-6 col-lg-3 mt-3">
         <div class="card border-info shadow-sm">
           <div class="card-body d-flex align-items-center">
             <i class="bi bi-list-check fs-2 text-info me-3"></i>
             <div>
-              <h6 class="text-muted mb-1">Total Produits</h6>
+              <h5 class="text-muted fw-bold mb-1">Total Produits</h5>
               <p class="fs-5 fw-bold mb-0">{{ totalProduits }}</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="col-md-6 col-lg-4">
+      <div class="col-md-6 col-lg-3 mt-3">
         <div class="card border-success shadow-sm">
           <div class="card-body d-flex align-items-center">
             <i class="bi bi-cash-stack fs-2 text-success me-3"></i>
             <div>
-              <h6 class="text-muted mb-1">Valeur achat du Stock</h6>
-              <p class="fs-5 fw-bold mb-0">{{ valeurTotaleStock | number }} F CFA</p>
+              <h5 class="text-muted fw-bold mb-1">Valeur achat du Stock intial </h5>
+              <p class="fs-5 fw-bold mb-0">{{ valeurTotaleStockAchatInitial | number }} F CFA</p>
             </div>
           </div>
         </div>
       </div>
-      <div class="col-md-6 col-lg-4">
+      <div class="col-md-6 col-lg-3 mt-3">
         <div class="card border-primary shadow-sm">
           <div class="card-body d-flex align-items-center">
             <i class="bi bi-graph-up-arrow fs-2 text-primary me-3"></i>
             <div>
-              <h6 class="text-muted mb-1">Valeur Vente du Stock</h6>
-              <p class="fs-5 fw-bold mb-0">{{ valeurTotaleVenteStock | number }} F CFA</p>
+              <h5 class="text-muted fw-bold mb-1">Valeur achat du Stock final</h5>
+              <p class="fs-5 fw-bold mb-0">{{ valeurTotaleVenteStockAchatFinal | number }} F CFA</p>
             </div>
           </div>
         </div>
       </div>
-      <div class="col-md-6 col-lg-4 mt-3">
+      <div class="col-md-6 col-lg-3 mt-3">
         <div class="card border-secondary shadow-sm">
           <div class="card-body d-flex align-items-center">
             <i class="bi bi-tags fs-2 text-secondary me-3"></i>
             <div>
-              <h6 class="text-muted mb-1">Produits Uniques</h6>
+              <h5 class="text-muted fw-bold mb-1">Produits Uniques</h5>
               <p class="fs-5 fw-bold mb-0">{{ produitsUniques }}</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="col-md-6 col-lg-4 mt-3">
+      <div class="col-md-6 col-lg-3 mt-3">
         <div class="card border-danger shadow-sm">
           <div class="card-body d-flex align-items-center">
             <i class="bi bi-exclamation-circle fs-2 text-danger me-3"></i>
             <div>
-              <h6 class="text-muted mb-1">Produits en Rupture</h6>
+              <h5 class="text-muted fw-bold mb-1">Produits en Rupture</h5>
               <p class="fs-5 fw-bold mb-0">{{ produitsRupture }}</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="col-md-6 col-lg-4 mt-3">
+      <div class="col-md-6 col-lg-3 mt-3">
         <div class="card border-warning shadow-sm">
           <div class="card-body d-flex align-items-center">
             <i class="bi bi-exclamation-triangle fs-2 text-warning me-3"></i>
             <div>
-              <h6 class="text-muted mb-1">Produits sous Alerte</h6>
+              <h5 class="text-muted fw-bold mb-1">Produits sous Alerte</h5>
               <p class="fs-5 fw-bold mb-0">{{ produitsEnAlerte }}</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="col-md-6 col-lg-4 mt-3">
+      <div class="col-md-6 col-lg-3 mt-3">
         <div class="card border-warning shadow-sm">
           <div class="card-body d-flex align-items-center">
             <i class="bi bi-arrow-down-circle fs-2 text-warning me-3"></i>
             <div>
-              <h6 class="text-muted mb-1">Produits à Réapprovisionner</h6>
+              <h5 class="text-muted fw-bold mb-1">Produits à Réapprovisionner</h5>
               <p class="fs-5 fw-bold mb-0">{{ produitsAReapprovisionne }}</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="col-md-6 col-lg-4 mt-3">
+      <div class="col-md-6 col-lg-3 mt-3">
         <div class="card border-dark shadow-sm">
           <div class="card-body d-flex align-items-center">
             <i class="bi bi-box-arrow-up fs-2 text-dark me-3"></i>
             <div>
-              <h6 class="text-muted mb-1">Produits en Surstock</h6>
+              <h5 class="text-muted fw-bold mb-1">Produits en Surstock</h5>
               <p class="fs-5 fw-bold mb-0">{{ produitsEnSurStock }}</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="col-md-6 col-lg-4 mt-3">
+      <div class="col-md-6 col-lg-3 mt-3">
         <div class="card border-primary shadow-sm">
           <div class="card-body d-flex align-items-center">
             <i class="bi bi-calendar-x fs-2 text-primary me-3"></i>
             <div>
-              <h6 class="text-muted mb-1">Produits Périssables</h6>
+              <h5 class="text-muted fw-bold mb-1">Produits Périssables</h5>
               <p class="fs-5 fw-bold mb-0">{{ produitsPerissable }}</p>
             </div>
           </div>
@@ -152,8 +157,11 @@
       </div>
     </div>
 
+    <div class="bg-light d-flex justify-content-center align-items-center p-2">
+      <h3 class="fw-bold">Liste des produits en stock pour la période sélectionnée</h3>
+    </div>
     <!-- Barre de recherche et sélection du nombre de lignes -->
-    <div class="d-flex justify-content-between mb-2 no-print">
+    <div class="d-flex justify-content-between my-3 no-print">
       <input type="text" class="form-control w-50" placeholder="Filtrer par catégorie et statut..." [(ngModel)]="searchTerm" (input)="onSearchChange()">
       <select class="form-select w-auto" (change)="setItemsPerPage($event)">
           <option [value]="5">5 lignes</option>
@@ -167,25 +175,47 @@
       </select>
     </div>
     <!-- Liste des Produits -->
-    <table class="table table-bordered table-striped">
-      <thead class="table-secondary">
+    <table class="table table-bordered table-striped shadow-sm">
+      <thead class="table-dark text-white">
         <tr>
-          <th>Nom du Produit</th>
+          <!-- <th>ID produit</th> -->
+          <th>Produit</th>
           <th>Catégorie</th>
+          <th>Unité stock</th>
           <th>Prix d'Achat</th>
-          <th>Quantité en Stock</th>
-          <th>Valeur du Stock</th>
+          <!-- <th>Prixe de vente</th> -->
+          <th>Stock intial</th>
+          <th>Entrées</th>
+          <th>Sorties</th>
+          <th>Stock final</th>
+          <th>Taux de rotation</th>
           <th>Statut</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let produit of getPaginatedProduits">
+          <!-- <td>{{ produit.id }}</td> -->
           <td>{{ produit.designation }}</td>
           <td>{{ produit.famille }}</td>
-          <td>{{ produit.prixAchatUnitaire ?? 0}} F CFA</td>
-          <td>{{ getQteById(produit.id, stocks) }}</td>
-          <td>{{  getValeurStocktById(produit.id, stocks)}} F CFA</td>
-          <td>{{ getStatutProduitById(produit.id, stocks) }}</td>
+          <td>{{produit.unite}}</td>
+          <td>{{ getDernierPrixAchatById(produit.id)}} F CFA</td>
+          <!-- <td>{{ getDernierPrixVenteById(produit.id)}} F CFA</td> -->
+          <td>
+            Qte:{{  getStatProduit(produit).stockInitial }} <br>
+            Valeur achat: {{ getStatProduit(produit).valeurStockInitial | number:'1.2-2' }}
+          </td>
+          <td>{{ getStatProduit(produit).entrees }}</td>
+          <td>{{ getStatProduit(produit).sorties }}</td>
+          <td>
+            Qte:{{ getStatProduit(produit).stockFinal }}<br>
+            Valeur achat: {{ getStatProduit(produit).valeurStockFinal | number:'1.2-2' }}
+          </td>
+          <td>{{ getStatProduit(produit).tauxRotation | number:'1.2-2' }}</td>
+          <td class="fw-bold">
+            <span class="badge bg-success" *ngIf="getStatutProduitById(produit.id) === 'En stock'">En stock</span>
+            <span class="badge bg-danger" *ngIf="getStatutProduitById(produit.id) === 'En rupture'">En rupture</span>
+            <span class="badge bg-warning" *ngIf="getStatutProduitById(produit.id) === 'En alerte'">En alerte</span>
+        </td>
         </tr>
       </tbody>
     </table>
@@ -202,10 +232,131 @@
         <i class="bi bi-arrow-right-circle"></i>
       </button>
     </div>
+    <!-- Listes des mouvements pour la période sélectionnée -->
+    <div class="bg-light d-flex justify-content-center align-items-center p-2">
+      <h3 class="fw-bold">Liste des mouvements pour la période sélectionnée</h3>
+    </div>
+    <table class="table table-bordered table-striped shadow-sm">
+      <thead class="table-dark text-white">
+        <tr>
+          <th>Reférence</th>
+          <th>Produit</th>
+          <th>Magasin</th>
+          <th>Type mouvement</th>
+          <th>Quantité</th>
+          <th>Prix unitaire</th>
+          <th>Prix total</th>
+          <th>Date mouvement</th>
+          <th>Description</th>
+          <th>Responsable</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let mvt of filteredMouvements">
+          <td>{{ mvt.ref }}</td>
+          <td>{{ getNomProduitById(mvt.produitId) }}</td>
+          <td>{{ getNomMagasinsById(mvt.magasinId)}}</td>
+          <td>{{ mvt.typeMouvement}}</td>
+          <td>Qte:{{  mvt.quantite }}</td>
+          <td>{{  mvt.prixUnitaire }}</td>
+          <td>{{  mvt.prixTotal | number:'1.2-2' }}</td>
+          <td>{{ mvt.dateMouvement | date :'dd/MM/yyyy'}}</td>
+          <td>{{ mvt.description}}</td>
+          <td>{{ mvt.acteurId}}</td>
+        </tr>
+      </tbody>
+    </table>
+    <!-- Graphiques et analyses-->
+    <div class="bg-light d-flex justify-content-center align-items-center p-2">
+      <h3 class="fw-bold">Evolution des stock, repartition par catégorie et les produits les plus vendus</h3>
+    </div>
+    <div class="chart-container">
+      <div class="chart-row">
+        <div class="chart-wrapper">
+          <h3>Évolution du stock dans le temps</h3>
+          <canvas #evolutionChart></canvas>
+        </div>
+        <div class="chart-wrapper">
+          <h3>Répartition par catégorie</h3>
+          <canvas #repartitionChart></canvas>
+        </div>
+      </div>
+      <div class="chart-row">
+        <div class="chart-wrapper full-width">
+          <h3>Produits les plus vendus</h3>
+          <canvas #topProduitsChart></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Graphiques et analyses -->
+    <div class="bg-light d-flex justify-content-center align-items-center p-2">
+      <h3 class="fw-bold">Observations et commentaires</h3>
+    </div>
+
+    <div>
+      <ul *ngIf="stocks && stocks.length > 0">
+        <!-- Liste des produits en rupture de stock -->
+        <li *ngIf="getListeProduitsEnRupture.length > 0">
+          Les produits suivants sont en rupture de stock :
+          <span *ngFor="let stock of getListeProduitsEnRupture">
+            {{ getNomProduitById(stock.produitId) }},
+          </span>
+          pensez à les recommander rapidement.
+        </li>
+
+        <!-- Liste des produits nécessitant un réapprovisionnement -->
+        <li *ngIf="getListeProduitsAReapprovisionner.length > 0">
+          Les produits suivants ont un stock faible et doivent être réapprovisionnés :
+          <span *ngFor="let stock of getListeProduitsAReapprovisionner">
+            {{ getNomProduitById(stock.produitId) }},
+          </span>
+        </li>
+
+        <!-- Liste des produits en surstock -->
+        <li *ngIf="getListeProduitsEnSurstockr.length > 0">
+          Les produits suivants sont en surstock, envisagez de réduire les commandes :
+          <span *ngFor="let stock of getListeProduitsEnSurstockr">
+            {{ getNomProduitById(stock.produitId) }},
+          </span>
+        </li>
+      </ul>
+    </div>
 
     <!-- Exportation -->
     <button class="btn btn-danger mt-3" (click)="exportToPDF()">Exporter en PDF</button>
     <button class="btn btn-success mt-3" (click)="exportToExcel()">Exporter en Excel</button>
+
+    <table class="table table-bordered table-striped shadow-sm">
+      <thead class="table-dark text-white">
+        <tr>
+          <th>id</th>
+          <th>Produit</th>
+          <th>Magasin</th>
+          <th>Qte total</th>
+          <th>Qte disponible</th>
+          <th>Qte réservée</th>
+          <th>Date mise à jour</th>
+          <!-- <th>Prix total</th>
+          <th>Description</th>
+          <th>Responsable</th> -->
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let mvt of allStocks">
+          <td>{{ mvt.produitId }}</td>
+          <td>{{ getNomProduitById(mvt.produitId) }}</td>
+          <td>{{ getNomMagasinsById(mvt.magasinId)}}</td>
+          <td>{{ mvt.quantiteTotale}}</td>
+          <td>Qte:{{  mvt.quantiteDisponible }}</td>
+          <td>{{  mvt.quantiteReservee }}</td>
+          <td>{{ mvt.dateDerniereMiseAJour | date :'dd/MM/yyyy'}}</td>
+          <!-- <td>{{  mvt.prixTotal | number:'1.2-2' }}</td>
+          <td>{{ mvt.description}}</td>
+          <td>{{ mvt.acteurId}}</td> -->
+        </tr>
+      </tbody>
+    </table>
 
   </div>
 

@@ -1,32 +1,5 @@
-/*
 
-export class Stock {
-  public id!: number;
-  public produitId!: number; // Produit concerné
-  public magasinId!: number; // Magasin concerné
-  public quantiteTotale!: number; // Quantité totale en stock
-  public quantiteReservee: number = 0; // Quantité déjà engagée pour des commandes
-  public quantiteDisponible!: number; // Calculée : quantiteTotale - quantiteReservee
-  public seuilAlerte: number = 5; // Niveau minimum pour alerte
-  public seuilReapprovisionnement: number = 10; // Déclenche une commande d'achat
-  public stockSecurite: number = 5; // Quantité tampon pour éviter les ruptures
-  public dernierPrixAchat: number = 0; // Dernier coût unitaire d’achat
-  public valeurTotaleStock: number = 0; // Calculée : dernierPrixAchat * quantiteTotale
-  public uniteStock: string = "Carton"; // Unité de stockage
-  public dateDerniereEntree?: Date; // Dernière entrée en stock
-  public dateDerniereSortie?: Date; // Dernière sortie de stock
-  public statutStock: string = "En stock"; // État du stock ("En stock", "Rupture", etc.)
-  public datePeremption?: Date; // Pour les produits périssables
-  public dateDerniereMiseAJour: Date = new Date(); // Date de la dernière mise à jour
-
-  constructor(data?: Partial<Stock>) {
-    Object.assign(this, data);
-    this.quantiteDisponible = (this.quantiteTotale || 0) - this.quantiteReservee;
-    this.valeurTotaleStock = (this.dernierPrixAchat || 0) * (this.quantiteTotale || 0);
-  }
-} */
-
-import { Produit, Produits } from "./produit.modele";
+import { Produits } from "./produit.modele";
 
   export class Stock {
     public id!: number;
@@ -41,7 +14,7 @@ import { Produit, Produits } from "./produit.modele";
     public prixVenteUnitaire?: number; // Prix de vente unitaire
     public datePeremption!: Date; // Pour les produits périssables
     public statutStock: string = "En stock"; // État du stock ("En stock", "Rupture", etc.)
-    public dateDerniereMiseAJour: Date = new Date(); // Date de la dernière mise à jour
+    public dateDerniereMiseAJour!: Date ; // Date de la dernière mise à jour
 
     // 🔹 Propriétés calculées
     public get quantiteDisponible(): number {
@@ -49,16 +22,16 @@ import { Produit, Produits } from "./produit.modele";
     }
 
     public get valeurTotaleStock(): number {
-      return (this.dernierPrixAchat || 0) * this.quantiteTotale;
+      return (this.dernierPrixAchat || 0) * this.quantiteDisponible;
     }
 
     public get valeurTotaleVente(): number {
-      return (this.prixVenteUnitaire || 0) * this.quantiteTotale;
+      return (this.prixVenteUnitaire || 0) * this.quantiteDisponible;
     }
 
     constructor(data?: Partial<Stock>) {
       Object.assign(this, data);
-      this.dateDerniereMiseAJour = new Date();
+      //this.dateDerniereMiseAJour = new Date();
     }
 
     // 🔹 Méthodes statiques pour les calculs globaux
@@ -107,60 +80,237 @@ import { Produit, Produits } from "./produit.modele";
 
 
 
-/* export class MouvementsStock {
-  public id!: number;
-  public ref!: string; // Référence du mouvement
-  public produitId!: number; // Produit concerné
-  public magasinId!: number; // Magasin concerné
-  public typeMouvement!: "Entree" | "Sortie" | "Ajustement"; // Type de mouvement
-  public quantite!: number; // Quantité ajoutée ou retirée
-  public prixUnitaire!: number; // Prix unitaire d'achat ou de vente
-  public prixTotal!: number; // Calculé : prixUnitaire * quantite
-  public acteurId!: number; // Fournisseur (si achat) ou client (si vente)
-  public uniteStock: string = "Carton"; // Unité de stockage
-  public nombreArticles: number = 1; // Nombre total d’articles
-  public description: string = ""; // Détails sur le mouvement
-  public dateMouvement: Date = new Date(); // Date du mouvement
-  public dateCreation: Date = new Date(); // Date de création de l'enregistrement
-  public heureCreation: Date = new Date(); // Heure de création
-  public motif?: string; // Raison si ajustement (ex : Perte, Correction)
-
-  constructor(data?: Partial<MouvementsStock>) {
-    Object.assign(this, data);
-    this.prixTotal = (this.prixUnitaire || 0) * (this.quantite || 0);
-  }
-}
- */
-
-
 export class MouvementsStock {
   public id!: number;
-  public ref!: string; // Référence unique du mouvement
-  public produitId!: number; // Produit concerné
-  public magasinId!: number; // Magasin concerné
-  public typeMouvement!: "Entree" | "Sortie" | "Transfert"; // Type de mouvement
-  public quantite!: number; // Quantité ajoutée ou retirée
-  public prixUnitaire!: number; // Prix unitaire d'achat ou de vente
-  public acteurId!: number; // Fournisseur (si achat) ou client (si vente)
-  public description?: string; // Détails sur le mouvement
-  public motif?: string; // Raison si ajustement (ex : Perte, Correction)
-  public dateMouvement: Date = new Date(); // Date du mouvement
+  public ref!: string;
+  public produitId!: number;
+  public magasinId!: number;
+  public stockId!: number;  // 🔹 Ajout du lien avec le stock
+  public typeMouvement!: "Entree" | "Sortie";
+  public quantite!: number;
+  public prixUnitaire!: number;
+  public acteurId!: number;
+  public description?: string;
+  public motif?: string;
+  public dateMouvement: Date = new Date();
 
-
-
-  // 🔹 Propriétés calculées (non stockées en base)
+  // 🔹 Calcul du prix total
   public get prixTotal(): number {
     return (this.prixUnitaire || 0) * this.quantite;
   }
 
   constructor(data?: Partial<MouvementsStock>) {
     if (data) {
-      // Exclure prixTotal lors de l'assignation pour éviter l'erreur
       const { prixTotal, ...rest } = data as any;
       Object.assign(this, rest);
     }
   }
+
+  // 🔹 Réinitialiser l'heure d'une date pour éviter les erreurs de comparaison
+  private static resetTime(date: Date): Date {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+  }
+
+  // 🔹 Méthode pour calculer les statistiques de stock
+  public static calculerStatistiques(
+    mouvements: MouvementsStock[],
+    stocks: Stock[],
+    dernierPrixAchat: number,
+    dateDebut: Date,
+    dateFin: Date,
+    magasinId: number,
+    produitId: number
+  ) {
+    const stockInitial = this.getStockInitial(produitId, magasinId, new Date(dateDebut.getTime() - 1), stocks, mouvements);
+
+    const startDate = this.resetTime(dateDebut);
+    const endDate = this.resetTime(dateFin);
+
+    const mouvementsFiltres = mouvements.filter(mvt => {
+      const mouvementDate = this.resetTime(new Date(mvt.dateMouvement));
+
+      return (
+        mvt.produitId === produitId &&
+        (magasinId === -1 || mvt.magasinId === magasinId) &&
+        mouvementDate >= startDate &&
+        mouvementDate <= endDate
+      );
+    });
+
+    // 🔹 Regrouper les entrées et sorties
+    const entrees = mouvementsFiltres
+      .filter(mvt => mvt.typeMouvement === "Entree")
+      .reduce((total, mvt) => total + mvt.quantite, 0);
+
+    const sorties = mouvementsFiltres
+      .filter(mvt => mvt.typeMouvement === "Sortie")
+      .reduce((total, mvt) => total + mvt.quantite, 0);
+
+    // 🔹 Calcul du stock final
+    const stockFinal = stockInitial + entrees - sorties;
+
+    // 🔹 Calcul des valeurs du stock
+    const valeurStockInitial = stockInitial * dernierPrixAchat;
+    const valeurStockFinal = stockFinal * dernierPrixAchat;
+
+    // 🔹 Calcul du stock moyen
+    const stockMoyen = (stockInitial + stockFinal) / 2;
+
+    // 🔹 Calcul du taux de rotation
+    const tauxRotation = stockMoyen > 0 ? sorties / stockMoyen : 0;
+
+    return {
+      stockInitial,
+      valeurStockInitial,
+      entrees,
+      sorties,
+      stockFinal,
+      valeurStockFinal,
+      tauxRotation
+    };
+  }
+
+  // 🔹 Méthode pour calculer le stock initial
+  private static getStockInitial(
+    produitId: number,
+    magasinId: number,
+    dateDebut: Date,
+    stocks: Stock[],
+    mouvements: MouvementsStock[]
+  ): number {
+    const dateDebutReset = this.resetTime(dateDebut);
+
+    if (magasinId !== -1) {
+      // ✅ Calcul pour un magasin spécifique
+      const stockEnregistre = stocks
+        .filter(stock => stock.produitId === produitId && stock.magasinId === magasinId)
+        .sort((a, b) => b.dateDerniereMiseAJour.getTime() - a.dateDerniereMiseAJour.getTime())
+        .find(stock => this.resetTime(stock.dateDerniereMiseAJour) <= dateDebutReset);
+
+      if (stockEnregistre) {
+        return stockEnregistre.quantiteDisponible;
+      }
+
+      // 🔹 Calcul via les mouvements
+      const totalEntrees = mouvements
+        .filter(mvt => mvt.produitId === produitId && mvt.magasinId === magasinId && this.resetTime(mvt.dateMouvement) <= dateDebutReset && mvt.typeMouvement === "Entree")
+        .reduce((total, mvt) => total + mvt.quantite, 0);
+
+      const totalSorties = mouvements
+        .filter(mvt => mvt.produitId === produitId && mvt.magasinId === magasinId && this.resetTime(mvt.dateMouvement) <= dateDebutReset && mvt.typeMouvement === "Sortie")
+        .reduce((total, mvt) => total + mvt.quantite, 0);
+
+      return totalEntrees - totalSorties;
+    }
+
+    // ✅ Cas où tous les magasins sont pris en compte
+    const stockTotal = stocks
+      .filter(stock => stock.produitId === produitId)
+      .reduce((total, stock) => total + stock.quantiteDisponible, 0);
+
+    const totalEntreesGlobales = mouvements
+      .filter(mvt => mvt.produitId === produitId && this.resetTime(mvt.dateMouvement) <= dateDebutReset && mvt.typeMouvement === "Entree")
+      .reduce((total, mvt) => total + mvt.quantite, 0);
+
+    const totalSortiesGlobales = mouvements
+      .filter(mvt => mvt.produitId === produitId && this.resetTime(mvt.dateMouvement) <= dateDebutReset && mvt.typeMouvement === "Sortie")
+      .reduce((total, mvt) => total + mvt.quantite, 0);
+
+    return stockTotal + totalEntreesGlobales - totalSortiesGlobales;
+  }
+  // Méthode pour calculer les statistiques globales pour tous les produits
+  public static calculerStatistiquesGlobaux(
+    mouvements: MouvementsStock[],
+    stocks: Stock[],
+    dateDebut: Date,
+    dateFin: Date,
+    magasinId: number
+  ) {
+    // Regrouper les mouvements par produit
+    const produitsStatistiques: { [key: number]: any } = {};
+
+    // Filtrer les mouvements entre les dates spécifiées
+    const mouvementsFiltres = mouvements.filter(mvt => {
+      const mouvementDate = this.resetTime(new Date(mvt.dateMouvement));
+      return (magasinId === -1 || mvt.magasinId === magasinId) &&
+             mouvementDate >= this.resetTime(dateDebut) &&
+             mouvementDate <= this.resetTime(dateFin);
+    });
+
+    // Calculer les statistiques pour chaque produit
+    mouvementsFiltres.forEach(mvt => {
+      const produitId = mvt.produitId;
+
+      if (!produitsStatistiques[produitId]) {
+        produitsStatistiques[produitId] = {
+          stockInitial: 0,
+          valeurStockInitial: 0,
+          entrees: 0,
+          sorties: 0,
+          stockFinal: 0,
+          valeurStockFinal: 0,
+          tauxRotation: 0,
+        };
+      }
+
+      const produitStatistiques = produitsStatistiques[produitId];
+
+      // Trouver le dernier prix d'achat du produit
+      const produit = stocks.find(p => p.id === produitId);
+      const dernierPrixAchat = produit ? produit.dernierPrixAchat??0:0;
+
+      // Calcul du stock initial pour chaque produit
+      const stockInitial = this.getStockInitial(produitId, magasinId, new Date(dateDebut.getTime() - 1), stocks, mouvements);
+
+      produitStatistiques.stockInitial += stockInitial;
+      produitStatistiques.valeurStockInitial += stockInitial *dernierPrixAchat ;
+      //produitStatistiques.stockFinal += stockFinal;
+      //produitStatistiques.valeurStockFinal += stockFinal * dernierPrixAchat;
+      produitStatistiques.entrees += mvt.typeMouvement === "Entree" ? mvt.quantite : 0;
+      produitStatistiques.sorties += mvt.typeMouvement === "Sortie" ? mvt.quantite : 0;
+      // Maintenant recalculer le stockFinal
+      const stockFinal = stockInitial + produitStatistiques.entrees - produitStatistiques.sorties;
+      produitStatistiques.stockFinal = stockFinal;
+      // Mettre à jour la valeur du stock final
+      produitStatistiques.valeurStockFinal = stockFinal * dernierPrixAchat;
+
+      // Calcul du taux de rotation
+      const stockMoyen = (produitStatistiques.stockInitial + produitStatistiques.stockFinal) / 2;
+      produitStatistiques.tauxRotation = stockMoyen > 0 ? produitStatistiques.sorties / stockMoyen : 0;
+    });
+
+    // Calcul des totaux globaux pour tous les produits
+    let totalEntrees = 0;
+    let totalSorties = 0;
+    let totalValeurStockInitial = 0;
+    let totalValeurStockFinal = 0;
+    let totalStockInitial = 0;
+    let totalStockFinal = 0;
+
+    for (const produitId in produitsStatistiques) {
+      const statsProduit = produitsStatistiques[produitId];
+      totalEntrees += statsProduit.entrees;
+      totalSorties += statsProduit.sorties;
+      totalValeurStockInitial += statsProduit.valeurStockInitial;
+      totalValeurStockFinal += statsProduit.valeurStockFinal;
+      totalStockInitial += statsProduit.stockInitial;
+      totalStockFinal += statsProduit.stockFinal;
+    }
+
+    return {
+      totalEntrees,
+      totalSorties,
+      totalValeurStockInitial,
+      totalValeurStockFinal,
+      totalStockInitial,
+      totalStockFinal,
+      tauxRotation: totalStockFinal > 0 ? totalSorties / totalStockFinal : 0,
+    };
+  }
+
+
 }
+
 
 export class Reconciliation {
   id?: number;

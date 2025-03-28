@@ -2,16 +2,15 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { jsPDF } from 'jspdf';  // Import jsPDF
-import autoTable from 'jspdf-autotable';
-
+import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import * as ExcelJS from 'exceljs';
 import { Magasin } from '../../../modeles/magasin.model';
 import { Produits } from '../../../modeles/produit.modele';
 import { MouvementsStock, Stock } from '../../../modeles/entrees-sorties.model';
-import { Panier } from '../../../modeles/panier.model';
 import { Transfert } from '../../../modeles/transfert.model';
-import { Depense, Recette } from '../../../modeles/finance.model';
 import html2canvas from 'html2canvas';
+import { magasins, produits, stocks,mouvements } from '../../../modeles/donnees_fictives';
+
 
 @Component({
   selector: 'app-rapports-ventes',
@@ -21,15 +20,19 @@ import html2canvas from 'html2canvas';
   styleUrl: './rapports-ventes.component.css'
 })
 export class RapportsVentesComponent implements OnInit {
-  // Déclarez la variable produits globalement
 
-  @ViewChild('pdfContent')
-  pdfContent!: ElementRef;
+   // Variables pour les graphiques
+   @ViewChild('evolutionChart') evolutionChartRef!: ElementRef;
+   @ViewChild('repartitionChart') repartitionChartRef!: ElementRef;
+   @ViewChild('topProduitsChart') topProduitsChartRef!: ElementRef;
+   evolutionChart: any;
+   repartitionChart: any;
+   topProduitsChart: any;
+
 
   dateGeneration = new Date();
-
-  produits: Produits[] = [];
-  prods: Produits[] = [];
+  dateDebut: string="";
+  dateFin: string= "";
   stocks: Stock[] = [];
    // Variables pour les filtres
    magasins: Magasin[] = [ ];
@@ -37,127 +40,270 @@ export class RapportsVentesComponent implements OnInit {
    selectedMagasin: string = 'Toutes les succursales';
    categorie: string = 'all';
    statut: string = 'all';
-   succursale: string = 'all';  // Pour les administrateurs
+   selectedMagasinId: number = -1;  // Pour les administrateurs
    isAdmin: boolean = true;  // Simuler un utilisateur admin, à remplacer par un réel contrôle d'accès
 
    searchTerm = ''; // Recherche
    pageSize:number = 5;
    currentPage:number=1;
    filteredProduits:Produits[] =[];
+   filteredMouvements:MouvementsStock[] =[];
    allStocks: Stock[] = []; // Tous les stocks de tous les magasins
    allProduits: Produits[] = []; // Tous les produits de tous les magasins
+   allMouvements: MouvementsStock[] = []; // Tous les produits de tous les magasins
+   allTransferts: Transfert[] = []; // Tous les produits de tous les magasins
 
    // Variables de vue d'ensemble
-   valeurTotaleStock: number = 0; // Calculée dynamiquement
+   valeurTotaleStockAchatInitial: number = 0; // Calculée dynamiquement
    totalProduits: number = 0; // Calculé dynamiquement
    produitsEnAlerte: number = 0;  // Calculé dynamiquement
    produitsRupture: number = 0;  // Calculé dynamiquement
-   valeurTotaleVenteStock: number = 0;  // Calculé dynamiquement
+   valeurTotaleVenteStockAchatFinal: number = 0;  // Calculé dynamiquement
    produitsPerissable: number = 0;  // Calculé dynamiquement
    produitsUniques: number = 0;  // Calculé dynamiquement
    produitsEnSurStock: number = 0;  // Calculé dynamiquement
    produitsAReapprovisionne: number = 0;  // Calculé dynamiquement
 
-   constructor(private cdr:ChangeDetectorRef) {}
-
-   ngOnInit(): void {
-
-    this.loadMagasins();
-    this.filteredProduits = [...this.allProduits]; // Initialiser avec tous les produits
-    this.stocks = [...this.allStocks]; // Initialiser avec tous les stocks
-    this.updateGlobalStats()
+   constructor(private cdr:ChangeDetectorRef) {
+    Chart.register(...registerables);
    }
 
+   ngOnInit(): void {
+    this.loadMagasins();
 
-   /* exportToPDF() {
-    const doc = new jsPDF();
+    // Initialiser les dates pour filtrage
+    this.initDateFilters();
 
-    // Définition des marges
-    const marginLeft = 15;
-    let currentY = 20;
+    this.filtrerStock();
+    this.updateGlobalStats();
+  }
 
-    // Ajout d'un logo (si vous avez un fichier logo.png)
-    const logo = new Image();
-    logo.src = './assets/avatar.jpg'; // Assurez-vous que le chemin est correct
-    doc.addImage(logo, 'PNG', marginLeft, currentY, 30, 15);
+  // Initialisation des dates de début et de fin (du lundi au jour actuel)
+  private initDateFilters(): void {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
 
-    // Informations de l'entreprise
-    const entreprise = "Stock Management SARL";
-    const adresse = "123 Rue du Commerce, Dakar, Sénégal";
-    const contact = "+221 77 123 45 67 | contact@stockmng.com";
-    const dateGeneration = new Date().toLocaleDateString();
+    this.dateDebut = this.formatDate(monday);
+    this.dateFin = this.formatDate(today);
+  }
+  // Méthode pour créer/mettre à jour les graphiques
+  updateCharts(): void {
+    this.createEvolutionChart();
+    this.createRepartitionChart();
+    this.createTopProduitsChart();
+  }
 
-    // En-tête
-    doc.setFontSize(18);
-    doc.setFont("helvetica", "bold");
-    doc.text(entreprise, marginLeft + 35, currentY + 5);
-
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "normal");
-    doc.text(adresse, marginLeft + 35, currentY + 12);
-    doc.text(contact, marginLeft + 35, currentY + 18);
-    doc.text(`Date du rapport : ${dateGeneration}`, marginLeft, currentY + 30);
-    doc.text(`Succursale(s) : ${this.selectedMagasin}`, marginLeft, currentY + 36);
-
-    // Titre du rapport
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(41, 128, 185);
-    doc.text("Rapport des Stocks", marginLeft, currentY + 50);
-
-    // Section récapitulative avec un cadre
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.rect(marginLeft - 5, currentY + 55, 180, 40); // Cadre
-    doc.text("Résumé du Stock", marginLeft, currentY + 62);
-
-    doc.setFont("helvetica", "normal");
-    doc.text(`Valeur Achat : ${this.valeurTotaleStock.toLocaleString()} F CFA`, marginLeft, currentY + 70);
-    doc.text(`Valeur Vente : ${this.valeurTotaleVenteStock.toLocaleString()} F CFA`, marginLeft, currentY + 78);
-    doc.text(`Produits Totaux : ${this.totalProduits}`, marginLeft, currentY + 86);
-    doc.text(`Produits Uniques : ${this.produitsUniques}`, marginLeft + 90, currentY + 70);
-    doc.text(`Produits en Alerte : ${this.produitsEnAlerte}`, marginLeft + 90, currentY + 78);
-    doc.text(`Produits en Rupture : ${this.produitsRupture}`, marginLeft + 90, currentY + 86);
-
-    // Espace avant le tableau
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.setTextColor(41, 128, 185);
-    doc.text("Détail des Stocks :", marginLeft, currentY + 100);
-    doc.setTextColor(0, 0, 0);
-
-    // Tableau des stocks
-    autoTable(doc, {
-        startY: currentY + 105,
-        head: [['Nom du Produit', 'Catégorie', 'Prix Achat (F CFA)', 'Quantité', 'Valeur Stock (F CFA)', 'Statut']],
-        body: this.getPaginatedProduits.map(produit => [
-            produit.designation,
-            produit.famille,
-            (produit.prixAchatUnitaire ?? 0).toLocaleString(),
-            this.getQteById(produit.id, this.stocks).toLocaleString(),
-            this.getValeurStocktById(produit.id, this.stocks).toLocaleString(),
-            this.getStatutProduitById(produit.id, this.stocks)
-        ]),
-        theme: 'striped',
-        styles: { fontSize: 10, cellPadding: 3 },
-        headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: "bold" },
-        alternateRowStyles: { fillColor: [240, 240, 240] },
-        margin: { left: marginLeft, right: marginLeft }
-    });
-
-    // Ajout d’un pied de page avec le numéro de page
-     const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.setFontSize(10);
-        doc.text(`Page ${i} / ${pageCount}`, 190, doc.internal.pageSize.height - 10, { align: "right" });
+  // Graphique d'évolution du stock dans le temps
+  createEvolutionChart(): void {
+    if (this.evolutionChart) {
+      this.evolutionChart.destroy();
     }
 
-    // Sauvegarde du fichier PDF
-    doc.save(`Rapport_Stock_${dateGeneration}.pdf`);
+    // Préparer les données
+    const dates = this.getDatesBetween(new Date(this.dateDebut), new Date(this.dateFin));
+    const stockValues = dates.map(date => {
+      const stocksAtDate = this.stocks.filter(stock => {
+        const stockDate = this.resetTime(new Date(stock.dateDerniereMiseAJour));
+        return stockDate <= date &&
+               (this.selectedMagasinId === -1 || stock.magasinId === this.selectedMagasinId);
+      });
+      return stocksAtDate.reduce((sum, stock) => sum + stock.quantiteDisponible, 0);
+    });
+
+
+    const ctx = this.evolutionChartRef?.nativeElement.getContext('2d');
+    if (ctx) {
+      this.evolutionChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: dates.map(date => this.formatDateForChart(date)),
+          datasets: [{
+            label: 'Évolution du stock total',
+            data: stockValues,
+            borderColor: 'rgb(75, 192, 192)',
+            tension: 0.1,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Évolution du stock dans le temps'
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: false
+            }
+          }
+        }
+      });
+    }
+  }
+
+  // Graphique de répartition par catégorie
+  createRepartitionChart(): void {
+    if (this.repartitionChart) {
+      this.repartitionChart.destroy();
+    }
+
+    // Debug: Vérifier les données sources
+    console.log('Stocks:', this.stocks);
+    console.log('Produits:', this.filteredProduits);
+
+    // Grouper par catégorie
+    const categories = new Map<string, number>();
+
+    this.stocks.forEach(stock => {
+      const produit = this.filteredProduits.find(p => p.id === stock.produitId);
+      if (produit) {
+        const cat = produit.famille?.trim() || 'Non catégorisé'; // trim() pour enlever les espaces
+        const currentValue = categories.get(cat) || 0;
+        categories.set(cat, currentValue + (stock.quantiteDisponible || 0));
+      } else {
+        console.warn('Produit non trouvé pour le stock:', stock);
+      }
+    });
+
+    // Debug: Afficher les catégories regroupées
+    console.log('Catégories regroupées:', Array.from(categories.entries()));
+
+    // Filtrer les catégories avec quantité > 0
+    const filteredCategories = Array.from(categories.entries())
+      .filter(([_, value]) => value > 0);
+
+    if (filteredCategories.length === 0) {
+      console.error('Aucune donnée valide pour le graphique');
+      return;
+    }
+
+    const ctx = this.repartitionChartRef?.nativeElement.getContext('2d');
+    if (ctx) {
+      this.repartitionChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: filteredCategories.map(([label, _]) => label),
+          datasets: [{
+            data: filteredCategories.map(([_, value]) => value),
+            backgroundColor: [
+              'rgb(255, 99, 132)',
+              'rgb(54, 162, 235)',
+              'rgb(255, 205, 86)',
+              'rgb(75, 192, 192)',
+              'rgb(153, 102, 255)',
+              'rgb(255, 159, 64)',
+              'rgb(199, 199, 199)',
+              'rgb(83, 102, 255)'
+            ],
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Répartition du stock par catégorie'
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context: { label?: string; raw?: unknown; dataset: { data: unknown[] } }) {
+                  const label = context.label || '';
+                  const value = Number(context.raw) || 0;
+                  const total = (context.dataset.data as number[]).reduce((a, b) => a + b, 0);
+                  const percentage = Math.round((value / total) * 100);
+                  return `${label}: ${value} (${percentage}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+  }
+
+  // Graphique des produits les plus vendus
+  createTopProduitsChart(): void {
+    if (this.topProduitsChart) {
+      this.topProduitsChart.destroy();
+    }
+
+    // Calculer les ventes par produit
+    const produitsVentes = new Map<string, number>();
+    this.filteredMouvements.forEach(mvt => {
+      if (mvt.typeMouvement === 'Sortie' && mvt.quantite > 0) {
+        const produit = this.allProduits.find(p => p.id === mvt.produitId);
+        if (produit) {
+          const currentValue = produitsVentes.get(produit.designation) || 0;
+          produitsVentes.set(produit.designation, currentValue + mvt.quantite);
+        }
+      }
+    });
+
+    // Trier et prendre les 10 premiers
+    const sortedProduits = Array.from(produitsVentes.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10);
+
+    const ctx = this.topProduitsChartRef?.nativeElement.getContext('2d');
+    if (ctx) {
+      this.topProduitsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: sortedProduits.map(item => item[0]),
+          datasets: [{
+            label: 'Quantité vendue',
+            data: sortedProduits.map(item => item[1]),
+            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+            borderColor: 'rgb(54, 162, 235)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Top 10 des produits les plus vendus'
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+  }
+
+  // Helper method to get dates between two dates
+  private getDatesBetween(startDate: Date, endDate: Date): Date[] {
+    const dates = [];
+    let currentDate = new Date(startDate);
+
+    while (currentDate <= endDate) {
+      dates.push(new Date(currentDate));
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return dates;
+  }
+
+  // Helper method to format date for chart labels
+  private formatDateForChart(date: Date): string {
+    return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  }
+
+// Méthode appeler quand on change les dates de début et de fin
+  filtrerDates(): void {
+  this.filtrerStock();
 }
- */
+
 exportToPDF() {
   const reportElement = document.getElementById('rapport');
   const reportHeader = document.getElementById('rapport-pdf');
@@ -215,42 +361,53 @@ exportToPDF() {
 }
 
 
-onMagasinSelect(event: any) {
-    const selectedMagasinId = event.target.value;
+onMagasinSelect(event: Event): void {
+  const target = event.target as HTMLSelectElement;
+  this.selectedMagasinId = Number(target.value) || -1;
+  this.filtrerStock();
+}
 
-    if (selectedMagasinId === 'all') {
-      this.selectedMagasin = 'Toutes les succursales';
-      // Afficher tous les produits et tous les stocks
-      this.filteredProduits = [...this.allProduits]; // Remettre tous les produits
-      this.stocks = [...this.allStocks]; // Tous les stocks
-    } else {
-      // Récupérer le magasin sélectionné depuis une liste existante
-      const selectedMagasin = this.magasins.find(m => m.id == selectedMagasinId);
 
-      if (selectedMagasin) {
-        this.selectedMagasin = selectedMagasin.nom;
-      } else {
-        this.selectedMagasin = 'Magasin inconnu'; // Sécurité en cas d'erreur
-      }
+// Méthode pour appliquer les filtres
+filtrerStock(): void {
+  if (!this.dateDebut || !this.dateFin) return;
 
-      // Filtrer les stocks en fonction du magasin sélectionné
-      this.stocks = this.allStocks.filter(s => s.magasinId == selectedMagasinId);
+  const startDate = this.resetTime(new Date(this.dateDebut));
+  const endDate = this.resetTime(new Date(this.dateFin));
 
-      // Récupérer les IDs des produits associés aux stocks filtrés
-      const produitIds = this.stocks.map(stock => stock.produitId);
+  this.stocks = this.allStocks.filter(stock => {
+    const stockDate = this.resetTime(new Date(stock.dateDerniereMiseAJour));
+    const isInDateRange = stockDate >= startDate && stockDate <= endDate;
+    return this.selectedMagasinId === -1 ? isInDateRange : (stock.magasinId === this.selectedMagasinId && isInDateRange);
+  });
 
-      // Filtrer les produits en fonction des IDs récupérés
-      this.filteredProduits = this.allProduits.filter(p => produitIds.includes(p.id));
-    }
+  this.filteredProduits = this.allProduits.filter(produit =>
+  this.stocks.some(stock => stock.produitId === produit.id)
+  );
+  this.filteredMouvements = this.allMouvements.filter(mvt =>
+    this.stocks.some(stock => stock.id === mvt.stockId)
+    );
 
-    // Mettre à jour les statistiques globales
-    this.updateGlobalStats();
-  }
+  this.updateGlobalStats();
+  this.cdr.detectChanges();  // Mise à jour de la vue
+  //this.updateChart1s();
+  this.updateCharts();
+}
 
+ // Formater la date en YYYY-MM-DD pour l'affichage dans <input type="date">
+formatDate(date: Date): string {
+  return date.toISOString().split('T')[0];
+}
+
+// Réinitialiser l'heure pour comparer uniquement les dates (évite les erreurs de fuseau horaire)
+private resetTime(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
 
 
   updateGlobalStats(): void {
-    this.valeurTotaleStock = Stock.calculerValeurTotaleStocks(this.stocks);
+    this.valeurTotaleStockAchatInitial = this.getStatGlobauxProduits().totalValeurStockInitial;
+    this.valeurTotaleVenteStockAchatFinal = this.getStatGlobauxProduits().totalValeurStockFinal;
     this.produitsEnAlerte = Stock.compterProduitsEnAlerte(this.stocks);
     this.produitsRupture = Stock.compterProduitsEnRupture(this.stocks);
     this.totalProduits = Stock.compterProduitsTotal(this.stocks);
@@ -258,16 +415,63 @@ onMagasinSelect(event: any) {
     this.produitsUniques = Stock.compterProduitsUniques(this.stocks);
     this.produitsAReapprovisionne = Stock.compterProduitsAReapprovisionner(this.stocks);
     this.produitsEnSurStock = Stock.compterProduitsEnSurstock(this.stocks);
-    this.valeurTotaleVenteStock = Stock.calculerValeurTotaleVente(this.stocks);
+
   }
 
-  /* getProduitsParMagasin(magasin: Magasin): Produist[] {
-    return this.allProduits.filter(produit => produit.magasinId === magasin.id);
-  } */
 
 getStockParMagasin(magasin: Magasin): Stock[] {
     return this.stocks.filter(stock => stock.magasinId === magasin.id);
 }
+
+/* getStockInitalProduit(prod: number): number {
+  return MouvementsStock.getStockInitial(prod,this.selectedMagasinId,new Date(this.dateDebut),this.stocks, this.allMouvements);
+} */
+
+  getStatProduit(prod: Produits) {
+    const prixUnitaire = this.getDernierPrixAchatById(prod.id)
+    return MouvementsStock.calculerStatistiques(
+      this.filteredMouvements,
+      this.stocks,
+      prixUnitaire,
+      new Date(this.dateDebut),
+      new Date(this.dateFin),
+      this.selectedMagasinId,
+      prod.id
+    );
+  }
+
+  getStatGlobauxProduits() {
+    return MouvementsStock.calculerStatistiquesGlobaux(
+      this.filteredMouvements,
+      this.stocks,
+      new Date(this.dateDebut),
+      new Date(this.dateFin),
+      this.selectedMagasinId,
+    );
+  }
+
+  get getListeProduitsEnAlerte() {
+    console.log("Produits en alerte:", this.stocks?.filter(stock => stock.quantiteDisponible <= stock.seuilAlerte));
+    return this.stocks?.filter(stock => stock.quantiteDisponible <= stock.seuilAlerte) || [];
+  }
+
+  get getListeProduitsEnRupture() {
+    console.log("Produits en rupture:", this.stocks?.filter(stock => stock.quantiteDisponible === 0));
+    return this.stocks?.filter(stock => stock.quantiteDisponible === 0) || [];
+  }
+
+  get getListeProduitsAReapprovisionner() {
+    console.log("Produits à réapprovisionner:", this.stocks?.filter(stock => stock.quantiteDisponible <= stock.seuilReapprovisionnement));
+    return this.stocks?.filter(stock => stock.quantiteDisponible <= stock.seuilReapprovisionnement) || [];
+  }
+
+  get getListeProduitsEnSurstockr() {
+    console.log("Produits en surstock:", this.stocks?.filter(stock => stock.quantiteDisponible > stock.seuilReapprovisionnement));
+    return this.stocks?.filter(stock => stock.quantiteDisponible > stock.seuilReapprovisionnement) || [];
+  }
+
+
+
 
 getAllProduits(): Produits[] {
   return this.allProduits; // Retourne tous les produits
@@ -276,23 +480,15 @@ getAllProduits(): Produits[] {
 getAllStocks(): Stock[] {
   return this.allStocks; // Retourne tous les stocks
 }
-
-   getCategories(): string[] {
-    // Vérifier si la liste de produits est définie
-    if (!this.produits || this.produits.length === 0) {
-      return [];
-    }
-    // Extraire les catégories uniques des produits
-    const categories = new Set(this.produits.map(produit => produit.famille));
-    // Convertir l'ensemble en tableau et le retourner
-    return Array.from(categories);
-  }
+getAllSMouvements(): MouvementsStock[] {
+  return this.allMouvements; // Retourne tous les stocks
+}
 
    exportToExcel() {
      let workbook = new ExcelJS.Workbook();
      let worksheet = workbook.addWorksheet('Rapport Stocks');
 
-     worksheet.addRow(['Valeur Totale du Stock', this.valeurTotaleStock]);
+     worksheet.addRow(['Valeur Totale du Stock', this.valeurTotaleStockAchatInitial]);
      worksheet.addRow(['Nombre Total de Produits', this.totalProduits]);
      worksheet.addRow(['Produits en Alerte', this.produitsEnAlerte]);
      worksheet.addRow(['Produits en Rupture', this.produitsRupture]);
@@ -307,201 +503,45 @@ getAllStocks(): Stock[] {
      });
    }
 
-   loadMagasins(){
-    //const magasins: Magasin[] = [];
-    const produitsDisponibles = ['Lait', 'Sucre', 'Riz', 'Farine', 'Huile', 'Pain', 'Fromage', 'Tomates', 'Jus', 'Café'];
+   loadMagasins(): void {
 
-    // Création des magasins
-    for (let i = 1; i <= 5; i++) {
-      //const produits: Produits[] = [];
-      const stocks: Stock[] = [];
-      const mouvementsStock: MouvementsStock[] = [];
-      const paniers: Panier[] = [];
-      const transferts: Transfert[] = [];
-      const depenses: Depense[] = [];
-      const recettes: Recette[] = [];
+    this.magasins = magasins;
+    this.allProduits = produits;
+    this.allMouvements = mouvements;
+    this.allStocks = stocks;
+    this.stocks = [...this.allStocks]; // Initialiser avec tous les stocks
+    this.filteredProduits = [...this.allProduits]; // Initialiser avec tous les produits
+    this.filteredMouvements = [...this.allMouvements]; // Initialiser avec tous les mouvements filtrés
 
-      // Génération des produits pour ce magasin
-      for (let j = 1; j <= 10; j++) {
-        const produit = new Produits({
-          id: (i - 1) * 10 + j, // ID unique pour chaque produit dans chaque magasin
-          famille: `Famille ${j}`,
-          designation: produitsDisponibles[Math.floor(Math.random() * produitsDisponibles.length)],
-          fournisseurId: j,
-          unite: "Pièce",
-          prixAchatUnitaire: Math.floor(Math.random() * 1000) + 500,
-          prixTotalAchat: 0,
-          prixVenteUnitaire: Math.floor(Math.random() * 1500) + 1000,
-          prixTotalVente: 0,
-          dateCreation: new Date(),
-          perissable:Math.random() < 0.5, // Génère aléatoirement true ou false,
-          agent: `Agent ${j}`,
-          description: `Description du produit ${j}`,
-          codeBarre: `CODE${j}`,
-          image: ""
-        });
-        this.allProduits.push(produit);
-
-        // Création des stocks pour ce produit dans ce magasin
-        stocks.push(new Stock({
-          id: (i - 1) * 10 + j,
-          produitId: produit.id!,
-          magasinId: i,
-          quantiteTotale: Math.floor(Math.random() * 100) + 10,
-          quantiteReservee: Math.floor(Math.random() * 10),
-          seuilAlerte: 5,
-          seuilReapprovisionnement: 10,
-          stockSecurite: 5,
-          statutStock: "En stock",
-          dateDerniereMiseAJour: new Date(),
-          dernierPrixAchat: Math.floor(Math.random() * 1000) + 500,
-          prixVenteUnitaire: Math.floor(Math.random() * 1000) + 600,
-          datePeremption: Math.random() < 0.5 ? new Date(Date.now() + Math.floor(Math.random() * 1000000000)) : undefined
-        }));
-      }
-
-      // Création des mouvements de stock pour ce magasin
-      for (let m = 1; m <= 10; m++) {
-        const produit = this.allProduits[Math.floor(Math.random() * this.allProduits.length)];
-        const typeMouvement = ["Entree", "Sortie", "Transfert"][Math.floor(Math.random() * 3)];
-
-        mouvementsStock.push(new MouvementsStock({
-          id: m,
-          ref: `MV-${m}${i}`,
-          produitId: produit.id!,
-          magasinId: i,
-          typeMouvement: typeMouvement as "Entree" | "Sortie" | "Transfert",
-          quantite: Math.floor(Math.random() * 50) + 5,
-          prixUnitaire: produit.prixAchatUnitaire,
-          acteurId: Math.floor(Math.random() * 100), // Aléatoire : fournisseur ou client
-          description: `Mouvement de type ${typeMouvement}`,
-          motif: typeMouvement === "Sortie" ? "Vente" : typeMouvement === "Entree" ? "Achat" : "Transfert interne",
-          dateMouvement: new Date(),
-        }));
-      }
-
-      // Création des paniers pour ce magasin
-      for (let k = 1; k <= 10; k++) {
-        const articles = this.allProduits
-          .sort(() => 0.5 - Math.random())
-          .slice(0, 4); // Sélectionner 4 produits au hasard
-
-        // Récupération des stocks correspondant aux produits choisis
-        const stockList = stocks.filter(stock =>
-          articles.some(article => article.id === stock.produitId)
-        );
-
-        paniers.push(new Panier({
-          id: k,
-          clientId: Math.floor(Math.random() * 1000),
-          bonId: Math.floor(Math.random() * 500),
-          articles: articles,
-          statut: "VALIDE",
-          dateCreation: new Date(),
-          magasinId: i, // Associer le magasin
-          stockList: stockList // Associer les stocks filtrés
-        }));
-      }
-
-      // Création des transferts de produits pour ce magasin
-      for (let t = 1; t <= 10; t++) {
-        transferts.push(new Transfert({
-          id: t,
-          reference: `TRANSFERT-${t}${i}`,
-          produitId: this.allProduits[Math.floor(Math.random() * this.allProduits.length)].id!,
-          quantite: Math.floor(Math.random() * 20) + 5,
-          magasinSource: Math.floor(Math.random() * 5) + 1,
-          magasinDestination: Math.floor(Math.random() * 5) + 1,
-          dateTransfert: new Date(),
-          statut: Math.random() > 0.5 ? 'Validé' : 'En attente',
-          agentResponsable: Math.floor(Math.random() * 100),
-          dateValidation: Math.random() > 0.5 ? new Date() : undefined,
-          agentValidation: Math.random() > 0.5 ? Math.floor(Math.random() * 100) : undefined
-        }));
-      }
-
-      // Ajout des dépenses pour ce magasin
-      for (let d = 1; d <= 5; d++) {
-        depenses.push(new Depense({
-          id: d,
-          date: new Date(),
-          amount: Math.floor(Math.random() * 10000) + 1000,
-          type: d % 2 === 0 ? "STANDARD" : "STOCK",
-          description: d % 2 === 0 ? "Achat de fournitures" : "Paiement des salaires",
-          paymentMode: d % 2 === 0 ? "Virement bancaire" : "Espèces",
-          magasinId: i
-        }));
-      }
-
-      // Ajout des recettes pour ce magasin
-      for (let r = 1; r <= 5; r++) {
-        recettes.push(new Recette({
-          id: r,
-          date: new Date(),
-          amount: Math.floor(Math.random() * 15000) + 5000,
-          categoryId: i,
-          description: `Recette de vente magasin ${i}`,
-          paymentMode: r % 2 === 0 ? "Espèces" : "Carte bancaire",
-          magasinId: i
-        }));
-      }
-
-      // Création du magasin avec toutes les données
-      this.magasins.push(new Magasin({
-        id: i,
-        nom: `Magasin ${i}`,
-        adresse: `Adresse ${i}, Ville ${i}`,
-        ville: `Ville ${i}`,
-        telephone: `77${Math.floor(Math.random() * 10000000)}`,
-        email: `magasin${i}@exemple.com`,
-        responsableId: Math.floor(Math.random() * 100),
-        capaciteStock: Math.floor(Math.random() * 5000) + 1000,
-        stock: stocks,
-        chiffreAffaires: Math.floor(Math.random() * 1000000) + 500000,
-        ventes: paniers,
-        depenses: depenses,
-        recettes: recettes,
-        statut: 'Actif',
-        dateCreation: new Date(),
-        derniereMiseAJour: new Date(),
-        transferts: transferts,
-        mouvements: mouvementsStock // Ajout des mouvements de stock
-      }));
-    }
-    this.magasins.forEach(mag => {
-      this.allStocks.push(...mag?.stock);
-    });
   }
 
-   getQteById(produitId: number, stocks: Stock[]): number {
-    const produit = stocks.find(p => p.produitId === produitId);
-    return produit ? produit.quantiteTotale : 0;
+
+  getQteById(produitId: number): number {
+    return this.stocks.find(p => p.produitId === produitId)?.quantiteTotale ?? 0;
   }
 
-  getStatutProduitById(produitId: number, stocks: Stock[]): string{
-    const produit = stocks.find(p => p.produitId === produitId);
-    return produit ? produit.statutStock : "Statut introuvable";
+  getDateUpdateById(produitId: number): Date {
+    return this.stocks.find(p => p.produitId === produitId)?.dateDerniereMiseAJour ?? new Date(1900, 9, 19);
   }
 
-  getValeurStocktById(produitId: number, stocks: Stock[]): number{
-    const produit = stocks.find(p => p.produitId === produitId);
-    return produit ? produit.valeurTotaleStock : 0;
+  getStatutProduitById(produitId: number): string {
+    return this.stocks.find(p => p.produitId === produitId)?.statutStock ?? "Statut introuvable";
+  }
+
+  getValeurStockById(produitId: number): number {
+    return this.stocks.find(p => p.produitId === produitId)?.valeurTotaleStock ?? 0;
   }
 
   // Gestion de la recherche
-onSearchChange(): void {
-  // if (!this.magasinSelectionne) return;
-      this.filteredProduits = this.allProduits.filter(prod =>
-        prod.famille?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-       /*  prod.designation?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        prod.unite?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        prod.prixAchatUnitaire?.toString().includes(this.searchTerm) ||
-        prod.prixVenteUnitaire?.toString().includes(this.searchTerm)|| */
-        this.getStatutProduitById(prod.id, this.stocks).toLowerCase().includes(this.searchTerm.toLowerCase())  // Recherche par statut
+  onSearchChange(): void {
+    const search = this.searchTerm.toLowerCase();
+    this.filteredProduits = this.allProduits.filter(prod =>
+      prod.famille?.toLowerCase().includes(search) ||
+      this.getStatutProduitById(prod.id).toLowerCase().includes(search)
+    );
+    this.currentPage = 1;
+  }
 
-      );
-      this.currentPage= 1;
-}
 
 // Méthode pour mettre à jour les recettes, les dépenses, les paiement et les catégories
 updatefilteredTable(): void {
@@ -516,26 +556,35 @@ setItemsPerPage(event: any) {
   this.cdr.detectChanges(); // Forcer la mise à jour de la vue
 }
 
-
-getProduitsParMagasin(magasin: Magasin | null | undefined): Produits[] {
-  if (!magasin?.stock || magasin.stock.length === 0) return [];
-
-  // Récupération des IDs des produits présents dans le stock
-  const produitIds = magasin.stock.map(stock => stock.produitId);
-
-  // Vérification que `this.produits` est défini avant de l'utiliser
-  return this.produits?.filter(produit => produitIds.includes(produit.id!)) ?? [];
+// Méthode pour obtenir le nom du produit à partir de l'id
+getNomProduitById(id: number): string | null {
+  const produit = this.allProduits.find(p => p.id === id);
+  return produit ? produit.designation : null;  // On retourne `null` si le produit n'est pas trouvé
+}
+// Méthode pour obtenir le nom du produit à partir de l'id
+getDernierPrixAchatById(id: number): number {
+  const stk = this.stocks.find(p => p.produitId === id);
+  return stk ? stk.dernierPrixAchat??0 : 0;  // On retourne `null` si le produit n'est pas trouvé
+}
+getDernierPrixVenteById(id: number): number {
+  const stk = this.stocks.find(p => p.produitId === id);
+  return stk ? stk.prixVenteUnitaire??0 : 0;  // On retourne `null` si le produit n'est pas trouvé
+}
+// Méthode pour obtenir le nom du produit à partir de l'id
+getNomMagasinsById(id: number): string | null {
+  const produit = this.magasins.find(m => m.id === id);
+  return produit ? produit.nom : null;  // On retourne `null` si le produit n'est pas trouvé
 }
 
 get getPaginatedProduits() {
   return this.paginate(this.filteredProduits, this.currentPage, this.pageSize);
 }
 
-
-paginate(data: any[], currentPage: number, itemsPerPage: number) {
+paginate(data: any[], currentPage: number, itemsPerPage: number): any[] {
   const start = (currentPage - 1) * itemsPerPage;
   return data.slice(start, start + itemsPerPage);
 }
+
 
 onPageChange(page: number): void {
     this.currentPage = page;

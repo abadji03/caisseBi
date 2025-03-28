@@ -1,0 +1,32 @@
+.chart-container {
+    margin-top: 2rem;
+  }
+
+  .chart-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    gap: 1rem;
+  }
+
+  .chart-wrapper {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    flex: 1;
+  }
+
+  .chart-wrapper h3 {
+    margin-top: 0;
+    text-align: center;
+  }
+
+  .full-width {
+    flex: 100%;
+  }
+
+  canvas {
+    max-height: 400px;
+    width: 100% !important;
+  }
