@@ -1,5 +1,5 @@
 import { MouvementsStock, Stock } from "./entrees-sorties.model";
-import { Depense, Recette } from "./finance.model";
+import { Categorie, Depense, Recette } from "./finance.model";
 import { Magasin } from "./magasin.model";
 import { Panier } from "./panier.model";
 import { Produits } from "./produit.modele";
@@ -286,32 +286,32 @@ export const stocks: Stock[] = [
       acteurId: 208, description: "Livraison entretien", dateMouvement: new Date("2025-03-21")
     }),
     new MouvementsStock({
-      id: 10, ref: "MV-PAR-2025-010", produitId: 9, magasinId: 1, stockId: 9,
+      id: 10, ref: "MV-PAR-2025-030", produitId: 9, magasinId: 1, stockId: 9,
       typeMouvement: "Entree", quantite: 50, prixUnitaire: 2.30,
       acteurId: 209, description: "Livraison surgelés", dateMouvement: new Date("2025-03-22")
     }),
     new MouvementsStock({
-      id: 11, ref: "MV-PAR-2025-011", produitId: 10, magasinId: 1, stockId: 10,
+      id: 11, ref: "MV-PAR-2025-031", produitId: 10, magasinId: 1, stockId: 10,
       typeMouvement: "Entree", quantite: 100, prixUnitaire: 1.10,
       acteurId: 210, description: "Livraison hygiène", dateMouvement: new Date("2025-03-23")
     }),
     new MouvementsStock({
-      id: 12, ref: "MV-PAR-2025-012", produitId: 2, magasinId: 1, stockId: 2,
+      id: 12, ref: "MV-PAR-2025-032", produitId: 2, magasinId: 1, stockId: 2,
       typeMouvement: "Sortie", quantite: 70, prixUnitaire: 0.80,
       acteurId: 302, description: "Vente client", dateMouvement: new Date("2025-03-16")
     }),
     new MouvementsStock({
-      id: 13, ref: "MV-PAR-2025-013", produitId: 3, magasinId: 1, stockId: 3,
+      id: 13, ref: "MV-PAR-2025-033", produitId: 3, magasinId: 1, stockId: 3,
       typeMouvement: "Sortie", quantite: 35, prixUnitaire: 2.80,
       acteurId: 303, description: "Vente client", dateMouvement: new Date("2025-03-14")
     }),
     new MouvementsStock({
-      id: 14, ref: "MV-PAR-2025-014", produitId: 5, magasinId: 1, stockId: 5,
+      id: 14, ref: "MV-PAR-2025-034", produitId: 5, magasinId: 1, stockId: 5,
       typeMouvement: "Sortie", quantite: 80, prixUnitaire: 1.20,
       acteurId: 304, description: "Vente client", dateMouvement: new Date("2025-03-18")
     }),
     new MouvementsStock({
-      id: 15, ref: "MV-PAR-2025-015", produitId: 7, magasinId: 1, stockId: 7,
+      id: 15, ref: "MV-PAR-2025-035", produitId: 7, magasinId: 1, stockId: 7,
       typeMouvement: "Sortie", quantite: 10, prixUnitaire: 39.99,
       acteurId: 305, description: "Vente client", dateMouvement: new Date("2025-03-20")
     }),
@@ -363,32 +363,32 @@ export const stocks: Stock[] = [
       acteurId: 218, description: "Livraison entretien", dateMouvement: new Date("2025-03-22")
     }),
     new MouvementsStock({
-      id: 25, ref: "MV-LYO-2025-010", produitId: 19, magasinId: 2, stockId: 19,
+      id: 25, ref: "MV-LYO-2025-030", produitId: 19, magasinId: 2, stockId: 19,
       typeMouvement: "Entree", quantite: 60, prixUnitaire: 2.80,
       acteurId: 219, description: "Livraison surgelés", dateMouvement: new Date("2025-03-23")
     }),
     new MouvementsStock({
-      id: 26, ref: "MV-LYO-2025-011", produitId: 20, magasinId: 2, stockId: 20,
+      id: 26, ref: "MV-LYO-2025-031", produitId: 20, magasinId: 2, stockId: 20,
       typeMouvement: "Entree", quantite: 100, prixUnitaire: 2.30,
       acteurId: 220, description: "Livraison hygiène", dateMouvement: new Date("2025-03-24")
     }),
     new MouvementsStock({
-      id: 27, ref: "MV-LYO-2025-012", produitId: 12, magasinId: 2, stockId: 12,
+      id: 27, ref: "MV-LYO-2025-032", produitId: 12, magasinId: 2, stockId: 12,
       typeMouvement: "Sortie", quantite: 50, prixUnitaire: 2.50,
       acteurId: 307, description: "Vente client", dateMouvement: new Date("2025-03-16")
     }),
     new MouvementsStock({
-      id: 28, ref: "MV-LYO-2025-013", produitId: 13, magasinId: 2, stockId: 13,
+      id: 28, ref: "MV-LYO-2025-033", produitId: 13, magasinId: 2, stockId: 13,
       typeMouvement: "Sortie", quantite: 30, prixUnitaire: 2.30,
       acteurId: 308, description: "Vente client", dateMouvement: new Date("2025-03-17")
     }),
     new MouvementsStock({
-      id: 29, ref: "MV-LYO-2025-014", produitId: 15, magasinId: 2, stockId: 15,
+      id: 29, ref: "MV-LYO-2025-034", produitId: 15, magasinId: 2, stockId: 15,
       typeMouvement: "Sortie", quantite: 60, prixUnitaire: 0.90,
       acteurId: 309, description: "Vente client", dateMouvement: new Date("2025-03-19")
     }),
     new MouvementsStock({
-      id: 30, ref: "MV-LYO-2025-015", produitId: 17, magasinId: 2, stockId: 17,
+      id: 30, ref: "MV-LYO-2025-035", produitId: 17, magasinId: 2, stockId: 17,
       typeMouvement: "Sortie", quantite: 12, prixUnitaire: 29.99,
       acteurId: 310, description: "Vente client", dateMouvement: new Date("2025-03-21")
     }),
@@ -440,32 +440,32 @@ export const stocks: Stock[] = [
       acteurId: 228, description: "Livraison entretien", dateMouvement: new Date("2025-03-22")
     }),
     new MouvementsStock({
-      id: 40, ref: "MV-MAR-2025-010", produitId: 29, magasinId: 3, stockId: 29,
+      id: 40, ref: "MV-MAR-2025-030", produitId: 29, magasinId: 3, stockId: 29,
       typeMouvement: "Entree", quantite: 40, prixUnitaire: 2.50,
       acteurId: 229, description: "Livraison surgelés", dateMouvement: new Date("2025-03-23")
     }),
     new MouvementsStock({
-      id: 41, ref: "MV-MAR-2025-011", produitId: 30, magasinId: 3, stockId: 30,
+      id: 41, ref: "MV-MAR-2025-031", produitId: 30, magasinId: 3, stockId: 30,
       typeMouvement: "Entree", quantite: 120, prixUnitaire: 0.80,
       acteurId: 230, description: "Livraison hygiène", dateMouvement: new Date("2025-03-24")
     }),
     new MouvementsStock({
-      id: 42, ref: "MV-MAR-2025-012", produitId: 22, magasinId: 3, stockId: 22,
+      id: 42, ref: "MV-MAR-2025-032", produitId: 22, magasinId: 3, stockId: 22,
       typeMouvement: "Sortie", quantite: 80, prixUnitaire: 1.90,
       acteurId: 312, description: "Vente client", dateMouvement: new Date("2025-03-16")
     }),
     new MouvementsStock({
-      id: 43, ref: "MV-MAR-2025-013", produitId: 23, magasinId: 3, stockId: 23,
+      id: 43, ref: "MV-MAR-2025-033", produitId: 23, magasinId: 3, stockId: 23,
       typeMouvement: "Sortie", quantite: 35, prixUnitaire: 2.90,
       acteurId: 313, description: "Vente client", dateMouvement: new Date("2025-03-17")
     }),
     new MouvementsStock({
-      id: 44, ref: "MV-MAR-2025-014", produitId: 25, magasinId: 3, stockId: 25,
+      id: 44, ref: "MV-MAR-2025-034", produitId: 25, magasinId: 3, stockId: 25,
       typeMouvement: "Sortie", quantite: 60, prixUnitaire: 1.00,
       acteurId: 314, description: "Vente client", dateMouvement: new Date("2025-03-19")
     }),
     new MouvementsStock({
-      id: 45, ref: "MV-MAR-2025-015", produitId: 27, magasinId: 3, stockId: 27,
+      id: 45, ref: "MV-MAR-2025-035", produitId: 27, magasinId: 3, stockId: 27,
       typeMouvement: "Sortie", quantite: 10, prixUnitaire: 24.99,
       acteurId: 315, description: "Vente client", dateMouvement: new Date("2025-03-21")
     })
@@ -473,91 +473,223 @@ export const stocks: Stock[] = [
 
 export const transferts: Transfert[] = [
     // Transferts depuis Magasin 1 (Paris) - 15 transferts
-    new Transfert({ id: 1, reference: "TRF-PAR-001", produitId: 1, quantite: 10, magasinSource: 1, magasinDestination: 2, dateTransfert: new Date("2025-01-05"), statut: "Validé", agentResponsable: 401 }),
-    new Transfert({ id: 2, reference: "TRF-PAR-002", produitId: 2, quantite: 20, magasinSource: 1, magasinDestination: 3, dateTransfert: new Date("2025-01-07"), statut: "Validé", agentResponsable: 402 }),
-    new Transfert({ id: 3, reference: "TRF-PAR-003", produitId: 3, quantite: 5, magasinSource: 1, magasinDestination: 2, dateTransfert: new Date("2025-01-09"), statut: "En attente", agentResponsable: 403 }),
-    new Transfert({ id: 4, reference: "TRF-PAR-004", produitId: 4, quantite: 8, magasinSource: 1, magasinDestination: 3, dateTransfert: new Date("2025-01-11"), statut: "Refusé", motif: "Stock insuffisant", agentResponsable: 404 }),
-    new Transfert({ id: 5, reference: "TRF-PAR-005", produitId: 5, quantite: 15, magasinSource: 1, magasinDestination: 2, dateTransfert: new Date("2025-01-13"), statut: "Validé", agentResponsable: 405 }),
-    new Transfert({ id: 6, reference: "TRF-PAR-006", produitId: 6, quantite: 3, magasinSource: 1, magasinDestination: 3, dateTransfert: new Date("2025-01-15"), statut: "Validé", agentResponsable: 406 }),
-    new Transfert({ id: 7, reference: "TRF-PAR-007", produitId: 7, quantite: 2, magasinSource: 1, magasinDestination: 2, dateTransfert: new Date("2025-01-17"), statut: "En attente", agentResponsable: 407 }),
-    new Transfert({ id: 8, reference: "TRF-PAR-008", produitId: 8, quantite: 4, magasinSource: 1, magasinDestination: 3, dateTransfert: new Date("2025-01-19"), statut: "Refusé", motif: "Produit endommagé", agentResponsable: 408 }),
-    new Transfert({ id: 9, reference: "TRF-PAR-009", produitId: 9, quantite: 6, magasinSource: 1, magasinDestination: 2, dateTransfert: new Date("2025-01-21"), statut: "Validé", agentResponsable: 409 }),
-    new Transfert({ id: 10, reference: "TRF-PAR-010", produitId: 10, quantite: 8, magasinSource: 1, magasinDestination: 3, dateTransfert: new Date("2025-01-23"), statut: "Validé", agentResponsable: 410 }),
-    new Transfert({ id: 11, reference: "TRF-PAR-011", produitId: 1, quantite: 5, magasinSource: 1, magasinDestination: 2, dateTransfert: new Date("2025-01-25"), statut: "Validé", agentResponsable: 411 }),
-    new Transfert({ id: 12, reference: "TRF-PAR-012", produitId: 2, quantite: 10, magasinSource: 1, magasinDestination: 3, dateTransfert: new Date("2025-01-27"), statut: "En attente", agentResponsable: 412 }),
-    new Transfert({ id: 13, reference: "TRF-PAR-013", produitId: 3, quantite: 4, magasinSource: 1, magasinDestination: 2, dateTransfert: new Date("2025-01-29"), statut: "Validé", agentResponsable: 413 }),
-    new Transfert({ id: 14, reference: "TRF-PAR-014", produitId: 4, quantite: 6, magasinSource: 1, magasinDestination: 3, dateTransfert: new Date("2025-01-31"), statut: "Refusé", motif: "Date péremption proche", agentResponsable: 414 }),
+    new Transfert({ id: 1, reference: "TRF-PAR-001", produitId: 1, quantite: 10, magasinSource: 1, magasinDestination: 2, dateTransfert: new Date("2025-03-05"), statut: "Validé", agentResponsable: 401 }),
+    new Transfert({ id: 2, reference: "TRF-PAR-002", produitId: 2, quantite: 20, magasinSource: 1, magasinDestination: 3, dateTransfert: new Date("2025-03-07"), statut: "Validé", agentResponsable: 402 }),
+    new Transfert({ id: 3, reference: "TRF-PAR-003", produitId: 3, quantite: 5, magasinSource: 1, magasinDestination: 2, dateTransfert: new Date("2025-03-09"), statut: "En attente", agentResponsable: 403 }),
+    new Transfert({ id: 4, reference: "TRF-PAR-004", produitId: 4, quantite: 8, magasinSource: 1, magasinDestination: 3, dateTransfert: new Date("2025-03-11"), statut: "Refusé", motif: "Stock insuffisant", agentResponsable: 404 }),
+    new Transfert({ id: 5, reference: "TRF-PAR-005", produitId: 5, quantite: 15, magasinSource: 1, magasinDestination: 2, dateTransfert: new Date("2025-03-13"), statut: "Validé", agentResponsable: 405 }),
+    new Transfert({ id: 6, reference: "TRF-PAR-006", produitId: 6, quantite: 3, magasinSource: 1, magasinDestination: 3, dateTransfert: new Date("2025-03-15"), statut: "Validé", agentResponsable: 406 }),
+    new Transfert({ id: 7, reference: "TRF-PAR-007", produitId: 7, quantite: 2, magasinSource: 1, magasinDestination: 2, dateTransfert: new Date("2025-03-17"), statut: "En attente", agentResponsable: 407 }),
+    new Transfert({ id: 8, reference: "TRF-PAR-008", produitId: 8, quantite: 4, magasinSource: 1, magasinDestination: 3, dateTransfert: new Date("2025-03-19"), statut: "Refusé", motif: "Produit endommagé", agentResponsable: 408 }),
+    new Transfert({ id: 9, reference: "TRF-PAR-009", produitId: 9, quantite: 6, magasinSource: 1, magasinDestination: 2, dateTransfert: new Date("2025-03-21"), statut: "Validé", agentResponsable: 409 }),
+    new Transfert({ id: 10, reference: "TRF-PAR-010", produitId: 10, quantite: 8, magasinSource: 1, magasinDestination: 3, dateTransfert: new Date("2025-03-23"), statut: "Validé", agentResponsable: 410 }),
+    new Transfert({ id: 11, reference: "TRF-PAR-011", produitId: 1, quantite: 5, magasinSource: 1, magasinDestination: 2, dateTransfert: new Date("2025-03-25"), statut: "Validé", agentResponsable: 411 }),
+    new Transfert({ id: 12, reference: "TRF-PAR-012", produitId: 2, quantite: 10, magasinSource: 1, magasinDestination: 3, dateTransfert: new Date("2025-03-27"), statut: "En attente", agentResponsable: 412 }),
+    new Transfert({ id: 13, reference: "TRF-PAR-013", produitId: 3, quantite: 4, magasinSource: 1, magasinDestination: 2, dateTransfert: new Date("2025-03-29"), statut: "Validé", agentResponsable: 413 }),
+    new Transfert({ id: 14, reference: "TRF-PAR-014", produitId: 4, quantite: 6, magasinSource: 1, magasinDestination: 3, dateTransfert: new Date("2025-03-31"), statut: "Refusé", motif: "Date péremption proche", agentResponsable: 414 }),
     new Transfert({ id: 15, reference: "TRF-PAR-015", produitId: 5, quantite: 12, magasinSource: 1, magasinDestination: 2, dateTransfert: new Date("2025-02-02"), statut: "Validé", agentResponsable: 415 }),
 
     // Transferts depuis Magasin 2 (Lyon) - 15 transferts
-    new Transfert({ id: 16, reference: "TRF-LYO-001", produitId: 11, quantite: 15, magasinSource: 2, magasinDestination: 1, dateTransfert: new Date("2025-01-06"), statut: "Validé", agentResponsable: 416 }),
-    new Transfert({ id: 17, reference: "TRF-LYO-002", produitId: 12, quantite: 10, magasinSource: 2, magasinDestination: 3, dateTransfert: new Date("2025-01-08"), statut: "Validé", agentResponsable: 417 }),
-    new Transfert({ id: 18, reference: "TRF-LYO-003", produitId: 13, quantite: 8, magasinSource: 2, magasinDestination: 1, dateTransfert: new Date("2025-01-10"), statut: "En attente", agentResponsable: 418 }),
-    new Transfert({ id: 19, reference: "TRF-LYO-004", produitId: 14, quantite: 12, magasinSource: 2, magasinDestination: 3, dateTransfert: new Date("2025-01-12"), statut: "Refusé", motif: "Stock critique", agentResponsable: 419 }),
-    new Transfert({ id: 20, reference: "TRF-LYO-005", produitId: 15, quantite: 20, magasinSource: 2, magasinDestination: 1, dateTransfert: new Date("2025-01-14"), statut: "Validé", agentResponsable: 420 }),
-    new Transfert({ id: 21, reference: "TRF-LYO-006", produitId: 16, quantite: 5, magasinSource: 2, magasinDestination: 3, dateTransfert: new Date("2025-01-16"), statut: "Validé", agentResponsable: 421 }),
-    new Transfert({ id: 22, reference: "TRF-LYO-007", produitId: 17, quantite: 3, magasinSource: 2, magasinDestination: 1, dateTransfert: new Date("2025-01-18"), statut: "En attente", agentResponsable: 422 }),
-    new Transfert({ id: 23, reference: "TRF-LYO-008", produitId: 18, quantite: 6, magasinSource: 2, magasinDestination: 3, dateTransfert: new Date("2025-01-20"), statut: "Refusé", motif: "Emballage abîmé", agentResponsable: 423 }),
-    new Transfert({ id: 24, reference: "TRF-LYO-009", produitId: 19, quantite: 10, magasinSource: 2, magasinDestination: 1, dateTransfert: new Date("2025-01-22"), statut: "Validé", agentResponsable: 424 }),
-    new Transfert({ id: 25, reference: "TRF-LYO-010", produitId: 20, quantite: 7, magasinSource: 2, magasinDestination: 3, dateTransfert: new Date("2025-01-24"), statut: "Validé", agentResponsable: 425 }),
-    new Transfert({ id: 26, reference: "TRF-LYO-011", produitId: 11, quantite: 8, magasinSource: 2, magasinDestination: 1, dateTransfert: new Date("2025-01-26"), statut: "Validé", agentResponsable: 426 }),
-    new Transfert({ id: 27, reference: "TRF-LYO-012", produitId: 12, quantite: 12, magasinSource: 2, magasinDestination: 3, dateTransfert: new Date("2025-01-28"), statut: "En attente", agentResponsable: 427 }),
-    new Transfert({ id: 28, reference: "TRF-LYO-013", produitId: 13, quantite: 5, magasinSource: 2, magasinDestination: 1, dateTransfert: new Date("2025-01-30"), statut: "Validé", agentResponsable: 428 }),
+    new Transfert({ id: 16, reference: "TRF-LYO-001", produitId: 11, quantite: 15, magasinSource: 2, magasinDestination: 1, dateTransfert: new Date("2025-03-06"), statut: "Validé", agentResponsable: 416 }),
+    new Transfert({ id: 17, reference: "TRF-LYO-002", produitId: 12, quantite: 10, magasinSource: 2, magasinDestination: 3, dateTransfert: new Date("2025-03-08"), statut: "Validé", agentResponsable: 417 }),
+    new Transfert({ id: 18, reference: "TRF-LYO-003", produitId: 13, quantite: 8, magasinSource: 2, magasinDestination: 1, dateTransfert: new Date("2025-03-10"), statut: "En attente", agentResponsable: 418 }),
+    new Transfert({ id: 19, reference: "TRF-LYO-004", produitId: 14, quantite: 12, magasinSource: 2, magasinDestination: 3, dateTransfert: new Date("2025-03-12"), statut: "Refusé", motif: "Stock critique", agentResponsable: 419 }),
+    new Transfert({ id: 20, reference: "TRF-LYO-005", produitId: 15, quantite: 20, magasinSource: 2, magasinDestination: 1, dateTransfert: new Date("2025-03-14"), statut: "Validé", agentResponsable: 420 }),
+    new Transfert({ id: 21, reference: "TRF-LYO-006", produitId: 16, quantite: 5, magasinSource: 2, magasinDestination: 3, dateTransfert: new Date("2025-03-16"), statut: "Validé", agentResponsable: 421 }),
+    new Transfert({ id: 22, reference: "TRF-LYO-007", produitId: 17, quantite: 3, magasinSource: 2, magasinDestination: 1, dateTransfert: new Date("2025-03-18"), statut: "En attente", agentResponsable: 422 }),
+    new Transfert({ id: 23, reference: "TRF-LYO-008", produitId: 18, quantite: 6, magasinSource: 2, magasinDestination: 3, dateTransfert: new Date("2025-03-20"), statut: "Refusé", motif: "Emballage abîmé", agentResponsable: 423 }),
+    new Transfert({ id: 24, reference: "TRF-LYO-009", produitId: 19, quantite: 10, magasinSource: 2, magasinDestination: 1, dateTransfert: new Date("2025-03-22"), statut: "Validé", agentResponsable: 424 }),
+    new Transfert({ id: 25, reference: "TRF-LYO-010", produitId: 20, quantite: 7, magasinSource: 2, magasinDestination: 3, dateTransfert: new Date("2025-03-24"), statut: "Validé", agentResponsable: 425 }),
+    new Transfert({ id: 26, reference: "TRF-LYO-011", produitId: 11, quantite: 8, magasinSource: 2, magasinDestination: 1, dateTransfert: new Date("2025-03-26"), statut: "Validé", agentResponsable: 426 }),
+    new Transfert({ id: 27, reference: "TRF-LYO-012", produitId: 12, quantite: 12, magasinSource: 2, magasinDestination: 3, dateTransfert: new Date("2025-03-28"), statut: "En attente", agentResponsable: 427 }),
+    new Transfert({ id: 28, reference: "TRF-LYO-013", produitId: 13, quantite: 5, magasinSource: 2, magasinDestination: 1, dateTransfert: new Date("2025-03-30"), statut: "Validé", agentResponsable: 428 }),
     new Transfert({ id: 29, reference: "TRF-LYO-014", produitId: 14, quantite: 9, magasinSource: 2, magasinDestination: 3, dateTransfert: new Date("2025-02-01"), statut: "Refusé", motif: "Produit périmé", agentResponsable: 429 }),
     new Transfert({ id: 30, reference: "TRF-LYO-015", produitId: 15, quantite: 15, magasinSource: 2, magasinDestination: 1, dateTransfert: new Date("2025-02-03"), statut: "Validé", agentResponsable: 430 }),
 
     // Transferts depuis Magasin 3 (Marseille) - 15 transferts
-    new Transfert({ id: 31, reference: "TRF-MAR-001", produitId: 21, quantite: 12, magasinSource: 3, magasinDestination: 1, dateTransfert: new Date("2025-01-07"), statut: "Validé", agentResponsable: 431 }),
-    new Transfert({ id: 32, reference: "TRF-MAR-002", produitId: 22, quantite: 8, magasinSource: 3, magasinDestination: 2, dateTransfert: new Date("2025-01-09"), statut: "Validé", agentResponsable: 432 }),
-    new Transfert({ id: 33, reference: "TRF-MAR-003", produitId: 23, quantite: 6, magasinSource: 3, magasinDestination: 1, dateTransfert: new Date("2025-01-11"), statut: "En attente", agentResponsable: 433 }),
-    new Transfert({ id: 34, reference: "TRF-MAR-004", produitId: 24, quantite: 4, magasinSource: 3, magasinDestination: 2, dateTransfert: new Date("2025-01-13"), statut: "Refusé", motif: "Stock réservé", agentResponsable: 434 }),
-    new Transfert({ id: 35, reference: "TRF-MAR-005", produitId: 25, quantite: 18, magasinSource: 3, magasinDestination: 1, dateTransfert: new Date("2025-01-15"), statut: "Validé", agentResponsable: 435 }),
-    new Transfert({ id: 36, reference: "TRF-MAR-006", produitId: 26, quantite: 3, magasinSource: 3, magasinDestination: 2, dateTransfert: new Date("2025-01-17"), statut: "Validé", agentResponsable: 436 }),
-    new Transfert({ id: 37, reference: "TRF-MAR-007", produitId: 27, quantite: 2, magasinSource: 3, magasinDestination: 1, dateTransfert: new Date("2025-01-19"), statut: "En attente", agentResponsable: 437 }),
-    new Transfert({ id: 38, reference: "TRF-MAR-008", produitId: 28, quantite: 10, magasinSource: 3, magasinDestination: 2, dateTransfert: new Date("2025-01-21"), statut: "Refusé", motif: "Commande annulée", agentResponsable: 438 }),
-    new Transfert({ id: 39, reference: "TRF-MAR-009", produitId: 29, quantite: 7, magasinSource: 3, magasinDestination: 1, dateTransfert: new Date("2025-01-23"), statut: "Validé", agentResponsable: 439 }),
-    new Transfert({ id: 40, reference: "TRF-MAR-010", produitId: 30, quantite: 5, magasinSource: 3, magasinDestination: 2, dateTransfert: new Date("2025-01-25"), statut: "Validé", agentResponsable: 440 }),
-    new Transfert({ id: 41, reference: "TRF-MAR-011", produitId: 21, quantite: 9, magasinSource: 3, magasinDestination: 1, dateTransfert: new Date("2025-01-27"), statut: "Validé", agentResponsable: 441 }),
-    new Transfert({ id: 42, reference: "TRF-MAR-012", produitId: 22, quantite: 6, magasinSource: 3, magasinDestination: 2, dateTransfert: new Date("2025-01-29"), statut: "En attente", agentResponsable: 442 }),
-    new Transfert({ id: 43, reference: "TRF-MAR-013", produitId: 23, quantite: 5, magasinSource: 3, magasinDestination: 1, dateTransfert: new Date("2025-01-31"), statut: "Validé", agentResponsable: 443 }),
+    new Transfert({ id: 31, reference: "TRF-MAR-001", produitId: 21, quantite: 12, magasinSource: 3, magasinDestination: 1, dateTransfert: new Date("2025-03-07"), statut: "Validé", agentResponsable: 431 }),
+    new Transfert({ id: 32, reference: "TRF-MAR-002", produitId: 22, quantite: 8, magasinSource: 3, magasinDestination: 2, dateTransfert: new Date("2025-03-09"), statut: "Validé", agentResponsable: 432 }),
+    new Transfert({ id: 33, reference: "TRF-MAR-003", produitId: 23, quantite: 6, magasinSource: 3, magasinDestination: 1, dateTransfert: new Date("2025-03-11"), statut: "En attente", agentResponsable: 433 }),
+    new Transfert({ id: 34, reference: "TRF-MAR-004", produitId: 24, quantite: 4, magasinSource: 3, magasinDestination: 2, dateTransfert: new Date("2025-03-13"), statut: "Refusé", motif: "Stock réservé", agentResponsable: 434 }),
+    new Transfert({ id: 35, reference: "TRF-MAR-005", produitId: 25, quantite: 18, magasinSource: 3, magasinDestination: 1, dateTransfert: new Date("2025-03-15"), statut: "Validé", agentResponsable: 435 }),
+    new Transfert({ id: 36, reference: "TRF-MAR-006", produitId: 26, quantite: 3, magasinSource: 3, magasinDestination: 2, dateTransfert: new Date("2025-03-17"), statut: "Validé", agentResponsable: 436 }),
+    new Transfert({ id: 37, reference: "TRF-MAR-007", produitId: 27, quantite: 2, magasinSource: 3, magasinDestination: 1, dateTransfert: new Date("2025-03-19"), statut: "En attente", agentResponsable: 437 }),
+    new Transfert({ id: 38, reference: "TRF-MAR-008", produitId: 28, quantite: 10, magasinSource: 3, magasinDestination: 2, dateTransfert: new Date("2025-03-21"), statut: "Refusé", motif: "Commande annulée", agentResponsable: 438 }),
+    new Transfert({ id: 39, reference: "TRF-MAR-009", produitId: 29, quantite: 7, magasinSource: 3, magasinDestination: 1, dateTransfert: new Date("2025-03-23"), statut: "Validé", agentResponsable: 439 }),
+    new Transfert({ id: 40, reference: "TRF-MAR-010", produitId: 30, quantite: 5, magasinSource: 3, magasinDestination: 2, dateTransfert: new Date("2025-03-25"), statut: "Validé", agentResponsable: 440 }),
+    new Transfert({ id: 41, reference: "TRF-MAR-011", produitId: 21, quantite: 9, magasinSource: 3, magasinDestination: 1, dateTransfert: new Date("2025-03-27"), statut: "Validé", agentResponsable: 441 }),
+    new Transfert({ id: 42, reference: "TRF-MAR-012", produitId: 22, quantite: 6, magasinSource: 3, magasinDestination: 2, dateTransfert: new Date("2025-03-29"), statut: "En attente", agentResponsable: 442 }),
+    new Transfert({ id: 43, reference: "TRF-MAR-013", produitId: 23, quantite: 5, magasinSource: 3, magasinDestination: 1, dateTransfert: new Date("2025-03-31"), statut: "Validé", agentResponsable: 443 }),
     new Transfert({ id: 44, reference: "TRF-MAR-014", produitId: 24, quantite: 3, magasinSource: 3, magasinDestination: 2, dateTransfert: new Date("2025-02-02"), statut: "Refusé", motif: "Quantité insuffisante", agentResponsable: 444 }),
     new Transfert({ id: 45, reference: "TRF-MAR-015", produitId: 25, quantite: 12, magasinSource: 3, magasinDestination: 1, dateTransfert: new Date("2025-02-04"), statut: "Validé", agentResponsable: 445 })
 ];
 export const depenses: Depense[] = [
-    new Depense({ id: 1, date: new Date("2025-01-02"), categoryId: 1, amount: 1200.00, type: "STOCK", description: "Achat pâtes Barilla", paymentMode: "Virement", magasinId: 1 }),
-    new Depense({ id: 2, date: new Date("2025-01-03"), categoryId: 2, amount: 450.50, type: "STANDARD", description: "Entretien camion livraison", paymentMode: "Chèque", magasinId: 1 }),
-    new Depense({ id: 3, date: new Date("2025-01-05"), categoryId: 3, amount: 3200.00, type: "STOCK", description: "Achat viandes", paymentMode: "Virement", magasinId: 2 }),
-    new Depense({ id: 4, date: new Date("2025-01-10"), categoryId: 4, amount: 180.75, type: "STANDARD", description: "Fournitures bureau", paymentMode: "Carte", magasinId: 2 }),
-    new Depense({ id: 5, date: new Date("2025-01-12"), categoryId: 1, amount: 950.00, type: "STOCK", description: "Achat produits laitiers", paymentMode: "Virement", magasinId: 3 }),
-    new Depense({ id: 6, date: new Date("2025-01-15"), categoryId: 5, amount: 420.30, type: "STANDARD", description: "Publicité locale", paymentMode: "Chèque", magasinId: 3 }),
-    new Depense({ id: 7, date: new Date("2025-01-18"), categoryId: 2, amount: 150.00, type: "STANDARD", description: "Nettoyage magasin", paymentMode: "Espèces", magasinId: 1 }),
-    new Depense({ id: 8, date: new Date("2025-01-20"), categoryId: 3, amount: 2800.00, type: "STOCK", description: "Achat boissons", paymentMode: "Virement", magasinId: 2 }),
-    new Depense({ id: 9, date: new Date("2025-01-22"), categoryId: 4, amount: 75.60, type: "STANDARD", description: "Petit matériel", paymentMode: "Carte", magasinId: 3 }),
-    new Depense({ id: 10, date: new Date("2025-01-25"), categoryId: 1, amount: 1650.00, type: "STOCK", description: "Achat fruits et légumes", paymentMode: "Virement", magasinId: 1 })
-  ];
+  // Magasin Paris (ID 1) - 10 dépenses
+  new Depense({ id: 1, date: new Date("2025-03-02"), categoryId: 1, montant: 1200.00, type: "STOCK", description: "Achat pâtes Barilla", paymentMode: "Virement", magasinId: 1 }),
+  new Depense({ id: 2, date: new Date("2025-03-03"), categoryId: 2, montant: 450.50, type: "STANDARD", description: "Entretien camion livraison", paymentMode: "Chèque", magasinId: 1 }),
+  new Depense({ id: 7, date: new Date("2025-03-07"), categoryId: 2, montant: 150.00, type: "STANDARD", description: "Nettoyage magasin", paymentMode: "Espèces", magasinId: 1 }),
+  new Depense({ id: 10, date: new Date("2025-03-10"), categoryId: 1, montant: 1650.00, type: "STOCK", description: "Achat fruits et légumes", paymentMode: "Virement", magasinId: 1 }),
+  new Depense({ id: 13, date: new Date("2025-03-15"), categoryId: 3, montant: 850.00, type: "STOCK", description: "Achat produits surgelés", paymentMode: "Virement", magasinId: 1 }),
+  new Depense({ id: 16, date: new Date("2025-03-18"), categoryId: 4, montant: 320.75, type: "STANDARD", description: "Matériel de caisse", paymentMode: "Carte", magasinId: 1 }),
+  new Depense({ id: 19, date: new Date("2025-03-22"), categoryId: 5, montant: 280.00, type: "STANDARD", description: "Formation employés", paymentMode: "Chèque", magasinId: 1 }),
+  new Depense({ id: 22, date: new Date("2025-03-25"), categoryId: 1, montant: 1350.00, type: "STOCK", description: "Achat produits bio", paymentMode: "Virement", magasinId: 1 }),
+  new Depense({ id: 25, date: new Date("2025-03-28"), categoryId: 2, montant: 175.50, type: "STANDARD", description: "Réparation chariot", paymentMode: "Espèces", magasinId: 1 }),
+  new Depense({ id: 28, date: new Date("2025-03-30"), categoryId: 3, montant: 920.00, type: "STOCK", description: "Achat produits secs", paymentMode: "Virement", magasinId: 1 }),
+
+  // Magasin Lyon (ID 2) - 10 dépenses
+  new Depense({ id: 3, date: new Date("2025-03-05"), categoryId: 3, montant: 3200.00, type: "STOCK", description: "Achat viandes", paymentMode: "Virement", magasinId: 2 }),
+  new Depense({ id: 4, date: new Date("2025-03-08"), categoryId: 4, montant: 180.75, type: "STANDARD", description: "Fournitures bureau", paymentMode: "Carte", magasinId: 2 }),
+  new Depense({ id: 8, date: new Date("2025-03-12"), categoryId: 3, montant: 2800.00, type: "STOCK", description: "Achat boissons", paymentMode: "Virement", magasinId: 2 }),
+  new Depense({ id: 11, date: new Date("2025-03-13"), categoryId: 5, montant: 420.30, type: "STANDARD", description: "Publicité locale", paymentMode: "Chèque", magasinId: 2 }),
+  new Depense({ id: 14, date: new Date("2025-03-16"), categoryId: 1, montant: 1100.00, type: "STOCK", description: "Achat épicerie", paymentMode: "Virement", magasinId: 2 }),
+  new Depense({ id: 17, date: new Date("2025-03-19"), categoryId: 2, montant: 380.00, type: "STANDARD", description: "Carburant livraison", paymentMode: "Carte", magasinId: 2 }),
+  new Depense({ id: 20, date: new Date("2025-03-23"), categoryId: 4, montant: 210.50, type: "STANDARD", description: "Logiciel caisse", paymentMode: "Virement", magasinId: 2 }),
+  new Depense({ id: 23, date: new Date("2025-03-26"), categoryId: 3, montant: 1950.00, type: "STOCK", description: "Achat poissons", paymentMode: "Virement", magasinId: 2 }),
+  new Depense({ id: 26, date: new Date("2025-03-29"), categoryId: 5, montant: 150.00, type: "STANDARD", description: "Fleurs accueil", paymentMode: "Espèces", magasinId: 2 }),
+  new Depense({ id: 29, date: new Date("2025-03-31"), categoryId: 1, montant: 1250.00, type: "STOCK", description: "Achat produits boulangerie", paymentMode: "Virement", magasinId: 2 }),
+
+  // Magasin Marseille (ID 3) - 10 dépenses
+  new Depense({ id: 5, date: new Date("2025-03-10"), categoryId: 1, montant: 950.00, type: "STOCK", description: "Achat produits laitiers", paymentMode: "Virement", magasinId: 3 }),
+  new Depense({ id: 6, date: new Date("2025-03-11"), categoryId: 5, montant: 420.30, type: "STANDARD", description: "Publicité locale", paymentMode: "Chèque", magasinId: 3 }),
+  new Depense({ id: 9, date: new Date("2025-03-14"), categoryId: 4, montant: 75.60, type: "STANDARD", description: "Petit matériel", paymentMode: "Carte", magasinId: 3 }),
+  new Depense({ id: 12, date: new Date("2025-03-15"), categoryId: 2, montant: 290.00, type: "STANDARD", description: "Uniforme personnel", paymentMode: "Chèque", magasinId: 3 }),
+  new Depense({ id: 15, date: new Date("2025-03-17"), categoryId: 3, montant: 1800.00, type: "STOCK", description: "Achat charcuterie", paymentMode: "Virement", magasinId: 3 }),
+  new Depense({ id: 18, date: new Date("2025-03-20"), categoryId: 1, montant: 1350.00, type: "STOCK", description: "Achat fruits exotiques", paymentMode: "Virement", magasinId: 3 }),
+  new Depense({ id: 21, date: new Date("2025-03-24"), categoryId: 5, montant: 350.00, type: "STANDARD", description: "Décorations saisonnières", paymentMode: "Espèces", magasinId: 3 }),
+  new Depense({ id: 24, date: new Date("2025-03-27"), categoryId: 4, montant: 120.00, type: "STANDARD", description: "Abonnements logiciels", paymentMode: "Virement", magasinId: 3 }),
+  new Depense({ id: 27, date: new Date("2025-03-30"), categoryId: 2, montant: 410.00, type: "STANDARD", description: "Maintenance équipement", paymentMode: "Carte", magasinId: 3 }),
+  new Depense({ id: 30, date: new Date("2025-02-01"), categoryId: 3, montant: 2200.00, type: "STOCK", description: "Achat vins et spiritueux", paymentMode: "Virement", magasinId: 3 })
+];
 
 export const recettes: Recette[] = [
-    new Recette({ id: 1, date: new Date("2025-01-02"), categoryId: 1, amount: 3500.75, description: "Vente journée", paymentMode: "Mixte", magasinId: 1 }),
-    new Recette({ id: 2, date: new Date("2025-01-03"), categoryId: 2, amount: 2800.50, description: "Vente journée", paymentMode: "Mixte", magasinId: 2 }),
-    new Recette({ id: 3, date: new Date("2025-01-04"), categoryId: 3, amount: 1950.25, description: "Vente journée", paymentMode: "Mixte", magasinId: 3 }),
-    new Recette({ id: 4, date: new Date("2025-01-05"), categoryId: 1, amount: 4200.00, description: "Vente weekend", paymentMode: "Mixte", magasinId: 1 }),
-    new Recette({ id: 5, date: new Date("2025-01-06"), categoryId: 2, amount: 3100.75, description: "Vente weekend", paymentMode: "Mixte", magasinId: 2 }),
-    new Recette({ id: 6, date: new Date("2025-01-07"), categoryId: 3, amount: 2450.50, description: "Vente weekend", paymentMode: "Mixte", magasinId: 3 }),
-    new Recette({ id: 7, date: new Date("2025-01-09"), categoryId: 1, amount: 3800.25, description: "Vente journée", paymentMode: "Mixte", magasinId: 1 }),
-    new Recette({ id: 8, date: new Date("2025-01-10"), categoryId: 2, amount: 2950.00, description: "Vente journée", paymentMode: "Mixte", magasinId: 2 }),
-    new Recette({ id: 9, date: new Date("2025-01-11"), categoryId: 3, amount: 2100.75, description: "Vente journée", paymentMode: "Mixte", magasinId: 3 }),
-    new Recette({ id: 10, date: new Date("2025-01-12"), categoryId: 1, amount: 3650.50, description: "Vente promotionnelle", paymentMode: "Mixte", magasinId: 1 })
-  ];
+  // Magasin Paris (ID 1) - 10 recettes
+  new Recette({ id: 1, date: new Date("2025-03-02"), categoryId: 101, montant: 3500.75, description: "Vente produits alimentaires", paymentMode: "Mixte", magasinId: 1 }),
+  new Recette({ id: 4, date: new Date("2025-03-05"), categoryId: 101, montant: 4200.00, description: "Vente weekend produits alimentaires", paymentMode: "Mixte", magasinId: 1 }),
+  new Recette({ id: 7, date: new Date("2025-03-09"), categoryId: 102, montant: 3800.25, description: "Vente promotion printemps", paymentMode: "Mixte", magasinId: 1 }),
+  new Recette({ id: 10, date: new Date("2025-03-12"), categoryId: 102, montant: 3650.50, description: "Promotion spéciale clients fidèles", paymentMode: "Mixte", magasinId: 1 }),
+  new Recette({ id: 13, date: new Date("2025-03-16"), categoryId: 103, montant: 4100.00, description: "Soirée gastronomique", paymentMode: "Mixte", magasinId: 1 }),
+  new Recette({ id: 16, date: new Date("2025-03-19"), categoryId: 101, montant: 3200.75, description: "Vente quotidienne alimentaire", paymentMode: "Mixte", magasinId: 1 }),
+  new Recette({ id: 19, date: new Date("2025-03-23"), categoryId: 103, montant: 2850.50, description: "Événement vin fromage", paymentMode: "Mixte", magasinId: 1 }),
+  new Recette({ id: 22, date: new Date("2025-03-26"), categoryId: 105, montant: 3950.00, description: "Service traiteur entreprise", paymentMode: "Virement", magasinId: 1 }),
+  new Recette({ id: 25, date: new Date("2025-03-29"), categoryId: 101, montant: 2750.25, description: "Vente produits bio", paymentMode: "Mixte", magasinId: 1 }),
+  new Recette({ id: 28, date: new Date("2025-03-04"), categoryId: 104, montant: 4300.00, description: "Subvention mairie Paris", paymentMode: "Virement", magasinId: 1 }),
 
+  // Magasin Lyon (ID 2) - 10 recettes
+  new Recette({ id: 2, date: new Date("2025-03-03"), categoryId: 101, montant: 2800.50, description: "Vente produits régionaux", paymentMode: "Mixte", magasinId: 2 }),
+  new Recette({ id: 5, date: new Date("2025-03-06"), categoryId: 102, montant: 3100.75, description: "Promotion produits lyonnais", paymentMode: "Mixte", magasinId: 2 }),
+  new Recette({ id: 8, date: new Date("2025-03-10"), categoryId: 101, montant: 2950.00, description: "Vente charcuterie", paymentMode: "Mixte", magasinId: 2 }),
+  new Recette({ id: 11, date: new Date("2025-03-14"), categoryId: 102, montant: 3400.50, description: "Promotion vins", paymentMode: "Mixte", magasinId: 2 }),
+  new Recette({ id: 14, date: new Date("2025-03-17"), categoryId: 103, montant: 2650.00, description: "Dégustation vins", paymentMode: "Mixte", magasinId: 2 }),
+  new Recette({ id: 17, date: new Date("2025-03-20"), categoryId: 105, montant: 3050.75, description: "Service livraison entreprises", paymentMode: "Virement", magasinId: 2 }),
+  new Recette({ id: 20, date: new Date("2025-03-24"), categoryId: 101, montant: 3750.00, description: "Vente primeurs", paymentMode: "Mixte", magasinId: 2 }),
+  new Recette({ id: 23, date: new Date("2025-03-27"), categoryId: 103, montant: 2900.50, description: "Atelier cuisine", paymentMode: "Mixte", magasinId: 2 }),
+  new Recette({ id: 26, date: new Date("2025-03-30"), categoryId: 101, montant: 2450.25, description: "Vente fromagerie", paymentMode: "Mixte", magasinId: 2 }),
+  new Recette({ id: 29, date: new Date("2025-03-05"), categoryId: 104, montant: 3300.00, description: "Aide région Rhône-Alpes", paymentMode: "Virement", magasinId: 2 }),
+
+  // Magasin Marseille (ID 3) - 10 recettes
+  new Recette({ id: 3, date: new Date("2025-03-04"), categoryId: 101, montant: 1950.25, description: "Vente produits méditerranéens", paymentMode: "Mixte", magasinId: 3 }),
+  new Recette({ id: 6, date: new Date("2025-03-07"), categoryId: 102, montant: 2450.50, description: "Promotion poissons", paymentMode: "Mixte", magasinId: 3 }),
+  new Recette({ id: 9, date: new Date("2025-03-11"), categoryId: 103, montant: 2100.75, description: "Soirée tapas", paymentMode: "Mixte", magasinId: 3 }),
+  new Recette({ id: 12, date: new Date("2025-03-15"), categoryId: 102, montant: 2300.00, description: "Promotion huiles d'olive", paymentMode: "Mixte", magasinId: 3 }),
+  new Recette({ id: 15, date: new Date("2025-03-18"), categoryId: 101, montant: 1850.50, description: "Vente épicerie fine", paymentMode: "Mixte", magasinId: 3 }),
+  new Recette({ id: 18, date: new Date("2025-03-21"), categoryId: 105, montant: 2000.75, description: "Service plateau-repas", paymentMode: "Carte", magasinId: 3 }),
+  new Recette({ id: 21, date: new Date("2025-03-25"), categoryId: 103, montant: 2550.00, description: "Animation produits locaux", paymentMode: "Mixte", magasinId: 3 }),
+  new Recette({ id: 24, date: new Date("2025-03-28"), categoryId: 101, montant: 1900.50, description: "Vente produits bio", paymentMode: "Mixte", magasinId: 3 }),
+  new Recette({ id: 27, date: new Date("2025-03-31"), categoryId: 102, montant: 1750.25, description: "Promotion de fin mois", paymentMode: "Mixte", magasinId: 3 }),
+  new Recette({ id: 30, date: new Date("2025-03-03"), categoryId: 104, montant: 2250.00, description: "Subvention ville Marseille", paymentMode: "Virement", magasinId: 3 })
+];
+
+export const categories: Categorie[] = [
+  // Catégories de Dépenses (type: 'DEPENSE')
+  new Categorie({
+      id: 1,
+      name: "Achat Stock Alimentaire",
+      description: "Achats de produits pour revente (nourriture, boissons)",
+      type: 'DEPENSE',
+      isActive: true
+  }),
+  new Categorie({
+      id: 2,
+      name: "Frais Logistiques",
+      description: "Transport, maintenance et fonctionnement du magasin",
+      type: 'DEPENSE',
+      isActive: true
+  }),
+  new Categorie({
+      id: 3,
+      name: "Achat Produits Frais",
+      description: "Viandes, poissons, produits laitiers et frais",
+      type: 'DEPENSE',
+      isActive: true
+  }),
+  new Categorie({
+      id: 4,
+      name: "Fournitures Bureau",
+      description: "Matériel administratif et de caisse",
+      type: 'DEPENSE',
+      isActive: true
+  }),
+  new Categorie({
+      id: 5,
+      name: "Marketing & Communication",
+      description: "Publicité, promotions et décorations",
+      type: 'DEPENSE',
+      isActive: true
+  }),
+  new Categorie({
+      id: 6,
+      name: "Frais Généraux",
+      description: "Divers frais de fonctionnement",
+      type: 'DEPENSE',
+      isActive: true
+  }),
+
+  // Catégories de Recettes (type: 'RECETTE')
+  new Categorie({
+      id: 101,
+      name: "Ventes Alimentaires",
+      description: "Recettes des ventes de produits alimentaires",
+      type: 'RECETTE',
+      isActive: true
+  }),
+  new Categorie({
+      id: 102,
+      name: "Ventes Promotions",
+      description: "Recettes issues des opérations promotionnelles",
+      type: 'RECETTE',
+      isActive: true
+  }),
+  new Categorie({
+      id: 103,
+      name: "Ventes Événementielles",
+      description: "Recettes spéciales (soirées, événements)",
+      type: 'RECETTE',
+      isActive: true
+  }),
+  new Categorie({
+      id: 104,
+      name: "Subventions",
+      description: "Aides et subventions exceptionnelles",
+      type: 'RECETTE',
+      isActive: false
+  }),
+  new Categorie({
+      id: 105,
+      name: "Services Annexes",
+      description: "Recettes des services complémentaires",
+      type: 'RECETTE',
+      isActive: true
+  })
+];
   export const paniers: Panier[] = [
-    new Panier({ id: 1, clientId: 501, articles: [produits[0], produits[1]], stockList: [stocks[0], stocks[1]], totalHT: 45.50, tva: 8.19, totalTTC: 53.69, statut: "VALIDE", dateCreation: new Date("2025-01-02T10:15:00"), magasinId: 1 }),
-    new Panier({ id: 2, clientId: 502, articles: [produits[2], produits[3]], stockList: [stocks[2], stocks[3]], totalHT: 38.40, tva: 6.91, totalTTC: 45.31, statut: "VALIDE", dateCreation: new Date("2025-01-03T11:30:00"), magasinId: 1 }),
-    new Panier({ id: 3, clientId: 503, articles: [produits[4], produits[5]], stockList: [stocks[4], stocks[5]], totalHT: 72.00, tva: 12.96, totalTTC: 84.96, statut: "VALIDE", dateCreation: new Date("2025-01-04T14:45:00"), magasinId: 2 }),
-    new Panier({ id: 4, clientId: 504, articles: [produits[6]], stockList: [stocks[6]], totalHT: 39.99, tva: 7.20, totalTTC: 47.19, statut: "VALIDE", dateCreation: new Date("2025-01-05T16:20:00"), magasinId: 3 }),
-    new Panier({ id: 5, clientId: 505, articles: [produits[7], produits[8]], stockList: [stocks[7], stocks[8]], totalHT: 56.00, tva: 10.08, totalTTC: 66.08, statut: "VALIDE", dateCreation: new Date("2025-01-06T09:10:00"), magasinId: 2 }),
-    new Panier({ id: 6, clientId: 506, articles: [produits[9]], stockList: [stocks[9]], totalHT: 26.40, tva: 4.75, totalTTC: 31.15, statut: "ANNULE", dateCreation: new Date("2025-01-07T17:30:00"), magasinId: 1 }),
-    new Panier({ id: 7, clientId: 507, articles: [produits[0], produits[2], produits[4]], stockList: [stocks[0], stocks[2], stocks[4]], totalHT: 67.30, tva: 12.11, totalTTC: 79.41, statut: "VALIDE", dateCreation: new Date("2025-01-08T12:15:00"), magasinId: 3 }),
-    new Panier({ id: 8, clientId: 508, articles: [produits[1], produits[3], produits[5]], stockList: [stocks[1], stocks[3], stocks[5]], totalHT: 94.80, tva: 17.06, totalTTC: 111.86, statut: "VALIDE", dateCreation: new Date("2025-01-09T15:45:00"), magasinId: 2 }),
-    new Panier({ id: 9, clientId: 509, articles: [produits[6], produits[8]], stockList: [stocks[6], stocks[8]], totalHT: 44.49, tva: 8.01, totalTTC: 52.50, statut: "EN_COURS", dateCreation: new Date("2025-01-10T18:20:00"), magasinId: 1 }),
-    new Panier({ id: 10, clientId: 510, articles: [produits[7], produits[9]], stockList: [stocks[7], stocks[9]], totalHT: 31.70, tva: 5.71, totalTTC: 37.41, statut: "VALIDE", dateCreation: new Date("2025-01-11T10:30:00"), magasinId: 3 })
+    new Panier({ id: 1, clientId: 501, articles: [produits[0], produits[1]], stockList: [stocks[0], stocks[1]], totalHT: 45.50, tva: 8.19, totalTTC: 53.69, statut: "VALIDE", dateCreation: new Date("2025-03-02T10:15:00"), magasinId: 1 }),
+    new Panier({ id: 2, clientId: 502, articles: [produits[2], produits[3]], stockList: [stocks[2], stocks[3]], totalHT: 38.40, tva: 6.91, totalTTC: 45.31, statut: "VALIDE", dateCreation: new Date("2025-03-03T11:30:00"), magasinId: 1 }),
+    new Panier({ id: 3, clientId: 503, articles: [produits[4], produits[5]], stockList: [stocks[4], stocks[5]], totalHT: 72.00, tva: 12.96, totalTTC: 84.96, statut: "VALIDE", dateCreation: new Date("2025-03-04T14:45:00"), magasinId: 2 }),
+    new Panier({ id: 4, clientId: 504, articles: [produits[6]], stockList: [stocks[6]], totalHT: 39.99, tva: 7.20, totalTTC: 47.19, statut: "VALIDE", dateCreation: new Date("2025-03-05T16:20:00"), magasinId: 3 }),
+    new Panier({ id: 5, clientId: 505, articles: [produits[7], produits[8]], stockList: [stocks[7], stocks[8]], totalHT: 56.00, tva: 10.08, totalTTC: 66.08, statut: "VALIDE", dateCreation: new Date("2025-03-06T09:10:00"), magasinId: 2 }),
+    new Panier({ id: 6, clientId: 506, articles: [produits[9]], stockList: [stocks[9]], totalHT: 26.40, tva: 4.75, totalTTC: 31.15, statut: "ANNULE", dateCreation: new Date("2025-03-07T17:30:00"), magasinId: 1 }),
+    new Panier({ id: 7, clientId: 507, articles: [produits[0], produits[2], produits[4]], stockList: [stocks[0], stocks[2], stocks[4]], totalHT: 67.30, tva: 12.11, totalTTC: 79.41, statut: "VALIDE", dateCreation: new Date("2025-03-08T12:15:00"), magasinId: 3 }),
+    new Panier({ id: 8, clientId: 508, articles: [produits[1], produits[3], produits[5]], stockList: [stocks[1], stocks[3], stocks[5]], totalHT: 94.80, tva: 17.06, totalTTC: 111.86, statut: "VALIDE", dateCreation: new Date("2025-03-09T15:45:00"), magasinId: 2 }),
+    new Panier({ id: 9, clientId: 509, articles: [produits[6], produits[8]], stockList: [stocks[6], stocks[8]], totalHT: 44.49, tva: 8.01, totalTTC: 52.50, statut: "EN_COURS", dateCreation: new Date("2025-03-10T18:20:00"), magasinId: 1 }),
+    new Panier({ id: 10, clientId: 510, articles: [produits[7], produits[9]], stockList: [stocks[7], stocks[9]], totalHT: 31.70, tva: 5.71, totalTTC: 37.41, statut: "VALIDE", dateCreation: new Date("2025-03-11T10:30:00"), magasinId: 3 })
   ];

@@ -328,7 +328,7 @@ loadMagasins(): Magasin[] {
       depenses.push(new Depense({
         id: d,
         date: new Date(),
-        amount: Math.floor(Math.random() * 10000) + 1000,
+        montant: Math.floor(Math.random() * 10000) + 1000,
         type: d % 2 === 0 ? "STANDARD" : "STOCK",
         description: d % 2 === 0 ? "Achat de fournitures" : "Paiement des salaires",
         paymentMode: d % 2 === 0 ? "Virement bancaire" : "Espèces",
@@ -342,7 +342,7 @@ loadMagasins(): Magasin[] {
       recettes.push(new Recette({
         id: r,
         date: new Date(),
-        amount: Math.floor(Math.random() * 15000) + 5000,
+        montant: Math.floor(Math.random() * 15000) + 5000,
         categoryId: i,
         description: `Recette de vente magasin ${i}`,
         paymentMode: r % 2 === 0 ? "Espèces" : "Carte bancaire",
@@ -493,7 +493,7 @@ getTotalDepensesDuJour(): number {
   const depenses = this.getDepensesParMagasin(this.magasinSelectionne) || [];
   return depenses
     .filter(d => this.estAujourdHui(d.date))
-    .reduce((total, depense) => total + depense.amount, 0);
+    .reduce((total, depense) => total + depense.montant, 0);
 }
 
 // Nombre de dépenses effectuées aujourd'hui
@@ -552,7 +552,7 @@ onSearchChange(objet: string): void {
     case 'depense':
       this.filteredDepnse = (this.getDepensesParMagasin(this.magasinSelectionne) ?? []).filter(depense =>
         depense.type?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        depense.amount?.toString().includes(this.searchTerm) ||
+        depense.montant?.toString().includes(this.searchTerm) ||
         new Date(depense.date)?.toLocaleDateString().includes(this.searchTerm)
       );
       this.currentPageDepnse = 1;

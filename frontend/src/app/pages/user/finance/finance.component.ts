@@ -113,7 +113,7 @@ currentPageCategorie: number = 1;
       this.filteredDepenses = this.depenses.filter(depense =>
         this.getCategoryName(depense.categoryId).toLowerCase().includes(this.searchTerm.toLowerCase()) ||
         depense.type.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        depense.amount.toString().includes(this.searchTerm) || // Filtrer par montant
+        depense.montant.toString().includes(this.searchTerm) || // Filtrer par montant
         new Date(depense.date).toLocaleDateString().includes(this.searchTerm) // Filtrer par date
       );
       this.currentPageDepense = 1; // Réinitialiser à la première page après recherche
@@ -121,7 +121,7 @@ currentPageCategorie: number = 1;
     else if (objet === 'recette') {
       this.filteredRecettes = this.recettes.filter(recette =>
         this.getCategoryName(recette.categoryId).toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        recette.amount.toString().includes(this.searchTerm) ||
+        recette.montant.toString().includes(this.searchTerm) ||
         new Date(recette.date).toLocaleDateString().includes(this.searchTerm)
       );
       this.currentPageRecette = 1;
@@ -169,31 +169,31 @@ currentPageCategorie: number = 1;
 
 loadDepenses(): Depense[] {
   return [
-    new Depense({ id: 1, date: new Date(), categoryId: 1, amount: 150000, type: "STANDARD", description: "Paiement du loyer de bureau", paymentMode: "Virement" }),
-    new Depense({ id: 2, date: new Date(), categoryId: 2, amount: 200000, type: "STANDARD", description: "Salaire du personnel", paymentMode: "Virement" }),
-    new Depense({ id: 3, date: new Date(), categoryId: 3, amount: 50000, type: "STOCK", description: "Achat de fournitures de bureau", paymentMode: "Espèce" }),
-    new Depense({ id: 4, date: new Date(), categoryId: 4, amount: 30000, type: "STANDARD", description: "Facture d’électricité", paymentMode: "Mobile Money" }),
-    new Depense({ id: 5, date: new Date(), categoryId: 8, amount: 80000, type: "STANDARD", description: "Publicité Facebook", paymentMode: "Carte" }),
-    new Depense({ id: 6, date: new Date(), categoryId: 9, amount: 40000, type: "STANDARD", description: "Transport des marchandises", paymentMode: "Espèce" }),
-    new Depense({ id: 7, date: new Date(), categoryId: 10, amount: 25000, type: "STANDARD", description: "Repas d’équipe", paymentMode: "Espèce" }),
-    new Depense({ id: 8, date: new Date(), categoryId: 3, amount: 70000, type: "STOCK", description: "Achat de fournitures de production", paymentMode: "Carte" }),
-    new Depense({ id: 9, date: new Date(), categoryId: 4, amount: 35000, type: "STANDARD", description: "Facture d’eau", paymentMode: "Virement" }),
-    new Depense({ id: 10, date: new Date(), categoryId: 1, amount: 160000, type: "STANDARD", description: "Renouvellement de bail", paymentMode: "Mobile Money" }),
+    new Depense({ id: 1, date: new Date(), categoryId: 1, montant: 150000, type: "STANDARD", description: "Paiement du loyer de bureau", paymentMode: "Virement" }),
+    new Depense({ id: 2, date: new Date(), categoryId: 2, montant: 200000, type: "STANDARD", description: "Salaire du personnel", paymentMode: "Virement" }),
+    new Depense({ id: 3, date: new Date(), categoryId: 3, montant: 50000, type: "STOCK", description: "Achat de fournitures de bureau", paymentMode: "Espèce" }),
+    new Depense({ id: 4, date: new Date(), categoryId: 4, montant: 30000, type: "STANDARD", description: "Facture d’électricité", paymentMode: "Mobile Money" }),
+    new Depense({ id: 5, date: new Date(), categoryId: 8, montant: 80000, type: "STANDARD", description: "Publicité Facebook", paymentMode: "Carte" }),
+    new Depense({ id: 6, date: new Date(), categoryId: 9, montant: 40000, type: "STANDARD", description: "Transport des marchandises", paymentMode: "Espèce" }),
+    new Depense({ id: 7, date: new Date(), categoryId: 10, montant: 25000, type: "STANDARD", description: "Repas d’équipe", paymentMode: "Espèce" }),
+    new Depense({ id: 8, date: new Date(), categoryId: 3, montant: 70000, type: "STOCK", description: "Achat de fournitures de production", paymentMode: "Carte" }),
+    new Depense({ id: 9, date: new Date(), categoryId: 4, montant: 35000, type: "STANDARD", description: "Facture d’eau", paymentMode: "Virement" }),
+    new Depense({ id: 10, date: new Date(), categoryId: 1, montant: 160000, type: "STANDARD", description: "Renouvellement de bail", paymentMode: "Mobile Money" }),
   ];
 }
 
 loadRecettes(): Recette[] {
   return [
-    new Recette({ id: 1, date: new Date(), categoryId: 5, amount: 300000, description: "Vente de produits alimentaires", paymentMode: "Espèce" }),
-    new Recette({ id: 2, date: new Date(), categoryId: 6, amount: 150000, description: "Dividendes sur investissement", paymentMode: "Virement" }),
-    new Recette({ id: 3, date: new Date(), categoryId: 7, amount: 80000, description: "Consultation informatique", paymentMode: "Mobile Money" }),
-    new Recette({ id: 4, date: new Date(), categoryId: 5, amount: 250000, description: "Vente de marchandises", paymentMode: "Carte" }),
-    new Recette({ id: 5, date: new Date(), categoryId: 6, amount: 50000, description: "Retour sur investissement", paymentMode: "Virement" }),
-    new Recette({ id: 6, date: new Date(), categoryId: 7, amount: 120000, description: "Formation en ligne", paymentMode: "Mobile Money" }),
-    new Recette({ id: 7, date: new Date(), categoryId: 5, amount: 180000, description: "Vente de produits électroniques", paymentMode: "Espèce" }),
-    new Recette({ id: 8, date: new Date(), categoryId: 6, amount: 220000, description: "Location d’équipements", paymentMode: "Virement" }),
-    new Recette({ id: 9, date: new Date(), categoryId: 7, amount: 95000, description: "Maintenance de site web", paymentMode: "Carte" }),
-    new Recette({ id: 10, date: new Date(), categoryId: 5, amount: 130000, description: "Vente de meubles", paymentMode: "Mobile Money" }),
+    new Recette({ id: 1, date: new Date(), categoryId: 5, montant: 300000, description: "Vente de produits alimentaires", paymentMode: "Espèce" }),
+    new Recette({ id: 2, date: new Date(), categoryId: 6, montant: 150000, description: "Dividendes sur investissement", paymentMode: "Virement" }),
+    new Recette({ id: 3, date: new Date(), categoryId: 7, montant: 80000, description: "Consultation informatique", paymentMode: "Mobile Money" }),
+    new Recette({ id: 4, date: new Date(), categoryId: 5, montant: 250000, description: "Vente de marchandises", paymentMode: "Carte" }),
+    new Recette({ id: 5, date: new Date(), categoryId: 6, montant: 50000, description: "Retour sur investissement", paymentMode: "Virement" }),
+    new Recette({ id: 6, date: new Date(), categoryId: 7, montant: 120000, description: "Formation en ligne", paymentMode: "Mobile Money" }),
+    new Recette({ id: 7, date: new Date(), categoryId: 5, montant: 180000, description: "Vente de produits électroniques", paymentMode: "Espèce" }),
+    new Recette({ id: 8, date: new Date(), categoryId: 6, montant: 220000, description: "Location d’équipements", paymentMode: "Virement" }),
+    new Recette({ id: 9, date: new Date(), categoryId: 7, montant: 95000, description: "Maintenance de site web", paymentMode: "Carte" }),
+    new Recette({ id: 10, date: new Date(), categoryId: 5, montant: 130000, description: "Vente de meubles", paymentMode: "Mobile Money" }),
   ];
 }
 
@@ -247,7 +247,7 @@ deleteRecette(recette: Recette) {
  private initForms() {
   this.depenseForm = this.fb.group({
     categoryId: ['', Validators.required],
-    amount: ['', [Validators.required, Validators.min(1)]],
+    montant: ['', [Validators.required, Validators.min(1)]],
     paymentMode: ['', Validators.required],
     description: [''],
     type: ['STANDARD', Validators.required],
@@ -256,7 +256,7 @@ deleteRecette(recette: Recette) {
 
   this.recetteForm = this.fb.group({
     categoryId: [null, Validators.required],
-    amount: [null, [Validators.required, Validators.min(0)]],
+    montant: [null, [Validators.required, Validators.min(0)]],
     paymentMode: ['', Validators.required],
     description: [''],
     receipt: ['']

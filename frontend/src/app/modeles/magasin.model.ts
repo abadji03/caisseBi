@@ -1,5 +1,6 @@
 import { MouvementsStock, Stock } from "./entrees-sorties.model";
 import { Depense, Recette } from "./finance.model";
+import { Operation } from "./operation.model";
 import { Panier } from "./panier.model";
 import { Produits } from "./produit.modele";
 import { Transfert } from "./transfert.model";

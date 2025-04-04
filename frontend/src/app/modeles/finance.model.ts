@@ -2,7 +2,7 @@ export class Depense {
     id?: number;
     date: Date = new Date();
     categoryId!: number;
-    amount: number = 0;
+    montant: number = 0;
     type: 'STANDARD' | 'STOCK' = 'STANDARD';
     description: string = "";
     paymentMode!: string;
@@ -18,7 +18,7 @@ export class Depense {
     id?: number;
     date: Date = new Date();
     categoryId!: number;
-    amount: number = 0;
+    montant: number = 0;
     description: string = "";
     paymentMode!: string;
     receipt?: string; // URL du fichier justificatif
