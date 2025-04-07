@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { jsPDF } from 'jspdf';
 import { Chart, ChartConfiguration, registerables, TooltipItem } from 'chart.js';
 import * as ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import { Magasin } from '../../../modeles/magasin.model';
 import html2canvas from 'html2canvas';
 import { Paiement } from '../../../modeles/paiement.model';
@@ -42,6 +43,8 @@ export class RapportsFinanciersComponent implements OnInit  {
   // Données financières
   allDepenses: Depense[] = [];
   allRecettes: Recette[] = [];
+  depensesInitial: Depense[] = [];
+  recettesInitial: Recette[] = [];
   filteredDepenses: Depense[] = [];
   filteredRecettes: Recette[] = [];
   allCategories: Categorie[] = [];
@@ -168,6 +171,7 @@ filtrerDates(): void {
   }
 
   calculerIndicateurs(recettes: Recette[], depenses: Depense[]): void {
+
     // Associer chaque recette à sa catégorie
     const recettesAvecCategories = recettes.map(r => ({
       ...r,
@@ -198,6 +202,8 @@ filtrerDates(): void {
     this.totalDepenses = depenses.reduce((sum, d) => sum + d.montant, 0);
     this.nbDepenses = depenses.length;
 
+    // const flux = this.calculerFluxTresorerie();
+    // this.soldeTresorerie = flux.soldeFinal; // Utilisez le solde final du flux
     // Bénéfice net
     this.beneficeNet = (this.chiffreAffaires + this.autresRecettes) - this.totalDepenses;
 
@@ -225,7 +231,7 @@ filtrerDates(): void {
     endDatePrecedent.setDate(startDate.getDate() - 1);
 
     // Filtrer les recettes de la période précédente
-    const recettesPrecedentes = this.allRecettes.filter(r => {
+    const recettesPrecedentes = this.filteredRecettes.filter(r => {
       const dateRecette = this.resetTime(new Date(r.date));
       return dateRecette >= startDatePrecedent &&
              dateRecette <= endDatePrecedent &&
@@ -254,57 +260,141 @@ filtrerDates(): void {
   }
 
   // Nouveaux calculs pour le flux de trésorerie
+/*  private calculerFluxTresorerie(): {
+    soldeInitial: number,
+    recettesPeriod: number,
+    depensesPeriod: number,
+    soldeFinal: number
+  } {
+    // 1. Trouver la date la plus ancienne dans les données
+    const datesExistantes = [
+      ...this.filteredRecettes.map(r => this.resetTime(new Date(r.date)).getTime()),
+      ...this.filteredDepenses.map(d => this.resetTime(new Date(d.date)).getTime())
+    ];
+    const datePlusAncienne = datesExistantes.length > 0
+      ? new Date(Math.min(...datesExistantes))
+      : null;
+
+    // 2. Calcul du solde initial (seulement si dateDebut > datePlusAncienne)
+    let soldeInitial = 0;
+    const dateDebut = this.resetTime(new Date(this.dateDebut));
+    //console.log('....................Date de début.........................')
+    if (datePlusAncienne && dateDebut > this.resetTime(datePlusAncienne)) {
+      soldeInitial = this.allRecettes
+        .filter(r => this.resetTime(new Date(r.date)) < dateDebut)
+        .reduce((sum, r) => sum + r.montant, 0)
+        -
+        this.allDepenses
+        .filter(d => this.resetTime(new Date(d.date)) < dateDebut)
+        .reduce((sum, d) => sum + d.montant, 0);
+    }
+    this.recettesInitial = this.allRecettes
+    .filter(r => this.resetTime(new Date(r.date)) < dateDebut);
+
+
+
+    this.depensesInitial = this.allDepenses
+    .filter(r => this.resetTime(new Date(r.date)) < dateDebut);
+
+
+    // 3. Recettes/Dépenses de la période (inchangé)
+    const recettesPeriod = this.filteredRecettes.reduce((sum, r) => sum + r.montant, 0);
+    const depensesPeriod = this.filteredDepenses.reduce((sum, d) => sum + d.montant, 0);
+
+    // 4. Solde final
+    const soldeFinal = soldeInitial + recettesPeriod - depensesPeriod;
+
+    return { soldeInitial, recettesPeriod, depensesPeriod, soldeFinal };
+  }
+ */
+
 private calculerFluxTresorerie(): {
   soldeInitial: number,
   recettesPeriod: number,
   depensesPeriod: number,
   soldeFinal: number
 } {
-  // 1. Solde initial (somme de toutes les entrées/sorties AVANT la période)
-  const soldeInitial = this.allRecettes
-    .filter(r => new Date(r.date) < new Date(this.dateDebut))
-    .reduce((sum, r) => sum + r.montant, 0)
-    -
-    this.allDepenses
-    .filter(d => new Date(d.date) < new Date(this.dateDebut))
+  // 1. Préparer les dates (en ignorant les heures)
+  const dateDebut = this.resetTime(new Date(this.dateDebut));
+  const dateFin = this.resetTime(new Date(this.dateFin));
+
+  // 2. Calculer la veille de la date de début
+  const dateVeille = new Date(dateDebut);
+  dateVeille.setDate(dateDebut.getDate() - 1);
+  this.resetTime(dateVeille);
+
+  // 3. Calcul du solde initial (toutes les transactions AVANT dateDebut)
+  let soldeInitial = 0;
+  const transactionsExistantes = this.allRecettes.length > 0 || this.allDepenses.length > 0;
+
+  if (transactionsExistantes) {
+    soldeInitial = this.allRecettes
+      .filter(r => this.resetTime(new Date(r.date)) < dateDebut)
+      .reduce((sum, r) => sum + r.montant, 0)
+      -
+      this.allDepenses
+      .filter(d => this.resetTime(new Date(d.date)) < dateDebut)
+      .reduce((sum, d) => sum + d.montant, 0);
+  }
+
+  // 4. Calcul des transactions de la période (INCLUSIVE dateDebut à dateFin)
+  const recettesPeriod = this.allRecettes
+    .filter(r => {
+      const date = this.resetTime(new Date(r.date));
+      return date >= dateDebut && date <= dateFin;
+    })
+    .reduce((sum, r) => sum + r.montant, 0);
+
+  const depensesPeriod = this.allDepenses
+    .filter(d => {
+      const date = this.resetTime(new Date(d.date));
+      return date >= dateDebut && date <= dateFin;
+    })
     .reduce((sum, d) => sum + d.montant, 0);
 
-  // 2. Recettes/Dépenses de la période
-  const recettesPeriod = this.filteredRecettes.reduce((sum, r) => sum + r.montant, 0);
-  const depensesPeriod = this.filteredDepenses.reduce((sum, d) => sum + d.montant, 0);
-
-  // 3. Solde final
+  // 5. Solde final
   const soldeFinal = soldeInitial + recettesPeriod - depensesPeriod;
 
-  return { soldeInitial, recettesPeriod, depensesPeriod, soldeFinal };
+  return {
+    soldeInitial,
+    recettesPeriod,
+    depensesPeriod,
+    soldeFinal
+  };
 }
-
 // Nouvelle méthode pour les tendances
 private calculerTendances(): {
   evolutionCA: { valeur: number, tendance: '↑' | '↓' | '→' },
   evolutionBenefices: { valeur: number, tendance: '↑' | '↓' | '→' },
   evolutionCouts: { valeur: number, tendance: '↑' | '↓' | '→' }
 } {
-  // Calcul des valeurs de la période précédente (utilisez la méthode existante calculerSoldeEtEvolution)
-  const periodePrecedente = this.getPeriodePrecedente();
+  try {
+    const periodePrecedente = this.getPeriodePrecedente();
 
-  // Évolution en %
-  const evolutionCA = this.calculerEvolution(
-    this.chiffreAffaires,
-    periodePrecedente.chiffreAffaires
-  );
+    // Vérification que les données précédentes sont valides
+    const donneesValides = periodePrecedente.chiffreAffaires !== undefined
+      && periodePrecedente.beneficeNet !== undefined
+      && periodePrecedente.totalDepenses !== undefined;
 
-  const evolutionBenefices = this.calculerEvolution(
-    this.beneficeNet,
-    periodePrecedente.beneficeNet
-  );
-
-  const evolutionCouts = this.calculerEvolution(
-    this.totalDepenses,
-    periodePrecedente.totalDepenses
-  );
-
-  return { evolutionCA, evolutionBenefices, evolutionCouts };
+    return {
+      evolutionCA: donneesValides
+        ? this.calculerEvolution(this.chiffreAffaires, periodePrecedente.chiffreAffaires)
+        : { valeur: 0, tendance: '→' },
+      evolutionBenefices: donneesValides
+        ? this.calculerEvolution(this.beneficeNet, periodePrecedente.beneficeNet)
+        : { valeur: 0, tendance: '→' },
+      evolutionCouts: donneesValides
+        ? this.calculerEvolution(this.totalDepenses, periodePrecedente.totalDepenses)
+        : { valeur: 0, tendance: '→' }
+    };
+  } catch (error) {
+    console.error("Erreur dans le calcul des tendances", error);
+    return {
+      evolutionCA: { valeur: 0, tendance: '→' },
+      evolutionBenefices: { valeur: 0, tendance: '→' },
+      evolutionCouts: { valeur: 0, tendance: '→' }
+    };
+  }
 }
 private getDonneesComparatives(): {
   periode: string,
@@ -335,17 +425,17 @@ private getDonneesPourPeriode(decalage: number): {
   beneficeNet: number,
   totalDepenses: number
 } {
-  const startDate = new Date(this.dateDebut);
-  const endDate = new Date(this.dateFin);
+  const startDate = this.resetTime(new Date(this.dateDebut));
+  const endDate = this.resetTime(new Date(this.dateFin));
 
   // Calculer la durée de la période en jours
   const dureePeriode = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
   // Calculer les dates de la période décalée
-  const startDateDecale = new Date(startDate);
+  const startDateDecale = this.resetTime(new Date(startDate));
   startDateDecale.setDate(startDate.getDate() + (decalage * dureePeriode));
 
-  const endDateDecale = new Date(endDate);
+  const endDateDecale = this.resetTime(new Date(endDate));
   endDateDecale.setDate(endDate.getDate() + (decalage * dureePeriode));
 
   // Filtrer les données pour la période décalée
@@ -702,83 +792,385 @@ creerGraphiqueRecettes(): void {
   }
 }
 
+async impression() {
+  this.isPrinting = true;
+
+  // 1. Préparer les graphiques AVANT le clonage
+  await this.prepareChartsForExport();
+
+  // 2. Obtenir l'élément original
+  const printContent = document.getElementById('rapport');
+  if (!printContent) return;
+
+  // 3. Convertir les canvas en images dans l'ORIGINAL avant clonage
+  await this.convertChartsToImages(printContent);
+
+  // 4. Maintenant cloner l'élément avec les images déjà converties
+  const clone = printContent.cloneNode(true) as HTMLElement;
+  clone.style.position = 'absolute';
+  clone.style.left = '0';
+  clone.style.top = '0';
+  clone.style.width = '100%';
+  clone.id = 'print-clone';
+
+  // 5. Styles d'impression
+  const style = document.createElement('style');
+  style.innerHTML = `
+    body > * {
+      display: none !important;
+    }
+    #print-clone {
+      display: block !important;
+      visibility: visible !important;
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      background: white;
+    }
+    .no-printer {
+      display: none !important;
+    }
+    .printer-only {
+      display: block !important;
+    }
+  `;
+
+  document.body.appendChild(style);
+  document.body.appendChild(clone);
+
+  // 6. Délai plus long pour assurer le rendu
+  setTimeout(() => {
+    window.print();
+
+    // 7. Nettoyage
+    document.body.removeChild(clone);
+    document.head.removeChild(style);
+    this.isPrinting = false;
+
+    // 8. Re-créer les graphiques dans l'original si nécessaire
+    this.recreateCharts();
+  }, 800); // Délai augmenté
+}
+
+private recreateCharts() {
+  // Implémentez la recréation des graphiques si nécessaire
+  // Par exemple: this.initCharts();
+  this.prepareChartsForExport(); // Redessine les graphiques dans la nouvelle fenêtre
+}
+
+private async convertChartsToImages(element: HTMLElement) {
+  const canvases = element.querySelectorAll('canvas');
+
+  for (const canvas of Array.from(canvases)) {
+    const canvasEl = canvas as HTMLCanvasElement;
+
+    // Créer une image de haute qualité
+    const img = new Image();
+    img.src = canvasEl.toDataURL('image/png', 1.0);
+    img.style.width = canvasEl.offsetWidth + 'px';
+    img.style.height = canvasEl.offsetHeight + 'px';
+
+    // Créer un conteneur pour préserver l'espacement
+    const container = document.createElement('div');
+    container.style.width = canvasEl.offsetWidth + 'px';
+    container.style.height = canvasEl.offsetHeight + 'px';
+    container.appendChild(img);
+
+    // Remplacer le canvas
+    canvasEl.parentNode?.replaceChild(container, canvasEl);
+
+    // Petite pause entre chaque conversion
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+}
+
 
   // Méthodes d'export
-  async exportToPDF(): Promise<void> {
-    this.isGeneratingPDF = true;
-    this.progress = 0;
+  async exportToPDF() {
+    this.isGeneratingPDF = true; // Afficher le loader
+    this.progress = 0; // Initialisation de la barre de progression
 
-    await this.preparerGraphiquesPourExport();
+    this.isPrinting = true; // Afficher les éléments avant la capture
+    await this.prepareChartsForExport();
 
-    const element = document.getElementById('rapport-financier');
-    if (!element) return;
+    const noPrintElements = document.querySelectorAll('.no-printer');
+    noPrintElements.forEach(el => el.classList.add('d-none'));
 
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const canvas = await html2canvas(element, { scale: 2 });
+    await new Promise(resolve => setTimeout(resolve, 200));
 
-    const imgData = canvas.toDataURL('image/png');
-    const imgWidth = pdf.internal.pageSize.getWidth() - 20;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    try {
+      const element = document.getElementById('rapport');
+      if (!element) {
+        console.error("Élément 'rapport' non trouvé.");
+        return;
+      }
 
-    pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
-    pdf.save('rapport-financier.pdf');
+      const pdf = new jsPDF('p', 'mm', 'a3');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 5;
 
-    this.isGeneratingPDF = false;
-    this.progress = 100;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true
+      });
+
+      const imgWidth = pageWidth - 2 * margin;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      let yPosition = margin;
+      let currentHeight = imgHeight;
+
+      let stepCount = Math.ceil(canvas.height / (pageHeight - 2 * margin)); // Nombre total d'étapes
+      let step = 0; // Étape actuelle
+
+      if (currentHeight > pageHeight - 2 * margin) {
+        let pageCanvas = document.createElement('canvas');
+        let pageCtx = pageCanvas.getContext('2d');
+
+        let sX = 0, sY = 0, dX = canvas.width, dY = (pageHeight - 2 * margin) * (canvas.width / imgWidth);
+
+        while (sY < canvas.height) {
+          pageCanvas.width = dX;
+          pageCanvas.height = dY;
+          pageCtx?.drawImage(canvas, sX, sY, dX, dY, 0, 0, dX, dY);
+
+          let pageImgData = pageCanvas.toDataURL('image/png');
+          pdf.addImage(pageImgData, 'PNG', margin, margin, imgWidth, dY * (imgWidth / dX));
+
+          sY += dY;
+          step++; // Incrémentation de la progression
+          this.progress = Math.round((step / stepCount) * 100); // Mise à jour de la barre
+
+          if (sY < canvas.height) {
+            pdf.addPage();
+          }
+
+          await new Promise(resolve => setTimeout(resolve, 100)); // Délai pour voir la progression
+        }
+      } else {
+        let imgData = canvas.toDataURL('image/png');
+        pdf.addImage(imgData, 'PNG', margin, yPosition, imgWidth, imgHeight);
+        this.progress = 100; // Fin de la progression
+      }
+
+      pdf.save('rapport_stock.pdf');
+    } catch (error) {
+      console.error('Erreur lors de la génération du PDF :', error);
+    } finally {
+      noPrintElements.forEach(el => el.classList.remove('d-none'));
+      this.isPrinting = false;
+      this.isGeneratingPDF = false; // Cacher le loader après la génération
+      this.progress = 0;
+    }
   }
 
-  async exportToExcel(): Promise<void> {
-    const workbook = new ExcelJS.Workbook();
 
-    // Feuille Résumé
-    const summarySheet = workbook.addWorksheet('Résumé');
-    summarySheet.addRow(['Rapport Financier']);
-    summarySheet.addRow(['Période', `${this.dateDebut} au ${this.dateFin}`]);
-    summarySheet.addRow(['Magasin', this.selectedMagasinId === -1 ? 'Tous' : this.getNomMagasin(this.selectedMagasinId)]);
-    summarySheet.addRow([]);
+  // Ajoutez cette méthode à votre composant
+async prepareChartsForExport() {
+  const charts = [
+    this.evolutionChart,
+    this.depensesChart,
+    this.recettesChart,
+    this.tendancesChart
+  ];
 
-    // Indicateurs clés
-    summarySheet.addRow(['Indicateur', 'Valeur']);
-    summarySheet.addRow(['Chiffre d\'affaires', this.chiffreAffaires]);
-    summarySheet.addRow(['Dépenses totales', this.totalDepenses]);
-    summarySheet.addRow(['Autres recettes', this.autresRecettes]);
-    summarySheet.addRow(['Bénéfice net', this.beneficeNet]);
+  // Forcer le rendu des graphiques
+  charts.forEach(chart => {
+    if (chart) {
+      chart.resize();
+      chart.render();
+    }
+  });
 
-    // Feuille Dépenses
-    const depensesSheet = workbook.addWorksheet('Dépenses');
-    depensesSheet.addRow(['Date', 'Catégorie', 'Montant', 'Mode paiement', 'Description']);
-    this.filteredDepenses.forEach(d => {
-      depensesSheet.addRow([
-        new Date(d.date).toLocaleDateString(),
-        this.getNomCategorie(d.categoryId),
-        d.montant,
-        d.paymentMode,
-        d.description
-      ]);
+  // Attendre que les graphiques soient rendus
+  await new Promise(resolve => setTimeout(resolve, 400));
+}
+
+async exportToExcel() {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'Rapport Financier';
+  workbook.created = new Date();
+  workbook.modified = new Date();
+
+  const getStyle = (options: Partial<ExcelJS.Style>): Partial<ExcelJS.Style> => ({
+    font: { size: 11, ...options.font },
+    alignment: { vertical: 'middle', horizontal: 'center', ...options.alignment },
+    border: {
+      top: { style: 'thin' },
+      bottom: { style: 'thin' },
+      left: { style: 'thin' },
+      right: { style: 'thin' },
+      ...options.border
+    },
+    fill: options.fill
+  });
+
+  const headerStyle = getStyle({
+    font: { bold: true, color: { argb: 'FFFFFFFF' } },
+    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0070C0' } }
+  });
+
+  const titleStyle = getStyle({
+    font: { bold: true, size: 14 }
+  });
+
+  const dataStyle = getStyle({});
+
+  /** Résumé **/
+  const summarySheet = workbook.addWorksheet('Résumé');
+  summarySheet.mergeCells('A1:F2');
+  const titleCell = summarySheet.getCell('A1');
+  titleCell.value = 'Rapport Financier';
+  Object.assign(titleCell.style, titleStyle);
+
+  summarySheet.addRow(['Entreprise', 'Nom de l\'Entreprise', '', 'Date', new Date().toISOString().slice(0, 10)]);
+  summarySheet.addRow(['Période', `${this.dateDebut} au ${this.dateFin}`, '', 'Magasin', this.selectedMagasinId !== -1 ? this.getNomMagasin(this.selectedMagasinId) : 'Tous']);
+  summarySheet.addRow([]);
+
+  summarySheet.addRow(['Indicateurs', 'Valeur']);
+  const lastRow = summarySheet.lastRow;
+  if (lastRow) {
+    lastRow.eachCell(cell => {
+      Object.assign(cell.style, headerStyle);
     });
-
-    // Feuille Recettes
-    const recettesSheet = workbook.addWorksheet('Recettes');
-    recettesSheet.addRow(['Date', 'Catégorie', 'Montant', 'Mode paiement', 'Description']);
-    this.filteredRecettes.forEach(r => {
-      recettesSheet.addRow([
-        new Date(r.date).toLocaleDateString(),
-        this.getNomCategorie(r.categoryId),
-        r.montant,
-        r.paymentMode,
-        r.description
-      ]);
-    });
-
-    // Générer le fichier
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `rapport-financier_${new Date().toISOString().slice(0,10)}.xlsx`;
-    a.click();
   }
+ /*  summarySheet.getRow(summarySheet.lastRow.number).eachCell(cell => {
+    Object.assign(cell.style, headerStyle);
+  }); */
+
+  const indicators = [
+    ['Chiffre d\'affaires', `${this.chiffreAffaires.toLocaleString()} F CFA`],
+    ['Dépenses totales', `${this.totalDepenses.toLocaleString()} F CFA`],
+    ['Autres recettes', `${this.autresRecettes.toLocaleString()} F CFA`],
+    ['Bénéfice net', `${this.beneficeNet.toLocaleString()} F CFA`],
+    ['Solde de trésorerie', `${this.soldeTresorerie.toLocaleString()} F CFA`],
+    ['Évolution CA', `${this.evolutionCA.pourcentage}% ${this.evolutionCA.tendance === 'hausse' ? '↑' : '↓'}`]
+  ];
+
+  indicators.forEach(row => {
+    const r = summarySheet.addRow(row);
+    r.eachCell(cell => Object.assign(cell.style, dataStyle));
+  });
+
+  /** Flux Trésorerie **/
+  const cashflowSheet = workbook.addWorksheet('Flux Trésorerie');
+  cashflowSheet.mergeCells('A1:B1');
+  const cfTitleCell = cashflowSheet.getCell('A1');
+  cfTitleCell.value = 'Flux de Trésorerie';
+  Object.assign(cfTitleCell.style, titleStyle);
+
+  cashflowSheet.addRow(['Libellé', 'Montant (F CFA)']).eachCell(cell => Object.assign(cell.style, headerStyle));
+
+  const cashflowData = [
+    ['Solde initial', this.fluxTresorerie.soldeInitial],
+    ['Entrées', this.fluxTresorerie.recettesPeriod],
+    ['Sorties', this.fluxTresorerie.depensesPeriod],
+    ['Solde final', this.fluxTresorerie.soldeFinal]
+  ];
+  cashflowData.forEach(row => {
+    const r = cashflowSheet.addRow(row);
+    r.eachCell(cell => Object.assign(cell.style, dataStyle));
+  });
+
+  /** Dépenses **/
+  const expensesSheet = workbook.addWorksheet('Dépenses');
+  expensesSheet.mergeCells('A1:D1');
+  expensesSheet.getCell('A1').value = 'Détail des Dépenses';
+  Object.assign(expensesSheet.getCell('A1').style, titleStyle);
+
+  expensesSheet.columns = [
+    { header: 'Catégorie', key: 'category', width: 25 },
+    { header: 'Montant', key: 'amount', width: 15 },
+    { header: 'Transactions', key: 'transactions', width: 15 },
+    { header: 'Pourcentage', key: 'percentage', width: 15 }
+  ];
+  expensesSheet.getRow(2).eachCell(cell => Object.assign(cell.style, headerStyle));
+
+  this.categoriesDepense.forEach(cat => {
+    const stats = this.getOccurenceDepensesByCategory(cat.id ?? 0);
+    expensesSheet.addRow({
+      category: cat.name,
+      amount: stats.montantTotal,
+      transactions: stats.occurrences,
+      percentage: `${(stats.montantTotal / this.totalDepenses * 100).toFixed(2)}%`
+    });
+  });
+
+  /** Recettes **/
+  const incomeSheet = workbook.addWorksheet('Recettes');
+  incomeSheet.mergeCells('A1:D1');
+  incomeSheet.getCell('A1').value = 'Détail des Recettes';
+  Object.assign(incomeSheet.getCell('A1').style, titleStyle);
+
+  incomeSheet.columns = [
+    { header: 'Catégorie', key: 'category', width: 25 },
+    { header: 'Montant', key: 'amount', width: 15 },
+    { header: 'Transactions', key: 'transactions', width: 15 },
+    { header: 'Pourcentage', key: 'percentage', width: 15 }
+  ];
+  incomeSheet.getRow(2).eachCell(cell => Object.assign(cell.style, headerStyle));
+
+  this.categoriesRecette.forEach(cat => {
+    const stats = this.getOccurenceRecettesByCategory(cat.id ?? 0);
+    incomeSheet.addRow({
+      category: cat.name,
+      amount: stats.montantTotal,
+      transactions: stats.occurrences,
+      percentage: `${(stats.montantTotal / (this.chiffreAffaires + this.autresRecettes) * 100).toFixed(2)}%`
+    });
+  });
+
+  /** Transactions **/
+  const transactionsSheet = workbook.addWorksheet('Transactions');
+  transactionsSheet.mergeCells('A1:D1');
+  transactionsSheet.getCell('A1').value = 'Détail des Transactions';
+  Object.assign(transactionsSheet.getCell('A1').style, titleStyle);
+
+  transactionsSheet.addRow(['Dépenses']).getCell(1).style = {
+    font: { bold: true, size: 12, color: { argb: 'FFFF0000' } }
+  };
+
+  transactionsSheet.columns = [
+    { header: 'Date', key: 'date', width: 20 },
+    { header: 'Catégorie', key: 'category', width: 25 },
+    { header: 'Montant', key: 'amount', width: 15 },
+    { header: 'Mode Paiement', key: 'payment', width: 20 }
+  ];
+
+  transactionsSheet.getRow(transactionsSheet.rowCount).eachCell(cell => Object.assign(cell.style, headerStyle));
+
+  this.filteredDepenses.forEach(dep => {
+    transactionsSheet.addRow({
+      date: new Date(dep.date).toISOString().slice(0, 10),
+      category: this.getNomCategorieBis(dep.categoryId),
+      amount: dep.montant,
+      payment: dep.paymentMode
+    });
+  });
+
+  transactionsSheet.addRow([]);
+  transactionsSheet.addRow(['Recettes']).getCell(1).style = {
+    font: { bold: true, size: 12, color: { argb: 'FF008000' } }
+  };
+
+  this.filteredRecettes.forEach(rec => {
+    transactionsSheet.addRow({
+      date: new Date(rec.date).toISOString().slice(0, 10),
+      category: this.getNomCategorieBis(rec.categoryId),
+      amount: rec.montant,
+      payment: rec.paymentMode
+    });
+  });
+
+  /** Génération du fichier Excel **/
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  });
+  saveAs(blob, `rapport_financier_${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
 
   // Méthodes utilitaires
   private getDatesBetween(start: Date, end: Date): Date[] {
@@ -853,7 +1245,7 @@ creerGraphiqueRecettes(): void {
     return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
   }
 
-  private getNomMagasin(id: number): string {
+  public getNomMagasin(id: number): string {
     const magasin = this.magasins.find(m => m.id === id);
     return magasin ? magasin.nom : 'Inconnu';
   }
