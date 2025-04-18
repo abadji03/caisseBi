@@ -311,7 +311,7 @@ export class ClientsComponent implements OnInit {
               date: new Date(),
               description: `Paiement ${j} du client ${i}`,
               montant: Math.floor(Math.random() * 10000) + 500,
-              methodePaiement: ['Espèce', 'Carte', 'Mobile Money', 'Virement'][Math.floor(Math.random() * 4)],
+              methodePaiement: Math.floor(Math.random() * 10) + 10,// ['Espèce', 'Carte', 'Mobile Money', 'Virement'][Math.floor(Math.random() * 4)],
               clientId: client.id,
               bonId: bon.id
             });
@@ -605,7 +605,7 @@ export class ClientsComponent implements OnInit {
     //this.updateFilteredPaiements();
     //if (this.selectedClient) {
       this.filteredPaiements = this.allPaiements.filter(paiement => paiement.description.toLocaleUpperCase().includes(this.searchPaiementQuery.toLowerCase()) ||
-      paiement.methodePaiement.toLowerCase().includes(this.searchPaiementQuery.toLowerCase()) ||
+      // paiement.methodePaiement.toLowerCase().includes(this.searchPaiementQuery.toLowerCase()) ||
       paiement.montant.toString().toLowerCase().includes(this.searchPaiementQuery.toLowerCase()) ||
       new Date(paiement.date).toLocaleDateString().includes(this.searchPaiementQuery.toLowerCase()) //||
       //this.getFournisseurByOperation(paiement).includes(this.searchPaiementQuery.toLowerCase())

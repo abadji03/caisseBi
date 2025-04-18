@@ -328,7 +328,7 @@ export class FournisseursComponent implements OnInit {
           date: new Date(),
           description: `Paiement ${j} au fournisseur ${i}`,
           montant: Math.floor(Math.random() * 10000) + 500,
-          methodePaiement: methodePaiement[Math.floor(Math.random() * methodePaiement.length)],
+          methodePaiement: Math.floor(Math.random() * 10) + 10, // methodePaiement[Math.floor(Math.random() * methodePaiement.length)],
           fournisseurId: fournisseur.id,
           bonId: bon.id,
         });
@@ -752,7 +752,7 @@ onSearchChangePaiement() {
   //this.updateFilteredPaiements();
   //if (this.selectedFournisseur) {
     this.filteredPaiements = this.allPaiements.filter(paiement => paiement.description.toLocaleUpperCase().includes(this.searchPaiementQuery.toLowerCase()) ||
-    paiement.methodePaiement.valueOf().includes(this.searchPaiementQuery.toLowerCase()) ||
+    // paiement.methodePaiement.valueOf().includes(this.searchPaiementQuery.toLowerCase()) ||
     paiement.montant.toString().includes(this.searchPaiementQuery.toLowerCase()) ||
     new Date(paiement.date).toLocaleDateString().includes(this.searchPaiementQuery.toLowerCase()) //||
     //this.getFournisseurByOperation(paiement).includes(this.searchPaiementQuery.toLowerCase())

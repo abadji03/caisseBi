@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Magasin } from '../../../modeles/magasin.model';
-import { Panier } from '../../../modeles/panier.model';
+import { ArticlePanier, Panier } from '../../../modeles/panier.model';
 import { Produits } from '../../../modeles/produit.modele';
 import { Transfert } from '../../../modeles/transfert.model';
 import { Depense, Recette } from '../../../modeles/finance.model';
@@ -284,13 +284,21 @@ loadMagasins(): Magasin[] {
     const paniers: Panier[] = [];
     for (let k = 1; k <= 10; k++) {
       const articles = this.produits
-        .sort(() => 0.5 - Math.random())
-        .slice(0, 4); // Sélectionner 4 produits au hasard
+      .sort(() => 0.5 - Math.random())
+      .slice(0, 4)
+      .map((produit, index) => {
+        const stockAssocie = stocks.find(s => s.produitId === produit.id);
+        const quantiteAleatoire = Math.floor(Math.random() * 5) + 1;
+        return new ArticlePanier({
+          id: produit.id,
+          produit: produit,
+          quantite: quantiteAleatoire,
+          prixVenteUnitaire: produit.prixVenteUnitaire,
+          prixAchatUnitaire: produit.prixAchatUnitaire,
+          stock: stockAssocie
+        });
+      });
 
-      // Récupération des stocks correspondant aux produits choisis
-      const stockList = stocks.filter(stock =>
-        articles.some(article => article.id === stock.produitId)
-      );
 
       paniers.push(new Panier({
         id: k,
@@ -300,7 +308,7 @@ loadMagasins(): Magasin[] {
         statut: "VALIDE",
         dateCreation: new Date(),
         magasinId: i, // Associer le magasin
-        stockList: stockList // Associer les stocks filtrés
+        //stockList: stockList // Associer les stocks filtrés
       }));
     }
 

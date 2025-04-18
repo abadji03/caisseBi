@@ -199,16 +199,16 @@ loadRecettes(): Recette[] {
 
 loadPaiement(): Paiement[] {
   return [
-    new Paiement({ id: 1, numero: "PAY-001", description: "Paiement fournisseur A", montant: 150000, compte: "Banque", typePaiement: "fournisseur", methodePaiement: "Virement" }),
-    new Paiement({ id: 2, numero: "PAY-002", description: "Acompte client B", montant: 50000, compte: "Mobile Money", typePaiement: "client", methodePaiement: "Mobile Money" }),
-    new Paiement({ id: 3, numero: "PAY-003", description: "Paiement fournisseur C", montant: 200000, compte: "Caisse", typePaiement: "fournisseur", methodePaiement: "Espèce" }),
-    new Paiement({ id: 4, numero: "PAY-004", description: "Paiement client D", montant: 75000, compte: "Banque", typePaiement: "client", methodePaiement: "Virement" }),
-    new Paiement({ id: 5, numero: "PAY-005", description: "Paiement fournisseur E", montant: 125000, compte: "Mobile Money", typePaiement: "fournisseur", methodePaiement: "Mobile Money" }),
-    new Paiement({ id: 6, numero: "PAY-006", description: "Remboursement client F", montant: 60000, compte: "Banque", typePaiement: "client", methodePaiement: "Carte" }),
-    new Paiement({ id: 7, numero: "PAY-007", description: "Paiement fournisseur G", montant: 95000, compte: "Caisse", typePaiement: "fournisseur", methodePaiement: "Espèce" }),
-    new Paiement({ id: 8, numero: "PAY-008", description: "Paiement client H", montant: 110000, compte: "Banque", typePaiement: "client", methodePaiement: "Virement" }),
-    new Paiement({ id: 9, numero: "PAY-009", description: "Paiement fournisseur I", montant: 300000, compte: "Mobile Money", typePaiement: "fournisseur", methodePaiement: "Mobile Money" }),
-    new Paiement({ id: 10, numero: "PAY-010", description: "Paiement client J", montant: 85000, compte: "Banque", typePaiement: "client", methodePaiement: "Carte" }),
+    new Paiement({ id: 1, numero: "PAY-001", description: "Paiement fournisseur A", montant: 150000, compte: "Banque", typePaiement: "fournisseur", methodePaiement: 1 }),
+    new Paiement({ id: 2, numero: "PAY-002", description: "Acompte client B", montant: 50000, compte: "Mobile Money", typePaiement: "client", methodePaiement: 3 }),
+    new Paiement({ id: 3, numero: "PAY-003", description: "Paiement fournisseur C", montant: 200000, compte: "Caisse", typePaiement: "fournisseur", methodePaiement: 2 }),
+    new Paiement({ id: 4, numero: "PAY-004", description: "Paiement client D", montant: 75000, compte: "Banque", typePaiement: "client", methodePaiement: 4 }),
+    new Paiement({ id: 5, numero: "PAY-005", description: "Paiement fournisseur E", montant: 125000, compte: "Mobile Money", typePaiement: "fournisseur", methodePaiement: 1 }),
+    new Paiement({ id: 6, numero: "PAY-006", description: "Remboursement client F", montant: 60000, compte: "Banque", typePaiement: "client", methodePaiement: 2 }),
+    new Paiement({ id: 7, numero: "PAY-007", description: "Paiement fournisseur G", montant: 95000, compte: "Caisse", typePaiement: "fournisseur", methodePaiement: 2}),
+    new Paiement({ id: 8, numero: "PAY-008", description: "Paiement client H", montant: 110000, compte: "Banque", typePaiement: "client", methodePaiement: 2 }),
+    new Paiement({ id: 9, numero: "PAY-009", description: "Paiement fournisseur I", montant: 300000, compte: "Mobile Money", typePaiement: "fournisseur", methodePaiement: 4 }),
+    new Paiement({ id: 10, numero: "PAY-010", description: "Paiement client J", montant: 85000, compte: "Banque", typePaiement: "client", methodePaiement: 4 }),
   ];
 }
 

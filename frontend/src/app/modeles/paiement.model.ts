@@ -10,7 +10,7 @@
     reste?:number;
     compte:'Bon'| 'Caisse'| 'Mobile Money'| 'Banque' = 'Caisse';
     date: Date = new Date();
-    methodePaiement!: string;
+    methodePaiement!: number;
     clientId?: number;
     fournisseurID?: number;
     fournisseurId?: number; // Clé étrangère vers Fournisseur
@@ -29,7 +29,7 @@
   // Classe pour gérer les modes de paiement
 export class ModePaiement {
   id?: number;
-  libelle?: 'Espèce' | 'Carte' | 'Mobile Money' | 'Virement';
+  libelle!: 'Espèce' | 'Carte' | 'Mobile Money' | 'Virement';
 
   constructor(data?: Partial<ModePaiement>) {
     Object.assign(this, data);

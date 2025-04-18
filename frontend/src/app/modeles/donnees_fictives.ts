@@ -1,9 +1,12 @@
+import { Client } from "./clients.model";
 import { MouvementsStock, Stock } from "./entrees-sorties.model";
 import { Categorie, Depense, Recette } from "./finance.model";
 import { Magasin } from "./magasin.model";
-import { Panier } from "./panier.model";
+import { ModePaiement, Paiement } from "./paiement.model";
+import { ArticlePanier, Panier } from "./panier.model";
 import { Produits } from "./produit.modele";
 import { Transfert } from "./transfert.model";
+import { User } from "./user.model";
 
 export const magasins: Magasin[] = [
     new Magasin({ id: 1, nom: "SuperMarket Paris", adresse: "12 Rue de la République", ville: "Paris", telephone: "0145863254", email: "paris@supermarket.com", responsableId: 101, capaciteStock: 5000, chiffreAffaires: 25000, statut: "Actif", dateCreation: new Date("2022-01-15") }),
@@ -681,15 +684,1370 @@ export const categories: Categorie[] = [
       isActive: true
   })
 ];
-  export const paniers: Panier[] = [
-    new Panier({ id: 1, clientId: 501, articles: [produits[0], produits[1]], stockList: [stocks[0], stocks[1]], totalHT: 45.50, tva: 8.19, totalTTC: 53.69, statut: "VALIDE", dateCreation: new Date("2025-03-02T10:15:00"), magasinId: 1 }),
-    new Panier({ id: 2, clientId: 502, articles: [produits[2], produits[3]], stockList: [stocks[2], stocks[3]], totalHT: 38.40, tva: 6.91, totalTTC: 45.31, statut: "VALIDE", dateCreation: new Date("2025-03-03T11:30:00"), magasinId: 1 }),
-    new Panier({ id: 3, clientId: 503, articles: [produits[4], produits[5]], stockList: [stocks[4], stocks[5]], totalHT: 72.00, tva: 12.96, totalTTC: 84.96, statut: "VALIDE", dateCreation: new Date("2025-03-04T14:45:00"), magasinId: 2 }),
-    new Panier({ id: 4, clientId: 504, articles: [produits[6]], stockList: [stocks[6]], totalHT: 39.99, tva: 7.20, totalTTC: 47.19, statut: "VALIDE", dateCreation: new Date("2025-03-05T16:20:00"), magasinId: 3 }),
-    new Panier({ id: 5, clientId: 505, articles: [produits[7], produits[8]], stockList: [stocks[7], stocks[8]], totalHT: 56.00, tva: 10.08, totalTTC: 66.08, statut: "VALIDE", dateCreation: new Date("2025-03-06T09:10:00"), magasinId: 2 }),
-    new Panier({ id: 6, clientId: 506, articles: [produits[9]], stockList: [stocks[9]], totalHT: 26.40, tva: 4.75, totalTTC: 31.15, statut: "ANNULE", dateCreation: new Date("2025-03-07T17:30:00"), magasinId: 1 }),
-    new Panier({ id: 7, clientId: 507, articles: [produits[0], produits[2], produits[4]], stockList: [stocks[0], stocks[2], stocks[4]], totalHT: 67.30, tva: 12.11, totalTTC: 79.41, statut: "VALIDE", dateCreation: new Date("2025-03-08T12:15:00"), magasinId: 3 }),
-    new Panier({ id: 8, clientId: 508, articles: [produits[1], produits[3], produits[5]], stockList: [stocks[1], stocks[3], stocks[5]], totalHT: 94.80, tva: 17.06, totalTTC: 111.86, statut: "VALIDE", dateCreation: new Date("2025-03-09T15:45:00"), magasinId: 2 }),
-    new Panier({ id: 9, clientId: 509, articles: [produits[6], produits[8]], stockList: [stocks[6], stocks[8]], totalHT: 44.49, tva: 8.01, totalTTC: 52.50, statut: "EN_COURS", dateCreation: new Date("2025-03-10T18:20:00"), magasinId: 1 }),
-    new Panier({ id: 10, clientId: 510, articles: [produits[7], produits[9]], stockList: [stocks[7], stocks[9]], totalHT: 31.70, tva: 5.71, totalTTC: 37.41, statut: "VALIDE", dateCreation: new Date("2025-03-11T10:30:00"), magasinId: 3 })
-  ];
+  // Clients (5 par magasin)
+export const clients: Client[] = [
+  // Clients pour Magasin 1 (Paris)
+  new Client({
+    id: 1,
+    nomComplet: "Jean Dupont",
+    email: "jean.dupont@email.com",
+    telephone: "0612345678",
+    adresse: "10 Rue de Paris, 75001 Paris",
+    dateCreation: new Date("2023-01-10"),
+    solde: 1500,
+    estEmploye: false,
+  }),
+  new Client({
+    id: 2,
+    nomComplet: "Marie Martin",
+    email: "marie.martin@email.com",
+    telephone: "0623456789",
+    adresse: "22 Avenue des Champs, 75008 Paris",
+    dateCreation: new Date("2023-02-15"),
+    solde: 750,
+    estEmploye: false,
+  }),
+  new Client({
+    id: 3,
+    nomComplet: "Pierre Durand",
+    email: "pierre.durand@email.com",
+    telephone: "0634567890",
+    adresse: "5 Boulevard Saint-Germain, 75005 Paris",
+    dateCreation: new Date("2023-03-20"),
+    solde: 2000,
+    estEmploye: true,
+  }),
+  new Client({
+    id: 4,
+    nomComplet: "Sophie Lambert",
+    email: "sophie.lambert@email.com",
+    telephone: "0645678901",
+    adresse: "15 Rue de Rivoli, 75004 Paris",
+    dateCreation: new Date("2023-04-05"),
+    solde: 500,
+    estEmploye: false,
+  }),
+  new Client({
+    id: 5,
+    nomComplet: "Thomas Moreau",
+    email: "thomas.moreau@email.com",
+    telephone: "0656789012",
+    adresse: "30 Rue de la Paix, 75002 Paris",
+    dateCreation: new Date("2023-05-12"),
+    solde: 1200,
+    estEmploye: false,
+  }),
+
+  // Clients pour Magasin 2 (Lyon)
+  new Client({
+    id: 6,
+    nomComplet: "Lucie Bernard",
+    email: "lucie.bernard@email.com",
+    telephone: "0678901234",
+    adresse: "8 Rue de la République, 69001 Lyon",
+    dateCreation: new Date("2023-01-15"),
+    solde: 1800,
+    estEmploye: false,
+  }),
+  new Client({
+    id: 7,
+    nomComplet: "Antoine Petit",
+    email: "antoine.petit@email.com",
+    telephone: "0689012345",
+    adresse: "12 Rue Victor Hugo, 69002 Lyon",
+    dateCreation: new Date("2023-02-20"),
+    solde: 950,
+    estEmploye: false,
+  }),
+  new Client({
+    id: 8,
+    nomComplet: "Elodie Roux",
+    email: "elodie.roux@email.com",
+    telephone: "0690123456",
+    adresse: "4 Place Bellecour, 69002 Lyon",
+    dateCreation: new Date("2023-03-25"),
+    solde: 600,
+    estEmploye: true,
+  }),
+  new Client({
+    id: 9,
+    nomComplet: "Nicolas Leroy",
+    email: "nicolas.leroy@email.com",
+    telephone: "0612340987",
+    adresse: "18 Rue de la Charité, 69007 Lyon",
+    dateCreation: new Date("2023-04-10"),
+    solde: 2200,
+    estEmploye: false,
+  }),
+  new Client({
+    id: 10,
+    nomComplet: "Camille Fournier",
+    email: "camille.fournier@email.com",
+    telephone: "0623459876",
+    adresse: "7 Quai Saint-Antoine, 69002 Lyon",
+    dateCreation: new Date("2023-05-15"),
+    solde: 850,
+    estEmploye: false,
+  }),
+
+  // Clients pour Magasin 3 (Marseille)
+  new Client({
+    id: 11,
+    nomComplet: "Alexandre Michel",
+    email: "alexandre.michel@email.com",
+    telephone: "0634568765",
+    adresse: "25 Rue Paradis, 13006 Marseille",
+    dateCreation: new Date("2023-01-20"),
+    solde: 1700,
+    estEmploye: false,
+  }),
+  new Client({
+    id: 12,
+    nomComplet: "Julie Laurent",
+    email: "julie.laurent@email.com",
+    telephone: "0645677654",
+    adresse: "10 Rue Saint-Ferréol, 13001 Marseille",
+    dateCreation: new Date("2023-02-25"),
+    solde: 1100,
+    estEmploye: false,
+  }),
+  new Client({
+    id: 13,
+    nomComplet: "Maxime Simon",
+    email: "maxime.simon@email.com",
+    telephone: "0656786543",
+    adresse: "3 Cours Belsunce, 13001 Marseille",
+    dateCreation: new Date("2023-03-30"),
+    solde: 650,
+    estEmploye: true,
+  }),
+  new Client({
+    id: 14,
+    nomComplet: "Laura Lefebvre",
+    email: "laura.lefebvre@email.com",
+    telephone: "0667895432",
+    adresse: "15 Rue de Rome, 13006 Marseille",
+    dateCreation: new Date("2023-04-15"),
+    solde: 1900,
+    estEmploye: false,
+  }),
+  new Client({
+    id: 15,
+    nomComplet: "Hugo Martinez",
+    email: "hugo.martinez@email.com",
+    telephone: "0678904321",
+    adresse: "8 Boulevard Longchamp, 13001 Marseille",
+    dateCreation: new Date("2023-05-20"),
+    solde: 800,
+    estEmploye: false,
+  })
+];
+
+// Vendeurs (1-2 par magasin)
+export const vendeurs: User[] = [
+  // Vendeurs pour Magasin 1 (Paris)
+  new User({
+    id: 101,
+    nom: "Sophie Garnier",
+    telephone: "0611223344",
+    email: "sophie.garnier@supermarket.com",
+    password: "password123",
+    typeUser: "Employé",
+    status: true,
+    role: "CAISSIER",
+    adresse: "5 Rue de Paris, 75001 Paris",
+    poste: "Caissier",
+    dateCreation: new Date("2022-02-01"),
+    salaire: 1800,
+    typeContrat: "CDI",
+  }),
+  new User({
+    id: 102,
+    nom: "Thomas Leroux",
+    telephone: "0622334455",
+    email: "thomas.leroux@supermarket.com",
+    password: "password123",
+    typeUser: "Employé",
+    status: true,
+    role: "VENDEUR",
+    adresse: "12 Avenue de Clichy, 75017 Paris",
+    poste: "Vendeur",
+    dateCreation: new Date("2022-02-15"),
+    salaire: 2000,
+    typeContrat: "CDI",
+  }),
+
+  // Vendeurs pour Magasin 2 (Lyon)
+  new User({
+    id: 103,
+    nom: "Laura Dumont",
+    telephone: "0633445566",
+    email: "laura.dumont@supermarket.com",
+    password: "password123",
+    typeUser: "Employé",
+    status: true,
+    role: "CAISSIER",
+    adresse: "8 Rue de Lyon, 69001 Lyon",
+    poste: "Caissier",
+    dateCreation: new Date("2022-03-10"),
+    salaire: 1750,
+    typeContrat: "CDI",
+  }),
+
+  // Vendeurs pour Magasin 3 (Marseille)
+  new User({
+    id: 104,
+    nom: "Julien Morel",
+    telephone: "0644556677",
+    email: "julien.morel@supermarket.com",
+    password: "password123",
+    typeUser: "Employé",
+    status: true,
+    role: "CAISSIER",
+    adresse: "10 Rue de Marseille, 13001 Marseille",
+    poste: "Caissier",
+    dateCreation: new Date("2022-05-15"),
+    salaire: 1700,
+    typeContrat: "CDD",
+  }),
+  new User({
+    id: 105,
+    nom: "Amélie Petit",
+    telephone: "0655667788",
+    email: "amelie.petit@supermarket.com",
+    password: "password123",
+    typeUser: "Employé",
+    status: true,
+    role: "VENDEUR",
+    adresse: "15 Boulevard National, 13001 Marseille",
+    poste: "Vendeur",
+    dateCreation: new Date("2022-05-20"),
+    salaire: 1850,
+    typeContrat: "CDI",
+  })
+];
+
+// Modes de paiement
+export const modesPaiement: ModePaiement[] = [
+  new ModePaiement({ id: 1, libelle: 'Espèce' }),
+  new ModePaiement({ id: 2, libelle: 'Carte' }),
+  new ModePaiement({ id: 3, libelle: 'Mobile Money' }),
+  new ModePaiement({ id: 4, libelle: 'Virement' })
+];
+
+// Paniers (10 par magasin)
+export const paniers: Panier[] = [
+  // Paniers pour Magasin 1 (Paris)
+  new Panier({
+    id: 1,
+    clientId: 1,
+    magasinId: 1,
+    agentId: 101,
+    dateCreation: new Date("2025-03-01T10:15:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[0],
+        quantite: 2,
+        prixVenteUnitaire: produits[0].prixVenteUnitaire,
+        prixAchatUnitaire: produits[0].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[0].id && s.magasinId === 1)
+      }),
+      new ArticlePanier({
+        produit: produits[2],
+        quantite: 1,
+        prixVenteUnitaire: produits[2].prixVenteUnitaire,
+        prixAchatUnitaire: produits[2].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[2].id && s.magasinId === 1)
+      }),
+      new ArticlePanier({
+        produit: produits[4],
+        quantite: 3,
+        prixVenteUnitaire: produits[4].prixVenteUnitaire,
+        prixAchatUnitaire: produits[4].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[4].id && s.magasinId === 1)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 1,
+        montant: 6.50,
+        methodePaiement: 1, // Espèce
+        date: new Date("2025-03-01T10:20:00"),
+        panierId: 1,
+        clientId: 1,
+        magasinId: 1
+      })
+    ]
+  }),
+  new Panier({
+    id: 2,
+    clientId: 2,
+    magasinId: 1,
+    agentId: 102,
+    dateCreation: new Date("2025-03-02T11:30:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[1],
+        quantite: 5,
+        prixVenteUnitaire: produits[1].prixVenteUnitaire,
+        prixAchatUnitaire: produits[1].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[1].id && s.magasinId === 1)
+      }),
+      new ArticlePanier({
+        produit: produits[3],
+        quantite: 2,
+        prixVenteUnitaire: produits[3].prixVenteUnitaire,
+        prixAchatUnitaire: produits[3].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[3].id && s.magasinId === 1)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 2,
+        montant: 2.30,
+        methodePaiement: 2, // Carte
+        date: new Date("2025-03-02T11:35:00"),
+        panierId: 2,
+        clientId: 2,
+        magasinId: 1
+      })
+    ]
+  }),
+  new Panier({
+    id: 3,
+    clientId: 3,
+    magasinId: 1,
+    agentId: 101,
+    dateCreation: new Date("2025-03-03T14:45:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[5],
+        quantite: 1,
+        prixVenteUnitaire: produits[5].prixVenteUnitaire,
+        prixAchatUnitaire: produits[5].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[5].id && s.magasinId === 1)
+      }),
+      new ArticlePanier({
+        produit: produits[7],
+        quantite: 1,
+        prixVenteUnitaire: produits[7].prixVenteUnitaire,
+        prixAchatUnitaire: produits[7].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[7].id && s.magasinId === 1)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 3,
+        montant: 21.50,
+        methodePaiement: 3, // Mobile Money
+        date: new Date("2025-03-03T14:50:00"),
+        panierId: 3,
+        clientId: 3,
+        magasinId: 1
+      })
+    ]
+  }),
+  new Panier({
+    id: 4,
+    clientId: 4,
+    magasinId: 1,
+    agentId: 102,
+    dateCreation: new Date("2025-03-04T16:20:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[6],
+        quantite: 1,
+        prixVenteUnitaire: produits[6].prixVenteUnitaire,
+        prixAchatUnitaire: produits[6].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[6].id && s.magasinId === 1)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 4,
+        montant: 39.99,
+        methodePaiement: 2, // Carte
+        date: new Date("2025-03-04T16:25:00"),
+        panierId: 4,
+        clientId: 4,
+        magasinId: 1
+      })
+    ]
+  }),
+  new Panier({
+    id: 5,
+    clientId: 5,
+    magasinId: 1,
+    agentId: 101,
+    dateCreation: new Date("2025-03-05T09:10:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[8],
+        quantite: 1,
+        prixVenteUnitaire: produits[8].prixVenteUnitaire,
+        prixAchatUnitaire: produits[8].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[8].id && s.magasinId === 1)
+      }),
+      new ArticlePanier({
+        produit: produits[9],
+        quantite: 2,
+        prixVenteUnitaire: produits[9].prixVenteUnitaire,
+        prixAchatUnitaire: produits[9].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[9].id && s.magasinId === 1)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 5,
+        montant: 6.70,
+        methodePaiement: 1, // Espèce
+        date: new Date("2025-03-05T09:15:00"),
+        panierId: 5,
+        clientId: 5,
+        magasinId: 1
+      })
+    ]
+  }),
+  new Panier({
+    id: 6,
+    clientId: 1,
+    magasinId: 1,
+    agentId: 102,
+    dateCreation: new Date("2025-03-06T17:30:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[0],
+        quantite: 1,
+        prixVenteUnitaire: produits[0].prixVenteUnitaire,
+        prixAchatUnitaire: produits[0].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[0].id && s.magasinId === 1)
+      }),
+      new ArticlePanier({
+        produit: produits[1],
+        quantite: 3,
+        prixVenteUnitaire: produits[1].prixVenteUnitaire,
+        prixAchatUnitaire: produits[1].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[1].id && s.magasinId === 1)
+      }),
+      new ArticlePanier({
+        produit: produits[3],
+        quantite: 1,
+        prixVenteUnitaire: produits[3].prixVenteUnitaire,
+        prixAchatUnitaire: produits[3].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[3].id && s.magasinId === 1)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 6,
+        montant: 4.80,
+        methodePaiement: 3, // Mobile Money
+        date: new Date("2025-03-06T17:35:00"),
+        panierId: 6,
+        clientId: 1,
+        magasinId: 1
+      })
+    ]
+  }),
+  new Panier({
+    id: 7,
+    clientId: 2,
+    magasinId: 1,
+    agentId: 101,
+    dateCreation: new Date("2025-03-07T12:45:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[2],
+        quantite: 2,
+        prixVenteUnitaire: produits[2].prixVenteUnitaire,
+        prixAchatUnitaire: produits[2].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[2].id && s.magasinId === 1)
+      }),
+      new ArticlePanier({
+        produit: produits[4],
+        quantite: 1,
+        prixVenteUnitaire: produits[4].prixVenteUnitaire,
+        prixAchatUnitaire: produits[4].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[4].id && s.magasinId === 1)
+      }),
+      new ArticlePanier({
+        produit: produits[6],
+        quantite: 1,
+        prixVenteUnitaire: produits[6].prixVenteUnitaire,
+        prixAchatUnitaire: produits[6].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[6].id && s.magasinId === 1)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 7,
+        montant: 43.99,
+        methodePaiement: 2, // Carte
+        date: new Date("2025-03-07T12:50:00"),
+        panierId: 7,
+        clientId: 2,
+        magasinId: 1
+      })
+    ]
+  }),
+  new Panier({
+    id: 8,
+    clientId: 3,
+    magasinId: 1,
+    agentId: 102,
+    dateCreation: new Date("2025-03-08T15:20:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[5],
+        quantite: 1,
+        prixVenteUnitaire: produits[5].prixVenteUnitaire,
+        prixAchatUnitaire: produits[5].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[5].id && s.magasinId === 1)
+      }),
+      new ArticlePanier({
+        produit: produits[7],
+        quantite: 1,
+        prixVenteUnitaire: produits[7].prixVenteUnitaire,
+        prixAchatUnitaire: produits[7].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[7].id && s.magasinId === 1)
+      }),
+      new ArticlePanier({
+        produit: produits[9],
+        quantite: 3,
+        prixVenteUnitaire: produits[9].prixVenteUnitaire,
+        prixAchatUnitaire: produits[9].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[9].id && s.magasinId === 1)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 8,
+        montant: 23.70,
+        methodePaiement: 1, // Espèce
+        date: new Date("2025-03-08T15:25:00"),
+        panierId: 8,
+        clientId: 3,
+        magasinId: 1
+      })
+    ]
+  }),
+  new Panier({
+    id: 9,
+    clientId: 4,
+    magasinId: 1,
+    agentId: 101,
+    dateCreation: new Date("2025-03-09T11:10:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[8],
+        quantite: 1,
+        prixVenteUnitaire: produits[8].prixVenteUnitaire,
+        prixAchatUnitaire: produits[8].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[8].id && s.magasinId === 1)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 9,
+        montant: 4.50,
+        methodePaiement: 2, // Carte
+        date: new Date("2025-03-09T11:15:00"),
+        panierId: 9,
+        clientId: 4,
+        magasinId: 1
+      })
+    ]
+  }),
+  new Panier({
+    id: 10,
+    clientId: 5,
+    magasinId: 1,
+    agentId: 102,
+    dateCreation: new Date("2025-03-10T18:30:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[0],
+        quantite: 1,
+        prixVenteUnitaire: produits[0].prixVenteUnitaire,
+        prixAchatUnitaire: produits[0].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[0].id && s.magasinId === 1)
+      }),
+      new ArticlePanier({
+        produit: produits[2],
+        quantite: 2,
+        prixVenteUnitaire: produits[2].prixVenteUnitaire,
+        prixAchatUnitaire: produits[2].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[2].id && s.magasinId === 1)
+      }),
+      new ArticlePanier({
+        produit: produits[4],
+        quantite: 2,
+        prixVenteUnitaire: produits[4].prixVenteUnitaire,
+        prixAchatUnitaire: produits[4].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[4].id && s.magasinId === 1)
+      }),
+      new ArticlePanier({
+        produit: produits[6],
+        quantite: 1,
+        prixVenteUnitaire: produits[6].prixVenteUnitaire,
+        prixAchatUnitaire: produits[6].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[6].id && s.magasinId === 1)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 10,
+        montant: 46.49,
+        methodePaiement: 3, // Mobile Money
+        date: new Date("2025-03-10T18:35:00"),
+        panierId: 10,
+        clientId: 5,
+        magasinId: 1
+      })
+    ]
+  }),
+
+  // Paniers pour Magasin 2 (Lyon)
+  new Panier({
+    id: 11,
+    clientId: 6,
+    magasinId: 2,
+    agentId: 103,
+    dateCreation: new Date("2025-03-01T09:15:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[10],
+        quantite: 1,
+        prixVenteUnitaire: produits[10].prixVenteUnitaire,
+        prixAchatUnitaire: produits[10].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[10].id && s.magasinId === 2)
+      }),
+      new ArticlePanier({
+        produit: produits[12],
+        quantite: 2,
+        prixVenteUnitaire: produits[12].prixVenteUnitaire,
+        prixAchatUnitaire: produits[12].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[12].id && s.magasinId === 2)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 11,
+        montant: 5.50,
+        methodePaiement: 1, // Espèce
+        date: new Date("2025-03-01T09:20:00"),
+        panierId: 11,
+        clientId: 6,
+        magasinId: 2
+      })
+    ]
+  }),
+  new Panier({
+    id: 12,
+    clientId: 7,
+    magasinId: 2,
+    agentId: 103,
+    dateCreation: new Date("2025-03-02T10:30:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[11],
+        quantite: 1,
+        prixVenteUnitaire: produits[11].prixVenteUnitaire,
+        prixAchatUnitaire: produits[11].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[11].id && s.magasinId === 2)
+      }),
+      new ArticlePanier({
+        produit: produits[13],
+        quantite: 4,
+        prixVenteUnitaire: produits[13].prixVenteUnitaire,
+        prixAchatUnitaire: produits[13].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[13].id && s.magasinId === 2)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 12,
+        montant: 3.30,
+        methodePaiement: 2, // Carte
+        date: new Date("2025-03-02T10:35:00"),
+        panierId: 12,
+        clientId: 7,
+        magasinId: 2
+      })
+    ]
+  }),
+  new Panier({
+    id: 13,
+    clientId: 8,
+    magasinId: 2,
+    agentId: 103,
+    dateCreation: new Date("2025-03-03T13:45:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[14],
+        quantite: 3,
+        prixVenteUnitaire: produits[14].prixVenteUnitaire,
+        prixAchatUnitaire: produits[14].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[14].id && s.magasinId === 2)
+      }),
+      new ArticlePanier({
+        produit: produits[16],
+        quantite: 1,
+        prixVenteUnitaire: produits[16].prixVenteUnitaire,
+        prixAchatUnitaire: produits[16].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[16].id && s.magasinId === 2)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 13,
+        montant: 10.80,
+        methodePaiement: 3, // Mobile Money
+        date: new Date("2025-03-03T13:50:00"),
+        panierId: 13,
+        clientId: 8,
+        magasinId: 2
+      })
+    ]
+  }),
+  new Panier({
+    id: 14,
+    clientId: 9,
+    magasinId: 2,
+    agentId: 103,
+    dateCreation: new Date("2025-03-04T15:20:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[15],
+        quantite: 1,
+        prixVenteUnitaire: produits[15].prixVenteUnitaire,
+        prixAchatUnitaire: produits[15].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[15].id && s.magasinId === 2)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 14,
+        montant: 29.99,
+        methodePaiement: 2, // Carte
+        date: new Date("2025-03-04T15:25:00"),
+        panierId: 14,
+        clientId: 9,
+        magasinId: 2
+      })
+    ]
+  }),
+  new Panier({
+    id: 15,
+    clientId: 10,
+    magasinId: 2,
+    agentId: 103,
+    dateCreation: new Date("2025-03-05T08:10:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[17],
+        quantite: 1,
+        prixVenteUnitaire: produits[17].prixVenteUnitaire,
+        prixAchatUnitaire: produits[17].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[17].id && s.magasinId === 2)
+      }),
+      new ArticlePanier({
+        produit: produits[19],
+        quantite: 2,
+        prixVenteUnitaire: produits[19].prixVenteUnitaire,
+        prixAchatUnitaire: produits[19].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[19].id && s.magasinId === 2)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 15,
+        montant: 10.70,
+        methodePaiement: 1, // Espèce
+        date: new Date("2025-03-05T08:15:00"),
+        panierId: 15,
+        clientId: 10,
+        magasinId: 2
+      })
+    ]
+  }),
+  new Panier({
+    id: 16,
+    clientId: 6,
+    magasinId: 2,
+    agentId: 103,
+    dateCreation: new Date("2025-03-06T16:30:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[10],
+        quantite: 1,
+        prixVenteUnitaire: produits[10].prixVenteUnitaire,
+        prixAchatUnitaire: produits[10].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[10].id && s.magasinId === 2)
+      }),
+      new ArticlePanier({
+        produit: produits[12],
+        quantite: 1,
+        prixVenteUnitaire: produits[12].prixVenteUnitaire,
+        prixAchatUnitaire: produits[12].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[12].id && s.magasinId === 2)
+      }),
+      new ArticlePanier({
+        produit: produits[14],
+        quantite: 2,
+        prixVenteUnitaire: produits[14].prixVenteUnitaire,
+        prixAchatUnitaire: produits[14].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[14].id && s.magasinId === 2)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 16,
+        montant: 7.00,
+        methodePaiement: 3, // Mobile Money
+        date: new Date("2025-03-06T16:35:00"),
+        panierId: 16,
+        clientId: 6,
+        magasinId: 2
+      })
+    ]
+  }),
+  new Panier({
+    id: 17,
+    clientId: 7,
+    magasinId: 2,
+    agentId: 103,
+    dateCreation: new Date("2025-03-07T11:45:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[11],
+        quantite: 2,
+        prixVenteUnitaire: produits[11].prixVenteUnitaire,
+        prixAchatUnitaire: produits[11].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[11].id && s.magasinId === 2)
+      }),
+      new ArticlePanier({
+        produit: produits[13],
+        quantite: 6,
+        prixVenteUnitaire: produits[13].prixVenteUnitaire,
+        prixAchatUnitaire: produits[13].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[13].id && s.magasinId === 2)
+      }),
+      new ArticlePanier({
+        produit: produits[15],
+        quantite: 1,
+        prixVenteUnitaire: produits[15].prixVenteUnitaire,
+        prixAchatUnitaire: produits[15].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[15].id && s.magasinId === 2)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 17,
+        montant: 33.29,
+        methodePaiement: 2, // Carte
+        date: new Date("2025-03-07T11:50:00"),
+        panierId: 17,
+        clientId: 7,
+        magasinId: 2
+      })
+    ]
+  }),
+  new Panier({
+    id: 18,
+    clientId: 8,
+    magasinId: 2,
+    agentId: 103,
+    dateCreation: new Date("2025-03-08T14:20:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[16],
+        quantite: 1,
+        prixVenteUnitaire: produits[16].prixVenteUnitaire,
+        prixAchatUnitaire: produits[16].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[16].id && s.magasinId === 2)
+      }),
+      new ArticlePanier({
+        produit: produits[18],
+        quantite: 2,
+        prixVenteUnitaire: produits[18].prixVenteUnitaire,
+        prixAchatUnitaire: produits[18].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[18].id && s.magasinId === 2)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 18,
+        montant: 15.10,
+        methodePaiement: 1, // Espèce
+        date: new Date("2025-03-08T14:25:00"),
+        panierId: 18,
+        clientId: 8,
+        magasinId: 2
+      })
+    ]
+  }),
+  new Panier({
+    id: 19,
+    clientId: 9,
+    magasinId: 2,
+    agentId: 103,
+    dateCreation: new Date("2025-03-09T10:10:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[17],
+        quantite: 1,
+        prixVenteUnitaire: produits[17].prixVenteUnitaire,
+        prixAchatUnitaire: produits[17].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[17].id && s.magasinId === 2)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 19,
+        montant: 6.20,
+        methodePaiement: 2, // Carte
+        date: new Date("2025-03-09T10:15:00"),
+        panierId: 19,
+        clientId: 9,
+        magasinId: 2
+      })
+    ]
+  }),
+  new Panier({
+    id: 20,
+    clientId: 10,
+    magasinId: 2,
+    agentId: 103,
+    dateCreation: new Date("2025-03-10T17:30:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[10],
+        quantite: 2,
+        prixVenteUnitaire: produits[10].prixVenteUnitaire,
+        prixAchatUnitaire: produits[10].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[10].id && s.magasinId === 2)
+      }),
+      new ArticlePanier({
+        produit: produits[12],
+        quantite: 3,
+        prixVenteUnitaire: produits[12].prixVenteUnitaire,
+        prixAchatUnitaire: produits[12].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[12].id && s.magasinId === 2)
+      }),
+      new ArticlePanier({
+        produit: produits[14],
+        quantite: 1,
+        prixVenteUnitaire: produits[14].prixVenteUnitaire,
+        prixAchatUnitaire: produits[14].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[14].id && s.magasinId === 2)
+      }),
+      new ArticlePanier({
+        produit: produits[16],
+        quantite: 1,
+        prixVenteUnitaire: produits[16].prixVenteUnitaire,
+        prixAchatUnitaire: produits[16].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[16].id && s.magasinId === 2)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 20,
+        montant: 18.20,
+        methodePaiement: 3, // Mobile Money
+        date: new Date("2025-03-10T17:35:00"),
+        panierId: 20,
+        clientId: 10,
+        magasinId: 2
+      })
+    ]
+  }),
+
+  // Paniers pour Magasin 3 (Marseille)
+  new Panier({
+    id: 21,
+    clientId: 11,
+    magasinId: 3,
+    agentId: 104,
+    dateCreation: new Date("2025-03-01T08:15:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[20],
+        quantite: 2,
+        prixVenteUnitaire: produits[20].prixVenteUnitaire,
+        prixAchatUnitaire: produits[20].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[20].id && s.magasinId === 3)
+      }),
+      new ArticlePanier({
+        produit: produits[22],
+        quantite: 1,
+        prixVenteUnitaire: produits[22].prixVenteUnitaire,
+        prixAchatUnitaire: produits[22].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[22].id && s.magasinId === 3)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 21,
+        montant: 4.70,
+        methodePaiement: 1, // Espèce
+        date: new Date("2025-03-01T08:20:00"),
+        panierId: 21,
+        clientId: 11,
+        magasinId: 3
+      })
+    ]
+  }),
+  new Panier({
+    id: 22,
+    clientId: 12,
+    magasinId: 3,
+    agentId: 105,
+    dateCreation: new Date("2025-03-02T09:30:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[21],
+        quantite: 5,
+        prixVenteUnitaire: produits[21].prixVenteUnitaire,
+        prixAchatUnitaire: produits[21].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[21].id && s.magasinId === 3)
+      }),
+      new ArticlePanier({
+        produit: produits[23],
+        quantite: 1,
+        prixVenteUnitaire: produits[23].prixVenteUnitaire,
+        prixAchatUnitaire: produits[23].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[23].id && s.magasinId === 3)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 22,
+        montant: 13.90,
+        methodePaiement: 2, // Carte
+        date: new Date("2025-03-02T09:35:00"),
+        panierId: 22,
+        clientId: 12,
+        magasinId: 3
+      })
+    ]
+  }),
+  new Panier({
+    id: 23,
+    clientId: 13,
+    magasinId: 3,
+    agentId: 104,
+    dateCreation: new Date("2025-03-03T12:45:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[24],
+        quantite: 3,
+        prixVenteUnitaire: produits[24].prixVenteUnitaire,
+        prixAchatUnitaire: produits[24].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[24].id && s.magasinId === 3)
+      }),
+      new ArticlePanier({
+        produit: produits[26],
+        quantite: 1,
+        prixVenteUnitaire: produits[26].prixVenteUnitaire,
+        prixAchatUnitaire: produits[26].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[26].id && s.magasinId === 3)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 23,
+        montant: 19.50,
+        methodePaiement: 3, // Mobile Money
+        date: new Date("2025-03-03T12:50:00"),
+        panierId: 23,
+        clientId: 13,
+        magasinId: 3
+      })
+    ]
+  }),
+  new Panier({
+    id: 24,
+    clientId: 14,
+    magasinId: 3,
+    agentId: 105,
+    dateCreation: new Date("2025-03-04T14:20:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[25],
+        quantite: 1,
+        prixVenteUnitaire: produits[25].prixVenteUnitaire,
+        prixAchatUnitaire: produits[25].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[25].id && s.magasinId === 3)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 24,
+        montant: 24.99,
+        methodePaiement: 2, // Carte
+        date: new Date("2025-03-04T14:25:00"),
+        panierId: 24,
+        clientId: 14,
+        magasinId: 3
+      })
+    ]
+  }),
+  new Panier({
+    id: 25,
+    clientId: 15,
+    magasinId: 3,
+    agentId: 104,
+    dateCreation: new Date("2025-03-05T07:10:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[27],
+        quantite: 1,
+        prixVenteUnitaire: produits[27].prixVenteUnitaire,
+        prixAchatUnitaire: produits[27].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[27].id && s.magasinId === 3)
+      }),
+      new ArticlePanier({
+        produit: produits[29],
+        quantite: 2,
+        prixVenteUnitaire: produits[29].prixVenteUnitaire,
+        prixAchatUnitaire: produits[29].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[29].id && s.magasinId === 3)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 25,
+        montant: 5.50,
+        methodePaiement: 1, // Espèce
+        date: new Date("2025-03-05T07:15:00"),
+        panierId: 25,
+        clientId: 15,
+        magasinId: 3
+      })
+    ]
+  }),
+  new Panier({
+    id: 26,
+    clientId: 11,
+    magasinId: 3,
+    agentId: 105,
+    dateCreation: new Date("2025-03-06T15:30:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[20],
+        quantite: 1,
+        prixVenteUnitaire: produits[20].prixVenteUnitaire,
+        prixAchatUnitaire: produits[20].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[20].id && s.magasinId === 3)
+      }),
+      new ArticlePanier({
+        produit: produits[22],
+        quantite: 2,
+        prixVenteUnitaire: produits[22].prixVenteUnitaire,
+        prixAchatUnitaire: produits[22].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[22].id && s.magasinId === 3)
+      }),
+      new ArticlePanier({
+        produit: produits[24],
+        quantite: 1,
+        prixVenteUnitaire: produits[24].prixVenteUnitaire,
+        prixAchatUnitaire: produits[24].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[24].id && s.magasinId === 3)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 26,
+        montant: 5.70,
+        methodePaiement: 3, // Mobile Money
+        date: new Date("2025-03-06T15:35:00"),
+        panierId: 26,
+        clientId: 11,
+        magasinId: 3
+      })
+    ]
+  }),
+  new Panier({
+    id: 27,
+    clientId: 12,
+    magasinId: 3,
+    agentId: 104,
+    dateCreation: new Date("2025-03-07T10:45:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[21],
+        quantite: 2,
+        prixVenteUnitaire: produits[21].prixVenteUnitaire,
+        prixAchatUnitaire: produits[21].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[21].id && s.magasinId === 3)
+      }),
+      new ArticlePanier({
+        produit: produits[23],
+        quantite: 1,
+        prixVenteUnitaire: produits[23].prixVenteUnitaire,
+        prixAchatUnitaire: produits[23].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[23].id && s.magasinId === 3)
+      }),
+      new ArticlePanier({
+        produit: produits[25],
+        quantite: 1,
+        prixVenteUnitaire: produits[25].prixVenteUnitaire,
+        prixAchatUnitaire: produits[25].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[25].id && s.magasinId === 3)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 27,
+        montant: 38.89,
+        methodePaiement: 2, // Carte
+        date: new Date("2025-03-07T10:50:00"),
+        panierId: 27,
+        clientId: 12,
+        magasinId: 3
+      })
+    ]
+  }),
+  new Panier({
+    id: 28,
+    clientId: 13,
+    magasinId: 3,
+    agentId: 105,
+    dateCreation: new Date("2025-03-08T13:20:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[26],
+        quantite: 1,
+        prixVenteUnitaire: produits[26].prixVenteUnitaire,
+        prixAchatUnitaire: produits[26].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[26].id && s.magasinId === 3)
+      }),
+      new ArticlePanier({
+        produit: produits[28],
+        quantite: 3,
+        prixVenteUnitaire: produits[28].prixVenteUnitaire,
+        prixAchatUnitaire: produits[28].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[28].id && s.magasinId === 3)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 28,
+        montant: 23.30,
+        methodePaiement: 1, // Espèce
+        date: new Date("2025-03-08T13:25:00"),
+        panierId: 28,
+        clientId: 13,
+        magasinId: 3
+      })
+    ]
+  }),
+  new Panier({
+    id: 29,
+    clientId: 14,
+    magasinId: 3,
+    agentId: 104,
+    dateCreation: new Date("2025-03-09T09:10:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[27],
+        quantite: 1,
+        prixVenteUnitaire: produits[27].prixVenteUnitaire,
+        prixAchatUnitaire: produits[27].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[27].id && s.magasinId === 3)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 29,
+        montant: 4.00,
+        methodePaiement: 2, // Carte
+        date: new Date("2025-03-09T09:15:00"),
+        panierId: 29,
+        clientId: 14,
+        magasinId: 3
+      })
+    ]
+  }),
+  new Panier({
+    id: 30,
+    clientId: 15,
+    magasinId: 3,
+    agentId: 105,
+    dateCreation: new Date("2025-03-10T16:30:00"),
+    statut: 'VALIDE',
+    articles: [
+      new ArticlePanier({
+        produit: produits[20],
+        quantite: 2,
+        prixVenteUnitaire: produits[20].prixVenteUnitaire,
+        prixAchatUnitaire: produits[20].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[20].id && s.magasinId === 3)
+      }),
+      new ArticlePanier({
+        produit: produits[22],
+        quantite: 1,
+        prixVenteUnitaire: produits[22].prixVenteUnitaire,
+        prixAchatUnitaire: produits[22].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[22].id && s.magasinId === 3)
+      }),
+      new ArticlePanier({
+        produit: produits[24],
+        quantite: 2,
+        prixVenteUnitaire: produits[24].prixVenteUnitaire,
+        prixAchatUnitaire: produits[24].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[24].id && s.magasinId === 3)
+      }),
+      new ArticlePanier({
+        produit: produits[26],
+        quantite: 1,
+        prixVenteUnitaire: produits[26].prixVenteUnitaire,
+        prixAchatUnitaire: produits[26].prixAchatUnitaire,
+        stock: stocks.find(s => s.produitId === produits[26].id && s.magasinId === 3)
+      })
+    ],
+    paiements: [
+      new Paiement({
+        id: 30,
+        montant: 24.20,
+        methodePaiement: 3, // Mobile Money
+        date: new Date("2025-03-10T16:35:00"),
+        panierId: 30,
+        clientId: 15,
+        magasinId: 3
+      })
+    ]
+  })
+];
+// Extraire tous les paiements des paniers
+export const paiements: Paiement[] = paniers.flatMap(p => p.paiements || []);

@@ -260,54 +260,6 @@ filtrerDates(): void {
   }
 
   // Nouveaux calculs pour le flux de trésorerie
-/*  private calculerFluxTresorerie(): {
-    soldeInitial: number,
-    recettesPeriod: number,
-    depensesPeriod: number,
-    soldeFinal: number
-  } {
-    // 1. Trouver la date la plus ancienne dans les données
-    const datesExistantes = [
-      ...this.filteredRecettes.map(r => this.resetTime(new Date(r.date)).getTime()),
-      ...this.filteredDepenses.map(d => this.resetTime(new Date(d.date)).getTime())
-    ];
-    const datePlusAncienne = datesExistantes.length > 0
-      ? new Date(Math.min(...datesExistantes))
-      : null;
-
-    // 2. Calcul du solde initial (seulement si dateDebut > datePlusAncienne)
-    let soldeInitial = 0;
-    const dateDebut = this.resetTime(new Date(this.dateDebut));
-    //console.log('....................Date de début.........................')
-    if (datePlusAncienne && dateDebut > this.resetTime(datePlusAncienne)) {
-      soldeInitial = this.allRecettes
-        .filter(r => this.resetTime(new Date(r.date)) < dateDebut)
-        .reduce((sum, r) => sum + r.montant, 0)
-        -
-        this.allDepenses
-        .filter(d => this.resetTime(new Date(d.date)) < dateDebut)
-        .reduce((sum, d) => sum + d.montant, 0);
-    }
-    this.recettesInitial = this.allRecettes
-    .filter(r => this.resetTime(new Date(r.date)) < dateDebut);
-
-
-
-    this.depensesInitial = this.allDepenses
-    .filter(r => this.resetTime(new Date(r.date)) < dateDebut);
-
-
-    // 3. Recettes/Dépenses de la période (inchangé)
-    const recettesPeriod = this.filteredRecettes.reduce((sum, r) => sum + r.montant, 0);
-    const depensesPeriod = this.filteredDepenses.reduce((sum, d) => sum + d.montant, 0);
-
-    // 4. Solde final
-    const soldeFinal = soldeInitial + recettesPeriod - depensesPeriod;
-
-    return { soldeInitial, recettesPeriod, depensesPeriod, soldeFinal };
-  }
- */
-
 private calculerFluxTresorerie(): {
   soldeInitial: number,
   recettesPeriod: number,
@@ -989,11 +941,20 @@ async prepareChartsForExport() {
 }
 
 async exportToExcel() {
+
+  // Vérifier si ExcelJS est disponible
+  if (!ExcelJS) {
+    console.error("ExcelJS n'est pas chargé.");
+    return;
+  }
+
+  // Créer un nouveau classeur Excel
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'Rapport Financier';
   workbook.created = new Date();
   workbook.modified = new Date();
 
+  // Styles réutilisables
   const getStyle = (options: Partial<ExcelJS.Style>): Partial<ExcelJS.Style> => ({
     font: { size: 11, ...options.font },
     alignment: { vertical: 'middle', horizontal: 'center', ...options.alignment },
@@ -1008,23 +969,40 @@ async exportToExcel() {
   });
 
   const headerStyle = getStyle({
-    font: { bold: true, color: { argb: 'FFFFFFFF' } },
-    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0070C0' } }
+    font: { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 },
+    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0070C0' } },
+    border: {
+        top: { style: 'thin', color: { argb: 'FF000000' } },
+        bottom: { style: 'thin', color: { argb: 'FF000000' } },
+        left: { style: 'thin', color: { argb: 'FF000000' } },
+        right: { style: 'thin', color: { argb: 'FF000000' } }
+    },
+    alignment: { vertical: 'middle', horizontal: 'center' }
   });
 
   const titleStyle = getStyle({
-    font: { bold: true, size: 14 }
+    font: { bold: true, size: 14 },
+    alignment: { vertical: 'middle', horizontal: 'center' }
   });
 
-  const dataStyle = getStyle({});
+  const dataStyle = getStyle({
+    font: { size: 11 },
+        border: {
+            top: { style: 'thin', color: { argb: 'FFD3D3D3' } },
+            bottom: { style: 'thin', color: { argb: 'FFD3D3D3' } },
+            left: { style: 'thin', color: { argb: 'FFD3D3D3' } },
+            right: { style: 'thin', color: { argb: 'FFD3D3D3' } }
+        }
+  });
 
-  /** Résumé **/
+  /** Feuille  Résumé **/
   const summarySheet = workbook.addWorksheet('Résumé');
+  // En-tête du rapport
   summarySheet.mergeCells('A1:F2');
   const titleCell = summarySheet.getCell('A1');
   titleCell.value = 'Rapport Financier';
   Object.assign(titleCell.style, titleStyle);
-
+  // Informations de base
   summarySheet.addRow(['Entreprise', 'Nom de l\'Entreprise', '', 'Date', new Date().toISOString().slice(0, 10)]);
   summarySheet.addRow(['Période', `${this.dateDebut} au ${this.dateFin}`, '', 'Magasin', this.selectedMagasinId !== -1 ? this.getNomMagasin(this.selectedMagasinId) : 'Tous']);
   summarySheet.addRow([]);
@@ -1039,24 +1017,24 @@ async exportToExcel() {
  /*  summarySheet.getRow(summarySheet.lastRow.number).eachCell(cell => {
     Object.assign(cell.style, headerStyle);
   }); */
+// Indicateurs clés
+const indicators = [
+  ['Chiffre d\'affaires', `${this.chiffreAffaires.toLocaleString()} F CFA`],
+  ['Dépenses totales', `${this.totalDepenses.toLocaleString()} F CFA`],
+  ['Autres recettes', `${this.autresRecettes.toLocaleString()} F CFA`],
+  ['Bénéfice net', `${this.beneficeNet.toLocaleString()} F CFA`],
+  ['Solde de trésorerie', `${this.soldeTresorerie.toLocaleString()} F CFA`],
+  ['Évolution CA', `${this.evolutionCA.pourcentage}% ${this.evolutionCA.tendance === 'hausse' ? '↑' : '↓'}`]
+];
 
-  const indicators = [
-    ['Chiffre d\'affaires', `${this.chiffreAffaires.toLocaleString()} F CFA`],
-    ['Dépenses totales', `${this.totalDepenses.toLocaleString()} F CFA`],
-    ['Autres recettes', `${this.autresRecettes.toLocaleString()} F CFA`],
-    ['Bénéfice net', `${this.beneficeNet.toLocaleString()} F CFA`],
-    ['Solde de trésorerie', `${this.soldeTresorerie.toLocaleString()} F CFA`],
-    ['Évolution CA', `${this.evolutionCA.pourcentage}% ${this.evolutionCA.tendance === 'hausse' ? '↑' : '↓'}`]
-  ];
+indicators.forEach(row => {
+  const r = summarySheet.addRow(row);
+  r.eachCell(cell => Object.assign(cell.style, dataStyle));
+});
 
-  indicators.forEach(row => {
-    const r = summarySheet.addRow(row);
-    r.eachCell(cell => Object.assign(cell.style, dataStyle));
-  });
-
-  /** Flux Trésorerie **/
+  /** Feuille Flux Trésorerie **/
   const cashflowSheet = workbook.addWorksheet('Flux Trésorerie');
-  cashflowSheet.mergeCells('A1:B1');
+  cashflowSheet.mergeCells('A1:D1');
   const cfTitleCell = cashflowSheet.getCell('A1');
   cfTitleCell.value = 'Flux de Trésorerie';
   Object.assign(cfTitleCell.style, titleStyle);
@@ -1069,14 +1047,29 @@ async exportToExcel() {
     ['Sorties', this.fluxTresorerie.depensesPeriod],
     ['Solde final', this.fluxTresorerie.soldeFinal]
   ];
-  cashflowData.forEach(row => {
+  /* cashflowData.forEach(row => {
     const r = cashflowSheet.addRow(row);
     r.eachCell(cell => Object.assign(cell.style, dataStyle));
-  });
+  }); */
 
-  /** Dépenses **/
+  cashflowSheet.addTable({
+    name: 'CashflowTable',
+    ref: 'A3',
+    headerRow: true,
+    style: {
+        theme: 'TableStyleMedium2',
+        showRowStripes: true
+    },
+    columns: [
+        { name: 'Libellé', filterButton: true },
+        { name: 'Montant', filterButton: true }
+    ],
+    rows: cashflowData
+});
+
+  /** Feuille  Dépenses **/
   const expensesSheet = workbook.addWorksheet('Dépenses');
-  expensesSheet.mergeCells('A1:D1');
+  expensesSheet.mergeCells('A1:E1');
   expensesSheet.getCell('A1').value = 'Détail des Dépenses';
   Object.assign(expensesSheet.getCell('A1').style, titleStyle);
 
@@ -1098,9 +1091,9 @@ async exportToExcel() {
     });
   });
 
-  /** Recettes **/
+  /** Feuille Recettes **/
   const incomeSheet = workbook.addWorksheet('Recettes');
-  incomeSheet.mergeCells('A1:D1');
+  incomeSheet.mergeCells('A1:E1');
   incomeSheet.getCell('A1').value = 'Détail des Recettes';
   Object.assign(incomeSheet.getCell('A1').style, titleStyle);
 
@@ -1122,13 +1115,14 @@ async exportToExcel() {
     });
   });
 
-  /** Transactions **/
+  /** Feuille  Transactions **/
   const transactionsSheet = workbook.addWorksheet('Transactions');
-  transactionsSheet.mergeCells('A1:D1');
+  transactionsSheet.mergeCells('A1:G1');
   transactionsSheet.getCell('A1').value = 'Détail des Transactions';
   Object.assign(transactionsSheet.getCell('A1').style, titleStyle);
 
-  transactionsSheet.addRow(['Dépenses']).getCell(1).style = {
+  // Ajouter les données des dépenses
+  transactionsSheet.addRow(['Détails des dépenses']).getCell(1).style = {
     font: { bold: true, size: 12, color: { argb: 'FFFF0000' } }
   };
 
@@ -1140,7 +1134,6 @@ async exportToExcel() {
   ];
 
   transactionsSheet.getRow(transactionsSheet.rowCount).eachCell(cell => Object.assign(cell.style, headerStyle));
-
   this.filteredDepenses.forEach(dep => {
     transactionsSheet.addRow({
       date: new Date(dep.date).toISOString().slice(0, 10),
@@ -1151,10 +1144,12 @@ async exportToExcel() {
   });
 
   transactionsSheet.addRow([]);
-  transactionsSheet.addRow(['Recettes']).getCell(1).style = {
+
+  // Ajouter les données des recettes
+  transactionsSheet.addRow(['Détails des recettes']).getCell(1).style = {
     font: { bold: true, size: 12, color: { argb: 'FF008000' } }
   };
-
+  transactionsSheet.getRow(transactionsSheet.rowCount).eachCell(cell => Object.assign(cell.style, headerStyle));
   this.filteredRecettes.forEach(rec => {
     transactionsSheet.addRow({
       date: new Date(rec.date).toISOString().slice(0, 10),

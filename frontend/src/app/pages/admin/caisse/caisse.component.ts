@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Client } from '../../../modeles/clients.model';
 import { Produits } from '../../../modeles/produit.modele';
-import { Panier } from '../../../modeles/panier.model';
+import { ArticlePanier, Panier } from '../../../modeles/panier.model';
 import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 
 @Component({
@@ -47,8 +47,8 @@ export class CaisseComponent implements OnInit {
       clientId: 101,
       bonId: 201,
       articles: [
-        new Produits({ designation: "Lait", prixVenteUnitaire: 500, prixTotalVente: 1000 }),
-        new Produits({ designation: "Pain", prixVenteUnitaire: 300, prixTotalVente: 300 })
+        new ArticlePanier({id:this.produits[0].id, produit: this.produits[0], quantite: 10, prixVenteUnitaire: this.produits[0].prixVenteUnitaire, prixAchatUnitaire: this.produits[0].prixAchatUnitaire }),
+        new ArticlePanier({id:this.produits[1].id, produit: this.produits[1], quantite: 10, prixVenteUnitaire: this.produits[1].prixVenteUnitaire, prixAchatUnitaire: this.produits[1].prixAchatUnitaire  })
       ]
     }),
     new Panier({
@@ -56,7 +56,7 @@ export class CaisseComponent implements OnInit {
       clientId: 102,
       bonId: 202,
       articles: [
-        new Produits({ designation: "Thiakri", prixVenteUnitaire: 700, prixTotalVente: 2100 })
+        new ArticlePanier({id:this.produits[0].id, produit: this.produits[0], quantite: 20, prixVenteUnitaire: this.produits[0].prixVenteUnitaire, prixAchatUnitaire: this.produits[0].prixAchatUnitaire })
       ]
     })
   ];
@@ -151,19 +151,33 @@ export class CaisseComponent implements OnInit {
   /** Sélectionner un produit */
   selectProduit(produit: Produits) {
     const panierArray = this.panierForm.get('panier') as FormArray;
+
     const article = this.fb.group({
       produit: [produit.designation, Validators.required],
       uniteStock: [produit.unite, Validators.required],
       quantite: [1, Validators.required],
       prixUnitaire: [produit.prixVenteUnitaire, Validators.required]
     });
+
     panierArray.push(article);
-    this.panier.articles.push(produit);
+
+    // ✅ Création d’un ArticlePanier valide
+    const articlePanier = new ArticlePanier({
+      id: produit.id,
+      produit: produit,
+      quantite: 1,
+      prixVenteUnitaire: produit.prixVenteUnitaire ?? 0,
+      prixAchatUnitaire: produit.prixAchatUnitaire ?? 0,
+    });
+
+    this.panier.articles.push(articlePanier);
     this.panier.calculerTotals();
+
     this.searchInput = '';
     this.filteredProduits = [];
-    this.updateTotal();
+    this.updateTotal(); // si cette méthode existe toujours pour mettre à jour le total
   }
+
 
   /** Désactiver le panier */
   disablePanier() {
@@ -231,7 +245,7 @@ export class CaisseComponent implements OnInit {
     ticket += `📅 Date: ${panier.dateCreation.toLocaleDateString()}\n`;
     ticket += `------------------------------\n`;
     panier.articles.forEach(article => {
-      ticket += `${article.designation} x${0} - ${article.prixTotalVente} F CFA\n`;
+      ticket += `${article.produit.designation} x${0} - ${article.quantite * article.prixVenteUnitaire} F CFA\n`;
     });
     ticket += `------------------------------\n`;
     ticket += `💰 Total TTC: ${panier.totalTTC} F CFA\n`;
