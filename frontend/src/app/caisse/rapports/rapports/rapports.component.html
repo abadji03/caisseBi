@@ -1,0 +1,25 @@
+<div class="container mt-3">
+  <ul class="nav nav-tabs">
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="activeTab === 'ventes'" (click)="activeTab = 'ventes'">Rapports de Ventes</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="activeTab === 'finances'" (click)="activeTab = 'finances'">Rapports Financiers</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="activeTab === 'stocks'" (click)="activeTab = 'stocks'">Rapports de Stock</a>
+    </li>
+  </ul>
+
+  <div class="tab-content mt-4">
+    <div *ngIf="activeTab === 'ventes'">
+      <app-rapports-ventes></app-rapports-ventes>
+    </div>
+    <div *ngIf="activeTab === 'finances'">
+      <app-rapports-financiers></app-rapports-financiers>
+    </div>
+    <div *ngIf="activeTab === 'stocks'">
+      <app-rapports-stocks></app-rapports-stocks>
+    </div>
+  </div>
+</div>

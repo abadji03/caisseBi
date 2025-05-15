@@ -1,41 +1,42 @@
 import { Routes } from '@angular/router';
-import { ConnexionComponent } from './pages/admin/connexion/connexion.component';
-import { LandingComponent } from './pages/user/landing/landing.component';
-import { WebProduitsComponent } from './pages/user/web-produits/web-produits.component';
-import { CategorieProduitsComponent } from './pages/user/categorie-produits/categorie-produits.component';
-import { LayoutComponent } from './pages/admin/layout/layout.component';
-import { ProduitsComponent } from './pages/admin/produits/produits.component';
-import { CategoriesComponent } from './pages/admin/categories/categories.component';
-import { PanierClientComponent } from './pages/user/panier-client/panier-client.component';
-import { ClientOrderComponent } from './pages/user/client-order/client-order.component';
-import { UserLoginComponent } from './pages/user/user-login/user-login.component';
-import { CheckoutComponent } from './pages/user/checkout/checkout.component';
-import { DetailsProduitComponent } from './pages/user/details-produit/details-produit.component';
-import { UserAccountComponent } from './pages/user/user-account/user-account.component';
-import { EnregistrementProduitsComponent } from './pages/admin/enregistrement-produits/enregistrement-produits.component';
-import { CaisseComponent } from './pages/admin/caisse/caisse.component';
-import { VenteComponent } from './pages/admin/vente/vente.component';
-import { VenteBComponent } from './pages/admin/vente-b/vente-b.component';
-import { EnregistrementActeurComponent } from './pages/admin/enregistrement-acteur/enregistrement-acteur.component';
-import { EspaceVendeursComponent } from './pages/user/espace-vendeurs/espace-vendeurs.component';
-import { OverviewComponent } from './pages/user/overview/overview.component';
-import { VentesComponent } from './pages/user/ventes/ventes.component';
-import { FournisseursComponent } from './pages/user/fournisseurs/fournisseurs.component';
-import { ClientsComponent } from './pages/user/clients/clients.component';
-import { RapportsFinanciersComponent } from './pages/user/rapports-financiers/rapports-financiers.component';
-import { ParametresComponent } from './pages/user/parametres/parametres.component';
-import { EntreesSortiesComponent } from './pages/user/entrees-sorties/entrees-sorties.component';
-import { StockInventairesComponent } from './pages/user/stock-inventaires/stock-inventaires.component';
-import { MagazinComponent } from './pages/user/magazin/magazin.component';
-import { GerantComponent } from './pages/user/gerant/gerant.component';
-import { CatalogueProduitComponent } from './pages/user/catalogue-produit/catalogue-produit.component';
-import { FinanceComponent } from './pages/user/finance/finance.component';
-import { RapportsComponent } from './pages/user/rapports/rapports.component';
+import { ConnexionComponent } from './caisse/acces_accueil/connexion/connexion.component';
+import { WebProduitsComponent } from './e-commerce/web-produits/web-produits.component';
+import { CategorieProduitsComponent } from './e-commerce/categorie-produits/categorie-produits.component';
+import { LayoutComponent } from './e-commerce/layout/layout.component';
+import { PanierClientComponent } from './e-commerce/panier-client/panier-client.component';
+import { ClientOrderComponent } from './e-commerce/client-order/client-order.component';
+import { CheckoutComponent } from './e-commerce/checkout/checkout.component';
+import { DetailsProduitComponent } from './e-commerce/details-produit/details-produit.component';
+import { EnregistrementProduitsComponent } from './caisse/acces_accueil/enregistrement-produits/enregistrement-produits.component';
+import { CaisseComponent } from './caisse/vente/caisse/caisse.component';
+import { VenteComponent } from './caisse/vente/vente/vente.component';
+import { VenteBComponent } from './caisse/vente/vente-b/vente-b.component';
+import { EnregistrementActeurComponent } from './caisse/acces_accueil/enregistrement-acteur/enregistrement-acteur.component';
+import { EspaceVendeursComponent } from './caisse/acces_accueil/espace-vendeurs/espace-vendeurs.component';
+import { OverviewComponent } from './caisse/parametres/overview/overview.component';
+import { VentesComponent } from './caisse/vente/ventes/ventes.component';
+import { FournisseursComponent } from './caisse/finance/fournisseurs/fournisseurs.component';
+import { ClientsComponent } from './caisse/vente/clients/clients.component';
+import { RapportsFinanciersComponent } from './caisse/rapports/rapports-financiers/rapports-financiers.component';
+import { ParametresComponent } from './caisse/parametres/parametres/parametres.component';
+import { EntreesSortiesComponent } from './caisse/stock_inventaire/entrees-sorties/entrees-sorties.component';
+import { StockInventairesComponent } from './caisse/stock_inventaire/stock-inventaires/stock-inventaires.component';
+import { MagazinComponent } from './caisse/parametres/magazin/magazin.component';
+import { GerantComponent } from './caisse/parametres/gerant/gerant.component';
+import { CatalogueProduitComponent } from './caisse/stock_inventaire/catalogue-produit/catalogue-produit.component';
+import { FinanceComponent } from './caisse/finance/finance/finance.component';
+import { RapportsComponent } from './caisse/rapports/rapports/rapports.component';
+import { RapportsVentesComponent } from './caisse/rapports/rapports-ventes/rapports-ventes.component';
+import { RapportsStocksComponent } from './caisse/rapports/rapports-stocks/rapports-stocks.component';
+import { LandingComponent } from './e-commerce/landing/landing.component';
+import { UserLoginComponent } from './e-commerce/user-login/user-login.component';
+import { UserAccountComponent } from './e-commerce/user-account/user-account.component';
+import { ProduitsComponent } from './e-commerce/produits/produits.component';
 
 export const routes: Routes = [
     {
         path:'',
-        redirectTo:'Allproducts',
+        redirectTo:'connexion',
         pathMatch:'full'
     },
     {
@@ -58,6 +59,10 @@ export const routes: Routes = [
                 pathMatch: 'full'
             },
             {
+                path:'user-account',
+                component:UserAccountComponent
+            },
+            {
                 path:'fournisseurs',
                 component:FournisseursComponent
             },
@@ -71,16 +76,20 @@ export const routes: Routes = [
             },
 
             {
-                path:'rapports-financiers',
+                path:'rapport-financier',
                 component:RapportsFinanciersComponent
+            },
+            {
+                path:'rapport-vente',
+                component:RapportsVentesComponent
+            },
+            {
+                path:'rapport-stk',
+                component:RapportsStocksComponent
             },
             {
                 path:'rapports',
                 component:RapportsComponent
-            },
-            {
-                path:'enregistrement-acteurs',
-                component:EnregistrementActeurComponent
             },
             {
                 path:'ventes',
@@ -126,10 +135,21 @@ export const routes: Routes = [
                 path:'overview',
                 component:OverviewComponent
             },
+            {
+                path:'connexion',
+                component:ConnexionComponent
+            },
         ]
     },
+
+    
     {
-        path:'',
+        path:'connexion',
+        component:EnregistrementActeurComponent
+    },
+
+    {
+        path:'Allproducts',
         component:LandingComponent,
         children: [
             {
