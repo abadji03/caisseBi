@@ -1,0 +1,46 @@
+const db = require("../models");
+const CategorieProduit = db.CategorieProduit;
+
+exports.createCategorie = async (req, res) => {
+  try {
+    const categorie = await CategorieProduit.create(req.body);
+    res.status(201).json(categorie);
+  } catch (error) {
+    res.status(500).json({ message: "Erreur création catégorie", error });
+  }
+};
+
+exports.updateCategorie = async (req, res) => {
+  try {
+    const categorie = await CategorieProduit.findByPk(req.params.id);
+    if (!categorie) return res.status(404).json({ message: "Catégorie non trouvée" });
+
+    await categorie.update(req.body);
+    res.json({ message: "Catégorie mise à jour", categorie });
+  } catch (error) {
+    res.status(500).json({ message: "Erreur mise à jour", error });
+  }
+};
+
+exports.deleteCategorie = async (req, res) => {
+  try {
+    const categorie = await CategorieProduit.findByPk(req.params.id);
+    if (!categorie) return res.status(404).json({ message: "Catégorie non trouvée" });
+
+    await categorie.destroy();
+    res.json({ message: "Catégorie supprimée" });
+  } catch (error) {
+    res.status(500).json({ message: "Erreur suppression", error });
+  }
+};
+
+exports.getCategoriesByStructure = async (req, res) => {
+  try {
+    const categories = await CategorieProduit.findAll({
+      where: { code_structure: req.params.code_structure }
+    });
+    res.json(categories);
+  } catch (error) {
+    res.status(500).json({ message: "Erreur récupération", error });
+  }
+};

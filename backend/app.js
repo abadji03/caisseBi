@@ -38,6 +38,30 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 const structureRoutes = require('./routers/structure.routes');
 app.use('/api/structures', structureRoutes);
 app.use('/api/magasins', require('./routers/magasins.routes'));
+app.use("/api/produits", require("./routers/produits.routes"));
+app.use("/api/fournisseurs", require("./routers/fournisseurs.routes"));
+app.use("/api/categories-produits", require("./routers/categoriesProduits.routes"));
+app.use("/api/clients", require("./routers/clients.routes"));
+app.use("/api/stocks", require("./routers/stocks.routes"));
+app.use("/api/reconciliations", require("./routers/reconciliations.routes"));
+app.use("/api/transferts", require("./routers/transfert.routes"));
+app.use("/api/categories", require("./routers/categorie.routes"));
+app.use("/api/depenses", require("./routers/depense.routes"));
+app.use("/api/reccetes", require("./routers/recette.routes"));
+app.use("/api/historiques-reconciliations", require("./routers/historiqueReconciliation.routes"));
+app.use("/api/historique-actions-utilisateur", require("./routers/historiqueActionsUtilisateur.routes"));
+app.use("/api/historique-connexions", require("./routers/historiqueConnexions.routes"));
+app.use("/api/bons", require("./routers/bon.routes"));
+app.use("/api/paniers", require("./routers/panier.routes"));
+app.use("/api/articles-panier", require("./routers/articlePanier.routes"));
+app.use("/api/operations", require("./routers/operation.routes"));
+app.use("/api/paiements", require("./routers/paiement.routes"));
+app.use("/api/users", require("./routers/users.routes"));
+
+
+
+
+
 
 // Route de base pour tester si le serveur fonctionne
 app.get('/', (req, res) => {
