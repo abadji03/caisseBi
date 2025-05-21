@@ -57,6 +57,10 @@ app.use("/api/articles-panier", require("./routers/articlePanier.routes"));
 app.use("/api/operations", require("./routers/operation.routes"));
 app.use("/api/paiements", require("./routers/paiement.routes"));
 app.use("/api/users", require("./routers/users.routes"));
+app.use("/api/permissions", require("./routers/permission.routes"));
+app.use("/api/roles", require("./routers/role.routes"));
+app.use("/api/user-roles",  require("./routers/user-role.routes"));
+app.use("/api/role-permissions", require("./routers/role-permission.routes"));
 
 
 

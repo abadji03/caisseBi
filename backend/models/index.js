@@ -61,6 +61,13 @@ db.ArticlePanier = require('./articlePanier.model')(sequelize,Sequelize);
 db.Operation = require('./operation.model')(sequelize,Sequelize);
 //Chargement et initialisation du modèle Paiement
 db.Paiement = require('./paiement.model')(sequelize,Sequelize)
+//Chargement et initialisation du modèle Permission
+db.permission = require('./permission.model')(sequelize,Sequelize);
+//Chargement et initialisation du modèle Role
+db.role = require('./role.model')(sequelize,Sequelize);
+
+
+
 /* Définition des relations entre les modèles */
 
 //Une structure peut avoir plusieurs utilisateurs (hasMany = 1:N)
@@ -329,6 +336,16 @@ db.Paiement.belongsTo(db.Magasin, { foreignKey: 'magasinId'});
 
 db.Structure.hasMany(db.Paiement, { foreignKey: "code_structure", sourceKey: "code_structure" });
 db.Paiement.belongsTo(db.Structure, { foreignKey: "code_structure", targetKey: "code_structure" });
+
+//Relations entre Permission, Role et les autres
+// role <-> permission
+db.role.belongsToMany(db.permission, { through: 'role_permissions', foreignKey: 'role_id' });
+db.permission.belongsToMany(db.role, { through: 'role_permissions', foreignKey: 'permission_id' });
+
+// user <-> role
+db.Users.belongsToMany(db.role, { through: 'users_roles', foreignKey: 'user_id' });
+db.role.belongsToMany(db.Users, { through: 'users_roles', foreignKey: 'role_id' });
+
 
 //Exportation de l’objet `db` contenant Sequelize, la connexion, et tous les modèles
 module.exports = db;
