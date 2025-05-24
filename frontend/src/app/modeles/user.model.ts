@@ -8,6 +8,7 @@ export class User {
   typeUser!: string; // Ex : "Employé", "Gérant", "Caissier"
   status!: boolean; // Actif ou inactif
   role!: string; // Ex : "ADMIN", "CAISSIER", "GERANT"
+ 
 
   // Champs optionnels
   adresse?: string;
@@ -20,6 +21,7 @@ export class User {
   derniereConnexion?: Date;
   historiqueConnexions?: { date: Date; ip: string }[];
   historiqueActions?: { date: Date; action: string }[];
+  structure_id?: number | null;
 
   constructor(data?: Partial<User>) {
       Object.assign(this, data);

@@ -44,6 +44,31 @@ exports.createStructure = async (req, res) => {
   }
 };
 
+// Récupérer toutes les structures
+exports.getAllStructures = async (req, res) => {
+  try {
+    const structures = await Structure.findAll();
+    res.status(200).json(structures);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur lors de la récupération des structures." });
+  }
+};
+
+// Récupérer une structure par son ID
+exports.getStructureById = async (req, res) => {
+  try {
+    const structure = await Structure.findByPk(req.params.id);
+    if (!structure) {
+      return res.status(404).json({ message: "Structure non trouvée" });
+    }
+    res.status(200).json(structure);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur lors de la récupération de la structure." });
+  }
+};
+
 //Modification d'une structure
 exports.updateStructure = async (req, res) => {
   try {

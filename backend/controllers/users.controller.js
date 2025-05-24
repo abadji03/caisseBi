@@ -1,10 +1,19 @@
 const db = require('../models');
-const User = db.users;
+const bcrypt = require('bcrypt');
+const User = db.Users;
 
 // Créer un nouvel utilisateur
 exports.create = async (req, res) => {
   try {
-    const user = await User.create(req.body);
+    let data = req.body;
+
+    // Si un mot de passe est fourni, on le hache
+    if (data.password) {
+      const salt = await bcrypt.genSalt(10);
+      data.password = await bcrypt.hash(data.password, salt);
+    }
+
+    const user = await User.create(data);
     res.status(201).json(user);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -38,9 +47,18 @@ exports.findOne = async (req, res) => {
 // Mettre à jour un utilisateur
 exports.update = async (req, res) => {
   try {
-    const [updated] = await User.update(req.body, {
+    let data = req.body;
+
+    // Vérifie si un nouveau mot de passe est fourni
+    if (data.password) {
+      const salt = await bcrypt.genSalt(10);
+      data.password = await bcrypt.hash(data.password, salt);
+    }
+
+    const [updated] = await User.update(data, {
       where: { id: req.params.id }
     });
+
     if (updated) {
       const updatedUser = await User.findByPk(req.params.id);
       res.json(updatedUser);

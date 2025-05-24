@@ -58,7 +58,7 @@ export class EnregistrementActeurComponent {
     this.accountExists = false;
 
     // Vérification si l'email existe déjà avant de créer le compte
-    this.userService.findUserWithEmail(this.userRegister.get('email')?.value).subscribe({
+    /* this.userService.findUserWithEmail(this.userRegister.get('email')?.value).subscribe({
       next: (res: any) => {
 
         console.log('Données teste :', this.userRegister.value);
@@ -77,7 +77,7 @@ export class EnregistrementActeurComponent {
         // Gestion des erreurs de l'appel API
         console.error('Erreur lors de la vérification de l\'email:', err);
       }
-    });
+    }); */
 
    /*    this.userService.create(this.userRegister.value).subscribe((res:any) => {
 

@@ -13,4 +13,7 @@ router.put('/:id', upload.single('logo'), structureController.updateStructure);
 //DELETE: Suppression d’une structure
 router.delete('/:id', structureController.deleteStructure);
 
+router.get('/', structureController.getAllStructures);
+router.get('/:id', structureController.getStructureById);
+
 module.exports = router;

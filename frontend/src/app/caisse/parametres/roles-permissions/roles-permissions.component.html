@@ -1,0 +1,75 @@
+<div>
+    <h1>Gestion des droits et permissions</h1>
+
+        <button class="btn btn-success mb-2 float-end" (click)="openPermissionModal()"><i class="bi bi-plus-circle me-2"></i>Nouveau droit</button>
+
+        <table class="table table-bordered table-responsive">
+          <thead class="thead-dark">
+            <tr>
+              <th>Nom</th>
+              <th>Niveau</th>
+              <th>Type de permission</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let permission of permissions">
+              <td>{{ permission.name }}</td>
+              <td>{{ permission.level }}</td>
+              <td>{{ permission.type }}</td>
+              <td>
+                <button class="btn btn-warning btn-sm me-2" (click)="editPermission(permission)">
+                  Modifier
+                </button>
+                <button class="btn btn-danger btn-sm" (click)="deletePermission(permission.id)">
+                  Supprimer
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="modal fade" id="permissionModal" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">{{ isEditMode ? 'Modifier le Droit' : 'Ajouter un Droit' }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+
+              <div class="modal-body">
+                <form [formGroup]="permissionForm" (ngSubmit)="onSubmitDroit()">
+                  <div class="mb-3">
+                    <label>Nom du Droit</label>
+                    <input type="text" class="form-control" formControlName="name" required />
+                  </div>
+
+                  <div class="mb-3">
+                    <label>Niveau</label>
+                    <select class="form-control" formControlName="level">
+                      <option value="1">Basique</option>
+                      <option value="2">Intermédiaire</option>
+                      <option value="3">Avancé</option>
+                    </select>
+                  </div>
+
+                  <div class="mb-3">
+                    <label>Type de Permission</label>
+                    <select class="form-control" formControlName="type">
+                      <option value="view_only">Consultation uniquement</option>
+                      <option value="edit">Modification</option>
+                      <option value="delete">Suppression</option>
+                      <option value="manage_users">Gestion des utilisateurs</option>
+                      <option value="manage_settings">Accès aux configurations</option>
+                      <option value="full_access">Accès total</option>
+                    </select>
+                  </div>
+
+                  <button type="submit" class="btn btn-success w-100">
+                    {{ isEditMode ? 'Modifier' : 'Enregistrer' }}
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+</div>
