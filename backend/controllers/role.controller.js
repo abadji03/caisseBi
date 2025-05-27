@@ -2,6 +2,7 @@ const db = require("../models");
 const Role = db.role;
 const Permission = db.permission;
 
+//Créer un rôle
 exports.create = async (req, res) => {
   try {
     const role = await Role.create(req.body);
@@ -11,6 +12,7 @@ exports.create = async (req, res) => {
   }
 };
 
+//Récupérer tous les rôles
 exports.findAll = async (req, res) => {
   try {
     const roles = await Role.findAll({ include: Permission });
@@ -20,6 +22,46 @@ exports.findAll = async (req, res) => {
   }
 };
 
+//Obtenir un rôle par ID
+exports.getRoleById = async (req, res) => {
+  try {
+    const role = await Role.findByPk(req.params.id);
+    if (!role) return res.status(404).json({ message: "Rôle non trouvé" });
+    res.json(role);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+//Mettre à jour un rôle
+exports.updateRole = async (req, res) => {
+  try {
+    const role = await Role.findByPk(req.params.id);
+    if (!role) return res.status(404).json({ message: "Rôle non trouvé" });
+
+    const { nom } = req.body;
+    await role.update({ nom });
+
+    res.json({ message: "Rôle mis à jour", role });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+//Supprimer un rôle
+exports.deleteRole = async (req, res) => {
+  try {
+    const role = await Role.findByPk(req.params.id);
+    if (!role) return res.status(404).json({ message: "Rôle non trouvé" });
+
+    await role.destroy();
+    res.json({ message: "Rôle supprimé" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+//Assigner une permission à un rôle
 exports.assignPermissions = async (req, res) => {
   try {
     const role = await Role.findByPk(req.params.id);

@@ -13,7 +13,7 @@ import { UserService } from '../../services/user.service';
   styleUrl: './user-login.component.css'
 })
 export class UserLoginComponent {
-
+ 
   userLogin: FormGroup;
   userRegister: FormGroup;
 

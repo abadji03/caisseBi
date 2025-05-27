@@ -17,12 +17,10 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
     },
     password: DataTypes.STRING(200),
-    typeUser: DataTypes.STRING,
     status: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
-    role: DataTypes.STRING,
     adresse: DataTypes.STRING,
     poste: DataTypes.STRING,
     dateCreation: {

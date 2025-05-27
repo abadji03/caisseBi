@@ -28,3 +28,32 @@ exports.getUserRoles = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+// Remplace les rôles existants par de nouveaux
+exports.updateUserRoles = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.userId);
+    if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
+
+    const roles = await Role.findAll({ where: { id: req.body.roleIds } });
+    await user.setRoles(roles); // Remplace les anciens rôles
+
+    res.json({ message: "Rôles mis à jour pour l'utilisateur." });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Supprime un ou plusieurs rôles d’un utilisateur sans toucher aux autres
+exports.removeUserRoles = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.userId);
+    if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
+
+    await user.removeRoles(req.body.roleIds);
+
+    res.json({ message: "Rôles supprimés de l'utilisateur." });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

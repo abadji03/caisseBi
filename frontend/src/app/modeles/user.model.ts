@@ -5,7 +5,6 @@ export class User {
   telephone!: string;
   email!: string;
   password!: string;
-  typeUser!: string; // Ex : "Employé", "Gérant", "Caissier"
   status!: boolean; // Actif ou inactif
   role!: string; // Ex : "ADMIN", "CAISSIER", "GERANT"
  
@@ -25,7 +24,7 @@ export class User {
 
   constructor(data?: Partial<User>) {
       Object.assign(this, data);
-
+ 
       // Valeurs par défaut si non définies
       this.dateCreation = this.dateCreation || new Date();
       this.historiqueConnexions = this.historiqueConnexions || [];

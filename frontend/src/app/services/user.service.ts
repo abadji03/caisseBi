@@ -11,43 +11,7 @@ import { AuthService } from './auth.service';
 export class UserService {
 
   private apiUrl = "http://localhost:5000/api/users";
- /*  private prefixe = "/api/users";
-  private users: User[] = [];
- */
-
-
-  /*------------------------------------------
-
-  --------------------------------------------
-
-  Http Header Options
-
-  --------------------------------------------
-
-  --------------------------------------------*/
-
-  httpOptions = {
-
-    headers: new HttpHeaders({
-
-      'Content-Type': 'application/json'
-
-    })
-
-  }
-
-
-
-  /*------------------------------------------
-
-  --------------------------------------------
-
-  Created constructor
-
-  --------------------------------------------
-
-  --------------------------------------------*/
-
+ 
   constructor(private http: HttpClient,private authService: AuthService) { }
 
     private getHeaders(): HttpHeaders {
@@ -77,7 +41,7 @@ export class UserService {
   // services/user.service.ts
 create(user: User): Observable<User> {
   // Si ce n'est pas l'admin général, on force la structure_id
-  if (!this.authService.isGeneralAdmin()) {
+  /* if (!this.authService.isGeneralAdmin()) {
     const structureId = this.authService.getUserStructureId();
     if (structureId !== null) {
       user.structure_id = structureId;
@@ -88,7 +52,7 @@ create(user: User): Observable<User> {
   } else {
     // Pour l'admin général, structure_id peut être null ou undefined
     user.structure_id = user.structure_id || null;
-  }
+  } */
   
   return this.http.post<User>(this.apiUrl, user, { headers: this.getHeaders() });
 }

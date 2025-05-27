@@ -1,75 +1,83 @@
 <div>
-    <h1>Gestion des droits et permissions</h1>
+  <h1>Gestion des rôles et permissions</h1>
 
-        <button class="btn btn-success mb-2 float-end" (click)="openPermissionModal()"><i class="bi bi-plus-circle me-2"></i>Nouveau droit</button>
+  <button class="btn btn-success mb-2 float-end" (click)="openRoleModal()">
+    <i class="bi bi-plus-circle me-2"></i>Nouveau rôle
+  </button>
 
-        <table class="table table-bordered table-responsive">
-          <thead class="thead-dark">
-            <tr>
-              <th>Nom</th>
-              <th>Niveau</th>
-              <th>Type de permission</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let permission of permissions">
-              <td>{{ permission.name }}</td>
-              <td>{{ permission.level }}</td>
-              <td>{{ permission.type }}</td>
-              <td>
-                <button class="btn btn-warning btn-sm me-2" (click)="editPermission(permission)">
-                  Modifier
-                </button>
-                <button class="btn btn-danger btn-sm" (click)="deletePermission(permission.id)">
-                  Supprimer
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="modal fade" id="permissionModal" tabindex="-1" aria-hidden="true">
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title">{{ isEditMode ? 'Modifier le Droit' : 'Ajouter un Droit' }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
+  <div *ngIf="isLoading" class="text-center">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+  </div>
 
-              <div class="modal-body">
-                <form [formGroup]="permissionForm" (ngSubmit)="onSubmitDroit()">
-                  <div class="mb-3">
-                    <label>Nom du Droit</label>
-                    <input type="text" class="form-control" formControlName="name" required />
-                  </div>
+  <table class="table table-bordered table-responsive" *ngIf="!isLoading">
+    <thead class="thead-dark">
+      <tr>
+        <th>Id</th>
+        <th>Nom</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let role of roles">
+        <td>{{ role.id }}</td>
+        <td>{{ role.nom }}</td>
+        <td>
+          <button class="btn btn-warning btn-sm me-2" (click)="editRole(role)">
+            Modifier
+          </button>
+          <button class="btn btn-danger btn-sm" (click)="deleteRole(role.id!)">
+            Supprimer
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
 
-                  <div class="mb-3">
-                    <label>Niveau</label>
-                    <select class="form-control" formControlName="level">
-                      <option value="1">Basique</option>
-                      <option value="2">Intermédiaire</option>
-                      <option value="3">Avancé</option>
-                    </select>
-                  </div>
+  <!-- Modal pour ajouter/modifier un rôle -->
+  <div class="modal fade" id="roleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">{{ isEditMode ? 'Modifier le Rôle' : 'Ajouter un Rôle' }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
 
-                  <div class="mb-3">
-                    <label>Type de Permission</label>
-                    <select class="form-control" formControlName="type">
-                      <option value="view_only">Consultation uniquement</option>
-                      <option value="edit">Modification</option>
-                      <option value="delete">Suppression</option>
-                      <option value="manage_users">Gestion des utilisateurs</option>
-                      <option value="manage_settings">Accès aux configurations</option>
-                      <option value="full_access">Accès total</option>
-                    </select>
-                  </div>
+        <div class="modal-body">
+          <form [formGroup]="roleForm" (ngSubmit)="onSubmitRole()">
+            <div class="mb-3">
+              <label class="form-label">Nom du Rôle</label>
+              <input type="text" class="form-control" formControlName="name" required>
+            </div>
 
-                  <button type="submit" class="btn btn-success w-100">
-                    {{ isEditMode ? 'Modifier' : 'Enregistrer' }}
-                  </button>
-                </form>
+            <!-- <div class="mb-3">
+              <label class="form-label">Description</label>
+              <textarea class="form-control" formControlName="description" rows="3"></textarea>
+            </div> -->
+
+            <div class="mb-3">
+              <label class="form-label">Permissions</label>
+              <div class="permissions-container">
+                <div *ngFor="let permission of allPermissions" class="form-check">
+                  <input class="form-check-input" type="checkbox" 
+                         [id]="'perm-' + permission.id"
+                         [value]="permission.id"
+                         [checked]="roleForm.value.permissions.includes(permission.id)"
+                         (change)="onPermissionChange(permission.id!, $event)">
+                  <label class="form-check-label" [for]="'perm-' + permission.id">
+                    {{ permission.nom }} ({{ permission.type }})
+                  </label>
+                </div>
               </div>
             </div>
-          </div>
+
+            <button type="submit" class="btn btn-success w-100" [disabled]="roleForm.invalid">
+              {{ isEditMode ? 'Modifier' : 'Enregistrer' }}
+            </button>
+          </form>
         </div>
+      </div>
+    </div>
+  </div>
 </div>
