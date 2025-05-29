@@ -4,7 +4,7 @@ export class Structure {
   logo?: string; // URL ou base64 du logo
   proprietaireId?: number; // ID de l'utilisateur propriétaire
   nombreMagasins!: number;
-  type!: 'boutique' | 'alimentation' | 'ferme';
+  type_structure!: 'boutique' | 'alimentation' | 'ferme';
   devise!: 'FCFA' | 'USD' | 'EUR';
   
   // Contact

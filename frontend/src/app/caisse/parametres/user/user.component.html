@@ -29,8 +29,15 @@
           <td>{{ user.nom }}</td>
           <td>{{ user.telephone }}</td>
           <td>{{ user.email }}</td>
-          <td>{{ user.role }}</td>
-          <td>{{ user.structure_id ? 'Structure ' + user.structure_id : 'Admin général' }}</td>
+          <!-- <td>{{ user.role }}</td> -->
+           <td>
+              <ng-container *ngIf="userRolesMap[user.id]; else loadingRoles">
+                {{ userRolesMap[user.id].join(', ') }}
+              </ng-container>
+              <ng-template #loadingRoles>Chargement...</ng-template>
+            </td>
+
+          <td>{{ user.structure_id ? getNomStructure(user.structure_id) : 'Admin général' }}</td>
           <td>
             <span class="badge" [ngClass]="user.status ? 'bg-success' : 'bg-danger'">
               {{ user.status ? 'Actif' : 'Inactif' }}
@@ -176,7 +183,7 @@
           </div> 
         </div> -->
 
-        <div class="row">
+       <!--  <div class="row">
           <div class="col-md-6 mb-3">
             <label>Mot de passe {{ isEditMode ? '(laisser vide pour ne pas changer)' : '*' }}</label>
             <input type="password" class="form-control" formControlName="password" [required]="!isEditMode">
@@ -191,8 +198,25 @@
               Les mots de passe ne correspondent pas
             </div>
           </div>
+        </div>-->
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label>Mot de passe {{ isEditMode ? '(laisser vide pour ne pas changer)' : '*' }}</label>
+            <input type="password" class="form-control" formControlName="password" 
+                  [required]="!isEditMode" [placeholder]="isEditMode ? '••••••' : ''">
+            <div *ngIf="userForm.get('password')?.invalid && userForm.get('password')?.touched" class="text-danger">
+              Min 6 caractères
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label>Confirmer le mot de passe {{ isEditMode ? '(laisser vide pour ne pas changer)' : '*' }}</label>
+            <input type="password" class="form-control" formControlName="confirmPassword" 
+                  [required]="!isEditMode" [placeholder]="isEditMode ? '••••••' : ''">
+            <div *ngIf="userForm.hasError('mismatch')" class="text-danger">
+              Les mots de passe ne correspondent pas
+            </div>
+          </div>
         </div>
-
         <div class="d-grid">
           <button type="submit" class="btn btn-success">
             {{ isEditMode ? 'Modifier' : 'Enregistrer' }}

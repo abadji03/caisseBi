@@ -35,6 +35,10 @@ module.exports = (sequelize, DataTypes) => {
     reseaux_sociaux: DataTypes.STRING,
     personne_confiance: DataTypes.STRING,
     assurances_souscrites: DataTypes.STRING,
+    estActive:{
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
     date_creation: {
       type: DataTypes.DATE,
       allowNull: false,

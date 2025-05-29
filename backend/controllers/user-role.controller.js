@@ -32,6 +32,7 @@ exports.getUserRoles = async (req, res) => {
 // Remplace les rôles existants par de nouveaux
 exports.updateUserRoles = async (req, res) => {
   try {
+    console.log('Corps de la requête reçu :', req.body);
     const user = await User.findByPk(req.params.userId);
     if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
 

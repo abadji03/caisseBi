@@ -87,9 +87,9 @@ export class StructureComponent implements OnInit {
   }
 
   loadData(): void {
-    if (this.isGeneralAdmin) {
+    //if (this.isGeneralAdmin) {
       this.loadStructures();
-    }
+    //}
   }
 
   loadStructures(): void {

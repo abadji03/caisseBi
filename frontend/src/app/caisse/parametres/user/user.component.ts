@@ -7,9 +7,9 @@ import { Structure } from '../../../modeles/structure.model';
 import { AuthService } from '../../../services/auth.service';
 import { StructureService } from '../../../services/structure.service';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { finalize, forkJoin, of } from 'rxjs';
+import { finalize, forkJoin, map, Observable, of } from 'rxjs';
 import { RolePermissionsService } from '../../../services/role-permissions.service';
-import { Role } from '../../../modeles/role-permission.model';
+import { Role, UserRole } from '../../../modeles/role-permission.model';
 
 @Component({
   selector: 'app-user',
@@ -28,7 +28,8 @@ export class UserComponent implements OnInit {
   selectedUserId: number | null = null;
   isLoading = false;
   roles: Role[] = [];
-  roleIds: number[] = [];
+  userRolesMap: { [userId: number]: string[] } = {};
+  //roleIds: number[] = [];
 
   constructor(
     private fb: FormBuilder,
@@ -125,88 +126,86 @@ export class UserComponent implements OnInit {
         this.structures = structures;
         this.roles = this.roles.filter(s => s.id !=1);
         this.users = this.users.filter(s => s.structure_id !=null);
+        for (const user of this.users) {
+          this.roleService.getRolesByUser(user.id).subscribe(roles => {
+            this.userRolesMap[user.id] = roles.map(role => role.nom);
+          });
+    }
       },
       error: (err) => console.error('Erreur chargement données', err)
     });
   }
 
 
-  openModal(content: any, user?: User): void {
+openModal(content: any, user?: User): void {
     this.selectedUser = user || null;
     this.isEditMode = !!user;
 
     // Initialisation du formulaire
     if (this.isEditMode && user) {
-      // Vérifie si user.role existe, sinon initialise avec un tableau vide
-      const userRoles = user.role ? (Array.isArray(user.role) ? user.role : [user.role]) : [];
-      
-      this.userForm.patchValue({
-        ...user,
-        role: userRoles, // Utilise le tableau de rôles ou un tableau vide
-        password: '',
-        confirmPassword: '',
-        structure_id: user.structure_id
+      // Récupère les rôles de l'utilisateur
+      this.roleService.getRolesIdByUser(user.id!).subscribe({
+        next: (userRole) => {
+          // Récupère les détails complets de l'utilisateur
+          console.log(userRole.roleIds)
+          this.userService.getById(user.id!).subscribe({
+            next: (fullUser) => {
+              // Patch le formulaire avec toutes les données
+              this.userForm.patchValue({
+                ...fullUser,
+                role: userRole.roleIds || [],
+                //password: '',
+                //confirmPassword: ''
+              });
+              
+              // Ouvre le modal une fois que tout est chargé
+              //this.modalService.open(content, { size: 'lg' });
+            },
+            error: (err) => {
+              console.error('Erreur lors du chargement des détails utilisateur', err);
+              // Fallback si erreur
+              this.userForm.patchValue({
+                ...user,
+                role: userRole.roleIds || [],
+                //password: '',
+                //confirmPassword: ''
+              });
+              this.modalService.open(content, { size: 'lg' });
+            }
+          });
+        },
+        error: (err) => {
+          console.error('Erreur lors du chargement des rôles', err);
+          // Fallback si erreur de chargement des rôles
+          this.userForm.patchValue({
+            ...user,
+            role: [],
+            //password: '',
+            //confirmPassword: ''
+          });
+          //this.modalService.open(content, { size: 'lg' });
+        }
       });
     } else {
+      // Mode création - initialisation du formulaire
       const defaultStructureId = this.authService.isGeneralAdmin() ? null : this.authService.getUserStructureId();
       this.userForm.reset({
         status: true,
-        role: [], // Toujours initialiser comme tableau vide pour les nouveaux utilisateurs
+        role: [],
         structure_id: defaultStructureId
       });
+      
     }
 
     this.modalService.open(content, { size: 'lg' });
 }
-
- /*  onSubmit(): void {
-    //console.log("Vous avez cliqué sur le bouton d'envoi")
-     if (this.userForm.invalid) {
-        console.log('Le formulaire est invalide');
-        return;
-     }
-    const userData = this.userForm.value;
-    // On ne garde pas la confirmation du mot de passe
-    delete userData.confirmPassword;
-
-    if (this.isEditMode && this.selectedUser) {
-      this.userService.update(this.selectedUser.id, userData).subscribe(() => {
-        this.loadData();
-        this.modalService.dismissAll();
-      });
-    } else {
-      this.userService.create(userData).subscribe(() => {
-        this.loadData();
-        this.modalService.dismissAll();
-      });
-    }
-  } */
-
-   /*  logFormErrors() {
-  Object.keys(this.userForm.controls).forEach(key => {
-    const control = this.userForm.get(key);
-    if (control?.errors) {
-      console.error(`Erreur sur ${key}:`, control.errors);
-    }
-  });
-  if (this.userForm.errors) {
-    console.error('Erreurs au niveau du formulaire:', this.userForm.errors);
-  }
-} */
-  onSubmit(): void {
+ 
+onSubmit(): void {
     //this.logFormErrors();
-  if (this.userForm.invalid) {
-    console.log('Le formulaire est invalide');
-    /* console.log('Champs invalides:', {
-      nom: this.userForm.get('nom')?.errors,
-      telephone: this.userForm.get('telephone')?.errors,
-      email: this.userForm.get('email')?.errors,
-      role: this.userForm.get('role')?.errors,
-      password: this.userForm.get('password')?.errors,
-      confirmPassword: this.userForm.get('confirmPassword')?.errors,
-      status: this.userForm.get('status')?.errors}); */
-    return;
-  }
+    if (this.userForm.invalid) {
+      console.log('Le formulaire est invalide');
+      return;
+    }
 
   const userData = this.userForm.value;
   // On ne garde pas la confirmation du mot de passe
@@ -214,13 +213,14 @@ export class UserComponent implements OnInit {
 
   // Extraire les rôles sélectionnés (si votre formulaire inclut des rôles)
   const roleIds = userData.role || [];
-  delete userData.role; // Supprimer les rôles des données utilisateur
+  //delete userData.role; // Supprimer les rôles des données utilisateur
 
   if (this.isEditMode && this.selectedUser) {
     // Mise à jour de l'utilisateur
     this.userService.update(this.selectedUser.id, userData).subscribe({
       next: (updatedUser) => {
         // Mise à jour des rôles de l'utilisateur
+        console.log('Envoi des rôles pour l’utilisateur', updatedUser.id, roleIds);
         this.roleService.updateRolesForUser(updatedUser.id, roleIds)
           .subscribe({
             next: () => {
@@ -245,7 +245,7 @@ export class UserComponent implements OnInit {
       next: (newUser) => {
         // Assignation des rôles au nouvel utilisateur
         if (roleIds.length > 0) {
-          this.roleService.updateRolesForUser(newUser.id, roleIds)
+          this.roleService.assignRolesToUser(newUser.id, roleIds)
             .subscribe({
               next: () => {
                 this.loadData();
@@ -268,15 +268,76 @@ export class UserComponent implements OnInit {
       }
     });
   }
+} 
+
+ deleteUser(userId: number): void {
+  if (confirm('Êtes-vous sûr de vouloir supprimer ce rôle ?')) {
+    this.isLoading = true;
+    
+    // D'abord, récupérer les permissions associées au rôle
+    this.roleService.getRolesIdByUser(userId)
+      .subscribe({
+        next: (userRoles) => {
+          const roleIds = userRoles.roleIds || [];
+          
+          // Supprimer d'abord les associations de permissions
+          if (roleIds.length > 0) {
+            //console.log('Succés');
+            this.roleService.removeRolesFromUser(userId, roleIds)
+              .subscribe({
+                next: () => {
+                  // Puis supprimer le rôle lui-même
+                  this.deleteUserFinally(userId);
+                },
+                error: (err) => {
+                  this.isLoading = false;
+                  console.error('Erreur lors de la suppression des permissions du rôle', err);
+                  //this.errorMessage = 'Erreur lors de la suppression des associations de permissions';
+                }
+              });
+          } else {
+            // Si pas de permissions, supprimer directement le rôle
+            this.deleteUser(userId);
+            //console.log('Echec');
+          }
+        },
+        error: (err) => {
+          this.isLoading = false;
+          console.error('Erreur lors de la récupération des rôles de user', err);
+          //this.errorMessage = 'Erreur lors de la récupération des permissions associées';
+        }
+      });
+  }
 }
 
-  deleteUser(id: number): void {
-    if (confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
-      this.userService.delete(id).subscribe(() => {
+private deleteUserFinally(userId: number): void {
+  this.userService.delete(userId)
+    .subscribe({
+      next: () => {
+        this.isLoading = false;
         this.loadData();
-      });
-    } 
-  }
+        //this.successMessage = 'Rôle supprimé avec succès';
+      },
+      error: (err) => {
+        this.isLoading = false;
+        console.error('Erreur lors de la suppression de user', err);
+        //this.errorMessage = 'Erreur lors de la suppression du rôle';
+      }
+    });
+}
+
+
+getNomStructure(id: number): string {
+      if (!this.structures) return "";
+      const structure = this.structures.find(str => str.id === id);
+      return structure ? structure.nom_structure : "";
+    }
+
+getUserRole(user: User): Observable<string[]> {
+  return this.roleService.getRolesByUser(user.id).pipe(
+    map((roles: Role[]) => roles.map(role => role.nom))
+  );
+}
 
   toggleStatus(user: User): void {
     user.status = !user.status;

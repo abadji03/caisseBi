@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { catchError, map, Observable, of } from 'rxjs';
 import { Permission, Role, RolePermission, UserRole } from '../modeles/role-permission.model';
+import { User } from '../modeles/user.model';
 
 @Injectable({
   providedIn: 'root'
@@ -83,29 +84,52 @@ export class RolePermissionsService {
   );
 }
 
+ getRolesIdByUser(userId: number): Observable<{ roleIds: number[] }> {
+  return this.http.get<any[]>(`${this.baseUrl}/user-roles/${userId}/roles`).pipe(
+    map(roles => ({
+      roleIds: roles.map(p => p.id) // Extrait seulement les IDs
+    })),
+    catchError(error => {
+      console.error('Error fetching permissions', error);
+      return of({ roleIds: [] }); // Retourne un tableau vide en cas d'erreur
+    })
+  );
+}
+
   //Affecter des permissions à un rôle
   assignPermissionsToRole(role_id:number,data: RolePermission): Observable<any> {
     return this.http.post(`${this.baseUrl}/role-permissions/${role_id}/permissions`, data);
   }
 
   //Récupérer les roles d’un utilisateur
-  getPermissionsByUser(userId: number): Observable<UserRole> {
-    return this.http.get<UserRole>(`${this.baseUrl}/user-roles/${userId}/roles`);
+ /*  getRolesByUser(userId: number): Observable<Role[]> {
+    return this.http.get<Role[]>(`${this.baseUrl}/user-roles/${userId}/roles`);
+  } */
+
+  getRolesByUser(userId: number): Observable<Role[]> {
+  return this.http.get<Role[]>(`${this.baseUrl}/user-roles/${userId}/roles`);
+}
+
+  getUserRole(user: User): Observable<string[]> {
+    return this.getRolesByUser(user.id).pipe(
+      map((roles) => roles.map(role => role.nom))
+    );
   }
 
+
   //Affecter des roles à un utilisateur
-  assignRolesToUser(userId: number,data: UserRole): Observable<any> {
-    return this.http.post(`${this.baseUrl}/user-roles/${userId}/roles`, data);
+  assignRolesToUser(userId: number,roleIds: number[]): Observable<any> {
+    return this.http.post(`${this.baseUrl}/user-roles/${userId}/roles`, { "roleIds":roleIds});
   }
 
   // Assigner ou mettre à jour des rôles
   updateRolesForUser(userId: number, roleIds: number[]) {
-    return this.http.put(`${this.baseUrl}/role-users/${userId}`, { roleIds });
+    return this.http.put(`${this.baseUrl}/user-roles/${userId}`, { roleIds });
   }
 
   // Supprimer des rôles pour un utilisateur
   removeRolesFromUser(userId: number, roleIds: number[]) {
-    return this.http.request('delete', `${this.baseUrl}/role-users/${userId}`, {
+    return this.http.request('delete', `${this.baseUrl}/user-roles/${userId}`, {
       body: { roleIds }
     });
   }

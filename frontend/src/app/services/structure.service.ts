@@ -36,6 +36,10 @@ export class StructureService {
     return this.http.put<Structure>(`${this.apiUrl}/${id}`, structure, { headers: this.getHeaders() });
   }
 
+  updateBis(id: number, structure: Structure): Observable<Structure> {
+    return this.http.put<Structure>(`${this.apiUrl}/${id}`, structure, { headers: this.getHeaders() });
+  }
+
   delete(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
   }
