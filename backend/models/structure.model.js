@@ -41,7 +41,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     date_creation: {
       type: DataTypes.DATE,
-      allowNull: false,
+      allowNull: true,
     },
     description: DataTypes.TEXT,
     code_structure: {

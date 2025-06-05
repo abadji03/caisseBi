@@ -5,8 +5,8 @@
   <div>
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h2>Gestion des structures</h2>
-      <button class="btn btn-primary" (click)="isEditMode = true">
-        <i class="fas fa-plus"></i> Ajouter une structure
+      <button class="btn btn-success" (click)="isEditMode = true">
+        <i class="bi bi-plus-circle"></i> Ajouter une structure
       </button>
     </div>
     
@@ -37,17 +37,21 @@
             </td>
             <td>
               <div class="btn-group" role="group">
-                <button class="btn btn-sm btn-info" (click)="showDetails(structure, detailsModal)" title="Voir">
+                <button class="btn btn-sm btn-info me-2" (click)="showDetails(structure, detailsModal)" title="Voir">
                   <i class="bi bi-eye"></i>
                 </button>
-                <button class="btn btn-sm btn-warning" (click)="prepareEdit(structure)" title="Modifier">
+                <button class="btn btn-sm btn-warning me-2" (click)="prepareEdit(structure)" title="Modifier">
                   <i class="bi bi-pencil"></i>
                 </button>
-                <button class="btn btn-sm" 
-                        [ngClass]="structure.estActive ? 'btn-danger' : 'btn-success'" 
+                <button class="btn btn-sm me-2" 
+                        [ngClass]="structure.estActive ? 'btn-secondary' : 'btn-success'" 
                         (click)="toggleStructureStatus(structure)" 
                         title="Activer/Désactiver">
-                  <i class="bi" [ngClass]="structure.estActive ? 'bi-times' : 'bi-check'"></i>
+                  <i class="bi" [ngClass]="structure.estActive ? 'bi-x-circle-fill' : 'bi-check-circle-fill'"></i>
+                </button>
+
+                <button class="btn btn-sm btn-danger" (click)="prepareEdit(structure)" title="Modifier">
+                  <i class="bi bi-trash"></i>
                 </button>
               </div>
             </td>
@@ -226,7 +230,7 @@
         </div>
         <div class="col-md-4 mb-3">
           <label>Date de création *</label>
-          <input type="date" class="form-control" formControlName="date_creation" required />
+          <input type="date" class="form-control" formControlName="date_creation"/>
         </div>
       </div>
       
@@ -263,7 +267,7 @@
         </div>
         <div class="col-md-8">
           <h4>{{ selectedStructure.nom_structure }}</h4>
-          <p><strong>Propriétaire:</strong> {{ selectedStructure.proprietaireId }}</p>
+          <!-- <p><strong>Propriétaire:</strong> {{ selectedStructure.proprietaireId }}</p> -->
           <p><strong>Type:</strong> {{ selectedStructure.	type_structure }}</p>
           <p><strong>Statut:</strong> 
             <span class="badge" [ngClass]="selectedStructure.estActive ? 'bg-success' : 'bg-danger'">
@@ -288,8 +292,8 @@
       </div>
     </div>
     <div class="modal-footer">
-      <button type="button" class="btn btn-secondary" (click)="modal.close()">Fermer</button>
-      <button type="button" class="btn btn-primary" (click)="prepareEdit(selectedStructure!); modal.close()">
+      <button type="button" class="btn btn-outline-secondary" (click)="modal.close()">Fermer</button>
+      <button type="button" class="btn btn-success" (click)="prepareEdit(selectedStructure!); modal.close()">
         Modifier
       </button>
     </div>

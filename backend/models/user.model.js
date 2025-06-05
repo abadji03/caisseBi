@@ -36,5 +36,9 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: true,
     },
+    code_structure: {
+      type: DataTypes.STRING(36),
+      allowNull: true,
+    },
   });
 };

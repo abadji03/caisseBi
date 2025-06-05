@@ -74,6 +74,14 @@ db.role = require('./role.model')(sequelize,Sequelize);
 db.Structure.hasMany(db.Users, { foreignKey: 'structure_id' });
 // Un utilisateur appartient à une seule structure (belongsTo = N:1)
 db.Users.belongsTo(db.Structure, { foreignKey: 'structure_id' });
+db.Structure.hasMany(db.Users, {
+  foreignKey: 'code_structure',
+  sourceKey: 'code_structure'
+});
+db.Users.belongsTo(db.Structure, {
+  foreignKey: 'code_structure',
+  targetKey: 'code_structure'
+});
 
 // Relation entre Structure et magasins
 db.Structure.hasMany(db.Magasin, {
@@ -287,7 +295,7 @@ db.Bon.hasMany(db.Panier, { foreignKey: 'bonId' });
 db.Panier.belongsTo(db.Bon, { foreignKey: 'bonId' });
 db.Magasin.hasMany(db.Panier, { foreignKey: 'magasinId'});
 db.Panier.belongsTo(db.Magasin, { foreignKey: 'magasinId'});
-db.Users.belongsTo(db.Panier, { foreignKey: 'agentId'});
+db.Users.hasMany(db.Panier, { foreignKey: 'agentId'});
 db.Panier.belongsTo(db.Users, { foreignKey: 'agentId'});
 db.Structure.hasMany(db.Panier, { foreignKey: "code_structure", sourceKey: "code_structure" });
 db.Panier.belongsTo(db.Structure, { foreignKey: "code_structure", targetKey: "code_structure" });
@@ -331,7 +339,7 @@ db.Paiement.belongsTo(db.Bon, { foreignKey: 'bonId'});
 db.Panier.hasMany(db.Paiement, { foreignKey: 'panierId'});
 db.Paiement.belongsTo(db.Panier, { foreignKey: 'panierId'});
 
-db.Magasin.belongsTo(db.Paiement, { foreignKey: 'magasinId'});
+db.Magasin.hasMany(db.Paiement, { foreignKey: 'magasinId'});
 db.Paiement.belongsTo(db.Magasin, { foreignKey: 'magasinId'});
 
 db.Structure.hasMany(db.Paiement, { foreignKey: "code_structure", sourceKey: "code_structure" });

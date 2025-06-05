@@ -68,7 +68,7 @@ export class StructureComponent implements OnInit {
     code_acces: [''],
     personne_confiance: [''],
     assurances_souscrites: [''],
-    date_creation: ['', Validators.required],
+    date_creation: [''],
     description: ['']
   });
   }
@@ -129,12 +129,29 @@ export class StructureComponent implements OnInit {
     document.getElementById('form-section')?.scrollIntoView({ behavior: 'smooth' });
   }
 
-  toggleStructureStatus(structure: Structure): void {
+  /* toggleStructureStatus(structure: Structure): void {
     const newStatus = !structure.estActive;
     this.structureService.updateStatus(structure.id!, newStatus).subscribe(() => {
       this.loadStructures();
     });
-  }
+  } */
+
+toggleStructureStatus(structure: Structure): void {
+  const newStatus = !structure.estActive;
+  
+  this.structureService.updateStatus(structure.id!, newStatus).subscribe({
+    next: () => {
+      structure.estActive = newStatus; // Mise à jour optimiste
+      // Optionnel : Recharger la liste si nécessaire
+      this.loadStructures();
+    },
+    error: (err) => {
+      console.error('Erreur:', err);
+      // Revert UI state if error
+      structure.estActive = !newStatus;
+    }
+  });
+}
 
   onSubmitFormsSetting(): void {
     if (this.generalForm.valid) {

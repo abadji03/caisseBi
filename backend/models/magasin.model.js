@@ -19,17 +19,9 @@ module.exports = (sequelize, DataTypes) => {
     email: DataTypes.STRING,
     responsableId: DataTypes.INTEGER,
     capaciteStock: DataTypes.DECIMAL(10, 2),
-    chiffreAffaires: {
-      type: DataTypes.DECIMAL(12, 2),
-      defaultValue: 0,
-    },
     statut: {
       type: DataTypes.ENUM("Actif", "Inactif"),
       defaultValue: "Actif",
-    },
-    dateCreation: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
     },
     derniereMiseAJour: {
       type: DataTypes.DATE,

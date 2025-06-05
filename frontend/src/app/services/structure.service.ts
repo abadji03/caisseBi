@@ -44,8 +44,8 @@ export class StructureService {
     return this.http.delete(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
   }
 
-  updateStatus(id: number, isActive: boolean): Observable<Structure> {
-    return this.http.patch<Structure>(`${this.apiUrl}/${id}/status`, { isActive }, { headers: this.getHeaders() });
+  updateStatus(id: number, estActive: boolean): Observable<Structure> {
+    return this.http.patch<Structure>(`${this.apiUrl}/${id}/status`, { estActive }, { headers: this.getHeaders() });
   }
 /*   //Créer une structure
   create(structure: Structure): Observable<Structure> {

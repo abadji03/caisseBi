@@ -13,7 +13,11 @@ router.put('/:id', upload.single('logo'), structureController.updateStructure);
 //DELETE: Suppression d’une structure
 router.delete('/:id', structureController.deleteStructure);
 
+// GET: Récupération d'une et de plusieurs structures
 router.get('/', structureController.getAllStructures);
 router.get('/:id', structureController.getStructureById);
+
+// PATCH: Mise à jour du statut uniquement
+router.patch('/:id/status', structureController.updateStructureStatus);
 
 module.exports = router;

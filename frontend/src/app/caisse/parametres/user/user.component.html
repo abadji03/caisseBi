@@ -16,7 +16,7 @@
       <thead class="table-dark">
         <tr>
           <th>Nom</th>
-          <th>Téléphone</th>
+          <!-- <th>Téléphone</th> -->
           <th>Email</th>
           <th>Rôle</th>
           <th>Structure</th>
@@ -27,7 +27,7 @@
       <tbody>
         <tr *ngFor="let user of users">
           <td>{{ user.nom }}</td>
-          <td>{{ user.telephone }}</td>
+          <!-- <td>{{ user.telephone }}</td> -->
           <td>{{ user.email }}</td>
           <!-- <td>{{ user.role }}</td> -->
            <td>
@@ -45,16 +45,17 @@
           </td>
           <td>
             <div class="btn-group">
-              <button class="btn btn-sm btn-warning" (click)="openModal(userModal, user)">
+              <button class="btn btn-sm btn-warning me-2" (click)="openModal(userModal, user)">
                 <i class="bi bi-pencil"></i>
+              </button>
+              <button class="btn btn-sm me-2" 
+                      [ngClass]="user.status ? 'btn-secondary' : 'btn-success'"
+                      (click)="toggleStatus(user)">
+                      <i class="bi" [ngClass]="user.status ? 'bi-x-circle-fill' : 'bi-check-circle-fill'"></i>
+                <!-- {{ user.status ? 'Désactiver' : 'Activer' }} -->
               </button>
               <button class="btn btn-sm btn-danger" (click)="deleteUser(user.id)">
                 <i class="bi bi-trash"></i>
-              </button>
-              <button class="btn btn-sm" 
-                      [ngClass]="user.status ? 'btn-secondary' : 'btn-success'"
-                      (click)="toggleStatus(user)">
-                {{ user.status ? 'Désactiver' : 'Activer' }}
               </button>
             </div>
           </td>

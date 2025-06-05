@@ -7,6 +7,11 @@ import { Produits } from '../../../modeles/produit.modele';
 import { Transfert } from '../../../modeles/transfert.model';
 import { Depense, Recette } from '../../../modeles/finance.model';
 import { MouvementsStock, Stock } from '../../../modeles/entrees-sorties.model';
+import { Structure } from '../../../modeles/structure.model';
+import { User } from '../../../modeles/user.model';
+import { UserService } from '../../../services/user.service';
+import { StructureService } from '../../../services/structure.service';
+import { MaagasinsService } from '../../../services/maagasins.service';
 
 @Component({
   selector: 'app-magazin',
@@ -17,11 +22,24 @@ import { MouvementsStock, Stock } from '../../../modeles/entrees-sorties.model';
 })
 export class MagazinComponent implements OnInit{
 
+  showDetails: boolean = true;
+
+  toggleParts(): void {
+    this.showDetails = !this.showDetails;
+  }
+
 currentDate: Date = new Date();
 modeEdition = false;
-magasinForm :FormGroup;
+magasinForm!:FormGroup;
 // Liste des magasins (à remplacer par un appel à un service API)
 magasins: Magasin[] = [ ];
+structures: Structure[] = [];
+responsables: User[] = [];
+
+selectedMagasinId: number | null = null;
+searchTerm: string = '';
+currentPage: number = 1;
+itemsPerPage: number = 10;
 
 modeVente: any;
 // Déclarez la variable produits globalement
@@ -41,7 +59,7 @@ currentPageCaisse: number = 1;
 currentPageDepnse:number = 1;
 currentPageTransferts:number = 1;
 currentPageStock:number = 1;
-searchTerm = ''; // Recherche
+//searchTerm = ''; // Recherche
 
 filteredStock:Produits[] =[];
 filteredMouvement:MouvementsStock[] =[];
@@ -52,26 +70,52 @@ filteredPanier:Panier[] =[];
 selectedPanierId: number | null = null;
 
 
-constructor(private fb: FormBuilder,private cdr:ChangeDetectorRef) {
+constructor(
+  private fb: FormBuilder,
+  private cdr:ChangeDetectorRef,
+  private magasinService: MaagasinsService,
+  private structureService: StructureService,
+  private userService: UserService
+) {
    // Initialisation du formulaire réactif
-   this.magasinForm = this.fb.group({
+  /*  this.magasinForm = this.fb.group({
     nom: ['', Validators.required],
     adresse: ['', Validators.required],
     responsableId: [, Validators.required]
+  }); */
+
+  this.magasinForm= this.fb.group({
+    code_structure: ['', Validators.required],
+    nom: ['', Validators.required],
+    adresse: ['', Validators.required],
+    ville: [''],
+    telephone: [''],
+    email: ['', [Validators.email]],
+    responsableId: ['', Validators.required],
+    capaciteStock: [0],
+    statut: ['Actif']
   });
+ 
 }
 
 ngOnInit(): void {
-  this.magasins = this.loadMagasins();
+
+  this.chargerMagasins();
+  this.loadStructures();
+  //this.loadUsers('1');
+  //this.loadUsers('1');
+  //console.log(this.responsables[0].nom)
+  //this.magasins = this.loadMagasins();
   //this.magasinSelectionne =this.magasins[0];
-  if (this.magasins.length > 0) {
+  /* if (this.magasins.length > 0) {
     this.afficherDetailsMagasin(this.magasins[0]);
-  }
-  this.updatefilteredTable('stock');
+  } */
+
+  /* this.updatefilteredTable('stock');
   this.updatefilteredTable('caisse');
   this.updatefilteredTable('depense');
   this.updatefilteredTable('mouvement');
-  this.updatefilteredTable('transfert');
+  this.updatefilteredTable('transfert'); */
 }
 
 toggleDetails(panierId: number) {
@@ -84,16 +128,16 @@ getAllProduits(): Stock[] {
   afficherDetailsMagasin(magasin: Magasin) {
     this.magasinSelectionne = magasin;
   }
-  nouveauMagasin() {
+  /* nouveauMagasin() {
     this.modeEdition = false;
     this.magasinForm.reset(); // Réinitialise complètement le formulaire
-  }
+  } */
 
 
 // Méthode pour supprimer un magasin
-supprimerMagasin(id: number) {
+/* supprimerMagasin(id: number) {
   this.magasins = this.magasins.filter(m => m.id !== id);
-}
+} */
 
 // Méthode pour réinitialiser le formulaire
 resetForm() {
@@ -191,12 +235,12 @@ supprimerDepense(id?: number) {
   this.resetForm();
 } */
 
-preparerEditionMagasin(magasin: Magasin) {
+/* preparerEditionMagasin(magasin: Magasin) {
   this.modeEdition = true;
   //this.magasinForm = { ...magasin };
-  this.magasinForm.patchValue(magasin);
-}
-
+  //this.magasinForm.patchValue(magasin);
+} */
+/* 
 ajouterMagasin(): void {
   if (this.magasinForm.valid) {
     console.log('Magasin ajouté :', this.magasinForm.value);
@@ -209,7 +253,7 @@ modifierMagasin(): void {
     console.log('Magasin modifié :', this.magasinForm.value);
     // Ajoutez ici la logique pour modifier le magasin
   }
-}
+} */
 
 
 loadMagasins(): Magasin[] {
@@ -399,7 +443,7 @@ getQteById(produitId: number, stocks: Stock[]): number {
   return produit ? produit.quantiteTotale : 0;
 }
 
-onMagasinChange(event: Event) {
+/* onMagasinChange(event: Event) {
   const selectedMagasinId = Number((event.target as HTMLSelectElement).value); // Convertir en nombre
   const selectedMagasin = this.magasins.find(m => m.id === selectedMagasinId); // Comparaison stricte
 
@@ -407,11 +451,9 @@ onMagasinChange(event: Event) {
     this.afficherDetailsMagasin(selectedMagasin);
   }
 
- /* if(! this.magasinSelectionne) return;
-    this.afficherDetailsMagasin(this.magasinSelectionne); */
-}
+} */
 
-getTotalProduits(stock: Stock[]): number {
+getTotalNombreProduits(stock: Stock[]): number {
   return stock.length;
 }
 
@@ -704,6 +746,248 @@ validerTransfert(transfert: Transfert) {
   console.log('Transfert validé :', transfert);
 }
 
+
+
+//.........................................................................................
+
+prepareFormData(): FormData {
+    const formData = new FormData();
+    const formValue = this.magasinForm.value;
+
+    Object.keys(formValue).forEach(key => {
+      if (formValue[key] !== null && formValue[key] !== undefined) {
+        formData.append(key, formValue[key]);
+      }
+    });
+
+    /* if (this.generalForm.get('logo')?.value instanceof File) {
+      formData.append('logo', this.generalForm.get('logo')?.value);
+    } */
+
+    return formData;
+  }
+ chargerMagasins(): void {
+    this.magasinService.getAllMagasins().subscribe({
+      next: (magasins) => {
+        this.magasins = magasins;
+        if (magasins.length > 0) {
+          this.magasinSelectionne = magasins[0];
+        }
+      },
+      error: (err) => console.error('Erreur lors du chargement des magasins', err)
+    });
+  }
+
+  loadStructures(): void {
+    this.structureService.getAll().subscribe(data => {
+      this.structures = data;
+    });
+  }
+
+  loadUsers(code_structure: string): void {
+    this.userService.getByStructure(code_structure).subscribe(data => {
+      this.responsables = data;
+      //console.log(this.responsables.length)
+    });
+  }
+
+  /* chargerStructures(): void {
+    this.structureService.getAll().subscribe({
+      next: (structures) => {
+        this.structures = structures;
+      },
+      error: (err) => console.error('Erreur lors du chargement des structures', err)
+    });
+  } */
+
+ /*  chargerResponsables(structureId: string): void {
+    this.userService.getByStructure(Number(structureId)).subscribe({
+      next: (users) => {
+        this.responsables = users.filter(user => user.role === 'GESTIONNAIRE');
+      },
+      error: (err) => console.error('Erreur lors du chargement des responsables', err)
+    });
+  }
+ */
+  onStructureChange(event: any): void {
+    const code_structure = event.target.value;
+    //const structureCode = this.magasinForm.get('code_structure')?.value;
+    if (code_structure) {
+      this.loadUsers(code_structure);
+    }
+  }
+
+  onMagasinChange(event: any): void {
+    const magasinId = event.target.value;
+    this.magasinService.getMagasinById(Number(magasinId)).subscribe({
+      next: (magasin) => {
+        this.magasinSelectionne = magasin;
+      },
+      error: (err) => console.error('Erreur lors de la récupération du magasin', err)
+    });
+  }
+
+  nouveauMagasin(): void {
+    this.modeEdition = false;
+    this.magasinForm.reset({
+      statut: 'Actif',
+      capaciteStock: 0
+    });
+  }
+
+  preparerEditionMagasin(magasin: Magasin): void {
+    this.modeEdition = true;
+    this.magasinForm.patchValue({
+      ...magasin,
+      responsableId: magasin.responsableId
+    });
+    
+    // Charger les responsables pour la structure sélectionnée
+    if (magasin.code_structure) {
+      this.loadUsers(magasin.code_structure);
+    }
+  }
+
+  ajouterMagasin(): void {
+    if (this.magasinForm.valid) {
+      this.magasinService.createMagasin(this.magasinForm.value).subscribe({
+        next: (magasin) => {
+          this.magasins.push(magasin);
+          this.magasinSelectionne = magasin;
+          this.fermerModal();
+        },
+        error: (err) => console.error('Erreur lors de la création du magasin', err)
+      });
+    }
+  }
+
+  modifierMagasin(): void {
+    if (this.magasinForm.valid && this.magasinSelectionne) {
+      const updatedMagasin = { ...this.magasinForm.value };
+      this.magasinService.updateMagasin(this.magasinSelectionne.id, updatedMagasin).subscribe({
+        next: (magasin) => {
+          const index = this.magasins.findIndex(m => m.id === magasin.id);
+          if (index !== -1) {
+            this.magasins[index] = magasin;
+            this.magasinSelectionne = magasin;
+          }
+          this.fermerModal();
+        },
+        error: (err) => console.error('Erreur lors de la mise à jour du magasin', err)
+      });
+    }
+  }
+
+  supprimerMagasin(id: number): void {
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce magasin ?')) {
+      this.magasinService.deleteMagasin(id).subscribe({
+        next: () => {
+          this.magasins = this.magasins.filter(m => m.id !== id);
+          if (this.magasinSelectionne?.id === id) {
+            this.magasinSelectionne = this.magasins.length > 0 ? this.magasins[0] : null;
+          }
+        },
+        error: (err) => console.error('Erreur lors de la suppression du magasin', err)
+      });
+    }
+  }
+
+  fermerModal(): void {
+    // Fermer le modal Bootstrap
+    const modal = document.getElementById('modalMagasin');
+    if (modal) {
+      (window as any).bootstrap.Modal.getInstance(modal).hide();
+      /* if (modalInstance) {
+        modalInstance.hide();
+      } */
+    }
+  }
+
+  // Méthodes utilitaires pour les calculs (à adapter selon vos besoins)
+  getTotalProduits(stock: any[]): number {
+    return stock ? stock.reduce((total, item) => total + item.quantite, 0) : 0;
+  }
+
+  /* getValeurTotaleStock(stock: any[]): number {
+    return stock ? stock.reduce((total, item) => total + (item.quantite * item.prixAchatUnitaire), 0) : 0;
+  } */
+
+
+    // Filtrage des magasins
+  get filteredMagasins(): Magasin[] {
+    return this.magasins.filter(magasin => 
+      magasin.nom.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+      magasin.code_structure.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+      magasin.adresse?.toLowerCase().includes(this.searchTerm.toLowerCase())
+    );
+  }
+
+  // Pagination
+  getPaginatedMagasins(): Magasin[] {
+    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    return this.filteredMagasins.slice(startIndex, startIndex + this.itemsPerPage);
+  }
+
+  getTotalPages1(): number {
+    return Math.ceil(this.filteredMagasins.length / this.itemsPerPage);
+  } 
+
+  getPages(): number[] {
+    const totalPages = this.getTotalPages1();
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+
+  onPageChange1(page: number): void {
+    if (page >= 1 && page <= this.getTotalPages1()) {
+      this.currentPage = page;
+    }
+  }
+
+  /* setItemsPerPage(event: any): void {
+    this.itemsPerPage = Number(event.target.value);
+    this.currentPage = 1;
+  } */
+
+  onSearchChange1(): void {
+    this.currentPage = 1;
+  } 
+
+  // Gestion des détails
+  toggleDetailsMagasin(magasinId: number): void {
+    this.selectedMagasinId = this.selectedMagasinId === magasinId ? null : magasinId;
+  }
+
+  getSelectedMagasin(): Magasin | undefined {
+    return this.magasins.find(m => m.id === this.selectedMagasinId);
+  }
+
+  // Gestion du statut
+  toggleStatutMagasin(magasin: Magasin): void {
+    console.log('réponse au clique')
+    const newStatut = magasin.statut === 'Actif' ? 'Inactif' : 'Actif';
+    this.magasinService.updateMagasinStatus(magasin.id, newStatut).subscribe({
+      next: (updatedMagasin) => {
+        this.chargerMagasins();
+       /*  const index = this.magasins.findIndex(m => m.id === updatedMagasin.id);
+        if (index !== -1) {
+          this.magasins[index] = updatedMagasin;
+        } */
+      },
+      error: (err) => console.error('Erreur lors du changement de statut', err)
+    });
+  }
+
+  // Sélection d'un magasin pour les onglets de détails
+  selectMagasin(magasin: Magasin): void {
+    this.magasinSelectionne = magasin;
+    // Scroll vers la section des détails si nécessaire
+  }
+
+  // Récupération du nom du responsable
+  getResponsableName(responsableId: number): string {
+    const responsable = this.responsables.find(r => r.id === responsableId);
+    return responsable ? `${responsable.nom}` : 'Non attribué';
+  }
 }
 
 

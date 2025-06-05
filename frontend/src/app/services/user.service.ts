@@ -103,8 +103,8 @@ create(user: User): Observable<User> {
   }
 
   // Récupère les utilisateurs par structure
-  getByStructure(structureId: number): Observable<User[]> {
-    return this.http.get<User[]>(`${this.apiUrl}?structure_id=${structureId}`, { 
+  getByStructure(code_structure: string): Observable<User[]> {
+    return this.http.get<User[]>(`${this.apiUrl}/${code_structure}/users`, { 
       headers: this.getHeaders() 
     });
   }

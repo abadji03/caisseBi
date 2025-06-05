@@ -41,6 +41,7 @@ import { Transfert } from "./transfert.model";
     responsableId?: number;
     capaciteStock?: number;
     chiffreAffaires?: number;
+    code_structure!:string;
     ventes?: Panier[];
     depenses?: Depense[];
     mouvements: MouvementsStock[] =[];

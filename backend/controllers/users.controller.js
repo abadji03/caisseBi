@@ -85,3 +85,18 @@ exports.delete = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// Récupérer les utilisateurs par code_structure
+exports.findByStructure = async (req, res) => {
+  try {
+    const { code_structure } = req.params;
+
+    const users = await User.findAll({
+      where: { code_structure }
+    });
+
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
