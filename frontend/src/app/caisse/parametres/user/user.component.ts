@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { User } from '../../../modeles/user.model';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { UserService } from '../../../services/user.service';
 import { CommonModule } from '@angular/common';
 import { Structure } from '../../../modeles/structure.model';
@@ -14,7 +14,7 @@ import { Role, UserRole } from '../../../modeles/role-permission.model';
 @Component({
   selector: 'app-user',
   standalone: true,
-  imports: [CommonModule,ReactiveFormsModule],
+  imports: [CommonModule,ReactiveFormsModule, FormsModule],
   templateUrl: './user.component.html',
   styleUrl: './user.component.css'
 })
@@ -29,6 +29,10 @@ export class UserComponent implements OnInit {
   isLoading = false;
   roles: Role[] = [];
   userRolesMap: { [userId: number]: string[] } = {};
+
+  searchTerm: string = '';
+  currentPage: number = 1;
+  itemsPerPage: number = 10;
   //roleIds: number[] = [];
 
   constructor(
@@ -346,6 +350,45 @@ getUserRole(user: User): Observable<string[]> {
     });
   }
 
+  get filteredUsers(): User[] {
+      return this.users.filter(user => 
+        user.nom.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+        this.getNomStructure(user.id).toLowerCase().includes(this.searchTerm.toLowerCase()) 
+        //magasin.adresse?.toLowerCase().includes(this.searchTerm.toLowerCase())
+      );
+    }
+  
+    // Pagination
+    getPaginatedUsers(): User[] {
+      const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+      return this.filteredUsers.slice(startIndex, startIndex + this.itemsPerPage);
+    }
+  
+    getTotalPages1(): number {
+      return Math.ceil(this.filteredUsers.length / this.itemsPerPage);
+    } 
+  
+    min(a: number, b: number): number {
+        return Math.min(a, b);
+    }
+    getPages(): number[] {
+      const totalPages = this.getTotalPages1();
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+  
+    setItemsPerPage(event: any): void {
+      this.itemsPerPage = Number(event.target.value);
+      this.currentPage = 1;
+    }
+  
+    onSearchChange1(): void {
+      this.currentPage = 1;
+    } 
+    onPageChange(page: number): void {
+    if (page >= 1 && page <= this.getTotalPages1()) {
+      this.currentPage = page;
+    }
+  }
   
 
 }

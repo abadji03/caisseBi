@@ -33,6 +33,16 @@ exports.deleteCategorie = async (req, res) => {
     res.status(500).json({ message: "Erreur suppression", error });
   }
 };
+exports.getCategoriesById = async (req, res) => {
+   try {
+    const categorie = await CategorieProduit.findByPk(req.params.id);
+    if (!categorie) return res.status(404).json({ message: "Catégorie non trouvé" });
+
+    res.json(categorie);
+  } catch (error) {
+    res.status(500).json({ message: "Erreur lors de la récupération de la catégorie catégorie", error });
+  }
+};
 
 exports.getCategoriesByStructure = async (req, res) => {
   try {

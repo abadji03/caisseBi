@@ -4,7 +4,8 @@ const categorieCtrl = require("../controllers/categorieProduit.controller");
 
 router.post("/", categorieCtrl.createCategorie);
 router.put("/:id", categorieCtrl.updateCategorie);
-router.delete("/:id", categorieCtrl.deleteCategorie);
+router.delete("/:id", categorieCtrl.deleteCategorie); 
+router.get("/:id", categorieCtrl.getCategoriesById); 
 router.get("/structure/:code_structure", categorieCtrl.getCategoriesByStructure);
 
 module.exports = router;

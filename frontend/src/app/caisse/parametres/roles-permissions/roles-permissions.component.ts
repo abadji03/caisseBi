@@ -44,7 +44,7 @@ export class RolesPermissionsComponent implements OnInit {
     this.rolePermissionsService.getAllRoles()
       .pipe(finalize(() => this.isLoading = false))
       .subscribe({
-        next: (roles) => this.roles = roles,
+        next: (roles) => this.roles = roles.filter(m => m.id !== 1),
         error: (err) => console.error('Erreur lors du chargement des rôles', err)
       });
   }

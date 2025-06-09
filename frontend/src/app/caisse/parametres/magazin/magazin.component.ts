@@ -22,10 +22,10 @@ import { MaagasinsService } from '../../../services/maagasins.service';
 })
 export class MagazinComponent implements OnInit{
 
-  showDetails: boolean = true;
+  showPartie1: boolean = true;
 
   toggleParts(): void {
-    this.showDetails = !this.showDetails;
+    this.showPartie1 = !this.showPartie1;
   }
 
 currentDate: Date = new Date();
@@ -35,6 +35,7 @@ magasinForm!:FormGroup;
 magasins: Magasin[] = [ ];
 structures: Structure[] = [];
 responsables: User[] = [];
+allUsers: User[] = [];
 
 selectedMagasinId: number | null = null;
 searchTerm: string = '';
@@ -102,6 +103,7 @@ ngOnInit(): void {
 
   this.chargerMagasins();
   this.loadStructures();
+  this.loadAllUsers();
   //this.loadUsers('1');
   //this.loadUsers('1');
   //console.log(this.responsables[0].nom)
@@ -570,6 +572,7 @@ setItemsPerPage(event: any) {
   this.currentPageDepnse = 1;
   this.currentPageTransferts = 1;
   this.currentPageStock = 1;
+   this.currentPage = 1;
 
 
     this.cdr.detectChanges(); // Forcer la mise à jour de la vue
@@ -684,7 +687,10 @@ paginate(data: any[], currentPage: number, itemsPerPage: number) {
 }
 
 onPageChange(page: number, instanceObj: string): void {
-  if(instanceObj === 'stock'){
+  if(instanceObj === 'magasin'){
+    this.currentPage = page;
+  }
+  else if(instanceObj === 'stock'){
     this.currentPageStock = page;
   }
   else if (instanceObj === 'caisse') {
@@ -750,22 +756,6 @@ validerTransfert(transfert: Transfert) {
 
 //.........................................................................................
 
-prepareFormData(): FormData {
-    const formData = new FormData();
-    const formValue = this.magasinForm.value;
-
-    Object.keys(formValue).forEach(key => {
-      if (formValue[key] !== null && formValue[key] !== undefined) {
-        formData.append(key, formValue[key]);
-      }
-    });
-
-    /* if (this.generalForm.get('logo')?.value instanceof File) {
-      formData.append('logo', this.generalForm.get('logo')?.value);
-    } */
-
-    return formData;
-  }
  chargerMagasins(): void {
     this.magasinService.getAllMagasins().subscribe({
       next: (magasins) => {
@@ -784,36 +774,26 @@ prepareFormData(): FormData {
     });
   }
 
-  loadUsers(code_structure: string): void {
+  loadUsersForSelectedStructure(code_structure: string): void {
     this.userService.getByStructure(code_structure).subscribe(data => {
       this.responsables = data;
       //console.log(this.responsables.length)
     });
   }
 
-  /* chargerStructures(): void {
-    this.structureService.getAll().subscribe({
-      next: (structures) => {
-        this.structures = structures;
-      },
-      error: (err) => console.error('Erreur lors du chargement des structures', err)
-    });
-  } */
-
- /*  chargerResponsables(structureId: string): void {
-    this.userService.getByStructure(Number(structureId)).subscribe({
-      next: (users) => {
-        this.responsables = users.filter(user => user.role === 'GESTIONNAIRE');
-      },
-      error: (err) => console.error('Erreur lors du chargement des responsables', err)
+  loadAllUsers(): void {
+    this.userService.getAlls().subscribe(data => {
+      this.allUsers = data;
+      console.log(this.allUsers.length)
     });
   }
- */
+
+ 
   onStructureChange(event: any): void {
     const code_structure = event.target.value;
     //const structureCode = this.magasinForm.get('code_structure')?.value;
     if (code_structure) {
-      this.loadUsers(code_structure);
+      this.loadUsersForSelectedStructure(code_structure);
     }
   }
 
@@ -835,18 +815,40 @@ prepareFormData(): FormData {
     });
   }
 
-  preparerEditionMagasin(magasin: Magasin): void {
+  /* preparerEditionMagasin(magasin: Magasin): void {
     this.modeEdition = true;
     this.magasinForm.patchValue({
       ...magasin,
-      responsableId: magasin.responsableId
+      code_structure: magasin.code_structure
+      //responsableId: magasin.responsableId
     });
     
     // Charger les responsables pour la structure sélectionnée
     if (magasin.code_structure) {
       this.loadUsers(magasin.code_structure);
     }
+  } */
+
+  preparerEditionMagasin(magasin: Magasin): void {
+  this.modeEdition = true;
+
+  this.magasinForm.patchValue({
+    nom: magasin.nom,
+    adresse: magasin.adresse,
+    ville: magasin.ville,
+    telephone: magasin.telephone,
+    email: magasin.email,
+    responsableId: magasin.responsableId,
+    capaciteStock: magasin.capaciteStock,
+    code_structure: magasin.code_structure,
+    statut: magasin.statut
+  });
+
+  if (magasin.code_structure) {
+    this.loadUsersForSelectedStructure(magasin.code_structure);
   }
+}
+
 
   ajouterMagasin(): void {
     if (this.magasinForm.valid) {
@@ -882,10 +884,11 @@ prepareFormData(): FormData {
     if (confirm('Êtes-vous sûr de vouloir supprimer ce magasin ?')) {
       this.magasinService.deleteMagasin(id).subscribe({
         next: () => {
-          this.magasins = this.magasins.filter(m => m.id !== id);
+          /* this.magasins = this.magasins.filter(m => m.id !== id);
           if (this.magasinSelectionne?.id === id) {
             this.magasinSelectionne = this.magasins.length > 0 ? this.magasins[0] : null;
-          }
+          } */
+         this.chargerMagasins();
         },
         error: (err) => console.error('Erreur lors de la suppression du magasin', err)
       });
@@ -932,6 +935,9 @@ prepareFormData(): FormData {
     return Math.ceil(this.filteredMagasins.length / this.itemsPerPage);
   } 
 
+  min(a: number, b: number): number {
+      return Math.min(a, b);
+  }
   getPages(): number[] {
     const totalPages = this.getTotalPages1();
     return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -984,8 +990,8 @@ prepareFormData(): FormData {
   }
 
   // Récupération du nom du responsable
-  getResponsableName(responsableId: number): string {
-    const responsable = this.responsables.find(r => r.id === responsableId);
+  getResponsableName(responsableId: number): string{
+    const responsable = this.allUsers.find(r => r.id === responsableId);
     return responsable ? `${responsable.nom}` : 'Non attribué';
   }
 }

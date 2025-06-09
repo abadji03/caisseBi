@@ -11,8 +11,8 @@
     </div>
   </div>
 
-  <table class="table table-bordered table-responsive" *ngIf="!isLoading">
-    <thead class="thead-dark">
+  <table class="table table-bordered table-striped table-hover table-responsive" *ngIf="!isLoading">
+    <thead class="table-dark">
       <tr>
         <th>Id</th>
         <th>Nom</th>
@@ -25,10 +25,10 @@
         <td>{{ role.nom }}</td>
         <td>
           <button class="btn btn-warning btn-sm me-2" (click)="editRole(role)">
-            Modifier
+            <i class="bi bi-pencil"></i>
           </button>
           <button class="btn btn-danger btn-sm" (click)="deleteRole(role.id!)">
-            Supprimer
+            <i class="bi bi-trash"></i>
           </button>
         </td>
       </tr>

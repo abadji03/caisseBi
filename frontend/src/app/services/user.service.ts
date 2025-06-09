@@ -14,7 +14,7 @@ export class UserService {
  
   constructor(private http: HttpClient,private authService: AuthService) { }
 
-    private getHeaders(): HttpHeaders {
+  private getHeaders(): HttpHeaders {
     const token = this.authService.getToken();
     return new HttpHeaders({
       'Authorization': `Bearer ${token}`,
@@ -30,6 +30,10 @@ export class UserService {
       : `${this.apiUrl}?structure_id=${structureId}`;
     
     return this.http.get<User[]>(url, { headers: this.getHeaders() });
+  }
+
+  getAlls(): Observable<User[]> {
+    return this.http.get<User[]>(`${this.apiUrl}`, { headers: this.getHeaders() })
   }
 
   // Récupère un utilisateur par son ID

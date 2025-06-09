@@ -6,5 +6,9 @@ router.post("/", produitCtrl.createProduit);
 router.put("/:id", produitCtrl.updateProduit);
 router.delete("/:id", produitCtrl.deleteProduit);
 router.get("/structure/:code_structure", produitCtrl.getProduitsByStructure);
+router.get("/:id", produitCtrl.getProduitById);
+router.get("/", produitCtrl.getAllProduits);
+router.patch("/:id/status", produitCtrl.updateStatusProduit);
+
 
 module.exports = router;

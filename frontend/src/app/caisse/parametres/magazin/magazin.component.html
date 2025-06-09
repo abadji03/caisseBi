@@ -1,5 +1,5 @@
 <div class="container-fluid mt-4">
-  <div class="row" *ngIf="showDetails">
+  <div class="row" *ngIf="showPartie1">
     <div class="col-12">
        <!-- Section supérieure avec bouton d'ajout -->
         <div class="row mb-3">
@@ -49,8 +49,8 @@
                         <td>{{ magasin.nom }}</td>
                         <td>{{ magasin.code_structure }}</td>
                         <td>{{ magasin.adresse }}</td>
-                        <!-- <td>{{ getResponsableName(magasin.responsableId) }}</td> -->
-                        <td>{{ magasin.responsableId}}</td>
+                        <td>{{ getResponsableName(magasin.responsableId!) }}</td>
+                        <!-- <td>{{ magasin.responsableId}}</td> -->
                         <td>
                           <span class="badge" [ngClass]="{
                             'bg-success': magasin.statut === 'Actif',
@@ -62,18 +62,18 @@
                         <td>
                           <div class="btn-group btn-group-sm" role="group">
                             <!-- Bouton Voir Détails -->
-                            <button class="btn btn-info" (click)="toggleDetailsMagasin(magasin.id)" title="Voir détails">
+                            <button class="btn btn-info me-2" (click)="toggleDetailsMagasin(magasin.id)" title="Voir détails">
                               <i class="bi bi-eye"></i>
                             </button>
                             
                             <!-- Bouton Modifier -->
-                            <button class="btn btn-warning" (click)="preparerEditionMagasin(magasin)" 
+                            <button class="btn btn-warning me-2" (click)="preparerEditionMagasin(magasin)" 
                                     data-bs-toggle="modal" data-bs-target="#modalMagasin" title="Modifier">
                               <i class="bi bi-pencil"></i>
                             </button>
                             
                             <!-- Bouton Activer/Désactiver -->
-                            <button class="btn" 
+                            <button class="btn me-2" 
                                     [class.btn-success]="magasin.statut === 'Inactif'"
                                     [class.btn-secondary]="magasin.statut === 'Actif'"
                                     (click)="toggleStatutMagasin(magasin)" 
@@ -108,8 +108,7 @@
                                     <strong>Contact:</strong> {{ magasin.telephone }} | {{ magasin.email }}
                                   </li>
                                   <li class="list-group-item">
-                                    <!-- <strong>Responsable:</strong> {{ getResponsableName(magasin.responsableId) }} -->
-                                    <strong>Responsable:</strong> {{ magasin.responsableId}}
+                                    <strong>Responsable:</strong> {{ getResponsableName(magasin.responsableId!) }} 
                                   </li>
                                 </ul>
                               </div>
@@ -138,8 +137,8 @@
                             
                             <!-- Bouton pour accéder aux détails complets -->
                             <div class="d-flex justify-content-end mt-3">
-                              <button class="btn btn-primary" (click)="toggleParts()">
-                                <i class="bi bi-box-arrow-in-right me-2"></i>Accéder à la gestion complète
+                              <button class="btn btn-outline-success" (click)="toggleParts()">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>Plus de détails....
                               </button>
                             </div>
                           </div>
@@ -154,22 +153,22 @@
                 <div class="d-flex justify-content-between align-items-center mt-3">
                   <div>
                     Affichage de {{ (currentPage - 1) * itemsPerPage + 1 }} à 
-                    <!-- {{ Math.min(currentPage * itemsPerPage, filteredMagasins.length) }}  -->
+                    {{ min(currentPage * itemsPerPage, filteredMagasins.length) }} 
                     sur {{ filteredMagasins.length }} magasins
                   </div>
                   <div>
                     <nav>
                       <ul class="pagination">
                         <li class="page-item" [class.disabled]="currentPage === 1">
-                          <a class="page-link" (click)="onPageChange1(currentPage - 1)">
+                          <a class="page-link" (click)="onPageChange(currentPage - 1,'magasin')">
                             <i class="bi bi-chevron-left"></i>
                           </a>
                         </li>
                         <li class="page-item" *ngFor="let page of getPages()" [class.active]="page === currentPage">
-                          <a class="page-link" (click)="onPageChange1(page)">{{ page }}</a>
+                          <a class="page-link" (click)="onPageChange(page,'magasin')">{{ page }}</a>
                         </li>
-                        <li class="page-item" [class.disabled]="currentPage === getTotalPages1()">
-                          <a class="page-link" (click)="onPageChange1(currentPage + 1)">
+                        <li class="page-item" [class.disabled]="currentPage === getTotalPages(filteredMagasins)">
+                          <a class="page-link" (click)="onPageChange(currentPage + 1,'magasin')">
                             <i class="bi bi-chevron-right"></i>
                           </a>
                         </li>
@@ -184,9 +183,9 @@
     </div>
   </div>
  
-  <div  class="row" *ngIf="!showDetails">
+  <div  class="row" *ngIf="!showPartie1">
     <div class="col-12" *ngIf="magasinSelectionne">
-      <button class="btn btn-success mb-3" (click)="toggleParts()">
+      <button class="btn btn-outline-secondary mb-3" (click)="toggleParts()">
                 <i class="bi bi-arrow-left-circle ms-2 me-3"></i>Retour
         </button>
         <!-- Onglets de navigation -->

@@ -138,3 +138,14 @@ export class Produit {
       }
     }
 
+export class CategorieProduits {
+  id?:number;
+  code_structure!: string;
+  nom!:string;
+  description?:string;
+
+  constructor(data?: Partial<CategorieProduits>){
+    
+  }
+
+}

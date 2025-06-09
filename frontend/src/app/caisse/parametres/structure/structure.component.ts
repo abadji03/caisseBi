@@ -1,6 +1,6 @@
 // structure.component.ts
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatCommonModule } from '@angular/material/core';
 import { Structure } from '../../../modeles/structure.model';
 import { StructureService } from '../../../services/structure.service';
@@ -12,7 +12,7 @@ import { NgbModal, NgbModalModule } from '@ng-bootstrap/ng-bootstrap';
 @Component({
   selector: 'app-structure',
   standalone: true,
-  imports: [MatCommonModule, ReactiveFormsModule, CommonModule, RouterModule, NgbModalModule],
+  imports: [MatCommonModule, ReactiveFormsModule, CommonModule, RouterModule, NgbModalModule, FormsModule],
   templateUrl: './structure.component.html',
   styleUrl: './structure.component.css'
 })
@@ -24,6 +24,9 @@ export class StructureComponent implements OnInit {
   isGeneralAdmin: boolean = false;
   selectedStructure: Structure | null = null;
   logoPreview: string | ArrayBuffer | null = null;
+  searchTerm: string = '';
+  currentPage: number = 1;
+  itemsPerPage: number = 10;
 
   constructor(
     private fb: FormBuilder,
@@ -223,4 +226,45 @@ toggleStructureStatus(structure: Structure): void {
   cancelEdit(): void {
     this.resetForm();
   }
+
+   get filteredStructures(): Structure[] {
+        return this.structures.filter(str => 
+          str.nom_structure.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+          str.type_structure.toLowerCase().includes(this.searchTerm.toLowerCase()) 
+          //magasin.adresse?.toLowerCase().includes(this.searchTerm.toLowerCase())
+        );
+      }
+    
+      // Pagination
+      getPaginatedStructure(): Structure[] {
+        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+        return this.filteredStructures.slice(startIndex, startIndex + this.itemsPerPage);
+      }
+    
+      getTotalPages1(): number {
+        return Math.ceil(this.filteredStructures.length / this.itemsPerPage);
+      } 
+    
+      min(a: number, b: number): number {
+          return Math.min(a, b);
+      }
+      getPages(): number[] {
+        const totalPages = this.getTotalPages1();
+        return Array.from({ length: totalPages }, (_, i) => i + 1);
+      }
+    
+      setItemsPerPage(event: any): void {
+        this.itemsPerPage = Number(event.target.value);
+        this.currentPage = 1;
+      }
+    
+      onSearchChange1(): void {
+        this.currentPage = 1;
+      } 
+      onPageChange(page: number): void {
+      if (page >= 1 && page <= this.getTotalPages1()) {
+        this.currentPage = page;
+      }
+    }
+    
 }
