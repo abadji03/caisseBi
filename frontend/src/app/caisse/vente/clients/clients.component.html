@@ -1,10 +1,5 @@
 <div class="container-fluid">
 
-  <div class="d-flex justify-content-center">
-    <!-- Contact -->
-    <h1 class="fw-bold text-uppercase">Gestion des clients</h1>
-  </div>
-  <hr>
   <nav>
     <div class="nav nav-tabs" id="nav-tab" role="tablist">
       <button class="nav-link active" id="nav-client-tab" data-bs-toggle="tab" data-bs-target="#nav-client" type="button" role="tab" aria-controls="nav-client" aria-selected="true">Accueil</button>
@@ -22,21 +17,18 @@
           <div class="row">
             <div [ngClass]="{ 'col-md-12': !isRowSelected, 'col-md-10': isRowSelected }">
 
-              <div class="d-flex justify-content-between align-items-center mb-3">
-                <h1>Liste des Clients</h1>
-                <button class="btn btn-success" (click)="openModal()"><i class="bi bi-plus-circle text-white me-2"></i>Nouveau Client</button>
-              </div>
-
               <div class="d-flex justify-content-between">
                   <!-- Champ de recherche -->
-                <input type="text" class="form-control mb-3 w-25" [(ngModel)]="searchQuery" placeholder="Rechercher un client...." (input)="onSearchChange()">
+                <!-- <input type="text" class="form-control mb-3 w-25" [(ngModel)]="searchQuery" placeholder="Rechercher un client...." (input)="onSearchChange()"> -->
 
                 <div class="d-flex justify-content-between mb-3">
                   <!-- Boutons Action -->
-                  <button class="btn btn-info"><i class="bi bi-box-arrow-up-right text-white me-2"></i></button>
-                  <button class="btn btn-warning"><i class="bi bi-box-arrow-up-right text-white me-2"></i></button>
+                  <button class="btn btn-info me-2"><i class="bi bi-box-arrow-up-right text-white me-2"></i></button>
+                  <button class="btn btn-warning me-2"><i class="bi bi-box-arrow-up-right text-white me-2"></i></button>
                   <button class="btn btn-secondary"><i class="bi bi-arrow-clockwise text-white me-2"></i></button>
                 </div>
+
+                 <button class="btn btn-success mb-3" (click)="openModal()"><i class="bi bi-plus-circle text-white me-2"></i>Nouveau Client</button>
               </div>
 
               <!-- Tableau des clients -->
@@ -45,13 +37,32 @@
                   <h2 class="text-warning"> Liste  des clients</h2>
                 </div> -->
                  <!-- Sélection du nombre de lignes à afficher -->
-                 <div class="d-flex justify-content-between align-items-center mb-2 float-start">
+                 <!-- <div class="d-flex justify-content-between align-items-center mb-2 float-start">
                   <label for="rowsPerPage" class="me-2">Afficher</label>
                   <select id="rowsPerPage" class="form-select w-auto me-2" (change)="onRowsPerPageChange($event)">
                     <option *ngFor="let option of [5, 10, 20, 50]" [value]="option">{{ option }}</option>
                   </select>
-                  <span>lignes par page</span>
+                  <span>lignes par page</span> 
+                </div> -->
+                <div class="d-flex justify-content-center my-3">
+                    <h1 class="text-muted">Liste des Clients</h1>
+                  </div>
+
+                <!-- Barre de recherche et filtres -->
+                <div class="d-flex justify-content-between mb-3">
+                  <div class="input-group w-50">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" placeholder="Rechercher un client..." [(ngModel)]="searchQuery" (input)="onSearchChange()">
+                  </div>
+                  <div>
+                    <select class="form-select" [(ngModel)]="rowsPerPage" (change)="onRowsPerPageChange($event)">
+                      <option value="5">5 éléments/page</option>
+                      <option value="10">10 éléments/page</option>
+                      <option value="20">20 éléments/page</option>
+                    </select>
+                  </div>
                 </div>
+
                 <table class="table table-bordered table-hover">
                   <thead class="table-success">
                     <tr>
@@ -94,15 +105,23 @@
               </div>
 
               <!-- Pagination -->
-              <div class="d-flex justify-content-center align-items-center">
-                <button class="btn btn-success" (click)="onPageChange(currentPageClient-1,'Client')" [disabled]="currentPageClient === 1">
-                  <i class="bi bi-arrow-left-circle"></i>
-                </button>
-                <span class="h3">{{ currentPageClient }} / {{ getTotalPages(filteredClients) }}</span>
-                <button class="btn btn-success" (click)="onPageChange(currentPageClient+1,'Client')"
-                  [disabled]="currentPageClient >= getTotalPages(filteredClients)">
-                  <i class="bi bi-arrow-right-circle"></i>
-                </button>
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  Affichage de {{ (currentPageClient - 1) * rowsPerPage + 1 }} à 
+                  {{ min(currentPageClient * rowsPerPage, filteredClients.length) }} 
+                  sur {{ filteredClients.length }} Clients
+                </div>
+                <div>
+                    <button class="btn btn-success" (click)="onPageChange(currentPageClient-1,'Client')" [disabled]="currentPageClient === 1">
+                      <i class="bi bi-arrow-left-circle"></i>
+                    </button>
+                    <!-- <span class="h3">{{ currentPageClient }} / {{ getTotalPages(filteredClients) }}</span> -->
+                    <span class="h3">{{ currentPageClient }}</span>
+                    <button class="btn btn-success" (click)="onPageChange(currentPageClient+1,'Client')"
+                      [disabled]="currentPageClient >= getTotalPages(filteredClients)">
+                      <i class="bi bi-arrow-right-circle"></i>
+                    </button>
+                </div>
               </div>
             </div>
             <!-- Colonne droite (actions) -->
@@ -553,7 +572,7 @@
       </div>
     </div>
 
-    <div class="modal" tabindex="-1" [ngClass]="{'d-block': showModal, 'd-none': !showModal}">
+   <div class="modal" tabindex="-1" [ngClass]="{'d-block': showModal, 'd-none': !showModal}">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header bg-light">
@@ -569,8 +588,11 @@
               <div class="row">
                 <div class="col-md-12">
                   <div class="mb-3">
-                    <label class="form-label">Nom complet</label>
-                    <input type="text" class="form-control" formControlName="nomComplet">
+                    <label class="form-label">Nom complet <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" formControlName="nomComplet" [ngClass]="{'is-invalid': clientForm.get('nomComplet')?.invalid && (clientForm.get('nomComplet')?.dirty || clientForm.get('nomComplet')?.touched)}">
+                    <div *ngIf="clientForm.get('nomComplet')?.invalid && (clientForm.get('nomComplet')?.dirty || clientForm.get('nomComplet')?.touched)" class="invalid-feedback">
+                      Le nom complet est obligatoire
+                    </div>
                   </div>
                 </div>
               </div>
@@ -580,13 +602,22 @@
                 <div class="col-md-6">
                   <div class="mb-3">
                     <label class="form-label">Email</label>
-                    <input type="email" class="form-control" formControlName="email">
+                    <input type="email" class="form-control" formControlName="email" [ngClass]="{'is-invalid': clientForm.get('email')?.invalid && (clientForm.get('email')?.dirty || clientForm.get('email')?.touched)}">
+                    <div *ngIf="clientForm.get('email')?.invalid && (clientForm.get('email')?.dirty || clientForm.get('email')?.touched)" class="invalid-feedback">
+                      Veuillez entrer une adresse email valide
+                    </div>
                   </div>
                 </div>
                 <div class="col-md-6">
                   <div class="mb-3">
-                    <label class="form-label">Téléphone</label>
-                    <input type="text" class="form-control" formControlName="telephone">
+                    <label class="form-label">Téléphone <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" formControlName="telephone" [ngClass]="{'is-invalid': clientForm.get('telephone')?.invalid && (clientForm.get('telephone')?.dirty || clientForm.get('telephone')?.touched)}">
+                    <div *ngIf="clientForm.get('telephone')?.errors?.['required'] && (clientForm.get('telephone')?.dirty || clientForm.get('telephone')?.touched)" class="invalid-feedback">
+                      Le téléphone est obligatoire
+                    </div>
+                    <div *ngIf="clientForm.get('telephone')?.errors?.['pattern'] && (clientForm.get('telephone')?.dirty || clientForm.get('telephone')?.touched)" class="invalid-feedback">
+                      Le téléphone doit contenir entre 9 et 12 chiffres
+                    </div>
                   </div>
                 </div>
               </div>
@@ -595,8 +626,11 @@
               <div class="row">
                 <div class="col-md-6">
                   <div class="mb-3">
-                    <label class="form-label">Adresse</label>
-                    <input type="text" class="form-control" formControlName="adresse">
+                    <label class="form-label">Adresse <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" formControlName="adresse" [ngClass]="{'is-invalid': clientForm.get('adresse')?.invalid && (clientForm.get('adresse')?.dirty || clientForm.get('adresse')?.touched)}">
+                    <div *ngIf="clientForm.get('adresse')?.invalid && (clientForm.get('adresse')?.dirty || clientForm.get('adresse')?.touched)" class="invalid-feedback">
+                      L'adresse est obligatoire
+                    </div>
                   </div>
                 </div>
                 <div class="col-md-6">
@@ -611,39 +645,72 @@
               <div class="row">
                 <div class="col-md-6">
                   <div class="mb-3">
-                    <label class="form-label">Plafond</label>
-                    <input type="number" class="form-control" formControlName="plafond">
+                    <label class="form-label">Plafond <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control" formControlName="plafond" [ngClass]="{'is-invalid': clientForm.get('plafond')?.invalid && (clientForm.get('plafond')?.dirty || clientForm.get('plafond')?.touched)}">
+                    <div *ngIf="clientForm.get('plafond')?.invalid && (clientForm.get('plafond')?.dirty || clientForm.get('plafond')?.touched)" class="invalid-feedback">
+                      Le plafond est obligatoire
+                    </div>
                   </div>
                 </div>
                 <div class="col-md-6">
                   <div class="mb-3">
-                    <label class="form-label">Est employé ?</label>
-                    <select class="form-control" formControlName="estEmploye">
-                      <option value="oui">Oui</option>
-                      <option value="non">Non</option>
+                    <label class="form-label">Est employé ? <span class="text-danger">*</span></label>
+                    <select class="form-control" formControlName="estEmploye" [ngClass]="{'is-invalid': clientForm.get('estEmploye')?.invalid && (clientForm.get('estEmploye')?.dirty || clientForm.get('estEmploye')?.touched)}">
+                      <option value="true">Oui</option>
+                      <option value="false">Non</option>
                     </select>
+                    <div *ngIf="clientForm.get('estEmploye')?.invalid && (clientForm.get('estEmploye')?.dirty || clientForm.get('estEmploye')?.touched)" class="invalid-feedback">
+                      Ce champ est obligatoire
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <!-- Nouveau champ Statut -->
-              <div class="row">
-                <div class="col-md-6">
+              <!-- Champ Statut (uniquement en mode édition) -->
+              <!-- <div class="row" *ngIf="isEditMode">
+                <div class="col-md-12">
                   <div class="mb-3">
-                    <label class="form-label">Statut</label>
-                    <select class="form-control" formControlName="statut">
-                      <option value="actif">Actif</option>
-                      <option value="inactif">Inactif</option>
-                    </select>
+                    <label class="form-label">Statut <span class="text-danger">*</span></label>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" formControlName="statut" id="statutActif" value="true" [ngClass]="{'is-invalid': clientForm.get('statut')?.invalid && (clientForm.get('statut')?.dirty || clientForm.get('statut')?.touched)}">
+                      <label class="form-check-label" for="statutActif">
+                        Actif
+                      </label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" formControlName="statut" id="statutInactif" value="false" [ngClass]="{'is-invalid': clientForm.get('statut')?.invalid && (clientForm.get('statut')?.dirty || clientForm.get('statut')?.touched)}">
+                      <label class="form-check-label" for="statutInactif">
+                        Inactif
+                      </label>
+                    </div>
+                    <div *ngIf="clientForm.get('statut')?.invalid && (clientForm.get('statut')?.dirty || clientForm.get('statut')?.touched)" class="invalid-feedback">
+                      Veuillez sélectionner un statut
+                    </div>
                   </div>
                 </div>
-              </div>
+              </div> -->
+
+              <div *ngIf="isEditMode" class="row">
+                  <div class="col-md-4 mb-3">
+                    <label class="form-label">Statut</label>
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="statut" formControlName="statut">
+                      <label class="form-check-label" for="statut">
+                        {{ clientForm.get('statut')?.value ? 'Actif' : 'Inactif' }}
+                      </label>
+                    </div>
+                  </div>
+                </div>
 
               <!-- Boutons -->
               <div class="d-flex justify-content-center mt-3">
-                <button type="submit" class="btn btn-primary me-2 w-50">Enregistrer</button>
+                <button type="submit" class="btn btn-success me-2 w-50" [disabled]="clientForm.invalid">Enregistrer</button>
                 <button type="button" class="btn btn-danger w-50" (click)="closeModal()">Annuler</button>
               </div>
+              <!-- Message d'erreur général -->
+                <div *ngIf="errorMessage" class="alert alert-danger mt-3">
+                  {{ errorMessage }}
+                </div>
             </form>
           </div>
         </div>

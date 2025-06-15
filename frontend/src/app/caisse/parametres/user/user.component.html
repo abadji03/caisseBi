@@ -265,6 +265,10 @@
             {{ isEditMode ? 'Modifier' : 'Enregistrer' }}
           </button>
         </div>
+        <!-- Message d'erreur général -->
+        <div *ngIf="errorMessage" class="alert alert-danger mt-3">
+          {{ errorMessage }}
+        </div>
       </form>
     </div>
   </ng-template>

@@ -840,75 +840,109 @@
       </div>
       <div class="modal-body">
         <form [formGroup]="magasinForm" (ngSubmit)="modeEdition ? modifierMagasin() : ajouterMagasin()">
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label for="structure" class="form-label">Structure rattachée</label>
-              <select class="form-select" id="structure" formControlName="code_structure" (change)="onStructureChange($event)" required>
-                <option value="" disabled>Sélectionnez une structure</option>
-                <option *ngFor="let structure of structures" [value]="structure.code_structure">{{ structure.nom_structure }}</option>
-              </select>
-            </div>
+            <div class="row g-3">
+              <!-- Structure rattachée -->
+              <div class="col-md-6">
+                <label for="structure" class="form-label">Structure rattachée <span class="text-danger">*</span></label>
+                <select class="form-select" id="structure" formControlName="code_structure" (change)="onStructureChange($event)"
+                  [ngClass]="{'is-invalid': magasinForm.get('code_structure')?.invalid && (magasinForm.get('code_structure')?.dirty || magasinForm.get('code_structure')?.touched)}">
+                  <option value="" disabled>Sélectionnez une structure</option>
+                  <option *ngFor="let structure of structures" [value]="structure.code_structure">{{ structure.nom_structure }}</option>
+                </select>
+                <div *ngIf="magasinForm.get('code_structure')?.invalid && (magasinForm.get('code_structure')?.dirty || magasinForm.get('code_structure')?.touched)" class="invalid-feedback">
+                  La structure rattachée est obligatoire
+                </div>
+              </div>
 
-            <div class="col-md-6">
-              <label for="nomMagasin" class="form-label">Nom du magasin</label>
-              <input type="text" class="form-control" id="nomMagasin" formControlName="nom" required>
-            </div>
+              <!-- Nom du magasin -->
+              <div class="col-md-6">
+                <label for="nomMagasin" class="form-label">Nom du magasin <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="nomMagasin" formControlName="nom"
+                  [ngClass]="{'is-invalid': magasinForm.get('nom')?.invalid && (magasinForm.get('nom')?.dirty || magasinForm.get('nom')?.touched)}">
+                <div *ngIf="magasinForm.get('nom')?.errors?.['required'] && (magasinForm.get('nom')?.dirty || magasinForm.get('nom')?.touched)" class="invalid-feedback">
+                  Le nom du magasin est obligatoire
+                </div>
+              </div>
 
-            <div class="col-md-6">
-              <label for="adresse" class="form-label">Adresse</label>
-              <input type="text" class="form-control" id="adresse" formControlName="adresse" required>
-            </div>
+              <!-- Adresse -->
+              <div class="col-md-6">
+                <label for="adresse" class="form-label">Adresse <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="adresse" formControlName="adresse"
+                  [ngClass]="{'is-invalid': magasinForm.get('adresse')?.invalid && (magasinForm.get('adresse')?.dirty || magasinForm.get('adresse')?.touched)}">
+                <div *ngIf="magasinForm.get('adresse')?.errors?.['required'] && (magasinForm.get('adresse')?.dirty || magasinForm.get('adresse')?.touched)" class="invalid-feedback">
+                  L'adresse est obligatoire
+                </div>
+              </div>
 
-            <div class="col-md-6">
-              <label for="ville" class="form-label">Ville</label>
-              <input type="text" class="form-control" id="ville" formControlName="ville">
-            </div>
+              <!-- Ville -->
+              <div class="col-md-6">
+                <label for="ville" class="form-label">Ville</label>
+                <input type="text" class="form-control" id="ville" formControlName="ville">
+              </div>
 
-            <div class="col-md-6">
-              <label for="telephone" class="form-label">Téléphone</label>
-              <input type="tel" class="form-control" id="telephone" formControlName="telephone">
-            </div>
+              <!-- Téléphone -->
+              <div class="col-md-6">
+                <label for="telephone" class="form-label">Téléphone</label>
+                <input type="tel" class="form-control" id="telephone" formControlName="telephone">
+              </div>
 
-            <div class="col-md-6">
-              <label for="email" class="form-label">Email</label>
-              <input type="email" class="form-control" id="email" formControlName="email">
-              <div *ngIf="magasinForm.get('email')?.invalid && magasinForm.get('email')?.touched" class="text-danger">
-                Veuillez entrer un email valide
+              <!-- Email -->
+              <div class="col-md-6">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" formControlName="email"
+                  [ngClass]="{'is-invalid': magasinForm.get('email')?.invalid && (magasinForm.get('email')?.dirty || magasinForm.get('email')?.touched)}">
+                <div *ngIf="magasinForm.get('email')?.errors?.['email'] && (magasinForm.get('email')?.dirty || magasinForm.get('email')?.touched)" class="invalid-feedback">
+                  Veuillez entrer un email valide
+                </div>
+              </div>
+
+              <!-- Responsable -->
+              <div class="col-md-6">
+                <label for="responsable" class="form-label">Responsable <span class="text-danger">*</span></label>
+                <select class="form-select" id="responsable" formControlName="responsableId"
+                  [ngClass]="{'is-invalid': magasinForm.get('responsableId')?.invalid && (magasinForm.get('responsableId')?.dirty || magasinForm.get('responsableId')?.touched)}">
+                  <option value="" disabled>Sélectionnez un responsable</option>
+                  <option *ngFor="let responsable of responsables" [value]="responsable.id">
+                    {{ responsable.nom }}
+                  </option>
+                </select>
+                <div *ngIf="magasinForm.get('responsableId')?.errors?.['required'] && (magasinForm.get('responsableId')?.dirty || magasinForm.get('responsableId')?.touched)" class="invalid-feedback">
+                  Le responsable est obligatoire
+                </div>
+              </div>
+
+              <!-- Capacité de stock -->
+              <div class="col-md-6">
+                <label for="capaciteStock" class="form-label">Capacité de stock (m²)</label>
+                <input type="number" class="form-control" id="capaciteStock" formControlName="capaciteStock" min="0"
+                  [ngClass]="{'is-invalid': magasinForm.get('capaciteStock')?.invalid && (magasinForm.get('capaciteStock')?.dirty || magasinForm.get('capaciteStock')?.touched)}">
+                <div *ngIf="magasinForm.get('capaciteStock')?.errors?.['min'] && (magasinForm.get('capaciteStock')?.dirty || magasinForm.get('capaciteStock')?.touched)" class="invalid-feedback">
+                  La capacité ne peut pas être négative
+                </div>
+              </div>
+
+              <!-- Statut (uniquement en mode édition) -->
+              <div class="col-md-6" *ngIf="modeEdition">
+                <label for="statut" class="form-label">Statut</label>
+                <select class="form-select" id="statut" formControlName="statut">
+                  <option value="Actif">Actif</option>
+                  <option value="Inactif">Inactif</option>
+                </select>
               </div>
             </div>
 
-            <div class="col-md-6">
-              <label for="responsable" class="form-label">Responsable</label>
-              <select class="form-select" id="responsable" formControlName="responsableId" required>
-                <option value="" disabled>Sélectionnez un responsable</option>
-                <option *ngFor="let responsable of responsables" [value]="responsable.id">
-                  {{ responsable.nom }}
-                </option>
-              </select>
+            <div class="modal-footer d-flex justify-content-center mt-4">
+              <button type="button" class="btn btn-secondary w-25" data-bs-dismiss="modal">Annuler</button>
+              <button type="submit" class="btn btn-success w-25" [disabled]="magasinForm.invalid">
+                {{ modeEdition ? 'Modifier' : 'Ajouter' }}
+              </button>
             </div>
 
-            <div class="col-md-6">
-              <label for="capaciteStock" class="form-label">Capacité de stock (m²)</label>
-              <input type="number" class="form-control" id="capaciteStock" formControlName="capaciteStock" min="0">
-            </div>
-
-            <div class="col-md-6" *ngIf="modeEdition">
-              <label for="statut" class="form-label">Statut</label>
-              <select class="form-select" id="statut" formControlName="statut">
-                <option value="Actif">Actif</option>
-                <option value="Inactif">Inactif</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="modal-footer d-flex justify-content-center mt-4">
-            <button type="button" class="btn btn-secondary w-25" data-bs-dismiss="modal">Annuler</button>
-            <button type="submit" class="btn btn-success w-25" [disabled]="magasinForm.invalid">
-              {{ modeEdition ? 'Modifier' : 'Ajouter' }}
-            </button>
-          </div>
-
-        </form>
+            <!-- Message d'erreur général -->
+                <div *ngIf="errorMessage" class="alert alert-danger mt-3">
+                  {{ errorMessage }}
+                </div>
+          </form>
       </div>
     </div>
   </div>

@@ -5,11 +5,12 @@ import { Paiement } from "./paiement.model";
 export class Fournisseur {
   id?: number;
   nomComplet!: string;
-  adresse?: string;
-  telephone?: string;
-  email?: string;
-  banque?: string;
-  numeroCompte?: string;
+  code_structure!: string;
+  adresse!: string;
+  telephone!: string;
+  email!: string;
+  banque!: string;
+  numeroCompte!: string;
   dateCreation: Date = new Date();
   statut: boolean = true;
   montantAPayer?: number;
@@ -17,7 +18,7 @@ export class Fournisseur {
   termeLivraison?: string;
   pays?: string;
   ville?: string;
-  magasinId?: string;
+  magasinId!: string;
 
   // Relations
   bons: Bon[] = [];

@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const User = db.Users;
 
 // Créer un nouvel utilisateur
-exports.create = async (req, res) => {
+/* exports.create = async (req, res) => {
   try {
     let data = req.body;
 
@@ -18,12 +18,40 @@ exports.create = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+}; */
+exports.create = async (req, res) => {
+  try {
+    const data = req.body;
+
+    // Vérifie si l'utilisateur existe déjà par email
+    const existingUser = await User.findOne({ where: { email: data.email } });
+
+    if (existingUser) {
+      return res.status(400).json({ message: "Un utilisateur avec cet email existe déjà." });
+    }
+
+    // Si un mot de passe est fourni, on le hache
+    if (data.password) {
+      const salt = await bcrypt.genSalt(10);
+      data.password = await bcrypt.hash(data.password, salt);
+    }
+
+    const user = await User.create(data);
+    res.status(201).json(user);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Erreur lors de la création de l'utilisateur.", error: error.message });
+  }
 };
+
 
 // Récupérer tous les utilisateurs
 exports.findAll = async (req, res) => {
   try {
-    const users = await User.findAll();
+    const users = await User.findAll({
+      order: [['createdAt', 'DESC']] 
+    });
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -92,7 +120,8 @@ exports.findByStructure = async (req, res) => {
     const { code_structure } = req.params;
 
     const users = await User.findAll({
-      where: { code_structure }
+      where: { code_structure },
+      order: [['createdAt', 'DESC']] 
     });
 
     res.json(users);

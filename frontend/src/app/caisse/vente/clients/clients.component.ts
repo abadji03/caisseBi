@@ -8,6 +8,11 @@ import { Paiement } from '../../../modeles/paiement.model';
 import { Operation } from '../../../modeles/operation.model';
 import { Panier } from '../../../modeles/panier.model';
 import { Produits } from '../../../modeles/produit.modele';
+import { Magasin } from '../../../modeles/magasin.model';
+import { ToastrService } from 'ngx-toastr';
+import { ClientsService } from '../../../services/clients.service';
+import { MaagasinsService } from '../../../services/maagasins.service';
+import { finalize, forkJoin } from 'rxjs';
 
 
 @Component({
@@ -19,6 +24,10 @@ import { Produits } from '../../../modeles/produit.modele';
 })
 export class ClientsComponent implements OnInit {
 
+  isLoading:boolean = false;
+  code_structure:string = 'MASTRUCTURET-NZNC';
+  magasinId:number = 1;
+  magasins: Magasin[] =[];
   bonForm!: FormGroup;
   //panier!: FormArray;
   currentDate: string =' ';
@@ -31,6 +40,8 @@ export class ClientsComponent implements OnInit {
   searchInput: string = '';
   // Ajoutez cette variable dans votre composant pour gérer l'état du bouton
   panierDisabled = false;
+
+  errorMessage = '';
 
   // Assurez-vous d'avoir une liste de tous les bons
   bons: any[] = []; // Remplir avec les bons correspondants
@@ -51,11 +62,11 @@ export class ClientsComponent implements OnInit {
     isEditMode: boolean = false; // Mode édition ou ajout
     isRowSelected: boolean = false; // Indique si une ligne est sélectionnée
     //selectedBon: Bon[] = []; // Détails du bon sélectionné
-    clientForm: FormGroup; // Formulaire de client
+    clientForm!: FormGroup; // Formulaire de client
     selectedClient: Client | null = null; // Client sélectionné pour modification
     showBonForm: boolean = false;  // Variable pour afficher ou masquer le formulaire de bon
      // Autres variables existantes...
-    paiementForm: FormGroup;  // Formulaire pour ajouter un paiement
+    paiementForm!: FormGroup;  // Formulaire pour ajouter un paiement
     showPaiementForm: boolean = false;  // Pour afficher ou masquer le formulaire de paiement
     actionType: string = 'ajouter';
 
@@ -101,20 +112,58 @@ export class ClientsComponent implements OnInit {
       { id: 3, nom: 'Couscous', quantite: 15,uniteStock:'Carton', prixUnitaire: 2000 }
     ];
 
-    constructor(private fb: FormBuilder, private paginationService: ApplicationService,private cdr: ChangeDetectorRef) {
+    constructor(
+      private fb: FormBuilder, 
+      private paginationService: ApplicationService,
+      private magasinService: MaagasinsService,
+      private clientService: ClientsService,
+      private toastr: ToastrService,
+      private cdr: ChangeDetectorRef) {
 
-      // Initialisation du formulaire réactif pour un client
-      this.clientForm = this.fb.group({
+    }
+
+    ngOnInit(): void {
+      // Chargement des données des clients (par exemple via un service)
+      //this.loadClients();
+      this.loadData();
+      this.iniForms();
+      //this.addArticle();
+      // Calcul du total à chaque changement de la remise, de la quantité et du prix unitaire
+      this.bonForm.valueChanges.subscribe(() => {
+        this.updateTotal();
+      });
+      this.onTypeBonChange(); // Met à jour les champs au chargement
+
+      // Date et heure actuelles
+    const currentDateObj = new Date();
+    this.currentDate = currentDateObj.toLocaleDateString();
+    this.currentTime = currentDateObj.toLocaleTimeString();
+
+    // Générer le numéro du bon à partir de la date et de l'heure courantes
+    this.generatedNumero = this.generateBonNumber(currentDateObj);
+
+    console.log("Produits disponibles :", this.produits); // Vérifier si les produits sont bien chargés
+    }
+
+min(a: number, b: number): number {
+  return Math.min(a, b);
+}
+     iniForms():void{
+       // Initialisation du formulaire réactif pour un client
+        this.clientForm = this.fb.group({
+        code_structure: [this.code_structure],
+        montantANousPayer:[0],
+        magasinId: [this.magasinId],
         nomComplet: ['', Validators.required],
         email: ['', [Validators.email]],
         telephone: ['', [Validators.required, Validators.pattern('^[0-9]{9,12}$')]],
-        adresse: ['',Validators.required],
+        adresse: ['', Validators.required],
         solde: [0],
-        estEmploye: ['oui', Validators.required],
         plafond: [0, Validators.required],
-        statut: ['actif', Validators.required]
+        estEmploye: ['non', Validators.required],
+        statut: ['true'] // valeur par défaut (visible uniquement si isEditMode == true)
       });
-
+      
       // Initialisation du formulaire réactif pour un bon
       this.bonForm = this.fb.group({
         numero: ['', Validators.required],
@@ -150,27 +199,6 @@ export class ClientsComponent implements OnInit {
         methodePaiement: ['Virement', Validators.required],
       });
 
-    }
-
-    ngOnInit(): void {
-      // Chargement des données des clients (par exemple via un service)
-      this.loadClients();
-      //this.addArticle();
-      // Calcul du total à chaque changement de la remise, de la quantité et du prix unitaire
-      this.bonForm.valueChanges.subscribe(() => {
-        this.updateTotal();
-      });
-      this.onTypeBonChange(); // Met à jour les champs au chargement
-
-      // Date et heure actuelles
-    const currentDateObj = new Date();
-    this.currentDate = currentDateObj.toLocaleDateString();
-    this.currentTime = currentDateObj.toLocaleTimeString();
-
-    // Générer le numéro du bon à partir de la date et de l'heure courantes
-    this.generatedNumero = this.generateBonNumber(currentDateObj);
-
-    console.log("Produits disponibles :", this.produits); // Vérifier si les produits sont bien chargés
     }
 
     onRowSelect(client: Client): void {
@@ -392,22 +420,27 @@ export class ClientsComponent implements OnInit {
     }
 
     // Soumettre le formulaire dans le modal
-    onModalSubmit(): void {
-      if (this.clientForm.valid) {
-        const clientData = this.clientForm.value;
-        if (this.isEditMode && this.selectedClient) {
-          // Mise à jour du client
-          Object.assign(this.selectedClient, clientData);
-        } else {
-          // Ajout du nouveau client
-          const newclient = new Client(clientData);
-          this.clients.push(newclient);
+     onModalSubmit(): void {
+        if (this.clientForm.invalid) {
+          this.clientForm.markAllAsTouched();
+          this.errorMessage = 'Veuillez corriger les erreurs dans le formulaire';
+          return;
         }
-        this.filteredClients = [...this.clients]; // Mettre à jour la liste filtrée
-        this.closeModal();
-      }
-    }
 
+        const formData = this.clientForm.value;
+
+        if (this.isEditMode && this.selectedClient) {
+          this.updateClient(this.selectedClient.id!, formData);
+        } else {
+          this.clientForm.patchValue({
+            code_structure: this.code_structure,
+            statut: true,
+            montantANousPayer: 0,
+            magasinId:this.magasinId
+          });
+          this.createClient(this.clientForm.value);
+        }
+      }
     // Fermer le modal
     closeModal(): void {
       this.showModal = false;
@@ -708,6 +741,7 @@ resetPanier() {
 
   toggleStatut(user: Client) {
         user.statut = !user.statut;
+        this.updateStatus(user.id!,user.statut)
       }
 
   onTypeBonChange(): void {
@@ -1019,6 +1053,187 @@ deleteBon(bonId: number): void {
   // Implémenter la logique pour supprimer le bon via l'API ou dans la base de données
   // Par exemple : this.apiService.deleteBon(bonId).subscribe(response => { console.log(response); });
   console.log('Bon supprimé:', bonId);
+}
+//.................................................................................................
+ loadData(): void {
+    this.isLoading = true;
+    forkJoin([
+      this.magasinService.getMagasinsByStructure(this.code_structure),
+      this.clientService.getClientsByStructure(this.code_structure)
+    ]).pipe(
+      finalize(() => this.isLoading = false)
+    ).subscribe({
+      next: ([mgs, frs]) => {
+        this.magasins = mgs;
+        this.clients = frs;
+        this.filteredClients = [...this.clients];
+        this.updatefilteredClients();
+      },
+      error: (err) => console.error('Erreur chargement données', err)
+    });
+  }
+
+ createClient(clientData: Partial<Client>): void {
+  this.isLoading = true;
+
+  this.clientService.ajouterClient(clientData as Client)
+    .pipe(
+      finalize(() => this.isLoading = false)
+    )
+    .subscribe({
+      next: () => {
+        this.toastr.success('Client créé avec succès');
+        this.closeModal();
+        this.loadData();
+      },
+      error: (err) => {
+        this.errorMessage = err.error?.message || 'Erreur lors de la création du client';
+        this.toastr.error(this.errorMessage);
+      }
+    });
+}
+  updateClient(id: number, updateData: Partial<Client>): void {
+  this.isLoading = true;
+
+  this.clientService.updateClient(id, updateData)
+    .pipe(
+      finalize(() => this.isLoading = false)
+    )
+    .subscribe({
+      next: () => {
+        this.toastr.success('Client mis à jour avec succès');
+        this.closeModal();
+        this.loadData();
+      },
+      error: (err) => {
+        this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour du client';
+        console.error(err);
+        this.toastr.error(this.errorMessage);
+      }
+    });
+}
+
+
+  updateStatus(id: number, newStatus: boolean): void {
+    this.isLoading = true;
+    this.clientService.updateClientStatut(id, newStatus).pipe(
+      finalize(() => this.isLoading = false)
+    )
+     .subscribe({
+      next: () => {
+         //this.isLoading = false;
+        this.toastr.success('Statut mis à jour avec succès');
+        this.loadData();
+        //this.selectedClient = null;
+        //this.isRowSelected = !this.isRowSelected;
+      },
+      error: (err) => {
+        //this.isLoading = false;
+        //this.toastr.error('Erreur lors de la mise à jour du statut ' +err.message);
+        this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour du statut';
+        this.toastr.error(this.errorMessage);
+        console.error(err);
+      }
+    });
+  }
+
+  deleteClients(id: number): void {
+    this.isLoading = true;
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce client ?')) {
+      this.clientService.deleteClient(id).pipe(
+      finalize(() => this.isLoading = false)
+    )
+      .subscribe({
+        next: () => {
+          this.toastr.success('Client supprimé avec succès');
+          this.loadData();
+        },
+        error: (err) => {
+          //this.isLoading = false;
+          //this.toastr.error('Erreur lors de la suppression du client');
+           this.errorMessage = err.error?.message || 'Erreur lors de lasuppression du client';
+           this.toastr.error(this.errorMessage);
+          console.error(err);
+        }
+      });
+    }
+  }
+
+  updatePlafond(id: number, plafond: number): void {
+  this.isLoading = true;
+
+  this.clientService.updateClientPlafond(id, plafond)
+    .pipe(finalize(() => this.isLoading = false))
+    .subscribe({
+      next: () => {
+        this.toastr.success('Plafond mis à jour avec succès');
+        this.loadData();
+        this.selectedClient = null;
+        this.isRowSelected = !this.isRowSelected;
+      },
+      error: (err) => {
+        //this.toastr.error('Erreur lors de la mise à jour du plafond');
+         this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour du plafond';
+        this.toastr.error(this.errorMessage);
+        console.error(err);
+      }
+    });
+}
+updateSolde(id: number, nouveauSolde: number): void {
+  this.isLoading = true;
+
+  this.clientService.updateClientSolde(id, nouveauSolde)
+    .pipe(finalize(() => this.isLoading = false))
+    .subscribe({
+      next: () => {
+        this.toastr.success('Solde mis à jour avec succès');
+        this.loadData();
+        this.selectedClient = null;
+        this.isRowSelected = !this.isRowSelected;
+      },
+      error: (err) => {
+        //this.toastr.error('Erreur lors de la mise à jour du solde');
+        this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour du solde';
+        this.toastr.error(this.errorMessage);
+        console.error(err);
+      }
+    });
+}
+updateMontantAPayer(id: number, montant: number): void {
+  this.isLoading = true;
+
+  this.clientService.updateClientMontantAPayer(id, montant)
+    .pipe(finalize(() => this.isLoading = false))
+    .subscribe({
+      next: () => {
+        this.toastr.success('Montant à payer mis à jour avec succès');
+        this.loadData();
+        this.selectedClient = null;
+        this.isRowSelected = !this.isRowSelected;
+      },
+      error: (err) => {
+        //this.toastr.error('Erreur lors de la mise à jour du montant à payer');
+         this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour du montant à payer';
+        this.toastr.error(this.errorMessage);
+        console.error(err);
+      }
+    });
+}
+
+updateClientProperty(type: 'plafond' | 'solde' | 'montant', id: number, value: number): void {
+  switch (type) {
+    case 'plafond':
+      this.updatePlafond(id, value);
+      break;
+    case 'solde':
+      this.updateSolde(id, value);
+      break;
+    case 'montant':
+      this.updateMontantAPayer(id, value);
+      break;
+    default:
+      console.warn('Type de mise à jour non reconnu');
+  }
 }
 
 }

@@ -57,11 +57,19 @@
                 <button class="btn btn-sm btn-warning me-2" (click)="prepareEdit(structure)" title="Modifier">
                   <i class="bi bi-pencil"></i>
                 </button>
-                <button class="btn btn-sm me-2" 
+                <!-- <button class="btn btn-sm me-2" 
                         [ngClass]="structure.estActive ? 'btn-secondary' : 'btn-success'" 
                         (click)="toggleStructureStatus(structure)" 
                         title="Activer/Désactiver">
                   <i class="bi" [ngClass]="structure.estActive ? 'bi-x-circle-fill' : 'bi-check-circle-fill'"></i>
+                </button> -->
+                <button class="btn me-2" 
+                  [class.btn-success]="!structure.estActive"
+                  [class.btn-secondary]="structure.estActive"
+                  (click)="toggleStructureStatus(structure)" 
+                  title="{{ structure.estActive ? 'Désactiver' : 'Activer' }}">
+                          <i class="bi" [class.bi-toggle-off]="!structure.estActive" 
+                          [class.bi-toggle-on]="structure.estActive"></i>
                 </button>
 
                 <button class="btn btn-sm btn-danger" (click)="prepareEdit(structure)" title="Modifier">
@@ -114,181 +122,225 @@
     </div>
     
     <form [formGroup]="generalForm" (ngSubmit)="onSubmitFormsSetting()">
-      <!-- Logo et preview -->
-      <div class="row mb-4">
-        <div class="col-md-2">
-          <div class="logo-preview-container">
-            <img [src]="logoPreview || 'assets/images/default-structure.png'" 
-                class="img-thumbnail logo-preview" 
-                alt="Logo preview">
+        <!-- Logo et preview -->
+        <div class="row mb-4">
+          <div class="col-md-2">
+            <div class="logo-preview-container">
+              <img [src]="logoPreview || 'assets/images/default-structure.png'" 
+                  class="img-thumbnail logo-preview" 
+                  alt="Logo preview">
+            </div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Logo</label>
+            <input type="file" class="form-control" (change)="onFileChange($event)" accept="image/*"/>
           </div>
         </div>
-        <div class="col-md-4">
-          <label class="form-label">Logo</label>
-          <input type="file" class="form-control" (change)="onFileChange($event)" accept="image/*"/>
-        </div>
-      </div>
 
-      <div class="d-flex justify-content-center">
-        <h3 class="mt-3 fw-bold">Informations générales</h3>
-      </div>
-      <div class="row">
-        <div class="col-md-4 mb-3">
-          <label>Nom de la structure *</label>
-          <input type="text" class="form-control" formControlName="nom_structure" required />
+        <div class="d-flex justify-content-center">
+          <h3 class="mt-3 fw-bold">Informations générales</h3>
         </div>
-        <div class="col-md-4 mb-3">
-          <label>Propriétaire *</label>
-          <input type="text" class="form-control" formControlName="proprietaire" required />
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Nom de la structure <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" formControlName="nom_structure" 
+                  [ngClass]="{'is-invalid': generalForm.get('nom_structure')?.invalid && (generalForm.get('nom_structure')?.dirty || generalForm.get('nom_structure')?.touched)}" />
+            <div *ngIf="generalForm.get('nom_structure')?.errors?.['required'] && (generalForm.get('nom_structure')?.dirty || generalForm.get('nom_structure')?.touched)" class="invalid-feedback">
+              Le nom de la structure est obligatoire
+            </div>
+          </div>
+          <!-- <div class="col-md-4 mb-3">
+            <label class="form-label">Propriétaire <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" formControlName="proprietaire"
+                  [ngClass]="{'is-invalid': generalForm.get('proprietaire')?.invalid && (generalForm.get('proprietaire')?.dirty || generalForm.get('proprietaire')?.touched)}" />
+            <div *ngIf="generalForm.get('proprietaire')?.errors?.['required'] && (generalForm.get('proprietaire')?.dirty || generalForm.get('proprietaire')?.touched)" class="invalid-feedback">
+              Le propriétaire est obligatoire
+            </div>
+          </div> -->
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Nombre de magasins <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" formControlName="nombre_magasins" min="0"
+                  [ngClass]="{'is-invalid': generalForm.get('nombre_magasins')?.invalid && (generalForm.get('nombre_magasins')?.dirty || generalForm.get('nombre_magasins')?.touched)}" />
+            <div *ngIf="generalForm.get('nombre_magasins')?.errors?.['required'] && (generalForm.get('nombre_magasins')?.dirty || generalForm.get('nombre_magasins')?.touched)" class="invalid-feedback">
+              Le nombre de magasins est obligatoire
+            </div>
+            <div *ngIf="generalForm.get('nombre_magasins')?.errors?.['min']" class="invalid-feedback">
+              Le nombre ne peut pas être négatif
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Type de structure <span class="text-danger">*</span></label>
+            <select class="form-control" formControlName="type_structure"
+                    [ngClass]="{'is-invalid': generalForm.get('type_structure')?.invalid && (generalForm.get('type_structure')?.dirty || generalForm.get('type_structure')?.touched)}">
+              <option value="boutique">Boutique</option>
+              <option value="alimentation">Alimentation Générale</option>
+              <option value="ferme">Ferme</option>
+            </select>
+            <div *ngIf="generalForm.get('type_structure')?.errors?.['required'] && (generalForm.get('type_structure')?.dirty || generalForm.get('type_structure')?.touched)" class="invalid-feedback">
+              Le type de structure est obligatoire
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Devise de transaction <span class="text-danger">*</span></label>
+            <select class="form-control" formControlName="devise"
+                    [ngClass]="{'is-invalid': generalForm.get('devise')?.invalid && (generalForm.get('devise')?.dirty || generalForm.get('devise')?.touched)}">
+              <option value="FCFA">FCFA</option>
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+            </select>
+            <div *ngIf="generalForm.get('devise')?.errors?.['required'] && (generalForm.get('devise')?.dirty || generalForm.get('devise')?.touched)" class="invalid-feedback">
+              La devise est obligatoire
+            </div>
+          </div>
         </div>
-        <div class="col-md-4 mb-3">
-          <label>Nombre de magasins *</label>
-          <input type="number" class="form-control" formControlName="nombre_magasins" required />
-        </div>
-        <div class="col-md-6 mb-3">
-          <label>Type de structure *</label>
-          <select class="form-control" formControlName="type_structure">
-            <option value="boutique">Boutique</option>
-            <option value="alimentation">Alimentation Générale</option>
-            <option value="ferme">Ferme</option>
-          </select>
-        </div>
-        <div class="col-md-6 mb-3">
-          <label>Devise de transaction *</label>
-          <select class="form-control" formControlName="devise">
-            <option value="FCFA">FCFA</option>
-            <option value="USD">USD</option>
-            <option value="EUR">EUR</option>
-          </select>
-        </div>
-      </div>
 
-      <div class="d-flex justify-content-center">
-        <h3 class="mt-3 fw-bold">Contact</h3>
-      </div>
-      <div class="row">
-        <div class="col-md-4 mb-3">
-          <label>Email *</label>
-          <input type="email" class="form-control" formControlName="email" required />
+        <div class="d-flex justify-content-center">
+          <h3 class="mt-3 fw-bold">Contact</h3>
         </div>
-        <div class="col-md-4 mb-3">
-          <label>Téléphone *</label>
-          <input type="text" class="form-control" formControlName="telephone" required />
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Email <span class="text-danger">*</span></label>
+            <input type="email" class="form-control" formControlName="email"
+                  [ngClass]="{'is-invalid': generalForm.get('email')?.invalid && (generalForm.get('email')?.dirty || generalForm.get('email')?.touched)}" />
+            <div *ngIf="generalForm.get('email')?.errors?.['required'] && (generalForm.get('email')?.dirty || generalForm.get('email')?.touched)" class="invalid-feedback">
+              L'email est obligatoire
+            </div>
+            <div *ngIf="generalForm.get('email')?.errors?.['email'] && (generalForm.get('email')?.dirty || generalForm.get('email')?.touched)" class="invalid-feedback">
+              Veuillez entrer un email valide
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Téléphone <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" formControlName="telephone"
+                  [ngClass]="{'is-invalid': generalForm.get('telephone')?.invalid && (generalForm.get('telephone')?.dirty || generalForm.get('telephone')?.touched)}" />
+            <div *ngIf="generalForm.get('telephone')?.errors?.['required'] && (generalForm.get('telephone')?.dirty || generalForm.get('telephone')?.touched)" class="invalid-feedback">
+              Le téléphone est obligatoire
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Adresse <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" formControlName="adresse"
+                  [ngClass]="{'is-invalid': generalForm.get('adresse')?.invalid && (generalForm.get('adresse')?.dirty || generalForm.get('adresse')?.touched)}" />
+            <div *ngIf="generalForm.get('adresse')?.errors?.['required'] && (generalForm.get('adresse')?.dirty || generalForm.get('adresse')?.touched)" class="invalid-feedback">
+              L'adresse est obligatoire
+            </div>
+          </div>
         </div>
-        <div class="col-md-4 mb-3">
-          <label>Adresse *</label>
-          <input type="text" class="form-control" formControlName="adresse" required />
+        
+        <!-- Sections suivantes avec champs optionnels -->
+        <div class="d-flex justify-content-center">
+          <h3 class="mt-3 fw-bold">Informations fiscales et légales</h3>
         </div>
-      </div>
-      
-      <div class="d-flex justify-content-center">
-        <h3 class="mt-3 fw-bold">Informations fiscales et légales</h3>
-      </div>
-      <div class="row">
-        <div class="col-md-4 mb-3">
-          <label>N° Identification Fiscale</label>
-          <input type="text" class="form-control" formControlName="numero_identification_fiscale" />
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label class="form-label">N° Identification Fiscale</label>
+            <input type="text" class="form-control" formControlName="numero_identification_fiscale" />
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Registre de commerce</label>
+            <input type="text" class="form-control" formControlName="registre_commerce" />
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Statut juridique</label>
+            <input type="text" class="form-control" formControlName="statut_juridique" />
+          </div>
         </div>
-        <div class="col-md-4 mb-3">
-          <label>Registre de commerce</label>
-          <input type="text" class="form-control" formControlName="registre_commerce" />
+        
+        <!-- Autres sections avec champs optionnels -->
+          <div class="d-flex justify-content-center">
+            <h3 class="mt-3 fw-bold">Informations bancaires et paiements</h3>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label>Nom de la banque</label>
+              <input type="text" class="form-control" formControlName="banque" />
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>Numéro de compte bancaire</label>
+              <input type="text" class="form-control" formControlName="numero_compte" />
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>Fournisseur Mobile Money</label>
+              <select class="form-control" formControlName="fournisseur_mobile_money">
+                <option value="Orange Money">Orange Money</option>
+                <option value="Wave">Wave</option>
+                <option value="Free Money">Free Money</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="d-flex justify-content-center">
+            <h3 class="mt-3 fw-bold">Informations administratives</h3>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label>Nombre d'employés</label>
+              <input type="number" class="form-control" formControlName="nombre_employes" />
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>Responsable administratif</label>
+              <input type="text" class="form-control" formControlName="responsable_administratif" />
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>Horaires d'ouverture</label>
+              <input type="text" class="form-control" formControlName="horaires_ouverture" />
+            </div>
+          </div>
+          
+          <div class="d-flex justify-content-center">
+            <h3 class="mt-3 fw-bold">Informations sur l'activité</h3>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label>Jours de fermeture</label>
+              <input type="text" class="form-control" formControlName="jours_fermeture" />
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>Site web</label>
+              <input type="url" class="form-control" formControlName="site_web" />
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>Réseaux sociaux</label>
+              <input type="text" class="form-control" formControlName="reseaux_sociaux" />
+            </div>
+          </div>
+          
+          <div class="d-flex justify-content-center">
+            <h3 class="mt-3 fw-bold">Sécurité et assurances</h3>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label>Personne de confiance</label>
+              <input type="text" class="form-control" formControlName="personne_confiance" />
+            </div>
+            <div class="col-md-6 mb-3">
+              <label>Assurances souscrites</label>
+              <input type="text" class="form-control" formControlName="assurances_souscrites" />
+            </div>
+            <!-- <div class="col-md-4 mb-3">
+              <label>Date de création *</label>
+              <input type="date" class="form-control" formControlName="date_creation"/>
+            </div> -->
+          </div>
+          
+          <div class="d-flex justify-content-center">
+            <h3 class="mt-3 fw-bold">Description</h3>
+          </div>
+          <div class="row">
+            <div class="col-md-12 mb-3">
+              <textarea class="form-control" rows="3" formControlName="description" placeholder="Ajoutez une description"></textarea>
+            </div>
+          </div>
+        
+        <div class="d-flex justify-content-center mt-4">
+          <button type="submit" class="btn btn-success w-50" [disabled]="generalForm.invalid">
+            {{ isEditMode ? 'Enregistrer les modifications' : 'Enregistrer les informations' }}
+          </button>
         </div>
-        <div class="col-md-4 mb-3">
-          <label>Statut juridique</label>
-          <input type="text" class="form-control" formControlName="statut_juridique" />
+        <!-- Message d'erreur général -->
+        <div *ngIf="errorMessage" class="alert alert-danger mt-3">
+          {{ errorMessage }}
         </div>
-      </div>
-      
-      <div class="d-flex justify-content-center">
-        <h3 class="mt-3 fw-bold">Informations bancaires et paiements</h3>
-      </div>
-      <div class="row">
-        <div class="col-md-4 mb-3">
-          <label>Nom de la banque</label>
-          <input type="text" class="form-control" formControlName="banque" />
-        </div>
-        <div class="col-md-4 mb-3">
-          <label>Numéro de compte bancaire</label>
-          <input type="text" class="form-control" formControlName="numero_compte" />
-        </div>
-        <div class="col-md-4 mb-3">
-          <label>Fournisseur Mobile Money</label>
-          <select class="form-control" formControlName="fournisseur_mobile_money">
-            <option value="Orange Money">Orange Money</option>
-            <option value="Wave">Wave</option>
-            <option value="Free Money">Free Money</option>
-          </select>
-        </div>
-      </div>
-      
-      <div class="d-flex justify-content-center">
-        <h3 class="mt-3 fw-bold">Informations administratives</h3>
-      </div>
-      <div class="row">
-        <div class="col-md-4 mb-3">
-          <label>Nombre d'employés</label>
-          <input type="number" class="form-control" formControlName="nombre_employes" />
-        </div>
-        <div class="col-md-4 mb-3">
-          <label>Responsable administratif</label>
-          <input type="text" class="form-control" formControlName="responsable_administratif" />
-        </div>
-        <div class="col-md-4 mb-3">
-          <label>Horaires d'ouverture</label>
-          <input type="text" class="form-control" formControlName="horaires_ouverture" />
-        </div>
-      </div>
-      
-      <div class="d-flex justify-content-center">
-        <h3 class="mt-3 fw-bold">Informations sur l'activité</h3>
-      </div>
-      <div class="row">
-        <div class="col-md-4 mb-3">
-          <label>Jours de fermeture</label>
-          <input type="text" class="form-control" formControlName="jours_fermeture" />
-        </div>
-        <div class="col-md-4 mb-3">
-          <label>Site web</label>
-          <input type="url" class="form-control" formControlName="site_web" />
-        </div>
-        <div class="col-md-4 mb-3">
-          <label>Réseaux sociaux</label>
-          <input type="text" class="form-control" formControlName="reseaux_sociaux" />
-        </div>
-      </div>
-      
-      <div class="d-flex justify-content-center">
-        <h3 class="mt-3 fw-bold">Sécurité et assurances</h3>
-      </div>
-      <div class="row">
-        <div class="col-md-4 mb-3">
-          <label>Personne de confiance</label>
-          <input type="text" class="form-control" formControlName="personne_confiance" />
-        </div>
-        <div class="col-md-4 mb-3">
-          <label>Assurances souscrites</label>
-          <input type="text" class="form-control" formControlName="assurances_souscrites" />
-        </div>
-        <div class="col-md-4 mb-3">
-          <label>Date de création *</label>
-          <input type="date" class="form-control" formControlName="date_creation"/>
-        </div>
-      </div>
-      
-      <div class="d-flex justify-content-center">
-        <h3 class="mt-3 fw-bold">Description</h3>
-      </div>
-      <div class="row">
-        <div class="col-md-12 mb-3">
-          <textarea class="form-control" rows="3" formControlName="description" placeholder="Ajoutez une description"></textarea>
-        </div>
-      </div>
-
-      <div class="d-flex justify-content-center mt-4">
-        <button type="submit" class="btn btn-success w-50">
-          {{ isEditMode ? 'Enregistrer les modifications' : 'Enregistrer les informations' }}
-        </button>
-      </div>
     </form>
   </div>
 

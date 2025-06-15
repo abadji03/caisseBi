@@ -4,7 +4,16 @@ const Magasin = db.Magasin;
 // Créer un magasin
 exports.createMagasin = async (req, res) => {
   try {
-    const magasin = await Magasin.create(req.body);
+    const data = req.body;
+
+    // Vérifie si le magasin existe déjà par téléphone
+    const existingMagasin = await Magasin.findOne({ where: { telephone: data.telephone } });
+
+    if (existingMagasin) {
+      return res.status(400).json({ message: "Un magasin avec ce numéro de téléphone  existe déjà." });
+    }
+
+    const magasin = await Magasin.create(data);
     res.status(201).json(magasin);
   } catch (error) {
     console.error(error);
@@ -46,7 +55,10 @@ exports.deleteMagasin = async (req, res) => {
 exports.getMagasinsByStructure = async (req, res) => {
   try {
     const { code_structure } = req.params;
-    const magasins = await Magasin.findAll({ where: { code_structure } });
+    const magasins = await Magasin.findAll({
+       where: { code_structure },
+       order: [['createdAt', 'DESC']]
+      });
     res.json(magasins);
   } catch (error) {
     console.error(error);
@@ -92,7 +104,9 @@ exports.updateStatutMagasin = async (req, res) => {
 // Obtenir tous les magasins
 exports.getAllMagasins = async (req, res) => {
   try {
-    const magasins = await Magasin.findAll();
+    const magasins = await Magasin.findAll({
+      order: [['createdAt', 'DESC']]
+    });
     res.json(magasins);
   } catch (error) {
     console.error(error);

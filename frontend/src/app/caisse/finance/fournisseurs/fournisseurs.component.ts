@@ -7,6 +7,11 @@ import { ApplicationService } from '../../../services/application.service';
 import { Operation } from '../../../modeles/operation.model';
 import { Bon } from '../../../modeles/bon.model';
 import { Paiement } from '../../../modeles/paiement.model';
+import { MaagasinsService } from '../../../services/maagasins.service';
+import { Magasin } from '../../../modeles/magasin.model';
+import { FournisseursService } from '../../../services/fournisseurs.service';
+import { ToastrService } from 'ngx-toastr';
+import { finalize, forkJoin } from 'rxjs';
 
 
 @Component({
@@ -19,6 +24,8 @@ import { Paiement } from '../../../modeles/paiement.model';
 export class FournisseursComponent implements OnInit {
 
   fournisseurs: Fournisseur[] = []; // Liste des fournisseurs
+  isLoading:boolean = false;
+  code_structure:string = 'MASTRUCTURET-NZNC';
   filteredOperations: Operation[] = []; // Opérations filtrées
   filteredFournisseurs: Fournisseur[] = []; // Liste filtrée pour la recherche
   searchQuery: string = ''; // Chaîne de recherche
@@ -31,14 +38,15 @@ export class FournisseursComponent implements OnInit {
   isRowSelected: boolean = false; // Indique si une ligne est sélectionnée
   //selectedBon: Bon[] = []; // Détails du bon sélectionné
   //selectedPaiement: Paiement[] = []; // Détails du paiement sélectionné
-  fournisseurForm: FormGroup; // Formulaire de fournisseur
+  fournisseurForm!: FormGroup; // Formulaire de fournisseur
   selectedFournisseur: Fournisseur | null = null; // Fournisseur sélectionné pour modification
-  bonForm: FormGroup;  // Formulaire pour ajouter un bon
+  bonForm!: FormGroup;  // Formulaire pour ajouter un bon
   showBonForm: boolean = false;  // Variable pour afficher ou masquer le formulaire de bon
    // Autres variables existantes...
-  paiementForm: FormGroup;  // Formulaire pour ajouter un paiement
+  paiementForm!: FormGroup;  // Formulaire pour ajouter un paiement
   showPaiementForm: boolean = false;  // Pour afficher ou masquer le formulaire de paiement
   actionType: string = 'ajouter';
+  magasins: Magasin[] = [];
 
   showProductsSection = false;  // Affichage de la section des produits à ajouter
   searchProduct: string = '';  // Champ de recherche pour les produits
@@ -75,6 +83,8 @@ export class FournisseursComponent implements OnInit {
   filteredBons: Bon[] = [];
   //filteredBonsBis: Bon[] = [];
   allBons: Bon[] = []; // Tous les bons
+  
+  errorMessage = '';
 
   currentPagePaiement: number = 1;
   //currentPagePaiementBis: number = 1;
@@ -121,8 +131,14 @@ export class FournisseursComponent implements OnInit {
   ];
 
 
-  constructor(private fb: FormBuilder, private paginationService: ApplicationService, private cdr: ChangeDetectorRef) {
-    this.fournisseurForm = this.fb.group({
+  constructor(
+    private fb: FormBuilder, 
+    private paginationService: ApplicationService, 
+    private cdr: ChangeDetectorRef,
+    private magasinService: MaagasinsService,
+    private fournisseurService: FournisseursService,
+    private toastr: ToastrService) {
+   /*  this.fournisseurForm = this.fb.group({
       nomComplet: ['', Validators.required],
       adresse: ['', Validators.required],
       telephone: ['', Validators.required],
@@ -135,7 +151,47 @@ export class FournisseursComponent implements OnInit {
       magasin: [''],                           // Ajouté (optionnel)
       conditionPaiement:['',Validators.required],
       conditionLivraison:['',Validators.required]
+    }); */
+    
+  }
+
+  ngOnInit(): void {
+    // Chargement des données des fournisseurs (par exemple via un service)
+    //this.loadDataFournisseurs();
+    this.loadData();
+    //this.loadMagasinForStrucure();
+    this.initForm();
+    //console.log('Valeur de code_structure:', this.code_structure); // Ajoutez ce log pour vérifier la valeur
+    // Date et heure actuelles
+    /* const currentDateObj = new Date();
+    this.currentDate = currentDateObj.toLocaleDateString();
+    this.currentTime = currentDateObj.toLocaleTimeString();
+    // Générer le numéro du bon à partir de la date et de l'heure courantes
+    this.generatedNumero = this.generateBonNumber(currentDateObj); */
+
+    this.onTypeBonChange(); // Met à jour les champs au chargement
+
+  }
+
+  initForm(): void {
+    this.fournisseurForm = this.fb.group({
+      nomComplet: ['', Validators.required],
+      code_structure: [this.code_structure],
+      adresse: ['', Validators.required],
+      telephone: ['', [Validators.required, Validators.pattern('^[0-9]{9,12}$')]],
+      email: ['', [Validators.required, Validators.email]],
+      banque: [''],
+      numeroCompte: [''],
+      statut: [true],
+      montantAPayer: [0],
+      termePaiement: [''],
+      termeLivraison: [''],
+      pays: [''],
+      ville: [''],
+      magasinId: ['', Validators.required],
     });
+    //console.log('Valeur de code_structure dans le formulaire:', this.fournisseurForm.value.code_structure); // Vérifiez la valeur dans le formulaire
+
     // Initialisation du formulaire réactif pour un paiement
     this.paiementForm = this.fb.group({
       description: ['', Validators.required],
@@ -173,19 +229,8 @@ export class FournisseursComponent implements OnInit {
     });
   }
 
-  ngOnInit(): void {
-    // Chargement des données des fournisseurs (par exemple via un service)
-    this.loadFournisseurs();
-    // Date et heure actuelles
-    const currentDateObj = new Date();
-    this.currentDate = currentDateObj.toLocaleDateString();
-    this.currentTime = currentDateObj.toLocaleTimeString();
-    // Générer le numéro du bon à partir de la date et de l'heure courantes
-    this.generatedNumero = this.generateBonNumber(currentDateObj);
-
-    this.onTypeBonChange(); // Met à jour les champs au chargement
-
-  }
+  // Getter pour accéder facilement aux contrôles du formulaire
+  get f() { return this.fournisseurForm.controls; }
 
   onRowSelect(fournisseur: Fournisseur): void {
     this.selectedFournisseur = fournisseur;
@@ -217,10 +262,13 @@ export class FournisseursComponent implements OnInit {
           this.openModal(this.selectedFournisseur)
         }
         else if(this.actionType === "supprimer"){
-          this.deleteFournisseur(this.selectedFournisseur);
+          this.deleteFournisseur(this.selectedFournisseur.id!);
         }
         else if(this.actionType === "statut"){
-          this.toggleStatut(this.selectedFournisseur);
+          //this.updateStatus(this.selectedFournisseur.id!, this.selectedFournisseur.statut);
+          // const nouveauStatut = !this.selectedFournisseur.statut;
+          // this.updateStatus(this.selectedFournisseur.id!, nouveauStatut);
+           this.toggleStatut(this.selectedFournisseur);
         }
         else {
           console.log('Aucune action correspondant')
@@ -391,16 +439,19 @@ export class FournisseursComponent implements OnInit {
       fournisseur.nomComplet.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
       fournisseur.adresse?.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
       fournisseur.telephone?.toString().toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-      fournisseur.banque?.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+      fournisseur.banque!.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
       fournisseur.montantAPayer?.toString().toLowerCase().includes(this.searchQuery.toLowerCase())
     );
       this.currentPageFournisseur = 1;
 
   }
+  min(a: number, b: number): number {
+      return Math.min(a, b);
+  }
 
   // Ouvrir le modal d'ajout ou modification
   openModal(fournisseur?: any): void {
-    console.log('Texte du bouton bis:', this.actionType);
+    //console.log('Texte du bouton bis:', this.actionType);
     //this.actionType === 'ajouter'
     if (fournisseur) {
       console.log('Valeur actionType:', this.actionType)
@@ -425,24 +476,32 @@ export class FournisseursComponent implements OnInit {
 
    toggleStatut(user: Fournisseur) {
       user.statut = !user.statut;
+      this.updateStatus(user.id!,user.statut);
     }
 
   // Soumettre le formulaire dans le modal
+
   onModalSubmit(): void {
-    if (this.fournisseurForm.valid) {
-      const fournisseurData = this.fournisseurForm.value;
-      if (this.isEditMode && this.selectedFournisseur) {
-        // Mise à jour du fournisseur
-        Object.assign(this.selectedFournisseur, fournisseurData);
-      } else {
-        // Ajout du nouveau fournisseur
-        const newFournisseur = new Fournisseur(fournisseurData);
-        this.fournisseurs.push(newFournisseur);
-      }
-      this.filteredFournisseurs = [...this.fournisseurs]; // Mettre à jour la liste filtrée
-      this.closeModal();
+    if (this.fournisseurForm.invalid) {
+      this.fournisseurForm.markAllAsTouched();
+      this.errorMessage = 'Veuillez corriger les erreurs dans le formulaire';
+      return;
+    }
+
+    const formData = this.fournisseurForm.value;
+
+    if (this.isEditMode && this.selectedFournisseur) {
+      this.updateFournisseur(this.selectedFournisseur.id!, formData);
+    } else {
+      this.fournisseurForm.patchValue({
+        code_structure: this.code_structure,
+        statut: true,
+        montantAPayer: 0
+      });
+      this.createFournisseur(this.fournisseurForm.value);
     }
   }
+
 
   // Fermer le modal
   closeModal(): void {
@@ -450,7 +509,7 @@ export class FournisseursComponent implements OnInit {
   }
 
   // Supprimer un fournisseur
-  deleteFournisseur(fournisseur: Fournisseur): void {
+  deletFournisseur(fournisseur: Fournisseur): void {
     /* const index = this.fournisseurs.indexOf(fournisseur);
     if (index > -1) {
       this.fournisseurs.splice(index, 1);
@@ -700,7 +759,7 @@ onPageChange(page: number, instanceObj: string): void {
   /* else if (instanceObj === 'PaiementBis') {
     this.currentPagePaiementBis = page;
   } */
-  console.log(`Changement de page ${instanceObj} -> Page actuelle :`, page);
+  //console.log(`Changement de page ${instanceObj} -> Page actuelle :`, page);
 
   this.cdr.detectChanges(); // Forcer la mise à jour de la vue
 }
@@ -1063,4 +1122,107 @@ getTotalPages(list: any[]): number {
   return Math.ceil(list.length / this.rowsPerPage);
 }
 
+//.........................................................................
+ loadData(): void {
+    this.isLoading = true;
+    forkJoin([
+      this.magasinService.getMagasinsByStructure(this.code_structure),
+      this.fournisseurService.getFournisseursByStructure(this.code_structure)
+    ]).pipe(
+      finalize(() => this.isLoading = false)
+    ).subscribe({
+      next: ([mgs, frs]) => {
+        this.magasins = mgs;
+        this.fournisseurs = frs;
+        this.filteredFournisseurs = [...this.fournisseurs];
+        this.updateFilteredFournisseurs();
+      },
+      error: (err) => console.error('Erreur chargement données', err)
+    });
+  }
+
+ createFournisseur(fournisseurData: Partial<Fournisseur>): void {
+  this.isLoading = true;
+
+  this.fournisseurService.createFournisseur(fournisseurData as Fournisseur)
+    .pipe(
+      finalize(() => this.isLoading = false)
+    )
+    .subscribe({
+      next: () => {
+        this.toastr.success('Fournisseur créé avec succès');
+        this.closeModal();
+        this.loadData();
+      },
+      error: (err) => {
+        this.errorMessage = err.error?.message || 'Erreur lors de la création du fournisseur';
+        this.toastr.error(this.errorMessage);
+      }
+    });
+}
+  updateFournisseur(id: number, updateData: Partial<Fournisseur>): void {
+  this.isLoading = true;
+
+  this.fournisseurService.updateFournisseur(id, updateData)
+    .pipe(
+      finalize(() => this.isLoading = false)
+    )
+    .subscribe({
+      next: () => {
+        this.toastr.success('Fournisseur mis à jour avec succès');
+        this.closeModal();
+        this.loadData();
+      },
+      error: (err) => {
+        this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour du fournisseur';
+        console.error(err);
+        this.toastr.error(this.errorMessage);
+      }
+    });
+}
+
+
+  updateStatus(id: number, newStatus: boolean): void {
+    this.isLoading = true;
+    this.fournisseurService.updateFournisseurStatus(id, newStatus).pipe(
+      finalize(() => this.isLoading = false)
+    )
+     .subscribe({
+      next: () => {
+         //this.isLoading = false;
+        this.toastr.success('Statut mis à jour avec succès');
+        this.loadData();
+        //this.selectedFournisseur = null;
+        //this.isRowSelected = !this.isRowSelected;
+      },
+      error: (err) => {
+        //this.isLoading = false;
+        this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour du statut fournisseur';
+        this.toastr.error(this.errorMessage);
+        console.error(err);
+      }
+    });
+  }
+
+  deleteFournisseur(id: number): void {
+    this.isLoading = true;
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce fournisseur ?')) {
+      this.fournisseurService.deleteFournisseur(id).pipe(
+      finalize(() => this.isLoading = false)
+    )
+      .subscribe({
+        next: () => {
+          this.toastr.success('Fournisseur supprimé avec succès');
+          this.loadData();
+        },
+        error: (err) => {
+          //this.isLoading = false;
+          //this.toastr.error('Erreur lors de la suppression du fournisseur');
+          this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour du statut fournisseur';
+          this.toastr.error(this.errorMessage);
+          //console.error(err);
+        }
+      });
+    }
+  }
 }

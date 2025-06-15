@@ -8,6 +8,8 @@ import { AuthService } from '../../../services/auth.service'; // Service d'authe
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { NgbModal, NgbModalModule } from '@ng-bootstrap/ng-bootstrap';
+import { ToastrService } from 'ngx-toastr';
+import { finalize } from 'rxjs';
 
 @Component({
   selector: 'app-structure',
@@ -27,12 +29,15 @@ export class StructureComponent implements OnInit {
   searchTerm: string = '';
   currentPage: number = 1;
   itemsPerPage: number = 10;
+  errorMessage:string = '';
+  isloading:boolean = true;
 
   constructor(
     private fb: FormBuilder,
     private structureService: StructureService,
     private authService: AuthService,
-    private modalService: NgbModal
+    private modalService: NgbModal,
+    private toastr: ToastrService
   ) {}
 
   ngOnInit(): void {
@@ -45,12 +50,12 @@ export class StructureComponent implements OnInit {
     this.generalForm = this.fb.group({
     nom_structure: ['', Validators.required],
     logo: [null],
-    proprietaire: ['', Validators.required],
+    //proprietaire: ['', Validators.required],
     nombre_magasins: [1, [Validators.required, Validators.min(1)]],
     type_structure: ['', Validators.required],
     devise: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
-    telephone: ['', Validators.required],
+    telephone: ['',  [Validators.required, Validators.pattern('^[0-9]{9,12}$')]],
     adresse: ['', Validators.required],
     numero_identification_fiscale: [''],
     registre_commerce: [''],  
@@ -71,7 +76,7 @@ export class StructureComponent implements OnInit {
     code_acces: [''],
     personne_confiance: [''],
     assurances_souscrites: [''],
-    date_creation: [''],
+    //date_creation: [''],
     description: ['']
   });
   }
@@ -96,13 +101,21 @@ export class StructureComponent implements OnInit {
   }
 
   loadStructures(): void {
-    this.structureService.getAll().subscribe(data => {
+    this.isloading = true;
+    this.structureService.getAll().pipe(
+          finalize(() => this.isloading = false)
+        )
+    .subscribe(data => {
       this.structures = data;
+
     });
   }
 
   loadStructureDetails(id: number): void {
-    this.structureService.getById(id).subscribe(structure => {
+    this.structureService.getById(id).pipe(
+          finalize(() => this.isloading = false)
+        )
+    .subscribe(structure => {
       this.selectedStructure = structure;
       this.currentStructureId = structure.id!;
       this.isEditMode = true;
@@ -142,14 +155,20 @@ export class StructureComponent implements OnInit {
 toggleStructureStatus(structure: Structure): void {
   const newStatus = !structure.estActive;
   
-  this.structureService.updateStatus(structure.id!, newStatus).subscribe({
+  this.structureService.updateStatus(structure.id!, newStatus).pipe(
+          finalize(() => this.isloading = false)
+        )
+  .subscribe({
     next: () => {
+      this.toastr.success('Statut mis à jour avec succès');
       structure.estActive = newStatus; // Mise à jour optimiste
       // Optionnel : Recharger la liste si nécessaire
       this.loadStructures();
     },
     error: (err) => {
       console.error('Erreur:', err);
+      this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour du statut de la structure';
+      this.toastr.error(this.errorMessage);
       // Revert UI state if error
       structure.estActive = !newStatus;
     }
@@ -161,22 +180,38 @@ toggleStructureStatus(structure: Structure): void {
       const formData = this.prepareFormData();
       
       if (this.isEditMode && this.currentStructureId) {
-        this.structureService.update(this.currentStructureId, formData).subscribe({
+        this.structureService.update(this.currentStructureId, formData).pipe(
+          finalize(() => this.isloading = false)
+        )
+        .subscribe({
           next: () => {
-            alert('Structure mise à jour avec succès!');
+            //alert('Structure mise à jour avec succès!');
+             this.toastr.success('Structure mise à jour avec succès!');
             this.loadData();
             this.resetForm();
           },
-          error: (err) => console.error('Erreur lors de la mise à jour:', err)
+          error: (err) => {
+            console.error('Erreur lors de la mise à jour de la structure:', err);
+            this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour de la structure';
+            this.toastr.error(this.errorMessage);
+          }
         });
       } else {
-        this.structureService.create(formData).subscribe({
+        this.structureService.create(formData).pipe(
+          finalize(() => this.isloading = false)
+        )
+        .subscribe({
           next: () => {
-            alert('Structure créée avec succès!');
+            //alert('Structure créée avec succès!');
+            this.toastr.success('Structure créée avec succès!');
             this.loadData();
             this.resetForm();
           },
-          error: (err) => console.error('Erreur lors de la création:', err)
+          error: (err) => {
+            console.error('Erreur lors de la création:', err);
+            this.errorMessage = err.error?.message || 'Erreur lors de la création de la structure';
+            this.toastr.error(this.errorMessage);
+          }
         });
       }
     } else {
@@ -195,7 +230,7 @@ toggleStructureStatus(structure: Structure): void {
     });
 
     if (this.generalForm.get('logo')?.value instanceof File) {
-      formData.append('logo', this.generalForm.get('logo')?.value);
+      formData.append('logo', this.generalForm.get('logo')?.value); 
     }
 
     return formData;

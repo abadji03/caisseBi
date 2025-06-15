@@ -25,6 +25,13 @@ exports.createStructure = async (req, res) => {
       personne_confiance, assurances_souscrites, date_creation, description
     } = req.body;
 
+     // Vérifie si l'utilisateur existe déjà par email
+    const existingStructure = await Structure.findOne({ where: {email} });
+
+    if (existingStructure) {
+      return res.status(400).json({ message: "Une structure avec cet email existe déjà." });
+    }
+
     let logo = null;
     if (req.file) {
       logo = BASE_URL + req.file.filename;
@@ -78,7 +85,9 @@ exports.getStructureById = async (req, res) => {
 }; */
 exports.getAllStructures = async (req, res) => {
   try {
-    const structures = await Structure.findAll();
+    const structures = await Structure.findAll({
+      order: [['createdAt', 'DESC']] 
+    });
     const baseUrl = `${req.protocol}://${req.get('host')}/uploads/`;
 
     const structuresWithLogoUrl = structures.map(struct => {

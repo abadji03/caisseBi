@@ -12,6 +12,8 @@ import { User } from '../../../modeles/user.model';
 import { UserService } from '../../../services/user.service';
 import { StructureService } from '../../../services/structure.service';
 import { MaagasinsService } from '../../../services/maagasins.service';
+import { ToastrService } from 'ngx-toastr';
+import { finalize } from 'rxjs';
 
 @Component({
   selector: 'app-magazin',
@@ -23,10 +25,10 @@ import { MaagasinsService } from '../../../services/maagasins.service';
 export class MagazinComponent implements OnInit{
 
   showPartie1: boolean = true;
+  isloading:boolean = false;
 
-  toggleParts(): void {
-    this.showPartie1 = !this.showPartie1;
-  }
+  
+errorMessage = '';
 
 currentDate: Date = new Date();
 modeEdition = false;
@@ -76,7 +78,8 @@ constructor(
   private cdr:ChangeDetectorRef,
   private magasinService: MaagasinsService,
   private structureService: StructureService,
-  private userService: UserService
+  private userService: UserService,
+  private toastr: ToastrService
 ) {
    // Initialisation du formulaire réactif
   /*  this.magasinForm = this.fb.group({
@@ -123,6 +126,10 @@ ngOnInit(): void {
 toggleDetails(panierId: number) {
   this.selectedPanierId = this.selectedPanierId === panierId ? null : panierId;
 }
+
+toggleParts(): void {
+    this.showPartie1 = !this.showPartie1;
+  }
 
 getAllProduits(): Stock[] {
   return this.magasins.flatMap((magasin: Magasin) => magasin.stock ?? []);
@@ -752,19 +759,22 @@ validerTransfert(transfert: Transfert) {
   console.log('Transfert validé :', transfert);
 }
 
-
-
 //.........................................................................................
 
  chargerMagasins(): void {
+  this.isloading = true;
     this.magasinService.getAllMagasins().subscribe({
       next: (magasins) => {
+        this.isloading = false;
         this.magasins = magasins;
         if (magasins.length > 0) {
-          this.magasinSelectionne = magasins[0];
-        }
+          this.magasinSelectionne = magasins[0];         }
       },
-      error: (err) => console.error('Erreur lors du chargement des magasins', err)
+      
+      error: (err) => {
+        this.isloading = false;
+        console.error('Erreur lors du chargement des magasins', err)
+      }
     });
   }
 
@@ -851,14 +861,22 @@ validerTransfert(transfert: Transfert) {
 
 
   ajouterMagasin(): void {
+    this.isloading = true;
     if (this.magasinForm.valid) {
       this.magasinService.createMagasin(this.magasinForm.value).subscribe({
         next: (magasin) => {
-          this.magasins.push(magasin);
+          this.toastr.success('Magasin créé avec succès');
+          //this.magasins.push(magasin);
+          this.chargerMagasins();
           this.magasinSelectionne = magasin;
           this.fermerModal();
         },
-        error: (err) => console.error('Erreur lors de la création du magasin', err)
+        error: (err) => {
+          this.errorMessage = err.error?.message || 'Erreur lors de la création du magasin';
+          this.toastr.error(this.errorMessage);
+          //console.error('Erreur lors de la création du magasin', err)
+
+        }
       });
     }
   }
@@ -868,14 +886,20 @@ validerTransfert(transfert: Transfert) {
       const updatedMagasin = { ...this.magasinForm.value };
       this.magasinService.updateMagasin(this.magasinSelectionne.id, updatedMagasin).subscribe({
         next: (magasin) => {
-          const index = this.magasins.findIndex(m => m.id === magasin.id);
+          this.chargerMagasins();
+          /* const index = this.magasins.findIndex(m => m.id === magasin.id);
           if (index !== -1) {
             this.magasins[index] = magasin;
             this.magasinSelectionne = magasin;
-          }
+          } */
+          this.toastr.success('Magasin créé avec succès');
           this.fermerModal();
         },
-        error: (err) => console.error('Erreur lors de la mise à jour du magasin', err)
+        error: (err) => {
+          this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour du magasin';
+          this.toastr.error(this.errorMessage);
+          //console.error('Erreur lors de la mise à jour du magasin', err)
+        }
       });
     }
   }
@@ -884,13 +908,18 @@ validerTransfert(transfert: Transfert) {
     if (confirm('Êtes-vous sûr de vouloir supprimer ce magasin ?')) {
       this.magasinService.deleteMagasin(id).subscribe({
         next: () => {
+           this.toastr.success('Magasin supprimé avec succès');
           /* this.magasins = this.magasins.filter(m => m.id !== id);
           if (this.magasinSelectionne?.id === id) {
             this.magasinSelectionne = this.magasins.length > 0 ? this.magasins[0] : null;
           } */
          this.chargerMagasins();
         },
-        error: (err) => console.error('Erreur lors de la suppression du magasin', err)
+        error: (err) => {
+          this.errorMessage = err.error?.message || 'Erreur lors  de la suppression du magasin';
+          this.toastr.error(this.errorMessage);
+          //console.error('Erreur lors de la suppression du magasin', err);
+        }
       });
     }
   }
@@ -973,13 +1002,18 @@ validerTransfert(transfert: Transfert) {
     const newStatut = magasin.statut === 'Actif' ? 'Inactif' : 'Actif';
     this.magasinService.updateMagasinStatus(magasin.id, newStatut).subscribe({
       next: (updatedMagasin) => {
+         this.toastr.success('Magasin mis à jour avec succès');
         this.chargerMagasins();
        /*  const index = this.magasins.findIndex(m => m.id === updatedMagasin.id);
         if (index !== -1) {
           this.magasins[index] = updatedMagasin;
         } */
       },
-      error: (err) => console.error('Erreur lors du changement de statut', err)
+      error: (err) => { 
+        console.error('Erreur lors du changement de statut', err);
+        this.errorMessage = err.error?.message || 'Erreur lors du changement de statut';
+        this.toastr.error(this.errorMessage);
+      }
     });
   }
 

@@ -47,7 +47,8 @@ exports.getCategoriesById = async (req, res) => {
 exports.getCategoriesByStructure = async (req, res) => {
   try {
     const categories = await CategorieProduit.findAll({
-      where: { code_structure: req.params.code_structure }
+      where: { code_structure: req.params.code_structure },
+      order: [['createdAt', 'DESC']]
     });
     res.json(categories);
   } catch (error) {

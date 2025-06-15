@@ -33,6 +33,7 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: false
     },
     plafond: DataTypes.DECIMAL(12, 2),
+    montantANousPayer: DataTypes.DECIMAL(12, 2),
     statut: {
       type: DataTypes.BOOLEAN,
       defaultValue: true

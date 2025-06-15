@@ -5,6 +5,7 @@ import { Panier } from "./panier.model";
 
 export class Client {
   id?: number;
+  code_structure?:string;
   nomComplet!: string;
   email?: string;
   telephone?: string;
@@ -12,9 +13,11 @@ export class Client {
   dateCreation?: Date ;
   dateMiseAJour?: Date;
   solde: number = 0;
+  montantANousPayer?:number;
   estEmploye: boolean = false;
   plafond?: number;
   statut?: boolean;
+  magasinId?:number;
 
   // Relations
   bons: Bon[] = [];

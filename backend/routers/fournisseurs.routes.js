@@ -6,5 +6,7 @@ router.post("/", fournisseurCtrl.createFournisseur);
 router.put("/:id", fournisseurCtrl.updateFournisseur);
 router.delete("/:id", fournisseurCtrl.deleteFournisseur);
 router.get("/structure/:code_structure", fournisseurCtrl.getFournisseursByStructure);
+router.patch('/:id/statut', fournisseurCtrl.updateFournisseurStatus);
+router.get('/:id', fournisseurCtrl.getFournisseurById);
 
 module.exports = router;

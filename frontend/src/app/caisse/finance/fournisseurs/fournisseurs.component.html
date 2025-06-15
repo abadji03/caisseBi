@@ -1,9 +1,8 @@
 <div class="container-fluid">
-  <div class="d-flex justify-content-center">
-    <!-- Contact -->
+  <!-- <div class="d-flex justify-content-center">
     <h1 class="fw-bold text-uppercase">Gestion des fournisseurs</h1>
   </div>
-  <hr>
+  <hr> -->
     <nav>
       <div class="nav nav-tabs" id="nav-tab" role="tablist">
         <button class="nav-link active" id="nav-fournisseur-tab" data-bs-toggle="tab" data-bs-target="#nav-fournisseur" type="button" role="tab" aria-controls="nav-fournisseur" aria-selected="true">Accueil</button>
@@ -21,21 +20,22 @@
             <div class="row">
               <div [ngClass]="{ 'col-md-12': !isRowSelected, 'col-md-10': isRowSelected }">
 
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                  <h1>Liste des Fournisseurs</h1>
-                  <button class="btn btn-success" (click)="openModal()"><i class="bi bi-plus-circle text-white me-2"></i>Nouveau Fournisseur</button>
-                </div>
-
-                <div class="d-flex justify-content-between">
+                <div class="d-flex justify-content-between align-items-center mt-2">
                     <!-- Champ de recherche -->
-                  <input type="text" class="form-control mb-3 w-25" [(ngModel)]="searchQuery" placeholder="Rechercher un fournisseur...." (input)="onSearchChange()">
+                  <!-- <input type="text" class="form-control mb-3 w-25" [(ngModel)]="searchQuery" placeholder="Rechercher un fournisseur...." (input)="onSearchChange()"> -->
 
                   <div class="d-flex justify-content-between mb-3">
                     <!-- Boutons Action -->
-                    <button class="btn btn-info"><i class="bi bi-box-arrow-up-right text-white me-2"></i></button>
-                    <button class="btn btn-warning"><i class="bi bi-box-arrow-up-right text-white me-2"></i></button>
+                    <button class="btn btn-info me-2"><i class="bi bi-box-arrow-up-right text-white me-2"></i></button>
+                    <button class="btn btn-warning me-2"><i class="bi bi-box-arrow-up-right text-white me-2"></i></button>
                     <button class="btn btn-secondary"><i class="bi bi-arrow-clockwise text-white me-2"></i></button>
                   </div>
+
+                  <button class="btn btn-success mb-3" (click)="openModal()"><i class="bi bi-plus-circle text-white me-2"></i>Nouveau Fournisseur</button>
+                </div>
+
+                <div class="d-flex justify-content-center mb-1">
+                  <h1 class="text-muted">Liste des Fournisseurs</h1>
                 </div>
 
                 <!-- Tableau des fournisseurs -->
@@ -44,13 +44,27 @@
                     <h2 class="text-warning"> Liste  des fournisseurs</h2>
                   </div> -->
                   <!-- Sélection du nombre de lignes à afficher -->
-                  <div class="d-flex justify-content-between align-items-center mb-2 float-start">
+                  <!-- <div class="d-flex justify-content-between align-items-center mb-2 float-start">
                     <label for="rowsPerPage" class="me-2">Afficher</label>
                     <select id="rowsPerPage" class="form-select w-auto me-2" (change)="onRowsPerPageChange($event)">
                       <option *ngFor="let option of [5, 10, 20, 50]" [value]="option">{{ option }}</option>
                     </select>
                     <span>lignes par page</span>
+                  </div> -->
+                  <!-- Barre de recherche et filtres -->
+                <div class="d-flex justify-content-between mb-3">
+                  <div class="input-group w-50">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" placeholder="Rechercher un fournisseur..." [(ngModel)]="searchQuery" (input)="onSearchChange()">
                   </div>
+                  <div>
+                    <select class="form-select" [(ngModel)]="rowsPerPage" (change)="onRowsPerPageChange($event)">
+                      <option value="5">5 éléments/page</option>
+                      <option value="10">10 éléments/page</option>
+                      <option value="20">20 éléments/page</option>
+                    </select>
+                  </div>
+                </div>
 
                   <table class="table table-bordered table-hover">
                     <thead class="table-success">
@@ -94,15 +108,23 @@
                 </div>
 
                 <!-- Pagination -->
-                <div class="d-flex justify-content-center align-items-center">
-                  <button class="btn btn-success" (click)="onPageChange(currentPageFournisseur-1,'Fournisseur')" [disabled]="currentPageFournisseur === 1">
-                    <i class="bi bi-arrow-left-circle"></i>
-                  </button>
-                  <span class="h3">{{ currentPageFournisseur }} / {{ getTotalPages(filteredFournisseurs) }}</span>
-                  <button class="btn btn-success" (click)="onPageChange(currentPageFournisseur+1,'Fournisseur')"
-                    [disabled]="currentPageFournisseur >= getTotalPages(filteredFournisseurs)">
-                    <i class="bi bi-arrow-right-circle"></i>
-                  </button>
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    Affichage de {{ (currentPageFournisseur - 1) * rowsPerPage + 1 }} à 
+                    {{ min(currentPageFournisseur * rowsPerPage, filteredFournisseurs.length) }} 
+                    sur {{ filteredFournisseurs.length }} fournisseurs
+                  </div>
+                  <div>
+                    <button class="btn btn-success" (click)="onPageChange(currentPageFournisseur-1,'Fournisseur')" [disabled]="currentPageFournisseur === 1">
+                      <i class="bi bi-arrow-left-circle"></i>
+                    </button>
+                    <!-- <span class="h3">{{ currentPageFournisseur }} / {{ getTotalPages(filteredFournisseurs) }}</span> -->
+                    <span class="h3">{{ currentPageFournisseur }} </span>
+                    <button class="btn btn-success" (click)="onPageChange(currentPageFournisseur+1,'Fournisseur')"
+                      [disabled]="currentPageFournisseur >= getTotalPages(filteredFournisseurs)">
+                      <i class="bi bi-arrow-right-circle"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
               <!-- Colonne droite (actions) -->
@@ -120,8 +142,8 @@
                     <button class="btn btn-warning me-3 text-white" (click)="onAction('modifier')"><i class="bi bi-pencil text-white me-2"></i>Modifier</button>
                     <button class="btn btn-danger" (click)="onAction('supprimer')"><i class="bi bi-trash text-white me-2"></i>Supprimer</button>
                     <button class="btn btn-info d-flex text-white" (click)="onAction('operation')"><i class="bi bi-eye me-2"></i> Opérations</button>
-                    <button class="btn btn-secondary d-flex" (click)="onAction('evaluer')"><i class="bi bi-star text-white me-2"></i> Evaluer</button>
-                    <!-- <button class="btn btn-secondary d-flex align-items-center" (click)="onAction('statut')"><i class="bi" [ngClass]="selectedFournisseur?.statut ? 'bi-x-circle-fill' : 'bi-check-circle-fill' text-white"></i>{{ selectedFournisseur?.statut ? 'Désactiver' : 'Activer' }}</button> -->
+                    <!-- <button class="btn btn-secondary d-flex" (click)="onAction('evaluer')"><i class="bi bi-star text-white me-2"></i> Evaluer</button> -->
+                    <button class="btn btn-secondary d-flex align-items-center" (click)="onAction('statut')"><i class="me-2 bi" [ngClass]="selectedFournisseur?.statut ? 'bi-x-circle-fill' : 'bi-check-circle-fill'"></i>{{ selectedFournisseur?.statut ? 'Désactiver' : 'Activer' }}</button>
                   </div>
               </div>
             </div>
@@ -582,106 +604,136 @@
             <div class="modal-body">
               <form [formGroup]="fournisseurForm" (ngSubmit)="onModalSubmit()">
 
-                <!-- Champs existants -->
+                <!-- Première ligne de champs -->
                 <div class="row">
+                  <!-- Nom Complet -->
                   <div class="col-md-4 mb-3">
-                    <label for="nomComplet" class="form-label">Nom Complet</label>
-                    <input id="nomComplet" formControlName="nomComplet" class="form-control" required>
+                    <label for="nomComplet" class="form-label">Nom Complet <span class="text-danger">*</span></label>
+                    <input id="nomComplet" formControlName="nomComplet" class="form-control" 
+                          [ngClass]="{'is-invalid': f['nomComplet'].touched && f['nomComplet'].errors}">
+                    <div *ngIf="f['nomComplet'].touched && f['nomComplet'].errors" class="invalid-feedback">
+                      <div *ngIf="f['nomComplet'].errors['required']">Le nom complet est obligatoire</div>
+                    </div>
                   </div>
+
+                  <!-- Téléphone -->
                   <div class="col-md-4 mb-3">
-                    <label for="telephone" class="form-label">Téléphone</label>
-                    <input id="telephone" formControlName="telephone" class="form-control" required>
+                    <label for="telephone" class="form-label">Téléphone <span class="text-danger">*</span></label>
+                    <input id="telephone" formControlName="telephone" class="form-control"
+                          [ngClass]="{'is-invalid': f['telephone'].touched && f['telephone'].errors}">
+                    <div *ngIf="f['telephone'].touched && f['telephone'].errors" class="invalid-feedback">
+                      <div *ngIf="f['telephone'].errors['required']">Le téléphone est obligatoire</div>
+                      <div *ngIf="f['telephone'].errors['pattern']">Format de téléphone invalide</div>
+                    </div>
                   </div>
+
+                  <!-- Adresse -->
                   <div class="col-md-4 mb-3">
-                    <label for="adresse" class="form-label">Adresse</label>
-                    <input id="adresse" formControlName="adresse" class="form-control" required>
+                    <label for="adresse" class="form-label">Adresse <span class="text-danger">*</span></label>
+                    <input id="adresse" formControlName="adresse" class="form-control"
+                          [ngClass]="{'is-invalid': f['adresse'].touched && f['adresse'].errors}">
+                    <div *ngIf="f['adresse'].touched && f['adresse'].errors" class="invalid-feedback">
+                      <div *ngIf="f['adresse'].errors['required']">L'adresse est obligatoire</div>
+                    </div>
                   </div>
                 </div>
 
+                <!-- Deuxième ligne de champs -->
                 <div class="row">
+                  <!-- Email -->
                   <div class="col-md-4 mb-3">
-                    <label for="email" class="form-label">Adresse Email</label>
-                    <input id="email" formControlName="email" class="form-control" type="email" required>
+                    <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                    <input id="email" formControlName="email" type="email" class="form-control"
+                          [ngClass]="{'is-invalid': f['email'].touched && f['email'].errors}">
+                    <div *ngIf="f['email'].touched && f['email'].errors" class="invalid-feedback">
+                      <div *ngIf="f['email'].errors['required']">L'email est obligatoire</div>
+                      <div *ngIf="f['email'].errors['email']">Format d'email invalide</div>
+                    </div>
                   </div>
+
+                  <!-- Banque (champ texte maintenant) -->
                   <div class="col-md-4 mb-3">
                     <label for="banque" class="form-label">Banque</label>
-                    <select id="banque" formControlName="banque" class="form-control" required>
-                      <option value='defaut'>Sélectionner une banque</option>
-                      <option *ngFor="let banque of banques" [value]="banque">{{ banque }}</option>
-                    </select>
+                    <input id="banque" formControlName="banque" class="form-control"
+                          [ngClass]="{'is-invalid': f['banque'].touched && f['banque'].errors}">
                   </div>
+
+                  <!-- Numéro de compte -->
                   <div class="col-md-4 mb-3">
                     <label for="numeroCompte" class="form-label">Numéro de Compte</label>
-                    <input id="numeroCompte" formControlName="numeroCompte" class="form-control" required>
+                    <input id="numeroCompte" formControlName="numeroCompte" class="form-control"
+                          [ngClass]="{'is-invalid': f['numeroCompte'].touched && f['numeroCompte'].errors}">
                   </div>
                 </div>
 
-                <!-- Nouveaux champs ajoutés -->
+                <!-- Troisième ligne de champs -->
                 <div class="row">
+                  <!-- Pays (champ texte maintenant) -->
                   <div class="col-md-4 mb-3">
                     <label for="pays" class="form-label">Pays</label>
-                    <select id="pays" formControlName="pays" class="form-control" required>
-                      <option value="" disabled selected>Sélectionner un pays</option>
-                      <option *ngFor="let pays of paysList" [value]="pays">{{ pays }}</option>
-                    </select>
+                    <input id="pays" formControlName="pays" class="form-control">
                   </div>
+
+                  <!-- Ville (champ texte maintenant) -->
                   <div class="col-md-4 mb-3">
                     <label for="ville" class="form-label">Ville</label>
-                    <input id="ville" formControlName="ville" class="form-control" required>
+                    <input id="ville" formControlName="ville" class="form-control">
                   </div>
+
+                  <!-- Magasin -->
                   <div class="col-md-4 mb-3">
-                    <label for="magasin" class="form-label">Magasin/Surcursale rattaché(e)</label>
-                    <select id="magasin" formControlName="magasin" class="form-control">
+                    <label for="magasinId" class="form-label">Magasin/Succursale <span class="text-danger">*</span></label>
+                    <select id="magasinId" formControlName="magasinId" class="form-control"
+                            [ngClass]="{'is-invalid': f['magasinId'].touched && f['magasinId'].errors}">
                       <option value="" disabled selected>Sélectionner un magasin</option>
-                      <option *ngFor="let magasin of magasinsList" [value]="magasin">{{ magasin }}</option>
+                      <option *ngFor="let magasin of magasins" [value]="magasin.id">{{ magasin.nom }}</option>
                     </select>
+                    <div *ngIf="f['magasinId'].touched && f['magasinId'].errors" class="invalid-feedback">
+                      <div *ngIf="f['magasinId'].errors['required']">Le magasin est obligatoire</div>
+                    </div>
                   </div>
                 </div>
 
+                <!-- Quatrième ligne de champs -->
                 <div class="row">
+                  <!-- Terme de paiement -->
                   <div class="col-md-6 mb-3">
-                    <label for="conditionPaiement" class="form-label">Condition de Paiement</label>
-                    <select id="conditionPaiement" formControlName="conditionPaiement" class="form-control" required>
-                      <option value="" disabled selected>Choisir une méthode de paiement</option>
-                      <option value="immediate">Paiement immédiat</option>
-                      <option value="30 jours">Paiement à 30 jours</option>
-                      <option value="60 jours">Paiement à 60 jours</option>
-                      <option value="90 jours">Paiement à 90 jours</option>
-                    </select>
+                    <label for="termePaiement" class="form-label">Terme de Paiement</label>
+                    <input id="termePaiement" formControlName="termePaiement" class="form-control">
                   </div>
+
+                  <!-- Terme de livraison -->
                   <div class="col-md-6 mb-3">
-                    <label for="conditionLivraison" class="form-label">Condition de Livraison</label>
-                    <select id="conditionLivraison" formControlName="conditionLivraison" class="form-control" required>
-                      <option value="" disabled selected>Choisir une méthoded de livraison</option>
-                      <option value="livraison_gratuite">Livraison gratuite</option>
-                      <option value="livraison_standard">Livraison standard</option>
-                      <option value="livraison_express">Livraison express</option>
-                    </select>
+                    <label for="termeLivraison" class="form-label">Terme de Livraison</label>
+                    <input id="termeLivraison" formControlName="termeLivraison" class="form-control">
                   </div>
                 </div>
 
+                <!-- Statut (visible seulement en mode édition) -->
                 <div *ngIf="isEditMode" class="row">
                   <div class="col-md-4 mb-3">
-                    <label for="statut" class="form-label">Statut</label>
-                    <div class="form-check">
-                      <!-- Formulaire lié via formControlName, Angular s'occupe de l'état -->
-                      <input id="statut" type="checkbox" formControlName="statut" class="form-check-input">
+                    <label class="form-label">Statut</label>
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="statut" formControlName="statut">
                       <label class="form-check-label" for="statut">
-                        {{selectedFournisseur?.statut ? 'Actif' : 'Inactif'}}
+                        {{ fournisseurForm.get('statut')?.value ? 'Actif' : 'Inactif' }}
                       </label>
                     </div>
                   </div>
                 </div>
 
-
-
-                <div class="d-flex justify-content-between">
+                <!-- Boutons -->
+                <div class="d-flex justify-content-between mt-4">
                   <button type="submit" class="btn btn-success w-50 me-3" [disabled]="fournisseurForm.invalid">
                     {{ isEditMode ? 'Mettre à jour' : 'Enregistrer' }}
                   </button>
                   <button type="button" class="btn btn-danger w-50" (click)="closeModal()">Annuler</button>
                 </div>
 
+                <!-- Message d'erreur général -->
+                <div *ngIf="errorMessage" class="alert alert-danger mt-3">
+                  {{ errorMessage }}
+                </div>
               </form>
             </div>
           </div>

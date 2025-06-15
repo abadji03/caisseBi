@@ -10,6 +10,7 @@ import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { finalize, forkJoin, map, Observable, of } from 'rxjs';
 import { RolePermissionsService } from '../../../services/role-permissions.service';
 import { Role, UserRole } from '../../../modeles/role-permission.model';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-user',
@@ -21,7 +22,7 @@ import { Role, UserRole } from '../../../modeles/role-permission.model';
 export class UserComponent implements OnInit {
   users: User[] = [];
   structures: Structure[] = [];
-  userForm: FormGroup;
+  userForm!: FormGroup;
   isEditMode = false;
   selectedUser: User | null = null;
   isGeneralAdmin:boolean = false;
@@ -35,29 +36,23 @@ export class UserComponent implements OnInit {
   itemsPerPage: number = 10;
   //roleIds: number[] = [];
 
+  errorMessage = '';
   constructor(
     private fb: FormBuilder,
     private userService: UserService,
     private authService: AuthService,
     private structureService: StructureService,
     private roleService: RolePermissionsService,
+     private toastr: ToastrService,
     private modalService: NgbModal
   ) {
-    this.userForm = this.fb.group({
-      nom: ['',  [Validators.required, Validators.minLength(2)]],
-      telephone: ['', [Validators.required, Validators.pattern(/^[0-9]{10,15}$/)]],
-      email: ['', [Validators.required, Validators.email]],
-      role: [[],Validators.required],
-      status: [true, Validators.required],
-      password: ['', !this.isEditMode ? [Validators.minLength(6)] : []],
-      confirmPassword: [''],
-      structure_id: [null]
-    }, { validator: !this.isEditMode ? this.passwordMatchValidator.bind(this) : null });
+
   }
 
   ngOnInit(): void {
     this.isGeneralAdmin= this.authService.isGeneralAdmin();
-    this.loadData()
+    this.loadData();
+    this.iniForm();
     /* this.loadUsers();
     //if (this.authService.isGeneralAdmin()) {
       this.loadStructures();
@@ -68,6 +63,18 @@ export class UserComponent implements OnInit {
          }); */
   }
 
+  iniForm(): void {
+     this.userForm = this.fb.group({
+      nom: ['',  [Validators.required, Validators.minLength(2)]],
+      telephone: ['', [Validators.required, Validators.pattern('^[0-9]{9,12}$')]],
+      email: ['', [Validators.required, Validators.email]],
+      role: [[],Validators.required],
+      status: [true, Validators.required],
+      password: ['', !this.isEditMode ? [Validators.minLength(6)] : []],
+      confirmPassword: [''],
+      structure_id: [null]
+    }, { validator: !this.isEditMode ? this.passwordMatchValidator.bind(this) : null });
+  }
   passwordMatchValidator(form: FormGroup) {
       const password = form.get('password')?.value;
       const confirmPassword = form.get('confirmPassword')?.value;
@@ -228,6 +235,7 @@ onSubmit(): void {
         this.roleService.updateRolesForUser(updatedUser.id, roleIds)
           .subscribe({
             next: () => {
+              this.toastr.success('Utilisateur mis à jour avec succès');
               this.loadData();
               this.modalService.dismissAll();
               // Message de succès si nécessaire
@@ -240,6 +248,8 @@ onSubmit(): void {
       },
       error: (err) => {
         console.error('Erreur lors de la mise à jour de l\'utilisateur', err);
+        this.toastr.error(err.error?.message);
+        this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour de l\'utilisateur';
         // Gérer l'erreur
       }
     });
@@ -252,12 +262,15 @@ onSubmit(): void {
           this.roleService.assignRolesToUser(newUser.id, roleIds)
             .subscribe({
               next: () => {
+                this.toastr.success('Utilisateur créé avec succès');
                 this.loadData();
                 this.modalService.dismissAll();
                 // Message de succès si nécessaire
               },
               error: (err) => {
                 console.error('Erreur lors de l\'assignation des rôles', err);
+                 //this.toastr.error(err.message);
+                 //this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour du fournisseur';
                 // Gérer l'erreur (message à l'utilisateur)
               }
             });
@@ -268,6 +281,8 @@ onSubmit(): void {
       },
       error: (err) => {
         console.error('Erreur lors de la création de l\'utilisateur', err);
+        this.toastr.error(err.error?.message);
+        this.errorMessage = err.error?.message || 'Erreur lors de la création de l\'utilisateur';
         // Gérer l'erreur
       }
     });
@@ -319,12 +334,15 @@ private deleteUserFinally(userId: number): void {
     .subscribe({
       next: () => {
         this.isLoading = false;
+        this.toastr.success('Utilisateur supprimé avec succès');
         this.loadData();
         //this.successMessage = 'Rôle supprimé avec succès';
       },
       error: (err) => {
         this.isLoading = false;
         console.error('Erreur lors de la suppression de user', err);
+        this.toastr.error("Erreur lors de la suppression de user : "+err.error?.message);
+        //this.errorMessage = err.error?.message || 'Erreur lors de la création de l\'utilisateur';
         //this.errorMessage = 'Erreur lors de la suppression du rôle';
       }
     });
@@ -346,6 +364,7 @@ getUserRole(user: User): Observable<string[]> {
   toggleStatus(user: User): void {
     user.status = !user.status;
     this.userService.update(user.id, user).subscribe(() => {
+      this.toastr.success('Status mis à jour avec avec succès');
       this.loadData();
     });
   }
