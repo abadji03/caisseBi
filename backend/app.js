@@ -15,8 +15,8 @@ const app = express();
 app.use(cors());
 
 // Middleware pour parser les données JSON envoyées dans le body des requêtes
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json({ limit: '10mb' }));
+app.use(bodyParser.urlencoded({ extended: true,limit: '10mb' }));
 
 // Connexion à la base de données via Sequelize
 const db = require('./models');

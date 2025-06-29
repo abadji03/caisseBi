@@ -9,7 +9,7 @@ import { AuthService } from './auth.service';
 })
 export class ProduitsService {
 
-  private apiUrl = 'http://localhost:3000/api';
+  private apiUrl = 'http://localhost:5000/api';
 
   constructor(private http: HttpClient, private authService: AuthService) {}
   private getHeaders(): HttpHeaders {
@@ -58,8 +58,8 @@ export class ProduitsService {
   }
 
   //Créer un produit
-  createProduit(produit: Produits): Observable<Produits> {
-    return this.http.post<Produits>(`${this.apiUrl}/produits`, produit, { headers: this.getHeaders() });
+  createProduit(produit: FormData): Observable<Produits> {
+    return this.http.post<Produits>(`${this.apiUrl}/produits`, produit);
   }
 
   //Créer une catégorie
@@ -96,6 +96,10 @@ export class ProduitsService {
   updateStatusProduit(id: number, status: string): Observable<any> {
     return this.http.patch(`${this.apiUrl}/produits/${id}/status`, { status }, { headers: this.getHeaders() });
   }
+  updateStatutCategorie(id: number, statut: boolean) {
+  return this.http.patch(`${this.apiUrl}/categories-produits/${id}/statut`, { statut },{ headers: this.getHeaders() });
+}
+
 
   // Archiver un produit
   archiverProduit(id: number): Observable<any> {

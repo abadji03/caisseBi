@@ -93,8 +93,8 @@ export class CaisseComponent implements OnInit {
     ];
 
     this.produits = [
-      { id: 1, designation: 'Lait Caillé', famille: 'Laitage', fournisseurId: 1, unite: 'L', prixVenteUnitaire: 500, prixTotalVente: 500, description: 'Boisson lactée', codeBarre: '123456' },
-      { id: 2, designation: 'Thiakri', famille: 'Céréales', fournisseurId: 2, unite: 'Kg', prixVenteUnitaire: 800, prixTotalVente: 800, description: 'Couscous sucré', codeBarre: '7891011' }
+      { id: 1, designation: 'Lait Caillé', categorieId: 1, fournisseurId: 1, unite: 'L', prixVenteUnitaire: 500, prixTotalVente: 500, description: 'Boisson lactée', codeBarre: '123456' },
+      { id: 2, designation: 'Thiakri', categorieId: 2, fournisseurId: 2, unite: 'Kg', prixVenteUnitaire: 800, prixTotalVente: 800, description: 'Couscous sucré', codeBarre: '7891011' }
     ];
 
     // Transactions journalières

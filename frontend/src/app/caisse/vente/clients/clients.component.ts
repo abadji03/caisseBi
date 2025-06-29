@@ -302,7 +302,7 @@ min(a: number, b: number): number {
               designation: produitsDisponibles[Math.floor(Math.random() * produitsDisponibles.length)],
               quantite: quantite,
               prixVenteUnitaire: prixUnitaire,
-              famille:'',
+              categorieId:0,
               fournisseur:'',
               magasin:'',
               unite: 'Unité',

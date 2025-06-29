@@ -340,7 +340,7 @@ export class FournisseursComponent implements OnInit {
             quantite: quantite,
             prixAchatUnitaire: prixUnitaire,
             prixVenteUnitaire: prixUnitaire,
-            famille:'',
+            categorieId:0,
             fournisseur:'',
             magasin:'',
             unite: 'Unité',
@@ -1220,7 +1220,7 @@ getTotalPages(list: any[]): number {
           //this.toastr.error('Erreur lors de la suppression du fournisseur');
           this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour du statut fournisseur';
           this.toastr.error(this.errorMessage);
-          //console.error(err);
+          console.error(err);
         }
       });
     }

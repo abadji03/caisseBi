@@ -16,41 +16,41 @@ export const magasins: Magasin[] = [
 
 export const produits: Produits[] = [
     // Produits pour Magasin 1 (1-10)
-    new Produits({ id: 1, famille: "Alimentation", designation: "Pâtes Barilla", unite: "Kg", prixAchatUnitaire: 1.20, prixVenteUnitaire: 2.50, perissable: false, codeBarre: "123456789012" }),
-    new Produits({ id: 2, famille: "Boissons", designation: "Eau minérale 1L", unite: "Bouteille", prixAchatUnitaire: 0.30, prixVenteUnitaire: 0.80, perissable: false, codeBarre: "234567890123" }),
-    new Produits({ id: 3, famille: "Fruits", designation: "Pommes Golden", unite: "Kg", prixAchatUnitaire: 1.50, prixVenteUnitaire: 2.80, perissable: true, codeBarre: "345678901234" }),
-    new Produits({ id: 4, famille: "Laitage", designation: "Lait entier", unite: "Litre", prixAchatUnitaire: 0.80, prixVenteUnitaire: 1.50, perissable: true, codeBarre: "456789012345" }),
-    new Produits({ id: 5, famille: "Boulangerie", designation: "Pain complet", unite: "Pièce", prixAchatUnitaire: 0.60, prixVenteUnitaire: 1.20, perissable: true, codeBarre: "567890123456" }),
-    new Produits({ id: 6, famille: "Viandes", designation: "Steak haché", unite: "Kg", prixAchatUnitaire: 8.50, prixVenteUnitaire: 12.00, perissable: true, codeBarre: "678901234567" }),
-    new Produits({ id: 7, famille: "Electroménager", designation: "Cafetière", unite: "Pièce", prixAchatUnitaire: 25.00, prixVenteUnitaire: 39.99, perissable: false, codeBarre: "789012345678" }),
-    new Produits({ id: 8, famille: "Entretien", designation: "Lessive 3L", unite: "Bouteille", prixAchatUnitaire: 5.80, prixVenteUnitaire: 9.50, perissable: false, codeBarre: "890123456789" }),
-    new Produits({ id: 9, famille: "Surgelés", designation: "Pizza 4 fromages", unite: "Pièce", prixAchatUnitaire: 2.30, prixVenteUnitaire: 4.50, perissable: true, codeBarre: "901234567890" }),
-    new Produits({ id: 10, famille: "Hygiène", designation: "Dentifrice", unite: "Tube", prixAchatUnitaire: 1.10, prixVenteUnitaire: 2.20, perissable: false, codeBarre: "012345678901" }),
+    new Produits({ id: 1, categorieId: 1, designation: "Pâtes Barilla", unite: "Kg", prixAchatUnitaire: 1.20, prixVenteUnitaire: 2.50, perissable: false, codeBarre: "123456789012" }),
+    new Produits({ id: 2, categorieId: 2, designation: "Eau minérale 1L", unite: "Bouteille", prixAchatUnitaire: 0.30, prixVenteUnitaire: 0.80, perissable: false, codeBarre: "234567890123" }),
+    new Produits({ id: 3, categorieId: 3, designation: "Pommes Golden", unite: "Kg", prixAchatUnitaire: 1.50, prixVenteUnitaire: 2.80, perissable: true, codeBarre: "345678901234" }),
+    new Produits({ id: 4, categorieId: 4, designation: "Lait entier", unite: "Litre", prixAchatUnitaire: 0.80, prixVenteUnitaire: 1.50, perissable: true, codeBarre: "456789012345" }),
+    new Produits({ id: 5, categorieId: 5, designation: "Pain complet", unite: "Pièce", prixAchatUnitaire: 0.60, prixVenteUnitaire: 1.20, perissable: true, codeBarre: "567890123456" }),
+    new Produits({ id: 6,categorieId: 5, designation: "Steak haché", unite: "Kg", prixAchatUnitaire: 8.50, prixVenteUnitaire: 12.00, perissable: true, codeBarre: "678901234567" }),
+    new Produits({ id: 7,categorieId: 5, designation: "Cafetière", unite: "Pièce", prixAchatUnitaire: 25.00, prixVenteUnitaire: 39.99, perissable: false, codeBarre: "789012345678" }),
+    new Produits({ id: 8,categorieId: 5, designation: "Lessive 3L", unite: "Bouteille", prixAchatUnitaire: 5.80, prixVenteUnitaire: 9.50, perissable: false, codeBarre: "890123456789" }),
+    new Produits({ id: 9, categorieId: 5, designation: "Pizza 4 fromages", unite: "Pièce", prixAchatUnitaire: 2.30, prixVenteUnitaire: 4.50, perissable: true, codeBarre: "901234567890" }),
+    new Produits({ id: 10, categorieId: 5, designation: "Dentifrice", unite: "Tube", prixAchatUnitaire: 1.10, prixVenteUnitaire: 2.20, perissable: false, codeBarre: "012345678901" }),
 
     // Produits pour Magasin 2 (11-20)
-    new Produits({ id: 11, famille: "Alimentation", designation: "Riz Basmati", unite: "Kg", prixAchatUnitaire: 1.80, prixVenteUnitaire: 3.20, perissable: false, codeBarre: "112345678901" }),
-    new Produits({ id: 12, famille: "Boissons", designation: "Jus d'orange 1L", unite: "Bouteille", prixAchatUnitaire: 1.20, prixVenteUnitaire: 2.50, perissable: true, codeBarre: "212345678901" }),
-    new Produits({ id: 13, famille: "Fruits", designation: "Bananes", unite: "Kg", prixAchatUnitaire: 1.20, prixVenteUnitaire: 2.30, perissable: true, codeBarre: "312345678901" }),
-    new Produits({ id: 14, famille: "Laitage", designation: "Yaourt nature", unite: "Pot", prixAchatUnitaire: 0.40, prixVenteUnitaire: 0.80, perissable: true, codeBarre: "412345678901" }),
-    new Produits({ id: 15, famille: "Boulangerie", designation: "Baguette", unite: "Pièce", prixAchatUnitaire: 0.35, prixVenteUnitaire: 0.90, perissable: true, codeBarre: "512345678901" }),
-    new Produits({ id: 16, famille: "Viandes", designation: "Poulet entier", unite: "Kg", prixAchatUnitaire: 6.50, prixVenteUnitaire: 9.90, perissable: true, codeBarre: "612345678901" }),
-    new Produits({ id: 17, famille: "Electroménager", designation: "Grille-pain", unite: "Pièce", prixAchatUnitaire: 18.00, prixVenteUnitaire: 29.99, perissable: false, codeBarre: "712345678901" }),
-    new Produits({ id: 18, famille: "Entretien", designation: "Nettoyant sol", unite: "Litre", prixAchatUnitaire: 3.50, prixVenteUnitaire: 6.20, perissable: false, codeBarre: "812345678901" }),
-    new Produits({ id: 19, famille: "Surgelés", designation: "Lasagnes", unite: "Pièce", prixAchatUnitaire: 2.80, prixVenteUnitaire: 5.20, perissable: true, codeBarre: "912345678901" }),
-    new Produits({ id: 20, famille: "Hygiène", designation: "Shampoing", unite: "Flacon", prixAchatUnitaire: 2.30, prixVenteUnitaire: 4.50, perissable: false, codeBarre: "022345678901" }),
+    new Produits({ id: 11, categorieId: 5, designation: "Riz Basmati", unite: "Kg", prixAchatUnitaire: 1.80, prixVenteUnitaire: 3.20, perissable: false, codeBarre: "112345678901" }),
+    new Produits({ id: 12, categorieId: 5, designation: "Jus d'orange 1L", unite: "Bouteille", prixAchatUnitaire: 1.20, prixVenteUnitaire: 2.50, perissable: true, codeBarre: "212345678901" }),
+    new Produits({ id: 13, categorieId: 5, designation: "Bananes", unite: "Kg", prixAchatUnitaire: 1.20, prixVenteUnitaire: 2.30, perissable: true, codeBarre: "312345678901" }),
+    new Produits({ id: 14, categorieId: 5, designation: "Yaourt nature", unite: "Pot", prixAchatUnitaire: 0.40, prixVenteUnitaire: 0.80, perissable: true, codeBarre: "412345678901" }),
+    new Produits({ id: 15, categorieId: 5, designation: "Baguette", unite: "Pièce", prixAchatUnitaire: 0.35, prixVenteUnitaire: 0.90, perissable: true, codeBarre: "512345678901" }),
+    new Produits({ id: 16, categorieId: 5, designation: "Poulet entier", unite: "Kg", prixAchatUnitaire: 6.50, prixVenteUnitaire: 9.90, perissable: true, codeBarre: "612345678901" }),
+    new Produits({ id: 17, categorieId: 5, designation: "Grille-pain", unite: "Pièce", prixAchatUnitaire: 18.00, prixVenteUnitaire: 29.99, perissable: false, codeBarre: "712345678901" }),
+    new Produits({ id: 18, categorieId: 5, designation: "Nettoyant sol", unite: "Litre", prixAchatUnitaire: 3.50, prixVenteUnitaire: 6.20, perissable: false, codeBarre: "812345678901" }),
+    new Produits({ id: 19,categorieId: 5, designation: "Lasagnes", unite: "Pièce", prixAchatUnitaire: 2.80, prixVenteUnitaire: 5.20, perissable: true, codeBarre: "912345678901" }),
+    new Produits({ id: 20, categorieId: 5, designation: "Shampoing", unite: "Flacon", prixAchatUnitaire: 2.30, prixVenteUnitaire: 4.50, perissable: false, codeBarre: "022345678901" }),
 
     // Produits pour Magasin 3 (21-30)
-    new Produits({ id: 21, famille: "Alimentation", designation: "Farine T55", unite: "Kg", prixAchatUnitaire: 0.90, prixVenteUnitaire: 1.80, perissable: false, codeBarre: "122345678901" }),
-    new Produits({ id: 22, famille: "Boissons", designation: "Soda 1.5L", unite: "Bouteille", prixAchatUnitaire: 0.80, prixVenteUnitaire: 1.90, perissable: false, codeBarre: "222345678901" }),
-    new Produits({ id: 23, famille: "Fruits", designation: "Oranges", unite: "Kg", prixAchatUnitaire: 1.60, prixVenteUnitaire: 2.90, perissable: true, codeBarre: "322345678901" }),
-    new Produits({ id: 24, famille: "Laitage", designation: "Fromage râpé", unite: "Kg", prixAchatUnitaire: 7.50, prixVenteUnitaire: 12.00, perissable: true, codeBarre: "422345678901" }),
-    new Produits({ id: 25, famille: "Boulangerie", designation: "Croissant", unite: "Pièce", prixAchatUnitaire: 0.45, prixVenteUnitaire: 1.00, perissable: true, codeBarre: "522345678901" }),
-    new Produits({ id: 26, famille: "Viandes", designation: "Saumon frais", unite: "Kg", prixAchatUnitaire: 12.00, prixVenteUnitaire: 18.50, perissable: true, codeBarre: "622345678901" }),
-    new Produits({ id: 27, famille: "Electroménager", designation: "Bouilloire", unite: "Pièce", prixAchatUnitaire: 15.00, prixVenteUnitaire: 24.99, perissable: false, codeBarre: "722345678901" }),
-    new Produits({ id: 28, famille: "Entretien", designation: "Désodorisant", unite: "Spray", prixAchatUnitaire: 2.20, prixVenteUnitaire: 4.00, perissable: false, codeBarre: "822345678901" }),
-    new Produits({ id: 29, famille: "Surgelés", designation: "Glace vanille", unite: "Pot", prixAchatUnitaire: 2.50, prixVenteUnitaire: 4.80, perissable: true, codeBarre: "922345678901" }),
-    new Produits({ id: 30, famille: "Hygiène", designation: "Savon", unite: "Pièce", prixAchatUnitaire: 0.80, prixVenteUnitaire: 1.50, perissable: false, codeBarre: "032345678901" })
-];
+    new Produits({ id: 21, categorieId: 5, designation: "Farine T55", unite: "Kg", prixAchatUnitaire: 0.90, prixVenteUnitaire: 1.80, perissable: false, codeBarre: "122345678901" }),
+    new Produits({ id: 22, categorieId: 5, designation: "Soda 1.5L", unite: "Bouteille", prixAchatUnitaire: 0.80, prixVenteUnitaire: 1.90, perissable: false, codeBarre: "222345678901" }),
+    new Produits({ id: 23, categorieId: 5, designation: "Oranges", unite: "Kg", prixAchatUnitaire: 1.60, prixVenteUnitaire: 2.90, perissable: true, codeBarre: "322345678901" }),
+    new Produits({ id: 24, categorieId: 5, designation: "Fromage râpé", unite: "Kg", prixAchatUnitaire: 7.50, prixVenteUnitaire: 12.00, perissable: true, codeBarre: "422345678901" }),
+    new Produits({ id: 25, categorieId: 5, designation: "Croissant", unite: "Pièce", prixAchatUnitaire: 0.45, prixVenteUnitaire: 1.00, perissable: true, codeBarre: "522345678901" }),
+    new Produits({ id: 26,categorieId: 5, designation: "Saumon frais", unite: "Kg", prixAchatUnitaire: 12.00, prixVenteUnitaire: 18.50, perissable: true, codeBarre: "622345678901" }),
+    new Produits({ id: 27, categorieId: 5, designation: "Bouilloire", unite: "Pièce", prixAchatUnitaire: 15.00, prixVenteUnitaire: 24.99, perissable: false, codeBarre: "722345678901" }),
+    new Produits({ id: 28,categorieId: 5, designation: "Désodorisant", unite: "Spray", prixAchatUnitaire: 2.20, prixVenteUnitaire: 4.00, perissable: false, codeBarre: "822345678901" }),
+    new Produits({ id: 29, categorieId: 5, designation: "Glace vanille", unite: "Pot", prixAchatUnitaire: 2.50, prixVenteUnitaire: 4.80, perissable: true, codeBarre: "922345678901" }),
+    new Produits({ id: 30, categorieId: 5, designation: "Savon", unite: "Pièce", prixAchatUnitaire: 0.80, prixVenteUnitaire: 1.50, perissable: false, codeBarre: "032345678901" })
+ ];
 
 // Stocks pour chaque magasin (10 par magasin)
 export const stocks: Stock[] = [

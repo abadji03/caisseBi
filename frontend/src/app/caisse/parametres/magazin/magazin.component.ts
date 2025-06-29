@@ -189,9 +189,9 @@ getPrixVenteProduitById(id: number,prod: Produits[]): number {
   return produit ? produit.prixVenteUnitaire : 0;  // On retourne `null` si le produit n'est pas trouvé
 }
 
-getFamilleProduitById(id: number,prod: Produits[]): string | null {
+getFamilleProduitById(id: number,prod: Produits[]): number | null {
   const produit = prod.find(p => p.id === id);
-  return produit ? produit.famille : null;  // On retourne `null` si le produit n'est pas trouvé
+  return produit ? produit.categorieId : null;  // On retourne `null` si le produit n'est pas trouvé
 }
 
 getNomMagazin(id: number): string | null {
@@ -273,7 +273,7 @@ loadMagasins(): Magasin[] {
     for (let j = 1; j <= 10; j++) {
       this.produits.push(new Produits({
         id: j,
-        famille: `Famille ${j}`,
+        categorieId: 2,
         designation: `Produit ${j}`,
         fournisseurId: j,
         unite: "Pièce",
@@ -282,7 +282,7 @@ loadMagasins(): Magasin[] {
         prixVenteUnitaire: Math.floor(Math.random() * 1500) + 1000,
         prixTotalVente: 0,
         dateCreation: new Date(),
-        agent: `Agent ${j}`,
+        //agent: `Agent ${j}`,
         description: `Description du produit ${j}`,
         codeBarre: `CODE${j}`,
         image: ""
@@ -591,7 +591,7 @@ onSearchChange(objet: string): void {
   switch (objet) {
     case 'stock':
       this.filteredStock = (this.getProduitsParMagasin(this.magasinSelectionne) ?? []).filter(prod =>
-        prod.famille?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+        //prod.famille?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
         prod.designation?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
         prod.unite?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
         prod.prixAchatUnitaire?.toString().includes(this.searchTerm) ||

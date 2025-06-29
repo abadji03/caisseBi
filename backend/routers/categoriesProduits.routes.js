@@ -7,5 +7,6 @@ router.put("/:id", categorieCtrl.updateCategorie);
 router.delete("/:id", categorieCtrl.deleteCategorie); 
 router.get("/:id", categorieCtrl.getCategoriesById); 
 router.get("/structure/:code_structure", categorieCtrl.getCategoriesByStructure);
+router.patch("/:id/statut", categorieCtrl.updateStatutCategorie);
 
 module.exports = router;

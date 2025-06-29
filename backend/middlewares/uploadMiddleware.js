@@ -14,7 +14,7 @@ const storage = multer.diskStorage({
   }
 });
 
-// Filtre de type de fichier (images uniquement)
+// Filtre de type de fichier 
 const fileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|gif|pdf/;
   const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
@@ -24,6 +24,9 @@ const fileFilter = (req, file, cb) => {
   else cb(new Error('Seuls les fichiers image sont autorisés.'));
 };
 
-const upload = multer({ storage, fileFilter });
+const upload = multer({
+   storage, fileFilter,
+   limits: { fileSize: 5 * 1024 * 1024 }  // 5 MB max
+   });
 
 module.exports = upload;

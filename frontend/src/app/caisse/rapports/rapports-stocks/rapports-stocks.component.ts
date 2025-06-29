@@ -169,9 +169,9 @@ export class RapportsStocksComponent implements OnInit {
     this.stocks.forEach(stock => {
       const produit = this.filteredProduits.find(p => p.id === stock.produitId);
       if (produit) {
-        const cat = produit.famille?.trim() || 'Non catégorisé'; // trim() pour enlever les espaces
-        const currentValue = categories.get(cat) || 0;
-        categories.set(cat, currentValue + (stock.quantiteDisponible || 0));
+        //const cat = produit.categorieId || 0; // trim() pour enlever les espaces
+        //const currentValue = categories.get(cat) || 0;
+        //categories.set(cat, currentValue + (stock.quantiteDisponible || 0));
       } else {
         console.warn('Produit non trouvé pour le stock:', stock);
       }
@@ -798,7 +798,7 @@ getAllSMouvements(): MouvementsStock[] {
         const stat = this.getStatProduit(produit);
         productsSheet.addRow({
           designation: produit.designation,
-          famille: produit.famille,
+          categorieId: produit.categorieId,
           unite: produit.unite,
           prixAchat: this.getDernierPrixAchatById(produit.id),
           stockInitial: `${stat.stockInitial} (${stat.valeurStockInitial?.toFixed(2)})`,
@@ -894,7 +894,7 @@ getAllSMouvements(): MouvementsStock[] {
 
     if (typeSearch === 'stock') {
       this.filteredProduits = this.allProduits.filter(prod =>
-        this.removeAccents(prod.famille?.toLowerCase()).includes(search) ||
+        //this.removeAccents(prod.famille?.toLowerCase()).includes(search) ||
         this.removeAccents(this.getStatutProduitById(prod.id).toLowerCase()).includes(search)
       );
       this.currentPage = 1;

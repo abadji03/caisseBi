@@ -122,6 +122,9 @@ db.Produit.belongsTo(db.CategoriesProduits, { foreignKey: 'categorieId' });
 // Produit appartient à un fournisseur
 db.Fournisseur.hasMany(db.Produit, { foreignKey: 'fournisseurId' });
 db.Produit.belongsTo(db.Fournisseur, { foreignKey: 'fournisseurId' });
+// les Produit sont enregistrés par un utilisateur
+db.Users.hasMany(db.Produit, { foreignKey: 'agentId' });
+db.Produit.belongsTo(db.Users, { foreignKey: 'agentId' });
 // Structure a plusieurs fournisseurs
 db.Structure.hasMany(db.Fournisseur, {
   foreignKey: 'code_structure',

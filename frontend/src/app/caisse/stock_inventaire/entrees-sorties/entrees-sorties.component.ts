@@ -67,7 +67,7 @@ export class EntreesSortiesComponent implements OnInit {
   ngOnInit() {
 
     this.produits = [
-      new Produits({ id: 101, famille: "Boissons", designation: "Lait Caillé 1L", fournisseurId: 10, unite: "Litre", prixAchatUnitaire: 100, prixVenteUnitaire: 150, codeBarre: "123456789101", description: "Lait caillé frais de qualité supérieure" }),
+    /*   new Produits({ id: 101, categorieId: "Boissons", designation: "Lait Caillé 1L", fournisseurId: 10, unite: "Litre", prixAchatUnitaire: 100, prixVenteUnitaire: 150, codeBarre: "123456789101", description: "Lait caillé frais de qualité supérieure" }),
 
       new Produits({ id: 102, famille: "Alimentation", designation: "Couscous de mil 500g", fournisseurId: 11, unite: "Paquet", prixAchatUnitaire: 150, prixVenteUnitaire: 200, codeBarre: "223344556677", description: "Couscous traditionnel 100% mil" }),
 
@@ -85,7 +85,7 @@ export class EntreesSortiesComponent implements OnInit {
 
       new Produits({ id: 204, famille: "Vêtements", designation: "T-shirt Coton XL", fournisseurId: 23, unite: "Pièce", prixAchatUnitaire: 250, prixVenteUnitaire: 400, codeBarre: "990011223344", description: "T-shirt 100% coton taille XL" }),
 
-      new Produits({ id: 205, famille: "Accessoires", designation: "Montre Connectée", fournisseurId: 24, unite: "Pièce", prixAchatUnitaire: 450, prixVenteUnitaire: 650, codeBarre: "001122334455", description: "Montre connectée avec suivi de santé et notifications" }),
+      new Produits({ id: 205, famille: "Accessoires", designation: "Montre Connectée", fournisseurId: 24, unite: "Pièce", prixAchatUnitaire: 450, prixVenteUnitaire: 650, codeBarre: "001122334455", description: "Montre connectée avec suivi de santé et notifications" }), */
     ];
 
 

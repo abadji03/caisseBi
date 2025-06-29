@@ -1,12 +1,12 @@
 const db = require("../models");
-const CategorieProduit = db.CategorieProduit;
+const CategorieProduit = db.CategoriesProduits;
 
 exports.createCategorie = async (req, res) => {
   try {
     const categorie = await CategorieProduit.create(req.body);
     res.status(201).json(categorie);
   } catch (error) {
-    res.status(500).json({ message: "Erreur création catégorie", error });
+    res.status(500).json({ message:"Erreur création catégorie", error });
   }
 };
 
@@ -53,5 +53,23 @@ exports.getCategoriesByStructure = async (req, res) => {
     res.json(categories);
   } catch (error) {
     res.status(500).json({ message: "Erreur récupération", error });
+  }
+};
+
+exports.updateStatutCategorie = async (req, res) => {
+  try {
+    const categorie = await CategorieProduit.findByPk(req.params.id);
+    if (!categorie) return res.status(404).json({ message: "Catégorie non trouvée" });
+
+    const { statut } = req.body;
+
+    if (typeof statut !== 'boolean') {
+      return res.status(400).json({ message: "Le statut doit être un booléen." });
+    }
+
+    await categorie.update({ statut });
+    res.json({ message: "Statut mis à jour avec succès", categorie });
+  } catch (error) {
+    res.status(500).json({ message: "Erreur mise à jour du statut", error });
   }
 };

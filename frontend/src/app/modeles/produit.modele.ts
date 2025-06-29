@@ -112,7 +112,7 @@ export class Produit {
 
     export class Produits {
       public id: number=0;
-      public famille!: string; // Catégorie du produit
+      public categorieId!: number; // Catégorie du produit
       public designation!: string; // Nom du produit
       public fournisseurId?: number; // ID du fournisseur
       public unite!: string; // Unité de mesure (Carton, Pièce, Kg…)
@@ -126,7 +126,7 @@ export class Produit {
       public codeBarre?: string; // Code-barres du produit
       public image?: string; // Image du produit
       public dateCreation?: Date = new Date(); // Date d'ajout du produit
-      public agent?: string; // Personne qui a ajouté le produit
+      public agentId?: number; // Personne qui a ajouté le produit
       public dernierPrixAchat?: number; // Dernier prix d'achat connu
 
       constructor(data?: Partial<Produits>) {
@@ -143,6 +143,7 @@ export class CategorieProduits {
   code_structure!: string;
   nom!:string;
   description?:string;
+  statut:boolean = true;
 
   constructor(data?: Partial<CategorieProduits>){
     

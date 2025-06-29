@@ -126,7 +126,7 @@ mouvementsStock: MouvementsStock[] = [
 
   // Données fictives pour les produits, à remplacer par des appels à des services backend
   produits: Produits[] = [
-    new Produits({ id: 101, famille: "Boissons", designation: "Lait en poudre", fournisseurId: 3, unite: "Carton", prixAchatUnitaire: 1500, prixVenteUnitaire: 2000, agent: "Admin", description: "Lait en poudre 500g", codeBarre: "1234567890123", image: "lait-poudre.jpg", perissable: true }),
+    /* new Produits({ id: 101, famille: "Boissons", designation: "Lait en poudre", fournisseurId: 3, unite: "Carton", prixAchatUnitaire: 1500, prixVenteUnitaire: 2000, agent: "Admin", description: "Lait en poudre 500g", codeBarre: "1234567890123", image: "lait-poudre.jpg", perissable: true }),
     new Produits({ id: 102, famille: "Snacks", designation: "Chips", fournisseurId: 2,  unite: "Sachet", prixAchatUnitaire: 500, prixVenteUnitaire: 700, agent: "Admin", description: "Chips de pomme de terre", codeBarre: "1234567890456", image: "chips.jpg", perissable: true }),
     new Produits({ id: 103, famille: "Boissons", designation: "Eau minérale", fournisseurId: 1,  unite: "Bouteille", prixAchatUnitaire: 300, prixVenteUnitaire: 500, agent: "Admin", description: "Eau minérale naturelle", codeBarre: "1234567890789", image: "eau.jpg", perissable: false }),
     new Produits({ id: 104, famille: "Confiserie", designation: "Chocolat", fournisseurId: 4, unite: "Pièce", prixAchatUnitaire: 2500, prixVenteUnitaire: 3000, agent: "Admin", description: "Chocolat noir 70%", codeBarre: "1234567890890", image: "chocolat.jpg", perissable: true }),
@@ -137,7 +137,7 @@ mouvementsStock: MouvementsStock[] = [
     new Produits({ id: 108, famille: "Épicerie", designation: "Riz basmati", fournisseurId: 8, unite: "Kg", prixAchatUnitaire: 2500, prixVenteUnitaire: 3000, agent: "Admin", description: "Riz basmati parfumé", codeBarre: "1234567891224", image: "riz.jpg", perissable: false }),
     new Produits({ id: 109, famille: "Produits laitiers", designation: "Yaourt nature", fournisseurId: 9, unite: "Pot", prixAchatUnitaire: 600, prixVenteUnitaire: 900, agent: "Admin", description: "Yaourt nature 150g", codeBarre: "1234567891335", image: "yaourt.jpg", perissable: true }),
     new Produits({ id: 110, famille: "Boulangerie", designation: "Pain complet", fournisseurId: 10, unite: "Pièce", prixAchatUnitaire: 800, prixVenteUnitaire: 1000, agent: "Admin", description: "Pain complet aux céréales", codeBarre: "1234567891446", image: "pain.jpg", perissable: true})
-  ];
+   */];
 
   // Données fictives pour les Perissables
   produitsPerissables: Produits[] = this.produits.filter(p => p.perissable === true);
@@ -185,7 +185,7 @@ mouvementsStock: MouvementsStock[] = [
     return this.produits.filter(p => !p.perissable);
   }
 
-  chargerInventaire(): void {
+  /* chargerInventaire(): void {
     this.stockService.getStocks().subscribe((data) => {
       this.stocks = data;
     });
@@ -201,7 +201,7 @@ mouvementsStock: MouvementsStock[] = [
     this.stockService.getMouvements().subscribe((data) => {
       this.mouvementsStock = data;
     });
-  }
+  } */
 
   // Méthodes pour gérer les alertes
   envoyerAlerteReapprovisionnement() {

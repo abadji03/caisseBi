@@ -1,9 +1,16 @@
 import { Component } from '@angular/core';
-import { Produits } from '../../../modeles/produit.modele';
+import { CategorieProduits, Produits } from '../../../modeles/produit.modele';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import JsBarcode from 'jsbarcode';
+import { ProduitsService } from '../../../services/produits.service';
+import { ToastrService } from 'ngx-toastr';
+import { FournisseursService } from '../../../services/fournisseurs.service';
+import { finalize, forkJoin } from 'rxjs';
+import { Fournisseur } from '../../../modeles/fournisseur.model';
+import { StockInventaireService } from '../../../services/stock-inventaire.service';
+import { image } from 'html2canvas/dist/types/css/types/image';
 
 @Component({
   selector: 'app-catalogue-produit',
@@ -15,9 +22,16 @@ import JsBarcode from 'jsbarcode';
 export class CatalogueProduitComponent {
 
     prods: Produits[] = [];  // Liste de prods
+    code_structure:string = 'MASTRUCTURET-NZNC';
+    isLoading:boolean = false;
+    agentId:number = 15;
+    magasinId:number = 1;
+    codeBarre:string = '';
+    selectedImageFile: File | null = null;
+    logoPreview: string | null = null;
     selectedProduits: Produits | null = null;  // Produits sélectionné
-    searchForm: FormGroup;  // Formulaire de recherche
-    categorieForm: FormGroup;  // Formulaire d'ajout de catégorie
+    searchForm!: FormGroup;  // Formulaire de recherche
+    categorieForm!: FormGroup;  // Formulaire d'ajout de catégorie
     isActionsEnabled: boolean = false;  // Indicateur pour activer les actions
     currentPage: number = 1;  // Page courante pour la pagination
     itemsPerPage: number = 6;  // Nombre d'items par page
@@ -25,11 +39,18 @@ export class CatalogueProduitComponent {
     ajoutCategorie:boolean = false;
     searchTerm: string = '';
 
+    errorMessage = '';
+    categories: CategorieProduits[] = [];
+    editingCategorieId: number | null = null;
+    editedCategorie: any = {};
+
     actionType: string = 'ajouter';
     searchText: string = '';  // Texte de recherche
     searchBy: string = 'designation';  // Critère de recherche
+    fournisseur:Fournisseur[] = [];
 
-    produitForm: FormGroup;
+    produitForm!: FormGroup;
+    stockForm!: FormGroup;
     // 1. Ajout d'une propriété pour les produits filtrés
     filteredProducts: Produits[] = [];
 
@@ -44,6 +65,7 @@ export class CatalogueProduitComponent {
 
     productsToRemove : Produits[] = [];
     isCheckedCase : boolean = false;
+   showStockSection = false;
 
 
 
@@ -53,7 +75,28 @@ export class CatalogueProduitComponent {
     magasins: string[] = ['Magasin 1', 'Magasin 2', 'Magasin 3', 'Magasin 4'];  // Liste des magasins
     selectedImage:File | null = null;
 
-    constructor(private fb: FormBuilder) {
+    constructor(
+      private fb: FormBuilder,
+      private produitsServices:ProduitsService,
+      private toastr: ToastrService,
+      private fournisseurService:FournisseursService,
+      private stockService: StockInventaireService
+    ) {
+
+    }
+
+    ngOnInit(): void {
+      this.iniFormulaire();
+      this.loadCategories();
+      this.loadFournisseurs();
+      // Charger les prods fictifs
+      //this.prods = this.loadMockData();
+      // Initialiser filteredProducts avec tous les produits
+      this.filteredProducts = [...this.prods];
+    }
+
+    iniFormulaire(): void{
+
       // Initialisation du formulaire réactif pour la recherche
       this.searchForm = this.fb.group({
         searchText: [''],
@@ -62,37 +105,45 @@ export class CatalogueProduitComponent {
 
       // Initialisation du formulaire réactif pour l'ajout d'une catégorie
       this.categorieForm = this.fb.group({
-        nom_categorie: ['', Validators.required],
-        desc_categorie: ['', Validators.required],
+        nom: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]],
+        description: ['', Validators.required],
+        code_structure:[this.code_structure],
+        statut:[true]
       });
           // Formulaire réactif pour ajouter/éditer un produit
       this.produitForm = this.fb.group({
-        id: [null],
-        famille: ['', Validators.required],
+        //code_structure: [this.code_structure],
+        categorieId: ['', Validators.required],
         designation: ['', Validators.required],
-        fournisseur: ['', Validators.required],
-        magasin: ['', Validators.required],  // Magasin ajouté
-        quantite: [0, Validators.required],
-        type_entree: ['', Validators.required],
-        type_sortie: ['', Validators.required],
+        fournisseurId: ['', Validators.required],
+        //agentId: [this.agentId], 
+        //quantite: [0, Validators.required],
+        // type_entree: ['', Validators.required],
+        // type_sortie: ['', Validators.required],
         unite: ['', Validators.required],
-        prixAchatUnitaire: [0, Validators.required],
-        prixTotalAchat: [0],
-        prixVenteUnitaire: [0, Validators.required],
-        prixTotalVente: [0],
+        prixAchatUnitaire: [0, [Validators.required, Validators.min(0)]],
+        prixVenteUnitaire: [0, [Validators.required, Validators.min(0)]],
+        //prixTotalVente: [0],
         description: [''],
-        stockable:['',Validators.required],
-        image:[null],
-        newUnite: ['']
+        perissable:[false, Validators.required]
+        //image:[null]
+       
       });
     }
 
-    ngOnInit(): void {
-      // Charger les prods fictifs
-      this.prods = this.loadMockData();
-      // Initialiser filteredProducts avec tous les produits
-      this.filteredProducts = [...this.prods];
+    initStockForm() {
+      this.stockForm = this.fb.group({
+        magasinId: [this.magasinId],
+          quantiteTotale: ['', [Validators.required, Validators.min(0)]],
+          seuilAlerte: [5],
+          seuilReapprovisionnement: [10],
+          stockSecurite: [5],
+          datePeremption: [null]
+      });
     }
+
+    // Getter pour accéder facilement aux contrôles
+    get f() { return this.produitForm.controls; }
 
     verifyCheckedCase() {
       const checkboxs = document.getElementsByName('checkCase');
@@ -169,15 +220,15 @@ export class CatalogueProduitComponent {
       }
     }
 
-    loadMockData(): Produits[] {
+    /* loadMockData(): Produits[] {
       return [
         new Produits({
           id: 1, famille: 'Electroménager', designation: 'Réfrigérateur', fournisseurId: 1,  unite: 'Unités', prixAchatUnitaire: 100, prixTotalAchat: 1000, prixVenteUnitaire: 150,
-          prixTotalVente: 1500, dateCreation: new Date(), agent: 'Agent 1', description: 'Réfrigérateur LG', codeBarre: '1234567890', image: ''
+          prixTotalVente: 1500, dateCreation: new Date(), description: 'Réfrigérateur LG', codeBarre: '1234567890', image: ''
         }),
         new Produits({
           id: 2, famille: 'Électronique', designation: 'Télévision', fournisseurId: 2,  unite: 'Unités', prixAchatUnitaire: 200, prixTotalAchat: 1000, prixVenteUnitaire: 300,
-          prixTotalVente: 1500, dateCreation: new Date(), agent: 'Agent 2', description: 'Télévision Samsung', codeBarre: '2345678901', image: ''
+          prixTotalVente: 1500, dateCreation: new Date(), description: 'Télévision Samsung', codeBarre: '2345678901', image: ''
         }),
         new Produits({
           id: 3, famille: 'Vêtements', designation: 'T-shirt', fournisseurId: 3,  unite: 'Unités', prixAchatUnitaire: 10, prixTotalAchat: 150, prixVenteUnitaire: 20,
@@ -236,7 +287,7 @@ export class CatalogueProduitComponent {
           prixTotalVente: 200, dateCreation: new Date(), agent: 'Agent 16', description: 'Jus d\'orange Tropicana', codeBarre: '6789012346', image: ''
         }),
         ]
-      }
+      } */
     onRowSelect(Produits: Produits): void {
       this.selectedProduits = Produits;
       this.isActionsEnabled = true;  // Activer les actions quand une ligne est sélectionnée
@@ -260,7 +311,7 @@ export class CatalogueProduitComponent {
       this.filteredProducts = this.prods.filter((produit) => {
         // Vérification si le champ `name` ou `city` contient la valeur recherchée
         return produit.designation?.toLowerCase().includes(searchValue) ||
-               produit.famille?.toLowerCase().includes(searchValue) ||
+               //produit.famille?.toLowerCase().includes(searchValue) ||
                produit.fournisseurId?.toString().toLowerCase().includes(searchValue)
               //  produit.magasinId?.toString().toLowerCase().includes(searchValue);
       });
@@ -319,7 +370,7 @@ export class CatalogueProduitComponent {
           // On charge les informations du produit sélectionné dans le formulaire
           this.produitForm.patchValue({
             id: this.selectedProduits.id,  // Remplir l'ID du produit
-            famille: this.selectedProduits.famille,  // Remplir la famille
+            categorieId: this.selectedProduits.categorieId,  // Remplir la famille
             designation: this.selectedProduits.designation,  // Remplir la désignation
             fournisseur: this.selectedProduits.fournisseurId,  // Remplir le fournisseur
             // magasin: this.selectedProduits.magasinId,  // Remplir le magasin
@@ -402,7 +453,7 @@ export class CatalogueProduitComponent {
           else {
             this.produitForm.patchValue({
               // On charge les valeurs de certains champs comme la famille, designation, etc.
-              famille: produit.famille,
+              categorieId: produit.categorieId,
               designation: produit.designation,
               unite: produit.unite
               // On peut laisser d'autres champs comme fournisseur, magasin, etc. réinitialisés
@@ -422,7 +473,7 @@ export class CatalogueProduitComponent {
         const modal = new (window as any).bootstrap.Modal(modalElement);
         modal.show();
       }
-    }
+    } 
 
     onSubmit(): void {
       if (this.produitForm.valid) {
@@ -433,12 +484,73 @@ export class CatalogueProduitComponent {
     }
 
     onSubmitCategorie(): void {
-      if (this.categorieForm.valid) {
-        /* const produit = this.produitForm.value;
-        console.log('Produit soumis:', produit);
-        this.closeModal(); */
-      }
+    if (this.categorieForm.invalid) {
+      this.toastr.warning('Veuillez remplir le nom de la catégorie');
+      return;
     }
+
+    const formValue = this.categorieForm.value;
+    const categorieData: CategorieProduits = {
+      nom: formValue.nom,
+      description: formValue.description,
+      code_structure:this.code_structure, //this.authService.getUserStructure()
+      statut:formValue.statut
+    };
+
+    console.log(this.categorieForm.get('code_structure')?.value)
+    console.log(categorieData)
+
+    this.produitsServices.createCategorie(categorieData).subscribe({
+      next: () => {
+        this.toastr.success('Catégorie créée avec succès');
+        //this.loadCategories();
+        this.categorieForm.reset();
+        this.ajoutCategorie = false;
+      },
+      error: (err) => {
+        this.errorMessage = err.error?.message || 'Erreur lors de la création de la catégorie';
+        this.toastr.error(this.errorMessage);
+        console.error(err);
+      }
+    });
+  }
+loadCategories(): void {
+    //onst code_structure = this.authService.getUserStructure();
+    this.isLoading = true; 
+    this.produitsServices.getAllCategoriesProduits(this.code_structure).subscribe({
+      next: (data) => {
+        this.isLoading = false;
+        this.categories = data;
+        // Mettre à jour les options de famille avec les catégories réelles
+        //this.familles = data.map(c => c.nom_categorie);
+      },
+      error: (err) => {
+        this.isLoading = false;
+        this.toastr.error('Erreur lors du chargement des catégories');
+        console.error(err);
+      }
+    });
+  }
+
+  loadFournisseurs(): void {
+    //onst code_structure = this.authService.getUserStructure();
+    this.isLoading = true; 
+    this.fournisseurService.getFournisseursByStructure(this.code_structure).subscribe({
+      next: (data) => {
+        this.isLoading = false;
+        this.fournisseur = data;
+        // Mettre à jour les options de famille avec les catégories réelles
+        //this.familles = data.map(c => c.nom_categorie);
+      },
+      error: (err) => {
+        this.isLoading = false;
+        this.toastr.error('Erreur lors du chargement des catégories');
+        console.error(err);
+      }
+    });
+  }
+
+
 
     // Fermer la modal en manipulant le DOM
     closeModal(act: string): void {
@@ -486,7 +598,7 @@ export class CatalogueProduitComponent {
   getButtonLabel(): string {
     switch (this.actionType) {
       case 'ajouter':
-        return 'Ajouter le produit';
+        return 'Ajouter un stock';
       case 'modifier':
         return 'Mettre à jour le produit';
       case 'entree':
@@ -494,7 +606,7 @@ export class CatalogueProduitComponent {
       case 'sortie':
         return 'Enregistrer la sortie';
       default:
-        return 'Ajouter le produit';
+        return 'Ajouter un stock';
     }
   }
 
@@ -603,4 +715,254 @@ export class CatalogueProduitComponent {
         modalInstance.show(); */
       }
     }
+
+  //...............................................................................................
+
+    // Méthode pour ouvrir le modal
+  openCategoriesModal() {
+      // Charger les catégories avant d'ouvrir le modal
+      this.loadCategories();
+      
+      // Ouvrir le modal avec Bootstrap
+      const modal = new (window as any).bootstrap.Modal(document.getElementById('categoriesModal'));
+      modal.show();
+  }
+
+  // Méthodes pour les actions
+  editCategorie(categorie: any) {
+      // Pré-remplir le formulaire avec les données de la catégorie
+      this.categorieForm.patchValue({
+          nom: categorie.nom,
+          description: categorie.description,
+          statut:categorie.statut,
+          code_structure:categorie.code_structure
+      });
+      // Fermer le modal
+      //const modal = new (window as any).bootstrap.Modal.getInstance(document.getElementById('categoriesModal'));
+      //modal.hide();
+  }
+
+  toggleCategorieStatus(categorie: any) {
+      // Implémentez la logique pour activer/désactiver
+      this.isLoading = true;
+      const newStatus = !categorie.statut;
+      this.produitsServices.updateStatutCategorie(categorie.id,newStatus).pipe(
+            finalize(() => this.isLoading = false)
+          )
+      .subscribe({
+        next:() =>{
+              this.toastr.success('Statut catégorie mis à jour avec succès');
+              this.loadCategories();
+        },
+        error:(err) => {
+           this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour du statut de la catégorie';
+          this.toastr.error(this.errorMessage);
+          //console.error(err);
+        }
+      });
+  }
+
+  deleteCategorie(id: number) {
+    this.isLoading = true;
+      // Confirmation avant suppression
+      if(confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?')) {
+        this.produitsServices.deleteCategorie(id).pipe(
+      finalize(() => this.isLoading = false)
+    )
+        .subscribe({
+
+           next:() =>{
+              this.toastr.success('Catégore supprimée avec succès');
+              this.loadCategories();
+        },
+        error:(err) => {
+           this.errorMessage = err.error?.message || 'Erreur lors de la suppression de la catégorie';
+            this.toastr.error(this.errorMessage);
+          //console.error(err);
+        }
+        });
+      }
+  }
+
+  editCategorieBis(categorie: any) {
+  this.editingCategorieId = categorie.id;
+  this.editedCategorie = { ...categorie }; // On fait une copie pour ne pas modifier directement l'objet original
+}
+
+cancelEdit() {
+  this.editingCategorieId = null;
+  this.editedCategorie = {};
+}
+
+saveCategorieEdit() {
+  // Appel à ton service pour faire la mise à jour :
+  this.produitsServices.updateCategorie(this.editedCategorie.id, this.editedCategorie).subscribe({
+    next: (updated) => {
+      this.toastr.success('Catégore mis à jour avec succès');
+      this.loadCategories();
+      this.cancelEdit();
+    },
+    error: (err) => {
+      this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour de la catégorie';
+      this.toastr.error(this.errorMessage);
+      console.error("Erreur de mise à jour :", err);
+      this.cancelEdit();
+    }
+  });
+}
+
+/* onSubmitWithStock() {
+  if (this.produitForm.invalid || this.stockForm.invalid) {
+    return;
+  }
+
+  const produitData = this.produitForm.value;
+  const stockData = this.stockForm.value;
+
+   const formData = new FormData();
+
+  // On parcourt le form pour ajouter tous les champs
+  Object.entries(this.produitForm.value).forEach(([key, value]) => {
+    formData.append(key, String(value));
+  });
+  // Ajouter les données supplémentaires non présentes dans le formulaire
+  formData.append('code_structure', this.code_structure);
+  formData.append('agentId', String(this.agentId));
+
+  // Ajout du fichier image si présent
+  if (this.selectedImageFile) {
+    formData.append('image', this.selectedImageFile);
+  }
+
+  //  const completepPoduitData = {
+  //       ...produitData,
+  //       code_structure: this.code_structure,
+  //       agentId:this.agentId
+  //     }; 
+
+  // Créer d'abord le produit
+  this.produitsServices.createProduit(formData).subscribe({
+    next: (newProduit) => {
+      // Puis créer le stock avec l'ID du nouveau produit
+      console.log('Produit ajouté avec succés')
+      const completeStockData = {
+        ...stockData,
+        code_structure: this.code_structure,
+        produitId: newProduit.id,
+        dernierPrixAchat: produitData.prixAchatUnitaire,
+        prixVenteUnitaire: produitData.prixVenteUnitaire
+      };
+
+      this.stockService.createStock(completeStockData).subscribe({
+        next: () => {
+          console.log('Stock ajouté avec succés')
+          this.toastr.success('Produit ajouté créé avec succès');
+          this.resetForms();
+          // this.closeModal();
+          // this.loadProduits();
+        },
+        error: (err) => {
+          //this.errorMessage = "Erreur lors de la création du stock";
+          this.errorMessage = err.error?.message || 'Erreur lors de l\'enregistreme du produit';
+          this.toastr.error(this.errorMessage);
+        }
+      });
+    },
+    error: (err) => {
+      console.log(err);
+      this.errorMessage = "Erreur lors de la création du produit";
+       console.log(this.errorMessage);
+    }
+  });
+}
+ */onSubmitWithStock() {
+  if (this.produitForm.invalid || this.stockForm.invalid) {
+    this.toastr.error('Veuillez remplir tous les champs requis.');
+    return;
+  }
+
+  const produitData = this.produitForm.value;
+  const stockData = this.stockForm.value;
+
+  const formData = new FormData();
+
+  // Ajouter les champs du formulaire produit
+  Object.keys(produitData).forEach((key) => {
+    const value = produitData[key];
+    if (value !== null && value !== undefined) {
+      formData.append(key, String(value));
+    }
+  });
+
+  // Champs additionnels nécessaires
+  formData.append('code_structure', this.code_structure);
+  formData.append('agentId', String(this.agentId));
+  formData.append('codeBarre', this.codeBarre);
+
+  // Ajouter l'image sélectionnée (si présente)
+  if (this.selectedImageFile) {
+    formData.append('image', this.selectedImageFile);
+  }
+
+  // 🛠 Appel au service pour créer le produit
+  this.produitsServices.createProduit(formData).subscribe({
+    next: (newProduit) => {
+      console.log('Produit ajouté avec succès');
+
+      // Construire les données du stock
+      const completeStockData = {
+        ...stockData,
+        code_structure: this.code_structure,
+        produitId: newProduit.id,
+        dernierPrixAchat: parseFloat(produitData.prixAchatUnitaire),
+        prixVenteUnitaire: parseFloat(produitData.prixVenteUnitaire)
+      };
+
+      // Créer le stock
+      this.stockService.createStock(completeStockData).subscribe({
+        next: () => {
+          this.toastr.success('Produit et stock ajoutés avec succès');
+          this.resetForms();
+        },
+        error: (err) => {
+          const message = err.error?.message || "Erreur lors de l'enregistrement du stock.";
+          this.toastr.error(message);
+        }
+      });
+    },
+    error: (err) => {
+      const message = err.error?.message || "Erreur lors de la création du produit.";
+      console.error('Erreur création produit :', err);
+      this.toastr.error(message);
+    }
+  });
+}
+
+
+ onFileChange(event: any): void {
+  const file = event.target.files[0];
+  if (file) {
+    this.selectedImageFile = file;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.logoPreview = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+
+resetForms() {
+  this.showStockSection = false;
+  this.produitForm.reset();
+  this.logoPreview = null;
+  this.selectedImageFile = null;
+  this.stockForm.reset();
+
+}
+
+resetStockSection() {
+  this.showStockSection = false;
+}
 }

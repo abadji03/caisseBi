@@ -47,13 +47,63 @@ exports.getProduitsByStructure = async (req, res) => {
 const db = require("../models");
 const Produit = db.Produit;
 
+const BASE_URL = 'http://localhost:5000/uploads/'; //url de l'emplacement des fichier à stocker
+
 //Créer un produit
-exports.createProduit = async (req, res) => {
+/* exports.createProduit = async (req, res) => {
   try {
-    const produit = await Produit.create(req.body);
+    const produitData = req.body;
+
+    // Vérifie si le produit existe déjà par codeBarre
+    const codeBarre = produitData.codeBarre;
+    const existingProduit = await Produit.findOne({ where: {codeBarre} });
+
+    if (existingProduit) {
+      return res.status(400).json({ message: "Un produit avec ce code barre existe déjà." });
+    }
+     // Ajouter le chemin de l'image s'il y a un fichier
+    if (req.file) {
+      produitData.image = BASE_URL +req.file.filename; 
+    }
+    const produit = await Produit.create(produitData);
     res.status(201).json(produit);
   } catch (error) {
     res.status(500).json({ message: "Erreur lors de la création du produit", error });
+  }
+};
+ */
+
+exports.createProduit = async (req, res) => {
+  try {
+    const produitData = req.body;
+
+    // Vérification : produit déjà existant ?
+    const { codeBarre } = produitData;
+    const existingProduit = await Produit.findOne({ where: { codeBarre } });
+
+    if (existingProduit) {
+      return res.status(400).json({ message: "Un produit avec ce code barre existe déjà." });
+    }
+
+    // Traitement de l'image (comme pour 'logo')
+    let image = null;
+    if (req.file) {
+      image = BASE_URL + req.file.filename;
+    }
+
+    // Création du produit avec image (si présente)
+    const produit = await Produit.create({
+      ...produitData,
+      image
+    });
+
+    return res.status(201).json(produit);
+  } catch (error) {
+    console.error('Erreur lors de la création du produit :', error);
+    return res.status(500).json({
+      message: "Erreur lors de la création du produit",
+      error: error.message
+    });
   }
 };
 
@@ -63,7 +113,16 @@ exports.updateProduit = async (req, res) => {
     const produit = await Produit.findByPk(req.params.id);
     if (!produit) return res.status(404).json({ message: "Produit non trouvé" });
 
-    await produit.update(req.body);
+    // Si nouveau image, supprimer l'ancien
+    if (req.file && produit.image) {
+      const oldPath = path.join('uploads', produit.image); // Chemin de l’ancien fichier
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath); // Suppression du fichier existant
+    }
+
+    const updatedData = { ...req.body }; // Copie les données envoyées dans la requête
+    if (req.file) updatedData.image = BASE_URL + req.file.filename; // Si nouveau fichier, on met à jour le champ logo
+    
+    await produit.update(updatedData);
     res.json({ message: "Produit mis à jour", produit });
   } catch (error) {
     res.status(500).json({ message: "Erreur lors de la mise à jour", error });
@@ -89,7 +148,11 @@ exports.getProduitById = async (req, res) => {
     const produit = await Produit.findByPk(req.params.id);
     if (!produit) return res.status(404).json({ message: "Produit non trouvé" });
 
-    res.json(produit);
+    const produitData = produit.toJSON();
+    const baseUrl = `${req.protocol}://${req.get('host')}/uploads/`;
+    produitData.imageUrl = produitData.image ? baseUrl + produitData.image : null;
+
+    res.status(200).json(produitData);
   } catch (error) {
     res.status(500).json({ message: "Erreur lors de la récupération du produit", error });
   }
@@ -99,7 +162,18 @@ exports.getProduitById = async (req, res) => {
 exports.getProduitsByStructure = async (req, res) => {
   try {
     const produits = await Produit.findAll({ where: { code_structure: req.params.code_structure } });
-    res.json(produits);
+
+    const baseUrl = `${req.protocol}://${req.get('host')}/uploads/`;
+
+     const produitsWithImageUrl = produits.map(struct => {
+      const prod = struct.toJSON(); // Convertit Sequelize instance en objet pur
+      prod.logoUrl = prod.image ? baseUrl + prod.image : null;
+      return prod;
+    });
+
+    res.status(200).json(produitsWithImageUrl);
+
+    //res.json(produits);
   } catch (error) {
     res.status(500).json({ message: "Erreur lors de la récupération des produits", error });
   }
