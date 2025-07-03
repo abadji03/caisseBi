@@ -68,7 +68,7 @@ export class ProduitsService {
   }
 
   //Mettre à jour un produit
-  updateProduit(id: number, produit: Partial<Produits>): Observable<any> {
+  updateProduit(id: number, produit: Partial<FormData>): Observable<any> {
     return this.http.put(`${this.apiUrl}/produits/${id}`, produit, { headers: this.getHeaders() });
   }
 

@@ -79,10 +79,12 @@ exports.createProduit = async (req, res) => {
 
     // Vérification : produit déjà existant ?
     const { codeBarre } = produitData;
-    const existingProduit = await Produit.findOne({ where: { codeBarre } });
+    if(codeBarre !==''){
+       const existingProduit = await Produit.findOne({ where: { codeBarre } });
 
-    if (existingProduit) {
-      return res.status(400).json({ message: "Un produit avec ce code barre existe déjà." });
+      if (existingProduit) {
+          return res.status(400).json({ message: "Un produit avec ce code barre existe déjà." });
+      }
     }
 
     // Traitement de l'image (comme pour 'logo')
@@ -161,7 +163,10 @@ exports.getProduitById = async (req, res) => {
 //Récupérer les produits par structure
 exports.getProduitsByStructure = async (req, res) => {
   try {
-    const produits = await Produit.findAll({ where: { code_structure: req.params.code_structure } });
+    const produits = await Produit.findAll({ 
+      where: { code_structure: req.params.code_structure },
+      order: [['createdAt', 'DESC']]
+     });
 
     const baseUrl = `${req.protocol}://${req.get('host')}/uploads/`;
 

@@ -25,6 +25,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
     },
+    statut: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
     perissable: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,

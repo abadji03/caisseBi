@@ -95,7 +95,7 @@
                 <th>Famille</th>
                 <th>Désignation</th>
                 <th>Fournisseur</th>
-                <th>Magasin</th>
+                <!-- <th>Magasin</th> -->
                 <th>Quantité</th>
                 <th>Unité Stock</th>
                 <th>P.A.U</th>
@@ -127,16 +127,16 @@
                 </td>
 
                 <!-- Autres informations sur le produit -->
-                <td>{{ produit.categorieId }}</td>
+                <td>{{ getNomCategorieById(produit.categorieId)}}</td>
                 <td>{{ produit.designation }}</td>
-                <td>{{ produit.fournisseurId }}</td>
-                <td>{{ 0 }} à corriger</td>
-                <td>{{ 0 }} à corriger</td>
+                <td>{{ getNomFournisseurById(produit.fournisseurId!) }}</td>
+                <td>{{ getQteById(produit.id) }}</td>
+                <!-- <td>{{ 0 }} à corriger</td> -->
                 <td>{{ produit.unite }}</td>
                 <td>{{ produit.prixAchatUnitaire }}</td>
                 <td>{{ produit.prixVenteUnitaire }}</td>
                 <td>{{ produit.dateCreation | date:'short' }}</td>
-                <td>{{ produit.agentId }}</td>
+                <td>{{ getNomUserById(produit.agentId!) }}</td>
                 <td>{{ produit.description }}</td>
               </tr>
             </tbody>
@@ -172,12 +172,13 @@
           <p>Nom: {{selectedProduits?.designation}}</p>
         </div>
         <div class="btn-group-vertical">
-          <button class="btn btn-secondary d-flex align-items-center" data-bs-toggle="tooltip" title="Cliquer pour ouvrir le formulaire" (click)="onAction('modifier')"><i class="bi bi-pencil text-white me-2"></i>Modifier</button>
-          <button class="btn btn-warning d-flex align-items-center text-white fw-bold" data-bs-toggle="tooltip" title="Mettre le produit en archive" (click)="onAction('archiver')"><i class="bi bi-archive me-2"></i>Archiver</button>
-          <button class="btn btn-success d-flex align-items-center" data-bs-toggle="tooltip" title="Ajouter de nouvelles entrées pour le produit" (click)="onAction('entree')"><mat-icon>arrow_downward</mat-icon>Entrée</button>
-          <button class="btn btn-danger d-flex align-items-center" data-bs-toggle="tooltip" title="Ajouter de nouvelles sorties pour le produit" (click)="onAction('sortie')"><mat-icon>arrow_upward </mat-icon>Sortie</button>
-          <button class="btn btn-primary d-flex align-items-center" data-bs-toggle="tooltip" title="Associer un code-barre au produit" (click)="onAction('code-barre')"><i class="bi bi-list text-white me-2"></i>code-barre</button>
-          <button class="btn btn-info d-flex align-items-center text-white  fw-bold" data-bs-toggle="tooltip" title="Asocier une image et une galerie au produit" (click)="onAction('image')"><i class="bi bi-camera-fill text-white me-2"></i>Image</button>
+          <button class="btn btn-warning d-flex align-items-center" data-bs-toggle="tooltip" title="Cliquer pour ouvrir le formulaire" (click)="onAction('modifier')"><i class="bi bi-pencil me-2"></i>Modifier</button>
+          <!-- <button class="btn btn-warning d-flex align-items-center text-white fw-bold" data-bs-toggle="tooltip" title="Mettre le produit en archive" (click)="onAction('archiver')"><i class="bi bi-archive me-2"></i>Archiver</button> -->
+          <!-- <button class="btn btn-success d-flex align-items-center" data-bs-toggle="tooltip" title="Ajouter de nouvelles entrées pour le produit" (click)="onAction('entree')"><mat-icon>arrow_downward</mat-icon>Entrée</button>
+          <button class="btn btn-danger d-flex align-items-center" data-bs-toggle="tooltip" title="Ajouter de nouvelles sorties pour le produit" (click)="onAction('sortie')"><mat-icon>arrow_upward </mat-icon>Sortie</button> -->
+          <button *ngIf="selectedProduits?.codeBarre === '' || selectedProduits?.codeBarre ===null" class="btn btn-primary d-flex align-items-center" data-bs-toggle="tooltip" title="Associer un code-barre au produit" (click)="onAction('code-barre')"><i class="bi bi-list me-2"></i>code-barre</button>
+          <button class="btn btn-secondary d-flex align-items-center" (click)="onAction('statut')"><i class="me-2 bi" [ngClass]="selectedProduits?.statut ? 'bi-x-circle-fill' : 'bi-check-circle-fill'"></i>{{ selectedProduits?.statut ? 'Désactiver' : 'Activer' }}</button>
+          <button  *ngIf="selectedProduits?.image === '' || selectedProduits?.image ===null" class="btn btn-info d-flex align-items-center text-white  fw-bold" data-bs-toggle="tooltip" title="Asocier une image et une galerie au produit" (click)="onAction('image')"><i class="bi bi-camera-fill me-2"></i>Image</button>
         </div>
       </div>
     </div>
@@ -313,14 +314,23 @@
                 {{ getButtonLabel() }}
               </button>
             </div> -->
-             <div class="d-flex justify-content-center mt-4">
+              <div class="d-flex justify-content-center mt-4">
               <button type="button" class="btn btn-outline-secondary w-50 me-2" data-bs-dismiss="modal">Annuler</button>
-              <button type="button" class="btn btn-outline-primary w-50" 
+              <!--<button type="button" class="btn btn-outline-primary w-50" 
                       [disabled]="produitForm.invalid"
                       (click)="showStockSection = true; initStockForm()">
-                <i class="bi bi-box-seam me-2"></i> {{getButtonLabel()}}
+                <i *ngIf="actionType ==='ajouter'" class="bi bi-box-seam me-2"></i> {{getButtonLabel()}}
+              </button>-->
+              <button type="button"
+                  class="btn btn-outline-primary w-50"
+                  [disabled]="produitForm.invalid"
+                  (click)="handleProduitAction()">
+                <i class="bi me-2"
+                  [ngClass]="actionType === 'ajouter' ? 'bi-box-seam' : 'bi-save'"></i>
+                {{ getButtonLabel() }}
               </button>
-            </div>
+            </div> 
+
           </form>
 
            <div *ngIf="showStockSection">

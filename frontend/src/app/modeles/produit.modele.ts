@@ -128,6 +128,7 @@ export class Produit {
       public dateCreation?: Date = new Date(); // Date d'ajout du produit
       public agentId?: number; // Personne qui a ajouté le produit
       public dernierPrixAchat?: number; // Dernier prix d'achat connu
+      public statut?: boolean; // Dernier prix d'achat connu
 
       constructor(data?: Partial<Produits>) {
         Object.assign(this, data);

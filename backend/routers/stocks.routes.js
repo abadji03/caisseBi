@@ -20,6 +20,9 @@ router.get('/produit/:produitId', stockCtrl.getStockByProduitId);
 // Recalculer et mettre à jour le statut stock
 //router.put('/:id/recalcul-statut', stockCtrl.recalculerStatutStock);
 
+router.patch('/:id/adjust-quantite', stockCtrl.adjustQuantiteTotale);
+router.patch('/:id/adjust-reservee', stockCtrl.adjustQuantiteReservee);
+
 
 
 module.exports = router; 

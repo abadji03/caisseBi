@@ -167,3 +167,53 @@ exports.deleteStock = async (req, res) => {
   }
 };
  */
+
+exports.adjustQuantiteTotale = async (req, res) => {
+  try {
+    const { variation } = req.body; // variation attendue : nombre (positif ou négatif)
+    if (typeof variation !== 'number') {
+      return res.status(400).json({ message: "La variation doit être un nombre" });
+    }
+
+    const stock = await Stock.findByPk(req.params.id);
+    if (!stock) return res.status(404).json({ message: "Stock non trouvé" });
+
+    const nouvelleQuantite = parseFloat(stock.quantiteTotale) + variation;
+    if (nouvelleQuantite < 0) {
+      return res.status(400).json({ message: "La quantité totale ne peut pas être négative" });
+    }
+
+    await stock.update({ quantiteTotale: nouvelleQuantite });
+
+    // Recalcul du statut
+    const nouveauStatut = calculerStatut({ ...stock.dataValues, quantiteTotale: nouvelleQuantite });
+    await stock.update({ statutStock: nouveauStatut });
+
+    res.json({ message: "Quantité totale ajustée avec succès", stock });
+  } catch (error) {
+    res.status(500).json({ message: "Erreur ajustement quantité totale", error });
+  }
+};
+
+exports.adjustQuantiteReservee = async (req, res) => {
+  try {
+    const { variation } = req.body;
+    if (typeof variation !== 'number') {
+      return res.status(400).json({ message: "La variation doit être un nombre" });
+    }
+
+    const stock = await Stock.findByPk(req.params.id);
+    if (!stock) return res.status(404).json({ message: "Stock non trouvé" });
+
+    const nouvelleReserve = parseFloat(stock.quantiteReservee || 0) + variation;
+    if (nouvelleReserve < 0) {
+      return res.status(400).json({ message: "La quantité réservée ne peut pas être négative" });
+    }
+
+    await stock.update({ quantiteReservee: nouvelleReserve });
+
+    res.json({ message: "Quantité réservée ajustée avec succès", stock });
+  } catch (error) {
+    res.status(500).json({ message: "Erreur ajustement quantité réservée", error });
+  }
+};

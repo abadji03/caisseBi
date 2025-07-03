@@ -11,6 +11,9 @@ import { finalize, forkJoin } from 'rxjs';
 import { Fournisseur } from '../../../modeles/fournisseur.model';
 import { StockInventaireService } from '../../../services/stock-inventaire.service';
 import { image } from 'html2canvas/dist/types/css/types/image';
+import { UserService } from '../../../services/user.service';
+import { User } from '../../../modeles/user.model';
+import { Stock } from '../../../modeles/entrees-sorties.model';
 
 @Component({
   selector: 'app-catalogue-produit',
@@ -22,6 +25,8 @@ import { image } from 'html2canvas/dist/types/css/types/image';
 export class CatalogueProduitComponent {
 
     prods: Produits[] = [];  // Liste de prods
+    users:User[] = [];
+    stock:Stock[]=[]
     code_structure:string = 'MASTRUCTURET-NZNC';
     isLoading:boolean = false;
     agentId:number = 15;
@@ -80,19 +85,21 @@ export class CatalogueProduitComponent {
       private produitsServices:ProduitsService,
       private toastr: ToastrService,
       private fournisseurService:FournisseursService,
+      private userService:UserService,
       private stockService: StockInventaireService
     ) {
 
     }
 
     ngOnInit(): void {
+      this.loadData();
       this.iniFormulaire();
       this.loadCategories();
       this.loadFournisseurs();
       // Charger les prods fictifs
       //this.prods = this.loadMockData();
       // Initialiser filteredProducts avec tous les produits
-      this.filteredProducts = [...this.prods];
+      
     }
 
     iniFormulaire(): void{
@@ -372,16 +379,18 @@ export class CatalogueProduitComponent {
             id: this.selectedProduits.id,  // Remplir l'ID du produit
             categorieId: this.selectedProduits.categorieId,  // Remplir la famille
             designation: this.selectedProduits.designation,  // Remplir la désignation
-            fournisseur: this.selectedProduits.fournisseurId,  // Remplir le fournisseur
+            fournisseurId: this.selectedProduits.fournisseurId,  // Remplir le fournisseur
             // magasin: this.selectedProduits.magasinId,  // Remplir le magasin
             // quantite: this.selectedProduits.quantite,  // Remplir la quantité
-            type_entree: '',  // Réinitialiser si nécessaire (selon votre logique)
-            type_sortie: '',  // Réinitialiser si nécessaire (selon votre logique)
+            //type_entree: '',  // Réinitialiser si nécessaire (selon votre logique)
+            //type_sortie: '',  // Réinitialiser si nécessaire (selon votre logique)
             prixAchatUnitaire: this.selectedProduits.prixAchatUnitaire,  // Remplir prix d'achat unitaire
             prixVenteUnitaire: this.selectedProduits.prixVenteUnitaire,  // Remplir prix de vente unitaire
-            description: this.selectedProduits.description  // Remplir la description
+            description: this.selectedProduits.description,  // Remplir la description
+            perissable:String(this.selectedProduits.perissable)
           });
-
+          
+          this.logoPreview = this.selectedProduits.image || './assets/images/default-structure.png';
           // Ouvrir la modal après avoir pré-rempli les champs avec les données du produit
           this.openModal(this.actionType,this.selectedProduits);
         }
@@ -526,7 +535,7 @@ loadCategories(): void {
       },
       error: (err) => {
         this.isLoading = false;
-        this.toastr.error('Erreur lors du chargement des catégories');
+        //this.toastr.error('Erreur lors du chargement des catégories');
         console.error(err);
       }
     });
@@ -544,13 +553,51 @@ loadCategories(): void {
       },
       error: (err) => {
         this.isLoading = false;
-        this.toastr.error('Erreur lors du chargement des catégories');
+        //this.toastr.error('Erreur lors du chargement des catégories');
         console.error(err);
       }
     });
   }
 
+  /* loadProduits(): void {
+    //onst code_structure = this.authService.getUserStructure();
+    this.isLoading = true; 
+    this.produitsServices.getAllProduits(this.code_structure).subscribe({
+      next: (data) => {
+        this.isLoading = false;
+        this.prods = data;
+        this.filteredProducts = [...this.prods];
+        // Mettre à jour les options de famille avec les catégories réelles
+        //this.familles = data.map(c => c.nom_categorie);
+      },
+      error: (err) => {
+        this.isLoading = false;
+        //this.toastr.error('Erreur lors du chargement des catégories');
+        console.error(err);
+      }
+    });
+  } */
 
+  loadData(): void {
+    this.isLoading = true;
+    forkJoin([
+      this.userService.getByStructure(this.code_structure),
+      this.produitsServices.getAllProduits(this.code_structure),
+      //this.isGeneralAdmin ? this.structureService.getAll() : of([])
+      this.stockService.getStocksByStructure(this.code_structure)
+    ]).pipe(
+      finalize(() => this.isLoading = false)
+    ).subscribe({
+      next: ([users, produits, stocks]) => {
+        this.users = users;
+        this.stock = stocks;
+        this.prods = produits;
+        this.filteredProducts = [...this.prods];
+      },
+      error: (err) => console.error('Erreur chargement données', err)
+    });
+  }
+  
 
     // Fermer la modal en manipulant le DOM
     closeModal(act: string): void {
@@ -875,14 +922,16 @@ saveCategorieEdit() {
     }
   });
 }
- */onSubmitWithStock() {
-  if (this.produitForm.invalid || this.stockForm.invalid) {
+ */
+
+onSubmitWithStock() {
+  if (this.produitForm.invalid || (this.stockForm && this.stockForm.invalid)) {
     this.toastr.error('Veuillez remplir tous les champs requis.');
     return;
   }
 
   const produitData = this.produitForm.value;
-  const stockData = this.stockForm.value;
+  
 
   const formData = new FormData();
 
@@ -904,38 +953,72 @@ saveCategorieEdit() {
     formData.append('image', this.selectedImageFile);
   }
 
-  // 🛠 Appel au service pour créer le produit
-  this.produitsServices.createProduit(formData).subscribe({
-    next: (newProduit) => {
-      console.log('Produit ajouté avec succès');
+   if (this.actionType === 'ajouter') {
+      const stockData = this.stockForm.value;
+      // Appel au service pour créer le produit
+      this.produitsServices.createProduit(formData).subscribe({
+        next: (newProduit) => {
+          console.log('Produit ajouté avec succès');
 
-      // Construire les données du stock
-      const completeStockData = {
-        ...stockData,
-        code_structure: this.code_structure,
-        produitId: newProduit.id,
-        dernierPrixAchat: parseFloat(produitData.prixAchatUnitaire),
-        prixVenteUnitaire: parseFloat(produitData.prixVenteUnitaire)
-      };
+          // Construire les données du stock
+          const completeStockData = {
+            ...stockData,
+            code_structure: this.code_structure,
+            produitId: newProduit.id,
+            dernierPrixAchat: parseFloat(produitData.prixAchatUnitaire),
+            prixVenteUnitaire: parseFloat(produitData.prixVenteUnitaire)
+          };
 
-      // Créer le stock
-      this.stockService.createStock(completeStockData).subscribe({
-        next: () => {
-          this.toastr.success('Produit et stock ajoutés avec succès');
-          this.resetForms();
+          // Créer le stock
+          this.stockService.createStock(completeStockData).subscribe({
+            next: () => {
+              this.toastr.success('Produit et stock ajoutés avec succès');
+              this.loadData();
+              this.resetForms();
+              this.closeModal(this.actionType)
+            },
+            error: (err) => {
+              const message = err.error?.message || "Erreur lors de l'enregistrement du stock.";
+              this.toastr.error(message);
+            }
+          });
         },
         error: (err) => {
-          const message = err.error?.message || "Erreur lors de l'enregistrement du stock.";
+          const message = err.error?.message || "Erreur lors de la création du produit.";
+          console.error('Erreur création produit :', err);
           this.toastr.error(message);
         }
       });
-    },
-    error: (err) => {
-      const message = err.error?.message || "Erreur lors de la création du produit.";
-      console.error('Erreur création produit :', err);
-      this.toastr.error(message);
-    }
-  });
+   }
+  else if (this.actionType === 'modifier') {
+
+    this.produitsServices.updateProduit(this.selectedProduits?.id!, formData).subscribe({
+      next: () => {
+        this.toastr.success('Produit mis à jour avec succès');
+        this.loadData();
+         this.resetForms();
+         this.closeModal(this.actionType)
+
+      },
+      error: (err) => {
+        const message = err.error?.message || "Erreur lors de la mise à jour du produit.";
+        this.toastr.error(message);
+      }
+    });
+  }
+  
+}
+
+handleProduitAction() {
+  if (this.actionType === 'ajouter') {
+    // Affiche le formulaire de stock
+    this.showStockSection = true;
+    this.initStockForm();
+  } 
+  else if (this.actionType === 'modifier') {
+    // Envoie directement la mise à jour du produit
+    this.onSubmitWithStock(); // Elle gère déjà le cas modifier
+  }
 }
 
 
@@ -964,5 +1047,23 @@ resetForms() {
 
 resetStockSection() {
   this.showStockSection = false;
+}
+
+getNomCategorieById(id: number): string | null {
+  const categorie = this.categories.find(p => p.id === id);
+  return categorie ? categorie.nom : null;  // On retourne `null` si la catégorie n'est pas trouvée
+}
+
+getNomFournisseurById(id: number): string | null {
+  const fournisseur = this.fournisseur.find(p => p.id === id);
+  return fournisseur ? fournisseur.nomComplet : null;  // On retourne `null` si la catégorie n'est pas trouvée
+}
+getNomUserById(id: number): string | null {
+  const user = this.users.find(p => p.id === id);
+  return user ? user.nom : null;  // On retourne `null` si la catégorie n'est pas trouvée
+}
+getQteById(id: number): number | 0 {
+  const stock = this.stock.find(p => p.produitId === id);
+  return stock ? stock.quantiteTotale : 0;  // On retourne `null` si la catégorie n'est pas trouvée
 }
 }
