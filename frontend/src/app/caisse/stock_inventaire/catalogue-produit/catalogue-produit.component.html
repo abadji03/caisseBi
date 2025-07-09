@@ -280,11 +280,29 @@
               <textarea class="form-control" id="description" formControlName="description"></textarea>
             </div>
 
+            <div class="row mb-3 d-flex align-items-center">
+              <!-- champs code barre -->
+              <div class="col-md-6">
+                <input type="text" step="0.01" class="form-control" id="codeBarre" formControlName="codeBarre" placeholder="Entrer le code barre">
+              </div>
+              <span class="text-muted col-md-1">OU</span>
+              <!-- Bouton pour générer un code barre -->
+              <div class="col-md-5">
+                <button class="btn btn-success w-100">
+                  Lire un code
+                </button>
+              </div>
+            </div>
+
             <!-- Image (facultative) -->
             <div class="mb-3">
               <label for="image" class="form-label">Image</label>
               <input type="file" class="form-control" id="image" accept="image/*" (change)="onFileChange($event)">
               <small class="text-muted">Format acceptés: JPG, PNG (max 2MB)</small>
+            </div>
+            <!-- Nom du fichier affiché -->
+            <div *ngIf="imageFilename" class="mt-1 text-primary small">
+              Fichier actuel : {{ imageFilename }}
             </div>
             <div class="image-preview-container mb-3">
               <img [src]="logoPreview || 'assets/images/default-structure.png'" 

@@ -50,29 +50,6 @@ const Produit = db.Produit;
 const BASE_URL = 'http://localhost:5000/uploads/'; //url de l'emplacement des fichier à stocker
 
 //Créer un produit
-/* exports.createProduit = async (req, res) => {
-  try {
-    const produitData = req.body;
-
-    // Vérifie si le produit existe déjà par codeBarre
-    const codeBarre = produitData.codeBarre;
-    const existingProduit = await Produit.findOne({ where: {codeBarre} });
-
-    if (existingProduit) {
-      return res.status(400).json({ message: "Un produit avec ce code barre existe déjà." });
-    }
-     // Ajouter le chemin de l'image s'il y a un fichier
-    if (req.file) {
-      produitData.image = BASE_URL +req.file.filename; 
-    }
-    const produit = await Produit.create(produitData);
-    res.status(201).json(produit);
-  } catch (error) {
-    res.status(500).json({ message: "Erreur lors de la création du produit", error });
-  }
-};
- */
-
 exports.createProduit = async (req, res) => {
   try {
     const produitData = req.body;
@@ -109,27 +86,45 @@ exports.createProduit = async (req, res) => {
   }
 };
 
+
 //Mettre à jour un produit
 exports.updateProduit = async (req, res) => {
+  console.log('BODY:', req.body);
+  console.log('FILE:', req.file);
+
   try {
     const produit = await Produit.findByPk(req.params.id);
-    if (!produit) return res.status(404).json({ message: "Produit non trouvé" });
-
-    // Si nouveau image, supprimer l'ancien
-    if (req.file && produit.image) {
-      const oldPath = path.join('uploads', produit.image); // Chemin de l’ancien fichier
-      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath); // Suppression du fichier existant
+    if (!produit) {
+      return res.status(404).json({ message: "Produit non trouvé" });
     }
 
-    const updatedData = { ...req.body }; // Copie les données envoyées dans la requête
-    if (req.file) updatedData.image = BASE_URL + req.file.filename; // Si nouveau fichier, on met à jour le champ logo
-    
+    const updatedData = { ...req.body };
+
+    // Si une nouvelle image est envoyée
+    if (req.file) {
+      // Supprimer l'ancienne image si elle existe
+      if (produit.image) {
+        const oldPath = path.join('uploads', path.basename(produit.image)); // attention à ne pas concaténer l'URL complète
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+      }
+
+      // Mettre à jour le champ image avec la nouvelle URL
+      updatedData.image = BASE_URL + req.file.filename;
+    } else {
+      // Sinon, conserver l'image existante
+      updatedData.image = produit.image;
+    }
+
     await produit.update(updatedData);
+    console.log('Produit mis à jour avec:', updatedData);
     res.json({ message: "Produit mis à jour", produit });
   } catch (error) {
-    res.status(500).json({ message: "Erreur lors de la mise à jour", error });
+    res.status(500).json({ message: "Erreur lors de la mise à jour",  error: error.message  });
   }
 };
+
 
 //Supprimer un produit (physiquement)
 exports.deleteProduit = async (req, res) => {
@@ -190,15 +185,20 @@ exports.updateStatusProduit = async (req, res) => {
     const produit = await Produit.findByPk(req.params.id);
     if (!produit) return res.status(404).json({ message: "Produit non trouvé" });
 
-    const { status } = req.body;
-    produit.status = status;
-    await produit.save();
+    const { statut } = req.body;
+    // produit.statut = statut;
+    // await produit.save();
+    if (typeof statut !== 'boolean') {
+      return res.status(400).json({ message: "Le statut doit être un booléen." });
+    }
+
+    await produit.update({ statut });
 
     res.json({ message: "Statut du produit mis à jour", produit });
   } catch (error) {
-    res.status(500).json({ message: "Erreur lors de la mise à jour du statut", error });
+    res.status(500).json({ message: "Erreur lors de la mise à jour du statut", error: error.message });
   }
-};
+}; 
 
 //Récupérer tous les produits
 exports.getAllProduits = async (req, res) => {
@@ -242,3 +242,29 @@ exports.getAllProduits = async (req, res) => {
     res.status(500).json({ message: "Erreur lors de l'archivage", error });
   }
 }; */
+
+exports.updateImageProduit = async (req, res) => {
+  try {
+    const produit = await Produit.findByPk(req.params.id);
+    if (!produit) return res.status(404).json({ message: "Produit non trouvé" });
+
+    if (!req.file) return res.status(400).json({ message: "Aucune image fournie" });
+
+    // Supprimer l'ancienne image si elle existe
+    if (produit.image) {
+      const oldPath = path.join('uploads', path.basename(produit.image));
+      if (fs.existsSync(oldPath)) {
+        fs.unlinkSync(oldPath);
+      }
+    }
+
+    // Mettre à jour l'image
+    const nouvelleImageUrl = BASE_URL + req.file.filename;
+    await produit.update({ image: nouvelleImageUrl });
+
+    res.json({ message: "Image du produit mise à jour", produit });
+  } catch (error) {
+    res.status(500).json({ message: "Erreur lors de la mise à jour de l'image", error: error.message });
+  }
+};
+

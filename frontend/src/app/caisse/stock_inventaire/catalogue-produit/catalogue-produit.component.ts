@@ -60,6 +60,8 @@ export class CatalogueProduitComponent {
     filteredProducts: Produits[] = [];
 
     isNewUniteVisible: boolean = false;
+    imageFilename: string | null = null;
+
 
     // Liste des unités possibles (à adapter selon vos besoins)
     uniteOptions = ['kg', 'litre', 'mètre', 'pièce'];
@@ -68,9 +70,12 @@ export class CatalogueProduitComponent {
     // Liste des produits paginés
     checkedProducts = [];
 
-    productsToRemove : Produits[] = [];
-    isCheckedCase : boolean = false;
-   showStockSection = false;
+  productsToRemove : Produits[] = [];
+  isCheckedCase : boolean = false;
+  showStockSection:boolean = false;
+
+  imageChanged: boolean = false; // <- À ajouter tout en haut de ton composant
+
 
 
 
@@ -130,6 +135,7 @@ export class CatalogueProduitComponent {
         unite: ['', Validators.required],
         prixAchatUnitaire: [0, [Validators.required, Validators.min(0)]],
         prixVenteUnitaire: [0, [Validators.required, Validators.min(0)]],
+        codeBarre:[''],
         //prixTotalVente: [0],
         description: [''],
         perissable:[false, Validators.required]
@@ -227,74 +233,6 @@ export class CatalogueProduitComponent {
       }
     }
 
-    /* loadMockData(): Produits[] {
-      return [
-        new Produits({
-          id: 1, famille: 'Electroménager', designation: 'Réfrigérateur', fournisseurId: 1,  unite: 'Unités', prixAchatUnitaire: 100, prixTotalAchat: 1000, prixVenteUnitaire: 150,
-          prixTotalVente: 1500, dateCreation: new Date(), description: 'Réfrigérateur LG', codeBarre: '1234567890', image: ''
-        }),
-        new Produits({
-          id: 2, famille: 'Électronique', designation: 'Télévision', fournisseurId: 2,  unite: 'Unités', prixAchatUnitaire: 200, prixTotalAchat: 1000, prixVenteUnitaire: 300,
-          prixTotalVente: 1500, dateCreation: new Date(), description: 'Télévision Samsung', codeBarre: '2345678901', image: ''
-        }),
-        new Produits({
-          id: 3, famille: 'Vêtements', designation: 'T-shirt', fournisseurId: 3,  unite: 'Unités', prixAchatUnitaire: 10, prixTotalAchat: 150, prixVenteUnitaire: 20,
-          prixTotalVente: 300, dateCreation: new Date(), agent: 'Agent 3', description: 'T-shirt coton', codeBarre: '3456789012', image: ''
-        }),
-        new Produits({
-          id: 4, famille: 'Jouets', designation: 'Peluche', fournisseurId: 4,  unite: 'Unités', prixAchatUnitaire: 50, prixTotalAchat: 400, prixVenteUnitaire: 70,
-          prixTotalVente: 560, dateCreation: new Date(), agent: 'Agent 4', description: 'Peluche panda', codeBarre: '4567890123', image: ''
-        }),
-        new Produits({
-          id: 5, famille: 'Alimentation', designation: 'Céréales', fournisseurId:5,  unite: 'Unités', prixAchatUnitaire: 5, prixTotalAchat: 125, prixVenteUnitaire: 8,
-          prixTotalVente: 200, dateCreation: new Date(), agent: 'Agent 5', description: 'Céréales nature', codeBarre: '5678901234', image: ''
-        }),
-        new Produits({
-          id: 6, famille: 'Électronique', designation: 'Smartphone', fournisseurId: 6,  unite: 'Unités', prixAchatUnitaire: 500, prixTotalAchat: 3000, prixVenteUnitaire: 700,
-          prixTotalVente: 3500, dateCreation: new Date(), agent: 'Agent 6', description: 'iPhone 14', codeBarre: '6789012345', image: ''
-        }),
-        new Produits({
-          id: 7, famille: 'Alimentation', designation: 'Pâtes', fournisseurId: 7,  unite: 'Paquets', prixAchatUnitaire: 2, prixTotalAchat: 80, prixVenteUnitaire: 5,
-          prixTotalVente: 200, dateCreation: new Date(), agent: 'Agent 7', description: 'Pâtes Barilla', codeBarre: '7890123456', image: ''
-        }),
-        new Produits({
-          id: 8, famille: 'Vêtements', designation: 'Jeans', fournisseurId: 8,  unite: 'Paires', prixAchatUnitaire: 30, prixTotalAchat: 600, prixVenteUnitaire: 50,
-          prixTotalVente: 1000, dateCreation: new Date(), agent: 'Agent 8', description: 'Jeans Levi\'s', codeBarre: '8901234567', image: ''
-        }),
-        new Produits({
-          id: 9, famille: 'Électronique', designation: 'Casque audio', fournisseurId: 9, unite: 'Unités', prixAchatUnitaire: 80, prixTotalAchat: 1200, prixVenteUnitaire: 100,
-          prixTotalVente: 1500, dateCreation: new Date(), agent: 'Agent 9', description: 'Casque Sony', codeBarre: '9012345678', image: ''
-        }),
-        new Produits({
-          id: 10, famille: 'Jouets', designation: 'Lego', fournisseurId: 10, unite: 'Boîtes', prixAchatUnitaire: 60, prixTotalAchat: 2100, prixVenteUnitaire: 100,
-          prixTotalVente: 3500, dateCreation: new Date(), agent: 'Agent 10', description: 'Lego Star Wars', codeBarre: '0123456789', image: ''
-        }),
-        new Produits({
-          id: 11, famille: 'Électronique', designation: 'Ordinateur portable', fournisseurId: 11, unite: 'Unités', prixAchatUnitaire: 700, prixTotalAchat: 17500, prixVenteUnitaire: 850,
-          prixTotalVente: 21250, dateCreation: new Date(), agent: 'Agent 11', description: 'MacBook Pro', codeBarre: '1234567891', image: ''
-        }),
-        new Produits({
-          id: 12, famille: 'Alimentation', designation: 'Café', fournisseurId: 12, unite: 'Paquets', prixAchatUnitaire: 4, prixTotalAchat: 240, prixVenteUnitaire: 6,
-          prixTotalVente: 360, dateCreation: new Date(), agent: 'Agent 12', description: 'Café Nespresso', codeBarre: '2345678902', image: ''
-        }),
-        new Produits({
-          id: 13, famille: 'Vêtements', designation: 'Chaussures', fournisseurId: 13,  unite: 'Paires', prixAchatUnitaire: 50, prixTotalAchat: 600, prixVenteUnitaire: 70,
-          prixTotalVente: 840, dateCreation: new Date(), agent: 'Agent 13', description: 'Nike Air Max', codeBarre: '3456789013', image: ''
-        }),
-        new Produits({
-          id: 14, famille: 'Jouets', designation: 'Puzzle', fournisseurId: 14,  unite: 'Boîtes', prixAchatUnitaire: 15, prixTotalAchat: 270, prixVenteUnitaire: 25,
-          prixTotalVente: 450, dateCreation: new Date(), agent: 'Agent 14', description: 'Puzzle Ravensburger', codeBarre: '4567890124', image: ''
-        }),
-        new Produits({
-          id: 15, famille: 'Électronique', designation: 'Tablette', fournisseurId: 15, unite: 'Unités', prixAchatUnitaire: 300, prixTotalAchat: 12000, prixVenteUnitaire: 400,
-          prixTotalVente: 16000, dateCreation: new Date(), agent: 'Agent 15', description: 'Samsung Galaxy Tab', codeBarre: '5678901235', image: ''
-        }),
-        new Produits({
-          id: 16, famille: 'Alimentation', designation: 'Jus de fruits', fournisseurId: 16,  unite: 'Bouteilles', prixAchatUnitaire: 3, prixTotalAchat: 150, prixVenteUnitaire: 4,
-          prixTotalVente: 200, dateCreation: new Date(), agent: 'Agent 16', description: 'Jus d\'orange Tropicana', codeBarre: '6789012346', image: ''
-        }),
-        ]
-      } */
     onRowSelect(Produits: Produits): void {
       this.selectedProduits = Produits;
       this.isActionsEnabled = true;  // Activer les actions quand une ligne est sélectionnée
@@ -368,11 +306,12 @@ export class CatalogueProduitComponent {
       if (action === 'ajouter') {
         this.actionType = 'ajouter';
         this.selectedProduits = null;  // S'assurer qu'aucun produit n'est sélectionné
-      } else {
+      } 
+      else {
         this.actionType = action;  // On garde l'action sélectionnée
       }
       if (this.selectedProduits) {
-        console.log(`${action} Produits:`, this.selectedProduits);
+        //console.log(`${action} Produits:`, this.selectedProduits);
         if (this.actionType === "modifier") {
           // On charge les informations du produit sélectionné dans le formulaire
           this.produitForm.patchValue({
@@ -380,6 +319,7 @@ export class CatalogueProduitComponent {
             categorieId: this.selectedProduits.categorieId,  // Remplir la famille
             designation: this.selectedProduits.designation,  // Remplir la désignation
             fournisseurId: this.selectedProduits.fournisseurId,  // Remplir le fournisseur
+            codeBarre:this.selectedProduits.codeBarre,
             // magasin: this.selectedProduits.magasinId,  // Remplir le magasin
             // quantite: this.selectedProduits.quantite,  // Remplir la quantité
             //type_entree: '',  // Réinitialiser si nécessaire (selon votre logique)
@@ -390,7 +330,17 @@ export class CatalogueProduitComponent {
             perissable:String(this.selectedProduits.perissable)
           });
           
-          this.logoPreview = this.selectedProduits.image || './assets/images/default-structure.png';
+          // Récupération du fichier image distant et conversion en File
+          if (this.selectedProduits.image) {
+             this.logoPreview = this.selectedProduits.image || './assets/images/default-structure.png';
+            this.imageFilename = this.extractFilenameFromUrl(this.selectedProduits.image);
+
+            this.urlToFile(this.selectedProduits.image, 'produit-image.png', 'image/png').then((file) => {
+              this.selectedImageFile = file;
+            });
+
+          }
+         
           // Ouvrir la modal après avoir pré-rempli les champs avec les données du produit
           this.openModal(this.actionType,this.selectedProduits);
         }
@@ -411,6 +361,11 @@ export class CatalogueProduitComponent {
           // Ouvrir la modal pour l'action entrée ou sortie
           this.openModal(this.actionType,this.selectedProduits);
         }
+        else if (this.actionType === "statut") {
+          console.log(this.actionType);
+          this.selectedProduits.statut = !this.selectedProduits.statut;
+          this.toggleProduitStatus(this.selectedProduits,this.selectedProduits.statut)
+        }
         else {
           //console.log(`${action} Produit:`, this.selectedProduits);
           /* if(this.actionType === "code-barre"){
@@ -426,6 +381,13 @@ export class CatalogueProduitComponent {
         this.openModal(this.actionType);  // Ouvrir la modal pour un nouveau produit sans produit sélectionné
       }
     }
+
+     async urlToFile(url: string, filename: string, mimeType: string): Promise<File> {
+        return fetch(url)
+          .then(res => res.blob())
+          .then(blob => new File([blob], filename, { type: mimeType }));
+    }
+
  // Fonction pour obtenir l'ID du modal en fonction de l'action
   getModalId(action: string): string {
     switch (action) {
@@ -600,7 +562,7 @@ loadCategories(): void {
   
 
     // Fermer la modal en manipulant le DOM
-    closeModal(act: string): void {
+    /* closeModal(act: string): void {
       const modalIdentifiant = this.getModalId(act);
       console.log('Identifiant généré pour la modal:', modalIdentifiant);
 
@@ -626,19 +588,71 @@ loadCategories(): void {
         //modalElement.style.display = 'none';
 
         // Fermer la modal avec Bootstrap
-       /*  const modal = new (window as any).bootstrap.Modal(modalElement);
-        modal.hide(); */
+        //const modal = new (window as any).bootstrap.Modal(modalElement);
+        //modal.hide(); 
 
         // Rediriger le focus vers un élément (par exemple un bouton)
-        /* const focusElement = document.getElementById('confirmArchiveModal')?.querySelector('button') as HTMLElement;
-        if (focusElement) {
-          focusElement.focus();
-        } */
+        //  const focusElement = document.getElementById('confirmArchiveModal')?.querySelector('button') as HTMLElement;
+        // if (focusElement) {
+        //   focusElement.focus();
+        // } 
 
       } else {
         console.error('Modal non trouvée pour l\'action:', act);
       }
     }
+ */
+
+/* closeModal(act: string): void {
+  const modalIdentifiant = this.getModalId(act);
+  const modalElement = document.getElementById(modalIdentifiant);
+
+  if (modalElement) {
+    // Utilisation correcte de Bootstrap Modal pour le fermer
+    const bootstrapModal = (window as any).bootstrap.Modal.getInstance(modalElement);
+
+    if (bootstrapModal) {
+      bootstrapModal.hide(); //Fermeture propre
+    } 
+    else {
+      // Si l'instance n'existe pas encore (peu probable), on la crée et la ferme
+      const modal = new (window as any).bootstrap.Modal(modalElement);
+      modal.hide();
+    }
+  } else {
+    console.error('Modal non trouvée pour l\'action:', act);
+  }
+} */
+
+  closeModal(act: string): void {
+  const modalIdentifiant = this.getModalId(act);
+  console.log('[closeModal] ID généré pour la modal :', modalIdentifiant);
+
+  const modalElement = document.getElementById(modalIdentifiant);
+  console.log('[closeModal] Élément DOM récupéré :', modalElement);
+
+  if (modalElement) {
+    // Vérifier si une instance Bootstrap existe déjà
+    const bootstrapModal = (window as any).bootstrap.Modal.getInstance(modalElement);
+    console.log('[closeModal] Instance Bootstrap récupérée :', bootstrapModal);
+
+    if (bootstrapModal) {
+      console.log('[closeModal] L’instance Bootstrap existe déjà, appel de hide()');
+      bootstrapModal.hide();
+    } else {
+      console.warn('[closeModal] Aucune instance Bootstrap trouvée, tentative de création manuelle');
+      const modal = new (window as any).bootstrap.Modal(modalElement);
+      modal.hide();
+      console.log('[closeModal] Modal créée et masquée via hide()');
+    }
+
+    // Facultatif : afficher les classes encore présentes
+    console.log('[closeModal] Classes DOM restantes :', modalElement.className);
+  } else {
+    console.error('[closeModal] Modal introuvable dans le DOM pour l’action :', act);
+  }
+}
+
 
 
     // Fonction pour obtenir le texte du bouton en fonction de l'action
@@ -708,25 +722,29 @@ loadCategories(): void {
     saveImage() {
       if (this.selectedProduits && this.selectedImage) {
         // Logique pour envoyer l'image à un serveur ou la sauvegarder localement
-        const formData = new FormData();
-        formData.append('image', this.selectedImage);
-
+        //const formData = new FormData();
+        //formData.append('image', this.selectedImage);
+        this.isLoading = true;
         // Remplacer l'URL par celle de ton serveur backend pour gérer l'image
-        /* this.httpClient.post('http://ton-serveur.com/upload', formData).subscribe(
-          response => {
-            console.log('Image sauvegardée avec succès', response);
-            // Mise à jour de l'image dans l'interface
-            this.selectedProduits.imageUrl = response.imageUrl; // Exemple de mise à jour
+        this.produitsServices.updateImageProduit(this.selectedProduits.id, this.selectedImage).pipe(
+            finalize(() => this.isLoading = false)
+          )
+        .subscribe({
+          next:() =>{
+            this.toastr.success('Image produit mis à jour avec succès');
+            this.loadData();
+            this.closeModal(this.actionType)
           },
-          error => {
-            console.error('Erreur lors de la sauvegarde de l\'image', error);
+          error:(err) =>{
+            this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour de l\'image du produit';
+            this.toastr.error(this.errorMessage);
           }
-        ); */
+        });
 
         // Fermer la modal après avoir associé l'image
-        const modal = document.getElementById('imageModal') as HTMLElement;
+        /* const modal = document.getElementById('imageModal') as HTMLElement;
         const modalInstance =  new (window as any).bootstrap.Modal.getInstance(modal);
-        modalInstance.hide();
+        modalInstance.hide(); */
       }
     }
     onImageSelected($event: Event) {
@@ -736,11 +754,8 @@ loadCategories(): void {
         console.log('Image sélectionnée', this.selectedImage);
       }
     }
-    generateBarcode() {
+    /* generateBarcode() {
       if (this.selectedProduits) {
-        // Utiliser l'ID du produit (ou tout autre attribut unique) pour générer le code-barres
-        //const barcodeValue = this.selectedProduits.famille + this.selectedProduits.id + this.selectedProduits.prixAchatUnitaire; // ou produit.id, etc.
-        // Générer une chaîne aléatoire pour le code-barres
         const barcodeValue = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15); // Génère une chaîne aléatoire
         // Sélectionner l'élément HTML où le code-barres sera affiché
         const barcodeElement = document.getElementById('barcode') as HTMLCanvasElement;  // Assurez-vous que l'élément est bien un canvas
@@ -756,12 +771,60 @@ loadCategories(): void {
           });
         }
 
-        // Ouvrir le modal pour afficher le code-barres généré
-       /*  const modal = document.getElementById('codeBarreModal') as HTMLElement;
-        const modalInstance = new (window as any).bootstrap.Modal.getInstance(modal);
-        modalInstance.show(); */
+        
       }
+    } */
+
+  generateBarcode(): void {
+    // Génère 12 chiffres aléatoires
+    const base = this.generateNumericBarcode(12);
+
+    // Calcule la clé de contrôle
+    const checksum = this.calculateEAN13Checksum(base);
+
+    // Concatène les 12 chiffres + la clé
+    const barcodeValue = base + checksum;
+
+    const barcodeElement = document.getElementById('barcode') as HTMLCanvasElement;
+    if (barcodeElement) {
+      JsBarcode(barcodeElement, barcodeValue, {
+        format: "EAN13",
+        width: 2,
+        height: 100,
+        displayValue: true,
+        fontSize: 18
+      });
     }
+
+    if (this.selectedProduits) {
+      this.codeBarre = barcodeValue;
+      console.log('Code barre généré (modification) :', this.codeBarre);
+    } else {
+      this.produitForm.patchValue({ codeBarre: barcodeValue });
+      console.log('Code barre généré (ajout) :', barcodeValue);
+    }
+}
+
+generateNumericBarcode(length: number): string {
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += Math.floor(Math.random() * 10);
+  }
+  return result;
+}
+
+calculateEAN13Checksum(code: string): string {
+  const digits = code.split('').map(Number);
+  let sum = 0;
+  for (let i = 0; i < digits.length; i++) {
+    sum += digits[i] * (i % 2 === 0 ? 1 : 3);
+  }
+  const remainder = sum % 10;
+  const checksum = remainder === 0 ? 0 : 10 - remainder;
+  return String(checksum);
+}
+
+
 
   //...............................................................................................
 
@@ -804,6 +867,25 @@ loadCategories(): void {
         error:(err) => {
            this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour du statut de la catégorie';
           this.toastr.error(this.errorMessage);
+          //console.error(err);
+        }
+      });
+  }
+
+  toggleProduitStatus(prod: Produits, status:boolean) {
+      // Implémentez la logique pour activer/désactiver
+      this.isLoading = true;
+      this.produitsServices.updateStatusProduit(prod.id,status).pipe(
+            finalize(() => this.isLoading = false)
+          )
+      .subscribe({
+        next:() =>{
+              this.toastr.success('Statut produit mis à jour avec succès');
+              this.loadData();
+        },
+        error:(err) => {
+           this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour du statut du produit';
+          this.toastr.error(this.errorMessage, err);
           //console.error(err);
         }
       });
@@ -946,10 +1028,10 @@ onSubmitWithStock() {
   // Champs additionnels nécessaires
   formData.append('code_structure', this.code_structure);
   formData.append('agentId', String(this.agentId));
-  formData.append('codeBarre', this.codeBarre);
+  //formData.append('codeBarre', this.codeBarre);
 
   // Ajouter l'image sélectionnée (si présente)
-  if (this.selectedImageFile) {
+  if (this.imageChanged && this.selectedImageFile) {
     formData.append('image', this.selectedImageFile);
   }
 
@@ -1021,8 +1103,12 @@ handleProduitAction() {
   }
 }
 
+extractFilenameFromUrl(url: string): string {
+  return url.split('/').pop() || 'image.png';
+}
 
- onFileChange(event: any): void {
+
+/*  onFileChange(event: any): void {
   const file = event.target.files[0];
   if (file) {
     this.selectedImageFile = file;
@@ -1033,15 +1119,33 @@ handleProduitAction() {
     };
     reader.readAsDataURL(file);
   }
+} */
+
+onFileChange(event: any): void {
+  const file = event.target.files[0];
+  if (file) {
+    this.selectedImageFile = file;
+    this.imageChanged = true; // <- MARQUER que l'image a été modifiée
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.logoPreview = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
 }
+
 
 
 resetForms() {
   this.showStockSection = false;
   this.produitForm.reset();
   this.logoPreview = null;
+  this.imageChanged = false;
+  this.imageFilename = null;
   this.selectedImageFile = null;
-  this.stockForm.reset();
+  if(this.showStockSection) this.stockForm.reset();
+ 
 
 }
 

@@ -15,8 +15,8 @@ export class ProduitsService {
   private getHeaders(): HttpHeaders {
       const token = this.authService.getToken();
       return new HttpHeaders({
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Authorization': `Bearer ${token}`
+        //'Content-Type': 'application/json'
       });
     }
 
@@ -93,11 +93,18 @@ export class ProduitsService {
   }
 
   //Mettre à jour le statut d’un produit
-  updateStatusProduit(id: number, status: string): Observable<any> {
-    return this.http.patch(`${this.apiUrl}/produits/${id}/status`, { status }, { headers: this.getHeaders() });
+  updateStatusProduit(id: number, statut: boolean): Observable<any> {
+    console.log('Statut envoyé :', statut);
+    return this.http.patch(`${this.apiUrl}/produits/${id}/statut`, { statut }, { headers: this.getHeaders() });
   }
   updateStatutCategorie(id: number, statut: boolean) {
   return this.http.patch(`${this.apiUrl}/categories-produits/${id}/statut`, { statut },{ headers: this.getHeaders() });
+}
+//Mise à jour de l'image du produit
+updateImageProduit(id: number, imageFile: File): Observable<any> {
+  const formData = new FormData();
+  formData.append('image', imageFile);
+  return this.http.patch(`${this.apiUrl}/produits/${id}/image`, formData, { headers: this.getHeaders() });
 }
 
 

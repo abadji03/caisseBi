@@ -9,7 +9,7 @@ router.delete("/:id", produitCtrl.deleteProduit);
 router.get("/structure/:code_structure", produitCtrl.getProduitsByStructure);
 router.get("/:id", produitCtrl.getProduitById);
 router.get("/", produitCtrl.getAllProduits);
-router.patch("/:id/status", produitCtrl.updateStatusProduit);
-
+router.patch("/:id/statut", produitCtrl.updateStatusProduit);
+router.patch("/:id/image", upload.single('image'), produitCtrl.updateImageProduit);
 
 module.exports = router;
