@@ -1,14 +1,17 @@
 <div class="container-fluid mt-4">
-  <div class="d-flex justify-content-center">
-    <!-- Contact -->
+  <!-- <div class="d-flex justify-content-center">
     <h1 class="fw-bold text-uppercase">Catalogue des produits</h1>
   </div>
-  <hr>
+  <hr> -->
     <div class="row"> 
       <!-- Colonne gauche (liste des produits) -->
       <div [ngClass]="{ 'col-md-12': !isRowSelected, 'col-md-10': isRowSelected }">
         <div class="d-flex justify-content-between mb-2">
-          <h1>Liste des produits</h1>
+          <div class="w-auto mb-3">
+                <button class="btn btn-info w-auto me-1" data-bs-toggle="tooltip" title="Exporter les produits" (click)="onAction('Exporter')"><i class="bi bi-box-arrow-up-right me-2"></i></button>
+                <button class="btn btn-danger w-auto me-1" data-bs-toggle="tooltip" title="Importer des produits" (click)="onAction('Importer')"><i class="bi bi-box-arrow-in-right me-2"></i></button>
+                <button class="btn btn-light w-auto" data-bs-toggle="tooltip" title="Rafraîchir le tableau" (click)="onAction('Rafraîchir')"><i class="bi bi-arrow-clockwise me-2"></i></button>
+            </div>
           <div class="">
             <!-- Bouton pour ouvrir le modal -->
             <button type="button" class="btn btn-secondary me-2" (click)="openCategoriesModal()">
@@ -56,9 +59,8 @@
           </div>
         </div>
 
-        <div class="d-flex justify-content-between  ">
-            <div class="w-50">
-            <!-- Formulaire de recherche -->
+           <!--  <div class="w-50">
+          
                     <div class="input-group mb-3 w-auto">
                       <input
                       type="text"
@@ -68,13 +70,27 @@
                       name="searchTerm"
                       placeholder="Rechercher par désignation, famille, fournisseur, etc...." />
                     </div>
+            </div> -->
+            
+        
+            <div class="d-flex justify-content-center">
+                <h1>Liste des produits</h1>
             </div>
-            <div class="w-auto float-end">
-                <button class="btn btn-info w-auto me-1" data-bs-toggle="tooltip" title="Exporter les produits" (click)="onAction('Exporter')"><i class="bi bi-box-arrow-up-right me-2"></i></button>
-                <button class="btn btn-danger w-auto me-1" data-bs-toggle="tooltip" title="Importer des produits" (click)="onAction('Importer')"><i class="bi bi-box-arrow-in-right me-2"></i></button>
-                <button class="btn btn-light w-auto" data-bs-toggle="tooltip" title="Rafraîchir le tableau" (click)="onAction('Rafraîchir')"><i class="bi bi-arrow-clockwise me-2"></i></button>
-            </div>
-        </div>
+        <!-- Barre de recherche et filtres -->
+        <div class="d-flex justify-content-between mb-3">
+          <div class="input-group w-50">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control" placeholder="Rechercher un produit..." [(ngModel)]="searchTerm" (input)="onSearchChange()">
+          </div>
+          <div>
+            <select class="form-select" [(ngModel)]="itemsPerPage" (change)="onRowsPerPageChange($event)">
+              <option value="5">5 éléments/page</option>
+              <option value="10">10 éléments/page</option>
+              <option value="20">20 éléments/page</option>
+            </select>
+          </div>
+        </div> 
+        
         <!-- Tableau des produits -->
         <div class="table-responsive">
           <table class="table table-bordered table-hover">
@@ -144,10 +160,28 @@
         </div>
 
         <!-- Pagination -->
-        <div class="pagination d-flex justify-content-center align-items-center">
+       <!--  <div class="pagination d-flex justify-content-center align-items-center">
             <button class="w-auto btn btn-success" (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 1"><i class="bi bi-arrow-left-circle fs-3"></i></button>
             <span class="h3">{{ currentPage }}</span>
             <button class="w-auto btn btn-success" (click)="onPageChange(currentPage + 1)" [disabled]="currentPage * itemsPerPage >= filteredProducts.length"><i class="bi bi-arrow-right-circle fs-3"></i></button>
+        </div> -->
+        <div class="d-flex justify-content-between align-items-center">
+              <div>
+                Affichage de {{ (currentPage - 1) * itemsPerPage + 1 }} à 
+                {{ min(currentPage * itemsPerPage, filteredProducts.length) }} 
+                sur {{ filteredProducts.length }} fournisseurs
+              </div>
+              <div>
+                <button class="btn btn-success" (click)="onPageChange(currentPage-1)" [disabled]="currentPage === 1">
+                  <i class="bi bi-arrow-left-circle"></i>
+                </button>
+                <!-- <span class="h3">{{ currentPageFournisseur }} / {{ getTotalPages(filteredFournisseurs) }}</span> -->
+                <span class="h3">{{ currentPage }} </span>
+                <button class="btn btn-success" (click)="onPageChange(currentPage+1)"
+                  [disabled]="currentPage >= getTotalPages(filteredProducts)">
+                  <i class="bi bi-arrow-right-circle"></i>
+                </button>
+              </div>
           </div>
         <!-- <div class="d-flex justify-content-center">
           <ul class="pagination">
@@ -548,7 +582,9 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="button" class="btn btn-success" (click)="generateBarcode()">Générer un code-barre</button>
+          <button type="button" *ngIf="!barcodeGenerated" class="btn btn-success" (click)="generateBarcode()">Générer un code-barre</button>
+          <button type="button" *ngIf="impressionBarcode" [disabled]="!impressionBarcode" class="btn btn-success" (click)="imprimer()">Imprimer</button>
+          <button type="button" *ngIf="barcodeGenerated" class="btn btn-success" (click)="mettreAJourCodeBarre()">Enregistrer</button>
         </div>
       </div>
     </div>

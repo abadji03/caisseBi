@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { CategorieProduits, Produits } from '../../../modeles/produit.modele';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -14,6 +14,7 @@ import { image } from 'html2canvas/dist/types/css/types/image';
 import { UserService } from '../../../services/user.service';
 import { User } from '../../../modeles/user.model';
 import { Stock } from '../../../modeles/entrees-sorties.model';
+import { normalize } from '../../../utils/string-utils';
 
 @Component({
   selector: 'app-catalogue-produit',
@@ -39,7 +40,7 @@ export class CatalogueProduitComponent {
     categorieForm!: FormGroup;  // Formulaire d'ajout de catégorie
     isActionsEnabled: boolean = false;  // Indicateur pour activer les actions
     currentPage: number = 1;  // Page courante pour la pagination
-    itemsPerPage: number = 6;  // Nombre d'items par page
+    itemsPerPage: number = 5;  // Nombre d'items par page
     isRowSelected: boolean = false; // Indique si une ligne est sélectionnée
     ajoutCategorie:boolean = false;
     searchTerm: string = '';
@@ -48,6 +49,9 @@ export class CatalogueProduitComponent {
     categories: CategorieProduits[] = [];
     editingCategorieId: number | null = null;
     editedCategorie: any = {};
+
+    barcodeGenerated: boolean = false;
+    impressionBarcode: boolean = false;
 
     actionType: string = 'ajouter';
     searchText: string = '';  // Texte de recherche
@@ -91,7 +95,8 @@ export class CatalogueProduitComponent {
       private toastr: ToastrService,
       private fournisseurService:FournisseursService,
       private userService:UserService,
-      private stockService: StockInventaireService
+      private stockService: StockInventaireService,
+      private cdr: ChangeDetectorRef,
     ) {
 
     }
@@ -266,6 +271,39 @@ export class CatalogueProduitComponent {
     }
   }
 
+  // Gestion de la recherche
+ /*  onSearchChange(): void {
+    this.filteredProducts = this.prods.filter(prod =>
+      prod.designation.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+      this.getNomCategorieById(prod.categorieId)?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+      this.getNomUserById(prod.agentId!)?.toString().toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+      prod.unite!.toLowerCase().includes(this.searchTerm.toLowerCase())
+      //fournisseur.montantAPayer?.toString().toLowerCase().includes(this.searchQuery.toLowerCase())
+    );
+      this.currentPage = 1;
+
+  } */
+
+      onSearchChange(): void {
+  
+  const search = normalize(this.searchTerm);
+
+  this.filteredProducts = this.prods.filter(prod =>
+    normalize(prod.designation).includes(search) ||
+    normalize(this.getNomCategorieById(prod.categorieId)).includes(search) ||
+    normalize(this.getNomUserById(prod.agentId!)).includes(search) ||
+    normalize(prod.unite).includes(search)
+  );
+
+  this.currentPage = 1;
+}
+
+min(a: number, b: number): number {
+      return Math.min(a, b);
+  }
+getTotalPages(list: any[]): number {
+  return Math.ceil(list.length / this.itemsPerPage);
+}
   afficherFormCategorie() {
     this.ajoutCategorie = !this.ajoutCategorie;  // Inverse l'état de la variable
   }
@@ -295,6 +333,14 @@ export class CatalogueProduitComponent {
 
     }
 
+    onRowsPerPageChange(event: any) {
+      this.itemsPerPage = Number(event.target.value);
+
+      // Réinitialiser les pages à 1 pour éviter un problème d'affichage
+      this.currentPage = 1;
+
+      this.cdr.detectChanges(); // Forcer la mise à jour de la vue
+    }
     // Gérer le changement de page
     onPageChange(page: number): void {
       this.currentPage = page;
@@ -733,6 +779,7 @@ loadCategories(): void {
           next:() =>{
             this.toastr.success('Image produit mis à jour avec succès');
             this.loadData();
+            this.isRowSelected = false;
             this.closeModal(this.actionType)
           },
           error:(err) =>{
@@ -798,6 +845,7 @@ loadCategories(): void {
 
     if (this.selectedProduits) {
       this.codeBarre = barcodeValue;
+       this.barcodeGenerated = true; //Active le bouton "Imprimer"
       console.log('Code barre généré (modification) :', this.codeBarre);
     } else {
       this.produitForm.patchValue({ codeBarre: barcodeValue });
@@ -822,6 +870,31 @@ calculateEAN13Checksum(code: string): string {
   const remainder = sum % 10;
   const checksum = remainder === 0 ? 0 : 10 - remainder;
   return String(checksum);
+}
+
+imprimer() {
+  const canvas: HTMLCanvasElement = document.getElementById('barcode') as HTMLCanvasElement;
+
+  if (!canvas) return;
+
+  const dataUrl = canvas.toDataURL(); // convertit le canvas en image base64
+  const windowContent = `
+    <html>
+      <head>
+        <title>Impression du code-barres</title>
+      </head>
+      <body onload="window.print(); window.close();">
+        <img src="${dataUrl}" style="width: 300px; height: auto;" />
+      </body>
+    </html>
+  `;
+
+  const printWindow = window.open('', '_blank');
+  if (printWindow) {
+    printWindow.document.open();
+    printWindow.document.write(windowContent);
+    printWindow.document.close();
+  }
 }
 
 
@@ -882,6 +955,7 @@ calculateEAN13Checksum(code: string): string {
         next:() =>{
               this.toastr.success('Statut produit mis à jour avec succès');
               this.loadData();
+              //this.isRowSelected = false;
         },
         error:(err) => {
            this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour du statut du produit';
@@ -890,6 +964,54 @@ calculateEAN13Checksum(code: string): string {
         }
       });
   }
+
+  toggleProduitCodeBarre(prod: Produits, status:boolean) {
+      // Implémentez la logique pour activer/désactiver
+      this.isLoading = true;
+      this.produitsServices.updateStatusProduit(prod.id,status).pipe(
+            finalize(() => this.isLoading = false)
+          )
+      .subscribe({
+        next:() =>{
+              this.toastr.success('Statut produit mis à jour avec succès');
+              this.loadData();
+        },
+        error:(err) => {
+           this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour du statut du produit';
+          this.toastr.error(this.errorMessage, err);
+          //console.error(err);
+        }
+      });
+  }
+
+  mettreAJourCodeBarre() {
+  if (!this.selectedProduits || !this.selectedProduits.id) return;
+
+  const nouveauCodeBarre = this.codeBarre;
+
+  if (!nouveauCodeBarre || nouveauCodeBarre.trim() === '') {
+    this.toastr.error("Veuillez saisir un code-barre.");
+    return;
+  }
+  this.isLoading = true;
+  this.produitsServices.updateCodeBarre(this.selectedProduits.id, nouveauCodeBarre).pipe(
+            finalize(() => this.isLoading = false)
+          )
+    .subscribe({
+      next: (res) => {
+        this.toastr.success("Code-barre mis à jour !");
+        // Recharger les données ou mettre à jour localement si besoin
+        this.impressionBarcode = true;
+        this.loadData();
+        this.isRowSelected = false;
+
+      },
+      error: (err) => {
+        this.toastr.error(err.error.message || "Erreur lors de la mise à jour");
+      }
+    });
+}
+
 
   deleteCategorie(id: number) {
     this.isLoading = true;
@@ -1079,6 +1201,7 @@ onSubmitWithStock() {
         this.toastr.success('Produit mis à jour avec succès');
         this.loadData();
          this.resetForms();
+         this.isRowSelected = false;
          this.closeModal(this.actionType)
 
       },

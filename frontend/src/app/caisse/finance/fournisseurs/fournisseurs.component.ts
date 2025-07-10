@@ -12,6 +12,7 @@ import { Magasin } from '../../../modeles/magasin.model';
 import { FournisseursService } from '../../../services/fournisseurs.service';
 import { ToastrService } from 'ngx-toastr';
 import { finalize, forkJoin } from 'rxjs';
+import { normalize } from '../../../utils/string-utils';
 
 
 @Component({
@@ -434,7 +435,7 @@ export class FournisseursComponent implements OnInit {
     return `BON-${year}${month}${day}-${hour}${minute}${second}`;
   }
   // Gestion de la recherche
-  onSearchChange(): void {
+  /* onSearchChange(): void {
     this.filteredFournisseurs = this.fournisseurs.filter(fournisseur =>
       fournisseur.nomComplet.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
       fournisseur.adresse?.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
@@ -444,7 +445,22 @@ export class FournisseursComponent implements OnInit {
     );
       this.currentPageFournisseur = 1;
 
-  }
+  } */
+ onSearchChange(): void {
+
+  const query = normalize(this.searchQuery);
+
+  this.filteredFournisseurs = this.fournisseurs.filter(fournisseur =>
+    normalize(fournisseur.nomComplet).includes(query) ||
+    normalize(fournisseur.adresse).includes(query) ||
+    normalize(fournisseur.telephone?.toString()).includes(query) ||
+    normalize(fournisseur.banque).includes(query) ||
+    normalize(fournisseur.montantAPayer?.toString()).includes(query)
+  );
+
+  this.currentPageFournisseur = 1;
+}
+
   min(a: number, b: number): number {
       return Math.min(a, b);
   }

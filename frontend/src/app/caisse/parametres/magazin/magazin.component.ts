@@ -14,6 +14,7 @@ import { StructureService } from '../../../services/structure.service';
 import { MaagasinsService } from '../../../services/maagasins.service';
 import { ToastrService } from 'ngx-toastr';
 import { finalize } from 'rxjs';
+import { normalize } from '../../../utils/string-utils';
 
 @Component({
   selector: 'app-magazin',
@@ -946,13 +947,24 @@ validerTransfert(transfert: Transfert) {
 
 
     // Filtrage des magasins
-  get filteredMagasins(): Magasin[] {
+  /* get filteredMagasins(): Magasin[] {
     return this.magasins.filter(magasin => 
       magasin.nom.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
       magasin.code_structure.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
       magasin.adresse?.toLowerCase().includes(this.searchTerm.toLowerCase())
     );
-  }
+  } */
+ get filteredMagasins(): Magasin[] {
+  
+  const search = normalize(this.searchTerm);
+
+  return this.magasins.filter(magasin =>
+    normalize(magasin.nom).includes(search) ||
+    normalize(magasin.code_structure).includes(search) ||
+    normalize(magasin.adresse).includes(search)
+  );
+}
+
 
   // Pagination
   getPaginatedMagasins(): Magasin[] {

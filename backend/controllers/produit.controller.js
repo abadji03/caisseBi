@@ -268,3 +268,39 @@ exports.updateImageProduit = async (req, res) => {
   }
 };
 
+// Mettre à jour uniquement le code-barre d’un produit
+exports.updateCodeBarreProduit = async (req, res) => {
+  try {
+    const { codeBarre } = req.body;
+
+    if (!codeBarre || codeBarre.trim() === "") {
+      return res.status(400).json({ message: "Le code-barre est requis." });
+    }
+
+    const produit = await Produit.findByPk(req.params.id);
+    if (!produit) {
+      return res.status(404).json({ message: "Produit non trouvé." });
+    }
+
+    // Vérifier l’unicité du code-barre
+    const codeBarreExiste = await Produit.findOne({
+      where: {
+        codeBarre,
+        id: { [db.Sequelize.Op.ne]: req.params.id } // exclure le produit actuel
+      }
+    });
+
+    if (codeBarreExiste) {
+      return res.status(400).json({ message: "Ce code-barre est déjà utilisé par un autre produit." });
+    }
+
+    // Mise à jour du code-barre
+    await produit.update({ codeBarre });
+
+    res.json({ message: "Code-barre mis à jour avec succès", produit });
+  } catch (error) {
+    res.status(500).json({ message: "Erreur lors de la mise à jour du code-barre", error: error.message });
+  }
+};
+
+

@@ -13,6 +13,7 @@ import { ToastrService } from 'ngx-toastr';
 import { ClientsService } from '../../../services/clients.service';
 import { MaagasinsService } from '../../../services/maagasins.service';
 import { finalize, forkJoin } from 'rxjs';
+import { normalize } from '../../../utils/string-utils';
 
 
 @Component({
@@ -384,7 +385,7 @@ min(a: number, b: number): number {
       this.filteredClients = this.clients.slice((this.currentPageClient - 1) * 10, this.currentPageClient * 10);
     }
     // Gestion de la recherche
-    onSearchChange(): void {
+    /* onSearchChange(): void {
       this.filteredClients = this.clients.filter(client =>
         client.nomComplet.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
         client.adresse.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
@@ -392,6 +393,20 @@ min(a: number, b: number): number {
         client.solde.toString().toLowerCase().includes(this.searchQuery.toLowerCase())
       );
       this.currentPageClient =1;
+    } */
+
+      onSearchChange(): void {
+
+      const query = normalize(this.searchQuery);
+
+      this.filteredClients = this.clients.filter(client =>
+        normalize(client.nomComplet).includes(query) ||
+        normalize(client.adresse).includes(query) ||
+        normalize(client.telephone?.toString()).includes(query) ||
+        normalize(client.solde?.toString()).includes(query)
+      );
+
+      this.currentPageClient = 1;
     }
 
     // Ouvrir le modal d'ajout ou modification

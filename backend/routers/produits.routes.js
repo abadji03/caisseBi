@@ -11,5 +11,6 @@ router.get("/:id", produitCtrl.getProduitById);
 router.get("/", produitCtrl.getAllProduits);
 router.patch("/:id/statut", produitCtrl.updateStatusProduit);
 router.patch("/:id/image", upload.single('image'), produitCtrl.updateImageProduit);
+router.put('/:id/code-barre', produitCtrl.updateCodeBarreProduit);
 
 module.exports = router;

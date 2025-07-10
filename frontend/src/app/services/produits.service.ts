@@ -77,6 +77,10 @@ export class ProduitsService {
     return this.http.put(`${this.apiUrl}/categories-produits/${id}`, categorie, { headers: this.getHeaders() });
   }
 
+  updateCodeBarre(id: number, codeBarre: string) {
+  return this.http.put<any>(`${this.apiUrl}/produits/${id}/code-barre`, { codeBarre }, { headers: this.getHeaders() });
+}
+
   //Supprimer un produit
   deleteProduit(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/produits/${id}`, { headers: this.getHeaders() });
