@@ -50,4 +50,32 @@ export class StockInventaireService {
       return this.http.get<any>(`${this.apiUrl}/produit/${produitId}/statut`, { headers: this.getHeaders() });
     }
   
+    /* ===========================================================
+   *  NOUVEAU : Ajustements de quantité
+   * ========================================================= */
+  /**
+   * Ajuste la quantité totale (entrée/sortie de stock)
+   * @param id        id du stock
+   * @param variation nombre positif (entrée) ou négatif (sortie)
+   */
+  adjustQuantiteTotale(id: number, variation: number): Observable<Stock> {
+    return this.http.patch<Stock>(
+      `${this.apiUrl}/${id}/adjust-quantite`,
+      { variation },
+      { headers: this.getHeaders() }
+    );
+  }
+
+  /**
+   * Ajuste la quantité réservée
+   * @param id        id du stock
+   * @param variation nombre positif ou négatif
+   */
+  adjustQuantiteReservee(id: number, variation: number): Observable<Stock> {
+    return this.http.patch<Stock>(
+      `${this.apiUrl}/${id}/adjust-reservee`,
+      { variation },
+      { headers: this.getHeaders() }
+    );
+  }
 }

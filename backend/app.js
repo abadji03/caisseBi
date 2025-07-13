@@ -127,6 +127,7 @@ app.use('/api/paiements', require('./routers/paiement.routes'));
 app.use('/api/users', require('./routers/users.routes'));
 app.use('/api/permissions', require('./routers/permission.routes'));
 app.use('/api/roles', require('./routers/role.routes'));
+app.use('/api/mouvements-stock', require('./routers/mouvementStock.routes'));
 app.use('/api/user-roles', require('./routers/user-role.routes'));
 app.use('/api/role-permissions', require('./routers/role-permission.routes'));
 app.use('/api/auth', require('./routers/auth.routes'));

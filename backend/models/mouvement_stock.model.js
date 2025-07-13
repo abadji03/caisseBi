@@ -26,7 +26,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     typeMouvement: {
-      type: DataTypes.ENUM("Entree", "Sortie"),
+      type: DataTypes.ENUM("Entrée", "Sortie"),
       allowNull: false
     },
     quantite: {
@@ -42,7 +42,6 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     description: DataTypes.TEXT,
-    motif: DataTypes.TEXT,
     dateMouvement: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW

@@ -5,7 +5,7 @@
       <a class="nav-link" id="nav-reconciliation-tab" data-bs-toggle="tab" href="#nav-reconciliation" role="tab" aria-controls="nav-reconciliation" aria-selected="false">Réconciliation</a>
       <a class="nav-link" id="nav-analyse-tab" data-bs-toggle="tab" href="#nav-analyse" role="tab" aria-controls="nav-analyse" aria-selected="false">Analyse des écarts</a>
     </div>
-  </nav>
+  </nav> 
 
   <div class="tab-content mt-4" id="nav-tabContent">
     <div class="tab-pane fade show active" id="nav-entrees" role="tabpanel" aria-labelledby="nav-entrees-tab">
@@ -79,83 +79,117 @@
         </div>
 
       <!-- Modal pour ajouter un mouvement -->
-      <!-- Modal pour Entrée -->
       <div class="modal fade" id="mouvementModal" tabindex="-1" aria-labelledby="mouvementModalLabel" aria-hidden="true">
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header d-flex justify-content-between">
-              <h2 class="modal-title" id="entreeModalLabel">{{ isEditing ? 'Modifier un mouvement' : 'Ajouter un nouveau mouvement' }}</h2>
+              <h2 class="modal-title">{{ isEditing ? 'Modifier un mouvement' : 'Ajouter un nouveau mouvement' }}</h2>
               <button type="button" class="w-auto bg-danger border border-3 px-2" data-bs-dismiss="modal" aria-label="Close">
                 <i class="bi bi-x-lg text-white"></i>
               </button>
             </div>
             <div class="modal-body">
               <form [formGroup]="mouvementForm" (ngSubmit)="enregistrerMouvement()">
-                <!-- Produit -->
-                <div class="mb-3">
-                  <label for="produitId" class="form-label">Produit</label>
-                  <input type="number" class="form-control" id="produitId" formControlName="produitId" required>
-                  <div *ngIf="mouvementForm.controls['produitId'].invalid && mouvementForm.controls['produitId'].touched" class="text-danger">
-                    Le produit est requis.
-                  </div>
-                </div>
-
-                <!-- Quantité -->
-                <div class="mb-3">
-                  <label for="quantite" class="form-label">Quantité</label>
-                  <input type="number" class="form-control" id="quantite" formControlName="quantite" required>
-                  <div *ngIf="mouvementForm.controls['quantite'].invalid && mouvementForm.controls['quantite'].touched" class="text-danger">
-                    La quantité est requise et doit être supérieure à 0.
-                  </div>
-                </div>
-
-                <!-- Unité de Stock -->
-                <div class="mb-3">
-                  <label for="uniteStock" class="form-label">Unité de Stock</label>
-                  <select class="form-select" id="uniteStock" formControlName="uniteStock" required>
-                    <option value="" disabled selected>Choisir une unité</option>
-                    <option value="sac">Sac</option>
-                    <option value="sachets">Sachets</option>
-                    <option value="cartons">Cartons</option>
-                    <option value="autre">Autre</option>
-                  </select>
-                  <div *ngIf="mouvementForm.controls['uniteStock'].invalid && mouvementForm.controls['uniteStock'].touched" class="text-danger">
-                    L'unité de stock est requise.
-                  </div>
-                </div>
-
                 <!-- Type de Mouvement -->
                 <div class="mb-3">
                   <label for="typeMouvement" class="form-label">Type de Mouvement</label>
-                  <select class="form-select" id="type" formControlName="typeMouvement" required>
+                  <select class="form-select" id="typeMouvement" formControlName="typeMouvement">
                     <option value="" disabled selected>Choisir un mouvement</option>
-                    <option value="entree">Entrée</option>
-                    <option value="sortie">Sortie</option>
+                    <option value="Entrée">Entrée</option>
+                    <option value="Sortie">Sortie</option>
                   </select>
                   <div *ngIf="mouvementForm.controls['typeMouvement'].invalid && mouvementForm.controls['typeMouvement'].touched" class="text-danger">
-                    Le type de mouvement est requis.
+                    Ce champ est requis.
                   </div>
                 </div>
+                <!-- Conteneur pour les champs conditionnels -->
+                <div *ngIf="mouvementForm.get('typeMouvement')?.value">
+                      <!-- Produit avec autocomplétion basée sur ngModel -->
+                      <div class="mb-3 position-relative">
+                        <label for="produitInput" class="form-label">Produit</label>
+                        <input type="text" class="form-control" id="produitInput"
+                              [(ngModel)]="searchInput"
+                              (input)="filterProduits()"
+                              placeholder="Rechercher un produit..."
+                              [ngModelOptions]="{ standalone: true }"
+                              required />
 
-                <!-- Description -->
-                <div class="mb-3">
-                  <label for="description" class="form-label">Description</label>
-                  <textarea class="form-control" id="description" formControlName="description" required></textarea>
-                  <div *ngIf="mouvementForm.controls['description'].invalid && mouvementForm.controls['description'].touched" class="text-danger">
-                    La description est requise.
-                  </div>
-                </div>
+                        <!-- Liste déroulante des résultats -->
+                        <ul *ngIf="filteredProduits.length > 0 && searchInput"
+                            class="list-group position-absolute mt-1 zindex-dropdown"
+                            style="width: 100%; max-height: 150px; overflow-y: auto;">
+                          <li *ngFor="let prod of filteredProduits"
+                              class="list-group-item list-group-item-action"
+                              (click)="selectProduit(prod)">
+                            {{ prod.designation }}
+                          </li>
+                        </ul>
 
-                <!-- Bouton de soumission -->
-                <div class="d-flex justify-content-center">
-                  <button type="submit" class="btn btn-success me-4 w-25" [disabled]="mouvementForm.invalid">{{ isEditing ? 'Mettre à jour' : 'Enregistrer' }}</button>
-                  <button type="reset" class="btn btn-secondary w-25" data-bs-dismiss="modal" aria-label="Close">Annuler</button>
-                </div>
+                        <!-- Message d'erreur si aucun produit n'est sélectionné -->
+                        <!-- <div *ngIf="mouvementForm.controls['produitId'].invalid && mouvementForm.controls['produitId'].touched"
+                            class="text-danger mt-1">
+                          Le produit est requis.
+                        </div> -->
+                      </div>
+
+                      <!-- Prix unitaire du produit -->
+                      <div class="mb-3">
+                        <label for="prixUnitaire" class="form-label">Prix unitaire</label>
+                        <input type="text" class="form-control" id="prixUnitaire"
+                              formControlName="prixUnitaire" readonly>
+                      </div>
+
+                      <!-- Unité de stock (readonly, rempli automatiquement) -->
+                      <div class="mb-3">
+                        <label for="uniteStock" class="form-label">Unité de Stock</label>
+                        <input type="text" class="form-control" id="uniteStock"
+                              formControlName="uniteStock" readonly>
+                      </div>
+
+                      <!-- Fournisseur -->
+                      <div class="mb-3">
+                        <label for="fournisseur" class="form-label">Fournisseur</label>
+                        <select id="fournisseur" class="form-select" formControlName="fournisseurId" required>
+                          <option value="" disabled selected>Choisir un fournisseur</option>
+                          <option *ngFor="let fournisseur of fournisseurs" [value]="fournisseur.id">{{ fournisseur.nomComplet }}</option>
+                        </select>
+                        <div *ngIf="mouvementForm.controls['fournisseurId'].invalid && mouvementForm.controls['fournisseurId'].touched" class="text-danger">
+                          Le fournisseur est requis.
+                        </div>
+                      </div>
+
+                      <!-- Quantité -->
+                      <div class="mb-3">
+                        <label for="quantite" class="form-label">Quantité</label>
+                        <input type="number" class="form-control" id="quantite" formControlName="quantite">
+                        <div *ngIf="mouvementForm.controls['quantite'].invalid && mouvementForm.controls['quantite'].touched" class="text-danger">
+                          La quantité est requise et doit être > 0.
+                        </div>
+                      </div>
+
+                      <!-- Description -->
+                      <div class="mb-3">
+                        <label for="description" class="form-label">Description/Commentaire</label>
+                        <textarea class="form-control" id="description" formControlName="description"></textarea>
+                        <div *ngIf="mouvementForm.controls['description'].invalid && mouvementForm.controls['description'].touched" class="text-danger">
+                          La description est requise.
+                        </div>
+                      </div>
+
+                      <!-- Boutons -->
+                      <div class="d-flex justify-content-center">
+                        <button type="submit" class="btn btn-success me-4 w-25" [disabled]="mouvementForm.invalid">
+                          {{ isEditing ? 'Mettre à jour' : 'Enregistrer' }}
+                        </button>
+                        <button type="reset" class="btn btn-secondary w-25" data-bs-dismiss="modal">Annuler</button>
+                      </div>
+                    </div>
               </form>
             </div>
           </div>
         </div>
       </div>
+
 
     </div>
 

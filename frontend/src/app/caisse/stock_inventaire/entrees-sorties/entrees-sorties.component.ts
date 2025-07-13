@@ -1,8 +1,15 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { AnalyseEcart, MouvementsStock, Reconciliation } from '../../../modeles/entrees-sorties.model';
+import { AnalyseEcart, MouvementsStock, Reconciliation, Stock } from '../../../modeles/entrees-sorties.model';
 import { Produits } from '../../../modeles/produit.modele';
+import { Fournisseur } from '../../../modeles/fournisseur.model';
+import { finalize, forkJoin } from 'rxjs';
+import { ProduitsService } from '../../../services/produits.service';
+import { StockInventaireService } from '../../../services/stock-inventaire.service';
+import { FournisseursService } from '../../../services/fournisseurs.service';
+import { ToastrService } from 'ngx-toastr';
+import { MouvementsStockService } from '../../../services/mouvements-stock.service';
 @Component({
   selector: 'app-entrees-sorties',
   standalone:true,
@@ -15,7 +22,7 @@ export class EntreesSortiesComponent implements OnInit {
   pageSize: number = 5;
 
   // Formulaire unique pour les mouvements de stock
-  mouvementForm: FormGroup;
+  mouvementForm!: FormGroup;
   mouvements: MouvementsStock[] = [];
   filteredMouvements: MouvementsStock[] = [];
   filteredEcarts: AnalyseEcart[] = [];
@@ -24,7 +31,11 @@ export class EntreesSortiesComponent implements OnInit {
   currentPageMouvement: number = 1;
   currentPageEcarts: number = 1;
   currentPageReconcialiation: number = 1;
-
+  code_structure:string = 'MASTRUCTURET-NZNC';
+  isLoading:boolean = false;
+  agentId:number = 15;
+  magasinId:number = 1;
+  stock:Stock[]=[]
 
   // Ajoutez une variable pour gérer l'état du formulaire
   isEditing = false;
@@ -42,29 +53,62 @@ export class EntreesSortiesComponent implements OnInit {
 
   detailsSelectionnes: { date: Date; ecart: number; corrige?: boolean }[] = [];
   produits: Produits[] = [];
+  filteredProduits: Produits[] = [];
+  fournisseurs: Fournisseur[] = [];
+  searchInput: string = ''; // input de recherche pour ngModel
+
+  selectedProduct: Produits | null = null;   // produit sélectionné
+  idStockPoduct:number = 0;
 
 
 
+  constructor(
+    private cdr: ChangeDetectorRef, 
+    private fb: FormBuilder, 
+    private produitsService: ProduitsService,
+    private stockServcice: StockInventaireService,
+    private fournissseurService: FournisseursService,
+    private mouvementsStockService : MouvementsStockService,
+    private toastr: ToastrService
+  ) {
+   
+  }
+  ngOnInit() {
 
-  constructor(private cdr: ChangeDetectorRef, private fb: FormBuilder) {
-    // Initialisation des formulaires réactifs
-    this.mouvementForm = new FormGroup({
-      produitId: new FormControl('', Validators.required),
-      quantite: new FormControl(0, [Validators.required, Validators.min(1)]),
-      uniteStock: new FormControl('', Validators.required),
-      typeMouvement: new FormControl('', Validators.required), // 'entree' ou 'sortie'
-      description: new FormControl('', Validators.required),
-    });
+    this.loadDataProdFourStock();
 
-    this.reconciliationForm = this.fb.group({
+    this.mouvementForm = this.fb.group({
+    //produitId: [null], // Utilisé après sélection
+    //ref: ['', Validators.required], // Autocomplétion
+    uniteStock: [{ value: '', disabled: false }, Validators.required],
+    quantite: [null, [Validators.required, Validators.min(0.01)]],
+    typeMouvement: ['', Validators.required],
+    description: ['', Validators.required],
+    prixUnitaire: [{ value: '', disabled: false }, Validators.required],
+    fournisseurId: ['', Validators.required]
+  }); 
+
+  this.reconciliationForm = this.fb.group({
       produitId: ['', Validators.required],
       stockTheorique: ['', Validators.required],
       stockPhysique: ['', Validators.required],
-      note: [''], // ✅ Champ optionnel
+      note: [''], // Champ optionnel
     });
+    // Abonnement : dès que le type de mouvement change, on recalcule le prix
+  this.mouvementForm.get('typeMouvement')!.valueChanges.subscribe(type => {
+    this.updatePrixUnitaire(type);
+  });
+  
+ /*  this.mouvementForm = this.fb.group({
+    produitId: new FormControl(null), // ou this.fb.control(null)
+    produitNom: new FormControl('', Validators.required),
+    uniteStock: new FormControl({ value: '', disabled: true }, Validators.required),
+    quantite: new FormControl(null, [Validators.required, Validators.min(0.01)]),
+    typeMouvement: new FormControl('', Validators.required),
+    description: new FormControl('', Validators.required),
+    fournisseurId: new FormControl('', Validators.required)
+  }); */
 
-  }
-  ngOnInit() {
 
     this.produits = [
     /*   new Produits({ id: 101, categorieId: "Boissons", designation: "Lait Caillé 1L", fournisseurId: 10, unite: "Litre", prixAchatUnitaire: 100, prixVenteUnitaire: 150, codeBarre: "123456789101", description: "Lait caillé frais de qualité supérieure" }),
@@ -200,6 +244,74 @@ export class EntreesSortiesComponent implements OnInit {
 
   }
 
+filterProduits(): void {
+  const input = this.searchInput.trim().toLowerCase();
+  this.filteredProduits = this.produits.filter(p =>
+    p.designation.toLowerCase().includes(input)
+  );
+}
+
+/* selectProduit(prod: any): void {
+  this.searchInput = prod.designation;
+  this.filteredProduits = [];
+
+  this.mouvementForm.patchValue({
+    produitId: prod.id,
+    uniteStock: prod.unite
+  });
+
+  this.mouvementForm.controls['produitId'].markAsTouched();
+} */
+
+selectProduit(prod: any): void {
+  this.selectedProduct = prod;               // ➜ mémorisé
+  this.searchInput      = prod.designation;
+  this.filteredProduits = [];
+  const stk = this.stock.find(stoc => stoc.produitId === this.selectedProduct?.id);
+  if(stk) this.idStockPoduct = stk?.id;
+  console.log(this.idStockPoduct)
+  this.mouvementForm.patchValue({
+    //produitId:  prod.id,
+    uniteStock: prod.unite
+  });
+
+  // Met à jour le prix selon le type déjà choisi (si l’utilisateur l’a sélectionné avant)
+  this.updatePrixUnitaire(this.mouvementForm.get('typeMouvement')!.value);
+  //this.mouvementForm.controls['produitId'].markAsTouched();
+}
+
+private updatePrixUnitaire(type: 'Entrée' | 'Sortie' | null) {
+  if (!this.selectedProduct || !type) {
+    this.mouvementForm.patchValue({ prixUnitaire: null });
+    return;
+  }
+
+  const prix = type === 'Entrée'? this.selectedProduct.prixAchatUnitaire : this.selectedProduct.prixVenteUnitaire;
+
+  this.mouvementForm.patchValue({ prixUnitaire: prix });
+}
+
+
+ loadDataProdFourStock(): void {
+    this.isLoading = true;
+    forkJoin([
+      this.fournissseurService.getFournisseursByStructure(this.code_structure),
+      this.produitsService.getAllProduits(this.code_structure),
+      //this.isGeneralAdmin ? this.structureService.getAll() : of([])
+      this.stockServcice.getStocksByStructure(this.code_structure)
+    ]).pipe(
+      finalize(() => this.isLoading = false)
+    ).subscribe({
+      next: ([four, produits, stocks]) => {
+        this.fournisseurs = four
+        this.stock = stocks;
+        this.produits = produits;
+        this.filteredProduits = [...this.produits];
+      },
+      error: (err) => console.error('Erreur chargement données', err)
+    });
+  }
+
   voirHistorique(reconciliation: Reconciliation) {
     this.historiqueSelectionne = reconciliation.historiqueEcart || [];
     const historiqueModal = new (window as any).bootstrap.Modal(document.getElementById('historiqueModal')!);
@@ -329,13 +441,42 @@ this.currentPageEcarts = 1;
   this.cdr.detectChanges(); // Forcer la mise à jour de la vue
 }
 
-// Méthode pour enregistrer ou mettre à jour un mouvement
+/* // Méthode pour enregistrer ou mettre à jour un mouvement
 enregistrerMouvement() {
   if (this.mouvementForm.invalid) {
     return; // Ne pas soumettre si le formulaire est invalide
   }
 
   const mouvementData = this.mouvementForm.value;
+  // Convertir les valeurs nécessaires en nombres
+  const quantite = Number(mouvementData.quantite);
+  const prixUnitaire = Number(mouvementData.prixUnitaire);
+  const formData = new FormData();
+
+  let variationStock = quantite;
+    
+    // Pour les sorties, la variation est négative
+  if (mouvementData.typeMouvement === 'Sortie') {
+      variationStock = -quantite;
+    }
+
+  // Ajouter les champs du formulaire produit
+  Object.keys(mouvementData).forEach((key) => {
+    const value = mouvementData[key];
+    if (value !== null && value !== undefined) {
+      formData.append(key, String(value));
+    }
+  });
+
+  // Champs additionnels nécessaires
+  formData.append('code_structure', this.code_structure);
+  formData.append('agentId', String(this.agentId));
+  formData.append('produitId', String(this.selectedProduct?.id));
+  formData.append('ref', String(this.selectedProduct?.designation));
+  formData.append('stockId ', String(this.idStockPoduct));
+  formData.append('magasinId ', String(this.magasinId));
+  
+  
 
   if (this.isEditing && this.currentMouvement) {
     // Si nous sommes en mode édition, mettez à jour le mouvement
@@ -366,7 +507,141 @@ enregistrerMouvement() {
   this.isEditing = false;
   this.currentMouvement = null;
 }
+ */
+/* enregistrerMouvement() {
+  if (this.mouvementForm.invalid) {
+    this.toastr.error('Veuillez remplir tous les champs obligatoires');
+    return;
+  }
 
+  const mouvementData = this.mouvementForm.value;
+  const quantite = Number(mouvementData.quantite);
+  const prixUnitaire = Number(mouvementData.prixUnitaire);
+  const formData = new FormData();
+  
+  let variationStock = quantite;
+  
+  // Pour les sorties, la variation est négative
+  if (mouvementData.typeMouvement === 'Sortie') {
+    variationStock = -quantite;
+  }
+
+  // Ajouter les champs du formulaire
+  Object.keys(mouvementData).forEach((key) => {
+    const value = mouvementData[key];
+    if (value !== null && value !== undefined) {
+      formData.append(key, String(value));
+    }
+  });
+
+  // Champs additionnels nécessaires
+  formData.append('code_structure', this.code_structure);
+  formData.append('agentId', String(this.agentId));
+  formData.append('produitId', String(this.selectedProduct?.id));
+  formData.append('ref', `MVT-${Date.now()}`);
+  formData.append('stockId', String(this.idStockPoduct));
+  formData.append('magasinId', String(this.magasinId));
+  formData.append('prixUnitaire', String(prixUnitaire));
+  formData.append('dateMouvement', new Date().toISOString());
+
+  if (this.isEditing && this.currentMouvement) {
+    // Mode édition - Mettre à jour le mouvement existant
+    this.mouvementsStockService.update(this.currentMouvement.id, formData).subscribe({
+      next: () => {
+        // Mise à jour du stock après la mise à jour du mouvement
+        this.stockServcice.adjustQuantiteTotale(this.idStockPoduct, variationStock).subscribe({
+          next: () => {
+            this.toastr.success('Mouvement mis à jour avec succès');
+            this.resetForm();
+          },
+          error: (stockError) => {
+            console.error('Erreur mise à jour stock:', stockError);
+            this.toastr.error('Erreur lors de la mise à jour du stock');
+          }
+        });
+      },
+      error: (mvtError) => {
+        console.error('Erreur mise à jour mouvement:', mvtError);
+        this.toastr.error('Erreur lors de la mise à jour du mouvement');
+      }
+    });
+  } else {
+    // Mode création - Créer un nouveau mouvement
+    this.mouvementsStockService.create(formData).subscribe({
+      next: () => {
+        // Mise à jour du stock après la création du mouvement
+        this.stockServcice.adjustQuantiteTotale(this.idStockPoduct, variationStock).subscribe({
+          next: () => {
+            this.toastr.success('Mouvement enregistré avec succès');
+            this.resetForm();
+          },
+          error: (stockError) => {
+            console.error('Erreur mise à jour stock:', stockError);
+            this.toastr.error('Erreur lors de la mise à jour du stock');
+          }
+        });
+      },
+      error: (mvtError) => {
+        console.error('Erreur création mouvement:', mvtError);
+        this.toastr.error('Erreur lors de la création du mouvement');
+      }
+    });
+  }
+} */
+
+  enregistrerMouvement() {
+  if (this.mouvementForm.invalid) {
+    this.toastr.error('Veuillez remplir tous les champs obligatoires');
+    return;
+  }
+
+  const f = this.mouvementForm.value; 
+  console.log(f.prixUnitaire);
+  const variation = f.typeMouvement === 'Sortie' ? -Number(f.quantite) : Number(f.quantite);
+
+  /** Corps JSON complet à envoyer */
+  const payload = {
+    ...f,
+    produitId:      this.selectedProduct?.id,
+    uniteStock:     this.selectedProduct?.unite,
+    prixUnitaire:   Number(f.prixUnitaire),
+    code_structure: this.code_structure,
+    acteurId:        this.agentId,
+    ref:            `MVT-${Date.now()}`,
+    stockId:        this.idStockPoduct,
+    magasinId:      this.magasinId,
+    //dateMouvement:  new Date().toISOString()
+  };
+
+  this.mouvementsStockService.create(payload).subscribe({
+    next: () => {
+      this.stockServcice.adjustQuantiteTotale(this.idStockPoduct, variation).subscribe({
+        next: () => {
+          this.toastr.success('Mouvement enregistré avec succès');
+          this.resetForm();
+        },
+        error: err => {
+          console.error(err);
+          this.toastr.error('Erreur lors de la mise à jour du stock');
+        }
+      });
+    },
+    error: err => {
+      console.error('Erreur création mouvement:'+err, err);
+      this.toastr.error('Erreur lors de la création du mouvement');
+    }
+  });
+}
+
+// Méthode pour réinitialiser le formulaire
+resetForm() {
+  this.searchInput = '';
+  this.selectedProduct = null;
+  this.mouvementForm.reset();
+  this.isEditing = false;
+  this.currentMouvement = null;
+  //this.closeModal('mouvement');
+}
 getNomProduitById(produitId: number, produits: Produits[]): string {
   const produit = produits.find(p => p.id === produitId);
   return produit ? produit.designation : "Produit introuvable";
@@ -400,7 +675,7 @@ enregistrerReconciliation() {
     this.selectedReconciliation.ecart = stockPhysique - stockTheorique;
   }
   else {
-    // ✅ Création correcte d'une instance de `Reconciliation`
+    // Création correcte d'une instance de `Reconciliation`
     const nouvelleReconciliation = new Reconciliation({
       id: this.reconciliations.length + 1,
       produitId,
