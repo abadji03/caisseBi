@@ -1,6 +1,6 @@
 // models/bon.js
 module.exports = (sequelize, DataTypes) => {
-  const Bon = sequelize.define("Bon", {
+  const Bon = sequelize.define('Bon', {
     code_structure: { type: DataTypes.STRING, allowNull: false },
     numero: {
       type: DataTypes.STRING,
@@ -9,40 +9,47 @@ module.exports = (sequelize, DataTypes) => {
     numeroFacture: DataTypes.STRING,
     type: {
       type: DataTypes.ENUM('Livraison', 'Commande', 'Retour', 'Avoir'),
-      allowNull: false
+      allowNull: false,
     },
     description: {
       type: DataTypes.TEXT,
-      allowNull: false
+      allowNull: false,
     },
     montantTotal: {
       type: DataTypes.DECIMAL(12, 2),
-      allowNull: false
+      allowNull: false,
     },
     remise: {
       type: DataTypes.DECIMAL(10, 2),
-      defaultValue: 0
+      defaultValue: 0,
     },
     netAPayer: {
       type: DataTypes.DECIMAL(12, 2),
-      allowNull: false
+      allowNull: false,
     },
     resteAPayer: {
       type: DataTypes.DECIMAL(12, 2),
-      allowNull: false
+      allowNull: false,
     },
     dateBon: {
       type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW
+      defaultValue: DataTypes.NOW,
     },
     statutBon: {
       type: DataTypes.ENUM(
-        'brouillon', 'commandé', 'expédié', 'livré',
-        'validé', 'retourné', 'facturé', 'payé', 'annulé'
-      )
+        'brouillon',
+        'commandé',
+        'expédié',
+        'livré',
+        'validé',
+        'retourné',
+        'facturé',
+        'payé',
+        'annulé'
+      ),
     },
     motifsRetour: DataTypes.TEXT,
-    fichier: DataTypes.TEXT
+    fichier: DataTypes.TEXT,
   });
 
   /* Bon.associate = models => {

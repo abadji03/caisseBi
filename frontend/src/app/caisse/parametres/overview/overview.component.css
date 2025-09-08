@@ -1,16 +1,16 @@
 .indicateurs .card-body i {
-    color: #007bff;
-  }
+  color: #007bff;
+}
 
-  .indicateurs.card-body {
-    padding: 1.5rem;
-  }
+.indicateurs.card-body {
+  padding: 1.5rem;
+}
 
-  .indicateurs .card-header {
-    font-weight: bold;
-  }
+.indicateurs .card-header {
+  font-weight: bold;
+}
 
-  .indicateurs .card-footer {
-    font-size: 0.8rem;
-    color: #999;
-  }
+.indicateurs .card-footer {
+  font-size: 0.8rem;
+  color: #999;
+}

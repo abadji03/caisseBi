@@ -9,12 +9,12 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     // Renommer le fichier avec la date pour éviter les conflits
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, uniqueSuffix + path.extname(file.originalname)); // ex: 123456.png
-  }
+  },
 });
 
-// Filtre de type de fichier 
+// Filtre de type de fichier
 const fileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|gif|pdf/;
   const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
@@ -25,8 +25,9 @@ const fileFilter = (req, file, cb) => {
 };
 
 const upload = multer({
-   storage, fileFilter,
-   limits: { fileSize: 5 * 1024 * 1024 }  // 5 MB max
-   });
+  storage,
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB max
+});
 
 module.exports = upload;

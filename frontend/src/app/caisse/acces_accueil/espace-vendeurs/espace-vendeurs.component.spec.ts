@@ -8,10 +8,9 @@ describe('EspaceVendeursComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EspaceVendeursComponent]
-    })
-    .compileComponents();
-    
+      imports: [EspaceVendeursComponent],
+    }).compileComponents();
+
     fixture = TestBed.createComponent(EspaceVendeursComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();

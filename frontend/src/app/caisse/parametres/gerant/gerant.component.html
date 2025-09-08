@@ -1,16 +1,57 @@
 <div class="container mt-4">
   <nav>
     <div class="nav nav-tabs" id="nav-tab" role="tablist">
-      <a class="nav-link active" id="nav-infos-gerants-tab" data-bs-toggle="tab" href="#nav-infos-gerants" role="tab" aria-controls="nav-infos-gerants" aria-selected="true">Informations sur les gérants</a>
-      <a class="nav-link" id="nav-performances-tab" data-bs-toggle="tab" href="#nav-performances" role="tab" aria-controls="nav-performances" aria-selected="false">Performances</a>
-      <a class="nav-link" id="nav-taches-tab" data-bs-toggle="tab" href="#nav-taches" role="tab" aria-controls="nav-taches" aria-selected="false">Tâches et responsabilités</a>
-      <a class="nav-link" id="nav-historique-tab" data-bs-toggle="tab" href="#nav-historique" role="tab" aria-controls="nav-historique" aria-selected="false">Historique des activités</a>
+      <a
+        class="nav-link active"
+        id="nav-infos-gerants-tab"
+        data-bs-toggle="tab"
+        href="#nav-infos-gerants"
+        role="tab"
+        aria-controls="nav-infos-gerants"
+        aria-selected="true"
+        >Informations sur les gérants</a
+      >
+      <a
+        class="nav-link"
+        id="nav-performances-tab"
+        data-bs-toggle="tab"
+        href="#nav-performances"
+        role="tab"
+        aria-controls="nav-performances"
+        aria-selected="false"
+        >Performances</a
+      >
+      <a
+        class="nav-link"
+        id="nav-taches-tab"
+        data-bs-toggle="tab"
+        href="#nav-taches"
+        role="tab"
+        aria-controls="nav-taches"
+        aria-selected="false"
+        >Tâches et responsabilités</a
+      >
+      <a
+        class="nav-link"
+        id="nav-historique-tab"
+        data-bs-toggle="tab"
+        href="#nav-historique"
+        role="tab"
+        aria-controls="nav-historique"
+        aria-selected="false"
+        >Historique des activités</a
+      >
     </div>
   </nav>
 
   <div class="tab-content mt-4" id="nav-tabContent">
     <!-- Section Informations sur les gérants -->
-    <div class="tab-pane fade show active" id="nav-infos-gerants" role="tabpanel" aria-labelledby="nav-infos-gerants-tab">
+    <div
+      class="tab-pane fade show active"
+      id="nav-infos-gerants"
+      role="tabpanel"
+      aria-labelledby="nav-infos-gerants-tab"
+    >
       <h4>Informations sur les gérants</h4>
       <table class="table table-bordered">
         <thead>
@@ -23,14 +64,14 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let gerant of gerants; let i = index">
-            <td>{{ i + 1 }}</td>
-            <td>{{ gerant.nom }}</td>
-            <td>{{ gerant.poste }}</td>
+          <tr *ngFor="let gerant of gerants">
+            <td>{{ gerant.id}}</td>
+            <td>{{ 'gerant.nom '}}</td>
+            <td>{{ 'gerant.poste' }}</td>
             <td>{{ gerant.email }}</td>
             <td>
               <button class="btn btn-primary" (click)="modifierGerant(gerant)">Modifier</button>
-              <button class="btn btn-danger" (click)="supprimerGerant(gerant.id)">Supprimer</button>
+              <!-- <button class="btn btn-danger" (click)="supprimerGerant(gerant.id)">Supprimer</button> -->
             </td>
           </tr>
         </tbody>
@@ -38,7 +79,12 @@
     </div>
 
     <!-- Section Performances des gérants -->
-    <div class="tab-pane fade" id="nav-performances" role="tabpanel" aria-labelledby="nav-performances-tab">
+    <div
+      class="tab-pane fade"
+      id="nav-performances"
+      role="tabpanel"
+      aria-labelledby="nav-performances-tab"
+    >
       <h4>Performances des gérants</h4>
       <table class="table">
         <thead>
@@ -50,9 +96,9 @@
         </thead>
         <tbody>
           <tr *ngFor="let gerant of gerants">
-            <td>{{ gerant.nom }}</td>
-            <td>{{ gerant.poste }}</td>
-            <td>{{ getPerformance(gerant.id) }} / 100</td>
+            <td>{{ 'gerant.nom' }}</td>
+            <td>{{ 'gerant.poste' }}</td>
+            <td>{{ 'getPerformance(gerant.id)' }} / 100</td>
           </tr>
         </tbody>
       </table>
@@ -71,13 +117,13 @@
         </thead>
         <tbody>
           <tr *ngFor="let gerant of gerants">
-            <td>{{ gerant.nom }}</td>
+            <td>{{ 'gerant.nom' }}</td>
             <td colspan="2">
               <table class="table">
-                <tr *ngFor="let tache of getTachesGerant(gerant.id)">
+                <!-- <tr *ngFor="let tache of getTachesGerant(gerant.id)">
                   <td>{{ tache.description }}</td>
                   <td>{{ tache.statut }}</td>
-                </tr>
+                </tr> -->
               </table>
             </td>
           </tr>
@@ -86,7 +132,12 @@
     </div>
 
     <!-- Section Historique des activités -->
-    <div class="tab-pane fade" id="nav-historique" role="tabpanel" aria-labelledby="nav-historique-tab">
+    <div
+      class="tab-pane fade"
+      id="nav-historique"
+      role="tabpanel"
+      aria-labelledby="nav-historique-tab"
+    >
       <h4>Historique des activités</h4>
       <table class="table">
         <thead>
@@ -98,13 +149,13 @@
         </thead>
         <tbody>
           <tr *ngFor="let gerant of gerants">
-            <td>{{ gerant.nom }}</td>
+            <td>{{ 'gerant.nom '}}</td>
             <td colspan="2">
               <table class="table">
-                <tr *ngFor="let activite of getActivitesGerant(gerant.id)">
+                <!-- <tr *ngFor="let activite of getActivitesGerant(gerant.id)">
                   <td>{{ activite.date }}</td>
                   <td>{{ activite.description }}</td>
-                </tr>
+                </tr> -->
               </table>
             </td>
           </tr>

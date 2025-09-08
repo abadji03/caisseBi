@@ -1,23 +1,23 @@
-import { Bon } from "./bon.model";
-import { Operation } from "./operation.model";
-import { Paiement } from "./paiement.model";
-import { Panier } from "./panier.model";
+import { Bon } from './bon.model';
+import { Operation } from './operation.model';
+import { Paiement } from './paiement.model';
+import { Panier } from './panier.model';
 
 export class Client {
   id?: number;
-  code_structure?:string;
+  code_structure?: string;
   nomComplet!: string;
   email?: string;
   telephone?: string;
   adresse!: string;
-  dateCreation?: Date ;
+  dateCreation?: Date;
   dateMiseAJour?: Date;
-  solde: number = 0;
-  montantANousPayer?:number;
-  estEmploye: boolean = false;
+  solde = 0;
+  montantANousPayer?: number;
+  estEmploye = false;
   plafond?: number;
   statut?: boolean;
-  magasinId?:number;
+  magasinId?: number;
 
   // Relations
   bons: Bon[] = [];

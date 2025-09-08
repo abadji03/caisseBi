@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-    // Définition du modèle Structure
+  // Définition du modèle Structure
   const Structure = sequelize.define('structure', {
     id: {
       type: DataTypes.INTEGER,
@@ -35,7 +35,7 @@ module.exports = (sequelize, DataTypes) => {
     reseaux_sociaux: DataTypes.STRING,
     personne_confiance: DataTypes.STRING,
     assurances_souscrites: DataTypes.STRING,
-    estActive:{
+    estActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
@@ -48,7 +48,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(36),
       //unique: true,
       allowNull: false,
-    }
+    },
   });
   return Structure;
 };

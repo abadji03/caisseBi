@@ -1,10 +1,10 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const stockCtrl = require("../controllers/stock.controller");
+const stockCtrl = require('../controllers/stock.controller');
 
-router.post("/", stockCtrl.createStock);
-router.put("/:id", stockCtrl.updateStock);
-router.get("/structure/:code_structure", stockCtrl.getStocksByStructure);
+router.post('/', stockCtrl.createStock);
+router.put('/:id', stockCtrl.updateStock);
+router.get('/structure/:code_structure', stockCtrl.getStocksByStructure);
 // Supprimer un stock
 router.delete('/:id', stockCtrl.deleteStock);
 
@@ -23,6 +23,4 @@ router.get('/produit/:produitId', stockCtrl.getStockByProduitId);
 router.patch('/:id/adjust-quantite', stockCtrl.adjustQuantiteTotale);
 router.patch('/:id/adjust-reservee', stockCtrl.adjustQuantiteReservee);
 
-
-
-module.exports = router; 
+module.exports = router;

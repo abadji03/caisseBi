@@ -1,11 +1,11 @@
-const db = require("../models");
+const db = require('../models');
 const User = db.Users;
 const Role = db.role;
 
 exports.assignRolesToUser = async (req, res) => {
   try {
     const user = await User.findByPk(req.params.userId);
-    if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
+    if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
 
     const roles = await Role.findAll({ where: { id: req.body.roleIds } });
     await user.setRoles(roles);
@@ -19,9 +19,9 @@ exports.assignRolesToUser = async (req, res) => {
 exports.getUserRoles = async (req, res) => {
   try {
     const user = await User.findByPk(req.params.userId, {
-      include: Role
+      include: Role,
     });
-    if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
+    if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
 
     res.json(user.roles);
   } catch (err) {
@@ -34,7 +34,7 @@ exports.updateUserRoles = async (req, res) => {
   try {
     console.log('Corps de la requête reçu :', req.body);
     const user = await User.findByPk(req.params.userId);
-    if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
+    if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
 
     const roles = await Role.findAll({ where: { id: req.body.roleIds } });
     await user.setRoles(roles); // Remplace les anciens rôles
@@ -49,7 +49,7 @@ exports.updateUserRoles = async (req, res) => {
 exports.removeUserRoles = async (req, res) => {
   try {
     const user = await User.findByPk(req.params.userId);
-    if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
+    if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
 
     await user.removeRoles(req.body.roleIds);
 

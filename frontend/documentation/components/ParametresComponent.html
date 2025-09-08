@@ -1,0 +1,500 @@
+<!doctype html>
+<html class="no-js" lang="">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title>frontend documentation</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="icon" type="image/x-icon" href="../images/favicon.ico">
+	   <link rel="stylesheet" href="../styles/style.css">
+        <link rel="stylesheet" href="../styles/dark.css">
+    </head>
+    <body>
+          <script>
+               // Blocking script to avoid flickering dark mode
+               // Dark mode toggle button
+               var useDark = window.matchMedia('(prefers-color-scheme: dark)');
+               var darkModeState = useDark.matches;
+               var $darkModeToggleSwitchers = document.querySelectorAll('.dark-mode-switch input');
+               var $darkModeToggles = document.querySelectorAll('.dark-mode-switch');
+               var darkModeStateLocal = localStorage.getItem('compodoc_darkmode-state');
+
+               function checkToggle(check) {
+                    for (var i = 0; i < $darkModeToggleSwitchers.length; i++) {
+                         $darkModeToggleSwitchers[i].checked = check;
+                    }
+               }
+
+               function toggleDarkMode(state) {
+                    if (window.localStorage) {
+                         localStorage.setItem('compodoc_darkmode-state', state);
+                    }
+
+                    checkToggle(state);
+
+                    const hasClass = document.body.classList.contains('dark');
+
+                    if (state) {
+                         for (var i = 0; i < $darkModeToggles.length; i++) {
+                              $darkModeToggles[i].classList.add('dark');
+                         }
+                         if (!hasClass) {
+                              document.body.classList.add('dark');
+                         }
+                    } else {
+                         for (var i = 0; i < $darkModeToggles.length; i++) {
+                              $darkModeToggles[i].classList.remove('dark');
+                         }
+                         if (hasClass) {
+                              document.body.classList.remove('dark');
+                         }
+                    }
+               }
+
+               useDark.addEventListener('change', function (evt) {
+                    toggleDarkMode(evt.matches);
+               });
+               if (darkModeStateLocal) {
+                    darkModeState = darkModeStateLocal === 'true';
+               }
+               toggleDarkMode(darkModeState);
+          </script>
+
+        <div class="navbar navbar-default navbar-fixed-top d-md-none p-0">
+               <div class="d-flex">
+                    <a href="../" class="navbar-brand">frontend documentation</a>
+                    <button type="button" class="btn btn-default btn-menu ion-ios-menu" id="btn-menu"></button>
+               </div>
+        </div>
+
+        <div class="xs-menu menu" id="mobile-menu">
+                <div id="book-search-input" role="search"><input type="text" placeholder="Type to search"></div>            <compodoc-menu></compodoc-menu>
+        </div>
+
+        <div class="container-fluid main">
+           <div class="row main">
+               <div class="d-none d-md-block menu">
+                   <compodoc-menu mode="normal"></compodoc-menu>
+               </div>
+               <!-- START CONTENT -->
+               <div class="content component">
+                   <div class="content-data">
+
+
+
+
+<ol class="breadcrumb">
+  <li class="breadcrumb-item">Components</li>
+  <li class="breadcrumb-item"
+  >
+  ParametresComponent</li>
+</ol>
+
+<ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item">
+            <a href="#info" class="nav-link active"
+                role="tab" id="info-tab" data-bs-toggle="tab" data-link="info">Info</a>
+        </li>
+        <li class="nav-item">
+            <a href="#source" class="nav-link"
+                role="tab" id="source-tab" data-bs-toggle="tab" data-link="source">Source</a>
+        </li>
+        <li class="nav-item">
+            <a href="#templateData" class="nav-link"
+                role="tab" id="templateData-tab" data-bs-toggle="tab" data-link="template">Template</a>
+        </li>
+        <li class="nav-item">
+            <a href="#tree" class="nav-link"
+                role="tab" id="tree-tab" data-bs-toggle="tab" data-link="dom-tree">DOM Tree</a>
+        </li>
+</ul>
+
+<div class="tab-content">
+    <div class="tab-pane fade active in" id="info"><p class="comment">
+    <h3>File</h3>
+</p>
+<p class="comment">
+    <code>src/app/caisse/parametres/parametres/parametres.component.ts</code>
+</p>
+
+
+
+
+    <p class="comment">
+        <h3>Implements</h3>
+    </p>
+    <p class="comment">
+                <code>OnInit</code>
+    </p>
+
+
+<section data-compodoc="block-metadata">
+    <h3>Metadata</h3>
+    <table class="table table-sm table-hover metadata">
+        <tbody>
+
+
+
+
+
+
+
+
+
+
+
+
+            <tr>
+                <td class="col-md-3">selector</td>
+                <td class="col-md-9"><code>app-parametres</code></td>
+            </tr>
+
+            <tr>
+                <td class="col-md-3">standalone</td>
+                <td class="col-md-9"><code>true</code></td>
+            </tr>
+
+            <tr>
+                <td class="col-md-3">imports</td>
+                <td class="col-md-9">
+                                <code><a href="../components/StructureComponent.html" target="_self" >StructureComponent</a></code>
+                                <code><a href="../components/RolesPermissionsComponent.html" target="_self" >RolesPermissionsComponent</a></code>
+                                <code><a href="../components/UserComponent.html" target="_self" >UserComponent</a></code>
+                </td>
+            </tr>
+
+
+
+
+            <tr>
+                <td class="col-md-3">templateUrl</td>
+                <td class="col-md-9"><code>./parametres.component.html</code></td>
+            </tr>
+
+
+
+            <tr>
+                <td class="col-md-3">styleUrl</td>
+                <td class="col-md-9"><code>./parametres.component.css</code></td>
+            </tr>
+
+
+
+
+
+        </tbody>
+    </table>
+</section>
+
+    <section data-compodoc="block-index">
+    <h3 id="index">Index</h3>
+    <table class="table table-sm table-bordered index-table">
+        <tbody>
+
+                <tr>
+                    <td class="col-md-4">
+                        <h6><b>Methods</b></h6>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <ul class="index-list">
+                            <li>
+                                <a href="#ngOnInit" >ngOnInit</a>
+                            </li>
+                        </ul>
+                    </td>
+                </tr>
+
+
+
+
+
+        </tbody>
+    </table>
+</section>
+
+
+
+
+
+
+    <section data-compodoc="block-methods">
+    
+    <h3 id="methods">
+        Methods
+    </h3>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="ngOnInit"></a>
+                    <span class="name">
+                        <span ><b>ngOnInit</b></span>
+                        <a href="#ngOnInit"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>ngOnInit()</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="14"
+                                    class="link-to-prism">src/app/caisse/parametres/parametres/parametres.component.ts:14</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+
+</div>
+
+
+    <div class="tab-pane fade  tab-source-code" id="source">
+        <pre class="line-numbers compodoc-sourcecode"><code class="language-typescript">import { Component, OnInit } from &#x27;@angular/core&#x27;;
+import { StructureComponent } from &#x27;../structure/structure.component&#x27;;
+import { RolesPermissionsComponent } from &#x27;../roles-permissions/roles-permissions.component&#x27;;
+import { UserComponent } from &#x27;../user/user.component&#x27;;
+
+@Component({
+  selector: &#x27;app-parametres&#x27;,
+  standalone: true,
+  imports: [StructureComponent, RolesPermissionsComponent, UserComponent],
+  templateUrl: &#x27;./parametres.component.html&#x27;,
+  styleUrl: &#x27;./parametres.component.css&#x27;,
+})
+export class ParametresComponent implements OnInit {
+  ngOnInit(): void {
+    throw new Error(&#x27;Method not implemented.&#x27;);
+  }
+}
+</code></pre>
+    </div>
+
+    <div class="tab-pane fade " id="templateData">
+        <pre class="line-numbers"><code class="language-html">&lt;div class&#x3D;&quot;container-fluid&quot;&gt;
+  &lt;!-- &lt;div class&#x3D;&quot;d-flex justify-content-center&quot;&gt;
+    &lt;h1 class&#x3D;&quot;fw-bold&quot;&gt; PARAMETRES ET CONFIGURATION&lt;/h1&gt;
+  &lt;/div&gt; 
+  &lt;hr&gt; --&gt;
+  &lt;div class&#x3D;&quot;d-flex align-items-start&quot;&gt;
+    &lt;div
+      class&#x3D;&quot;nav flex-column nav-pills me-5&quot;
+      id&#x3D;&quot;v-pills-tab&quot;
+      role&#x3D;&quot;tablist&quot;
+      aria-orientation&#x3D;&quot;vertical&quot;
+    &gt;
+      &lt;button
+        class&#x3D;&quot;nav-link active&quot;
+        id&#x3D;&quot;v-pills-general-tab&quot;
+        data-bs-toggle&#x3D;&quot;pill&quot;
+        data-bs-target&#x3D;&quot;#v-pills-general&quot;
+        type&#x3D;&quot;button&quot;
+        role&#x3D;&quot;tab&quot;
+        aria-controls&#x3D;&quot;v-pills-general&quot;
+        aria-selected&#x3D;&quot;true&quot;
+      &gt;
+        Général
+      &lt;/button&gt;
+      &lt;button
+        class&#x3D;&quot;nav-link&quot;
+        id&#x3D;&quot;v-pills-utilisateurs-tab&quot;
+        data-bs-toggle&#x3D;&quot;pill&quot;
+        data-bs-target&#x3D;&quot;#v-pills-utilisateurs&quot;
+        type&#x3D;&quot;button&quot;
+        role&#x3D;&quot;tab&quot;
+        aria-controls&#x3D;&quot;v-pills-utilisateurs&quot;
+        aria-selected&#x3D;&quot;false&quot;
+      &gt;
+        Utilisateurs
+      &lt;/button&gt;
+      &lt;button
+        class&#x3D;&quot;nav-link&quot;
+        id&#x3D;&quot;v-pills-droit-permission-tab&quot;
+        data-bs-toggle&#x3D;&quot;pill&quot;
+        data-bs-target&#x3D;&quot;#v-pills-droit-permission&quot;
+        type&#x3D;&quot;button&quot;
+        role&#x3D;&quot;tab&quot;
+        aria-controls&#x3D;&quot;v-pills-droit-permission&quot;
+        aria-selected&#x3D;&quot;false&quot;
+        droit-permission
+      &gt;
+        Droits et permissions
+      &lt;/button&gt;
+      &lt;!-- &lt;button class&#x3D;&quot;nav-link&quot; id&#x3D;&quot;v-pills-messages-tab&quot; data-bs-toggle&#x3D;&quot;pill&quot; data-bs-target&#x3D;&quot;#v-pills-messages&quot; type&#x3D;&quot;button&quot; role&#x3D;&quot;tab&quot; aria-controls&#x3D;&quot;v-pills-messages&quot; aria-selected&#x3D;&quot;false&quot;&gt;Messages&lt;/button&gt;
+      &lt;button class&#x3D;&quot;nav-link&quot; id&#x3D;&quot;v-pills-settings-tab&quot; data-bs-toggle&#x3D;&quot;pill&quot; data-bs-target&#x3D;&quot;#v-pills-settings&quot; type&#x3D;&quot;button&quot; role&#x3D;&quot;tab&quot; aria-controls&#x3D;&quot;v-pills-settings&quot; aria-selected&#x3D;&quot;false&quot;&gt;Settings&lt;/button&gt; --&gt;
+    &lt;/div&gt;
+    &lt;div class&#x3D;&quot;tab-content w-100&quot; id&#x3D;&quot;v-pills-tabContent&quot;&gt;
+      &lt;div
+        class&#x3D;&quot;tab-pane fade show active&quot;
+        id&#x3D;&quot;v-pills-general&quot;
+        role&#x3D;&quot;tabpanel&quot;
+        aria-labelledby&#x3D;&quot;v-pills-general-tab&quot;
+        tabindex&#x3D;&quot;0&quot;
+      &gt;
+        &lt;app-structure&gt;&lt;/app-structure&gt;
+      &lt;/div&gt;
+      &lt;div
+        class&#x3D;&quot;tab-pane fade&quot;
+        id&#x3D;&quot;v-pills-utilisateurs&quot;
+        role&#x3D;&quot;tabpanel&quot;
+        aria-labelledby&#x3D;&quot;v-pills-utilisateurs-tab&quot;
+        tabindex&#x3D;&quot;0&quot;
+      &gt;
+        &lt;app-user&gt;&lt;/app-user&gt;
+      &lt;/div&gt;
+      &lt;div
+        class&#x3D;&quot;tab-pane fade&quot;
+        id&#x3D;&quot;v-pills-droit-permission&quot;
+        role&#x3D;&quot;tabpanel&quot;
+        aria-labelledby&#x3D;&quot;v-pills-droit-permission-tab&quot;
+        tabindex&#x3D;&quot;0&quot;
+      &gt;
+        &lt;app-roles-permissions&gt;&lt;/app-roles-permissions&gt;
+      &lt;/div&gt;
+      &lt;!-- &lt;div class&#x3D;&quot;tab-pane fade&quot; id&#x3D;&quot;v-pills-messages&quot; role&#x3D;&quot;tabpanel&quot; aria-labelledby&#x3D;&quot;v-pills-messages-tab&quot; tabindex&#x3D;&quot;0&quot;&gt;...&lt;/div&gt;
+      &lt;div class&#x3D;&quot;tab-pane fade&quot; id&#x3D;&quot;v-pills-settings&quot; role&#x3D;&quot;tabpanel&quot; aria-labelledby&#x3D;&quot;v-pills-settings-tab&quot; tabindex&#x3D;&quot;0&quot;&gt;...&lt;/div&gt; --&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+</code></pre>
+    </div>
+
+
+    <div class="tab-pane fade " id="tree">
+        <div id="tree-container"></div>
+        <div class="tree-legend">
+            <div class="title">
+                <b>Legend</b>
+            </div>
+            <div>
+                <div class="color htmlelement"></div><span>Html element</span>
+            </div>
+            <div>
+                <div class="color component"></div><span>Component</span>
+            </div>
+            <div>
+                <div class="color directive"></div><span>Html element with directive</span>
+            </div>
+        </div>
+    </div>
+
+    
+</div>
+
+<script src="../js/libs/vis.min.js"></script>
+<script src="../js/libs/htmlparser.js"></script>
+<script src="../js/libs/deep-iterator.js"></script>
+<script>
+        var COMPONENT_TEMPLATE = '<div><div class="container-fluid">  <!-- <div class="d-flex justify-content-center">    <h1 class="fw-bold"> PARAMETRES ET CONFIGURATION</h1>  </div>   <hr> -->  <div class="d-flex align-items-start">    <div      class="nav flex-column nav-pills me-5"      id="v-pills-tab"      role="tablist"      aria-orientation="vertical"    >      <button        class="nav-link active"        id="v-pills-general-tab"        data-bs-toggle="pill"        data-bs-target="#v-pills-general"        type="button"        role="tab"        aria-controls="v-pills-general"        aria-selected="true"      >        Général      </button>      <button        class="nav-link"        id="v-pills-utilisateurs-tab"        data-bs-toggle="pill"        data-bs-target="#v-pills-utilisateurs"        type="button"        role="tab"        aria-controls="v-pills-utilisateurs"        aria-selected="false"      >        Utilisateurs      </button>      <button        class="nav-link"        id="v-pills-droit-permission-tab"        data-bs-toggle="pill"        data-bs-target="#v-pills-droit-permission"        type="button"        role="tab"        aria-controls="v-pills-droit-permission"        aria-selected="false"        droit-permission      >        Droits et permissions      </button>      <!-- <button class="nav-link" id="v-pills-messages-tab" data-bs-toggle="pill" data-bs-target="#v-pills-messages" type="button" role="tab" aria-controls="v-pills-messages" aria-selected="false">Messages</button>      <button class="nav-link" id="v-pills-settings-tab" data-bs-toggle="pill" data-bs-target="#v-pills-settings" type="button" role="tab" aria-controls="v-pills-settings" aria-selected="false">Settings</button> -->    </div>    <div class="tab-content w-100" id="v-pills-tabContent">      <div        class="tab-pane fade show active"        id="v-pills-general"        role="tabpanel"        aria-labelledby="v-pills-general-tab"        tabindex="0"      >        <app-structure></app-structure>      </div>      <div        class="tab-pane fade"        id="v-pills-utilisateurs"        role="tabpanel"        aria-labelledby="v-pills-utilisateurs-tab"        tabindex="0"      >        <app-user></app-user>      </div>      <div        class="tab-pane fade"        id="v-pills-droit-permission"        role="tabpanel"        aria-labelledby="v-pills-droit-permission-tab"        tabindex="0"      >        <app-roles-permissions></app-roles-permissions>      </div>      <!-- <div class="tab-pane fade" id="v-pills-messages" role="tabpanel" aria-labelledby="v-pills-messages-tab" tabindex="0">...</div>      <div class="tab-pane fade" id="v-pills-settings" role="tabpanel" aria-labelledby="v-pills-settings-tab" tabindex="0">...</div> -->    </div>  </div></div></div>'
+    var COMPONENTS = [{'name': 'AppComponent', 'selector': 'app-root'},{'name': 'CaisseComponent', 'selector': 'app-caisse'},{'name': 'CatalogueProduitComponent', 'selector': 'app-catalogue-produit'},{'name': 'ClientsComponent', 'selector': 'app-clients'},{'name': 'ConnexionComponent', 'selector': 'app-connexion'},{'name': 'EntreesSortiesComponent', 'selector': 'app-entrees-sorties'},{'name': 'EspaceVendeursComponent', 'selector': 'app-espace-vendeurs'},{'name': 'FinanceComponent', 'selector': 'app-finance'},{'name': 'FournisseursComponent', 'selector': 'app-fournisseurs'},{'name': 'GerantComponent', 'selector': 'app-gerant'},{'name': 'MagasinComponent', 'selector': 'app-magasin'},{'name': 'MagazinComponent', 'selector': 'app-magazin'},{'name': 'OverviewComponent', 'selector': 'app-overview'},{'name': 'ParametresComponent', 'selector': 'app-parametres'},{'name': 'RapportsComponent', 'selector': 'app-rapports'},{'name': 'RapportsFinanciersComponent', 'selector': 'app-rapports-financiers'},{'name': 'RapportsStocksComponent', 'selector': 'app-rapports-stocks'},{'name': 'RapportsVentesComponent', 'selector': 'app-rapports-ventes'},{'name': 'RolesPermissionsComponent', 'selector': 'app-roles-permissions'},{'name': 'StockInventairesComponent', 'selector': 'app-stock-inventaires'},{'name': 'StructureComponent', 'selector': 'app-structure'},{'name': 'UserComponent', 'selector': 'app-user'},{'name': 'VentesComponent', 'selector': 'app-ventes'}];
+    var DIRECTIVES = [];
+    var ACTUAL_COMPONENT = {'name': 'ParametresComponent'};
+</script>
+<script src="../js/tree.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                   </div><div class="search-results">
+    <div class="has-results">
+        <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+        <ul class="search-results-list"></ul>
+    </div>
+    <div class="no-results">
+        <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+    </div>
+</div>
+</div>
+               <!-- END CONTENT -->
+           </div>
+       </div>
+
+          <label class="dark-mode-switch">
+               <input type="checkbox">
+               <span class="slider">
+                    <svg class="slider-icon" viewBox="0 0 24 24" fill="none" height="20" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" width="20" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>
+                    </svg>
+               </span>
+          </label>
+
+       <script>
+            var COMPODOC_CURRENT_PAGE_DEPTH = 1;
+            var COMPODOC_CURRENT_PAGE_CONTEXT = 'component';
+            var COMPODOC_CURRENT_PAGE_URL = 'ParametresComponent.html';
+            var MAX_SEARCH_RESULTS = 15;
+       </script>
+
+       <script>
+               $darkModeToggleSwitchers = document.querySelectorAll('.dark-mode-switch input');
+               checkToggle(darkModeState);
+               if ($darkModeToggleSwitchers.length > 0) {
+                    for (var i = 0; i < $darkModeToggleSwitchers.length; i++) {
+                         $darkModeToggleSwitchers[i].addEventListener('change', function (event) {
+                              darkModeState = !darkModeState;
+                              toggleDarkMode(darkModeState);
+                         });
+                    }
+               }
+          </script>
+
+       <script src="../js/libs/custom-elements.min.js"></script>
+       <script src="../js/libs/lit-html.js"></script>
+
+       <script src="../js/menu-wc.js" defer></script>
+       <script nomodule src="../js/menu-wc_es5.js" defer></script>
+
+       <script src="../js/libs/bootstrap-native.js"></script>
+
+       <script src="../js/libs/es6-shim.min.js"></script>
+       <script src="../js/libs/EventDispatcher.js"></script>
+       <script src="../js/libs/promise.min.js"></script>
+
+       <script src="../js/compodoc.js"></script>
+
+       <script src="../js/tabs.js"></script>
+       <script src="../js/menu.js"></script>
+       <script src="../js/libs/clipboard.min.js"></script>
+       <script src="../js/libs/prism.js"></script>
+       <script src="../js/sourceCode.js"></script>
+          <script src="../js/search/search.js"></script>
+          <script src="../js/search/lunr.min.js"></script>
+          <script src="../js/search/search-lunr.js"></script>
+          <script src="../js/search/search_index.js"></script>
+       <script src="../js/lazy-load-graphs.js"></script>
+
+
+    </body>
+</html>

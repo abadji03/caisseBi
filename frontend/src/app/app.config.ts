@@ -10,11 +10,16 @@ import { provideToastr } from 'ngx-toastr';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideRouter(routes, withInMemoryScrolling({
+    provideRouter(
+      routes,
+      withInMemoryScrolling({
         scrollPositionRestoration: 'top', // Fait remonter en haut à chaque navigation
-        anchorScrolling: 'enabled'       // Optionnel : permet le scroll vers les ancres
-      })), 
+        anchorScrolling: 'enabled', // Optionnel : permet le scroll vers les ancres
+      }),
+    ),
     provideHttpClient(),
-     provideAnimationsAsync(),provideToastr(),
-     provideCharts()]
+    provideAnimationsAsync(),
+    provideToastr(),
+    provideCharts(),
+  ],
 };

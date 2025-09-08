@@ -18,7 +18,7 @@
 /* Onglet actif */
 .nav-tabs .nav-link.active {
   color: #fff; /* Texte blanc */
-  background-color:black; /* Couleur de fond bleu pour l'onglet actif */
+  background-color: black; /* Couleur de fond bleu pour l'onglet actif */
   border-color: black; /* Bordure bleue pour l'onglet actif */
   box-shadow: 0 0 10px rgba(0, 123, 255, 0.4); /* Ombre portée subtile */
 }

@@ -1,19 +1,19 @@
 // models/articlePanier.js
 module.exports = (sequelize, DataTypes) => {
-  const ArticlePanier = sequelize.define("ArticlePanier", {
+  const ArticlePanier = sequelize.define('ArticlePanier', {
     code_structure: { type: DataTypes.STRING, allowNull: false },
     quantite: {
       type: DataTypes.DECIMAL(10, 2),
-      allowNull: false
+      allowNull: false,
     },
     prixVenteUnitaire: {
       type: DataTypes.DECIMAL(10, 2),
-      allowNull: false
+      allowNull: false,
     },
     prixAchatUnitaire: {
       type: DataTypes.DECIMAL(10, 2),
-      allowNull: true
-    }
+      allowNull: true,
+    },
   });
 
   /* ArticlePanier.associate = models => {

@@ -29,7 +29,8 @@
   cursor: pointer;
 }
 
-.col-10, .col-11 {
+.col-10,
+.col-11 {
   transition: all 0.3s;
 }
 
@@ -131,7 +132,7 @@
   padding: 10px;
   margin-top: 5px;
 }
-.accordion-item{
+.accordion-item {
   background-color: black;
   border: none;
 }
@@ -154,7 +155,6 @@
 .no-arrow {
   box-shadow: none;
 }
-
 
 .accordion-item button:hover {
   background-color: white;
@@ -190,12 +190,12 @@
 .collapse.show {
   display: block;
 }
-nav .active{
+nav .active {
   background-color: white;
   color: black;
   border: solid 1px;
 }
- nav .accordion-body .active{
+nav .accordion-body .active {
   background-color: lightgray;
   color: black;
   border: solid 1px;

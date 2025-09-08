@@ -1,51 +1,7 @@
-/* const db = require("../models");
+const db = require('../models');
 const Produit = db.Produit;
-
-exports.createProduit = async (req, res) => {
-  try {
-    const produit = await Produit.create(req.body);
-    res.status(201).json(produit);
-  } catch (error) {
-    res.status(500).json({ message: "Erreur lors de la création du produit", error });
-  }
-};
-
-exports.updateProduit = async (req, res) => {
-  try {
-    const produit = await Produit.findByPk(req.params.id);
-    if (!produit) return res.status(404).json({ message: "Produit non trouvé" });
-
-    await produit.update(req.body);
-    res.json({ message: "Produit mis à jour", produit });
-  } catch (error) {
-    res.status(500).json({ message: "Erreur lors de la mise à jour", error });
-  }
-};
-
-exports.deleteProduit = async (req, res) => {
-  try {
-    const produit = await Produit.findByPk(req.params.id);
-    if (!produit) return res.status(404).json({ message: "Produit non trouvé" });
-
-    await produit.destroy();
-    res.json({ message: "Produit supprimé" });
-  } catch (error) {
-    res.status(500).json({ message: "Erreur lors de la suppression", error });
-  }
-};
-
-exports.getProduitsByStructure = async (req, res) => {
-  try {
-    const produits = await Produit.findAll({ where: { code_structure: req.params.code_structure } });
-    res.json(produits);
-  } catch (error) {
-    res.status(500).json({ message: "Erreur lors de la récupération des produits", error });
-  }
-};
- */
-
-const db = require("../models");
-const Produit = db.Produit;
+const fs = require('fs');
+const path = require('path');
 
 const BASE_URL = 'http://localhost:5000/uploads/'; //url de l'emplacement des fichier à stocker
 
@@ -56,11 +12,11 @@ exports.createProduit = async (req, res) => {
 
     // Vérification : produit déjà existant ?
     const { codeBarre } = produitData;
-    if(codeBarre !==''){
-       const existingProduit = await Produit.findOne({ where: { codeBarre } });
+    if (codeBarre !== '') {
+      const existingProduit = await Produit.findOne({ where: { codeBarre } });
 
       if (existingProduit) {
-          return res.status(400).json({ message: "Un produit avec ce code barre existe déjà." });
+        return res.status(400).json({ message: 'Un produit avec ce code barre existe déjà.' });
       }
     }
 
@@ -73,19 +29,18 @@ exports.createProduit = async (req, res) => {
     // Création du produit avec image (si présente)
     const produit = await Produit.create({
       ...produitData,
-      image
+      image,
     });
 
     return res.status(201).json(produit);
   } catch (error) {
     console.error('Erreur lors de la création du produit :', error);
     return res.status(500).json({
-      message: "Erreur lors de la création du produit",
-      error: error.message
+      message: 'Erreur lors de la création du produit',
+      error: error.message,
     });
   }
 };
-
 
 //Mettre à jour un produit
 exports.updateProduit = async (req, res) => {
@@ -95,7 +50,7 @@ exports.updateProduit = async (req, res) => {
   try {
     const produit = await Produit.findByPk(req.params.id);
     if (!produit) {
-      return res.status(404).json({ message: "Produit non trouvé" });
+      return res.status(404).json({ message: 'Produit non trouvé' });
     }
 
     const updatedData = { ...req.body };
@@ -119,23 +74,22 @@ exports.updateProduit = async (req, res) => {
 
     await produit.update(updatedData);
     console.log('Produit mis à jour avec:', updatedData);
-    res.json({ message: "Produit mis à jour", produit });
+    res.json({ message: 'Produit mis à jour', produit });
   } catch (error) {
-    res.status(500).json({ message: "Erreur lors de la mise à jour",  error: error.message  });
+    res.status(500).json({ message: 'Erreur lors de la mise à jour', error: error.message });
   }
 };
-
 
 //Supprimer un produit (physiquement)
 exports.deleteProduit = async (req, res) => {
   try {
     const produit = await Produit.findByPk(req.params.id);
-    if (!produit) return res.status(404).json({ message: "Produit non trouvé" });
+    if (!produit) return res.status(404).json({ message: 'Produit non trouvé' });
 
     await produit.destroy();
-    res.json({ message: "Produit supprimé" });
+    res.json({ message: 'Produit supprimé' });
   } catch (error) {
-    res.status(500).json({ message: "Erreur lors de la suppression", error });
+    res.status(500).json({ message: 'Erreur lors de la suppression', error });
   }
 };
 
@@ -143,7 +97,7 @@ exports.deleteProduit = async (req, res) => {
 exports.getProduitById = async (req, res) => {
   try {
     const produit = await Produit.findByPk(req.params.id);
-    if (!produit) return res.status(404).json({ message: "Produit non trouvé" });
+    if (!produit) return res.status(404).json({ message: 'Produit non trouvé' });
 
     const produitData = produit.toJSON();
     const baseUrl = `${req.protocol}://${req.get('host')}/uploads/`;
@@ -151,21 +105,21 @@ exports.getProduitById = async (req, res) => {
 
     res.status(200).json(produitData);
   } catch (error) {
-    res.status(500).json({ message: "Erreur lors de la récupération du produit", error });
+    res.status(500).json({ message: 'Erreur lors de la récupération du produit', error });
   }
 };
 
 //Récupérer les produits par structure
 exports.getProduitsByStructure = async (req, res) => {
   try {
-    const produits = await Produit.findAll({ 
+    const produits = await Produit.findAll({
       where: { code_structure: req.params.code_structure },
-      order: [['createdAt', 'DESC']]
-     });
+      order: [['createdAt', 'DESC']],
+    });
 
     const baseUrl = `${req.protocol}://${req.get('host')}/uploads/`;
 
-     const produitsWithImageUrl = produits.map(struct => {
+    const produitsWithImageUrl = produits.map((struct) => {
       const prod = struct.toJSON(); // Convertit Sequelize instance en objet pur
       prod.logoUrl = prod.image ? baseUrl + prod.image : null;
       return prod;
@@ -175,7 +129,7 @@ exports.getProduitsByStructure = async (req, res) => {
 
     //res.json(produits);
   } catch (error) {
-    res.status(500).json({ message: "Erreur lors de la récupération des produits", error });
+    res.status(500).json({ message: 'Erreur lors de la récupération des produits', error });
   }
 };
 
@@ -183,22 +137,24 @@ exports.getProduitsByStructure = async (req, res) => {
 exports.updateStatusProduit = async (req, res) => {
   try {
     const produit = await Produit.findByPk(req.params.id);
-    if (!produit) return res.status(404).json({ message: "Produit non trouvé" });
+    if (!produit) return res.status(404).json({ message: 'Produit non trouvé' });
 
     const { statut } = req.body;
     // produit.statut = statut;
     // await produit.save();
     if (typeof statut !== 'boolean') {
-      return res.status(400).json({ message: "Le statut doit être un booléen." });
+      return res.status(400).json({ message: 'Le statut doit être un booléen.' });
     }
 
     await produit.update({ statut });
 
-    res.json({ message: "Statut du produit mis à jour", produit });
+    res.json({ message: 'Statut du produit mis à jour', produit });
   } catch (error) {
-    res.status(500).json({ message: "Erreur lors de la mise à jour du statut", error: error.message });
+    res
+      .status(500)
+      .json({ message: 'Erreur lors de la mise à jour du statut', error: error.message });
   }
-}; 
+};
 
 //Récupérer tous les produits
 exports.getAllProduits = async (req, res) => {
@@ -206,7 +162,7 @@ exports.getAllProduits = async (req, res) => {
     const produits = await Produit.findAll();
     res.json(produits);
   } catch (error) {
-    res.status(500).json({ message: "Erreur lors de la récupération de tous les produits", error });
+    res.status(500).json({ message: 'Erreur lors de la récupération de tous les produits', error });
   }
 };
 
@@ -246,9 +202,9 @@ exports.getAllProduits = async (req, res) => {
 exports.updateImageProduit = async (req, res) => {
   try {
     const produit = await Produit.findByPk(req.params.id);
-    if (!produit) return res.status(404).json({ message: "Produit non trouvé" });
+    if (!produit) return res.status(404).json({ message: 'Produit non trouvé' });
 
-    if (!req.file) return res.status(400).json({ message: "Aucune image fournie" });
+    if (!req.file) return res.status(400).json({ message: 'Aucune image fournie' });
 
     // Supprimer l'ancienne image si elle existe
     if (produit.image) {
@@ -262,9 +218,11 @@ exports.updateImageProduit = async (req, res) => {
     const nouvelleImageUrl = BASE_URL + req.file.filename;
     await produit.update({ image: nouvelleImageUrl });
 
-    res.json({ message: "Image du produit mise à jour", produit });
+    res.json({ message: 'Image du produit mise à jour', produit });
   } catch (error) {
-    res.status(500).json({ message: "Erreur lors de la mise à jour de l'image", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Erreur lors de la mise à jour de l'image", error: error.message });
   }
 };
 
@@ -273,34 +231,36 @@ exports.updateCodeBarreProduit = async (req, res) => {
   try {
     const { codeBarre } = req.body;
 
-    if (!codeBarre || codeBarre.trim() === "") {
-      return res.status(400).json({ message: "Le code-barre est requis." });
+    if (!codeBarre || codeBarre.trim() === '') {
+      return res.status(400).json({ message: 'Le code-barre est requis.' });
     }
 
     const produit = await Produit.findByPk(req.params.id);
     if (!produit) {
-      return res.status(404).json({ message: "Produit non trouvé." });
+      return res.status(404).json({ message: 'Produit non trouvé.' });
     }
 
     // Vérifier l’unicité du code-barre
     const codeBarreExiste = await Produit.findOne({
       where: {
         codeBarre,
-        id: { [db.Sequelize.Op.ne]: req.params.id } // exclure le produit actuel
-      }
+        id: { [db.Sequelize.Op.ne]: req.params.id }, // exclure le produit actuel
+      },
     });
 
     if (codeBarreExiste) {
-      return res.status(400).json({ message: "Ce code-barre est déjà utilisé par un autre produit." });
+      return res
+        .status(400)
+        .json({ message: 'Ce code-barre est déjà utilisé par un autre produit.' });
     }
 
     // Mise à jour du code-barre
     await produit.update({ codeBarre });
 
-    res.json({ message: "Code-barre mis à jour avec succès", produit });
+    res.json({ message: 'Code-barre mis à jour avec succès', produit });
   } catch (error) {
-    res.status(500).json({ message: "Erreur lors de la mise à jour du code-barre", error: error.message });
+    res
+      .status(500)
+      .json({ message: 'Erreur lors de la mise à jour du code-barre', error: error.message });
   }
 };
-
-

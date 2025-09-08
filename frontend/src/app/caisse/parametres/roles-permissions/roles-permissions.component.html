@@ -41,14 +41,25 @@
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">{{ isEditMode ? 'Modifier le Rôle' : 'Ajouter un Rôle' }}</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
         </div>
 
         <div class="modal-body">
           <form [formGroup]="roleForm" (ngSubmit)="onSubmitRole()">
             <div class="mb-3">
-              <label class="form-label">Nom du Rôle</label>
-              <input type="text" class="form-control" formControlName="name" required>
+              <label for="nomRole" class="form-label">Nom du Rôle</label>
+              <input
+                id="nomRole"
+                type="text"
+                class="form-control"
+                formControlName="name"
+                required
+              />
             </div>
 
             <!-- <div class="mb-3">
@@ -57,14 +68,18 @@
             </div> -->
 
             <div class="mb-3">
-              <label class="form-label">Permissions</label>
+              <label for="permission" class="form-label">Permissions</label>
               <div class="permissions-container">
                 <div *ngFor="let permission of allPermissions" class="form-check">
-                  <input class="form-check-input" type="checkbox" 
-                         [id]="'perm-' + permission.id"
-                         [value]="permission.id"
-                         [checked]="roleForm.value.permissions.includes(permission.id)"
-                         (change)="onPermissionChange(permission.id!, $event)">
+                  <input
+                    name="permissions"
+                    class="form-check-input"
+                    type="checkbox"
+                    [id]="'perm-' + permission.id"
+                    [value]="permission.id"
+                    [checked]="roleForm.value.permissions.includes(permission.id)"
+                    (change)="onPermissionChange(permission.id!, $event)"
+                  />
                   <label class="form-check-label" [for]="'perm-' + permission.id">
                     {{ permission.nom }} ({{ permission.type }})
                   </label>

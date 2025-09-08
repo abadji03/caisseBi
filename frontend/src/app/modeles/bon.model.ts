@@ -1,5 +1,5 @@
-import { Operation } from "./operation.model";
-import { Produits } from "./produit.modele";
+import { Operation } from './operation.model';
+import { Produits } from './produit.modele';
 
 export class Bon {
   id?: number;
@@ -12,7 +12,16 @@ export class Bon {
   netAPayer!: number;
   resteAPayer!: number;
   dateBon: Date = new Date();
-  statutBon?: "brouillon" | "commandé" | "expédié" | "livré" | "validé" | "retourné" | "facturé" | "payé" | "annulé";
+  statutBon?:
+    | 'brouillon'
+    | 'commandé'
+    | 'expédié'
+    | 'livré'
+    | 'validé'
+    | 'retourné'
+    | 'facturé'
+    | 'payé'
+    | 'annulé';
   motifsRetour?: string;
   fichier?: string; // URL ou base64
 

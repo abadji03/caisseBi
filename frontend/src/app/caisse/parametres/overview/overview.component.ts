@@ -1,20 +1,36 @@
-import { ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { ChartOptions, ChartData, ChartType, Chart} from 'chart.js';
-import { Chart as ChartJS,registerables } from 'chart.js';
+import {
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  OnInit,
+  ViewChild,
+  AfterViewInit,
+  inject,
+} from '@angular/core';
+import { Chart } from 'chart.js';
+import { Chart as ChartJS, registerables } from 'chart.js';
 import { CommonModule } from '@angular/common';
-import { BaseChartDirective } from 'ng2-charts';
-import saveAs from 'file-saver';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Magasin } from '../../../modeles/magasin.model';
 import { Produits } from '../../../modeles/produit.modele';
 import { MouvementsStock, Stock } from '../../../modeles/entrees-sorties.model';
 import { Transfert } from '../../../modeles/transfert.model';
-import { categories, clients, magasins, modesPaiement, mouvements, paniers, produits, recettes, stocks, vendeurs } from '../../../modeles/donnees_fictives';
+import {
+  categories,
+  clients,
+  magasins,
+  modesPaiement,
+  mouvements,
+  paniers,
+  produits,
+  recettes,
+  stocks,
+  vendeurs,
+} from '../../../modeles/donnees_fictives';
 import { Categorie, Depense, Recette } from '../../../modeles/finance.model';
 import { Panier } from '../../../modeles/panier.model';
 import { Client } from '../../../modeles/clients.model';
-import { ModePaiement } from '../../../modeles/paiement.model';
 import { User } from '../../../modeles/user.model';
 
 // Enregistrer les éléments nécessaires dans Chart.js
@@ -25,53 +41,55 @@ ChartJS.register(...registerables);
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './overview.component.html',
-  styleUrl: './overview.component.css'
+  styleUrl: './overview.component.css',
 })
-export class OverviewComponent implements OnInit {
-
+export class OverviewComponent implements OnInit, AfterViewInit {
   @ViewChild('ventesChart') ventesChartRef!: ElementRef;
   @ViewChild('paiementsChart') paiementsChartRef!: ElementRef;
   @ViewChild('comparaisonMagasinsChart') comparaisonMagasinsChartRef!: ElementRef;
 
   // Variables de vue d'ensemble
-   valeurTotaleStockAchatInitial: number = 0; // Calculée dynamiquement
-   totalProduits: number = 0; // Calculé dynamiquement
-   produitsEnAlerte: number = 0;  // Calculé dynamiquement
-   produitsRupture: number = 0;  // Calculé dynamiquement
-   valeurTotaleVenteStockAchatFinal: number = 0;  // Calculé dynamiquement
-   produitsPerissable: number = 0;  // Calculé dynamiquement
-   produitsUniques: number = 0;  // Calculé dynamiquement
-   produitsEnSurStock: number = 0;  // Calculé dynamiquement
-   produitsAReapprovisionne: number = 0;  // Calculé dynamiquement
+  valeurTotaleStockAchatInitial = 0; // Calculée dynamiquement
+  totalProduits = 0; // Calculé dynamiquement
+  produitsEnAlerte = 0; // Calculé dynamiquement
+  produitsRupture = 0; // Calculé dynamiquement
+  valeurTotaleVenteStockAchatFinal = 0; // Calculé dynamiquement
+  produitsPerissable = 0; // Calculé dynamiquement
+  produitsUniques = 0; // Calculé dynamiquement
+  produitsEnSurStock = 0; // Calculé dynamiquement
+  produitsAReapprovisionne = 0; // Calculé dynamiquement
   // Indicateurs clés
-  chiffreAffaires: number = 0;
-  totalDepenses: number = 0;
-  autresRecettes: number = 0;
-  beneficeNet: number = 0;
-  nbVentes : number = 0;
-  nbAutresRecettes : number = 0;
-  nbDepenses : number = 0;
+  chiffreAffaires = 0;
+  totalDepenses = 0;
+  autresRecettes = 0;
+  beneficeNet = 0;
+  nbVentes = 0;
+  nbAutresRecettes = 0;
+  nbDepenses = 0;
   // Ajoutez dans la section des propriétés
-  soldeTresorerie: number = 0;
-  evolutionCA: { pourcentage: number, tendance: 'hausse' | 'baisse' | 'stable' } = { pourcentage: 0, tendance: 'stable' };
-  periodePrecedenteCA: number = 0;
+  soldeTresorerie = 0;
+  evolutionCA: { pourcentage: number; tendance: 'hausse' | 'baisse' | 'stable' } = {
+    pourcentage: 0,
+    tendance: 'stable',
+  };
+  periodePrecedenteCA = 0;
   // Ajoutez dans la section des propriétés
-fluxTresorerie: {
-  soldeInitial: number,
-  recettesPeriod: number,
-  depensesPeriod: number,
-  soldeFinal: number
-} = { soldeInitial: 0, recettesPeriod: 0, depensesPeriod: 0, soldeFinal: 0 };
+  fluxTresorerie: {
+    soldeInitial: number;
+    recettesPeriod: number;
+    depensesPeriod: number;
+    soldeFinal: number;
+  } = { soldeInitial: 0, recettesPeriod: 0, depensesPeriod: 0, soldeFinal: 0 };
 
-tendances: {
-  evolutionCA: { valeur: number, tendance: '↑' | '↓' | '→' },
-  evolutionBenefices: { valeur: number, tendance: '↑' | '↓' | '→' },
-  evolutionCouts: { valeur: number, tendance: '↑' | '↓' | '→' }
-} = {
-  evolutionCA: { valeur: 0, tendance: '→' },
-  evolutionBenefices: { valeur: 0, tendance: '→' },
-  evolutionCouts: { valeur: 0, tendance: '→' }
-};
+  tendances: {
+    evolutionCA: { valeur: number; tendance: '↑' | '↓' | '→' };
+    evolutionBenefices: { valeur: number; tendance: '↑' | '↓' | '→' };
+    evolutionCouts: { valeur: number; tendance: '↑' | '↓' | '→' };
+  } = {
+    evolutionCA: { valeur: 0, tendance: '→' },
+    evolutionBenefices: { valeur: 0, tendance: '→' },
+    evolutionCouts: { valeur: 0, tendance: '→' },
+  };
 
   // Variables d'état
   today = new Date();
@@ -82,10 +100,10 @@ tendances: {
   alertes: { message: string; lien?: string }[] = [];
 
   // Variables pour les filtres
-  magasins: Magasin[] = [ ];
+  magasins: Magasin[] = [];
   magasinSelectionne: Magasin | null = null;
-  filteredProduits:Produits[] =[];
-  filteredMouvements:MouvementsStock[] =[];
+  filteredProduits: Produits[] = [];
+  filteredMouvements: MouvementsStock[] = [];
   allStocks: Stock[] = []; // Tous les stocks de tous les magasins
   allProduits: Produits[] = []; // Tous les produits de tous les magasins
   allMouvements: MouvementsStock[] = []; // Tous les produits de tous les magasins
@@ -101,38 +119,45 @@ tendances: {
   filteredCategories: Categorie[] = [];
   categoriesDepense: Categorie[] = [];
   categoriesRecette: Categorie[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   modesPaiement: any[] = [];
   allVentes: Panier[] = [];
   filteredVentes: Panier[] = [];
-  allClients: Client[] = [];
-  vendeurs: User[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  allClients: any[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  vendeurs: any[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   statmodesPaiement: any;
 
   // Top listes
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   topProduits: any[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   topClients: any[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   vendeursPerformance: any[] = [];
 
   triVendeursPar: 'ca' | 'transactions' | 'moyenne' = 'ca';
 
   // Indicateurs clés
-  totalVentes: number = 0;
-  chiffreAffairesHT: number = 0;
-  chiffreAffairesTTC: number = 0;
-  margeBeneficiaire: number = 0;
-  ticketMoyen: number = 0;
-  panierMoyen: number = 0;
-  evolutionVolume: { valeur: number, tendance: '↑' | '↓' | '→' } = { valeur: 0, tendance: '→' };
-  
+  totalVentes = 0;
+  chiffreAffairesHT = 0;
+  chiffreAffairesTTC = 0;
+  margeBeneficiaire = 0;
+  ticketMoyen = 0;
+  panierMoyen = 0;
+  evolutionVolume: { valeur: number; tendance: '↑' | '↓' | '→' } = { valeur: 0, tendance: '→' };
 
   // Références aux graphiques
   ventesChart!: Chart;
   paiementsChart!: Chart;
   comparaisonMagasinsChart!: Chart;
-  dateDebut: string = '';
-  dateFin: string = '';
+  dateDebut = '';
+  dateFin = '';
 
-  constructor(private cdr:ChangeDetectorRef) {
+  private cdr = inject(ChangeDetectorRef);
+  constructor() {
     Chart.register(...registerables);
   }
 
@@ -147,159 +172,168 @@ tendances: {
   }
 
   loadMagasins(): void {
-  
-      this.magasins = magasins;
-      this.allProduits = produits;
-      this.allMouvements = mouvements;
-      this.allStocks = stocks;
-      this.stocks = [...this.allStocks]; // Initialiser avec tous les stocks
-      this.filteredProduits = [...this.allProduits]; // Initialiser avec tous les produits
-      this.filteredMouvements = [...this.allMouvements]; // Initialiser avec tous les mouvements filtrés
+    this.magasins = magasins;
+    this.allProduits = produits;
+    this.allMouvements = mouvements;
+    this.allStocks = stocks;
+    this.stocks = [...this.allStocks]; // Initialiser avec tous les stocks
+    this.filteredProduits = [...this.allProduits]; // Initialiser avec tous les produits
+    this.filteredMouvements = [...this.allMouvements]; // Initialiser avec tous les mouvements filtrés
 
-      this.allRecettes = recettes;
-      this.allCategories = categories;
-      this.filteredDepenses = [...this.allDepenses];
-      this.filteredRecettes = [...this.allRecettes];
-      this.filteredCategories = [...this.allCategories];
-      this.categoriesDepense = this.filteredCategories.filter(cat => cat.type === "DEPENSE");
-      this.categoriesRecette = this.filteredCategories.filter(cat => cat.type === "RECETTE")
+    this.allRecettes = recettes;
+    this.allCategories = categories;
+    this.filteredDepenses = [...this.allDepenses];
+    this.filteredRecettes = [...this.allRecettes];
+    this.filteredCategories = [...this.allCategories];
+    this.categoriesDepense = this.filteredCategories.filter((cat) => cat.type === 'DEPENSE');
+    this.categoriesRecette = this.filteredCategories.filter((cat) => cat.type === 'RECETTE');
 
-      this.vendeurs = vendeurs
-      
-      this.modesPaiement = modesPaiement;
+    this.vendeurs = vendeurs;
 
-      // Générer des données de vente fictives
-      this.allVentes = paniers;
-      this.allClients = clients
-      this.filteredVentes = [...this.allVentes];
-  
-    }
+    this.modesPaiement = modesPaiement;
 
-        getStatistiquesModesPaiementArrayFinancier(recettes: Recette[]): { mode: string, montantTotal: number, occurrences: number }[] {
-        const statsMap = new Map<string, { montantTotal: number, occurrences: number }>();
+    // Générer des données de vente fictives
+    this.allVentes = paniers;
+    this.allClients = clients;
+    this.filteredVentes = [...this.allVentes];
+  }
 
-        recettes.forEach(recette => {
-            const current = statsMap.get(recette.paymentMode) || { montantTotal: 0, occurrences: 0 };
-            statsMap.set(recette.paymentMode, {
-                montantTotal: current.montantTotal + recette.montant,
-                occurrences: current.occurrences + 1
-            });
+  getStatistiquesModesPaiementArrayFinancier(
+    recettes: Recette[],
+  ): { mode: string; montantTotal: number; occurrences: number }[] {
+    const statsMap = new Map<string, { montantTotal: number; occurrences: number }>();
+
+    recettes.forEach((recette) => {
+      const current = statsMap.get(recette.paymentMode) || { montantTotal: 0, occurrences: 0 };
+      statsMap.set(recette.paymentMode, {
+        montantTotal: current.montantTotal + recette.montant,
+        occurrences: current.occurrences + 1,
+      });
+    });
+
+    return Array.from(statsMap.entries()).map(([mode, stats]) => ({
+      mode,
+      ...stats,
+    }));
+  }
+  getStatistiquesModesPaiementArray(): {
+    mode: string;
+    montantTotal: number;
+    occurrences: number;
+  }[] {
+    const statsMap = new Map<string, { montantTotal: number; occurrences: number }>();
+
+    // Parcourir toutes les ventes filtrées
+    this.filteredVentes.forEach((vente) => {
+      // Parcourir tous les paiements de chaque vente
+      vente.paiements?.forEach((paiement) => {
+        // Trouver le libellé du mode de paiement à partir de l'ID
+        const modePaiement = this.modesPaiement.find((mp) => mp.id === paiement.methodePaiement);
+        const modeLabel = modePaiement?.libelle || 'Inconnu';
+
+        // Récupérer ou initialiser les statistiques pour ce mode de paiement
+        const current = statsMap.get(modeLabel) || { montantTotal: 0, occurrences: 0 };
+
+        // Mettre à jour les statistiques
+        statsMap.set(modeLabel, {
+          montantTotal: current.montantTotal + paiement.montant,
+          occurrences: current.occurrences + 1,
         });
+      });
+    });
 
-        return Array.from(statsMap.entries()).map(([mode, stats]) => ({
-            mode,
-            ...stats
-        }));
-      }
-     getStatistiquesModesPaiementArray(): { mode: string, montantTotal: number, occurrences: number }[] {
-        const statsMap = new Map<string, { montantTotal: number, occurrences: number }>();
+    // Convertir la Map en tableau d'objets
+    return Array.from(statsMap.entries()).map(([mode, stats]) => ({
+      mode,
+      ...stats,
+    }));
+  }
 
-        // Parcourir toutes les ventes filtrées
-        this.filteredVentes.forEach(vente => {
-          // Parcourir tous les paiements de chaque vente
-          vente.paiements?.forEach(paiement => {
-            // Trouver le libellé du mode de paiement à partir de l'ID
-            const modePaiement = this.modesPaiement.find(mp => mp.id === paiement.methodePaiement);
-            const modeLabel = modePaiement?.libelle || 'Inconnu';
+  private resetTime(date: Date): Date {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  }
 
-            // Récupérer ou initialiser les statistiques pour ce mode de paiement
-            const current = statsMap.get(modeLabel) || { montantTotal: 0, occurrences: 0 };
+  initDateFilters(): void {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
 
-            // Mettre à jour les statistiques
-            statsMap.set(modeLabel, {
-              montantTotal: current.montantTotal + paiement.montant,
-              occurrences: current.occurrences + 1
-            });
-          });
-        });
+    this.dateDebut = this.formatDate(monday);
+    this.dateFin = this.formatDate(today);
+  }
 
-        // Convertir la Map en tableau d'objets
-        return Array.from(statsMap.entries()).map(([mode, stats]) => ({
-          mode,
-          ...stats
-        }));
-      }
-    
-      private resetTime(date: Date): Date {
-        return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      }
+  private formatDate(date: Date): string {
+    return date.toISOString().split('T')[0];
+  }
+  filtrerDonnees(): void {
+    if (!this.dateDebut || !this.dateFin) return;
 
-      initDateFilters(): void {
-        const today = new Date();
-        const dayOfWeek = today.getDay();
-        const monday = new Date(today);
-        monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    const startDate = this.resetTime(new Date(this.dateDebut));
+    const endDate = this.resetTime(new Date(this.dateFin));
 
-        this.dateDebut = this.formatDate(monday);
-        this.dateFin = this.formatDate(today);
-      }
+    this.filteredVentes = this.allVentes.filter(
+      (v) =>
+        this.resetTime(new Date(v.dateCreation)) >= startDate &&
+        this.resetTime(new Date(v.dateCreation)) <= endDate &&
+        (this.selectedMagasinId === -1 || v.magasinId === this.selectedMagasinId),
+      //(this.selectedVendeurId === -1 || /* logique pour filtrer par vendeur */ true)
+    );
 
-      private formatDate(date: Date): string {
-        return date.toISOString().split('T')[0];
-      }
-      filtrerDonnees(): void {
-        if (!this.dateDebut || !this.dateFin) return;
+    // Filtrer par date et magasin
+    const depensesFiltrees = this.allDepenses.filter(
+      (d) =>
+        this.resetTime(new Date(d.date)) >= startDate &&
+        this.resetTime(new Date(d.date)) <= endDate &&
+        (this.selectedMagasinId === -1 || d.magasinId === this.selectedMagasinId),
+    );
 
-        const startDate = this.resetTime(new Date(this.dateDebut));
-        const endDate = this.resetTime(new Date(this.dateFin));
+    const recettesFiltrees = this.allRecettes.filter(
+      (r) =>
+        this.resetTime(new Date(r.date)) >= startDate &&
+        this.resetTime(new Date(r.date)) <= endDate &&
+        (this.selectedMagasinId === -1 || r.magasinId === this.selectedMagasinId),
+    );
 
-        this.filteredVentes = this.allVentes.filter(v =>
-          this.resetTime(new Date(v.dateCreation)) >= startDate &&
-          this.resetTime(new Date(v.dateCreation)) <= endDate &&
-          (this.selectedMagasinId === -1 || v.magasinId === this.selectedMagasinId) 
-          //(this.selectedVendeurId === -1 || /* logique pour filtrer par vendeur */ true)
-        );
+    this.filteredDepenses = [...depensesFiltrees];
+    this.filteredRecettes = [...recettesFiltrees];
+    // Mettre à jour les graphiques
+    //this.updateMaxItems();
+    // Calculer les indicateurs
+    this.calculerIndicateursFinanciers(this.filteredRecettes, this.filteredDepenses);
+    this.modesPaiement = this.getStatistiquesModesPaiementArrayFinancier(this.filteredRecettes);
+    this.fluxTresorerie = this.calculerFluxTresorerie();
+    this.tendances = this.calculerTendances();
 
-        // Filtrer par date et magasin
-        const depensesFiltrees = this.allDepenses.filter(d =>
-          this.resetTime(new Date(d.date)) >= startDate &&
-          this.resetTime(new Date(d.date)) <= endDate &&
-          (this.selectedMagasinId === -1 || d.magasinId === this.selectedMagasinId)
-        );
+    this.calculerIndicateurs();
+    this.calculerTopListes();
+    this.statmodesPaiement = this.getStatistiquesModesPaiementArray();
+    this.cdr.detectChanges();
 
-        const recettesFiltrees = this.allRecettes.filter(r =>
-          this.resetTime(new Date(r.date)) >= startDate &&
-          this.resetTime(new Date(r.date)) <= endDate &&
-          (this.selectedMagasinId === -1 || r.magasinId === this.selectedMagasinId)
-        );
+    this.stocks = this.allStocks.filter((stock) => {
+      const stockDate = this.resetTime(new Date(stock.dateDerniereMiseAJour));
+      const isInDateRange = stockDate >= startDate && stockDate <= endDate;
+      return this.selectedMagasinId === -1
+        ? isInDateRange
+        : stock.magasinId === this.selectedMagasinId && isInDateRange;
+    });
 
-        this.filteredDepenses = [...depensesFiltrees];
-        this.filteredRecettes = [...recettesFiltrees];
-        // Mettre à jour les graphiques
-        //this.updateMaxItems();
-        // Calculer les indicateurs
-        this.calculerIndicateursFinanciers(this.filteredRecettes, this.filteredDepenses);
-        this.modesPaiement = this.getStatistiquesModesPaiementArrayFinancier(this.filteredRecettes);
-        this.fluxTresorerie = this.calculerFluxTresorerie();
-        this.tendances = this.calculerTendances();
-        
-        this.calculerIndicateurs();
-        this.calculerTopListes();
-        this.statmodesPaiement = this.getStatistiquesModesPaiementArray();
-        this.cdr.detectChanges();
+    this.filteredProduits = this.allProduits.filter((produit) =>
+      this.stocks.some((stock) => stock.produitId === produit.id),
+    );
+    this.filteredMouvements = this.allMouvements.filter((mvt) =>
+      this.stocks.some((stock) => stock.id === mvt.stockId),
+    );
 
-        this.stocks = this.allStocks.filter(stock => {
-        const stockDate = this.resetTime(new Date(stock.dateDerniereMiseAJour));
-        const isInDateRange = stockDate >= startDate && stockDate <= endDate;
-        return this.selectedMagasinId === -1 ? isInDateRange : (stock.magasinId === this.selectedMagasinId && isInDateRange);
-        });
+    this.updateGlobalStats();
 
-      this.filteredProduits = this.allProduits.filter(produit =>
-      this.stocks.some(stock => stock.produitId === produit.id)
-      );
-      this.filteredMouvements = this.allMouvements.filter(mvt =>
-        this.stocks.some(stock => stock.id === mvt.stockId)
-        );
+    setTimeout(() => {
+      this.mettreAJourGraphiques();
+      this.updateCharts();
+    }, 100);
+  }
 
-      this.updateGlobalStats();
-
-        setTimeout(() => {
-          this.mettreAJourGraphiques();
-          this.updateCharts();
-        }, 100);
-      }
-
-       updateGlobalStats(): void {
+  updateGlobalStats(): void {
     this.valeurTotaleStockAchatInitial = this.getStatGlobauxProduits().totalValeurStockInitial;
     this.valeurTotaleVenteStockAchatFinal = this.getStatGlobauxProduits().totalValeurStockFinal;
     this.produitsEnAlerte = Stock.compterProduitsEnAlerte(this.stocks);
@@ -309,7 +343,6 @@ tendances: {
     this.produitsUniques = Stock.compterProduitsUniques(this.stocks);
     this.produitsAReapprovisionne = Stock.compterProduitsAReapprovisionner(this.stocks);
     this.produitsEnSurStock = Stock.compterProduitsEnSurstock(this.stocks);
-
   }
   getStatGlobauxProduits() {
     return MouvementsStock.calculerStatistiquesGlobaux(
@@ -321,54 +354,55 @@ tendances: {
     );
   }
 
-       mettreAJourGraphiques(): void {
-        /* this.creerGraphiqueEvolutionVentes();
+  mettreAJourGraphiques(): void {
+    /* this.creerGraphiqueEvolutionVentes();
         this.creerGraphiquePaiements();
         this.creerGraphiqueTopProduits(); */
-      }
+  }
 
-      calculerIndicateursFinanciers(recettes: Recette[], depenses: Depense[]): void {
+  calculerIndicateursFinanciers(recettes: Recette[], depenses: Depense[]): void {
+    // Associer chaque recette à sa catégorie
+    const recettesAvecCategories = recettes.map((r) => ({
+      ...r,
+      categorie: this.categoriesRecette.find((c) => c.id === r.categoryId),
+    }));
 
-          // Associer chaque recette à sa catégorie
-          const recettesAvecCategories = recettes.map(r => ({
-            ...r,
-            categorie: this.categoriesRecette.find(c => c.id === r.categoryId)
-          }));
+    // Recettes de type "vente"
+    const recettesVente = recettesAvecCategories.filter(
+      (r) =>
+        r.categorie &&
+        (r.categorie.name.toLowerCase().includes('vente') ||
+          r.categorie.description?.toLowerCase().includes('vente')),
+    );
 
-          // Recettes de type "vente"
-          const recettesVente = recettesAvecCategories.filter(r =>
-            r.categorie &&
-            (r.categorie.name.toLowerCase().includes('vente') ||
-            r.categorie.description?.toLowerCase().includes('vente'))
-          );
+    this.chiffreAffaires = recettesVente.reduce((sum, r) => sum + r.montant, 0);
+    this.nbVentes = recettesVente.length;
 
-          this.chiffreAffaires = recettesVente.reduce((sum, r) => sum + r.montant, 0);
-          this.nbVentes = recettesVente.length;
+    // Autres recettes (hors ventes)
+    const autresRecettes = recettesAvecCategories.filter(
+      (r) =>
+        !r.categorie ||
+        (!r.categorie.name.toLowerCase().includes('vente') &&
+          !r.categorie.description?.toLowerCase().includes('vente')),
+    );
 
-          // Autres recettes (hors ventes)
-          const autresRecettes = recettesAvecCategories.filter(r =>
-            !r.categorie ||
-            (!r.categorie.name.toLowerCase().includes('vente') &&
-            !r.categorie.description?.toLowerCase().includes('vente'))
-          );
+    this.autresRecettes = autresRecettes.reduce((sum, r) => sum + r.montant, 0);
+    this.nbAutresRecettes = autresRecettes.length;
 
-          this.autresRecettes = autresRecettes.reduce((sum, r) => sum + r.montant, 0);
-          this.nbAutresRecettes = autresRecettes.length;
+    // Dépenses
+    this.totalDepenses = depenses.reduce((sum, d) => sum + d.montant, 0);
+    this.nbDepenses = depenses.length;
 
-          // Dépenses
-          this.totalDepenses = depenses.reduce((sum, d) => sum + d.montant, 0);
-          this.nbDepenses = depenses.length;
+    // const flux = this.calculerFluxTresorerie();
+    // this.soldeTresorerie = flux.soldeFinal; // Utilisez le solde final du flux
+    // Bénéfice net
+    this.beneficeNet = this.chiffreAffaires + this.autresRecettes - this.totalDepenses;
 
-          // const flux = this.calculerFluxTresorerie();
-          // this.soldeTresorerie = flux.soldeFinal; // Utilisez le solde final du flux
-          // Bénéfice net
-          this.beneficeNet = (this.chiffreAffaires + this.autresRecettes) - this.totalDepenses;
+    // Calculer le solde et l'évolution du CA
+    this.calculerSoldeEtEvolution();
+  }
 
-          // Calculer le solde et l'évolution du CA
-          this.calculerSoldeEtEvolution();
-        }
-
-        private calculerSoldeEtEvolution(): void {
+  private calculerSoldeEtEvolution(): void {
     // Calcul du solde de trésorerie (argent disponible)
     this.soldeTresorerie = this.chiffreAffaires + this.autresRecettes - this.totalDepenses;
 
@@ -377,7 +411,8 @@ tendances: {
     const endDate = this.resetTime(new Date(this.dateFin));
 
     // Calculer la durée de la période en jours
-    const dureePeriode = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const dureePeriode =
+      Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
     // Calculer la date de début de la période précédente
     const startDatePrecedent = new Date(startDate);
@@ -388,337 +423,368 @@ tendances: {
     endDatePrecedent.setDate(startDate.getDate() - 1);
 
     // Filtrer les recettes de la période précédente
-    const recettesPrecedentes = this.filteredRecettes.filter(r => {
+    const recettesPrecedentes = this.filteredRecettes.filter((r) => {
       const dateRecette = this.resetTime(new Date(r.date));
-      return dateRecette >= startDatePrecedent &&
-             dateRecette <= endDatePrecedent &&
-             (this.selectedMagasinId === -1 || r.magasinId === this.selectedMagasinId);
+      return (
+        dateRecette >= startDatePrecedent &&
+        dateRecette <= endDatePrecedent &&
+        (this.selectedMagasinId === -1 || r.magasinId === this.selectedMagasinId)
+      );
     });
 
     // Calculer le CA de la période précédente
     this.periodePrecedenteCA = recettesPrecedentes
-      .filter(r => {
-        const categorie = this.categoriesRecette.find(c => c.id === r.categoryId);
-        return categorie &&
-               (categorie.name.toLowerCase().includes('vente') ||
-                categorie.description?.toLowerCase().includes('vente'));
+      .filter((r) => {
+        const categorie = this.categoriesRecette.find((c) => c.id === r.categoryId);
+        return (
+          categorie &&
+          (categorie.name.toLowerCase().includes('vente') ||
+            categorie.description?.toLowerCase().includes('vente'))
+        );
       })
       .reduce((sum, r) => sum + r.montant, 0);
 
     // Calculer l'évolution en pourcentage
     if (this.periodePrecedenteCA > 0) {
-      this.evolutionCA.pourcentage = Math.round(((this.chiffreAffaires - this.periodePrecedenteCA) / this.periodePrecedenteCA) * 100);
-      this.evolutionCA.tendance = this.chiffreAffaires > this.periodePrecedenteCA ? 'hausse' :
-                                 this.chiffreAffaires < this.periodePrecedenteCA ? 'baisse' : 'stable';
+      this.evolutionCA.pourcentage = Math.round(
+        ((this.chiffreAffaires - this.periodePrecedenteCA) / this.periodePrecedenteCA) * 100,
+      );
+      this.evolutionCA.tendance =
+        this.chiffreAffaires > this.periodePrecedenteCA
+          ? 'hausse'
+          : this.chiffreAffaires < this.periodePrecedenteCA
+            ? 'baisse'
+            : 'stable';
     } else {
       this.evolutionCA.pourcentage = this.chiffreAffaires > 0 ? 100 : 0;
       this.evolutionCA.tendance = this.chiffreAffaires > 0 ? 'hausse' : 'stable';
     }
   }
 
-      calculerIndicateurs(): void {
-        // Chiffre d'affaires
-        this.totalVentes = this.filteredVentes.length;
-        this.chiffreAffairesHT = this.filteredVentes.reduce((sum, v) => sum + v.totalHT, 0);
-        this.chiffreAffairesTTC = this.filteredVentes.reduce((sum, v) => sum + v.totalTTC, 0);
+  calculerIndicateurs(): void {
+    // Chiffre d'affaires
+    this.totalVentes = this.filteredVentes.length;
+    this.chiffreAffairesHT = this.filteredVentes.reduce((sum, v) => sum + v.totalHT, 0);
+    this.chiffreAffairesTTC = this.filteredVentes.reduce((sum, v) => sum + v.totalTTC, 0);
 
-        // Marge bénéficiaire (si prix d'achat connu)
-        this.margeBeneficiaire = this.filteredVentes.reduce((sum, v) => {
-          const margeVente = v.articles.reduce((s, a) => s + ((a.prixVenteUnitaire || 0) - (a.prixAchatUnitaire || 0)), 0);
-          return sum + margeVente;
-        }, 0);
+    // Marge bénéficiaire (si prix d'achat connu)
+    this.margeBeneficiaire = this.filteredVentes.reduce((sum, v) => {
+      const margeVente = v.articles.reduce(
+        (s, a) => s + ((a.prixVenteUnitaire || 0) - (a.prixAchatUnitaire || 0)),
+        0,
+      );
+      return sum + margeVente;
+    }, 0);
 
-        // Ticket moyen et panier moyen
-        this.ticketMoyen = this.totalVentes > 0 ? this.chiffreAffairesTTC / this.totalVentes : 0;
-        this.panierMoyen = this.totalVentes > 0 ?
-          this.filteredVentes.reduce((sum, v) => sum + v.articles.length, 0) / this.totalVentes : 0;
+    // Ticket moyen et panier moyen
+    this.ticketMoyen = this.totalVentes > 0 ? this.chiffreAffairesTTC / this.totalVentes : 0;
+    this.panierMoyen =
+      this.totalVentes > 0
+        ? this.filteredVentes.reduce((sum, v) => sum + v.articles.length, 0) / this.totalVentes
+        : 0;
+  }
 
-      }
+  // Nouveaux calculs pour le flux de trésorerie
+  private calculerFluxTresorerie(): {
+    soldeInitial: number;
+    recettesPeriod: number;
+    depensesPeriod: number;
+    soldeFinal: number;
+  } {
+    // 1. Préparer les dates (en ignorant les heures)
+    const dateDebut = this.resetTime(new Date(this.dateDebut));
+    const dateFin = this.resetTime(new Date(this.dateFin));
 
-      // Nouveaux calculs pour le flux de trésorerie
-      private calculerFluxTresorerie(): {
-        soldeInitial: number,
-        recettesPeriod: number,
-        depensesPeriod: number,
-        soldeFinal: number
-      } {
-        // 1. Préparer les dates (en ignorant les heures)
-        const dateDebut = this.resetTime(new Date(this.dateDebut));
-        const dateFin = this.resetTime(new Date(this.dateFin));
+    // 2. Calculer la veille de la date de début
+    const dateVeille = new Date(dateDebut);
+    dateVeille.setDate(dateDebut.getDate() - 1);
+    this.resetTime(dateVeille);
 
-        // 2. Calculer la veille de la date de début
-        const dateVeille = new Date(dateDebut);
-        dateVeille.setDate(dateDebut.getDate() - 1);
-        this.resetTime(dateVeille);
+    // 3. Calcul du solde initial (toutes les transactions AVANT dateDebut)
+    let soldeInitial = 0;
+    const transactionsExistantes = this.allRecettes.length > 0 || this.allDepenses.length > 0;
 
-        // 3. Calcul du solde initial (toutes les transactions AVANT dateDebut)
-        let soldeInitial = 0;
-        const transactionsExistantes = this.allRecettes.length > 0 || this.allDepenses.length > 0;
-
-        if (transactionsExistantes) {
-          soldeInitial = this.allRecettes
-            .filter(r => this.resetTime(new Date(r.date)) < dateDebut)
-            .reduce((sum, r) => sum + r.montant, 0)
-            -
-            this.allDepenses
-            .filter(d => this.resetTime(new Date(d.date)) < dateDebut)
-            .reduce((sum, d) => sum + d.montant, 0);
-        }
-
-        // 4. Calcul des transactions de la période (INCLUSIVE dateDebut à dateFin)
-        const recettesPeriod = this.allRecettes
-          .filter(r => {
-            const date = this.resetTime(new Date(r.date));
-            return date >= dateDebut && date <= dateFin;
-          })
-          .reduce((sum, r) => sum + r.montant, 0);
-
-        const depensesPeriod = this.allDepenses
-          .filter(d => {
-            const date = this.resetTime(new Date(d.date));
-            return date >= dateDebut && date <= dateFin;
-          })
+    if (transactionsExistantes) {
+      soldeInitial =
+        this.allRecettes
+          .filter((r) => this.resetTime(new Date(r.date)) < dateDebut)
+          .reduce((sum, r) => sum + r.montant, 0) -
+        this.allDepenses
+          .filter((d) => this.resetTime(new Date(d.date)) < dateDebut)
           .reduce((sum, d) => sum + d.montant, 0);
+    }
 
-        // 5. Solde final
-        const soldeFinal = soldeInitial + recettesPeriod - depensesPeriod;
+    // 4. Calcul des transactions de la période (INCLUSIVE dateDebut à dateFin)
+    const recettesPeriod = this.allRecettes
+      .filter((r) => {
+        const date = this.resetTime(new Date(r.date));
+        return date >= dateDebut && date <= dateFin;
+      })
+      .reduce((sum, r) => sum + r.montant, 0);
 
-        return {
-          soldeInitial,
-          recettesPeriod,
-          depensesPeriod,
-          soldeFinal
+    const depensesPeriod = this.allDepenses
+      .filter((d) => {
+        const date = this.resetTime(new Date(d.date));
+        return date >= dateDebut && date <= dateFin;
+      })
+      .reduce((sum, d) => sum + d.montant, 0);
+
+    // 5. Solde final
+    const soldeFinal = soldeInitial + recettesPeriod - depensesPeriod;
+
+    return {
+      soldeInitial,
+      recettesPeriod,
+      depensesPeriod,
+      soldeFinal,
+    };
+  }
+  private getPeriodePrecedente(): {
+    chiffreAffaires: number;
+    beneficeNet: number;
+    totalDepenses: number;
+  } {
+    const startDate = new Date(this.dateDebut);
+    const endDate = new Date(this.dateFin);
+
+    // 1. Calculer la durée de la période actuelle en jours
+    const dureePeriode =
+      Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+    // 2. Calculer les dates de la période précédente
+    const startDatePrecedent = new Date(startDate);
+    startDatePrecedent.setDate(startDate.getDate() - dureePeriode);
+
+    const endDatePrecedent = new Date(startDate);
+    endDatePrecedent.setDate(startDate.getDate() - 1);
+
+    // 3. Filtrer les données pour la période précédente
+    const depensesPrecedentes = this.allDepenses.filter(
+      (d) =>
+        this.resetTime(new Date(d.date)) >= this.resetTime(startDatePrecedent) &&
+        this.resetTime(new Date(d.date)) <= this.resetTime(endDatePrecedent) &&
+        (this.selectedMagasinId === -1 || d.magasinId === this.selectedMagasinId),
+    );
+
+    const recettesPrecedentes = this.allRecettes.filter(
+      (r) =>
+        this.resetTime(new Date(r.date)) >= this.resetTime(startDatePrecedent) &&
+        this.resetTime(new Date(r.date)) <= this.resetTime(endDatePrecedent) &&
+        (this.selectedMagasinId === -1 || r.magasinId === this.selectedMagasinId),
+    );
+
+    // 4. Calculer les indicateurs pour la période précédente
+    const chiffreAffairesPrecedent = recettesPrecedentes
+      .filter((r) => {
+        const categorie = this.categoriesRecette.find((c) => c.id === r.categoryId);
+        return (
+          categorie &&
+          (categorie.name.toLowerCase().includes('vente') ||
+            categorie.description?.toLowerCase().includes('vente'))
+        );
+      })
+      .reduce((sum, r) => sum + r.montant, 0);
+
+    const autresRecettesPrecedent = recettesPrecedentes
+      .filter((r) => {
+        const categorie = this.categoriesRecette.find((c) => c.id === r.categoryId);
+        return (
+          !categorie ||
+          (!categorie.name.toLowerCase().includes('vente') &&
+            !categorie.description?.toLowerCase().includes('vente'))
+        );
+      })
+      .reduce((sum, r) => sum + r.montant, 0);
+
+    const totalDepensesPrecedent = depensesPrecedentes.reduce((sum, d) => sum + d.montant, 0);
+    const beneficeNetPrecedent =
+      chiffreAffairesPrecedent + autresRecettesPrecedent - totalDepensesPrecedent;
+
+    return {
+      chiffreAffaires: chiffreAffairesPrecedent,
+      beneficeNet: beneficeNetPrecedent,
+      totalDepenses: totalDepensesPrecedent,
+    };
+  }
+
+  // Helper pour calculer l'évolution
+  private calculerEvolution(
+    valeurActuelle: number,
+    valeurPrecedente: number,
+  ): {
+    valeur: number;
+    tendance: '↑' | '↓' | '→';
+  } {
+    if (valeurPrecedente === 0) return { valeur: 0, tendance: '→' };
+
+    const evolution = ((valeurActuelle - valeurPrecedente) / valeurPrecedente) * 100;
+    return {
+      valeur: Math.round(evolution),
+      tendance: evolution > 0 ? '↑' : evolution < 0 ? '↓' : '→',
+    };
+  }
+  // Nouvelle méthode pour les tendances
+  private calculerTendances(): {
+    evolutionCA: { valeur: number; tendance: '↑' | '↓' | '→' };
+    evolutionBenefices: { valeur: number; tendance: '↑' | '↓' | '→' };
+    evolutionCouts: { valeur: number; tendance: '↑' | '↓' | '→' };
+  } {
+    try {
+      const periodePrecedente = this.getPeriodePrecedente();
+
+      // Vérification que les données précédentes sont valides
+      const donneesValides =
+        periodePrecedente.chiffreAffaires !== undefined &&
+        periodePrecedente.beneficeNet !== undefined &&
+        periodePrecedente.totalDepenses !== undefined;
+
+      return {
+        evolutionCA: donneesValides
+          ? this.calculerEvolution(this.chiffreAffaires, periodePrecedente.chiffreAffaires)
+          : { valeur: 0, tendance: '→' },
+        evolutionBenefices: donneesValides
+          ? this.calculerEvolution(this.beneficeNet, periodePrecedente.beneficeNet)
+          : { valeur: 0, tendance: '→' },
+        evolutionCouts: donneesValides
+          ? this.calculerEvolution(this.totalDepenses, periodePrecedente.totalDepenses)
+          : { valeur: 0, tendance: '→' },
+      };
+    } catch (error) {
+      console.error('Erreur dans le calcul des tendances', error);
+      return {
+        evolutionCA: { valeur: 0, tendance: '→' },
+        evolutionBenefices: { valeur: 0, tendance: '→' },
+        evolutionCouts: { valeur: 0, tendance: '→' },
+      };
+    }
+  }
+  calculerTopListes(): void {
+    const produitsMap = new Map<
+      number,
+      {
+        produit: Produits;
+        quantite: number;
+        ca: number;
+        marge: number;
+        nombreVentes: number;
+      }
+    >();
+
+    this.filteredVentes.forEach((v) => {
+      const produitsDéjàComptés = new Set<number>(); // pour cette vente
+
+      v.articles.forEach((a) => {
+        const produitId = a.produit.id!;
+        const quantite = a.quantite || 0;
+        const prixVente = a.prixVenteUnitaire || 0;
+        const prixAchat = a.prixAchatUnitaire || 0;
+
+        const existant = produitsMap.get(produitId) || {
+          produit: a.produit,
+          quantite: 0,
+          ca: 0,
+          marge: 0,
+          nombreVentes: 0,
         };
-      }
-      private getPeriodePrecedente(): {
-          chiffreAffaires: number,
-          beneficeNet: number,
-          totalDepenses: number
-        } {
-          const startDate = new Date(this.dateDebut);
-          const endDate = new Date(this.dateFin);
 
-          // 1. Calculer la durée de la période actuelle en jours
-          const dureePeriode = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        const dejaCompte = produitsDéjàComptés.has(produitId);
 
-          // 2. Calculer les dates de la période précédente
-          const startDatePrecedent = new Date(startDate);
-          startDatePrecedent.setDate(startDate.getDate() - dureePeriode);
-
-          const endDatePrecedent = new Date(startDate);
-          endDatePrecedent.setDate(startDate.getDate() - 1);
-
-          // 3. Filtrer les données pour la période précédente
-          const depensesPrecedentes = this.allDepenses.filter(d =>
-            this.resetTime(new Date(d.date)) >= this.resetTime(startDatePrecedent) &&
-            this.resetTime(new Date(d.date)) <= this.resetTime(endDatePrecedent) &&
-            (this.selectedMagasinId === -1 || d.magasinId === this.selectedMagasinId)
-          );
-
-          const recettesPrecedentes = this.allRecettes.filter(r =>
-            this.resetTime(new Date(r.date)) >= this.resetTime(startDatePrecedent) &&
-            this.resetTime(new Date(r.date)) <= this.resetTime(endDatePrecedent) &&
-            (this.selectedMagasinId === -1 || r.magasinId === this.selectedMagasinId)
-          );
-
-          // 4. Calculer les indicateurs pour la période précédente
-          const chiffreAffairesPrecedent = recettesPrecedentes
-            .filter(r => {
-              const categorie = this.categoriesRecette.find(c => c.id === r.categoryId);
-              return categorie &&
-                    (categorie.name.toLowerCase().includes('vente') ||
-                      categorie.description?.toLowerCase().includes('vente'));
-            })
-            .reduce((sum, r) => sum + r.montant, 0);
-
-          const autresRecettesPrecedent = recettesPrecedentes
-            .filter(r => {
-              const categorie = this.categoriesRecette.find(c => c.id === r.categoryId);
-              return !categorie ||
-                    (!categorie.name.toLowerCase().includes('vente') &&
-                      !categorie.description?.toLowerCase().includes('vente'));
-            })
-            .reduce((sum, r) => sum + r.montant, 0);
-
-          const totalDepensesPrecedent = depensesPrecedentes.reduce((sum, d) => sum + d.montant, 0);
-          const beneficeNetPrecedent = (chiffreAffairesPrecedent + autresRecettesPrecedent) - totalDepensesPrecedent;
-
-          return {
-            chiffreAffaires: chiffreAffairesPrecedent,
-            beneficeNet: beneficeNetPrecedent,
-            totalDepenses: totalDepensesPrecedent
-          };
-        }
-
-        // Helper pour calculer l'évolution
-        private calculerEvolution(valeurActuelle: number, valeurPrecedente: number): {
-          valeur: number,
-          tendance: '↑' | '↓' | '→'
-        } {
-          if (valeurPrecedente === 0) return { valeur: 0, tendance: '→' };
-
-          const evolution = ((valeurActuelle - valeurPrecedente) / valeurPrecedente) * 100;
-          return {
-            valeur: Math.round(evolution),
-            tendance: evolution > 0 ? '↑' : evolution < 0 ? '↓' : '→'
-          };
-        }
-      // Nouvelle méthode pour les tendances
-      private calculerTendances(): {
-        evolutionCA: { valeur: number, tendance: '↑' | '↓' | '→' },
-        evolutionBenefices: { valeur: number, tendance: '↑' | '↓' | '→' },
-        evolutionCouts: { valeur: number, tendance: '↑' | '↓' | '→' }
-      } {
-        try {
-          const periodePrecedente = this.getPeriodePrecedente();
-
-          // Vérification que les données précédentes sont valides
-          const donneesValides = periodePrecedente.chiffreAffaires !== undefined
-            && periodePrecedente.beneficeNet !== undefined
-            && periodePrecedente.totalDepenses !== undefined;
-
-          return {
-            evolutionCA: donneesValides
-              ? this.calculerEvolution(this.chiffreAffaires, periodePrecedente.chiffreAffaires)
-              : { valeur: 0, tendance: '→' },
-            evolutionBenefices: donneesValides
-              ? this.calculerEvolution(this.beneficeNet, periodePrecedente.beneficeNet)
-              : { valeur: 0, tendance: '→' },
-            evolutionCouts: donneesValides
-              ? this.calculerEvolution(this.totalDepenses, periodePrecedente.totalDepenses)
-              : { valeur: 0, tendance: '→' }
-          };
-        } catch (error) {
-          console.error("Erreur dans le calcul des tendances", error);
-          return {
-            evolutionCA: { valeur: 0, tendance: '→' },
-            evolutionBenefices: { valeur: 0, tendance: '→' },
-            evolutionCouts: { valeur: 0, tendance: '→' }
-          };
-        }
-      }
-      calculerTopListes(): void {
-        const produitsMap = new Map<number, {
-          produit: Produits,
-          quantite: number,
-          ca: number,
-          marge: number,
-          nombreVentes: number
-        }>();
-
-        this.filteredVentes.forEach(v => {
-          const produitsDéjàComptés = new Set<number>(); // pour cette vente
-
-          v.articles.forEach(a => {
-            const produitId = a.produit.id!;
-            const quantite = a.quantite || 0;
-            const prixVente = a.prixVenteUnitaire || 0;
-            const prixAchat = a.prixAchatUnitaire || 0;
-
-            const existant = produitsMap.get(produitId) || {
-              produit: a.produit,
-              quantite: 0,
-              ca: 0,
-              marge: 0,
-              nombreVentes: 0
-            };
-
-            const dejaCompte = produitsDéjàComptés.has(produitId);
-
-            produitsMap.set(produitId, {
-              produit: a.produit,
-              quantite: existant.quantite + quantite,
-              ca: existant.ca + (quantite * prixVente),
-              marge: existant.marge + (quantite * (prixVente - prixAchat)),
-              nombreVentes: existant.nombreVentes + (dejaCompte ? 0 : 1)
-            });
-
-            produitsDéjàComptés.add(produitId);
-          });
+        produitsMap.set(produitId, {
+          produit: a.produit,
+          quantite: existant.quantite + quantite,
+          ca: existant.ca + quantite * prixVente,
+          marge: existant.marge + quantite * (prixVente - prixAchat),
+          nombreVentes: existant.nombreVentes + (dejaCompte ? 0 : 1),
         });
 
-        this.topProduits = Array.from(produitsMap.values())
-          .sort((a, b) => b.quantite - a.quantite)
-          .slice(0, 10);
+        produitsDéjàComptés.add(produitId);
+      });
+    });
 
+    this.topProduits = Array.from(produitsMap.values())
+      .sort((a, b) => b.quantite - a.quantite)
+      .slice(0, 10);
 
+    // Top clients
+    const clientsMap = new Map<
+      number,
+      { client: Client; nbAchats: number; ca: number; dernierAchat: Date }
+    >();
 
-        // Top clients
-        const clientsMap = new Map<number, { client: Client, nbAchats: number, ca: number, dernierAchat: Date }>();
+    this.filteredVentes.forEach((v) => {
+      if (!v.clientId) return;
 
-        this.filteredVentes.forEach(v => {
-          if (!v.clientId) return;
+      const client = this.allClients.find((c) => c.id === v.clientId);
+      if (!client) return;
 
-          const client = this.allClients.find(c => c.id === v.clientId);
-          if (!client) return;
+      const existant = clientsMap.get(v.clientId) || {
+        client,
+        nbAchats: 0,
+        ca: 0,
+        dernierAchat: new Date(0),
+      };
 
-          const existant = clientsMap.get(v.clientId) || {
-            client,
-            nbAchats: 0,
-            ca: 0,
-            dernierAchat: new Date(0)
-          };
+      clientsMap.set(v.clientId, {
+        client,
+        nbAchats: existant.nbAchats + 1,
+        ca: existant.ca + v.totalTTC,
+        dernierAchat:
+          v.dateCreation > existant.dernierAchat ? v.dateCreation : existant.dernierAchat,
+      });
+    });
 
-          clientsMap.set(v.clientId, {
-            client,
-            nbAchats: existant.nbAchats + 1,
-            ca: existant.ca + v.totalTTC,
-            dernierAchat: v.dateCreation > existant.dernierAchat ? v.dateCreation : existant.dernierAchat
-          });
-        });
+    this.topClients = Array.from(clientsMap.values())
+      .sort((a, b) => b.ca - a.ca)
+      .slice(0, 10);
 
-        this.topClients = Array.from(clientsMap.values())
-          .sort((a, b) => b.ca - a.ca)
-          .slice(0, 10);
+    // Performance vendeurs
+    const vendeursMap = new Map<
+      number,
+      { vendeur: User; nbVentes: number; caHT: number; caTTC: number }
+    >();
 
-        // Performance vendeurs
-        const vendeursMap = new Map<number, { vendeur: User, nbVentes: number, caHT: number, caTTC: number }>();
+    this.filteredVentes.forEach((v) => {
+      const vendeurId = v.agentId;
+      const vendeur = this.vendeurs.find((vu) => vu.id === vendeurId);
 
-        this.filteredVentes.forEach(v => {
-          const vendeurId = v.agentId;
-          const vendeur = this.vendeurs.find(vu => vu.id === vendeurId);
+      if (!vendeur) return; // vendeur introuvable, on ignore cette vente
 
-          if (!vendeur) return; // vendeur introuvable, on ignore cette vente
+      const existant = vendeursMap.get(vendeurId!) || {
+        vendeur,
+        nbVentes: 0,
+        caHT: 0,
+        caTTC: 0,
+      };
 
-          const existant = vendeursMap.get(vendeurId!) || {
-            vendeur,
-            nbVentes: 0,
-            caHT: 0,
-            caTTC: 0
-          };
+      vendeursMap.set(vendeurId!, {
+        vendeur,
+        nbVentes: existant.nbVentes + 1,
+        caHT: existant.caHT + v.totalHT,
+        caTTC: existant.caTTC + v.totalTTC,
+      });
+    });
 
-          vendeursMap.set(vendeurId!, {
-            vendeur,
-            nbVentes: existant.nbVentes + 1,
-            caHT: existant.caHT + v.totalHT,
-            caTTC: existant.caTTC + v.totalTTC
-          });
-        });
+    this.vendeursPerformance = Array.from(vendeursMap.values()).map((v) => ({
+      ...v,
+      ticketMoyen: v.nbVentes > 0 ? v.caTTC / v.nbVentes : 0,
+    }));
 
-        this.vendeursPerformance = Array.from(vendeursMap.values()).map(v => ({
-          ...v,
-          ticketMoyen: v.nbVentes > 0 ? v.caTTC / v.nbVentes : 0
-        }));
+    this.trierVendeurs();
+  }
 
-        this.trierVendeurs();
-
-      }
-
-      trierVendeurs(): void {
-        switch (this.triVendeursPar) {
-          case 'ca':
-            this.vendeursPerformance.sort((a, b) => b.caTTC - a.caTTC);
-            break;
-          case 'transactions':
-            this.vendeursPerformance.sort((a, b) => b.nbVentes - a.nbVentes);
-            break;
-          case 'moyenne':
-            this.vendeursPerformance.sort((a, b) => b.ticketMoyen - a.ticketMoyen);
-            break;
-        }
-      }
-
- 
+  trierVendeurs(): void {
+    switch (this.triVendeursPar) {
+      case 'ca':
+        this.vendeursPerformance.sort((a, b) => b.caTTC - a.caTTC);
+        break;
+      case 'transactions':
+        this.vendeursPerformance.sort((a, b) => b.nbVentes - a.nbVentes);
+        break;
+      case 'moyenne':
+        this.vendeursPerformance.sort((a, b) => b.ticketMoyen - a.ticketMoyen);
+        break;
+    }
+  }
 
   // Vérifie les alertes critiques
   checkAlertes(): void {
@@ -746,11 +812,11 @@ tendances: {
         labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
         datasets: [
           {
-            label: 'Chiffre d\'affaires (F CFA)',
+            label: "Chiffre d'affaires (F CFA)",
             data: [120000, 190000, 150000, 200000, 180000, 250000, 220000],
             borderColor: '#4e73df',
             backgroundColor: 'rgba(78, 115, 223, 0.05)',
-            tension: 0.3
+            tension: 0.3,
           },
           {
             label: 'Nombre de ventes',
@@ -758,15 +824,15 @@ tendances: {
             borderColor: '#1cc88a',
             backgroundColor: 'rgba(28, 200, 138, 0.05)',
             tension: 0.3,
-            yAxisID: 'y1'
-          }
-        ]
+            yAxisID: 'y1',
+          },
+        ],
       },
       options: {
         responsive: true,
         interaction: {
           mode: 'index',
-          intersect: false
+          intersect: false,
         },
         scales: {
           y: {
@@ -775,23 +841,23 @@ tendances: {
             position: 'left',
             title: {
               display: true,
-              text: 'Chiffre d\'affaires'
-            }
+              text: "Chiffre d'affaires",
+            },
           },
           y1: {
             type: 'linear',
             display: true,
             position: 'right',
             grid: {
-              drawOnChartArea: false
+              drawOnChartArea: false,
             },
             title: {
               display: true,
-              text: 'Nombre de ventes'
-            }
-          }
-        }
-      }
+              text: 'Nombre de ventes',
+            },
+          },
+        },
+      },
     });
 
     // Graphique des modes de paiement
@@ -824,16 +890,16 @@ tendances: {
           labels: ['Magasin A', 'Magasin B', 'Magasin C'],
           datasets: [
             {
-              label: 'CA aujourd\'hui',
+              label: "CA aujourd'hui",
               data: [450000, 380000, 420000],
-              backgroundColor: 'rgba(78, 115, 223, 0.5)'
+              backgroundColor: 'rgba(78, 115, 223, 0.5)',
             },
             {
               label: 'CA hier',
               data: [420000, 350000, 410000],
-              backgroundColor: 'rgba(78, 115, 223, 0.2)'
-            }
-          ]
+              backgroundColor: 'rgba(78, 115, 223, 0.2)',
+            },
+          ],
         },
         options: {
           responsive: true,
@@ -842,11 +908,11 @@ tendances: {
               beginAtZero: true,
               title: {
                 display: true,
-                text: 'Chiffre d\'affaires (F CFA)'
-              }
-            }
-          }
-        }
+                text: "Chiffre d'affaires (F CFA)",
+              },
+            },
+          },
+        },
       });
     }
   }
@@ -858,6 +924,7 @@ tendances: {
   }
 
   // Filtre par magasin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onMagasinSelect(event: any): void {
     this.selectedMagasinId = event.target.value;
     this.filtrerDonnees();
@@ -887,7 +954,7 @@ tendances: {
 
   // Export en Excel
   async exportToExcel(): Promise<void> {
-   /*  const workbook = new ExcelJS.Workbook();
+    /*  const workbook = new ExcelJS.Workbook();
     workbook.creator = 'Tableau de Bord';
     workbook.created = new Date();
 
@@ -934,5 +1001,5 @@ tendances: {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     });
     saveAs(blob, `dashboard_${new Date().toISOString().slice(0, 10)}.xlsx`);*/
-  } 
+  }
 }

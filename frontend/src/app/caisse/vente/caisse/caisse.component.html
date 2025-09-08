@@ -1,9 +1,10 @@
 <div class="container-fluid">
-
   <!-- BANNIÈRE DU JOURNAL -->
   <div class="alert alert-light d-flex justify-content-between align-items-center">
     <h1>Journal du {{ dateJournal | date: 'dd/MM/yyyy' }}</h1>
-    <h3>Total de la caisse :<b>{{ totalCaisse}} F CFA </b></h3>
+    <h3>
+      Total de la caisse :<b>{{ totalCaisse }} F CFA </b>
+    </h3>
     <button class="btn btn-success" (click)="nouvelleVente()">Nouvelle Vente</button>
   </div>
 
@@ -15,8 +16,12 @@
         <!-- Section Clients existants -->
         <div class="col-md-3">
           <h5>Clients existants</h5>
-          <input list="clientList" class="form-control mb-2" placeholder="Rechercher un client..."
-                 (input)="onSelectionClient($event)">
+          <input
+            list="clientList"
+            class="form-control mb-2"
+            placeholder="Rechercher un client..."
+            (input)="onSelectionClient($event)"
+          />
           <datalist id="clientList">
             <option *ngFor="let client of clients" [value]="client.nomComplet"></option>
           </datalist>
@@ -25,22 +30,32 @@
         <!-- Section Nouveau client -->
         <div class="col-md-9">
           <form [formGroup]="clientForm">
-            <h5 >Nouveau client</h5>
+            <h5>Nouveau client</h5>
             <div class="row">
               <div class="col-md-3">
-                <input formControlName="nomComplet" class="form-control mb-2" placeholder="Nom complet">
+                <input
+                  formControlName="nomComplet"
+                  class="form-control mb-2"
+                  placeholder="Nom complet"
+                />
               </div>
               <div class="col-md-2">
-                <input formControlName="telephone" class="form-control mb-2" placeholder="Téléphone">
+                <input
+                  formControlName="telephone"
+                  class="form-control mb-2"
+                  placeholder="Téléphone"
+                />
               </div>
               <div class="col-md-3">
-                <input formControlName="email" class="form-control mb-2" placeholder="Email">
+                <input formControlName="email" class="form-control mb-2" placeholder="Email" />
               </div>
               <div class="col-md-3">
-                <input formControlName="adresse" class="form-control mb-2" placeholder="Adresse">
+                <input formControlName="adresse" class="form-control mb-2" placeholder="Adresse" />
               </div>
               <div class="col-md-1">
-                <button type="button" class="btn btn-success" (click)="ajouterClient()"><i class="bi bi-check"></i></button>
+                <button type="button" class="btn btn-success" (click)="ajouterClient()">
+                  <i class="bi bi-check"></i>
+                </button>
               </div>
             </div>
           </form>
@@ -48,7 +63,6 @@
       </div>
     </div>
   </div>
-
 
   <!-- Ajout des produits au panier (caché par défaut) -->
   <div *ngIf="showPanierSection" class="card mb-3">
@@ -58,36 +72,66 @@
         <h2>🛒 Panier</h2>
       </div>
 
-      <div class="bg-secondary d-flex justify-content-between align-items-center mt-1 p-2 text-white">
+      <div
+        class="bg-secondary d-flex justify-content-between align-items-center mt-1 p-2 text-white"
+      >
         <span>📌 Panier en cours...</span>
         <span>📅 Heure: {{ currentTime }}</span>
-        <span>💰 Total panier : <strong>{{ totalPanier }} F CFA</strong></span>
-        <span>💰 Total à payer : <strong>{{ totalAPayer }} F CFA</strong></span>
+        <span
+          >💰 Total panier : <strong>{{ totalPanier }} F CFA</strong></span
+        >
+        <span
+          >💰 Total à payer : <strong>{{ totalAPayer }} F CFA</strong></span
+        >
       </div>
 
       <form [formGroup]="panierForm" (ngSubmit)="enregistrerBon()">
         <div class="row mt-2">
           <div class="col-md-3 searchChamp">
-            <input type="text" class="form-control" [(ngModel)]="searchInput"
-                   placeholder="Rechercher un produit..."
-                   (input)="filterProduits()" [ngModelOptions]="{standalone: true}">
-            <ul *ngIf="filteredProduits.length > 0 && searchInput" class="list-group position-absolute" style="width: 230px;">
-              <li *ngFor="let prod of filteredProduits" class="list-group-item list-group-item-action bg-info"
-                  (click)="selectProduit(prod)">
-                {{ prod.designation }}
+            <input
+              type="text"
+              class="form-control"
+              [(ngModel)]="searchInput"
+              placeholder="Rechercher un produit..."
+              (input)="filterProduits()"
+              [ngModelOptions]="{ standalone: true }"
+            />
+            <ul
+              *ngIf="filteredProduits.length > 0 && searchInput"
+              class="list-group position-absolute"
+              style="width: 230px"
+            >
+              <li *ngFor="let prod of filteredProduits" class="list-group-item bg-info">
+                <button
+                  type="button"
+                  class="list-group-item-action w-100 text-start bg-transparent border-0"
+                  (click)="selectProduit(prod)"
+                >
+                  {{ prod.designation }}
+                </button>
               </li>
             </ul>
           </div>
 
           <div class="col-md-2">
-            <input type="number" class="form-control" formControlName="remise" placeholder="Remise">
+            <input
+              type="number"
+              class="form-control"
+              formControlName="remise"
+              placeholder="Remise"
+            />
           </div>
           <!-- <div class="col-md-2">
             <input type="number" class="form-control" formControlName="avance" placeholder="Avancement">
           </div> -->
           <div class="col-md-2 d-flex align-items-center">
-            <input type="checkbox" class="form-check-input me-2" formControlName="inclureTVA" (change)="toggleTVA($event)">
-            <label class="form-check-label">Inclure TVA</label>
+            <input
+              type="checkbox"
+              class="form-check-input me-2"
+              formControlName="inclureTVA"
+              (change)="toggleTVA($event)"
+            />
+            <label for="tauxTVA" class="form-check-label">Inclure TVA</label>
           </div>
           <div *ngIf="tvaInclu" class="col-md-2">
             <select class="form-select" formControlName="tauxTVA" (change)="updateTVA()">
@@ -134,16 +178,16 @@
             </tr>
             <tr *ngFor="let article of panierArray.controls; let i = index" [formGroupName]="i">
               <td>
-                <input type="text" class="form-control" formControlName="produit" readonly>
+                <input type="text" class="form-control" formControlName="produit" readonly />
               </td>
               <td>
-                <input type="text" class="form-control" formControlName="uniteStock" readonly>
+                <input type="text" class="form-control" formControlName="uniteStock" readonly />
               </td>
               <td>
-                <input type="number" class="form-control" formControlName="quantite">
+                <input type="number" class="form-control" formControlName="quantite" />
               </td>
               <td>
-                <input type="number" class="form-control" formControlName="prixUnitaire">
+                <input type="number" class="form-control" formControlName="prixUnitaire" />
               </td>
               <td>
                 <button type="button" class="btn btn-danger" (click)="removeArticle(i)">🗑</button>
@@ -152,11 +196,11 @@
           </tbody>
         </table>
 
-          <!-- Bouton de soumission -->
-          <div class="d-flex justify-content-center">
-            <button type="submit" class="btn btn-success w-25 me-3">💾 Enregistrer</button>
-            <button type="reset" class="btn btn-warning w-25"> ❌  Annuler</button>
-          </div>
+        <!-- Bouton de soumission -->
+        <div class="d-flex justify-content-center">
+          <button type="submit" class="btn btn-success w-25 me-3">💾 Enregistrer</button>
+          <button type="reset" class="btn btn-warning w-25">❌ Annuler</button>
+        </div>
       </form>
     </div>
   </div>
@@ -172,61 +216,72 @@
   </div> -->
 
   <!-- Transactions journalières -->
-<div class="card mb-3">
-  <div class="card-header">Transactions Journalières</div>
-  <ul class="list-group">
-    <li *ngFor="let transaction of paniers" class="list-group-item">
-      <div class="d-flex justify-content-between align-items-center">
-        <div class="d-flex justify-content-between">
-          <span class="me-3">Vente Nº : <b>{{ transaction.id }}</b></span>
-          <span class="me-3">Date et heure : <b>{{ transaction.dateCreation | date: 'dd/mm/yyyy à HH:MM' }}</b></span>
-          <span class="me-3">Client :<b>{{ transaction.clientId }}</b></span>
-          <span>Total: <b>{{ transaction.totalTTC }} FCFA</b></span>
+  <div class="card mb-3">
+    <div class="card-header">Transactions Journalières</div>
+    <ul class="list-group">
+      <li *ngFor="let transaction of paniers" class="list-group-item">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="d-flex justify-content-between">
+            <span class="me-3"
+              >Vente Nº : <b>{{ transaction.id }}</b></span
+            >
+            <span class="me-3"
+              >Date et heure :
+              <b>{{ transaction.dateCreation | date: 'dd/mm/yyyy à HH:MM' }}</b></span
+            >
+            <span class="me-3"
+              >Client :<b>{{ transaction.clientId }}</b></span
+            >
+            <span
+              >Total: <b>{{ transaction.totalTTC }} FCFA</b></span
+            >
+          </div>
+
+          <div>
+            <button class="btn btn-info btn-sm me-2" (click)="afficherDetails(transaction)">
+              📝 Détails
+            </button>
+            <button
+              *ngIf="transaction.statut !== 'ANNULE'"
+              class="btn btn-danger btn-sm me-2"
+              (click)="annulerPanier(transaction)"
+            >
+              🔄 Retourner
+            </button>
+            <button class="btn btn-success btn-sm" (click)="imprimerTicket(transaction)">
+              🖨 Imprimer
+            </button>
+          </div>
         </div>
 
-        <div>
-          <button class="btn btn-info btn-sm me-2" (click)="afficherDetails(transaction)">
-            📝 Détails
-          </button>
-          <button *ngIf="transaction.statut !== 'ANNULE'" class="btn btn-danger btn-sm me-2" (click)="annulerPanier(transaction)">
-            🔄 Retourner
-          </button>
-          <button class="btn btn-success btn-sm" (click)="imprimerTicket(transaction)">
-            🖨 Imprimer
-          </button>
+        <!-- Affichage des détails du panier -->
+        <div *ngIf="transaction.detailsVisible" class="mt-3 p-3 border rounded bg-light">
+          <h5>Détails du panier</h5>
+          <p><strong>Date :</strong> {{ transaction.dateCreation | date: 'dd/MM/yyyy HH:mm' }}</p>
+          <p><strong>Statut :</strong> {{ transaction.statut }}</p>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Produit</th>
+                <th>Quantité</th>
+                <th>Prix Unitaire</th>
+                <th>Prix Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let article of transaction.articles">
+                <td>{{ 'article.designation' }}</td>
+                <td>{{ 0 }} à corriger</td>
+                <td>{{ article.prixVenteUnitaire }} F CFA</td>
+                <td>{{ 'article.prixTotalVente' }} F CFA</td>
+              </tr>
+            </tbody>
+          </table>
+          <p><strong>Total HT :</strong> {{ transaction.totalHT }} F CFA</p>
+          <p><strong>TVA (18%) :</strong> {{ transaction.tva }} F CFA</p>
+          <p><strong>Total TTC :</strong> {{ transaction.totalTTC }} F CFA</p>
         </div>
-      </div>
-
-      <!-- Affichage des détails du panier -->
-      <div *ngIf="transaction.detailsVisible" class="mt-3 p-3 border rounded bg-light">
-        <h5>Détails du panier</h5>
-        <p><strong>Date :</strong> {{ transaction.dateCreation | date: 'dd/MM/yyyy HH:mm' }}</p>
-        <p><strong>Statut :</strong> {{ transaction.statut }}</p>
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Produit</th>
-              <th>Quantité</th>
-              <th>Prix Unitaire</th>
-              <th>Prix Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let article of transaction.articles">
-              <td>{{ "article.designation" }}</td>
-              <td>{{ 0 }} à corriger</td>
-              <td>{{ article.prixVenteUnitaire }} F CFA</td>
-              <td>{{ "article.prixTotalVente" }} F CFA</td>
-            </tr>
-          </tbody>
-        </table>
-        <p><strong>Total HT :</strong> {{ transaction.totalHT }} F CFA</p>
-        <p><strong>TVA (18%) :</strong> {{ transaction.tva }} F CFA</p>
-        <p><strong>Total TTC :</strong> {{ transaction.totalTTC }} F CFA</p>
-      </div>
-    </li>
-  </ul>
-</div>
-
-
+      </li>
+    </ul>
+  </div>
 </div>

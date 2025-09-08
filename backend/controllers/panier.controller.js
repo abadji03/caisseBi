@@ -14,7 +14,7 @@ exports.createPanier = async (req, res) => {
 exports.getAllPaniers = async (req, res) => {
   try {
     const paniers = await Panier.findAll({
-      include: ['Client', 'Bon', 'Magasin', 'User']
+      include: ['Client', 'Bon', 'Magasin', 'User'],
     });
     res.json(paniers);
   } catch (error) {
@@ -25,7 +25,7 @@ exports.getAllPaniers = async (req, res) => {
 exports.getPanierById = async (req, res) => {
   try {
     const panier = await Panier.findByPk(req.params.id);
-    if (!panier) return res.status(404).json({ message: "Panier non trouvé" });
+    if (!panier) return res.status(404).json({ message: 'Panier non trouvé' });
     res.json(panier);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -35,9 +35,9 @@ exports.getPanierById = async (req, res) => {
 exports.updatePanier = async (req, res) => {
   try {
     const [updated] = await Panier.update(req.body, {
-      where: { id: req.params.id }
+      where: { id: req.params.id },
     });
-    if (!updated) return res.status(404).json({ message: "Panier non trouvé" });
+    if (!updated) return res.status(404).json({ message: 'Panier non trouvé' });
     const panier = await Panier.findByPk(req.params.id);
     res.json(panier);
   } catch (error) {
@@ -48,7 +48,7 @@ exports.updatePanier = async (req, res) => {
 exports.deletePanier = async (req, res) => {
   try {
     const deleted = await Panier.destroy({ where: { id: req.params.id } });
-    if (!deleted) return res.status(404).json({ message: "Panier non trouvé" });
+    if (!deleted) return res.status(404).json({ message: 'Panier non trouvé' });
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -1,40 +1,41 @@
-.table-responsive,.formBon {
-    overflow-y: auto; /* Pour activer la barre de défilement verticale */
-    overflow-x: auto; /* Pour activer la barre de défilement horizontale */
-    /*max-height: 450px;  Hauteur maximale pour activer la barre de défilement */
-  }
+.table-responsive,
+.formBon {
+  overflow-y: auto; /* Pour activer la barre de défilement verticale */
+  overflow-x: auto; /* Pour activer la barre de défilement horizontale */
+  /*max-height: 450px;  Hauteur maximale pour activer la barre de défilement */
+}
 
-
- /* Applique table-layout: auto pour laisser les colonnes s'ajuster à leur contenu */
- .table {
-    table-layout: auto !important;
-    /* width: 100%;
+/* Applique table-layout: auto pour laisser les colonnes s'ajuster à leur contenu */
+.table {
+  table-layout: auto !important;
+  /* width: 100%;
     border-collapse: collapse; */
-  }
+}
 
-  /* Définir une largeur maximale sur chaque cellule et permettre un retour à la ligne */
-  .table th, .table td {
-    word-wrap: break-word;
-    max-width: 300px; /* Limite de la largeur des colonnes */
-    min-width: 150px;
-    white-space: normal; /* Permet aux cellules d'être responsives et de ne pas couper le texte sur une seule ligne */
-    padding: 8px 12px;
-    text-align: Center;
-    border: 1px solid #ddd;
-  }
-  /* Style pour le survol des lignes du tableau */
-  .table tbody tr:hover {
-    background-color: #f0f0f0; /* Couleur de fond lors du survol */
-    cursor: pointer; /* Change le curseur pour indiquer que c'est interactif */
-  }
+/* Définir une largeur maximale sur chaque cellule et permettre un retour à la ligne */
+.table th,
+.table td {
+  word-wrap: break-word;
+  max-width: 300px; /* Limite de la largeur des colonnes */
+  min-width: 150px;
+  white-space: normal; /* Permet aux cellules d'être responsives et de ne pas couper le texte sur une seule ligne */
+  padding: 8px 12px;
+  text-align: Center;
+  border: 1px solid #ddd;
+}
+/* Style pour le survol des lignes du tableau */
+.table tbody tr:hover {
+  background-color: #f0f0f0; /* Couleur de fond lors du survol */
+  cursor: pointer; /* Change le curseur pour indiquer que c'est interactif */
+}
 
-  /* Style pour une ligne sélectionnée */
-  .table tbody tr.selected {
-    background-color: #007bff; /* Couleur de fond de la ligne sélectionnée */
-    color: white; /* Changer la couleur du texte lors de la sélection */
-  }
+/* Style pour une ligne sélectionnée */
+.table tbody tr.selected {
+  background-color: #007bff; /* Couleur de fond de la ligne sélectionnée */
+  color: white; /* Changer la couleur du texte lors de la sélection */
+}
 
-  /* Style général des onglets */
+/* Style général des onglets */
 .nav-tabs .nav-link {
   border-radius: 0.5rem;
   padding: 10px 20px;
@@ -44,7 +45,7 @@
   color: #6c757d; /* Couleur du texte par défaut */
   border: 1px solid transparent;
 }
-  /* Effet au survol (hover) */
+/* Effet au survol (hover) */
 .nav-tabs .nav-link:hover {
   background-color: #e9ecef; /* Fond léger au survol */
   color: black; /* Texte bleu au survol */
@@ -53,7 +54,7 @@
 /* Onglet actif */
 .nav-tabs .nav-link.active {
   color: #fff; /* Texte blanc */
-  background-color:black; /* Couleur de fond bleu pour l'onglet actif */
+  background-color: black; /* Couleur de fond bleu pour l'onglet actif */
   border-color: black; /* Bordure bleue pour l'onglet actif */
   box-shadow: 0 0 10px rgba(0, 123, 255, 0.4); /* Ombre portée subtile */
 }
@@ -67,6 +68,3 @@
 .nav-tabs .nav-link {
   padding: 12px 20px;
 }
-
-
-

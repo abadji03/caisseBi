@@ -14,7 +14,7 @@ exports.create = async (req, res) => {
 exports.findAll = async (req, res) => {
   try {
     const articles = await ArticlePanier.findAll({
-      include: ['Panier', 'Produit', 'Stock']
+      include: ['Panier', 'Produit', 'Stock'],
     });
     res.json(articles);
   } catch (err) {
@@ -25,7 +25,7 @@ exports.findAll = async (req, res) => {
 exports.findById = async (req, res) => {
   try {
     const article = await ArticlePanier.findByPk(req.params.id);
-    if (!article) return res.status(404).json({ message: "Article non trouvé" });
+    if (!article) return res.status(404).json({ message: 'Article non trouvé' });
     res.json(article);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -35,9 +35,9 @@ exports.findById = async (req, res) => {
 exports.update = async (req, res) => {
   try {
     const [updated] = await ArticlePanier.update(req.body, {
-      where: { id: req.params.id }
+      where: { id: req.params.id },
     });
-    if (!updated) return res.status(404).json({ message: "Article non trouvé" });
+    if (!updated) return res.status(404).json({ message: 'Article non trouvé' });
     const article = await ArticlePanier.findByPk(req.params.id);
     res.json(article);
   } catch (err) {
@@ -48,7 +48,7 @@ exports.update = async (req, res) => {
 exports.delete = async (req, res) => {
   try {
     const deleted = await ArticlePanier.destroy({ where: { id: req.params.id } });
-    if (!deleted) return res.status(404).json({ message: "Article non trouvé" });
+    if (!deleted) return res.status(404).json({ message: 'Article non trouvé' });
     res.status(204).send();
   } catch (err) {
     res.status(500).json({ error: err.message });

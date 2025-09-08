@@ -1,5 +1,6 @@
 /* Applique table-layout: auto pour laisser les colonnes s'ajuster à leur contenu */
-.table-responsive,.formBon {
+.table-responsive,
+.formBon {
   overflow-y: auto; /* Pour activer la barre de défilement verticale */
   overflow-x: auto; /* Pour activer la barre de défilement horizontale */
   /*max-height: 450px;  Hauteur maximale pour activer la barre de défilement */
@@ -12,7 +13,8 @@
 }
 
 /* Définir une largeur maximale sur chaque cellule et permettre un retour à la ligne */
-.table th, .table td {
+.table th,
+.table td {
   word-wrap: break-word;
   max-width: 300px; /* Limite de la largeur des colonnes */
   min-width: 150px;
@@ -35,35 +37,34 @@
 
 /* Style général des onglets */
 .nav-tabs .nav-link {
-border-radius: 0.5rem;
-padding: 10px 20px;
-font-weight: 600;
-transition: all 0.3s ease-in-out;
-background-color: #f8f9fa; /* Couleur de fond claire */
-color: #6c757d; /* Couleur du texte par défaut */
-border: 1px solid transparent;
+  border-radius: 0.5rem;
+  padding: 10px 20px;
+  font-weight: 600;
+  transition: all 0.3s ease-in-out;
+  background-color: #f8f9fa; /* Couleur de fond claire */
+  color: #6c757d; /* Couleur du texte par défaut */
+  border: 1px solid transparent;
 }
 /* Effet au survol (hover) */
 .nav-tabs .nav-link:hover {
-background-color: #e9ecef; /* Fond léger au survol */
-color: black; /* Texte bleu au survol */
+  background-color: #e9ecef; /* Fond léger au survol */
+  color: black; /* Texte bleu au survol */
 }
 
 /* Onglet actif */
 .nav-tabs .nav-link.active {
-color: #fff; /* Texte blanc */
-background-color:black; /* Couleur de fond bleu pour l'onglet actif */
-border-color: black; /* Bordure bleue pour l'onglet actif */
-box-shadow: 0 0 10px rgba(0, 123, 255, 0.4); /* Ombre portée subtile */
+  color: #fff; /* Texte blanc */
+  background-color: black; /* Couleur de fond bleu pour l'onglet actif */
+  border-color: black; /* Bordure bleue pour l'onglet actif */
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.4); /* Ombre portée subtile */
 }
 
 /* Espacement entre les onglets */
 .nav-tabs {
-margin-bottom: 1rem; /* Espacement en dessous des onglets */
+  margin-bottom: 1rem; /* Espacement en dessous des onglets */
 }
 
 /* Style pour les titres des onglets (ajout de padding pour plus de lisibilité) */
 .nav-tabs .nav-link {
-padding: 12px 20px;
+  padding: 12px 20px;
 }
-

@@ -1,6 +1,6 @@
-import { Stock } from "./entrees-sorties.model";
-import { Paiement } from "./paiement.model";
-import { Produits } from "./produit.modele";
+import { Stock } from './entrees-sorties.model';
+import { Paiement } from './paiement.model';
+import { Produits } from './produit.modele';
 
 export class Panier {
   id?: number;
@@ -9,33 +9,32 @@ export class Panier {
   articles: ArticlePanier[] = [];
   //articles: Produits[] = [];
   //stockList: Stock[] = [];  // Liste des stocks associés à chaque produit (pour un magasin spécifique)
-  totalHT: number = 0;
-  tva: number = 0;
-  totalTTC: number = 0;
+  totalHT = 0;
+  tva = 0;
+  totalTTC = 0;
   statut: 'EN_COURS' | 'VALIDE' | 'ANNULE' = 'EN_COURS';
   dateCreation: Date = new Date();
   dateMiseAJour: Date = new Date();
-  detailsVisible: boolean = false; // Permet de gérer l'affichage des détails
-  magasinId?:number;
-  agentId?:number;
-  paiements?:Paiement[];
+  detailsVisible = false; // Permet de gérer l'affichage des détails
+  magasinId?: number;
+  agentId?: number;
+  paiements?: Paiement[];
   constructor(data?: Partial<Panier>) {
     Object.assign(this, data);
     this.calculerTotals();
   }
 
- // ✅ Nouvelle méthode pour calculer les totaux
- public calculerTotals(): void {
-  this.totalHT = this.articles.reduce((sum, article) => {
-    const quantite = article.quantite ?? 0;
-    const prix = article.prixVenteUnitaire ?? 0;
-    return sum + prix * quantite;
-  }, 0);
+  // ✅ Nouvelle méthode pour calculer les totaux
+  public calculerTotals(): void {
+    this.totalHT = this.articles.reduce((sum, article) => {
+      const quantite = article.quantite ?? 0;
+      const prix = article.prixVenteUnitaire ?? 0;
+      return sum + prix * quantite;
+    }, 0);
 
-  this.tva = this.totalHT * 0.18;
-  this.totalTTC = this.totalHT + this.tva;
-}
-
+    this.tva = this.totalHT * 0.18;
+    this.totalTTC = this.totalHT + this.tva;
+  }
 
   public annuler(): void {
     this.statut = 'ANNULE';
@@ -43,7 +42,7 @@ export class Panier {
 }
 
 export class ArticlePanier {
-  id!:number;
+  id!: number;
   produit!: Produits;
   quantite!: number;
   prixVenteUnitaire!: number;

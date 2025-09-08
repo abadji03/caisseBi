@@ -1,29 +1,23 @@
-import { Component } from '@angular/core';
-import { Router } from '@angular/router';
-import { FormControl,FormsModule } from '@angular/forms'; 
+import { Component, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../services/auth.service';
-import { RolePermissionsService } from '../../../services/role-permissions.service';
 
 @Component({
   selector: 'app-connexion',
   standalone: true,
   imports: [FormsModule],
   templateUrl: './connexion.component.html',
-  styleUrl: './connexion.component.css'
+  styleUrl: './connexion.component.css',
 })
 export class ConnexionComponent {
-
   loginObj = {
     email: '',
-    password: ''
+    password: '',
   };
   errorMessage = '';
-
-  constructor(
-    private router: Router,
-    private authService: AuthService, 
-    private roleService: RolePermissionsService
-  ){}
+  //private router = inject(Router);
+  private authService = inject(AuthService);
+  //private roleService = inject(RolePermissionsService);
 
   /* onLogin() {
     this.authService.login(this.loginObj.email, this.loginObj.password).subscribe({
@@ -43,20 +37,18 @@ export class ConnexionComponent {
       }
     });
   } */
-  
-    
-onLogin(): void {
-  if (!this.loginObj.email || !this.loginObj.password) return;
 
-  this.authService.login(this.loginObj.email, this.loginObj.password).subscribe({
-    next: () => {
-      // Redirection déjà gérée dans le service
-    },
-    error: (err) => {
-      console.error('Erreur de connexion :', err);
-      alert('Email ou mot de passe incorrect');
-    }
-  });
-}
-  
+  onLogin(): void {
+    if (!this.loginObj.email || !this.loginObj.password) return;
+
+    this.authService.login(this.loginObj.email, this.loginObj.password).subscribe({
+      next: () => {
+        // Redirection déjà gérée dans le service
+      },
+      error: (err) => {
+        console.error('Erreur de connexion :', err);
+        alert('Email ou mot de passe incorrect');
+      },
+    });
+  }
 }

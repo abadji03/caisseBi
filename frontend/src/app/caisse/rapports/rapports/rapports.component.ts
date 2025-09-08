@@ -8,12 +8,16 @@ import { RapportsVentesComponent } from '../rapports-ventes/rapports-ventes.comp
 @Component({
   selector: 'app-rapports',
   standalone: true,
-  imports: [CommonModule, FormsModule, RapportsFinanciersComponent, RapportsStocksComponent, RapportsVentesComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RapportsFinanciersComponent,
+    RapportsStocksComponent,
+    RapportsVentesComponent,
+  ],
   templateUrl: './rapports.component.html',
-  styleUrl: './rapports.component.css'
+  styleUrl: './rapports.component.css',
 })
 export class RapportsComponent {
-
-  activeTab: string = 'ventes';
-
+  activeTab = 'ventes';
 }

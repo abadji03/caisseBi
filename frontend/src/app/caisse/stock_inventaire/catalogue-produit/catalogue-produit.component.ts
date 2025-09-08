@@ -1,6 +1,12 @@
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { CategorieProduits, Produits } from '../../../modeles/produit.modele';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import JsBarcode from 'jsbarcode';
@@ -10,7 +16,6 @@ import { FournisseursService } from '../../../services/fournisseurs.service';
 import { finalize, forkJoin } from 'rxjs';
 import { Fournisseur } from '../../../modeles/fournisseur.model';
 import { StockInventaireService } from '../../../services/stock-inventaire.service';
-import { image } from 'html2canvas/dist/types/css/types/image';
 import { UserService } from '../../../services/user.service';
 import { User } from '../../../modeles/user.model';
 import { Stock } from '../../../modeles/entrees-sorties.model';
@@ -18,240 +23,234 @@ import { normalize } from '../../../utils/string-utils';
 
 @Component({
   selector: 'app-catalogue-produit',
-  standalone:true,
-  imports: [CommonModule, ReactiveFormsModule, MatIconModule,FormsModule],
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, MatIconModule, FormsModule],
   templateUrl: './catalogue-produit.component.html',
-  styleUrl: './catalogue-produit.component.css'
+  styleUrl: './catalogue-produit.component.css',
 })
-export class CatalogueProduitComponent {
+export class CatalogueProduitComponent implements OnInit {
+  prods: Produits[] = []; // Liste de prods
+  users: User[] = [];
+  stock: Stock[] = [];
+  code_structure = 'MASTRUCTURET-NZNC';
+  isLoading = false;
+  agentId = 15;
+  magasinId = 1;
+  codeBarre = '';
+  selectedImageFile: File | null = null;
+  logoPreview: string | null = null;
+  selectedProduits: Produits | null = null; // Produits sélectionné
+  searchForm!: FormGroup; // Formulaire de recherche
+  categorieForm!: FormGroup; // Formulaire d'ajout de catégorie
+  isActionsEnabled = false; // Indicateur pour activer les actions
+  currentPage = 1; // Page courante pour la pagination
+  itemsPerPage = 5; // Nombre d'items par page
+  isRowSelected = false; // Indique si une ligne est sélectionnée
+  ajoutCategorie = false;
+  searchTerm = '';
 
-    prods: Produits[] = [];  // Liste de prods
-    users:User[] = [];
-    stock:Stock[]=[]
-    code_structure:string = 'MASTRUCTURET-NZNC';
-    isLoading:boolean = false;
-    agentId:number = 15;
-    magasinId:number = 1;
-    codeBarre:string = '';
-    selectedImageFile: File | null = null;
-    logoPreview: string | null = null;
-    selectedProduits: Produits | null = null;  // Produits sélectionné
-    searchForm!: FormGroup;  // Formulaire de recherche
-    categorieForm!: FormGroup;  // Formulaire d'ajout de catégorie
-    isActionsEnabled: boolean = false;  // Indicateur pour activer les actions
-    currentPage: number = 1;  // Page courante pour la pagination
-    itemsPerPage: number = 5;  // Nombre d'items par page
-    isRowSelected: boolean = false; // Indique si une ligne est sélectionnée
-    ajoutCategorie:boolean = false;
-    searchTerm: string = '';
+  errorMessage = '';
+  categories: CategorieProduits[] = [];
+  editingCategorieId: number | null = null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  editedCategorie: any = {};
 
-    errorMessage = '';
-    categories: CategorieProduits[] = [];
-    editingCategorieId: number | null = null;
-    editedCategorie: any = {};
+  barcodeGenerated = false;
+  impressionBarcode = false;
 
-    barcodeGenerated: boolean = false;
-    impressionBarcode: boolean = false;
+  actionType = 'ajouter';
+  searchText = ''; // Texte de recherche
+  searchBy = 'designation'; // Critère de recherche
+  fournisseur: Fournisseur[] = [];
 
-    actionType: string = 'ajouter';
-    searchText: string = '';  // Texte de recherche
-    searchBy: string = 'designation';  // Critère de recherche
-    fournisseur:Fournisseur[] = [];
+  produitForm!: FormGroup;
+  stockForm!: FormGroup;
+  // 1. Ajout d'une propriété pour les produits filtrés
+  filteredProducts: Produits[] = [];
 
-    produitForm!: FormGroup;
-    stockForm!: FormGroup;
-    // 1. Ajout d'une propriété pour les produits filtrés
-    filteredProducts: Produits[] = [];
+  isNewUniteVisible = false;
+  imageFilename: string | null = null;
 
-    isNewUniteVisible: boolean = false;
-    imageFilename: string | null = null;
+  // Liste des unités possibles (à adapter selon vos besoins)
+  uniteOptions = ['kg', 'litre', 'mètre', 'pièce'];
+  // Variable pour gérer la sélection globale
+  selectAll = false;
+  // Liste des produits paginés
+  checkedProducts = [];
 
+  productsToRemove: Produits[] = [];
+  isCheckedCase = false;
+  showStockSection = false;
 
-    // Liste des unités possibles (à adapter selon vos besoins)
-    uniteOptions = ['kg', 'litre', 'mètre', 'pièce'];
-    // Variable pour gérer la sélection globale
-    selectAll: boolean = false;
-    // Liste des produits paginés
-    checkedProducts = [];
+  imageChanged = false; // <- À ajouter tout en haut de ton composant
 
-  productsToRemove : Produits[] = [];
-  isCheckedCase : boolean = false;
-  showStockSection:boolean = false;
+  // Listes des familles, fournisseurs et magasins
+  familles: string[] = ['Electroménager', 'Électronique', 'Vêtements', 'Jouets', 'Alimentation'];
+  fournisseurs: string[] = [
+    'Fournisseur A',
+    'Fournisseur B',
+    'Fournisseur C',
+    'Fournisseur D',
+    'Fournisseur E',
+  ];
+  magasins: string[] = ['Magasin 1', 'Magasin 2', 'Magasin 3', 'Magasin 4']; // Liste des magasins
+  selectedImage: File | null = null;
 
-  imageChanged: boolean = false; // <- À ajouter tout en haut de ton composant
+  private fb = inject(FormBuilder);
+  private produitsServices = inject(ProduitsService);
+  private toastr = inject(ToastrService);
+  private fournisseurService = inject(FournisseursService);
+  private userService = inject(UserService);
+  private stockService = inject(StockInventaireService);
+  private cdr = inject(ChangeDetectorRef);
 
+  ngOnInit(): void {
+    this.loadData();
+    this.iniFormulaire();
+    this.loadCategories();
+    this.loadFournisseurs();
+    // Charger les prods fictifs
+    //this.prods = this.loadMockData();
+    // Initialiser filteredProducts avec tous les produits
+  }
 
+  iniFormulaire(): void {
+    // Initialisation du formulaire réactif pour la recherche
+    this.searchForm = this.fb.group({
+      searchText: [''],
+      searchBy: ['designation'], // Valeur par défaut de la recherche (par exemple par designation)
+    });
 
+    // Initialisation du formulaire réactif pour l'ajout d'une catégorie
+    this.categorieForm = this.fb.group({
+      nom: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]],
+      description: ['', Validators.required],
+      code_structure: [this.code_structure],
+      statut: [true],
+    });
+    // Formulaire réactif pour ajouter/éditer un produit
+    this.produitForm = this.fb.group({
+      //code_structure: [this.code_structure],
+      categorieId: ['', Validators.required],
+      designation: ['', Validators.required],
+      fournisseurId: ['', Validators.required],
+      //agentId: [this.agentId],
+      //quantite: [0, Validators.required],
+      // type_entree: ['', Validators.required],
+      // type_sortie: ['', Validators.required],
+      unite: ['', Validators.required],
+      prixAchatUnitaire: [0, [Validators.required, Validators.min(0)]],
+      prixVenteUnitaire: [0, [Validators.required, Validators.min(0)]],
+      codeBarre: [''],
+      //prixTotalVente: [0],
+      description: [''],
+      perissable: [false, Validators.required],
+      //image:[null]
+    });
+  }
 
-    // Listes des familles, fournisseurs et magasins
-    familles: string[] = ['Electroménager', 'Électronique', 'Vêtements', 'Jouets', 'Alimentation'];
-    fournisseurs: string[] = ['Fournisseur A', 'Fournisseur B', 'Fournisseur C', 'Fournisseur D', 'Fournisseur E'];
-    magasins: string[] = ['Magasin 1', 'Magasin 2', 'Magasin 3', 'Magasin 4'];  // Liste des magasins
-    selectedImage:File | null = null;
+  initStockForm() {
+    this.stockForm = this.fb.group({
+      magasinId: [this.magasinId],
+      quantiteTotale: ['', [Validators.required, Validators.min(0)]],
+      seuilAlerte: [5],
+      seuilReapprovisionnement: [10],
+      stockSecurite: [5],
+      datePeremption: [null],
+    });
+  }
 
-    constructor(
-      private fb: FormBuilder,
-      private produitsServices:ProduitsService,
-      private toastr: ToastrService,
-      private fournisseurService:FournisseursService,
-      private userService:UserService,
-      private stockService: StockInventaireService,
-      private cdr: ChangeDetectorRef,
-    ) {
+  // Getter pour accéder facilement aux contrôles
+  get f() {
+    return this.produitForm.controls;
+  }
 
+  verifyCheckedCase() {
+    const checkboxs = document.getElementsByName('checkCase');
+    for (let i = 0; i < checkboxs.length; i++) {
+      const cb = checkboxs[i] as HTMLInputElement;
+      if (cb.checked == true) {
+        //this.isCheckedCase = true;
+        const prod = this.filteredProducts[i];
+        this.productsToRemove.push(prod);
+      } else {
+        this.productsToRemove.splice(i, 1);
+      }
     }
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    this.productsToRemove.length > 1 ? (this.isCheckedCase = true) : (this.isCheckedCase = false);
+  }
 
-    ngOnInit(): void {
-      this.loadData();
-      this.iniFormulaire();
-      this.loadCategories();
-      this.loadFournisseurs();
-      // Charger les prods fictifs
-      //this.prods = this.loadMockData();
-      // Initialiser filteredProducts avec tous les produits
-      
+  deleteAllSelectedProd() {
+    const checkboxs = document.getElementsByName('checkCase');
+    for (let i = 0; i < checkboxs.length; i++) {
+      const cb = checkboxs[i] as HTMLInputElement;
+      if (cb.checked == true) {
+        this.filteredProducts.splice(i, 1);
+        localStorage.setItem('list_produits', JSON.stringify(this.filteredProducts));
+      }
     }
+  }
+  VerificationCheckedCase() {
+    const selected = document.getElementById('checkAll') as HTMLInputElement;
+    //const checkboxs = document.getElementsByName('checkCase');
 
-    iniFormulaire(): void{
-
-      // Initialisation du formulaire réactif pour la recherche
-      this.searchForm = this.fb.group({
-        searchText: [''],
-        searchBy: ['designation'],  // Valeur par défaut de la recherche (par exemple par designation)
-      });
-
-      // Initialisation du formulaire réactif pour l'ajout d'une catégorie
-      this.categorieForm = this.fb.group({
-        nom: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]],
-        description: ['', Validators.required],
-        code_structure:[this.code_structure],
-        statut:[true]
-      });
-          // Formulaire réactif pour ajouter/éditer un produit
-      this.produitForm = this.fb.group({
-        //code_structure: [this.code_structure],
-        categorieId: ['', Validators.required],
-        designation: ['', Validators.required],
-        fournisseurId: ['', Validators.required],
-        //agentId: [this.agentId], 
-        //quantite: [0, Validators.required],
-        // type_entree: ['', Validators.required],
-        // type_sortie: ['', Validators.required],
-        unite: ['', Validators.required],
-        prixAchatUnitaire: [0, [Validators.required, Validators.min(0)]],
-        prixVenteUnitaire: [0, [Validators.required, Validators.min(0)]],
-        codeBarre:[''],
-        //prixTotalVente: [0],
-        description: [''],
-        perissable:[false, Validators.required]
-        //image:[null]
-       
-      });
+    if (selected.checked == true || this.productsToRemove.length > 1) {
+      this.deleteAllSelectedProd();
+      window.location.reload();
+    } else {
+      alert('Veuillez sélectionner les produits à supprimer');
     }
+  }
+  selectAllProd() {
+    const selected = document.getElementById('checkAll') as HTMLInputElement;
+    const checkboxs = document.getElementsByName('checkCase');
 
-    initStockForm() {
-      this.stockForm = this.fb.group({
-        magasinId: [this.magasinId],
-          quantiteTotale: ['', [Validators.required, Validators.min(0)]],
-          seuilAlerte: [5],
-          seuilReapprovisionnement: [10],
-          stockSecurite: [5],
-          datePeremption: [null]
-      });
-    }
-
-    // Getter pour accéder facilement aux contrôles
-    get f() { return this.produitForm.controls; }
-
-    verifyCheckedCase() {
-      const checkboxs = document.getElementsByName('checkCase');
-      for(let i = 0; i < checkboxs.length; i++){
+    if (selected.checked == true) {
+      // eslint-disable-next-line @typescript-eslint/prefer-for-of
+      for (let i = 0; i < checkboxs.length; i++) {
         const cb = checkboxs[i] as HTMLInputElement;
-        if(cb.checked == true) {
-         //this.isCheckedCase = true;
-         const prod = this.filteredProducts[i];
-         this.productsToRemove.push(prod);
-        }
-        else {
-          this.productsToRemove.splice(i,1);
-        }
+        cb.checked = true;
       }
-      this.productsToRemove.length > 1 ? this.isCheckedCase = true: this.isCheckedCase = false;
-
-    }
-
-    deleteAllSelectedProd(){
-      const checkboxs = document.getElementsByName('checkCase');
-      for(let i = 0; i < checkboxs.length; i++){
+      this.isCheckedCase = true;
+    } else {
+      // eslint-disable-next-line @typescript-eslint/prefer-for-of
+      for (let i = 0; i < checkboxs.length; i++) {
         const cb = checkboxs[i] as HTMLInputElement;
-        if(cb.checked == true) {
-          this.filteredProducts.splice(i,1);
-          localStorage.setItem("list_produits", JSON.stringify(this.filteredProducts));
-        }
-      }
-    }
-    VerificationCheckedCase(){
-      const selected = document.getElementById('checkAll') as HTMLInputElement;
-      const checkboxs = document.getElementsByName('checkCase');
-
-      if(selected.checked == true || this.productsToRemove.length > 1){
-        this.deleteAllSelectedProd();
-        window.location.reload();
-      }
-      else{
-        alert("Veuillez sélectionner les produits à supprimer");
-      }
-    }
-    selectAllProd(){
-      const selected = document.getElementById('checkAll') as HTMLInputElement;
-      const checkboxs = document.getElementsByName('checkCase');
-
-      if(selected.checked == true){
-        for(let i = 0; i < checkboxs.length; i++){
-          const cb = checkboxs[i] as HTMLInputElement;
-          cb.checked = true;
-        }
-        this.isCheckedCase = true;
-      }
-      else {
-        for(let i = 0; i < checkboxs.length; i++){
-          const cb = checkboxs[i] as HTMLInputElement;
-          cb.checked = false;
+        cb.checked = false;
       }
       this.isCheckedCase = false;
     }
+  }
+
+  // Afficher ou cacher le champ de saisie de nouvelle unité
+  toggleNewUniteField() {
+    this.isNewUniteVisible = !this.isNewUniteVisible;
+  }
+
+  // Ajouter la nouvelle unité à la liste des unités disponibles
+  addNewUnite() {
+    const newUnite = this.produitForm.get('newUnite')?.value;
+    if (newUnite && !this.uniteOptions.includes(newUnite)) {
+      this.uniteOptions.push(newUnite);
+      this.produitForm.get('unite')?.setValue(newUnite); // Sélectionner la nouvelle unité dans le formulaire
+      this.isNewUniteVisible = false; // Cacher le champ après ajout
     }
+  }
 
+  onRowSelect(Produits: Produits): void {
+    this.selectedProduits = Produits;
+    this.isActionsEnabled = true; // Activer les actions quand une ligne est sélectionnée
+    this.isRowSelected = true; // Lorsque la ligne est sélectionnée, la colonne droite s'affiche
+  }
 
-     // Afficher ou cacher le champ de saisie de nouvelle unité
-    toggleNewUniteField() {
-      this.isNewUniteVisible = !this.isNewUniteVisible;
-    }
+  // Fonction pour fermer la partie des actions (colonne droite)
+  closeActions(): void {
+    this.selectedProduits = null;
+    this.isRowSelected = false; // Fermer la colonne droite en réinitialisant la sélection
+  }
 
-    // Ajouter la nouvelle unité à la liste des unités disponibles
-    addNewUnite() {
-      const newUnite = this.produitForm.get('newUnite')?.value;
-      if (newUnite && !this.uniteOptions.includes(newUnite)) {
-        this.uniteOptions.push(newUnite);
-        this.produitForm.get('unite')?.setValue(newUnite);  // Sélectionner la nouvelle unité dans le formulaire
-        this.isNewUniteVisible = false;  // Cacher le champ après ajout
-      }
-    }
-
-    onRowSelect(Produits: Produits): void {
-      this.selectedProduits = Produits;
-      this.isActionsEnabled = true;  // Activer les actions quand une ligne est sélectionnée
-      this.isRowSelected = true;  // Lorsque la ligne est sélectionnée, la colonne droite s'affiche
-    }
-
-    // Fonction pour fermer la partie des actions (colonne droite)
-    closeActions(): void {
-      this.selectedProduits = null;
-      this.isRowSelected = false;  // Fermer la colonne droite en réinitialisant la sélection
-    }
-
-
-    // Fonction pour appliquer la recherche
+  // Fonction pour appliquer la recherche
   // Fonction de recherche appelée en temps réel à chaque saisie
   onSearch() {
     const searchValue = this.searchTerm.toLowerCase();
@@ -260,10 +259,12 @@ export class CatalogueProduitComponent {
     if (searchValue) {
       this.filteredProducts = this.prods.filter((produit) => {
         // Vérification si le champ `name` ou `city` contient la valeur recherchée
-        return produit.designation?.toLowerCase().includes(searchValue) ||
-               //produit.famille?.toLowerCase().includes(searchValue) ||
-               produit.fournisseurId?.toString().toLowerCase().includes(searchValue)
-              //  produit.magasinId?.toString().toLowerCase().includes(searchValue);
+        return (
+          produit.designation?.toLowerCase().includes(searchValue) ||
+          //produit.famille?.toLowerCase().includes(searchValue) ||
+          produit.fournisseurId?.toString().toLowerCase().includes(searchValue)
+        );
+        //  produit.magasinId?.toString().toLowerCase().includes(searchValue);
       });
     } else {
       // Si aucune recherche, on réinitialise la liste filtrée avec tous les produits
@@ -272,7 +273,7 @@ export class CatalogueProduitComponent {
   }
 
   // Gestion de la recherche
- /*  onSearchChange(): void {
+  /*  onSearchChange(): void {
     this.filteredProducts = this.prods.filter(prod =>
       prod.designation.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
       this.getNomCategorieById(prod.categorieId)?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
@@ -284,36 +285,37 @@ export class CatalogueProduitComponent {
 
   } */
 
-      onSearchChange(): void {
-  
-  const search = normalize(this.searchTerm);
+  onSearchChange(): void {
+    const search = normalize(this.searchTerm);
 
-  this.filteredProducts = this.prods.filter(prod =>
-    normalize(prod.designation).includes(search) ||
-    normalize(this.getNomCategorieById(prod.categorieId)).includes(search) ||
-    normalize(this.getNomUserById(prod.agentId!)).includes(search) ||
-    normalize(prod.unite).includes(search)
-  );
+    this.filteredProducts = this.prods.filter(
+      (prod) =>
+        normalize(prod.designation).includes(search) ||
+        normalize(this.getNomCategorieById(prod.categorieId)).includes(search) ||
+        normalize(this.getNomUserById(prod.agentId!)).includes(search) ||
+        normalize(prod.unite).includes(search),
+    );
 
-  this.currentPage = 1;
-}
-
-min(a: number, b: number): number {
-      return Math.min(a, b);
+    this.currentPage = 1;
   }
-getTotalPages(list: any[]): number {
-  return Math.ceil(list.length / this.itemsPerPage);
-}
+
+  min(a: number, b: number): number {
+    return Math.min(a, b);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getTotalPages(list: any[]): number {
+    return Math.ceil(list.length / this.itemsPerPage);
+  }
   afficherFormCategorie() {
-    this.ajoutCategorie = !this.ajoutCategorie;  // Inverse l'état de la variable
+    this.ajoutCategorie = !this.ajoutCategorie; // Inverse l'état de la variable
   }
 
   saveFormCategorie() {
-    this.ajoutCategorie = !this.ajoutCategorie;  // Inverse l'état de la variable
+    this.ajoutCategorie = !this.ajoutCategorie; // Inverse l'état de la variable
   }
 
-   // Méthode pour rafraîchir ou réinitialiser le tableau
-   rafraichirTableau(): void {
+  // Méthode pour rafraîchir ou réinitialiser le tableau
+  rafraichirTableau(): void {
     //this.tableau = [...this.tableau];  // Utilisation d'un nouveau tableau pour forcer Angular à détecter le changement
   }
 
@@ -322,119 +324,115 @@ getTotalPages(list: any[]): number {
     //this.chargerDonnees();  // Recharger les données depuis l'API
   }
 
-    // Pagination sur les produits filtrés
-    get paginatedProducts(): Produits[] {
-      const start = (this.currentPage - 1) * this.itemsPerPage;
-      const paginated = this.filteredProducts.slice(start, start + this.itemsPerPage);
-      /*console.log('Paginated Products:', paginated); // Log pour vérifier la pagination
+  // Pagination sur les produits filtrés
+  get paginatedProducts(): Produits[] {
+    const start = (this.currentPage - 1) * this.itemsPerPage;
+    //const paginated = this.filteredProducts.slice(start, start + this.itemsPerPage);
+    /*console.log('Paginated Products:', paginated); // Log pour vérifier la pagination
       console.log('Search Value:', this.searchForm.get('searchText')?.value.toLowerCase());
       console.log('Search By:', this.searchForm.get('searchBy')?.value); */
-      return this.filteredProducts.slice(start, start + this.itemsPerPage);
+    return this.filteredProducts.slice(start, start + this.itemsPerPage);
+  }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onRowsPerPageChange(event: any) {
+    this.itemsPerPage = Number(event.target.value);
+
+    // Réinitialiser les pages à 1 pour éviter un problème d'affichage
+    this.currentPage = 1;
+
+    this.cdr.detectChanges(); // Forcer la mise à jour de la vue
+  }
+  // Gérer le changement de page
+  onPageChange(page: number): void {
+    this.currentPage = page;
+  }
+
+  // Actions sur le Produits sélectionné (par exemple: ajouter, modifier, etc.)
+  onAction(action: string): void {
+    // Si l'action est "ajouter", on réinitialise actionType à "ajouter"
+    if (action === 'ajouter') {
+      this.actionType = 'ajouter';
+      this.selectedProduits = null; // S'assurer qu'aucun produit n'est sélectionné
+    } else {
+      this.actionType = action; // On garde l'action sélectionnée
     }
+    if (this.selectedProduits) {
+      //console.log(`${action} Produits:`, this.selectedProduits);
+      if (this.actionType === 'modifier') {
+        // On charge les informations du produit sélectionné dans le formulaire
+        this.produitForm.patchValue({
+          id: this.selectedProduits.id, // Remplir l'ID du produit
+          categorieId: this.selectedProduits.categorieId, // Remplir la famille
+          designation: this.selectedProduits.designation, // Remplir la désignation
+          fournisseurId: this.selectedProduits.fournisseurId, // Remplir le fournisseur
+          codeBarre: this.selectedProduits.codeBarre,
+          // magasin: this.selectedProduits.magasinId,  // Remplir le magasin
+          // quantite: this.selectedProduits.quantite,  // Remplir la quantité
+          //type_entree: '',  // Réinitialiser si nécessaire (selon votre logique)
+          //type_sortie: '',  // Réinitialiser si nécessaire (selon votre logique)
+          prixAchatUnitaire: this.selectedProduits.prixAchatUnitaire, // Remplir prix d'achat unitaire
+          prixVenteUnitaire: this.selectedProduits.prixVenteUnitaire, // Remplir prix de vente unitaire
+          description: this.selectedProduits.description, // Remplir la description
+          perissable: String(this.selectedProduits.perissable),
+        });
 
-    onRowsPerPageChange(event: any) {
-      this.itemsPerPage = Number(event.target.value);
+        // Récupération du fichier image distant et conversion en File
+        if (this.selectedProduits.image) {
+          this.logoPreview = this.selectedProduits.image || './assets/images/default-structure.png';
+          this.imageFilename = this.extractFilenameFromUrl(this.selectedProduits.image);
 
-      // Réinitialiser les pages à 1 pour éviter un problème d'affichage
-      this.currentPage = 1;
-
-      this.cdr.detectChanges(); // Forcer la mise à jour de la vue
-    }
-    // Gérer le changement de page
-    onPageChange(page: number): void {
-      this.currentPage = page;
-    }
-
-    // Actions sur le Produits sélectionné (par exemple: ajouter, modifier, etc.)
-    onAction(action: string): void {
-      // Si l'action est "ajouter", on réinitialise actionType à "ajouter"
-      if (action === 'ajouter') {
-        this.actionType = 'ajouter';
-        this.selectedProduits = null;  // S'assurer qu'aucun produit n'est sélectionné
-      } 
-      else {
-        this.actionType = action;  // On garde l'action sélectionnée
-      }
-      if (this.selectedProduits) {
-        //console.log(`${action} Produits:`, this.selectedProduits);
-        if (this.actionType === "modifier") {
-          // On charge les informations du produit sélectionné dans le formulaire
-          this.produitForm.patchValue({
-            id: this.selectedProduits.id,  // Remplir l'ID du produit
-            categorieId: this.selectedProduits.categorieId,  // Remplir la famille
-            designation: this.selectedProduits.designation,  // Remplir la désignation
-            fournisseurId: this.selectedProduits.fournisseurId,  // Remplir le fournisseur
-            codeBarre:this.selectedProduits.codeBarre,
-            // magasin: this.selectedProduits.magasinId,  // Remplir le magasin
-            // quantite: this.selectedProduits.quantite,  // Remplir la quantité
-            //type_entree: '',  // Réinitialiser si nécessaire (selon votre logique)
-            //type_sortie: '',  // Réinitialiser si nécessaire (selon votre logique)
-            prixAchatUnitaire: this.selectedProduits.prixAchatUnitaire,  // Remplir prix d'achat unitaire
-            prixVenteUnitaire: this.selectedProduits.prixVenteUnitaire,  // Remplir prix de vente unitaire
-            description: this.selectedProduits.description,  // Remplir la description
-            perissable:String(this.selectedProduits.perissable)
-          });
-          
-          // Récupération du fichier image distant et conversion en File
-          if (this.selectedProduits.image) {
-             this.logoPreview = this.selectedProduits.image || './assets/images/default-structure.png';
-            this.imageFilename = this.extractFilenameFromUrl(this.selectedProduits.image);
-
-            this.urlToFile(this.selectedProduits.image, 'produit-image.png', 'image/png').then((file) => {
+          this.urlToFile(this.selectedProduits.image, 'produit-image.png', 'image/png').then(
+            (file) => {
               this.selectedImageFile = file;
-            });
+            },
+          );
+        }
 
-          }
-         
-          // Ouvrir la modal après avoir pré-rempli les champs avec les données du produit
-          this.openModal(this.actionType,this.selectedProduits);
-        }
-        // Si l'action est "entree" ou "sortie", réinitialiser certains champs pour ces actions
-        else if (this.actionType === "entree" || this.actionType === "sortie") {
-          // Réinitialiser uniquement les champs spécifiques pour l'entrée ou la sortie
-          this.produitForm.patchValue({
-            fournisseur: '',        // Réinitialiser le champ fournisseur
-            magasin: '',           // Réinitialiser le champ magasin
-            quantite: 0,           // Réinitialiser la quantité
-            type_entree: action === 'entree' ? '' : null,  // Réinitialiser type_entree si action est 'entree'
-            type_sortie: action === 'sortie' ? '' : null,  // Réinitialiser type_sortie si action est 'sortie'
-            prixAchatUnitaire: 0,  // Réinitialiser le prix d'achat unitaire
-            prixVenteUnitaire: 0,  // Réinitialiser le prix de vente unitaire
-            description: ''        // Réinitialiser la description
-          });
+        // Ouvrir la modal après avoir pré-rempli les champs avec les données du produit
+        this.openModal(this.actionType, this.selectedProduits);
+      }
+      // Si l'action est "entree" ou "sortie", réinitialiser certains champs pour ces actions
+      else if (this.actionType === 'entree' || this.actionType === 'sortie') {
+        // Réinitialiser uniquement les champs spécifiques pour l'entrée ou la sortie
+        this.produitForm.patchValue({
+          fournisseur: '', // Réinitialiser le champ fournisseur
+          magasin: '', // Réinitialiser le champ magasin
+          quantite: 0, // Réinitialiser la quantité
+          type_entree: action === 'entree' ? '' : null, // Réinitialiser type_entree si action est 'entree'
+          type_sortie: action === 'sortie' ? '' : null, // Réinitialiser type_sortie si action est 'sortie'
+          prixAchatUnitaire: 0, // Réinitialiser le prix d'achat unitaire
+          prixVenteUnitaire: 0, // Réinitialiser le prix de vente unitaire
+          description: '', // Réinitialiser la description
+        });
 
-          // Ouvrir la modal pour l'action entrée ou sortie
-          this.openModal(this.actionType,this.selectedProduits);
-        }
-        else if (this.actionType === "statut") {
-          console.log(this.actionType);
-          this.selectedProduits.statut = !this.selectedProduits.statut;
-          this.toggleProduitStatus(this.selectedProduits,this.selectedProduits.statut)
-        }
-        else {
-          //console.log(`${action} Produit:`, this.selectedProduits);
-          /* if(this.actionType === "code-barre"){
+        // Ouvrir la modal pour l'action entrée ou sortie
+        this.openModal(this.actionType, this.selectedProduits);
+      } else if (this.actionType === 'statut') {
+        console.log(this.actionType);
+        this.selectedProduits.statut = !this.selectedProduits.statut;
+        this.toggleProduitStatus(this.selectedProduits, this.selectedProduits.statut);
+      } else {
+        //console.log(`${action} Produit:`, this.selectedProduits);
+        /* if(this.actionType === "code-barre"){
               this.generateBarcode();
           } */
-          this.openModal(this.actionType,this.selectedProduits);
-        }
-
+        this.openModal(this.actionType, this.selectedProduits);
       }
-      else {
-        this.selectedProduits = null;
-        this.actionType = 'ajouter';  // On s'assure que l'actionType est bien 'ajouter' pour "Nouveau produit"
-        this.openModal(this.actionType);  // Ouvrir la modal pour un nouveau produit sans produit sélectionné
-      }
+    } else {
+      this.selectedProduits = null;
+      this.actionType = 'ajouter'; // On s'assure que l'actionType est bien 'ajouter' pour "Nouveau produit"
+      this.openModal(this.actionType); // Ouvrir la modal pour un nouveau produit sans produit sélectionné
     }
+  }
 
-     async urlToFile(url: string, filename: string, mimeType: string): Promise<File> {
-        return fetch(url)
-          .then(res => res.blob())
-          .then(blob => new File([blob], filename, { type: mimeType }));
-    }
+  async urlToFile(url: string, filename: string, mimeType: string): Promise<File> {
+    return fetch(url)
+      .then((res) => res.blob())
+      .then((blob) => new File([blob], filename, { type: mimeType }));
+  }
 
- // Fonction pour obtenir l'ID du modal en fonction de l'action
+  // Fonction pour obtenir l'ID du modal en fonction de l'action
   getModalId(action: string): string {
     switch (action) {
       case 'ajouter':
@@ -453,54 +451,53 @@ getTotalPages(list: any[]): number {
     }
   }
 
-    openModal(act: string, produit?: any): void {
-      //this.actionType ="ajouter"
-      /* if (produit) {
+  openModal(act: string, produit?: Produits): void {
+    //this.actionType ="ajouter"
+    /* if (produit) {
         this.produitForm.patchValue(produit);
       } else {
         this.produitForm.reset();
       } */
-     // Mettre à jour le texte du bouton avant d'ouvrir la modal
-        console.log('Texte du bouton:', this.getButtonLabel()); // Vérifiez ici si la valeur est correcte
-        if (produit) {
-          if (this.actionType === 'ajouter') {
-            this.produitForm.reset();
-            console.log('Texte du bouton bis:', this.getButtonLabel()); // Vérifiez ici si la valeur est correcte
-          }
-          else {
-            this.produitForm.patchValue({
-              // On charge les valeurs de certains champs comme la famille, designation, etc.
-              categorieId: produit.categorieId,
-              designation: produit.designation,
-              unite: produit.unite
-              // On peut laisser d'autres champs comme fournisseur, magasin, etc. réinitialisés
-            });
-          }
-        }
-        else {
-          this.actionType = 'ajouter'
-          console.log('Texte du bouton bis:', this.getButtonLabel()); // Vérifiez ici si la valeur est correcte
-          this.produitForm.reset();
-        }
-
-        const modalIdentifiant = this.getModalId(act);
-      // Manipulation du DOM pour afficher la modal
-      const modalElement = document.getElementById(modalIdentifiant);
-      if (modalElement) {
-        const modal = new (window as any).bootstrap.Modal(modalElement);
-        modal.show();
+    // Mettre à jour le texte du bouton avant d'ouvrir la modal
+    console.log('Texte du bouton:', this.getButtonLabel()); // Vérifiez ici si la valeur est correcte
+    if (produit) {
+      if (this.actionType === 'ajouter') {
+        this.produitForm.reset();
+        console.log('Texte du bouton bis:', this.getButtonLabel()); // Vérifiez ici si la valeur est correcte
+      } else {
+        this.produitForm.patchValue({
+          // On charge les valeurs de certains champs comme la famille, designation, etc.
+          categorieId: produit.categorieId,
+          designation: produit.designation,
+          unite: produit.unite,
+          // On peut laisser d'autres champs comme fournisseur, magasin, etc. réinitialisés
+        });
       }
-    } 
-
-    onSubmit(): void {
-      if (this.produitForm.valid) {
-        const produit = this.produitForm.value;
-        console.log('Produit soumis:', produit);
-        this.closeModal(this.actionType);
-      }
+    } else {
+      this.actionType = 'ajouter';
+      console.log('Texte du bouton bis:', this.getButtonLabel()); // Vérifiez ici si la valeur est correcte
+      this.produitForm.reset();
     }
 
-    onSubmitCategorie(): void {
+    const modalIdentifiant = this.getModalId(act);
+    // Manipulation du DOM pour afficher la modal
+    const modalElement = document.getElementById(modalIdentifiant);
+    if (modalElement) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const modal = new (window as any).bootstrap.Modal(modalElement);
+      modal.show();
+    }
+  }
+
+  onSubmit(): void {
+    if (this.produitForm.valid) {
+      const produit = this.produitForm.value;
+      console.log('Produit soumis:', produit);
+      this.closeModal(this.actionType);
+    }
+  }
+
+  onSubmitCategorie(): void {
     if (this.categorieForm.invalid) {
       this.toastr.warning('Veuillez remplir le nom de la catégorie');
       return;
@@ -510,12 +507,12 @@ getTotalPages(list: any[]): number {
     const categorieData: CategorieProduits = {
       nom: formValue.nom,
       description: formValue.description,
-      code_structure:this.code_structure, //this.authService.getUserStructure()
-      statut:formValue.statut
+      code_structure: this.code_structure, //this.authService.getUserStructure()
+      statut: formValue.statut,
     };
 
-    console.log(this.categorieForm.get('code_structure')?.value)
-    console.log(categorieData)
+    console.log(this.categorieForm.get('code_structure')?.value);
+    console.log(categorieData);
 
     this.produitsServices.createCategorie(categorieData).subscribe({
       next: () => {
@@ -528,12 +525,12 @@ getTotalPages(list: any[]): number {
         this.errorMessage = err.error?.message || 'Erreur lors de la création de la catégorie';
         this.toastr.error(this.errorMessage);
         console.error(err);
-      }
+      },
     });
   }
-loadCategories(): void {
+  loadCategories(): void {
     //onst code_structure = this.authService.getUserStructure();
-    this.isLoading = true; 
+    this.isLoading = true;
     this.produitsServices.getAllCategoriesProduits(this.code_structure).subscribe({
       next: (data) => {
         this.isLoading = false;
@@ -545,13 +542,13 @@ loadCategories(): void {
         this.isLoading = false;
         //this.toastr.error('Erreur lors du chargement des catégories');
         console.error(err);
-      }
+      },
     });
   }
 
   loadFournisseurs(): void {
     //onst code_structure = this.authService.getUserStructure();
-    this.isLoading = true; 
+    this.isLoading = true;
     this.fournisseurService.getFournisseursByStructure(this.code_structure).subscribe({
       next: (data) => {
         this.isLoading = false;
@@ -563,7 +560,7 @@ loadCategories(): void {
         this.isLoading = false;
         //this.toastr.error('Erreur lors du chargement des catégories');
         console.error(err);
-      }
+      },
     });
   }
 
@@ -592,23 +589,22 @@ loadCategories(): void {
       this.userService.getByStructure(this.code_structure),
       this.produitsServices.getAllProduits(this.code_structure),
       //this.isGeneralAdmin ? this.structureService.getAll() : of([])
-      this.stockService.getStocksByStructure(this.code_structure)
-    ]).pipe(
-      finalize(() => this.isLoading = false)
-    ).subscribe({
-      next: ([users, produits, stocks]) => {
-        this.users = users;
-        this.stock = stocks;
-        this.prods = produits;
-        this.filteredProducts = [...this.prods];
-      },
-      error: (err) => console.error('Erreur chargement données', err)
-    });
+      this.stockService.getStocksByStructure(this.code_structure),
+    ])
+      .pipe(finalize(() => (this.isLoading = false)))
+      .subscribe({
+        next: ([users, produits, stocks]) => {
+          this.users = users;
+          this.stock = stocks;
+          this.prods = produits;
+          this.filteredProducts = [...this.prods];
+        },
+        error: (err) => console.error('Erreur chargement données', err),
+      });
   }
-  
 
-    // Fermer la modal en manipulant le DOM
-    /* closeModal(act: string): void {
+  // Fermer la modal en manipulant le DOM
+  /* closeModal(act: string): void {
       const modalIdentifiant = this.getModalId(act);
       console.log('Identifiant généré pour la modal:', modalIdentifiant);
 
@@ -649,7 +645,7 @@ loadCategories(): void {
     }
  */
 
-/* closeModal(act: string): void {
+  /* closeModal(act: string): void {
   const modalIdentifiant = this.getModalId(act);
   const modalElement = document.getElementById(modalIdentifiant);
 
@@ -671,37 +667,39 @@ loadCategories(): void {
 } */
 
   closeModal(act: string): void {
-  const modalIdentifiant = this.getModalId(act);
-  console.log('[closeModal] ID généré pour la modal :', modalIdentifiant);
+    const modalIdentifiant = this.getModalId(act);
+    console.log('[closeModal] ID généré pour la modal :', modalIdentifiant);
 
-  const modalElement = document.getElementById(modalIdentifiant);
-  console.log('[closeModal] Élément DOM récupéré :', modalElement);
+    const modalElement = document.getElementById(modalIdentifiant);
+    console.log('[closeModal] Élément DOM récupéré :', modalElement);
 
-  if (modalElement) {
-    // Vérifier si une instance Bootstrap existe déjà
-    const bootstrapModal = (window as any).bootstrap.Modal.getInstance(modalElement);
-    console.log('[closeModal] Instance Bootstrap récupérée :', bootstrapModal);
+    if (modalElement) {
+      // Vérifier si une instance Bootstrap existe déjà
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const bootstrapModal = (window as any).bootstrap.Modal.getInstance(modalElement);
+      console.log('[closeModal] Instance Bootstrap récupérée :', bootstrapModal);
 
-    if (bootstrapModal) {
-      console.log('[closeModal] L’instance Bootstrap existe déjà, appel de hide()');
-      bootstrapModal.hide();
+      if (bootstrapModal) {
+        console.log('[closeModal] L’instance Bootstrap existe déjà, appel de hide()');
+        bootstrapModal.hide();
+      } else {
+        console.warn(
+          '[closeModal] Aucune instance Bootstrap trouvée, tentative de création manuelle',
+        );
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const modal = new (window as any).bootstrap.Modal(modalElement);
+        modal.hide();
+        console.log('[closeModal] Modal créée et masquée via hide()');
+      }
+
+      // Facultatif : afficher les classes encore présentes
+      console.log('[closeModal] Classes DOM restantes :', modalElement.className);
     } else {
-      console.warn('[closeModal] Aucune instance Bootstrap trouvée, tentative de création manuelle');
-      const modal = new (window as any).bootstrap.Modal(modalElement);
-      modal.hide();
-      console.log('[closeModal] Modal créée et masquée via hide()');
+      console.error('[closeModal] Modal introuvable dans le DOM pour l’action :', act);
     }
-
-    // Facultatif : afficher les classes encore présentes
-    console.log('[closeModal] Classes DOM restantes :', modalElement.className);
-  } else {
-    console.error('[closeModal] Modal introuvable dans le DOM pour l’action :', act);
   }
-}
 
-
-
-    // Fonction pour obtenir le texte du bouton en fonction de l'action
+  // Fonction pour obtenir le texte du bouton en fonction de l'action
   getButtonLabel(): string {
     switch (this.actionType) {
       case 'ajouter':
@@ -709,7 +707,7 @@ loadCategories(): void {
       case 'modifier':
         return 'Mettre à jour le produit';
       case 'entree':
-        return 'Enregistrer l\'entrée';
+        return "Enregistrer l'entrée";
       case 'sortie':
         return 'Enregistrer la sortie';
       default:
@@ -721,13 +719,13 @@ loadCategories(): void {
   getModalTitle(): string {
     switch (this.actionType) {
       case 'ajouter':
-        return 'Ajout d\'un nouveau produit';
+        return "Ajout d'un nouveau produit";
       case 'modifier':
-        return 'Modification d\'un produit';
+        return "Modification d'un produit";
       case 'entree':
-        return 'Enregistrement d\'une nouvelle entrée';
+        return "Enregistrement d'une nouvelle entrée";
       case 'sortie':
-        return 'Enregistrement d\'une nouvelle sortie';
+        return "Enregistrement d'une nouvelle sortie";
       default:
         return 'Ajouter le produit';
     }
@@ -764,44 +762,45 @@ loadCategories(): void {
       const modalInstance = new (window as any).bootstrap.Modal.getInstance(modal);
       modalInstance.hide(); */
     }
-    }
-    saveImage() {
-      if (this.selectedProduits && this.selectedImage) {
-        // Logique pour envoyer l'image à un serveur ou la sauvegarder localement
-        //const formData = new FormData();
-        //formData.append('image', this.selectedImage);
-        this.isLoading = true;
-        // Remplacer l'URL par celle de ton serveur backend pour gérer l'image
-        this.produitsServices.updateImageProduit(this.selectedProduits.id, this.selectedImage).pipe(
-            finalize(() => this.isLoading = false)
-          )
+  }
+  saveImage() {
+    if (this.selectedProduits && this.selectedImage) {
+      // Logique pour envoyer l'image à un serveur ou la sauvegarder localement
+      //const formData = new FormData();
+      //formData.append('image', this.selectedImage);
+      this.isLoading = true;
+      // Remplacer l'URL par celle de ton serveur backend pour gérer l'image
+      this.produitsServices
+        .updateImageProduit(this.selectedProduits.id, this.selectedImage)
+        .pipe(finalize(() => (this.isLoading = false)))
         .subscribe({
-          next:() =>{
+          next: () => {
             this.toastr.success('Image produit mis à jour avec succès');
             this.loadData();
             this.isRowSelected = false;
-            this.closeModal(this.actionType)
+            this.closeModal(this.actionType);
           },
-          error:(err) =>{
-            this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour de l\'image du produit';
+          error: (err) => {
+            this.errorMessage =
+              err.error?.message || "Erreur lors de la mise à jour de l'image du produit";
             this.toastr.error(this.errorMessage);
-          }
+          },
         });
 
-        // Fermer la modal après avoir associé l'image
-        /* const modal = document.getElementById('imageModal') as HTMLElement;
+      // Fermer la modal après avoir associé l'image
+      /* const modal = document.getElementById('imageModal') as HTMLElement;
         const modalInstance =  new (window as any).bootstrap.Modal.getInstance(modal);
         modalInstance.hide(); */
-      }
     }
-    onImageSelected($event: Event) {
-      const input = $event.target as HTMLInputElement;
-      if (input?.files?.length) {
-        this.selectedImage = input.files[0];
-        console.log('Image sélectionnée', this.selectedImage);
-      }
+  }
+  onImageSelected($event: Event) {
+    const input = $event.target as HTMLInputElement;
+    if (input?.files?.length) {
+      this.selectedImage = input.files[0];
+      console.log('Image sélectionnée', this.selectedImage);
     }
-    /* generateBarcode() {
+  }
+  /* generateBarcode() {
       if (this.selectedProduits) {
         const barcodeValue = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15); // Génère une chaîne aléatoire
         // Sélectionner l'élément HTML où le code-barres sera affiché
@@ -835,50 +834,50 @@ loadCategories(): void {
     const barcodeElement = document.getElementById('barcode') as HTMLCanvasElement;
     if (barcodeElement) {
       JsBarcode(barcodeElement, barcodeValue, {
-        format: "EAN13",
+        format: 'EAN13',
         width: 2,
         height: 100,
         displayValue: true,
-        fontSize: 18
+        fontSize: 18,
       });
     }
 
     if (this.selectedProduits) {
       this.codeBarre = barcodeValue;
-       this.barcodeGenerated = true; //Active le bouton "Imprimer"
+      this.barcodeGenerated = true; //Active le bouton "Imprimer"
       console.log('Code barre généré (modification) :', this.codeBarre);
     } else {
       this.produitForm.patchValue({ codeBarre: barcodeValue });
       console.log('Code barre généré (ajout) :', barcodeValue);
     }
-}
-
-generateNumericBarcode(length: number): string {
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += Math.floor(Math.random() * 10);
   }
-  return result;
-}
 
-calculateEAN13Checksum(code: string): string {
-  const digits = code.split('').map(Number);
-  let sum = 0;
-  for (let i = 0; i < digits.length; i++) {
-    sum += digits[i] * (i % 2 === 0 ? 1 : 3);
+  generateNumericBarcode(length: number): string {
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      result += Math.floor(Math.random() * 10);
+    }
+    return result;
   }
-  const remainder = sum % 10;
-  const checksum = remainder === 0 ? 0 : 10 - remainder;
-  return String(checksum);
-}
 
-imprimer() {
-  const canvas: HTMLCanvasElement = document.getElementById('barcode') as HTMLCanvasElement;
+  calculateEAN13Checksum(code: string): string {
+    const digits = code.split('').map(Number);
+    let sum = 0;
+    for (let i = 0; i < digits.length; i++) {
+      sum += digits[i] * (i % 2 === 0 ? 1 : 3);
+    }
+    const remainder = sum % 10;
+    const checksum = remainder === 0 ? 0 : 10 - remainder;
+    return String(checksum);
+  }
 
-  if (!canvas) return;
+  imprimer() {
+    const canvas: HTMLCanvasElement = document.getElementById('barcode') as HTMLCanvasElement;
 
-  const dataUrl = canvas.toDataURL(); // convertit le canvas en image base64
-  const windowContent = `
+    if (!canvas) return;
+
+    const dataUrl = canvas.toDataURL(); // convertit le canvas en image base64
+    const windowContent = `
     <html>
       <head>
         <title>Impression du code-barres</title>
@@ -889,180 +888,180 @@ imprimer() {
     </html>
   `;
 
-  const printWindow = window.open('', '_blank');
-  if (printWindow) {
-    printWindow.document.open();
-    printWindow.document.write(windowContent);
-    printWindow.document.close();
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.open();
+      printWindow.document.write(windowContent);
+      printWindow.document.close();
+    }
   }
-}
-
-
 
   //...............................................................................................
 
-    // Méthode pour ouvrir le modal
+  // Méthode pour ouvrir le modal
   openCategoriesModal() {
-      // Charger les catégories avant d'ouvrir le modal
-      this.loadCategories();
-      
-      // Ouvrir le modal avec Bootstrap
-      const modal = new (window as any).bootstrap.Modal(document.getElementById('categoriesModal'));
-      modal.show();
+    // Charger les catégories avant d'ouvrir le modal
+    this.loadCategories();
+
+    // Ouvrir le modal avec Bootstrap
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const modal = new (window as any).bootstrap.Modal(document.getElementById('categoriesModal'));
+    modal.show();
   }
 
   // Méthodes pour les actions
-  editCategorie(categorie: any) {
-      // Pré-remplir le formulaire avec les données de la catégorie
-      this.categorieForm.patchValue({
-          nom: categorie.nom,
-          description: categorie.description,
-          statut:categorie.statut,
-          code_structure:categorie.code_structure
-      });
-      // Fermer le modal
-      //const modal = new (window as any).bootstrap.Modal.getInstance(document.getElementById('categoriesModal'));
-      //modal.hide();
+  editCategorie(categorie: CategorieProduits) {
+    // Pré-remplir le formulaire avec les données de la catégorie
+    this.categorieForm.patchValue({
+      nom: categorie.description,
+      description: categorie.description,
+      statut: categorie.statut,
+      code_structure: categorie.code_structure,
+    });
+    // Fermer le modal
+    //const modal = new (window as any).bootstrap.Modal.getInstance(document.getElementById('categoriesModal'));
+    //modal.hide();
   }
 
-  toggleCategorieStatus(categorie: any) {
-      // Implémentez la logique pour activer/désactiver
-      this.isLoading = true;
-      const newStatus = !categorie.statut;
-      this.produitsServices.updateStatutCategorie(categorie.id,newStatus).pipe(
-            finalize(() => this.isLoading = false)
-          )
+  toggleCategorieStatus(categorie: CategorieProduits) {
+    // Implémentez la logique pour activer/désactiver
+    this.isLoading = true;
+    const newStatus = !categorie.statut;
+    this.produitsServices
+      .updateStatutCategorie(categorie.id!, newStatus)
+      .pipe(finalize(() => (this.isLoading = false)))
       .subscribe({
-        next:() =>{
-              this.toastr.success('Statut catégorie mis à jour avec succès');
-              this.loadCategories();
+        next: () => {
+          this.toastr.success('Statut catégorie mis à jour avec succès');
+          this.loadCategories();
         },
-        error:(err) => {
-           this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour du statut de la catégorie';
+        error: (err) => {
+          this.errorMessage =
+            err.error?.message || 'Erreur lors de la mise à jour du statut de la catégorie';
           this.toastr.error(this.errorMessage);
           //console.error(err);
-        }
+        },
       });
   }
 
-  toggleProduitStatus(prod: Produits, status:boolean) {
-      // Implémentez la logique pour activer/désactiver
-      this.isLoading = true;
-      this.produitsServices.updateStatusProduit(prod.id,status).pipe(
-            finalize(() => this.isLoading = false)
-          )
+  toggleProduitStatus(prod: Produits, status: boolean) {
+    // Implémentez la logique pour activer/désactiver
+    this.isLoading = true;
+    this.produitsServices
+      .updateStatusProduit(prod.id, status)
+      .pipe(finalize(() => (this.isLoading = false)))
       .subscribe({
-        next:() =>{
-              this.toastr.success('Statut produit mis à jour avec succès');
-              this.loadData();
-              //this.isRowSelected = false;
+        next: () => {
+          this.toastr.success('Statut produit mis à jour avec succès');
+          this.loadData();
+          //this.isRowSelected = false;
         },
-        error:(err) => {
-           this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour du statut du produit';
+        error: (err) => {
+          this.errorMessage =
+            err.error?.message || 'Erreur lors de la mise à jour du statut du produit';
           this.toastr.error(this.errorMessage, err);
           //console.error(err);
-        }
+        },
       });
   }
 
-  toggleProduitCodeBarre(prod: Produits, status:boolean) {
-      // Implémentez la logique pour activer/désactiver
-      this.isLoading = true;
-      this.produitsServices.updateStatusProduit(prod.id,status).pipe(
-            finalize(() => this.isLoading = false)
-          )
+  toggleProduitCodeBarre(prod: Produits, status: boolean) {
+    // Implémentez la logique pour activer/désactiver
+    this.isLoading = true;
+    this.produitsServices
+      .updateStatusProduit(prod.id, status)
+      .pipe(finalize(() => (this.isLoading = false)))
       .subscribe({
-        next:() =>{
-              this.toastr.success('Statut produit mis à jour avec succès');
-              this.loadData();
+        next: () => {
+          this.toastr.success('Statut produit mis à jour avec succès');
+          this.loadData();
         },
-        error:(err) => {
-           this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour du statut du produit';
+        error: (err) => {
+          this.errorMessage =
+            err.error?.message || 'Erreur lors de la mise à jour du statut du produit';
           this.toastr.error(this.errorMessage, err);
           //console.error(err);
-        }
+        },
       });
   }
 
   mettreAJourCodeBarre() {
-  if (!this.selectedProduits || !this.selectedProduits.id) return;
+    if (!this.selectedProduits || !this.selectedProduits.id) return;
 
-  const nouveauCodeBarre = this.codeBarre;
+    const nouveauCodeBarre = this.codeBarre;
 
-  if (!nouveauCodeBarre || nouveauCodeBarre.trim() === '') {
-    this.toastr.error("Veuillez saisir un code-barre.");
-    return;
+    if (!nouveauCodeBarre || nouveauCodeBarre.trim() === '') {
+      this.toastr.error('Veuillez saisir un code-barre.');
+      return;
+    }
+    this.isLoading = true;
+    this.produitsServices
+      .updateCodeBarre(this.selectedProduits.id, nouveauCodeBarre)
+      .pipe(finalize(() => (this.isLoading = false)))
+      .subscribe({
+        next: () => {
+          this.toastr.success('Code-barre mis à jour !');
+          // Recharger les données ou mettre à jour localement si besoin
+          this.impressionBarcode = true;
+          this.loadData();
+          this.isRowSelected = false;
+        },
+        error: (err) => {
+          this.toastr.error(err.error.message || 'Erreur lors de la mise à jour');
+        },
+      });
   }
-  this.isLoading = true;
-  this.produitsServices.updateCodeBarre(this.selectedProduits.id, nouveauCodeBarre).pipe(
-            finalize(() => this.isLoading = false)
-          )
-    .subscribe({
-      next: (res) => {
-        this.toastr.success("Code-barre mis à jour !");
-        // Recharger les données ou mettre à jour localement si besoin
-        this.impressionBarcode = true;
-        this.loadData();
-        this.isRowSelected = false;
-
-      },
-      error: (err) => {
-        this.toastr.error(err.error.message || "Erreur lors de la mise à jour");
-      }
-    });
-}
-
 
   deleteCategorie(id: number) {
     this.isLoading = true;
-      // Confirmation avant suppression
-      if(confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?')) {
-        this.produitsServices.deleteCategorie(id).pipe(
-      finalize(() => this.isLoading = false)
-    )
+    // Confirmation avant suppression
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?')) {
+      this.produitsServices
+        .deleteCategorie(id)
+        .pipe(finalize(() => (this.isLoading = false)))
         .subscribe({
-
-           next:() =>{
-              this.toastr.success('Catégore supprimée avec succès');
-              this.loadCategories();
-        },
-        error:(err) => {
-           this.errorMessage = err.error?.message || 'Erreur lors de la suppression de la catégorie';
+          next: () => {
+            this.toastr.success('Catégore supprimée avec succès');
+            this.loadCategories();
+          },
+          error: (err) => {
+            this.errorMessage =
+              err.error?.message || 'Erreur lors de la suppression de la catégorie';
             this.toastr.error(this.errorMessage);
-          //console.error(err);
-        }
+            //console.error(err);
+          },
         });
-      }
+    }
   }
 
-  editCategorieBis(categorie: any) {
-  this.editingCategorieId = categorie.id;
-  this.editedCategorie = { ...categorie }; // On fait une copie pour ne pas modifier directement l'objet original
-}
+  editCategorieBis(categorie: CategorieProduits) {
+    this.editingCategorieId = categorie.id!;
+    this.editedCategorie = { ...categorie }; // On fait une copie pour ne pas modifier directement l'objet original
+  }
 
-cancelEdit() {
-  this.editingCategorieId = null;
-  this.editedCategorie = {};
-}
+  cancelEdit() {
+    this.editingCategorieId = null;
+    this.editedCategorie = {};
+  }
 
-saveCategorieEdit() {
-  // Appel à ton service pour faire la mise à jour :
-  this.produitsServices.updateCategorie(this.editedCategorie.id, this.editedCategorie).subscribe({
-    next: (updated) => {
-      this.toastr.success('Catégore mis à jour avec succès');
-      this.loadCategories();
-      this.cancelEdit();
-    },
-    error: (err) => {
-      this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour de la catégorie';
-      this.toastr.error(this.errorMessage);
-      console.error("Erreur de mise à jour :", err);
-      this.cancelEdit();
-    }
-  });
-}
+  saveCategorieEdit() {
+    // Appel à ton service pour faire la mise à jour :
+    this.produitsServices.updateCategorie(this.editedCategorie.id, this.editedCategorie).subscribe({
+      next: () => {
+        this.toastr.success('Catégore mis à jour avec succès');
+        this.loadCategories();
+        this.cancelEdit();
+      },
+      error: (err) => {
+        this.errorMessage = err.error?.message || 'Erreur lors de la mise à jour de la catégorie';
+        this.toastr.error(this.errorMessage);
+        console.error('Erreur de mise à jour :', err);
+        this.cancelEdit();
+      },
+    });
+  }
 
-/* onSubmitWithStock() {
+  /* onSubmitWithStock() {
   if (this.produitForm.invalid || this.stockForm.invalid) {
     return;
   }
@@ -1128,36 +1127,35 @@ saveCategorieEdit() {
 }
  */
 
-onSubmitWithStock() {
-  if (this.produitForm.invalid || (this.stockForm && this.stockForm.invalid)) {
-    this.toastr.error('Veuillez remplir tous les champs requis.');
-    return;
-  }
-
-  const produitData = this.produitForm.value;
-  
-
-  const formData = new FormData();
-
-  // Ajouter les champs du formulaire produit
-  Object.keys(produitData).forEach((key) => {
-    const value = produitData[key];
-    if (value !== null && value !== undefined) {
-      formData.append(key, String(value));
+  onSubmitWithStock() {
+    if (this.produitForm.invalid || (this.stockForm && this.stockForm.invalid)) {
+      this.toastr.error('Veuillez remplir tous les champs requis.');
+      return;
     }
-  });
 
-  // Champs additionnels nécessaires
-  formData.append('code_structure', this.code_structure);
-  formData.append('agentId', String(this.agentId));
-  //formData.append('codeBarre', this.codeBarre);
+    const produitData = this.produitForm.value;
 
-  // Ajouter l'image sélectionnée (si présente)
-  if (this.imageChanged && this.selectedImageFile) {
-    formData.append('image', this.selectedImageFile);
-  }
+    const formData = new FormData();
 
-   if (this.actionType === 'ajouter') {
+    // Ajouter les champs du formulaire produit
+    Object.keys(produitData).forEach((key) => {
+      const value = produitData[key];
+      if (value !== null && value !== undefined) {
+        formData.append(key, String(value));
+      }
+    });
+
+    // Champs additionnels nécessaires
+    formData.append('code_structure', this.code_structure);
+    formData.append('agentId', String(this.agentId));
+    //formData.append('codeBarre', this.codeBarre);
+
+    // Ajouter l'image sélectionnée (si présente)
+    if (this.imageChanged && this.selectedImageFile) {
+      formData.append('image', this.selectedImageFile);
+    }
+
+    if (this.actionType === 'ajouter') {
       const stockData = this.stockForm.value;
       // Appel au service pour créer le produit
       this.produitsServices.createProduit(formData).subscribe({
@@ -1170,7 +1168,7 @@ onSubmitWithStock() {
             code_structure: this.code_structure,
             produitId: newProduit.id,
             dernierPrixAchat: parseFloat(produitData.prixAchatUnitaire),
-            prixVenteUnitaire: parseFloat(produitData.prixVenteUnitaire)
+            prixVenteUnitaire: parseFloat(produitData.prixVenteUnitaire),
           };
 
           // Créer le stock
@@ -1179,59 +1177,53 @@ onSubmitWithStock() {
               this.toastr.success('Produit et stock ajoutés avec succès');
               this.loadData();
               this.resetForms();
-              this.closeModal(this.actionType)
+              this.closeModal(this.actionType);
             },
             error: (err) => {
               const message = err.error?.message || "Erreur lors de l'enregistrement du stock.";
               this.toastr.error(message);
-            }
+            },
           });
         },
         error: (err) => {
-          const message = err.error?.message || "Erreur lors de la création du produit.";
+          const message = err.error?.message || 'Erreur lors de la création du produit.';
           console.error('Erreur création produit :', err);
           this.toastr.error(message);
-        }
+        },
       });
-   }
-  else if (this.actionType === 'modifier') {
-
-    this.produitsServices.updateProduit(this.selectedProduits?.id!, formData).subscribe({
-      next: () => {
-        this.toastr.success('Produit mis à jour avec succès');
-        this.loadData();
-         this.resetForms();
-         this.isRowSelected = false;
-         this.closeModal(this.actionType)
-
-      },
-      error: (err) => {
-        const message = err.error?.message || "Erreur lors de la mise à jour du produit.";
-        this.toastr.error(message);
-      }
-    });
+    } else if (this.actionType === 'modifier' && this.selectedProduits) {
+      this.produitsServices.updateProduit(this.selectedProduits?.id, formData).subscribe({
+        next: () => {
+          this.toastr.success('Produit mis à jour avec succès');
+          this.loadData();
+          this.resetForms();
+          this.isRowSelected = false;
+          this.closeModal(this.actionType);
+        },
+        error: (err) => {
+          const message = err.error?.message || 'Erreur lors de la mise à jour du produit.';
+          this.toastr.error(message);
+        },
+      });
+    }
   }
-  
-}
 
-handleProduitAction() {
-  if (this.actionType === 'ajouter') {
-    // Affiche le formulaire de stock
-    this.showStockSection = true;
-    this.initStockForm();
-  } 
-  else if (this.actionType === 'modifier') {
-    // Envoie directement la mise à jour du produit
-    this.onSubmitWithStock(); // Elle gère déjà le cas modifier
+  handleProduitAction() {
+    if (this.actionType === 'ajouter') {
+      // Affiche le formulaire de stock
+      this.showStockSection = true;
+      this.initStockForm();
+    } else if (this.actionType === 'modifier') {
+      // Envoie directement la mise à jour du produit
+      this.onSubmitWithStock(); // Elle gère déjà le cas modifier
+    }
   }
-}
 
-extractFilenameFromUrl(url: string): string {
-  return url.split('/').pop() || 'image.png';
-}
+  extractFilenameFromUrl(url: string): string {
+    return url.split('/').pop() || 'image.png';
+  }
 
-
-/*  onFileChange(event: any): void {
+  /*  onFileChange(event: any): void {
   const file = event.target.files[0];
   if (file) {
     this.selectedImageFile = file;
@@ -1244,53 +1236,50 @@ extractFilenameFromUrl(url: string): string {
   }
 } */
 
-onFileChange(event: any): void {
-  const file = event.target.files[0];
-  if (file) {
-    this.selectedImageFile = file;
-    this.imageChanged = true; // <- MARQUER que l'image a été modifiée
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onFileChange(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      this.selectedImageFile = file;
+      this.imageChanged = true; // <- MARQUER que l'image a été modifiée
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.logoPreview = reader.result as string;
-    };
-    reader.readAsDataURL(file);
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.logoPreview = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    }
   }
-}
 
+  resetForms() {
+    this.showStockSection = false;
+    this.produitForm.reset();
+    this.logoPreview = null;
+    this.imageChanged = false;
+    this.imageFilename = null;
+    this.selectedImageFile = null;
+    if (this.showStockSection) this.stockForm.reset();
+  }
 
+  resetStockSection() {
+    this.showStockSection = false;
+  }
 
-resetForms() {
-  this.showStockSection = false;
-  this.produitForm.reset();
-  this.logoPreview = null;
-  this.imageChanged = false;
-  this.imageFilename = null;
-  this.selectedImageFile = null;
-  if(this.showStockSection) this.stockForm.reset();
- 
+  getNomCategorieById(id: number): string | null {
+    const categorie = this.categories.find((p) => p.id === id);
+    return categorie ? categorie.nom : null; // On retourne `null` si la catégorie n'est pas trouvée
+  }
 
-}
-
-resetStockSection() {
-  this.showStockSection = false;
-}
-
-getNomCategorieById(id: number): string | null {
-  const categorie = this.categories.find(p => p.id === id);
-  return categorie ? categorie.nom : null;  // On retourne `null` si la catégorie n'est pas trouvée
-}
-
-getNomFournisseurById(id: number): string | null {
-  const fournisseur = this.fournisseur.find(p => p.id === id);
-  return fournisseur ? fournisseur.nomComplet : null;  // On retourne `null` si la catégorie n'est pas trouvée
-}
-getNomUserById(id: number): string | null {
-  const user = this.users.find(p => p.id === id);
-  return user ? user.nom : null;  // On retourne `null` si la catégorie n'est pas trouvée
-}
-getQteById(id: number): number | 0 {
-  const stock = this.stock.find(p => p.produitId === id);
-  return stock ? stock.quantiteTotale : 0;  // On retourne `null` si la catégorie n'est pas trouvée
-}
+  getNomFournisseurById(id: number): string | null {
+    const fournisseur = this.fournisseur.find((p) => p.id === id);
+    return fournisseur ? fournisseur.nomComplet : null; // On retourne `null` si la catégorie n'est pas trouvée
+  }
+  getNomUserById(id: number): string | null {
+    const user = this.users.find((p) => p.id === id);
+    return user ? user.nom : null; // On retourne `null` si la catégorie n'est pas trouvée
+  }
+  getQteById(id: number): number | 0 {
+    const stock = this.stock.find((p) => p.produitId === id);
+    return stock ? stock.quantiteTotale : 0; // On retourne `null` si la catégorie n'est pas trouvée
+  }
 }

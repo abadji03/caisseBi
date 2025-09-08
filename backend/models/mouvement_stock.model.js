@@ -1,51 +1,51 @@
 module.exports = (sequelize, DataTypes) => {
-  const MouvementStock = sequelize.define("MouvementStock", {
+  const MouvementStock = sequelize.define('MouvementStock', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
-      autoIncrement: true
+      autoIncrement: true,
     },
     code_structure: {
       type: DataTypes.STRING(36),
-      allowNull: false
+      allowNull: false,
     },
     ref: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
     },
     produitId: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
     },
     magasinId: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
     },
     stockId: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
     },
     typeMouvement: {
-      type: DataTypes.ENUM("Entrée", "Sortie"),
-      allowNull: false
+      type: DataTypes.ENUM('Entrée', 'Sortie'),
+      allowNull: false,
     },
     quantite: {
       type: DataTypes.DECIMAL(10, 2),
-      allowNull: false
+      allowNull: false,
     },
     prixUnitaire: {
       type: DataTypes.DECIMAL(10, 2),
-      allowNull: false
+      allowNull: false,
     },
     acteurId: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
     },
     description: DataTypes.TEXT,
     dateMouvement: {
       type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW
-    }
+      defaultValue: DataTypes.NOW,
+    },
   });
 
   return MouvementStock;

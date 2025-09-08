@@ -1,4 +1,4 @@
-const db = require("../models");
+const db = require('../models');
 const HistoriqueConnexions = db.HistoriqueConnexions;
 
 exports.create = async (req, res) => {
@@ -16,10 +16,10 @@ exports.findByUser = async (req, res) => {
     const { userId } = req.params;
     const data = await HistoriqueConnexions.findAll({
       where: { userId },
-      order: [["date", "DESC"]]
+      order: [['date', 'DESC']],
     });
     res.json(data);
   } catch (error) {
-    res.status(500).json({ message: "Erreur lors de la récupération des connexions", error });
+    res.status(500).json({ message: 'Erreur lors de la récupération des connexions', error });
   }
 };

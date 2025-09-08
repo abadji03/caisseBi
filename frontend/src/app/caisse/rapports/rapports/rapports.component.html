@@ -1,13 +1,31 @@
 <div class="container mt-3">
   <ul class="nav nav-tabs">
     <li class="nav-item">
-      <a class="nav-link" [class.active]="activeTab === 'ventes'" (click)="activeTab = 'ventes'">Rapports de Ventes</a>
+      <button
+        class="nav-link"
+        [class.active]="activeTab === 'ventes'"
+        (click)="activeTab = 'ventes'"
+      >
+        Rapports de Ventes
+      </button>
     </li>
     <li class="nav-item">
-      <a class="nav-link" [class.active]="activeTab === 'finances'" (click)="activeTab = 'finances'">Rapports Financiers</a>
+      <button
+        class="nav-link"
+        [class.active]="activeTab === 'finances'"
+        (click)="activeTab = 'finances'"
+      >
+        Rapports Financiers
+      </button>
     </li>
     <li class="nav-item">
-      <a class="nav-link" [class.active]="activeTab === 'stocks'" (click)="activeTab = 'stocks'">Rapports de Stock</a>
+      <button
+        class="nav-link"
+        [class.active]="activeTab === 'stocks'"
+        (click)="activeTab = 'stocks'"
+      >
+        Rapports de Stock
+      </button>
     </li>
   </ul>
 

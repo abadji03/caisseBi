@@ -14,7 +14,7 @@ exports.createBon = async (req, res) => {
 exports.getAllBons = async (req, res) => {
   try {
     const bons = await Bon.findAll({
-      include: ['Fournisseur', 'Client', 'User', 'Magasin']
+      include: ['Fournisseur', 'Client', 'User', 'Magasin'],
     });
     res.json(bons);
   } catch (error) {
@@ -25,7 +25,7 @@ exports.getAllBons = async (req, res) => {
 exports.getBonById = async (req, res) => {
   try {
     const bon = await Bon.findByPk(req.params.id);
-    if (!bon) return res.status(404).json({ message: "Bon non trouvé" });
+    if (!bon) return res.status(404).json({ message: 'Bon non trouvé' });
     res.json(bon);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -35,9 +35,9 @@ exports.getBonById = async (req, res) => {
 exports.updateBon = async (req, res) => {
   try {
     const [updated] = await Bon.update(req.body, {
-      where: { id: req.params.id }
+      where: { id: req.params.id },
     });
-    if (!updated) return res.status(404).json({ message: "Bon non trouvé" });
+    if (!updated) return res.status(404).json({ message: 'Bon non trouvé' });
     const bon = await Bon.findByPk(req.params.id);
     res.json(bon);
   } catch (error) {
@@ -48,7 +48,7 @@ exports.updateBon = async (req, res) => {
 exports.deleteBon = async (req, res) => {
   try {
     const deleted = await Bon.destroy({ where: { id: req.params.id } });
-    if (!deleted) return res.status(404).json({ message: "Bon non trouvé" });
+    if (!deleted) return res.status(404).json({ message: 'Bon non trouvé' });
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ error: error.message });

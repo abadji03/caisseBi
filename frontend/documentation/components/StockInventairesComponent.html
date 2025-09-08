@@ -1,0 +1,3870 @@
+<!doctype html>
+<html class="no-js" lang="">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title>frontend documentation</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="icon" type="image/x-icon" href="../images/favicon.ico">
+	   <link rel="stylesheet" href="../styles/style.css">
+        <link rel="stylesheet" href="../styles/dark.css">
+    </head>
+    <body>
+          <script>
+               // Blocking script to avoid flickering dark mode
+               // Dark mode toggle button
+               var useDark = window.matchMedia('(prefers-color-scheme: dark)');
+               var darkModeState = useDark.matches;
+               var $darkModeToggleSwitchers = document.querySelectorAll('.dark-mode-switch input');
+               var $darkModeToggles = document.querySelectorAll('.dark-mode-switch');
+               var darkModeStateLocal = localStorage.getItem('compodoc_darkmode-state');
+
+               function checkToggle(check) {
+                    for (var i = 0; i < $darkModeToggleSwitchers.length; i++) {
+                         $darkModeToggleSwitchers[i].checked = check;
+                    }
+               }
+
+               function toggleDarkMode(state) {
+                    if (window.localStorage) {
+                         localStorage.setItem('compodoc_darkmode-state', state);
+                    }
+
+                    checkToggle(state);
+
+                    const hasClass = document.body.classList.contains('dark');
+
+                    if (state) {
+                         for (var i = 0; i < $darkModeToggles.length; i++) {
+                              $darkModeToggles[i].classList.add('dark');
+                         }
+                         if (!hasClass) {
+                              document.body.classList.add('dark');
+                         }
+                    } else {
+                         for (var i = 0; i < $darkModeToggles.length; i++) {
+                              $darkModeToggles[i].classList.remove('dark');
+                         }
+                         if (hasClass) {
+                              document.body.classList.remove('dark');
+                         }
+                    }
+               }
+
+               useDark.addEventListener('change', function (evt) {
+                    toggleDarkMode(evt.matches);
+               });
+               if (darkModeStateLocal) {
+                    darkModeState = darkModeStateLocal === 'true';
+               }
+               toggleDarkMode(darkModeState);
+          </script>
+
+        <div class="navbar navbar-default navbar-fixed-top d-md-none p-0">
+               <div class="d-flex">
+                    <a href="../" class="navbar-brand">frontend documentation</a>
+                    <button type="button" class="btn btn-default btn-menu ion-ios-menu" id="btn-menu"></button>
+               </div>
+        </div>
+
+        <div class="xs-menu menu" id="mobile-menu">
+                <div id="book-search-input" role="search"><input type="text" placeholder="Type to search"></div>            <compodoc-menu></compodoc-menu>
+        </div>
+
+        <div class="container-fluid main">
+           <div class="row main">
+               <div class="d-none d-md-block menu">
+                   <compodoc-menu mode="normal"></compodoc-menu>
+               </div>
+               <!-- START CONTENT -->
+               <div class="content component">
+                   <div class="content-data">
+
+
+
+
+<ol class="breadcrumb">
+  <li class="breadcrumb-item">Components</li>
+  <li class="breadcrumb-item"
+  >
+  StockInventairesComponent</li>
+</ol>
+
+<ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item">
+            <a href="#info" class="nav-link active"
+                role="tab" id="info-tab" data-bs-toggle="tab" data-link="info">Info</a>
+        </li>
+        <li class="nav-item">
+            <a href="#source" class="nav-link"
+                role="tab" id="source-tab" data-bs-toggle="tab" data-link="source">Source</a>
+        </li>
+        <li class="nav-item">
+            <a href="#templateData" class="nav-link"
+                role="tab" id="templateData-tab" data-bs-toggle="tab" data-link="template">Template</a>
+        </li>
+        <li class="nav-item">
+            <a href="#tree" class="nav-link"
+                role="tab" id="tree-tab" data-bs-toggle="tab" data-link="dom-tree">DOM Tree</a>
+        </li>
+</ul>
+
+<div class="tab-content">
+    <div class="tab-pane fade active in" id="info"><p class="comment">
+    <h3>File</h3>
+</p>
+<p class="comment">
+    <code>src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts</code>
+</p>
+
+
+
+
+    <p class="comment">
+        <h3>Implements</h3>
+    </p>
+    <p class="comment">
+                <code>OnInit</code>
+    </p>
+
+
+<section data-compodoc="block-metadata">
+    <h3>Metadata</h3>
+    <table class="table table-sm table-hover metadata">
+        <tbody>
+
+
+
+
+
+
+
+
+
+
+
+
+            <tr>
+                <td class="col-md-3">selector</td>
+                <td class="col-md-9"><code>app-stock-inventaires</code></td>
+            </tr>
+
+            <tr>
+                <td class="col-md-3">standalone</td>
+                <td class="col-md-9"><code>true</code></td>
+            </tr>
+
+            <tr>
+                <td class="col-md-3">imports</td>
+                <td class="col-md-9">
+                            <code>CommonModule</code>
+                            <code>FormsModule</code>
+                </td>
+            </tr>
+
+
+
+
+            <tr>
+                <td class="col-md-3">templateUrl</td>
+                <td class="col-md-9"><code>./stock-inventaires.component.html</code></td>
+            </tr>
+
+
+
+            <tr>
+                <td class="col-md-3">styleUrl</td>
+                <td class="col-md-9"><code>./stock-inventaires.component.css</code></td>
+            </tr>
+
+
+
+
+
+        </tbody>
+    </table>
+</section>
+
+    <section data-compodoc="block-index">
+    <h3 id="index">Index</h3>
+    <table class="table table-sm table-bordered index-table">
+        <tbody>
+                <tr>
+                    <td class="col-md-4">
+                        <h6><b>Properties</b></h6>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <ul class="index-list">
+                            <li>
+                                <a href="#alertes" >alertes</a>
+                            </li>
+                            <li>
+                                <a href="#currentPageAlertes" >currentPageAlertes</a>
+                            </li>
+                            <li>
+                                <a href="#currentPageInventaire" >currentPageInventaire</a>
+                            </li>
+                            <li>
+                                <a href="#currentPageMouvements" >currentPageMouvements</a>
+                            </li>
+                            <li>
+                                <a href="#currentPageNiveauStock" >currentPageNiveauStock</a>
+                            </li>
+                            <li>
+                                <a href="#currentPagePerissables" >currentPagePerissables</a>
+                            </li>
+                            <li>
+                                <a href="#currentPageQtesDisponibles" >currentPageQtesDisponibles</a>
+                            </li>
+                            <li>
+                                <a href="#filteredAlertes" >filteredAlertes</a>
+                            </li>
+                            <li>
+                                <a href="#filteredInventaire" >filteredInventaire</a>
+                            </li>
+                            <li>
+                                <a href="#filteredMouvements" >filteredMouvements</a>
+                            </li>
+                            <li>
+                                <a href="#filteredNiveauStock" >filteredNiveauStock</a>
+                            </li>
+                            <li>
+                                <a href="#filteredPerissables" >filteredPerissables</a>
+                            </li>
+                            <li>
+                                <a href="#filteredQtesDisponibles" >filteredQtesDisponibles</a>
+                            </li>
+                            <li>
+                                <a href="#itemsPerPage" >itemsPerPage</a>
+                            </li>
+                            <li>
+                                <a href="#magasins" >magasins</a>
+                            </li>
+                            <li>
+                                <a href="#mouvementsStock" >mouvementsStock</a>
+                            </li>
+                            <li>
+                                <a href="#produits" >produits</a>
+                            </li>
+                            <li>
+                                <a href="#produitsPerissables" >produitsPerissables</a>
+                            </li>
+                            <li>
+                                <a href="#searchTerm" >searchTerm</a>
+                            </li>
+                            <li>
+                                <a href="#stocks" >stocks</a>
+                            </li>
+                        </ul>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="col-md-4">
+                        <h6><b>Methods</b></h6>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <ul class="index-list">
+                            <li>
+                                <a href="#ajouterMouvement" >ajouterMouvement</a>
+                            </li>
+                            <li>
+                                <a href="#envoyerAlerteReapprovisionnement" >envoyerAlerteReapprovisionnement</a>
+                            </li>
+                            <li>
+                                <a href="#getMagasinById" >getMagasinById</a>
+                            </li>
+                            <li>
+                                <a href="#getNomMagasinByProduitId" >getNomMagasinByProduitId</a>
+                            </li>
+                            <li>
+                                <a href="#getNomProduitById" >getNomProduitById</a>
+                            </li>
+                            <li>
+                                <a href="#getProduitsNonPerissables" >getProduitsNonPerissables</a>
+                            </li>
+                            <li>
+                                <a href="#getProduitsParMagasin" >getProduitsParMagasin</a>
+                            </li>
+                            <li>
+                                <a href="#getProduitsPerissables" >getProduitsPerissables</a>
+                            </li>
+                            <li>
+                                <a href="#getQteById" >getQteById</a>
+                            </li>
+                            <li>
+                                <a href="#getQteDisponibleById" >getQteDisponibleById</a>
+                            </li>
+                            <li>
+                                <a href="#getTotalPages" >getTotalPages</a>
+                            </li>
+                            <li>
+                                <a href="#ngOnInit" >ngOnInit</a>
+                            </li>
+                            <li>
+                                <a href="#onPageChange" >onPageChange</a>
+                            </li>
+                            <li>
+                                <a href="#onSearchChange" >onSearchChange</a>
+                            </li>
+                            <li>
+                                <a href="#paginate" >paginate</a>
+                            </li>
+                            <li>
+                                <a href="#setItemsPerPage" >setItemsPerPage</a>
+                            </li>
+                            <li>
+                                <a href="#updatefilteredTable" >updatefilteredTable</a>
+                            </li>
+                        </ul>
+                    </td>
+                </tr>
+
+
+
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <h6><b>Accessors</b></h6>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="col-md-4">
+                            <ul class="index-list">
+                                <li>
+                                    <a href="#getPaginatedInventaire" >getPaginatedInventaire</a>
+                                </li>
+                                <li>
+                                    <a href="#getPaginatedQtesDisponibles" >getPaginatedQtesDisponibles</a>
+                                </li>
+                                <li>
+                                    <a href="#getPaginatedAlertes" >getPaginatedAlertes</a>
+                                </li>
+                                <li>
+                                    <a href="#getPaginatedMouvements" >getPaginatedMouvements</a>
+                                </li>
+                                <li>
+                                    <a href="#getPaginatedNiveauStock" >getPaginatedNiveauStock</a>
+                                </li>
+                                <li>
+                                    <a href="#getPaginatedPerissables" >getPaginatedPerissables</a>
+                                </li>
+                            </ul>
+                        </td>
+                    </tr>
+        </tbody>
+    </table>
+</section>
+
+
+
+
+
+
+    <section data-compodoc="block-methods">
+    
+    <h3 id="methods">
+        Methods
+    </h3>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="ajouterMouvement"></a>
+                    <span class="name">
+                        <span ><b>ajouterMouvement</b></span>
+                        <a href="#ajouterMouvement"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>ajouterMouvement(mouvement: <a href="../classes/MouvementsStock.html" target="_self">MouvementsStock</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="458"
+                                    class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:458</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>mouvement</td>
+                                            <td>
+                                                            <code><a href="../classes/MouvementsStock.html" target="_self" >MouvementsStock</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="envoyerAlerteReapprovisionnement"></a>
+                    <span class="name">
+                        <span ><b>envoyerAlerteReapprovisionnement</b></span>
+                        <a href="#envoyerAlerteReapprovisionnement"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>envoyerAlerteReapprovisionnement()</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="452"
+                                    class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:452</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="getMagasinById"></a>
+                    <span class="name">
+                        <span ><b>getMagasinById</b></span>
+                        <a href="#getMagasinById"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>getMagasinById(magasinId: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank">number</a>, stocks: <a href="../classes/Stock.html" target="_self">Stock[]</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="680"
+                                    class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:680</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>magasinId</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>stocks</td>
+                                            <td>
+                                                            <code><a href="../classes/Stock.html" target="_self" >Stock[]</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="getNomMagasinByProduitId"></a>
+                    <span class="name">
+                        <span ><b>getNomMagasinByProduitId</b></span>
+                        <a href="#getNomMagasinByProduitId"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>getNomMagasinByProduitId(produitId: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank">number</a>, stocks: <a href="../classes/Stock.html" target="_self">Stock[]</a>, magasins: <a href="../classes/Magasin.html" target="_self">Magasin[]</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="684"
+                                    class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:684</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>produitId</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>stocks</td>
+                                            <td>
+                                                            <code><a href="../classes/Stock.html" target="_self" >Stock[]</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>magasins</td>
+                                            <td>
+                                                            <code><a href="../classes/Magasin.html" target="_self" >Magasin[]</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="getNomProduitById"></a>
+                    <span class="name">
+                        <span ><b>getNomProduitById</b></span>
+                        <a href="#getNomProduitById"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>getNomProduitById(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank">number</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="472"
+                                    class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:472</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>id</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>    <code>string | null</code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="getProduitsNonPerissables"></a>
+                    <span class="name">
+                        <span ><b>getProduitsNonPerissables</b></span>
+                        <a href="#getProduitsNonPerissables"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>getProduitsNonPerissables()</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="429"
+                                    class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:429</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >any</a></code>
+
+                        </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="getProduitsParMagasin"></a>
+                    <span class="name">
+                        <span ><b>getProduitsParMagasin</b></span>
+                        <a href="#getProduitsParMagasin"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>getProduitsParMagasin(magasin: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank">number</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="421"
+                                    class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:421</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>magasin</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >any</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="getProduitsPerissables"></a>
+                    <span class="name">
+                        <span ><b>getProduitsPerissables</b></span>
+                        <a href="#getProduitsPerissables"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>getProduitsPerissables()</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="463"
+                                    class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:463</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="../classes/Stock.html" target="_self" >Stock[]</a></code>
+
+                        </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="getQteById"></a>
+                    <span class="name">
+                        <span ><b>getQteById</b></span>
+                        <a href="#getQteById"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>getQteById(produitId: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank">number</a>, stocks: <a href="../classes/Stock.html" target="_self">Stock[]</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="670"
+                                    class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:670</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>produitId</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>stocks</td>
+                                            <td>
+                                                            <code><a href="../classes/Stock.html" target="_self" >Stock[]</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="getQteDisponibleById"></a>
+                    <span class="name">
+                        <span ><b>getQteDisponibleById</b></span>
+                        <a href="#getQteDisponibleById"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>getQteDisponibleById(produitId: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank">number</a>, stocks: <a href="../classes/Stock.html" target="_self">Stock[]</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="675"
+                                    class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:675</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>produitId</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>stocks</td>
+                                            <td>
+                                                            <code><a href="../classes/Stock.html" target="_self" >Stock[]</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="getTotalPages"></a>
+                    <span class="name">
+                        <span ><b>getTotalPages</b></span>
+                        <a href="#getTotalPages"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>getTotalPages(list: any[])</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="666"
+                                    class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:666</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>list</td>
+                                            <td>
+                                                        <code>any[]</code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="ngOnInit"></a>
+                    <span class="name">
+                        <span ><b>ngOnInit</b></span>
+                        <a href="#ngOnInit"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>ngOnInit()</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="401"
+                                    class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:401</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="onPageChange"></a>
+                    <span class="name">
+                        <span ><b>onPageChange</b></span>
+                        <a href="#onPageChange"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>onPageChange(page: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank">number</a>, instanceObj: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="649"
+                                    class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:649</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>page</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>instanceObj</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="onSearchChange"></a>
+                    <span class="name">
+                        <span ><b>onSearchChange</b></span>
+                        <a href="#onSearchChange"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>onSearchChange(objet: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="513"
+                                    class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:513</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>objet</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="paginate"></a>
+                    <span class="name">
+                        <span ><b>paginate</b></span>
+                        <a href="#paginate"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>paginate(data: any[], currentPage: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank">number</a>, itemsPerPage: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank">number</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="644"
+                                    class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:644</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>data</td>
+                                            <td>
+                                                        <code>any[]</code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>currentPage</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>itemsPerPage</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >any</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="setItemsPerPage"></a>
+                    <span class="name">
+                        <span ><b>setItemsPerPage</b></span>
+                        <a href="#setItemsPerPage"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>setItemsPerPage(event: <a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank">any</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="603"
+                                    class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:603</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>event</td>
+                                            <td>
+                                                            <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >any</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="updatefilteredTable"></a>
+                    <span class="name">
+                        <span ><b>updatefilteredTable</b></span>
+                        <a href="#updatefilteredTable"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>updatefilteredTable(objet: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="478"
+                                    class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:478</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>objet</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+    <section data-compodoc="block-properties">
+    
+    <h3 id="inputs">
+        Properties
+    </h3>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="alertes"></a>
+                    <span class="name">
+                        <span ><b>alertes</b></span>
+                        <a href="#alertes"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="../classes/Stock.html" target="_self" >Stock[]</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>this.stocks.filter((p) &#x3D;&gt; p.quantiteTotale &lt;&#x3D; p.seuilAlerte)</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="246" class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:246</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="currentPageAlertes"></a>
+                    <span class="name">
+                        <span ><b>currentPageAlertes</b></span>
+                        <a href="#currentPageAlertes"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>1</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="25" class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:25</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="currentPageInventaire"></a>
+                    <span class="name">
+                        <span ><b>currentPageInventaire</b></span>
+                        <a href="#currentPageInventaire"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>1</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="26" class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:26</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="currentPageMouvements"></a>
+                    <span class="name">
+                        <span ><b>currentPageMouvements</b></span>
+                        <a href="#currentPageMouvements"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>1</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="29" class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:29</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="currentPageNiveauStock"></a>
+                    <span class="name">
+                        <span ><b>currentPageNiveauStock</b></span>
+                        <a href="#currentPageNiveauStock"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>1</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="28" class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:28</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="currentPagePerissables"></a>
+                    <span class="name">
+                        <span ><b>currentPagePerissables</b></span>
+                        <a href="#currentPagePerissables"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>1</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="30" class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:30</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="currentPageQtesDisponibles"></a>
+                    <span class="name">
+                        <span ><b>currentPageQtesDisponibles</b></span>
+                        <a href="#currentPageQtesDisponibles"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>1</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="27" class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:27</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="filteredAlertes"></a>
+                    <span class="name">
+                        <span ><b>filteredAlertes</b></span>
+                        <a href="#filteredAlertes"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="../classes/Stock.html" target="_self" >Stock[]</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[]</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="20" class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:20</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="filteredInventaire"></a>
+                    <span class="name">
+                        <span ><b>filteredInventaire</b></span>
+                        <a href="#filteredInventaire"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>Produits[]</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[]</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="17" class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:17</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="filteredMouvements"></a>
+                    <span class="name">
+                        <span ><b>filteredMouvements</b></span>
+                        <a href="#filteredMouvements"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>MouvementsStock[]</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[]</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="21" class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:21</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="filteredNiveauStock"></a>
+                    <span class="name">
+                        <span ><b>filteredNiveauStock</b></span>
+                        <a href="#filteredNiveauStock"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>Produits[]</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[]</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="19" class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:19</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="filteredPerissables"></a>
+                    <span class="name">
+                        <span ><b>filteredPerissables</b></span>
+                        <a href="#filteredPerissables"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="../classes/Stock.html" target="_self" >Stock[]</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[]</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="22" class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:22</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="filteredQtesDisponibles"></a>
+                    <span class="name">
+                        <span ><b>filteredQtesDisponibles</b></span>
+                        <a href="#filteredQtesDisponibles"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>Produits[]</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[]</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="18" class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:18</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="itemsPerPage"></a>
+                    <span class="name">
+                        <span ><b>itemsPerPage</b></span>
+                        <a href="#itemsPerPage"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>5</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="24" class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:24</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="magasins"></a>
+                    <span class="name">
+                        <span ><b>magasins</b></span>
+                        <a href="#magasins"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="../classes/Magasin.html" target="_self" >Magasin[]</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[
+    new Magasin({
+      id: 1,
+      nom: &#x27;Magasin A&#x27;,
+      adresse: &#x27;Route de la Gare, Dakar&#x27;,
+      ville: &#x27;Dakar&#x27;,
+      telephone: &#x27;77 123 45 67&#x27;,
+      email: &#x27;magasinA@example.com&#x27;,
+      responsableId: 1, // Correspond au responsable dans votre système
+      capaciteStock: 500,
+      chiffreAffaires: 1500000,
+      ventes: [
+        /* Liste de paniers correspondants à ce magasin */
+      ],
+      depenses: [
+        /* Liste des dépenses pour ce magasin */
+      ],
+      recettes: [
+        /* Liste des recettes pour ce magasin */
+      ],
+      statut: &#x27;Actif&#x27;,
+      dateCreation: new Date(&#x27;2023-01-01&#x27;),
+      derniereMiseAJour: new Date(&#x27;2025-03-01&#x27;),
+      transferts: [
+        /* Liste des transferts pour ce magasin */
+      ],
+      //stock: this.stocks
+    }),
+    new Magasin({
+      id: 2,
+      nom: &#x27;Magasin B&#x27;,
+      adresse: &#x27;Avenue Blaise Diagne, Saint-Louis&#x27;,
+      ville: &#x27;Saint-Louis&#x27;,
+      telephone: &#x27;77 234 56 78&#x27;,
+      email: &#x27;magasinB@example.com&#x27;,
+      responsableId: 2, // Autre responsable
+      capaciteStock: 300,
+      chiffreAffaires: 800000,
+      ventes: [
+        /* Liste de paniers correspondants à ce magasin */
+      ],
+      depenses: [
+        /* Liste des dépenses pour ce magasin */
+      ],
+      recettes: [
+        /* Liste des recettes pour ce magasin */
+      ],
+      statut: &#x27;Actif&#x27;,
+      dateCreation: new Date(&#x27;2023-02-01&#x27;),
+      derniereMiseAJour: new Date(&#x27;2025-03-01&#x27;),
+      transferts: [
+        /* Liste des transferts pour ce magasin */
+      ],
+      //stock: this.stocks
+    }),
+    new Magasin({
+      id: 3,
+      nom: &#x27;Magasin C&#x27;,
+      adresse: &#x27;Centre-ville, Thiès&#x27;,
+      ville: &#x27;Thiès&#x27;,
+      telephone: &#x27;77 345 67 89&#x27;,
+      email: &#x27;magasinC@example.com&#x27;,
+      responsableId: 3, // Autre responsable
+      capaciteStock: 400,
+      chiffreAffaires: 1200000,
+      ventes: [
+        /* Liste de paniers correspondants à ce magasin */
+      ],
+      depenses: [
+        /* Liste des dépenses pour ce magasin */
+      ],
+      recettes: [
+        /* Liste des recettes pour ce magasin */
+      ],
+      statut: &#x27;Inactif&#x27;,
+      dateCreation: new Date(&#x27;2023-03-01&#x27;),
+      derniereMiseAJour: new Date(&#x27;2025-03-01&#x27;),
+      transferts: [
+        /* Liste des transferts pour ce magasin */
+      ],
+      //stock: this.stocks
+    }),
+  ]</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="32" class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:32</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="mouvementsStock"></a>
+                    <span class="name">
+                        <span ><b>mouvementsStock</b></span>
+                        <a href="#mouvementsStock"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>MouvementsStock[]</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[
+    new MouvementsStock({
+      id: 1,
+      ref: &#x27;MV-20250308-001&#x27;,
+      produitId: 101,
+      magasinId: 1,
+      typeMouvement: &#x27;Entree&#x27;,
+      quantite: 20,
+      prixUnitaire: 1600,
+      acteurId: 3,
+      description: &#x27;Réapprovisionnement&#x27;,
+      dateMouvement: new Date(&#x27;2025-03-08&#x27;),
+    }),
+    new MouvementsStock({
+      id: 2,
+      ref: &#x27;MV-20250308-002&#x27;,
+      produitId: 102,
+      magasinId: 2,
+      typeMouvement: &#x27;Sortie&#x27;,
+      quantite: 10,
+      prixUnitaire: 2000,
+      acteurId: 5,
+      description: &#x27;Vente au client&#x27;,
+      dateMouvement: new Date(&#x27;2025-03-08&#x27;),
+    }),
+    new MouvementsStock({
+      id: 3,
+      ref: &#x27;MV-20250308-003&#x27;,
+      produitId: 103,
+      magasinId: 3,
+      typeMouvement: &#x27;Entree&#x27;,
+      quantite: 50,
+      prixUnitaire: 500,
+      acteurId: 1,
+      description: &#x27;Stock initial&#x27;,
+      dateMouvement: new Date(&#x27;2025-03-07&#x27;),
+    }),
+    new MouvementsStock({
+      id: 4,
+      ref: &#x27;MV-20250308-004&#x27;,
+      produitId: 104,
+      magasinId: 1,
+      typeMouvement: &#x27;Sortie&#x27;,
+      quantite: 5,
+      prixUnitaire: 3000,
+      acteurId: 4,
+      description: &#x27;Commande client&#x27;,
+      dateMouvement: new Date(&#x27;2025-03-06&#x27;),
+    }),
+    new MouvementsStock({
+      id: 5,
+      ref: &#x27;MV-20250308-005&#x27;,
+      produitId: 105,
+      magasinId: 2,
+      typeMouvement: &#x27;Entree&#x27;,
+      quantite: 100,
+      prixUnitaire: 1200,
+      acteurId: 2,
+      description: &#x27;Nouvelle livraison fournisseur&#x27;,
+      dateMouvement: new Date(&#x27;2025-03-05&#x27;),
+    }),
+
+    new MouvementsStock({
+      id: 6,
+      ref: &#x27;MV-20250308-006&#x27;,
+      produitId: 106,
+      magasinId: 1,
+      typeMouvement: &#x27;Sortie&#x27;,
+      quantite: 15,
+      prixUnitaire: 2500,
+      acteurId: 3,
+      description: &#x27;Vente comptoir&#x27;,
+      dateMouvement: new Date(&#x27;2025-03-05&#x27;),
+    }),
+    new MouvementsStock({
+      id: 7,
+      ref: &#x27;MV-20250308-007&#x27;,
+      produitId: 107,
+      magasinId: 3,
+      typeMouvement: &#x27;Entree&#x27;,
+      quantite: 80,
+      prixUnitaire: 2200,
+      acteurId: 6,
+      description: &#x27;Commande fournisseur&#x27;,
+      dateMouvement: new Date(&#x27;2025-03-04&#x27;),
+    }),
+    new MouvementsStock({
+      id: 8,
+      ref: &#x27;MV-20250308-008&#x27;,
+      produitId: 108,
+      magasinId: 2,
+      typeMouvement: &#x27;Sortie&#x27;,
+      quantite: 30,
+      prixUnitaire: 3000,
+      acteurId: 7,
+      description: &#x27;Livraison client gros&#x27;,
+      dateMouvement: new Date(&#x27;2025-03-03&#x27;),
+    }),
+    new MouvementsStock({
+      id: 9,
+      ref: &#x27;MV-20250308-009&#x27;,
+      produitId: 109,
+      magasinId: 1,
+      typeMouvement: &#x27;Entree&#x27;,
+      quantite: 60,
+      prixUnitaire: 900,
+      acteurId: 8,
+      description: &#x27;Achat pour revente&#x27;,
+      dateMouvement: new Date(&#x27;2025-03-02&#x27;),
+    }),
+    new MouvementsStock({
+      id: 10,
+      ref: &#x27;MV-20250308-010&#x27;,
+      produitId: 110,
+      magasinId: 3,
+      typeMouvement: &#x27;Sortie&#x27;,
+      quantite: 25,
+      prixUnitaire: 1000,
+      acteurId: 9,
+      description: &#x27;Stock boulangerie&#x27;,
+      dateMouvement: new Date(&#x27;2025-03-01&#x27;),
+    }),
+  ]</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="249" class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:249</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="produits"></a>
+                    <span class="name">
+                        <span ><b>produits</b></span>
+                        <a href="#produits"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>Produits[]</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[
+    /* new Produits({ id: 101, famille: &quot;Boissons&quot;, designation: &quot;Lait en poudre&quot;, fournisseurId: 3, unite: &quot;Carton&quot;, prixAchatUnitaire: 1500, prixVenteUnitaire: 2000, agent: &quot;Admin&quot;, description: &quot;Lait en poudre 500g&quot;, codeBarre: &quot;1234567890123&quot;, image: &quot;lait-poudre.jpg&quot;, perissable: true }),
+    new Produits({ id: 102, famille: &quot;Snacks&quot;, designation: &quot;Chips&quot;, fournisseurId: 2,  unite: &quot;Sachet&quot;, prixAchatUnitaire: 500, prixVenteUnitaire: 700, agent: &quot;Admin&quot;, description: &quot;Chips de pomme de terre&quot;, codeBarre: &quot;1234567890456&quot;, image: &quot;chips.jpg&quot;, perissable: true }),
+    new Produits({ id: 103, famille: &quot;Boissons&quot;, designation: &quot;Eau minérale&quot;, fournisseurId: 1,  unite: &quot;Bouteille&quot;, prixAchatUnitaire: 300, prixVenteUnitaire: 500, agent: &quot;Admin&quot;, description: &quot;Eau minérale naturelle&quot;, codeBarre: &quot;1234567890789&quot;, image: &quot;eau.jpg&quot;, perissable: false }),
+    new Produits({ id: 104, famille: &quot;Confiserie&quot;, designation: &quot;Chocolat&quot;, fournisseurId: 4, unite: &quot;Pièce&quot;, prixAchatUnitaire: 2500, prixVenteUnitaire: 3000, agent: &quot;Admin&quot;, description: &quot;Chocolat noir 70%&quot;, codeBarre: &quot;1234567890890&quot;, image: &quot;chocolat.jpg&quot;, perissable: true }),
+    new Produits({ id: 105, famille: &quot;Épicerie&quot;, designation: &quot;Sucre&quot;, fournisseurId: 5,  unite: &quot;Kg&quot;, prixAchatUnitaire: 1000, prixVenteUnitaire: 1200, agent: &quot;Admin&quot;, description: &quot;Sucre blanc raffiné&quot;, codeBarre: &quot;1234567890991&quot;, image: &quot;sucre.jpg&quot;, perissable: false }),
+
+    new Produits({ id: 106, famille: &quot;Boissons&quot;, designation: &quot;Café soluble&quot;, fournisseurId: 6,  unite: &quot;Bocal&quot;, prixAchatUnitaire: 2000, prixVenteUnitaire: 2500, agent: &quot;Admin&quot;, description: &quot;Café instantané 100g&quot;, codeBarre: &quot;1234567891002&quot;, image: &quot;cafe.jpg&quot;, perissable: false }),
+    new Produits({ id: 107, famille: &quot;Légumineuses&quot;, designation: &quot;Lentilles&quot;, fournisseurId: 7, unite: &quot;Kg&quot;, prixAchatUnitaire: 1800, prixVenteUnitaire: 2200, agent: &quot;Admin&quot;, description: &quot;Lentilles vertes bio&quot;, codeBarre: &quot;1234567891113&quot;, image: &quot;lentilles.jpg&quot;, perissable: false }),
+    new Produits({ id: 108, famille: &quot;Épicerie&quot;, designation: &quot;Riz basmati&quot;, fournisseurId: 8, unite: &quot;Kg&quot;, prixAchatUnitaire: 2500, prixVenteUnitaire: 3000, agent: &quot;Admin&quot;, description: &quot;Riz basmati parfumé&quot;, codeBarre: &quot;1234567891224&quot;, image: &quot;riz.jpg&quot;, perissable: false }),
+    new Produits({ id: 109, famille: &quot;Produits laitiers&quot;, designation: &quot;Yaourt nature&quot;, fournisseurId: 9, unite: &quot;Pot&quot;, prixAchatUnitaire: 600, prixVenteUnitaire: 900, agent: &quot;Admin&quot;, description: &quot;Yaourt nature 150g&quot;, codeBarre: &quot;1234567891335&quot;, image: &quot;yaourt.jpg&quot;, perissable: true }),
+    new Produits({ id: 110, famille: &quot;Boulangerie&quot;, designation: &quot;Pain complet&quot;, fournisseurId: 10, unite: &quot;Pièce&quot;, prixAchatUnitaire: 800, prixVenteUnitaire: 1000, agent: &quot;Admin&quot;, description: &quot;Pain complet aux céréales&quot;, codeBarre: &quot;1234567891446&quot;, image: &quot;pain.jpg&quot;, perissable: true})
+   */
+  ]</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="374" class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:374</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="produitsPerissables"></a>
+                    <span class="name">
+                        <span ><b>produitsPerissables</b></span>
+                        <a href="#produitsPerissables"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>Produits[]</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>this.produits.filter((p) &#x3D;&gt; p.perissable &#x3D;&#x3D;&#x3D; true)</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="390" class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:390</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="searchTerm"></a>
+                    <span class="name">
+                        <span ><b>searchTerm</b></span>
+                        <a href="#searchTerm"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>&#x27;&#x27;</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="16" class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:16</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="stocks"></a>
+                    <span class="name">
+                        <span ><b>stocks</b></span>
+                        <a href="#stocks"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="../classes/Stock.html" target="_self" >Stock[]</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[
+    new Stock({
+      id: 1,
+      produitId: 101,
+      magasinId: 1,
+      quantiteTotale: 100,
+      quantiteReservee: 20,
+      seuilAlerte: 10,
+      seuilReapprovisionnement: 30,
+      stockSecurite: 5,
+      dernierPrixAchat: 1500,
+      dateDerniereMiseAJour: new Date(&#x27;2025-03-01&#x27;),
+      datePeremption: new Date(&#x27;2025-12-01&#x27;),
+      statutStock: &#x27;En stock&#x27;,
+    }),
+    new Stock({
+      id: 2,
+      produitId: 102,
+      magasinId: 2,
+      quantiteTotale: 50,
+      quantiteReservee: 5,
+      seuilAlerte: 5,
+      seuilReapprovisionnement: 15,
+      stockSecurite: 5,
+      dernierPrixAchat: 2000,
+      statutStock: &#x27;En stock&#x27;,
+      datePeremption: new Date(&#x27;2025-06-15&#x27;),
+    }),
+    new Stock({
+      id: 3,
+      produitId: 103,
+      magasinId: 3,
+      quantiteTotale: 30,
+      quantiteReservee: 10,
+      seuilAlerte: 3,
+      seuilReapprovisionnement: 10,
+      stockSecurite: 3,
+      dernierPrixAchat: 500,
+      statutStock: &#x27;Rupture&#x27;,
+    }),
+    new Stock({
+      id: 4,
+      produitId: 104,
+      magasinId: 1,
+      quantiteTotale: 75,
+      quantiteReservee: 20,
+      seuilAlerte: 10,
+      seuilReapprovisionnement: 20,
+      stockSecurite: 5,
+      dernierPrixAchat: 1200,
+      statutStock: &#x27;En stock&#x27;,
+      datePeremption: new Date(&#x27;2025-08-01&#x27;),
+    }),
+    new Stock({
+      id: 5,
+      produitId: 105,
+      magasinId: 2,
+      quantiteTotale: 40,
+      quantiteReservee: 5,
+      seuilAlerte: 5,
+      seuilReapprovisionnement: 10,
+      stockSecurite: 5,
+      dernierPrixAchat: 3000,
+      statutStock: &#x27;En stock&#x27;,
+    }),
+    new Stock({
+      id: 6,
+      produitId: 106,
+      magasinId: 3,
+      quantiteTotale: 90,
+      quantiteReservee: 15,
+      seuilAlerte: 8,
+      seuilReapprovisionnement: 25,
+      stockSecurite: 5,
+      dernierPrixAchat: 1800,
+      statutStock: &#x27;En stock&#x27;,
+    }),
+    new Stock({
+      id: 7,
+      produitId: 107,
+      magasinId: 1,
+      quantiteTotale: 120,
+      quantiteReservee: 30,
+      seuilAlerte: 15,
+      seuilReapprovisionnement: 40,
+      stockSecurite: 10,
+      dernierPrixAchat: 1400,
+      statutStock: &#x27;En stock&#x27;,
+    }),
+    new Stock({
+      id: 8,
+      produitId: 108,
+      magasinId: 2,
+      quantiteTotale: 55,
+      quantiteReservee: 5,
+      seuilAlerte: 5,
+      seuilReapprovisionnement: 15,
+      stockSecurite: 5,
+      dernierPrixAchat: 2500,
+      statutStock: &#x27;En stock&#x27;,
+    }),
+    new Stock({
+      id: 9,
+      produitId: 109,
+      magasinId: 3,
+      quantiteTotale: 20,
+      quantiteReservee: 3,
+      seuilAlerte: 20,
+      seuilReapprovisionnement: 5,
+      stockSecurite: 2,
+      dernierPrixAchat: 800,
+      statutStock: &#x27;Rupture&#x27;,
+      datePeremption: new Date(&#x27;2025-04-20&#x27;),
+    }),
+    new Stock({
+      id: 10,
+      produitId: 110,
+      magasinId: 1,
+      quantiteTotale: 85,
+      quantiteReservee: 10,
+      seuilAlerte: 8,
+      seuilReapprovisionnement: 20,
+      stockSecurite: 5,
+      dernierPrixAchat: 1600,
+      statutStock: &#x27;En stock&#x27;,
+      datePeremption: new Date(&#x27;2025-03-15&#x27;),
+    }),
+  ]</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="116" class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:116</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+</section>
+
+    <section data-compodoc="block-accessors">
+    <h3 id="accessors">
+        Accessors
+    </h3>
+        <table class="table table-sm table-bordered">
+            <tbody>
+                <tr>
+                    <td class="col-md-4">
+                        <a name="getPaginatedInventaire"></a>
+                        <span class="name"><b>getPaginatedInventaire</b><a href="#getPaginatedInventaire"><span class="icon ion-ios-link"></span></a></span>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="col-md-4">
+                        <span class="accessor"><b>get</b><code>getPaginatedInventaire()</code></span>
+                    </td>
+                </tr>
+                            <tr>
+                                <td class="col-md-4">
+                                    <div class="io-line">Defined in <a href="" data-line="616" class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:616</a></div>
+                                </td>
+                            </tr>
+
+            </tbody>
+        </table>
+        <table class="table table-sm table-bordered">
+            <tbody>
+                <tr>
+                    <td class="col-md-4">
+                        <a name="getPaginatedQtesDisponibles"></a>
+                        <span class="name"><b>getPaginatedQtesDisponibles</b><a href="#getPaginatedQtesDisponibles"><span class="icon ion-ios-link"></span></a></span>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="col-md-4">
+                        <span class="accessor"><b>get</b><code>getPaginatedQtesDisponibles()</code></span>
+                    </td>
+                </tr>
+                            <tr>
+                                <td class="col-md-4">
+                                    <div class="io-line">Defined in <a href="" data-line="620" class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:620</a></div>
+                                </td>
+                            </tr>
+
+            </tbody>
+        </table>
+        <table class="table table-sm table-bordered">
+            <tbody>
+                <tr>
+                    <td class="col-md-4">
+                        <a name="getPaginatedAlertes"></a>
+                        <span class="name"><b>getPaginatedAlertes</b><a href="#getPaginatedAlertes"><span class="icon ion-ios-link"></span></a></span>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="col-md-4">
+                        <span class="accessor"><b>get</b><code>getPaginatedAlertes()</code></span>
+                    </td>
+                </tr>
+                            <tr>
+                                <td class="col-md-4">
+                                    <div class="io-line">Defined in <a href="" data-line="628" class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:628</a></div>
+                                </td>
+                            </tr>
+
+            </tbody>
+        </table>
+        <table class="table table-sm table-bordered">
+            <tbody>
+                <tr>
+                    <td class="col-md-4">
+                        <a name="getPaginatedMouvements"></a>
+                        <span class="name"><b>getPaginatedMouvements</b><a href="#getPaginatedMouvements"><span class="icon ion-ios-link"></span></a></span>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="col-md-4">
+                        <span class="accessor"><b>get</b><code>getPaginatedMouvements()</code></span>
+                    </td>
+                </tr>
+                            <tr>
+                                <td class="col-md-4">
+                                    <div class="io-line">Defined in <a href="" data-line="632" class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:632</a></div>
+                                </td>
+                            </tr>
+
+            </tbody>
+        </table>
+        <table class="table table-sm table-bordered">
+            <tbody>
+                <tr>
+                    <td class="col-md-4">
+                        <a name="getPaginatedNiveauStock"></a>
+                        <span class="name"><b>getPaginatedNiveauStock</b><a href="#getPaginatedNiveauStock"><span class="icon ion-ios-link"></span></a></span>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="col-md-4">
+                        <span class="accessor"><b>get</b><code>getPaginatedNiveauStock()</code></span>
+                    </td>
+                </tr>
+                            <tr>
+                                <td class="col-md-4">
+                                    <div class="io-line">Defined in <a href="" data-line="635" class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:635</a></div>
+                                </td>
+                            </tr>
+
+            </tbody>
+        </table>
+        <table class="table table-sm table-bordered">
+            <tbody>
+                <tr>
+                    <td class="col-md-4">
+                        <a name="getPaginatedPerissables"></a>
+                        <span class="name"><b>getPaginatedPerissables</b><a href="#getPaginatedPerissables"><span class="icon ion-ios-link"></span></a></span>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="col-md-4">
+                        <span class="accessor"><b>get</b><code>getPaginatedPerissables()</code></span>
+                    </td>
+                </tr>
+                            <tr>
+                                <td class="col-md-4">
+                                    <div class="io-line">Defined in <a href="" data-line="639" class="link-to-prism">src/app/caisse/stock_inventaire/stock-inventaires/stock-inventaires.component.ts:639</a></div>
+                                </td>
+                            </tr>
+
+            </tbody>
+        </table>
+</section>
+</div>
+
+
+    <div class="tab-pane fade  tab-source-code" id="source">
+        <pre class="line-numbers compodoc-sourcecode"><code class="language-typescript">import { Component, OnInit } from &#x27;@angular/core&#x27;;
+import { CommonModule } from &#x27;@angular/common&#x27;;
+import { MouvementsStock, Stock } from &#x27;../../../modeles/entrees-sorties.model&#x27;;
+import { Produits } from &#x27;../../../modeles/produit.modele&#x27;;
+import { FormsModule } from &#x27;@angular/forms&#x27;;
+import { Magasin } from &#x27;../../../modeles/magasin.model&#x27;;
+
+@Component({
+  selector: &#x27;app-stock-inventaires&#x27;,
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: &#x27;./stock-inventaires.component.html&#x27;,
+  styleUrl: &#x27;./stock-inventaires.component.css&#x27;,
+})
+export class StockInventairesComponent implements OnInit {
+  searchTerm &#x3D; &#x27;&#x27;; // Recherche
+  filteredInventaire: Produits[] &#x3D; [];
+  filteredQtesDisponibles: Produits[] &#x3D; [];
+  filteredNiveauStock: Produits[] &#x3D; [];
+  filteredAlertes: Stock[] &#x3D; [];
+  filteredMouvements: MouvementsStock[] &#x3D; [];
+  filteredPerissables: Stock[] &#x3D; [];
+
+  itemsPerPage &#x3D; 5; // Nombre d&#x27;éléments par page
+  currentPageAlertes &#x3D; 1;
+  currentPageInventaire &#x3D; 1;
+  currentPageQtesDisponibles &#x3D; 1;
+  currentPageNiveauStock &#x3D; 1;
+  currentPageMouvements &#x3D; 1;
+  currentPagePerissables &#x3D; 1;
+
+  magasins: Magasin[] &#x3D; [
+    new Magasin({
+      id: 1,
+      nom: &#x27;Magasin A&#x27;,
+      adresse: &#x27;Route de la Gare, Dakar&#x27;,
+      ville: &#x27;Dakar&#x27;,
+      telephone: &#x27;77 123 45 67&#x27;,
+      email: &#x27;magasinA@example.com&#x27;,
+      responsableId: 1, // Correspond au responsable dans votre système
+      capaciteStock: 500,
+      chiffreAffaires: 1500000,
+      ventes: [
+        /* Liste de paniers correspondants à ce magasin */
+      ],
+      depenses: [
+        /* Liste des dépenses pour ce magasin */
+      ],
+      recettes: [
+        /* Liste des recettes pour ce magasin */
+      ],
+      statut: &#x27;Actif&#x27;,
+      dateCreation: new Date(&#x27;2023-01-01&#x27;),
+      derniereMiseAJour: new Date(&#x27;2025-03-01&#x27;),
+      transferts: [
+        /* Liste des transferts pour ce magasin */
+      ],
+      //stock: this.stocks
+    }),
+    new Magasin({
+      id: 2,
+      nom: &#x27;Magasin B&#x27;,
+      adresse: &#x27;Avenue Blaise Diagne, Saint-Louis&#x27;,
+      ville: &#x27;Saint-Louis&#x27;,
+      telephone: &#x27;77 234 56 78&#x27;,
+      email: &#x27;magasinB@example.com&#x27;,
+      responsableId: 2, // Autre responsable
+      capaciteStock: 300,
+      chiffreAffaires: 800000,
+      ventes: [
+        /* Liste de paniers correspondants à ce magasin */
+      ],
+      depenses: [
+        /* Liste des dépenses pour ce magasin */
+      ],
+      recettes: [
+        /* Liste des recettes pour ce magasin */
+      ],
+      statut: &#x27;Actif&#x27;,
+      dateCreation: new Date(&#x27;2023-02-01&#x27;),
+      derniereMiseAJour: new Date(&#x27;2025-03-01&#x27;),
+      transferts: [
+        /* Liste des transferts pour ce magasin */
+      ],
+      //stock: this.stocks
+    }),
+    new Magasin({
+      id: 3,
+      nom: &#x27;Magasin C&#x27;,
+      adresse: &#x27;Centre-ville, Thiès&#x27;,
+      ville: &#x27;Thiès&#x27;,
+      telephone: &#x27;77 345 67 89&#x27;,
+      email: &#x27;magasinC@example.com&#x27;,
+      responsableId: 3, // Autre responsable
+      capaciteStock: 400,
+      chiffreAffaires: 1200000,
+      ventes: [
+        /* Liste de paniers correspondants à ce magasin */
+      ],
+      depenses: [
+        /* Liste des dépenses pour ce magasin */
+      ],
+      recettes: [
+        /* Liste des recettes pour ce magasin */
+      ],
+      statut: &#x27;Inactif&#x27;,
+      dateCreation: new Date(&#x27;2023-03-01&#x27;),
+      derniereMiseAJour: new Date(&#x27;2025-03-01&#x27;),
+      transferts: [
+        /* Liste des transferts pour ce magasin */
+      ],
+      //stock: this.stocks
+    }),
+  ];
+  // Données fictives pour les stocks
+  stocks: Stock[] &#x3D; [
+    new Stock({
+      id: 1,
+      produitId: 101,
+      magasinId: 1,
+      quantiteTotale: 100,
+      quantiteReservee: 20,
+      seuilAlerte: 10,
+      seuilReapprovisionnement: 30,
+      stockSecurite: 5,
+      dernierPrixAchat: 1500,
+      dateDerniereMiseAJour: new Date(&#x27;2025-03-01&#x27;),
+      datePeremption: new Date(&#x27;2025-12-01&#x27;),
+      statutStock: &#x27;En stock&#x27;,
+    }),
+    new Stock({
+      id: 2,
+      produitId: 102,
+      magasinId: 2,
+      quantiteTotale: 50,
+      quantiteReservee: 5,
+      seuilAlerte: 5,
+      seuilReapprovisionnement: 15,
+      stockSecurite: 5,
+      dernierPrixAchat: 2000,
+      statutStock: &#x27;En stock&#x27;,
+      datePeremption: new Date(&#x27;2025-06-15&#x27;),
+    }),
+    new Stock({
+      id: 3,
+      produitId: 103,
+      magasinId: 3,
+      quantiteTotale: 30,
+      quantiteReservee: 10,
+      seuilAlerte: 3,
+      seuilReapprovisionnement: 10,
+      stockSecurite: 3,
+      dernierPrixAchat: 500,
+      statutStock: &#x27;Rupture&#x27;,
+    }),
+    new Stock({
+      id: 4,
+      produitId: 104,
+      magasinId: 1,
+      quantiteTotale: 75,
+      quantiteReservee: 20,
+      seuilAlerte: 10,
+      seuilReapprovisionnement: 20,
+      stockSecurite: 5,
+      dernierPrixAchat: 1200,
+      statutStock: &#x27;En stock&#x27;,
+      datePeremption: new Date(&#x27;2025-08-01&#x27;),
+    }),
+    new Stock({
+      id: 5,
+      produitId: 105,
+      magasinId: 2,
+      quantiteTotale: 40,
+      quantiteReservee: 5,
+      seuilAlerte: 5,
+      seuilReapprovisionnement: 10,
+      stockSecurite: 5,
+      dernierPrixAchat: 3000,
+      statutStock: &#x27;En stock&#x27;,
+    }),
+    new Stock({
+      id: 6,
+      produitId: 106,
+      magasinId: 3,
+      quantiteTotale: 90,
+      quantiteReservee: 15,
+      seuilAlerte: 8,
+      seuilReapprovisionnement: 25,
+      stockSecurite: 5,
+      dernierPrixAchat: 1800,
+      statutStock: &#x27;En stock&#x27;,
+    }),
+    new Stock({
+      id: 7,
+      produitId: 107,
+      magasinId: 1,
+      quantiteTotale: 120,
+      quantiteReservee: 30,
+      seuilAlerte: 15,
+      seuilReapprovisionnement: 40,
+      stockSecurite: 10,
+      dernierPrixAchat: 1400,
+      statutStock: &#x27;En stock&#x27;,
+    }),
+    new Stock({
+      id: 8,
+      produitId: 108,
+      magasinId: 2,
+      quantiteTotale: 55,
+      quantiteReservee: 5,
+      seuilAlerte: 5,
+      seuilReapprovisionnement: 15,
+      stockSecurite: 5,
+      dernierPrixAchat: 2500,
+      statutStock: &#x27;En stock&#x27;,
+    }),
+    new Stock({
+      id: 9,
+      produitId: 109,
+      magasinId: 3,
+      quantiteTotale: 20,
+      quantiteReservee: 3,
+      seuilAlerte: 20,
+      seuilReapprovisionnement: 5,
+      stockSecurite: 2,
+      dernierPrixAchat: 800,
+      statutStock: &#x27;Rupture&#x27;,
+      datePeremption: new Date(&#x27;2025-04-20&#x27;),
+    }),
+    new Stock({
+      id: 10,
+      produitId: 110,
+      magasinId: 1,
+      quantiteTotale: 85,
+      quantiteReservee: 10,
+      seuilAlerte: 8,
+      seuilReapprovisionnement: 20,
+      stockSecurite: 5,
+      dernierPrixAchat: 1600,
+      statutStock: &#x27;En stock&#x27;,
+      datePeremption: new Date(&#x27;2025-03-15&#x27;),
+    }),
+  ];
+
+  // Données fictives pour les alertes (produits avec une quantité &lt; 50)
+  alertes: Stock[] &#x3D; this.stocks.filter((p) &#x3D;&gt; p.quantiteTotale &lt;&#x3D; p.seuilAlerte);
+
+  // Données fictives pour l&#x27;historique des mouvements de stock
+  mouvementsStock: MouvementsStock[] &#x3D; [
+    new MouvementsStock({
+      id: 1,
+      ref: &#x27;MV-20250308-001&#x27;,
+      produitId: 101,
+      magasinId: 1,
+      typeMouvement: &#x27;Entree&#x27;,
+      quantite: 20,
+      prixUnitaire: 1600,
+      acteurId: 3,
+      description: &#x27;Réapprovisionnement&#x27;,
+      dateMouvement: new Date(&#x27;2025-03-08&#x27;),
+    }),
+    new MouvementsStock({
+      id: 2,
+      ref: &#x27;MV-20250308-002&#x27;,
+      produitId: 102,
+      magasinId: 2,
+      typeMouvement: &#x27;Sortie&#x27;,
+      quantite: 10,
+      prixUnitaire: 2000,
+      acteurId: 5,
+      description: &#x27;Vente au client&#x27;,
+      dateMouvement: new Date(&#x27;2025-03-08&#x27;),
+    }),
+    new MouvementsStock({
+      id: 3,
+      ref: &#x27;MV-20250308-003&#x27;,
+      produitId: 103,
+      magasinId: 3,
+      typeMouvement: &#x27;Entree&#x27;,
+      quantite: 50,
+      prixUnitaire: 500,
+      acteurId: 1,
+      description: &#x27;Stock initial&#x27;,
+      dateMouvement: new Date(&#x27;2025-03-07&#x27;),
+    }),
+    new MouvementsStock({
+      id: 4,
+      ref: &#x27;MV-20250308-004&#x27;,
+      produitId: 104,
+      magasinId: 1,
+      typeMouvement: &#x27;Sortie&#x27;,
+      quantite: 5,
+      prixUnitaire: 3000,
+      acteurId: 4,
+      description: &#x27;Commande client&#x27;,
+      dateMouvement: new Date(&#x27;2025-03-06&#x27;),
+    }),
+    new MouvementsStock({
+      id: 5,
+      ref: &#x27;MV-20250308-005&#x27;,
+      produitId: 105,
+      magasinId: 2,
+      typeMouvement: &#x27;Entree&#x27;,
+      quantite: 100,
+      prixUnitaire: 1200,
+      acteurId: 2,
+      description: &#x27;Nouvelle livraison fournisseur&#x27;,
+      dateMouvement: new Date(&#x27;2025-03-05&#x27;),
+    }),
+
+    new MouvementsStock({
+      id: 6,
+      ref: &#x27;MV-20250308-006&#x27;,
+      produitId: 106,
+      magasinId: 1,
+      typeMouvement: &#x27;Sortie&#x27;,
+      quantite: 15,
+      prixUnitaire: 2500,
+      acteurId: 3,
+      description: &#x27;Vente comptoir&#x27;,
+      dateMouvement: new Date(&#x27;2025-03-05&#x27;),
+    }),
+    new MouvementsStock({
+      id: 7,
+      ref: &#x27;MV-20250308-007&#x27;,
+      produitId: 107,
+      magasinId: 3,
+      typeMouvement: &#x27;Entree&#x27;,
+      quantite: 80,
+      prixUnitaire: 2200,
+      acteurId: 6,
+      description: &#x27;Commande fournisseur&#x27;,
+      dateMouvement: new Date(&#x27;2025-03-04&#x27;),
+    }),
+    new MouvementsStock({
+      id: 8,
+      ref: &#x27;MV-20250308-008&#x27;,
+      produitId: 108,
+      magasinId: 2,
+      typeMouvement: &#x27;Sortie&#x27;,
+      quantite: 30,
+      prixUnitaire: 3000,
+      acteurId: 7,
+      description: &#x27;Livraison client gros&#x27;,
+      dateMouvement: new Date(&#x27;2025-03-03&#x27;),
+    }),
+    new MouvementsStock({
+      id: 9,
+      ref: &#x27;MV-20250308-009&#x27;,
+      produitId: 109,
+      magasinId: 1,
+      typeMouvement: &#x27;Entree&#x27;,
+      quantite: 60,
+      prixUnitaire: 900,
+      acteurId: 8,
+      description: &#x27;Achat pour revente&#x27;,
+      dateMouvement: new Date(&#x27;2025-03-02&#x27;),
+    }),
+    new MouvementsStock({
+      id: 10,
+      ref: &#x27;MV-20250308-010&#x27;,
+      produitId: 110,
+      magasinId: 3,
+      typeMouvement: &#x27;Sortie&#x27;,
+      quantite: 25,
+      prixUnitaire: 1000,
+      acteurId: 9,
+      description: &#x27;Stock boulangerie&#x27;,
+      dateMouvement: new Date(&#x27;2025-03-01&#x27;),
+    }),
+  ];
+
+  // Données fictives pour les produits, à remplacer par des appels à des services backend
+  produits: Produits[] &#x3D; [
+    /* new Produits({ id: 101, famille: &quot;Boissons&quot;, designation: &quot;Lait en poudre&quot;, fournisseurId: 3, unite: &quot;Carton&quot;, prixAchatUnitaire: 1500, prixVenteUnitaire: 2000, agent: &quot;Admin&quot;, description: &quot;Lait en poudre 500g&quot;, codeBarre: &quot;1234567890123&quot;, image: &quot;lait-poudre.jpg&quot;, perissable: true }),
+    new Produits({ id: 102, famille: &quot;Snacks&quot;, designation: &quot;Chips&quot;, fournisseurId: 2,  unite: &quot;Sachet&quot;, prixAchatUnitaire: 500, prixVenteUnitaire: 700, agent: &quot;Admin&quot;, description: &quot;Chips de pomme de terre&quot;, codeBarre: &quot;1234567890456&quot;, image: &quot;chips.jpg&quot;, perissable: true }),
+    new Produits({ id: 103, famille: &quot;Boissons&quot;, designation: &quot;Eau minérale&quot;, fournisseurId: 1,  unite: &quot;Bouteille&quot;, prixAchatUnitaire: 300, prixVenteUnitaire: 500, agent: &quot;Admin&quot;, description: &quot;Eau minérale naturelle&quot;, codeBarre: &quot;1234567890789&quot;, image: &quot;eau.jpg&quot;, perissable: false }),
+    new Produits({ id: 104, famille: &quot;Confiserie&quot;, designation: &quot;Chocolat&quot;, fournisseurId: 4, unite: &quot;Pièce&quot;, prixAchatUnitaire: 2500, prixVenteUnitaire: 3000, agent: &quot;Admin&quot;, description: &quot;Chocolat noir 70%&quot;, codeBarre: &quot;1234567890890&quot;, image: &quot;chocolat.jpg&quot;, perissable: true }),
+    new Produits({ id: 105, famille: &quot;Épicerie&quot;, designation: &quot;Sucre&quot;, fournisseurId: 5,  unite: &quot;Kg&quot;, prixAchatUnitaire: 1000, prixVenteUnitaire: 1200, agent: &quot;Admin&quot;, description: &quot;Sucre blanc raffiné&quot;, codeBarre: &quot;1234567890991&quot;, image: &quot;sucre.jpg&quot;, perissable: false }),
+
+    new Produits({ id: 106, famille: &quot;Boissons&quot;, designation: &quot;Café soluble&quot;, fournisseurId: 6,  unite: &quot;Bocal&quot;, prixAchatUnitaire: 2000, prixVenteUnitaire: 2500, agent: &quot;Admin&quot;, description: &quot;Café instantané 100g&quot;, codeBarre: &quot;1234567891002&quot;, image: &quot;cafe.jpg&quot;, perissable: false }),
+    new Produits({ id: 107, famille: &quot;Légumineuses&quot;, designation: &quot;Lentilles&quot;, fournisseurId: 7, unite: &quot;Kg&quot;, prixAchatUnitaire: 1800, prixVenteUnitaire: 2200, agent: &quot;Admin&quot;, description: &quot;Lentilles vertes bio&quot;, codeBarre: &quot;1234567891113&quot;, image: &quot;lentilles.jpg&quot;, perissable: false }),
+    new Produits({ id: 108, famille: &quot;Épicerie&quot;, designation: &quot;Riz basmati&quot;, fournisseurId: 8, unite: &quot;Kg&quot;, prixAchatUnitaire: 2500, prixVenteUnitaire: 3000, agent: &quot;Admin&quot;, description: &quot;Riz basmati parfumé&quot;, codeBarre: &quot;1234567891224&quot;, image: &quot;riz.jpg&quot;, perissable: false }),
+    new Produits({ id: 109, famille: &quot;Produits laitiers&quot;, designation: &quot;Yaourt nature&quot;, fournisseurId: 9, unite: &quot;Pot&quot;, prixAchatUnitaire: 600, prixVenteUnitaire: 900, agent: &quot;Admin&quot;, description: &quot;Yaourt nature 150g&quot;, codeBarre: &quot;1234567891335&quot;, image: &quot;yaourt.jpg&quot;, perissable: true }),
+    new Produits({ id: 110, famille: &quot;Boulangerie&quot;, designation: &quot;Pain complet&quot;, fournisseurId: 10, unite: &quot;Pièce&quot;, prixAchatUnitaire: 800, prixVenteUnitaire: 1000, agent: &quot;Admin&quot;, description: &quot;Pain complet aux céréales&quot;, codeBarre: &quot;1234567891446&quot;, image: &quot;pain.jpg&quot;, perissable: true})
+   */
+  ];
+
+  // Données fictives pour les Perissables
+  produitsPerissables: Produits[] &#x3D; this.produits.filter((p) &#x3D;&gt; p.perissable &#x3D;&#x3D;&#x3D; true);
+
+  // Alertes de réapprovisionnement
+  // alertes &#x3D; this.produits.filter(p &#x3D;&gt; p.quantite &lt; 30);  // Produits avec faible stock
+
+  // Historique des mouvements (fictif pour l&#x27;exemple)
+  /*  historique &#x3D; [
+    { date: &#x27;2025-01-01&#x27;, action: &#x27;Entrée&#x27;, produit: &#x27;Produit A&#x27;, quantite: 100 },
+    { date: &#x27;2025-01-02&#x27;, action: &#x27;Sortie&#x27;, produit: &#x27;Produit B&#x27;, quantite: 30 }
+  ]; */
+
+  ngOnInit(): void {
+    /* this.chargerInventaire();
+    this.chargerAlertes();
+    this.chargerHistorique(); */
+    console.log(&#x27;Taille alertse&#x27;, this.alertes.length);
+    console.log(&#x27;Taille produitsPeriassables&#x27;, this.getProduitsNonPerissables().length);
+    this.filteredInventaire &#x3D; [...this.produits];
+    this.filteredQtesDisponibles &#x3D; [...this.produits];
+    this.filteredNiveauStock &#x3D; [...this.produits];
+    this.filteredMouvements &#x3D; [...this.mouvementsStock];
+    this.filteredAlertes &#x3D; [...this.alertes];
+    this.filteredPerissables &#x3D; [...this.getProduitsPerissables()];
+    this.updatefilteredTable(&#x27;inventaire&#x27;);
+    this.updatefilteredTable(&#x27;qteDisponible&#x27;);
+    this.updatefilteredTable(&#x27;niveauStock&#x27;);
+    this.updatefilteredTable(&#x27;alerte&#x27;);
+    this.updatefilteredTable(&#x27;mouvement&#x27;);
+    this.updatefilteredTable(&#x27;perissable&#x27;);
+  }
+  // Méthodes pour afficher les informations
+  getProduitsParMagasin(magasin: number) {
+    return this.stocks.filter((p) &#x3D;&gt; p.magasinId &#x3D;&#x3D;&#x3D; magasin);
+  }
+
+  /* getProduitsPerissables() {
+    return this.produits.filter(p &#x3D;&gt; p.perissable);
+  } */
+
+  getProduitsNonPerissables() {
+    return this.produits.filter((p) &#x3D;&gt; !p.perissable);
+  }
+
+  /* chargerInventaire(): void {
+    this.stockService.getStocks().subscribe((data) &#x3D;&gt; {
+      this.stocks &#x3D; data;
+    });
+  }
+
+  chargerAlertes(): void {
+    this.stockService.checkReapprovisionnement().subscribe((data) &#x3D;&gt; {
+      this.alertes &#x3D; data;
+    });
+  }
+
+  chargerHistorique(): void {
+    this.stockService.getMouvements().subscribe((data) &#x3D;&gt; {
+      this.mouvementsStock &#x3D; data;
+    });
+  } */
+
+  // Méthodes pour gérer les alertes
+  envoyerAlerteReapprovisionnement() {
+    console.log(&#x27;Alerte de réapprovisionnement envoyée&#x27;);
+    // Implémentation de l&#x27;envoi d&#x27;alertes
+  }
+
+  // Méthodes pour gérer l&#x27;historique
+  ajouterMouvement(mouvement: MouvementsStock) {
+    this.mouvementsStock.push(mouvement);
+    console.log(&#x27;Mouvement ajouté:&#x27;, mouvement);
+  }
+
+  getProduitsPerissables(): Stock[] {
+    return this.stocks.filter(
+      (produit) &#x3D;&gt;
+        produit.datePeremption &amp;&amp;
+        new Date(produit.datePeremption).getTime() &lt; new Date().getTime() + 7 * 24 * 60 * 60 * 1000, // Moins de 7 jours
+    );
+  }
+
+  // Méthode pour obtenir le nom du produit à partir de l&#x27;id
+  getNomProduitById(id: number): string | null {
+    const produit &#x3D; this.produits.find((p) &#x3D;&gt; p.id &#x3D;&#x3D;&#x3D; id);
+    return produit ? produit.designation : null; // On retourne &#x60;null&#x60; si le produit n&#x27;est pas trouvé
+  }
+
+  // Méthode pour mettre à jour les recettes, les dépenses, les paiement et les catégories
+  updatefilteredTable(objet: string): void {
+    if (objet &#x3D;&#x3D;&#x3D; &#x27;inventaire&#x27;) {
+      this.filteredInventaire &#x3D; this.produits.slice(
+        (this.currentPageInventaire - 1) * 10,
+        this.currentPageInventaire * 10,
+      );
+    } else if (objet &#x3D;&#x3D;&#x3D; &#x27;qteDisponible&#x27;) {
+      this.filteredQtesDisponibles &#x3D; this.produits.slice(
+        (this.currentPageQtesDisponibles - 1) * 10,
+        this.currentPageQtesDisponibles * 10,
+      );
+    } else if (objet &#x3D;&#x3D;&#x3D; &#x27;niveauStock&#x27;) {
+      this.filteredNiveauStock &#x3D; this.produits.slice(
+        (this.currentPageNiveauStock - 1) * 10,
+        this.currentPageNiveauStock * 10,
+      );
+    } else if (objet &#x3D;&#x3D;&#x3D; &#x27;alerte&#x27;) {
+      this.filteredAlertes &#x3D; this.alertes.slice(
+        (this.currentPageAlertes - 1) * 10,
+        this.currentPageAlertes * 10,
+      );
+    } else if (objet &#x3D;&#x3D;&#x3D; &#x27;mouvement&#x27;) {
+      this.filteredMouvements &#x3D; this.mouvementsStock.slice(
+        (this.currentPageMouvements - 1) * 10,
+        this.currentPageMouvements * 10,
+      );
+    } else if (objet &#x3D;&#x3D;&#x3D; &#x27;perissable&#x27;) {
+      this.filteredPerissables &#x3D; this.getProduitsPerissables().slice(
+        (this.currentPagePerissables - 1) * 10,
+        this.currentPagePerissables * 10,
+      );
+    }
+  }
+
+  // Gestion de la recherche
+  onSearchChange(objet: string): void {
+    if (objet &#x3D;&#x3D;&#x3D; &#x27;inventaire&#x27; || objet &#x3D;&#x3D;&#x3D; &#x27;qteDisponible&#x27; || objet &#x3D;&#x3D;&#x3D; &#x27;niveauStock&#x27;) {
+      if (objet &#x3D;&#x3D;&#x3D; &#x27;inventaire&#x27;) {
+        this.filteredInventaire &#x3D; this.produits.filter(
+          (produit) &#x3D;&gt;
+            produit.designation.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+            this.getNomMagasinByProduitId(produit.id!, this.stocks, this.magasins)
+              .toLowerCase()
+              .includes(this.searchTerm.toLowerCase()) ||
+            this.getQteById(produit.id!, this.stocks)
+              .toString()
+              .toLowerCase()
+              .includes(this.searchTerm.toLowerCase()),
+          // produit.magasinId?.toString().toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+          // produit.quantite?.toString().includes(this.searchTerm)
+          //new Date(depense.date).toLocaleDateString().includes(this.searchTerm) // Filtrer par date
+        );
+        this.currentPageInventaire &#x3D; 1; // Réinitialiser à la première page après recherche
+      }
+      if (objet &#x3D;&#x3D;&#x3D; &#x27;niveauStock&#x27;) {
+        this.filteredNiveauStock &#x3D; this.produits.filter(
+          (produit) &#x3D;&gt;
+            produit.designation.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+            this.getNomMagasinByProduitId(produit.id!, this.stocks, this.magasins)
+              .toLowerCase()
+              .includes(this.searchTerm.toLowerCase()) ||
+            this.getQteById(produit.id!, this.stocks)
+              .toString()
+              .toLowerCase()
+              .includes(this.searchTerm.toLowerCase()),
+          /* produit.magasinId?.toString().toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+          produit.quantite?.toString().includes(this.searchTerm) ||
+          produit.seuilAlerte?.toString().includes(this.searchTerm) */
+          //new Date(depense.date).toLocaleDateString().includes(this.searchTerm) // Filtrer par date
+        );
+        this.currentPageNiveauStock &#x3D; 1;
+      }
+
+      if (objet &#x3D;&#x3D;&#x3D; &#x27;qteDisponible&#x27;) {
+        this.filteredQtesDisponibles &#x3D; this.produits.filter(
+          (produit) &#x3D;&gt;
+            produit.designation.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+            this.getQteDisponibleById(produit.id!, this.stocks)
+              .toString()
+              .toLowerCase()
+              .includes(this.searchTerm.toLowerCase()),
+          // produit.quantiteDisponible?.toString().includes(this.searchTerm)
+          //new Date(depense.date).toLocaleDateString().includes(this.searchTerm) // Filtrer par date
+        );
+        this.currentPageQtesDisponibles &#x3D; 1;
+      }
+    } else if (objet &#x3D;&#x3D;&#x3D; &#x27;alerte&#x27;) {
+      this.filteredAlertes &#x3D; this.alertes.filter(
+        (alerte) &#x3D;&gt;
+          this.getNomProduitById(alerte.produitId)
+            ?.toLowerCase()
+            .includes(this.searchTerm.toLowerCase()) ||
+          alerte.quantiteDisponible.toString().includes(this.searchTerm) ||
+          alerte.seuilAlerte.toString().includes(this.searchTerm),
+        //new Date(recette.date).toLocaleDateString().includes(this.searchTerm)
+      );
+      this.currentPageAlertes &#x3D; 1;
+    } else if (objet &#x3D;&#x3D;&#x3D; &#x27;mouvement&#x27;) {
+      this.filteredMouvements &#x3D; this.mouvementsStock.filter(
+        (mvt) &#x3D;&gt;
+          this.getNomProduitById(mvt.produitId)
+            ?.toLowerCase()
+            .includes(this.searchTerm.toLowerCase()) ||
+          mvt.typeMouvement.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+          mvt.quantite.toString().includes(this.searchTerm) ||
+          new Date(mvt.dateMouvement).toLocaleDateString().includes(this.searchTerm),
+      );
+      this.currentPageMouvements &#x3D; 1;
+    } else if (objet &#x3D;&#x3D;&#x3D; &#x27;perissable&#x27;) {
+      this.filteredPerissables &#x3D; this.getProduitsPerissables().filter(
+        (perissable) &#x3D;&gt;
+          this.getNomProduitById(perissable.produitId)
+            ?.toLowerCase()
+            .includes(this.searchTerm.toLowerCase()) ||
+          perissable.quantiteTotale
+            .toString()
+            .toLowerCase()
+            .includes(this.searchTerm.toLowerCase()),
+        //new Date(perissable.datePeremption).toLocaleDateString().includes(this.searchTerm)
+      );
+      this.currentPagePerissables &#x3D; 1;
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  setItemsPerPage(event: any) {
+    this.itemsPerPage &#x3D; +event.target.value;
+    this.currentPageAlertes &#x3D; 1;
+    this.currentPageInventaire &#x3D; 1;
+    this.currentPageQtesDisponibles &#x3D; 1;
+    this.currentPageNiveauStock &#x3D; 1;
+    this.currentPageMouvements &#x3D; 1;
+    this.currentPagePerissables &#x3D; 1;
+
+    //this.cdr.detectChanges(); // Forcer la mise à jour de la vue
+  }
+
+  // Méthodes de pagination
+  get getPaginatedInventaire() {
+    return this.paginate(this.filteredInventaire, this.currentPageInventaire, this.itemsPerPage);
+  }
+
+  get getPaginatedQtesDisponibles() {
+    return this.paginate(
+      this.filteredQtesDisponibles,
+      this.currentPageQtesDisponibles,
+      this.itemsPerPage,
+    );
+  }
+
+  get getPaginatedAlertes() {
+    return this.paginate(this.filteredAlertes, this.currentPageAlertes, this.itemsPerPage);
+  }
+
+  get getPaginatedMouvements() {
+    return this.paginate(this.filteredMouvements, this.currentPageMouvements, this.itemsPerPage);
+  }
+  get getPaginatedNiveauStock() {
+    return this.paginate(this.filteredNiveauStock, this.currentPageNiveauStock, this.itemsPerPage);
+  }
+
+  get getPaginatedPerissables() {
+    return this.paginate(this.filteredPerissables, this.currentPagePerissables, this.itemsPerPage);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  paginate(data: any[], currentPage: number, itemsPerPage: number) {
+    const start &#x3D; (currentPage - 1) * itemsPerPage;
+    return data.slice(start, start + itemsPerPage);
+  }
+
+  onPageChange(page: number, instanceObj: string): void {
+    if (instanceObj &#x3D;&#x3D;&#x3D; &#x27;inventaire&#x27;) {
+      this.currentPageInventaire &#x3D; page;
+    } else if (instanceObj &#x3D;&#x3D;&#x3D; &#x27;qteDisponible&#x27;) {
+      this.currentPageQtesDisponibles &#x3D; page;
+    } else if (instanceObj &#x3D;&#x3D;&#x3D; &#x27;niveauStock&#x27;) {
+      this.currentPageNiveauStock &#x3D; page;
+    } else if (instanceObj &#x3D;&#x3D;&#x3D; &#x27;alerte&#x27;) {
+      this.currentPageAlertes &#x3D; page;
+    } else if (instanceObj &#x3D;&#x3D;&#x3D; &#x27;mouvement&#x27;) {
+      this.currentPageMouvements &#x3D; page;
+    } else if (instanceObj &#x3D;&#x3D;&#x3D; &#x27;perissable&#x27;) {
+      this.currentPagePerissables &#x3D; page;
+    }
+    console.log(&#x60;Changement de page ${instanceObj} -&gt; Page actuelle :&#x60;, page);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getTotalPages(list: any[]): number {
+    return Math.ceil(list.length / this.itemsPerPage);
+  }
+
+  getQteById(produitId: number, stocks: Stock[]): number {
+    const produit &#x3D; stocks.find((p) &#x3D;&gt; p.produitId &#x3D;&#x3D;&#x3D; produitId);
+    return produit ? produit.quantiteTotale : 0;
+  }
+
+  getQteDisponibleById(produitId: number, stocks: Stock[]): number {
+    const produit &#x3D; stocks.find((p) &#x3D;&gt; p.produitId &#x3D;&#x3D;&#x3D; produitId);
+    return produit ? produit.quantiteDisponible : 0;
+  }
+
+  getMagasinById(magasinId: number, stocks: Stock[]): number {
+    const stock &#x3D; stocks.find((p) &#x3D;&gt; p.magasinId &#x3D;&#x3D;&#x3D; magasinId);
+    return stock ? stock.magasinId : 0; // Renvoie l&#x27;id du magasin ou 0 si aucun stock trouvé
+  }
+  getNomMagasinByProduitId(produitId: number, stocks: Stock[], magasins: Magasin[]): string {
+    // Trouver le stock correspondant au produitId
+    const stock &#x3D; stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produitId);
+
+    // Si un stock est trouvé, utiliser magasinId pour chercher le nom du magasin
+    if (stock) {
+      const magasin &#x3D; magasins.find((m) &#x3D;&gt; m.id &#x3D;&#x3D;&#x3D; stock.magasinId);
+      return magasin ? magasin.nom : &#x27;Magasin introuvable&#x27;; // Retourner le nom du magasin ou un message d&#x27;erreur
+    }
+
+    return &#x27;Produit non trouvé&#x27;; // Si aucun stock pour le produit
+  }
+}
+</code></pre>
+    </div>
+
+    <div class="tab-pane fade " id="templateData">
+        <pre class="line-numbers"><code class="language-html">&lt;div class&#x3D;&quot;container-fluid mt-4&quot;&gt;
+  &lt;nav&gt;
+    &lt;div class&#x3D;&quot;nav nav-tabs&quot; id&#x3D;&quot;nav-tab&quot; role&#x3D;&quot;tablist&quot;&gt;
+      &lt;a
+        class&#x3D;&quot;nav-link active&quot;
+        id&#x3D;&quot;nav-inventaire-tab&quot;
+        data-bs-toggle&#x3D;&quot;tab&quot;
+        href&#x3D;&quot;#nav-inventaire&quot;
+        role&#x3D;&quot;tab&quot;
+        aria-controls&#x3D;&quot;nav-inventaire&quot;
+        aria-selected&#x3D;&quot;true&quot;
+        &gt;Inventaire actuel&lt;/a
+      &gt;
+      &lt;a
+        class&#x3D;&quot;nav-link&quot;
+        id&#x3D;&quot;nav-quantites-tab&quot;
+        data-bs-toggle&#x3D;&quot;tab&quot;
+        href&#x3D;&quot;#nav-quantites&quot;
+        role&#x3D;&quot;tab&quot;
+        aria-controls&#x3D;&quot;nav-quantites&quot;
+        aria-selected&#x3D;&quot;false&quot;
+        &gt;Quantités disponibles&lt;/a
+      &gt;
+      &lt;a
+        class&#x3D;&quot;nav-link&quot;
+        id&#x3D;&quot;nav-niveaux-tab&quot;
+        data-bs-toggle&#x3D;&quot;tab&quot;
+        href&#x3D;&quot;#nav-niveaux&quot;
+        role&#x3D;&quot;tab&quot;
+        aria-controls&#x3D;&quot;nav-niveaux&quot;
+        aria-selected&#x3D;&quot;false&quot;
+        &gt;Niveaux de stock&lt;/a
+      &gt;
+      &lt;a
+        class&#x3D;&quot;nav-link&quot;
+        id&#x3D;&quot;nav-alertes-tab&quot;
+        data-bs-toggle&#x3D;&quot;tab&quot;
+        href&#x3D;&quot;#nav-alertes&quot;
+        role&#x3D;&quot;tab&quot;
+        aria-controls&#x3D;&quot;nav-alertes&quot;
+        aria-selected&#x3D;&quot;false&quot;
+        &gt;Alertes&lt;/a
+      &gt;
+      &lt;a
+        class&#x3D;&quot;nav-link&quot;
+        id&#x3D;&quot;nav-historique-tab&quot;
+        data-bs-toggle&#x3D;&quot;tab&quot;
+        href&#x3D;&quot;#nav-historique&quot;
+        role&#x3D;&quot;tab&quot;
+        aria-controls&#x3D;&quot;nav-historique&quot;
+        aria-selected&#x3D;&quot;false&quot;
+        &gt;Historique des mouvements&lt;/a
+      &gt;
+      &lt;a
+        class&#x3D;&quot;nav-link&quot;
+        id&#x3D;&quot;nav-périssables-tab&quot;
+        data-bs-toggle&#x3D;&quot;tab&quot;
+        href&#x3D;&quot;#nav-périssables&quot;
+        role&#x3D;&quot;tab&quot;
+        aria-controls&#x3D;&quot;nav-périssables&quot;
+        aria-selected&#x3D;&quot;false&quot;
+        &gt;Produits périssables&lt;/a
+      &gt;
+    &lt;/div&gt;
+  &lt;/nav&gt;
+  &lt;div class&#x3D;&quot;tab-content mt-4&quot; id&#x3D;&quot;nav-tabContent&quot;&gt;
+    &lt;!-- Section Inventaire actuel --&gt;
+    &lt;div
+      class&#x3D;&quot;tab-pane fade show active&quot;
+      id&#x3D;&quot;nav-inventaire&quot;
+      role&#x3D;&quot;tabpanel&quot;
+      aria-labelledby&#x3D;&quot;nav-inventaire-tab&quot;
+    &gt;
+      &lt;!-- &lt;h4&gt;Inventaire actuel&lt;/h4&gt;
+        &lt;p&gt;Liste des produits disponibles dans l&#x27;inventaire actuel...&lt;/p&gt; --&gt;
+      &lt;!-- Implémentation de la liste des produits et de leur état --&gt;
+      &lt;!-- Barre de recherche et sélection du nombre de lignes --&gt;
+      &lt;div class&#x3D;&quot;d-flex justify-content-between mb-2&quot;&gt;
+        &lt;input
+          type&#x3D;&quot;text&quot;
+          class&#x3D;&quot;form-control w-50&quot;
+          placeholder&#x3D;&quot;Rechercher par nom produit, magasin, quantité ....&quot;
+          [(ngModel)]&#x3D;&quot;searchTerm&quot;
+          (input)&#x3D;&quot;onSearchChange(&#x27;inventaire&#x27;)&quot;
+        /&gt;
+        &lt;select class&#x3D;&quot;form-select w-auto&quot; (change)&#x3D;&quot;setItemsPerPage($event)&quot;&gt;
+          &lt;option [value]&#x3D;&quot;5&quot;&gt;5 lignes&lt;/option&gt;
+          &lt;option [value]&#x3D;&quot;10&quot;&gt;10 lignes&lt;/option&gt;
+          &lt;option [value]&#x3D;&quot;20&quot;&gt;20 lignes&lt;/option&gt;
+        &lt;/select&gt;
+      &lt;/div&gt;
+      &lt;table class&#x3D;&quot;table&quot;&gt;
+        &lt;thead&gt;
+          &lt;tr&gt;
+            &lt;th scope&#x3D;&quot;col&quot;&gt;Produit&lt;/th&gt;
+            &lt;th scope&#x3D;&quot;col&quot;&gt;Magasin&lt;/th&gt;
+            &lt;th scope&#x3D;&quot;col&quot;&gt;Quantité&lt;/th&gt;
+            &lt;th scope&#x3D;&quot;col&quot;&gt;Périssable&lt;/th&gt;
+          &lt;/tr&gt;
+        &lt;/thead&gt;
+        &lt;tbody&gt;
+          &lt;tr *ngFor&#x3D;&quot;let produit of getPaginatedInventaire&quot;&gt;
+            &lt;td&gt;{{ produit.description }}&lt;/td&gt;
+            &lt;td&gt;{{ getNomMagasinByProduitId(produit.id, stocks, magasins) }}&lt;/td&gt;
+            &lt;td&gt;{{ getQteById(produit.id, stocks) }}&lt;/td&gt;
+            &lt;td&gt;{{ produit.perissable ? &#x27;Oui&#x27; : &#x27;Non&#x27; }}&lt;/td&gt;
+          &lt;/tr&gt;
+        &lt;/tbody&gt;
+      &lt;/table&gt;
+      &lt;!-- Pagination --&gt;
+      &lt;div class&#x3D;&quot;d-flex justify-content-center align-items-center&quot;&gt;
+        &lt;button
+          class&#x3D;&quot;btn btn-success&quot;
+          (click)&#x3D;&quot;onPageChange(currentPageInventaire - 1, &#x27;inventaire&#x27;)&quot;
+          [disabled]&#x3D;&quot;currentPageInventaire &#x3D;&#x3D;&#x3D; 1&quot;
+        &gt;
+          &lt;i class&#x3D;&quot;bi bi-arrow-left-circle&quot;&gt;&lt;/i&gt;
+        &lt;/button&gt;
+        &lt;span class&#x3D;&quot;h3&quot;
+          &gt;{{ currentPageInventaire }} / {{ getTotalPages(filteredInventaire) }}&lt;/span
+        &gt;
+        &lt;button
+          class&#x3D;&quot;btn btn-success&quot;
+          (click)&#x3D;&quot;onPageChange(currentPageInventaire + 1, &#x27;inventaire&#x27;)&quot;
+          [disabled]&#x3D;&quot;currentPageInventaire &gt;&#x3D; getTotalPages(filteredInventaire)&quot;
+        &gt;
+          &lt;i class&#x3D;&quot;bi bi-arrow-right-circle&quot;&gt;&lt;/i&gt;
+        &lt;/button&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;!-- Section Quantités disponibles --&gt;
+    &lt;div
+      class&#x3D;&quot;tab-pane fade&quot;
+      id&#x3D;&quot;nav-quantites&quot;
+      role&#x3D;&quot;tabpanel&quot;
+      aria-labelledby&#x3D;&quot;nav-quantites-tab&quot;
+    &gt;
+      &lt;!-- &lt;h4&gt;Quantités disponibles&lt;/h4&gt;
+        &lt;p&gt;Affichage des quantités disponibles pour chaque produit...&lt;/p&gt; --&gt;
+      &lt;!-- Implémentation de la gestion des quantités --&gt;
+      &lt;!-- Barre de recherche et sélection du nombre de lignes --&gt;
+      &lt;div class&#x3D;&quot;d-flex justify-content-between mb-2&quot;&gt;
+        &lt;input
+          type&#x3D;&quot;text&quot;
+          class&#x3D;&quot;form-control w-50&quot;
+          placeholder&#x3D;&quot;Rechercher par nom produit, quantité ....&quot;
+          [(ngModel)]&#x3D;&quot;searchTerm&quot;
+          (input)&#x3D;&quot;onSearchChange(&#x27;qteDisponible&#x27;)&quot;
+        /&gt;
+        &lt;select class&#x3D;&quot;form-select w-auto&quot; (change)&#x3D;&quot;setItemsPerPage($event)&quot;&gt;
+          &lt;option [value]&#x3D;&quot;5&quot;&gt;5 lignes&lt;/option&gt;
+          &lt;option [value]&#x3D;&quot;10&quot;&gt;10 lignes&lt;/option&gt;
+          &lt;option [value]&#x3D;&quot;20&quot;&gt;20 lignes&lt;/option&gt;
+        &lt;/select&gt;
+      &lt;/div&gt;
+      &lt;table class&#x3D;&quot;table&quot;&gt;
+        &lt;thead&gt;
+          &lt;tr&gt;
+            &lt;th scope&#x3D;&quot;col&quot;&gt;Produit&lt;/th&gt;
+            &lt;th scope&#x3D;&quot;col&quot;&gt;Quantité disponible&lt;/th&gt;
+          &lt;/tr&gt;
+        &lt;/thead&gt;
+        &lt;tbody&gt;
+          &lt;tr *ngFor&#x3D;&quot;let produit of getPaginatedQtesDisponibles&quot;&gt;
+            &lt;td&gt;{{ produit.designation }}&lt;/td&gt;
+            &lt;td&gt;{{ getQteDisponibleById(produit.id, stocks) }}&lt;/td&gt;
+          &lt;/tr&gt;
+        &lt;/tbody&gt;
+      &lt;/table&gt;
+      &lt;!-- Pagination --&gt;
+      &lt;div class&#x3D;&quot;d-flex justify-content-center align-items-center&quot;&gt;
+        &lt;button
+          class&#x3D;&quot;btn btn-success&quot;
+          (click)&#x3D;&quot;onPageChange(currentPageQtesDisponibles - 1, &#x27;qteDisponible&#x27;)&quot;
+          [disabled]&#x3D;&quot;currentPageQtesDisponibles &#x3D;&#x3D;&#x3D; 1&quot;
+        &gt;
+          &lt;i class&#x3D;&quot;bi bi-arrow-left-circle&quot;&gt;&lt;/i&gt;
+        &lt;/button&gt;
+        &lt;span class&#x3D;&quot;h3&quot;
+          &gt;{{ currentPageQtesDisponibles }} / {{ getTotalPages(filteredQtesDisponibles) }}&lt;/span
+        &gt;
+        &lt;button
+          class&#x3D;&quot;btn btn-success&quot;
+          (click)&#x3D;&quot;onPageChange(currentPageQtesDisponibles + 1, &#x27;qteDisponible&#x27;)&quot;
+          [disabled]&#x3D;&quot;currentPageQtesDisponibles &gt;&#x3D; getTotalPages(filteredQtesDisponibles)&quot;
+        &gt;
+          &lt;i class&#x3D;&quot;bi bi-arrow-right-circle&quot;&gt;&lt;/i&gt;
+        &lt;/button&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;!-- Section Niveaux de stock --&gt;
+    &lt;div class&#x3D;&quot;tab-pane fade&quot; id&#x3D;&quot;nav-niveaux&quot; role&#x3D;&quot;tabpanel&quot; aria-labelledby&#x3D;&quot;nav-niveaux-tab&quot;&gt;
+      &lt;!--  &lt;h4&gt;Niveaux de stock par magasin&lt;/h4&gt;
+        &lt;p&gt;Affichage des niveaux de stock dans chaque magasin...&lt;/p&gt; --&gt;
+      &lt;!-- Barre de recherche et sélection du nombre de lignes --&gt;
+      &lt;div class&#x3D;&quot;d-flex justify-content-between mb-2&quot;&gt;
+        &lt;input
+          type&#x3D;&quot;text&quot;
+          class&#x3D;&quot;form-control w-50&quot;
+          placeholder&#x3D;&quot;Rechercher par nom produit, magasin, quantité ....&quot;
+          [(ngModel)]&#x3D;&quot;searchTerm&quot;
+          (input)&#x3D;&quot;onSearchChange(&#x27;niveauStock&#x27;)&quot;
+        /&gt;
+        &lt;select class&#x3D;&quot;form-select w-auto&quot; (change)&#x3D;&quot;setItemsPerPage($event)&quot;&gt;
+          &lt;option [value]&#x3D;&quot;5&quot;&gt;5 lignes&lt;/option&gt;
+          &lt;option [value]&#x3D;&quot;10&quot;&gt;10 lignes&lt;/option&gt;
+          &lt;option [value]&#x3D;&quot;20&quot;&gt;20 lignes&lt;/option&gt;
+        &lt;/select&gt;
+      &lt;/div&gt;
+      &lt;!-- Implémentation de la gestion des niveaux de stock par magasin --&gt;
+      &lt;table class&#x3D;&quot;table&quot;&gt;
+        &lt;thead&gt;
+          &lt;tr&gt;
+            &lt;th scope&#x3D;&quot;col&quot;&gt;Produit&lt;/th&gt;
+            &lt;th scope&#x3D;&quot;col&quot;&gt;Magasin&lt;/th&gt;
+            &lt;th scope&#x3D;&quot;col&quot;&gt;Quantité&lt;/th&gt;
+          &lt;/tr&gt;
+        &lt;/thead&gt;
+        &lt;tbody&gt;
+          &lt;tr *ngFor&#x3D;&quot;let produit of getPaginatedNiveauStock&quot;&gt;
+            &lt;td&gt;{{ produit.designation }}&lt;/td&gt;
+            &lt;td&gt;{{ getNomMagasinByProduitId(produit.id, stocks, magasins) }}&lt;/td&gt;
+            &lt;td&gt;{{ getQteById(produit.id, stocks) }}&lt;/td&gt;
+          &lt;/tr&gt;
+        &lt;/tbody&gt;
+      &lt;/table&gt;
+      &lt;!-- Pagination --&gt;
+      &lt;div class&#x3D;&quot;d-flex justify-content-center align-items-center&quot;&gt;
+        &lt;button
+          class&#x3D;&quot;btn btn-success&quot;
+          (click)&#x3D;&quot;onPageChange(currentPageNiveauStock - 1, &#x27;niveauStock&#x27;)&quot;
+          [disabled]&#x3D;&quot;currentPageNiveauStock &#x3D;&#x3D;&#x3D; 1&quot;
+        &gt;
+          &lt;i class&#x3D;&quot;bi bi-arrow-left-circle&quot;&gt;&lt;/i&gt;
+        &lt;/button&gt;
+        &lt;span class&#x3D;&quot;h3&quot;
+          &gt;{{ currentPageNiveauStock }} / {{ getTotalPages(filteredNiveauStock) }}&lt;/span
+        &gt;
+        &lt;button
+          class&#x3D;&quot;btn btn-success&quot;
+          (click)&#x3D;&quot;onPageChange(currentPageNiveauStock + 1, &#x27;niveauStock&#x27;)&quot;
+          [disabled]&#x3D;&quot;currentPageNiveauStock &gt;&#x3D; getTotalPages(filteredNiveauStock)&quot;
+        &gt;
+          &lt;i class&#x3D;&quot;bi bi-arrow-right-circle&quot;&gt;&lt;/i&gt;
+        &lt;/button&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;!-- Section Alertes de réapprovisionnement --&gt;
+    &lt;div class&#x3D;&quot;tab-pane fade&quot; id&#x3D;&quot;nav-alertes&quot; role&#x3D;&quot;tabpanel&quot; aria-labelledby&#x3D;&quot;nav-alertes-tab&quot;&gt;
+      &lt;!-- &lt;h4&gt;Alertes de réapprovisionnement&lt;/h4&gt;
+        &lt;p&gt;Liste des alertes de réapprovisionnement pour les produits...&lt;/p&gt; --&gt;
+      &lt;!-- Barre de recherche et sélection du nombre de lignes --&gt;
+      &lt;div class&#x3D;&quot;d-flex justify-content-between mb-2&quot;&gt;
+        &lt;input
+          type&#x3D;&quot;text&quot;
+          class&#x3D;&quot;form-control w-50&quot;
+          placeholder&#x3D;&quot;Rechercher par nom produit, magasin, quantité ....&quot;
+          [(ngModel)]&#x3D;&quot;searchTerm&quot;
+          (input)&#x3D;&quot;onSearchChange(&#x27;alerte&#x27;)&quot;
+        /&gt;
+        &lt;select class&#x3D;&quot;form-select w-auto&quot; (change)&#x3D;&quot;setItemsPerPage($event)&quot;&gt;
+          &lt;option [value]&#x3D;&quot;5&quot;&gt;5 lignes&lt;/option&gt;
+          &lt;option [value]&#x3D;&quot;10&quot;&gt;10 lignes&lt;/option&gt;
+          &lt;option [value]&#x3D;&quot;20&quot;&gt;20 lignes&lt;/option&gt;
+        &lt;/select&gt;
+      &lt;/div&gt;
+      &lt;!-- Implémentation de l&#x27;affichage des alertes de réapprovisionnement --&gt;
+      &lt;table class&#x3D;&quot;table&quot;&gt;
+        &lt;thead&gt;
+          &lt;tr&gt;
+            &lt;th scope&#x3D;&quot;col&quot;&gt;Produit&lt;/th&gt;
+            &lt;th scope&#x3D;&quot;col&quot;&gt;Quantité restante&lt;/th&gt;
+            &lt;th scope&#x3D;&quot;col&quot;&gt;Seuil&lt;/th&gt;
+            &lt;th scope&#x3D;&quot;col&quot;&gt;Action&lt;/th&gt;
+          &lt;/tr&gt;
+        &lt;/thead&gt;
+        &lt;tbody&gt;
+          &lt;tr *ngFor&#x3D;&quot;let alerte of getPaginatedAlertes&quot;&gt;
+            &lt;td&gt;{{ getNomProduitById(alerte.produitId) }}&lt;/td&gt;
+            &lt;td&gt;{{ alerte.quantiteDisponible }}&lt;/td&gt;
+            &lt;td&gt;{{ alerte.seuilAlerte }}&lt;/td&gt;
+            &lt;td&gt;
+              &lt;button class&#x3D;&quot;btn btn-warning&quot; (click)&#x3D;&quot;envoyerAlerteReapprovisionnement()&quot;&gt;
+                Envoyer alerte
+              &lt;/button&gt;
+            &lt;/td&gt;
+          &lt;/tr&gt;
+        &lt;/tbody&gt;
+      &lt;/table&gt;
+      &lt;!-- Pagination --&gt;
+      &lt;div class&#x3D;&quot;d-flex justify-content-center align-items-center&quot;&gt;
+        &lt;button
+          class&#x3D;&quot;btn btn-success&quot;
+          (click)&#x3D;&quot;onPageChange(currentPageAlertes - 1, &#x27;alerte&#x27;)&quot;
+          [disabled]&#x3D;&quot;currentPageAlertes &#x3D;&#x3D;&#x3D; 1&quot;
+        &gt;
+          &lt;i class&#x3D;&quot;bi bi-arrow-left-circle&quot;&gt;&lt;/i&gt;
+        &lt;/button&gt;
+        &lt;span class&#x3D;&quot;h3&quot;&gt;{{ currentPageAlertes }} / {{ getTotalPages(filteredAlertes) }}&lt;/span&gt;
+        &lt;button
+          class&#x3D;&quot;btn btn-success&quot;
+          (click)&#x3D;&quot;onPageChange(currentPageAlertes + 1, &#x27;alerte&#x27;)&quot;
+          [disabled]&#x3D;&quot;currentPageAlertes &gt;&#x3D; getTotalPages(filteredAlertes)&quot;
+        &gt;
+          &lt;i class&#x3D;&quot;bi bi-arrow-right-circle&quot;&gt;&lt;/i&gt;
+        &lt;/button&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;!-- Section Historique des mouvements --&gt;
+    &lt;div
+      class&#x3D;&quot;tab-pane fade&quot;
+      id&#x3D;&quot;nav-historique&quot;
+      role&#x3D;&quot;tabpanel&quot;
+      aria-labelledby&#x3D;&quot;nav-historique-tab&quot;
+    &gt;
+      &lt;!-- &lt;h4&gt;Historique des mouvements de stock&lt;/h4&gt;
+        &lt;p&gt;Liste des mouvements de stock (entrées et sorties)...&lt;/p&gt; --&gt;
+      &lt;!-- Barre de recherche et sélection du nombre de lignes --&gt;
+      &lt;div class&#x3D;&quot;d-flex justify-content-between mb-2&quot;&gt;
+        &lt;input
+          type&#x3D;&quot;text&quot;
+          class&#x3D;&quot;form-control w-50&quot;
+          placeholder&#x3D;&quot;Rechercher par nom produit, date, quantité ....&quot;
+          [(ngModel)]&#x3D;&quot;searchTerm&quot;
+          (input)&#x3D;&quot;onSearchChange(&#x27;mouvement&#x27;)&quot;
+        /&gt;
+        &lt;select class&#x3D;&quot;form-select w-auto&quot; (change)&#x3D;&quot;setItemsPerPage($event)&quot;&gt;
+          &lt;option [value]&#x3D;&quot;5&quot;&gt;5 lignes&lt;/option&gt;
+          &lt;option [value]&#x3D;&quot;10&quot;&gt;10 lignes&lt;/option&gt;
+          &lt;option [value]&#x3D;&quot;20&quot;&gt;20 lignes&lt;/option&gt;
+        &lt;/select&gt;
+      &lt;/div&gt;
+      &lt;!-- Implémentation de l&#x27;historique des mouvements de stock --&gt;
+      &lt;table class&#x3D;&quot;table&quot;&gt;
+        &lt;thead&gt;
+          &lt;tr&gt;
+            &lt;th scope&#x3D;&quot;col&quot;&gt;Date&lt;/th&gt;
+            &lt;th scope&#x3D;&quot;col&quot;&gt;Action&lt;/th&gt;
+            &lt;th scope&#x3D;&quot;col&quot;&gt;Produit&lt;/th&gt;
+            &lt;th scope&#x3D;&quot;col&quot;&gt;Quantité&lt;/th&gt;
+          &lt;/tr&gt;
+        &lt;/thead&gt;
+        &lt;tbody&gt;
+          &lt;tr *ngFor&#x3D;&quot;let mouvement of getPaginatedMouvements&quot;&gt;
+            &lt;td&gt;{{ mouvement.dateMouvement | date: &#x27;dd/mm/yyyy à HH:mm&#x27; }}&lt;/td&gt;
+            &lt;td&gt;{{ mouvement.typeMouvement }}&lt;/td&gt;
+            &lt;td&gt;{{ getNomProduitById(mouvement.produitId) }}&lt;/td&gt;
+            &lt;td&gt;{{ mouvement.quantite }}&lt;/td&gt;
+          &lt;/tr&gt;
+        &lt;/tbody&gt;
+      &lt;/table&gt;
+      &lt;!-- Pagination --&gt;
+      &lt;div class&#x3D;&quot;d-flex justify-content-center align-items-center&quot;&gt;
+        &lt;button
+          class&#x3D;&quot;btn btn-success&quot;
+          (click)&#x3D;&quot;onPageChange(currentPageMouvements - 1, &#x27;mouvement&#x27;)&quot;
+          [disabled]&#x3D;&quot;currentPageMouvements &#x3D;&#x3D;&#x3D; 1&quot;
+        &gt;
+          &lt;i class&#x3D;&quot;bi bi-arrow-left-circle&quot;&gt;&lt;/i&gt;
+        &lt;/button&gt;
+        &lt;span class&#x3D;&quot;h3&quot;
+          &gt;{{ currentPageMouvements }} / {{ getTotalPages(filteredMouvements) }}&lt;/span
+        &gt;
+        &lt;button
+          class&#x3D;&quot;btn btn-success&quot;
+          (click)&#x3D;&quot;onPageChange(currentPageMouvements + 1, &#x27;mouvement&#x27;)&quot;
+          [disabled]&#x3D;&quot;currentPageMouvements &gt;&#x3D; getTotalPages(filteredMouvements)&quot;
+        &gt;
+          &lt;i class&#x3D;&quot;bi bi-arrow-right-circle&quot;&gt;&lt;/i&gt;
+        &lt;/button&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;!-- Section Produits périssables --&gt;
+    &lt;div
+      class&#x3D;&quot;tab-pane fade&quot;
+      id&#x3D;&quot;nav-périssables&quot;
+      role&#x3D;&quot;tabpanel&quot;
+      aria-labelledby&#x3D;&quot;nav-périssables-tab&quot;
+    &gt;
+      &lt;!-- &lt;h4&gt;Gestion des produits périssables&lt;/h4&gt;
+        &lt;p&gt;Liste des produits périssables et leur gestion...&lt;/p&gt; --&gt;
+      &lt;!-- Barre de recherche et sélection du nombre de lignes --&gt;
+      &lt;div class&#x3D;&quot;d-flex justify-content-between mb-2&quot;&gt;
+        &lt;input
+          type&#x3D;&quot;text&quot;
+          class&#x3D;&quot;form-control w-50&quot;
+          placeholder&#x3D;&quot;Rechercher par nom produit, magasin, quantité ....&quot;
+          [(ngModel)]&#x3D;&quot;searchTerm&quot;
+          (input)&#x3D;&quot;onSearchChange(&#x27;perissable&#x27;)&quot;
+        /&gt;
+        &lt;select class&#x3D;&quot;form-select w-auto&quot; (change)&#x3D;&quot;setItemsPerPage($event)&quot;&gt;
+          &lt;option [value]&#x3D;&quot;5&quot;&gt;5 lignes&lt;/option&gt;
+          &lt;option [value]&#x3D;&quot;10&quot;&gt;10 lignes&lt;/option&gt;
+          &lt;option [value]&#x3D;&quot;20&quot;&gt;20 lignes&lt;/option&gt;
+        &lt;/select&gt;
+      &lt;/div&gt;
+      &lt;!-- Implémentation de la gestion des produits périssables --&gt;
+      &lt;table class&#x3D;&quot;table&quot;&gt;
+        &lt;thead&gt;
+          &lt;tr&gt;
+            &lt;th scope&#x3D;&quot;col&quot;&gt;Produit&lt;/th&gt;
+            &lt;th scope&#x3D;&quot;col&quot;&gt;Date d&#x27;expiration&lt;/th&gt;
+            &lt;th scope&#x3D;&quot;col&quot;&gt;Quantité&lt;/th&gt;
+            &lt;th scope&#x3D;&quot;col&quot;&gt;Alerte&lt;/th&gt;
+          &lt;/tr&gt;
+        &lt;/thead&gt;
+        &lt;tbody&gt;
+          &lt;tr *ngFor&#x3D;&quot;let produit of getPaginatedPerissables&quot;&gt;
+            &lt;td&gt;{{ getNomProduitById(produit.produitId) }}&lt;/td&gt;
+            &lt;!-- &lt;td&gt;{{ produit.dateExpiration | date:&#x27;short&#x27; }}&lt;/td&gt; --&gt;
+            &lt;td&gt;{{ produit.datePeremption | date: &#x27;dd/mm/yyyy&#x27; }}&lt;/td&gt;
+            &lt;td&gt;{{ produit.quantiteTotale }}&lt;/td&gt;
+            &lt;td&gt;&lt;button class&#x3D;&quot;btn btn-danger&quot;&gt;Gérer&lt;/button&gt;&lt;/td&gt;
+          &lt;/tr&gt;
+        &lt;/tbody&gt;
+      &lt;/table&gt;
+      &lt;!-- Pagination --&gt;
+      &lt;div class&#x3D;&quot;d-flex justify-content-center align-items-center&quot;&gt;
+        &lt;button
+          class&#x3D;&quot;btn btn-success&quot;
+          (click)&#x3D;&quot;onPageChange(currentPagePerissables - 1, &#x27;perissable&#x27;)&quot;
+          [disabled]&#x3D;&quot;currentPagePerissables &#x3D;&#x3D;&#x3D; 1&quot;
+        &gt;
+          &lt;i class&#x3D;&quot;bi bi-arrow-left-circle&quot;&gt;&lt;/i&gt;
+        &lt;/button&gt;
+        &lt;span class&#x3D;&quot;h3&quot;
+          &gt;{{ currentPagePerissables }} / {{ getTotalPages(filteredPerissables) }}&lt;/span
+        &gt;
+        &lt;button
+          class&#x3D;&quot;btn btn-success&quot;
+          (click)&#x3D;&quot;onPageChange(currentPagePerissables + 1, &#x27;perissable&#x27;)&quot;
+          [disabled]&#x3D;&quot;currentPagePerissables &gt;&#x3D; getTotalPages(filteredPerissables)&quot;
+        &gt;
+          &lt;i class&#x3D;&quot;bi bi-arrow-right-circle&quot;&gt;&lt;/i&gt;
+        &lt;/button&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+</code></pre>
+    </div>
+
+
+    <div class="tab-pane fade " id="tree">
+        <div id="tree-container"></div>
+        <div class="tree-legend">
+            <div class="title">
+                <b>Legend</b>
+            </div>
+            <div>
+                <div class="color htmlelement"></div><span>Html element</span>
+            </div>
+            <div>
+                <div class="color component"></div><span>Component</span>
+            </div>
+            <div>
+                <div class="color directive"></div><span>Html element with directive</span>
+            </div>
+        </div>
+    </div>
+
+    
+</div>
+
+<script src="../js/libs/vis.min.js"></script>
+<script src="../js/libs/htmlparser.js"></script>
+<script src="../js/libs/deep-iterator.js"></script>
+<script>
+        var COMPONENT_TEMPLATE = '<div><div class="container-fluid mt-4">  <nav>    <div class="nav nav-tabs" id="nav-tab" role="tablist">      <a        class="nav-link active"        id="nav-inventaire-tab"        data-bs-toggle="tab"        href="#nav-inventaire"        role="tab"        aria-controls="nav-inventaire"        aria-selected="true"        >Inventaire actuel</a      >      <a        class="nav-link"        id="nav-quantites-tab"        data-bs-toggle="tab"        href="#nav-quantites"        role="tab"        aria-controls="nav-quantites"        aria-selected="false"        >Quantités disponibles</a      >      <a        class="nav-link"        id="nav-niveaux-tab"        data-bs-toggle="tab"        href="#nav-niveaux"        role="tab"        aria-controls="nav-niveaux"        aria-selected="false"        >Niveaux de stock</a      >      <a        class="nav-link"        id="nav-alertes-tab"        data-bs-toggle="tab"        href="#nav-alertes"        role="tab"        aria-controls="nav-alertes"        aria-selected="false"        >Alertes</a      >      <a        class="nav-link"        id="nav-historique-tab"        data-bs-toggle="tab"        href="#nav-historique"        role="tab"        aria-controls="nav-historique"        aria-selected="false"        >Historique des mouvements</a      >      <a        class="nav-link"        id="nav-périssables-tab"        data-bs-toggle="tab"        href="#nav-périssables"        role="tab"        aria-controls="nav-périssables"        aria-selected="false"        >Produits périssables</a      >    </div>  </nav>  <div class="tab-content mt-4" id="nav-tabContent">    <!-- Section Inventaire actuel -->    <div      class="tab-pane fade show active"      id="nav-inventaire"      role="tabpanel"      aria-labelledby="nav-inventaire-tab"    >      <!-- <h4>Inventaire actuel</h4>        <p>Liste des produits disponibles dans l\'inventaire actuel...</p> -->      <!-- Implémentation de la liste des produits et de leur état -->      <!-- Barre de recherche et sélection du nombre de lignes -->      <div class="d-flex justify-content-between mb-2">        <input          type="text"          class="form-control w-50"          placeholder="Rechercher par nom produit, magasin, quantité ...."          [(ngModel)]="searchTerm"          (input)="onSearchChange(\'inventaire\')"        />        <select class="form-select w-auto" (change)="setItemsPerPage($event)">          <option [value]="5">5 lignes</option>          <option [value]="10">10 lignes</option>          <option [value]="20">20 lignes</option>        </select>      </div>      <table class="table">        <thead>          <tr>            <th scope="col">Produit</th>            <th scope="col">Magasin</th>            <th scope="col">Quantité</th>            <th scope="col">Périssable</th>          </tr>        </thead>        <tbody>          <tr *ngFor="let produit of getPaginatedInventaire">            <td>{{ produit.description }}</td>            <td>{{ getNomMagasinByProduitId(produit.id, stocks, magasins) }}</td>            <td>{{ getQteById(produit.id, stocks) }}</td>            <td>{{ produit.perissable ? \'Oui\' : \'Non\' }}</td>          </tr>        </tbody>      </table>      <!-- Pagination -->      <div class="d-flex justify-content-center align-items-center">        <button          class="btn btn-success"          (click)="onPageChange(currentPageInventaire - 1, \'inventaire\')"          [disabled]="currentPageInventaire === 1"        >          <i class="bi bi-arrow-left-circle"></i>        </button>        <span class="h3"          >{{ currentPageInventaire }} / {{ getTotalPages(filteredInventaire) }}</span        >        <button          class="btn btn-success"          (click)="onPageChange(currentPageInventaire + 1, \'inventaire\')"          [disabled]="currentPageInventaire >= getTotalPages(filteredInventaire)"        >          <i class="bi bi-arrow-right-circle"></i>        </button>      </div>    </div>    <!-- Section Quantités disponibles -->    <div      class="tab-pane fade"      id="nav-quantites"      role="tabpanel"      aria-labelledby="nav-quantites-tab"    >      <!-- <h4>Quantités disponibles</h4>        <p>Affichage des quantités disponibles pour chaque produit...</p> -->      <!-- Implémentation de la gestion des quantités -->      <!-- Barre de recherche et sélection du nombre de lignes -->      <div class="d-flex justify-content-between mb-2">        <input          type="text"          class="form-control w-50"          placeholder="Rechercher par nom produit, quantité ...."          [(ngModel)]="searchTerm"          (input)="onSearchChange(\'qteDisponible\')"        />        <select class="form-select w-auto" (change)="setItemsPerPage($event)">          <option [value]="5">5 lignes</option>          <option [value]="10">10 lignes</option>          <option [value]="20">20 lignes</option>        </select>      </div>      <table class="table">        <thead>          <tr>            <th scope="col">Produit</th>            <th scope="col">Quantité disponible</th>          </tr>        </thead>        <tbody>          <tr *ngFor="let produit of getPaginatedQtesDisponibles">            <td>{{ produit.designation }}</td>            <td>{{ getQteDisponibleById(produit.id, stocks) }}</td>          </tr>        </tbody>      </table>      <!-- Pagination -->      <div class="d-flex justify-content-center align-items-center">        <button          class="btn btn-success"          (click)="onPageChange(currentPageQtesDisponibles - 1, \'qteDisponible\')"          [disabled]="currentPageQtesDisponibles === 1"        >          <i class="bi bi-arrow-left-circle"></i>        </button>        <span class="h3"          >{{ currentPageQtesDisponibles }} / {{ getTotalPages(filteredQtesDisponibles) }}</span        >        <button          class="btn btn-success"          (click)="onPageChange(currentPageQtesDisponibles + 1, \'qteDisponible\')"          [disabled]="currentPageQtesDisponibles >= getTotalPages(filteredQtesDisponibles)"        >          <i class="bi bi-arrow-right-circle"></i>        </button>      </div>    </div>    <!-- Section Niveaux de stock -->    <div class="tab-pane fade" id="nav-niveaux" role="tabpanel" aria-labelledby="nav-niveaux-tab">      <!--  <h4>Niveaux de stock par magasin</h4>        <p>Affichage des niveaux de stock dans chaque magasin...</p> -->      <!-- Barre de recherche et sélection du nombre de lignes -->      <div class="d-flex justify-content-between mb-2">        <input          type="text"          class="form-control w-50"          placeholder="Rechercher par nom produit, magasin, quantité ...."          [(ngModel)]="searchTerm"          (input)="onSearchChange(\'niveauStock\')"        />        <select class="form-select w-auto" (change)="setItemsPerPage($event)">          <option [value]="5">5 lignes</option>          <option [value]="10">10 lignes</option>          <option [value]="20">20 lignes</option>        </select>      </div>      <!-- Implémentation de la gestion des niveaux de stock par magasin -->      <table class="table">        <thead>          <tr>            <th scope="col">Produit</th>            <th scope="col">Magasin</th>            <th scope="col">Quantité</th>          </tr>        </thead>        <tbody>          <tr *ngFor="let produit of getPaginatedNiveauStock">            <td>{{ produit.designation }}</td>            <td>{{ getNomMagasinByProduitId(produit.id, stocks, magasins) }}</td>            <td>{{ getQteById(produit.id, stocks) }}</td>          </tr>        </tbody>      </table>      <!-- Pagination -->      <div class="d-flex justify-content-center align-items-center">        <button          class="btn btn-success"          (click)="onPageChange(currentPageNiveauStock - 1, \'niveauStock\')"          [disabled]="currentPageNiveauStock === 1"        >          <i class="bi bi-arrow-left-circle"></i>        </button>        <span class="h3"          >{{ currentPageNiveauStock }} / {{ getTotalPages(filteredNiveauStock) }}</span        >        <button          class="btn btn-success"          (click)="onPageChange(currentPageNiveauStock + 1, \'niveauStock\')"          [disabled]="currentPageNiveauStock >= getTotalPages(filteredNiveauStock)"        >          <i class="bi bi-arrow-right-circle"></i>        </button>      </div>    </div>    <!-- Section Alertes de réapprovisionnement -->    <div class="tab-pane fade" id="nav-alertes" role="tabpanel" aria-labelledby="nav-alertes-tab">      <!-- <h4>Alertes de réapprovisionnement</h4>        <p>Liste des alertes de réapprovisionnement pour les produits...</p> -->      <!-- Barre de recherche et sélection du nombre de lignes -->      <div class="d-flex justify-content-between mb-2">        <input          type="text"          class="form-control w-50"          placeholder="Rechercher par nom produit, magasin, quantité ...."          [(ngModel)]="searchTerm"          (input)="onSearchChange(\'alerte\')"        />        <select class="form-select w-auto" (change)="setItemsPerPage($event)">          <option [value]="5">5 lignes</option>          <option [value]="10">10 lignes</option>          <option [value]="20">20 lignes</option>        </select>      </div>      <!-- Implémentation de l\'affichage des alertes de réapprovisionnement -->      <table class="table">        <thead>          <tr>            <th scope="col">Produit</th>            <th scope="col">Quantité restante</th>            <th scope="col">Seuil</th>            <th scope="col">Action</th>          </tr>        </thead>        <tbody>          <tr *ngFor="let alerte of getPaginatedAlertes">            <td>{{ getNomProduitById(alerte.produitId) }}</td>            <td>{{ alerte.quantiteDisponible }}</td>            <td>{{ alerte.seuilAlerte }}</td>            <td>              <button class="btn btn-warning" (click)="envoyerAlerteReapprovisionnement()">                Envoyer alerte              </button>            </td>          </tr>        </tbody>      </table>      <!-- Pagination -->      <div class="d-flex justify-content-center align-items-center">        <button          class="btn btn-success"          (click)="onPageChange(currentPageAlertes - 1, \'alerte\')"          [disabled]="currentPageAlertes === 1"        >          <i class="bi bi-arrow-left-circle"></i>        </button>        <span class="h3">{{ currentPageAlertes }} / {{ getTotalPages(filteredAlertes) }}</span>        <button          class="btn btn-success"          (click)="onPageChange(currentPageAlertes + 1, \'alerte\')"          [disabled]="currentPageAlertes >= getTotalPages(filteredAlertes)"        >          <i class="bi bi-arrow-right-circle"></i>        </button>      </div>    </div>    <!-- Section Historique des mouvements -->    <div      class="tab-pane fade"      id="nav-historique"      role="tabpanel"      aria-labelledby="nav-historique-tab"    >      <!-- <h4>Historique des mouvements de stock</h4>        <p>Liste des mouvements de stock (entrées et sorties)...</p> -->      <!-- Barre de recherche et sélection du nombre de lignes -->      <div class="d-flex justify-content-between mb-2">        <input          type="text"          class="form-control w-50"          placeholder="Rechercher par nom produit, date, quantité ...."          [(ngModel)]="searchTerm"          (input)="onSearchChange(\'mouvement\')"        />        <select class="form-select w-auto" (change)="setItemsPerPage($event)">          <option [value]="5">5 lignes</option>          <option [value]="10">10 lignes</option>          <option [value]="20">20 lignes</option>        </select>      </div>      <!-- Implémentation de l\'historique des mouvements de stock -->      <table class="table">        <thead>          <tr>            <th scope="col">Date</th>            <th scope="col">Action</th>            <th scope="col">Produit</th>            <th scope="col">Quantité</th>          </tr>        </thead>        <tbody>          <tr *ngFor="let mouvement of getPaginatedMouvements">            <td>{{ mouvement.dateMouvement | date: \'dd/mm/yyyy à HH:mm\' }}</td>            <td>{{ mouvement.typeMouvement }}</td>            <td>{{ getNomProduitById(mouvement.produitId) }}</td>            <td>{{ mouvement.quantite }}</td>          </tr>        </tbody>      </table>      <!-- Pagination -->      <div class="d-flex justify-content-center align-items-center">        <button          class="btn btn-success"          (click)="onPageChange(currentPageMouvements - 1, \'mouvement\')"          [disabled]="currentPageMouvements === 1"        >          <i class="bi bi-arrow-left-circle"></i>        </button>        <span class="h3"          >{{ currentPageMouvements }} / {{ getTotalPages(filteredMouvements) }}</span        >        <button          class="btn btn-success"          (click)="onPageChange(currentPageMouvements + 1, \'mouvement\')"          [disabled]="currentPageMouvements >= getTotalPages(filteredMouvements)"        >          <i class="bi bi-arrow-right-circle"></i>        </button>      </div>    </div>    <!-- Section Produits périssables -->    <div      class="tab-pane fade"      id="nav-périssables"      role="tabpanel"      aria-labelledby="nav-périssables-tab"    >      <!-- <h4>Gestion des produits périssables</h4>        <p>Liste des produits périssables et leur gestion...</p> -->      <!-- Barre de recherche et sélection du nombre de lignes -->      <div class="d-flex justify-content-between mb-2">        <input          type="text"          class="form-control w-50"          placeholder="Rechercher par nom produit, magasin, quantité ...."          [(ngModel)]="searchTerm"          (input)="onSearchChange(\'perissable\')"        />        <select class="form-select w-auto" (change)="setItemsPerPage($event)">          <option [value]="5">5 lignes</option>          <option [value]="10">10 lignes</option>          <option [value]="20">20 lignes</option>        </select>      </div>      <!-- Implémentation de la gestion des produits périssables -->      <table class="table">        <thead>          <tr>            <th scope="col">Produit</th>            <th scope="col">Date d\'expiration</th>            <th scope="col">Quantité</th>            <th scope="col">Alerte</th>          </tr>        </thead>        <tbody>          <tr *ngFor="let produit of getPaginatedPerissables">            <td>{{ getNomProduitById(produit.produitId) }}</td>            <!-- <td>{{ produit.dateExpiration | date:\'short\' }}</td> -->            <td>{{ produit.datePeremption | date: \'dd/mm/yyyy\' }}</td>            <td>{{ produit.quantiteTotale }}</td>            <td><button class="btn btn-danger">Gérer</button></td>          </tr>        </tbody>      </table>      <!-- Pagination -->      <div class="d-flex justify-content-center align-items-center">        <button          class="btn btn-success"          (click)="onPageChange(currentPagePerissables - 1, \'perissable\')"          [disabled]="currentPagePerissables === 1"        >          <i class="bi bi-arrow-left-circle"></i>        </button>        <span class="h3"          >{{ currentPagePerissables }} / {{ getTotalPages(filteredPerissables) }}</span        >        <button          class="btn btn-success"          (click)="onPageChange(currentPagePerissables + 1, \'perissable\')"          [disabled]="currentPagePerissables >= getTotalPages(filteredPerissables)"        >          <i class="bi bi-arrow-right-circle"></i>        </button>      </div>    </div>  </div></div></div>'
+    var COMPONENTS = [{'name': 'AppComponent', 'selector': 'app-root'},{'name': 'CaisseComponent', 'selector': 'app-caisse'},{'name': 'CatalogueProduitComponent', 'selector': 'app-catalogue-produit'},{'name': 'ClientsComponent', 'selector': 'app-clients'},{'name': 'ConnexionComponent', 'selector': 'app-connexion'},{'name': 'EntreesSortiesComponent', 'selector': 'app-entrees-sorties'},{'name': 'EspaceVendeursComponent', 'selector': 'app-espace-vendeurs'},{'name': 'FinanceComponent', 'selector': 'app-finance'},{'name': 'FournisseursComponent', 'selector': 'app-fournisseurs'},{'name': 'GerantComponent', 'selector': 'app-gerant'},{'name': 'MagasinComponent', 'selector': 'app-magasin'},{'name': 'MagazinComponent', 'selector': 'app-magazin'},{'name': 'OverviewComponent', 'selector': 'app-overview'},{'name': 'ParametresComponent', 'selector': 'app-parametres'},{'name': 'RapportsComponent', 'selector': 'app-rapports'},{'name': 'RapportsFinanciersComponent', 'selector': 'app-rapports-financiers'},{'name': 'RapportsStocksComponent', 'selector': 'app-rapports-stocks'},{'name': 'RapportsVentesComponent', 'selector': 'app-rapports-ventes'},{'name': 'RolesPermissionsComponent', 'selector': 'app-roles-permissions'},{'name': 'StockInventairesComponent', 'selector': 'app-stock-inventaires'},{'name': 'StructureComponent', 'selector': 'app-structure'},{'name': 'UserComponent', 'selector': 'app-user'},{'name': 'VentesComponent', 'selector': 'app-ventes'}];
+    var DIRECTIVES = [];
+    var ACTUAL_COMPONENT = {'name': 'StockInventairesComponent'};
+</script>
+<script src="../js/tree.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                   </div><div class="search-results">
+    <div class="has-results">
+        <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+        <ul class="search-results-list"></ul>
+    </div>
+    <div class="no-results">
+        <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+    </div>
+</div>
+</div>
+               <!-- END CONTENT -->
+           </div>
+       </div>
+
+          <label class="dark-mode-switch">
+               <input type="checkbox">
+               <span class="slider">
+                    <svg class="slider-icon" viewBox="0 0 24 24" fill="none" height="20" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" width="20" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>
+                    </svg>
+               </span>
+          </label>
+
+       <script>
+            var COMPODOC_CURRENT_PAGE_DEPTH = 1;
+            var COMPODOC_CURRENT_PAGE_CONTEXT = 'component';
+            var COMPODOC_CURRENT_PAGE_URL = 'StockInventairesComponent.html';
+            var MAX_SEARCH_RESULTS = 15;
+       </script>
+
+       <script>
+               $darkModeToggleSwitchers = document.querySelectorAll('.dark-mode-switch input');
+               checkToggle(darkModeState);
+               if ($darkModeToggleSwitchers.length > 0) {
+                    for (var i = 0; i < $darkModeToggleSwitchers.length; i++) {
+                         $darkModeToggleSwitchers[i].addEventListener('change', function (event) {
+                              darkModeState = !darkModeState;
+                              toggleDarkMode(darkModeState);
+                         });
+                    }
+               }
+          </script>
+
+       <script src="../js/libs/custom-elements.min.js"></script>
+       <script src="../js/libs/lit-html.js"></script>
+
+       <script src="../js/menu-wc.js" defer></script>
+       <script nomodule src="../js/menu-wc_es5.js" defer></script>
+
+       <script src="../js/libs/bootstrap-native.js"></script>
+
+       <script src="../js/libs/es6-shim.min.js"></script>
+       <script src="../js/libs/EventDispatcher.js"></script>
+       <script src="../js/libs/promise.min.js"></script>
+
+       <script src="../js/compodoc.js"></script>
+
+       <script src="../js/tabs.js"></script>
+       <script src="../js/menu.js"></script>
+       <script src="../js/libs/clipboard.min.js"></script>
+       <script src="../js/libs/prism.js"></script>
+       <script src="../js/sourceCode.js"></script>
+          <script src="../js/search/search.js"></script>
+          <script src="../js/search/lunr.min.js"></script>
+          <script src="../js/search/search-lunr.js"></script>
+          <script src="../js/search/search_index.js"></script>
+       <script src="../js/lazy-load-graphs.js"></script>
+
+
+    </body>
+</html>

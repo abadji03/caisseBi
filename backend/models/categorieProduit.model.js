@@ -1,25 +1,24 @@
 module.exports = (sequelize, DataTypes) => {
-  const CategoriesProduits = sequelize.define("CategoriesProduits", {
+  const CategoriesProduits = sequelize.define('CategoriesProduits', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
-      autoIncrement: true
+      autoIncrement: true,
     },
     code_structure: {
       type: DataTypes.STRING(36),
-      allowNull: false
-    }, 
+      allowNull: false,
+    },
     nom: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
     },
     description: DataTypes.TEXT,
-    statut:{
+    statut: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
-    }
+    },
   });
-  
 
   return CategoriesProduits;
 };

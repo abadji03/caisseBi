@@ -1,57 +1,59 @@
 /* Ajoutez dans votre fichier CSS */
 .card {
-    transition: all 0.3s ease;
-  }
+  transition: all 0.3s ease;
+}
 
-  .card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-  }
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
 
-  .chart-container {
-    margin-top: 2rem;
-  }
+.chart-container {
+  margin-top: 2rem;
+}
 
-  .chart-row {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 2rem;
-    gap: 1rem;
-  }
+.chart-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  gap: 1rem;
+}
 
-  .chart-wrapper {
-    background: white;
-    padding: 1rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    flex: 1;
-  }
+.chart-wrapper {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  flex: 1;
+}
 
-  .chart-wrapper h3 {
-    margin-top: 0;
-    text-align: center;
-  }
+.chart-wrapper h3 {
+  margin-top: 0;
+  text-align: center;
+}
 
-  .full-width {
-    flex: 100%;
-  }
+.full-width {
+  flex: 100%;
+}
 
-  canvas {
-    max-height: 400px;
-    width: 100% !important;
-  }
+canvas {
+  max-height: 400px;
+  width: 100% !important;
+}
 
-  /* Styles pour l'impression */
+/* Styles pour l'impression */
 @media print {
   body * {
     visibility: hidden;
   }
 
-  #rapport, #rapport * {
+  #rapport,
+  #rapport * {
     visibility: visible;
   }
 
-  .no-printer, .no-printer * {
+  .no-printer,
+  .no-printer * {
     display: none !important;
   }
 

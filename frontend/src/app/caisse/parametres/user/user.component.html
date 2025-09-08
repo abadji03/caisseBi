@@ -6,7 +6,7 @@
       <i class="bi bi-plus-circle me-2"></i>Nouvel utilisateur
     </button>
   </div>
-<div *ngIf="isLoading" class="text-center my-4">
+  <div *ngIf="isLoading" class="text-center my-4">
     <div class="spinner-border text-success" role="status">
       <span class="visually-hidden">Chargement...</span>
     </div>
@@ -16,7 +16,13 @@
     <div class="d-flex justify-content-between mb-3">
       <div class="input-group w-50">
         <span class="input-group-text"><i class="bi bi-search"></i></span>
-        <input type="text" class="form-control" placeholder="Rechercher un utilisateur..." [(ngModel)]="searchTerm" (input)="onSearchChange1()">
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Rechercher un utilisateur..."
+          [(ngModel)]="searchTerm"
+          (input)="onSearchChange1()"
+        />
       </div>
       <div>
         <select class="form-select" [(ngModel)]="itemsPerPage" (change)="setItemsPerPage($event)">
@@ -44,12 +50,12 @@
           <!-- <td>{{ user.telephone }}</td> -->
           <td>{{ user.email }}</td>
           <!-- <td>{{ user.role }}</td> -->
-           <td>
-              <ng-container *ngIf="userRolesMap[user.id]; else loadingRoles">
-                {{ userRolesMap[user.id].join(', ') }}
-              </ng-container>
-              <ng-template #loadingRoles>Chargement...</ng-template>
-            </td>
+          <td>
+            <ng-container *ngIf="userRolesMap[user.id]; else loadingRoles">
+              {{ userRolesMap[user.id].join(', ') }}
+            </ng-container>
+            <ng-template #loadingRoles>Chargement...</ng-template>
+          </td>
 
           <td>{{ user.structure_id ? getNomStructure(user.structure_id) : 'Admin général' }}</td>
           <td>
@@ -62,10 +68,15 @@
               <button class="btn btn-sm btn-warning me-2" (click)="openModal(userModal, user)">
                 <i class="bi bi-pencil"></i>
               </button>
-              <button class="btn btn-sm me-2" 
-                      [ngClass]="user.status ? 'btn-secondary' : 'btn-success'"
-                      (click)="toggleStatus(user)">
-                      <i class="bi" [ngClass]="user.status ? 'bi-x-circle-fill' : 'bi-check-circle-fill'"></i>
+              <button
+                class="btn btn-sm me-2"
+                [ngClass]="user.status ? 'btn-secondary' : 'btn-success'"
+                (click)="toggleStatus(user)"
+              >
+                <i
+                  class="bi"
+                  [ngClass]="user.status ? 'bi-x-circle-fill' : 'bi-check-circle-fill'"
+                ></i>
                 <!-- {{ user.status ? 'Désactiver' : 'Activer' }} -->
               </button>
               <button class="btn btn-sm btn-danger" (click)="deleteUser(user.id)">
@@ -80,25 +91,29 @@
     <!-- Pagination -->
     <div class="d-flex justify-content-between align-items-center mt-3">
       <div>
-        Affichage de {{ (currentPage - 1) * itemsPerPage + 1 }} à 
-        {{ min(currentPage * itemsPerPage, filteredUsers.length) }} 
+        Affichage de {{ (currentPage - 1) * itemsPerPage + 1 }} à
+        {{ min(currentPage * itemsPerPage, filteredUsers.length) }}
         sur {{ filteredUsers.length }} utilisateurs
       </div>
       <div>
         <nav>
           <ul class="pagination">
             <li class="page-item" [class.disabled]="currentPage === 1">
-              <a class="page-link" (click)="onPageChange(currentPage - 1)">
+              <button class="page-link" (click)="onPageChange(currentPage - 1)">
                 <i class="bi bi-chevron-left"></i>
-              </a>
+              </button>
             </li>
-            <li class="page-item" *ngFor="let page of getPages()" [class.active]="page === currentPage">
-              <a class="page-link" (click)="onPageChange(page)">{{ page }}</a>
+            <li
+              class="page-item"
+              *ngFor="let page of getPages()"
+              [class.active]="page === currentPage"
+            >
+              <button class="page-link" (click)="onPageChange(page)">{{ page }}</button>
             </li>
             <li class="page-item" [class.disabled]="currentPage === getTotalPages1()">
-              <a class="page-link" (click)="onPageChange(currentPage + 1)">
+              <button class="page-link" (click)="onPageChange(currentPage + 1)">
                 <i class="bi bi-chevron-right"></i>
-              </a>
+              </button>
             </li>
           </ul>
         </nav>
@@ -110,23 +125,34 @@
   <ng-template #userModal let-modal>
     <div class="modal-header">
       <h5 class="modal-title">{{ isEditMode ? 'Modifier' : 'Ajouter' }} un utilisateur</h5>
-      <button type="button" class="btn-close" (click)="modal.dismiss()"></button>
+      <button type="button" class="btn-close" (click)="modal.dismiss()">Fermer</button>
     </div>
     <div class="modal-body">
       <form [formGroup]="userForm" (ngSubmit)="onSubmit()">
-        
         <div class="row">
           <div class="col-md-6 mb-3">
-            <label>Nom complet*</label>
-            <input type="text" class="form-control" formControlName="nom" required>
-            <div *ngIf="userForm.get('nom')?.invalid && userForm.get('nom')?.touched" class="text-danger">
+            <label for="nom" class="form-label">Nom complet*</label>
+            <input type="text" class="form-control" id="nom" formControlName="nom" required />
+            <div
+              *ngIf="userForm.get('nom')?.invalid && userForm.get('nom')?.touched"
+              class="text-danger"
+            >
               Le nom est requis (min 2 caractères)
             </div>
           </div>
           <div class="col-md-6 mb-3">
-            <label>Téléphone *</label>
-            <input type="tel" class="form-control" formControlName="telephone" required>
-            <div *ngIf="userForm.get('telephone')?.invalid && userForm.get('telephone')?.touched" class="text-danger">
+            <label for="telephone" class="form-label">Téléphone *</label>
+            <input
+              type="tel"
+              class="form-control"
+              id="telephone"
+              formControlName="telephone"
+              required
+            />
+            <div
+              *ngIf="userForm.get('telephone')?.invalid && userForm.get('telephone')?.touched"
+              class="text-danger"
+            >
               Numéro invalide (10-15 chiffres)
             </div>
           </div>
@@ -134,57 +160,39 @@
 
         <div class="row">
           <div class="col-md-6 mb-3">
-            <label>Email *</label>
-            <input type="email" class="form-control" formControlName="email" required>
-            <div *ngIf="userForm.get('email')?.invalid && userForm.get('email')?.touched" class="text-danger">
+            <label for="email" class="form-label">Email *</label>
+            <input type="email" class="form-control" id="email" formControlName="email" required />
+            <div
+              *ngIf="userForm.get('email')?.invalid && userForm.get('email')?.touched"
+              class="text-danger"
+            >
               Email invalide
             </div>
           </div>
-          <!--  <div class="col-md-6">
-            <label class="form-label">Rôle *</label>
-            <select class="form-control" formControlName="role_id">
-              <option *ngFor="let role of roles" [value]="role.id">{{role.nom}}</option>
-            </select>
-          </div> -->
-           <div class="col-md-6 mb-3">
-            <label>Structure</label>
-            <select class="form-control" formControlName="structure_id">
-              <option *ngFor="let structure of structures" [value]="structure.id" >
-                {{ structure.nom_structure }}
-              </option>
-            </select>
-          </div> 
-        </div>
-
-        <div class="row">
-           
-          <!-- <div class="col-md-6 mb-3">
-            <label>Type d'utilisateur *</label>
-            <select class="form-control" formControlName="typeUser" required>
-              <option value="proprietaire">Propriétaire</option>
-              <option value="gerant">Gérant</option>
-              <option value="caissier">Caissier</option>
-              <option value="employe">Employé</option>
-            </select>
-          </div> -->
-          <!-- <div class="col-md-6 mb-3" *ngIf="isGeneralAdmin">
-            <label>Structure</label>
-            <select class="form-control" formControlName="structure_id">
-              <option [value]="null" >Admin général</option>
+          <div class="col-md-6 mb-3">
+            <label for="structure_id" class="form-label">Structure</label>
+            <select class="form-control" id="structure_id" formControlName="structure_id">
               <option *ngFor="let structure of structures" [value]="structure.id">
                 {{ structure.nom_structure }}
               </option>
             </select>
-          </div>  -->
+          </div>
+        </div>
+
+        <div class="row">
           <div class="col-md-6 mb-3">
-            <label class="form-label">Rôles *</label>
+            <label for="roles" class="form-label">Rôles *</label>
             <div class="permissions-container">
               <div *ngFor="let rol of roles" class="form-check">
-                <input class="form-check-input" type="checkbox" 
-                      [id]="'role-' + rol.id"
-                      [value]="rol.id"
-                      (change)="onRoleChange($event, rol.id!)"
-                      [checked]="userForm.value.role.includes(rol.id)">
+                <input
+                  name="roles"
+                  class="form-check-input"
+                  type="checkbox"
+                  [id]="'role-' + rol.id"
+                  [value]="rol.id"
+                  (change)="onRoleChange($event, rol.id!)"
+                  [checked]="userForm.value.role.includes(rol.id)"
+                />
                 <label class="form-check-label" [for]="'role-' + rol.id">
                   {{ rol.nom }}
                 </label>
@@ -192,79 +200,76 @@
             </div>
           </div>
           <div class="col-md-6 mb-3">
-            <label class="form-label">Statut *</label>
+            <label for="statut" class="form-label">Statut *</label>
             <div class="form-check">
-              <input class="form-check-input" type="radio" 
-                    id="status-active" 
-                    [value]="true" 
-                    formControlName="status">
-              <label class="form-check-label" for="status-active">
-                Actif
-              </label>
+              <input
+                name="statut"
+                class="form-check-input"
+                type="radio"
+                id="status-active"
+                [value]="true"
+                formControlName="status"
+              />
+              <label class="form-check-label" for="status-active"> Actif </label>
             </div>
             <div class="form-check">
-              <input class="form-check-input" type="radio" 
-                    id="status-inactive" 
-                    [value]="false" 
-                    formControlName="status">
-              <label class="form-check-label" for="status-inactive">
-                Inactif
-              </label>
+              <input
+                class="form-check-input"
+                type="radio"
+                id="status-inactive"
+                [value]="false"
+                formControlName="status"
+              />
+              <label class="form-check-label" for="status-inactive"> Inactif </label>
             </div>
           </div>
         </div>
 
-        <!-- <div class="row" *ngIf="isGeneralAdmin">
-          <div class="col-md-12 mb-3">
-            <label>Structure</label>
-            <select class="form-control" formControlName="structure_id">
-              <option [value]="null" >Admin général</option>
-              <option *ngFor="let structure of structures" [value]="structure.id">
-                {{ structure.nom_structure }}
-              </option>
-            </select>
-          </div> 
-        </div> -->
-
-       <!--  <div class="row">
-          <div class="col-md-6 mb-3">
-            <label>Mot de passe {{ isEditMode ? '(laisser vide pour ne pas changer)' : '*' }}</label>
-            <input type="password" class="form-control" formControlName="password" [required]="!isEditMode">
-            <div *ngIf="userForm.get('password')?.invalid && userForm.get('password')?.touched" class="text-danger">
-              Min 6 caractères
-            </div>
-          </div>
-          <div class="col-md-6 mb-3">
-            <label>Confirmer le mot de passe {{ isEditMode ? '(laisser vide pour ne pas changer)' : '*' }}</label>
-            <input type="password" class="form-control" formControlName="confirmPassword" [required]="!isEditMode">
-            <div *ngIf="userForm.hasError('mismatch')" class="text-danger">
-              Les mots de passe ne correspondent pas
-            </div>
-          </div>
-        </div>-->
         <div class="row">
           <div class="col-md-6 mb-3">
-            <label>Mot de passe {{ isEditMode ? '(laisser vide pour ne pas changer)' : '*' }}</label>
-            <input type="password" class="form-control" formControlName="password" 
-                  [required]="!isEditMode" [placeholder]="isEditMode ? '••••••' : ''">
-            <div *ngIf="userForm.get('password')?.invalid && userForm.get('password')?.touched" class="text-danger">
+            <label for="password" class="form-label"
+              >Mot de passe {{ isEditMode ? '(laisser vide pour ne pas changer)' : '*' }}</label
+            >
+            <input
+              type="password"
+              class="form-control"
+              id="password"
+              formControlName="password"
+              [required]="!isEditMode"
+              [placeholder]="isEditMode ? '••••••' : ''"
+            />
+            <div
+              *ngIf="userForm.get('password')?.invalid && userForm.get('password')?.touched"
+              class="text-danger"
+            >
               Min 6 caractères
             </div>
           </div>
           <div class="col-md-6 mb-3">
-            <label>Confirmer le mot de passe {{ isEditMode ? '(laisser vide pour ne pas changer)' : '*' }}</label>
-            <input type="password" class="form-control" formControlName="confirmPassword" 
-                  [required]="!isEditMode" [placeholder]="isEditMode ? '••••••' : ''">
+            <label for="confirmPassword" class="form-label"
+              >Confirmer le mot de passe
+              {{ isEditMode ? '(laisser vide pour ne pas changer)' : '*' }}</label
+            >
+            <input
+              type="password"
+              class="form-control"
+              id="confirmPassword"
+              formControlName="confirmPassword"
+              [required]="!isEditMode"
+              [placeholder]="isEditMode ? '••••••' : ''"
+            />
             <div *ngIf="userForm.hasError('mismatch')" class="text-danger">
               Les mots de passe ne correspondent pas
             </div>
           </div>
         </div>
+
         <div class="d-grid">
           <button type="submit" class="btn btn-success">
             {{ isEditMode ? 'Modifier' : 'Enregistrer' }}
           </button>
         </div>
+
         <!-- Message d'erreur général -->
         <div *ngIf="errorMessage" class="alert alert-danger mt-3">
           {{ errorMessage }}

@@ -1,43 +1,49 @@
 export class Produit {
-    id : number;
-    sku: string;
-    nomComplet: string;
-    prix: number;
-    nomCourt: string;
-    description: string;
-    quantite: number;
-    dateCreation: Date;
-    deliveryTimeSpan: string
-    categorie: string;
-    imageUrl: string;
+  id: number;
+  sku: string;
+  nomComplet: string;
+  prix: number;
+  nomCourt: string;
+  description: string;
+  quantite: number;
+  dateCreation: Date;
+  deliveryTimeSpan: string;
+  categorie: string;
+  imageUrl: string;
 
-
-
-    constructor(id: number,sku: string, nomComplet: string,
-         prix: number,nomCourt: string, description: string, quantite: number,
-          date_creation: Date, deliveryTimeSpan: string,
-          categorie: string,imageUrl: string) {
-
-      this.id = id;
-      this.sku = sku;
-      this.nomComplet = nomComplet;
-      this.nomCourt = nomCourt;
-      this.prix = prix;
-      this.description = description;
-      this.quantite = quantite;
-      this.imageUrl = imageUrl;
-      this.dateCreation = date_creation;
-      this.categorie = categorie;
-      this.deliveryTimeSpan = deliveryTimeSpan;
-    }
-    /* constructor(public title: string,
+  constructor(
+    id: number,
+    sku: string,
+    nomComplet: string,
+    prix: number,
+    nomCourt: string,
+    description: string,
+    quantite: number,
+    date_creation: Date,
+    deliveryTimeSpan: string,
+    categorie: string,
+    imageUrl: string,
+  ) {
+    this.id = id;
+    this.sku = sku;
+    this.nomComplet = nomComplet;
+    this.nomCourt = nomCourt;
+    this.prix = prix;
+    this.description = description;
+    this.quantite = quantite;
+    this.imageUrl = imageUrl;
+    this.dateCreation = date_creation;
+    this.categorie = categorie;
+    this.deliveryTimeSpan = deliveryTimeSpan;
+  }
+  /* constructor(public title: string,
       public description: string,
       public imageUrl: string,
       public createdDate: Date,
       public snaps: number,
       public location?: string) {
     } */
-  }
+}
 
 /*   export class Produits {
     id?: number;
@@ -63,7 +69,7 @@ export class Produit {
     }
   } */
 
- /*  export class Produits {
+/*  export class Produits {
     public id?: number;
     public famille?: string; // Catégorie du produit
     public designation!: string; // Nom du produit
@@ -110,44 +116,41 @@ export class Produit {
     }
   } */
 
-    export class Produits {
-      public id: number=0;
-      public categorieId!: number; // Catégorie du produit
-      public designation!: string; // Nom du produit
-      public fournisseurId?: number; // ID du fournisseur
-      public unite!: string; // Unité de mesure (Carton, Pièce, Kg…)
-      public prixAchatUnitaire?: number; // Prix d'achat unitaire
-      public prixTotalAchat?: number; // Calculé : prixAchatUnitaire * quantite
-      public prixVenteUnitaire!: number; // Prix de vente unitaire
-      public prixTotalVente?: number; // Calculé : prixVenteUnitaire * quantite
-      public marge?: number; // Calculé dynamiquement : prixVenteUnitaire - prixAchatUnitaire
-      public perissable?: boolean = false; // Produit périssable ou non
-      public description?: string; // Détails du produit
-      public codeBarre?: string; // Code-barres du produit
-      public image?: string; // Image du produit
-      public dateCreation?: Date = new Date(); // Date d'ajout du produit
-      public agentId?: number; // Personne qui a ajouté le produit
-      public dernierPrixAchat?: number; // Dernier prix d'achat connu
-      public statut?: boolean; // Dernier prix d'achat connu
+export class Produits {
+  public id = 0;
+  public categorieId!: number; // Catégorie du produit
+  public designation!: string; // Nom du produit
+  public fournisseurId?: number; // ID du fournisseur
+  public unite!: string; // Unité de mesure (Carton, Pièce, Kg…)
+  public prixAchatUnitaire?: number; // Prix d'achat unitaire
+  public prixTotalAchat?: number; // Calculé : prixAchatUnitaire * quantite
+  public prixVenteUnitaire!: number; // Prix de vente unitaire
+  public prixTotalVente?: number; // Calculé : prixVenteUnitaire * quantite
+  public marge?: number; // Calculé dynamiquement : prixVenteUnitaire - prixAchatUnitaire
+  public perissable?: boolean = false; // Produit périssable ou non
+  public description?: string; // Détails du produit
+  public codeBarre?: string; // Code-barres du produit
+  public image?: string; // Image du produit
+  public dateCreation?: Date = new Date(); // Date d'ajout du produit
+  public agentId?: number; // Personne qui a ajouté le produit
+  public dernierPrixAchat?: number; // Dernier prix d'achat connu
+  public statut?: boolean; // Dernier prix d'achat connu
 
-      constructor(data?: Partial<Produits>) {
-        Object.assign(this, data);
-        this.marge = (this.prixVenteUnitaire || 0) - (this.prixAchatUnitaire || 0);
-        this.dateCreation = this.dateCreation ?? new Date();
-
-
-      }
-    }
+  constructor(data?: Partial<Produits>) {
+    Object.assign(this, data);
+    this.marge = (this.prixVenteUnitaire || 0) - (this.prixAchatUnitaire || 0);
+    this.dateCreation = this.dateCreation ?? new Date();
+  }
+}
 
 export class CategorieProduits {
-  id?:number;
+  id?: number;
   code_structure!: string;
-  nom!:string;
-  description?:string;
-  statut:boolean = true;
+  nom!: string;
+  description?: string;
+  statut = true;
 
-  constructor(data?: Partial<CategorieProduits>){
-    
+  constructor(data?: Partial<CategorieProduits>) {
+    Object.assign(this, data);
   }
-
 }

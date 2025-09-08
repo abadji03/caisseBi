@@ -1,29 +1,75 @@
 <div class="container-fluid mt-4">
   <nav>
     <div class="nav nav-tabs" id="nav-tab" role="tablist">
-      <a class="nav-link active" id="nav-entrees-tab" data-bs-toggle="tab" href="#nav-entrees" role="tab" aria-controls="nav-entrees" aria-selected="true">Mouvements stock</a>
-      <a class="nav-link" id="nav-reconciliation-tab" data-bs-toggle="tab" href="#nav-reconciliation" role="tab" aria-controls="nav-reconciliation" aria-selected="false">Réconciliation</a>
-      <a class="nav-link" id="nav-analyse-tab" data-bs-toggle="tab" href="#nav-analyse" role="tab" aria-controls="nav-analyse" aria-selected="false">Analyse des écarts</a>
+      <a
+        class="nav-link active"
+        id="nav-entrees-tab"
+        data-bs-toggle="tab"
+        href="#nav-entrees"
+        role="tab"
+        aria-controls="nav-entrees"
+        aria-selected="true"
+        >Mouvements stock</a
+      >
+      <a
+        class="nav-link"
+        id="nav-reconciliation-tab"
+        data-bs-toggle="tab"
+        href="#nav-reconciliation"
+        role="tab"
+        aria-controls="nav-reconciliation"
+        aria-selected="false"
+        >Réconciliation</a
+      >
+      <a
+        class="nav-link"
+        id="nav-analyse-tab"
+        data-bs-toggle="tab"
+        href="#nav-analyse"
+        role="tab"
+        aria-controls="nav-analyse"
+        aria-selected="false"
+        >Analyse des écarts</a
+      >
     </div>
-  </nav> 
+  </nav>
 
   <div class="tab-content mt-4" id="nav-tabContent">
-    <div class="tab-pane fade show active" id="nav-entrees" role="tabpanel" aria-labelledby="nav-entrees-tab">
+    <div
+      class="tab-pane fade show active"
+      id="nav-entrees"
+      role="tabpanel"
+      aria-labelledby="nav-entrees-tab"
+    >
       <div class="table-responsive">
-      <div class="d-flex justify-content-between">
-          <input [(ngModel)]="searchTextMouvement" type="text" placeholder="Rechercher un mouvement..." class="form-control w-50 mb-3"  (input)="onSearchChange()">
-          <button class="btn btn-success mb-3 w-auto float-end" data-bs-toggle="modal" data-bs-target="#mouvementModal">
+        <div class="d-flex justify-content-between">
+          <input
+            [(ngModel)]="searchTextMouvement"
+            type="text"
+            placeholder="Rechercher un mouvement..."
+            class="form-control w-50 mb-3"
+            (input)="onSearchChange()"
+          />
+          <button
+            class="btn btn-success mb-3 w-auto float-end"
+            data-bs-toggle="modal"
+            data-bs-target="#mouvementModal"
+          >
             <i class="bi bi-plus-circle me-1"></i> Nouveau mouvement
           </button>
         </div>
         <!-- Sélection du nombre de lignes à afficher -->
         <div class="d-flex justify-content-between align-items-center mb-2 float-end">
-            <label for="rowsPerPage" class="me-2">Afficher</label>
-            <select id="rowsPerPage" class="form-select w-auto me-2" (change)="onRowsPerPageChange($event)">
-              <option *ngFor="let option of [5, 10, 20, 50]" [value]="option">{{ option }}</option>
-            </select>
-            <span>lignes par page</span>
-          </div>
+          <label for="rowsPerPage" class="me-2">Afficher</label>
+          <select
+            id="rowsPerPage"
+            class="form-select w-auto me-2"
+            (change)="onRowsPerPageChange($event)"
+          >
+            <option *ngFor="let option of [5, 10, 20, 50]" [value]="option">{{ option }}</option>
+          </select>
+          <span>lignes par page</span>
+        </div>
 
         <table class="table table-bordered table-hover">
           <thead class="table-success">
@@ -42,22 +88,34 @@
           <tbody>
             <tr *ngFor="let mouvement of getPaginatedMouvements">
               <td>
-                <span class="badge" [ngClass]="{'bg-success': mouvement.typeMouvement === 'Entree', 'bg-danger': mouvement.typeMouvement === 'Sortie'}">
+                <span
+                  class="badge"
+                  [ngClass]="{
+                    'bg-success': mouvement.typeMouvement === 'Entrée',
+                    'bg-danger': mouvement.typeMouvement === 'Sortie',
+                  }"
+                >
                   {{ mouvement.typeMouvement }}
                 </span>
               </td>
               <td>{{ mouvement.ref }}</td>
-              <td>{{ getNomProduitById (mouvement.produitId, produits) }}</td>
+              <td>{{ getNomProduitById(mouvement.produitId, produits) }}</td>
               <td>{{ mouvement.quantite }}</td>
-              <td>{{ getUniteProduitById (mouvement.produitId, produits) }}</td>
+              <td>{{ getUniteProduitById(mouvement.produitId, produits) }}</td>
               <td>{{ mouvement.dateMouvement | date: 'yyyy-MM-dd' }}</td>
-              <td>{{ mouvement.heureMouvement | date: 'HH:mm'}}</td>
+              <td>{{ mouvement.dateMouvement | date: 'HH:mm' }}</td>
               <td>{{ mouvement.description }}</td>
               <td>
-                <button class="btn btn-warning btn-sm w-auto h-auto" (click)="modifierMouvement(mouvement)">
+                <button
+                  class="btn btn-warning btn-sm w-auto h-auto"
+                  (click)="modifierMouvement(mouvement)"
+                >
                   <i class="bi bi-pencil text-dark"></i>
                 </button>
-                <button class="btn btn-danger btn-sm w-auto h-auto float-end" (click)="supprimerMouvement(mouvement)">
+                <button
+                  class="btn btn-danger btn-sm w-auto h-auto float-end"
+                  (click)="supprimerMouvement(mouvement)"
+                >
                   <i class="bi bi-trash text-white"></i>
                 </button>
               </td>
@@ -66,25 +124,45 @@
         </table>
       </div>
 
-        <!-- Pagination -->
-        <div class="d-flex justify-content-center align-items-center">
-          <button class="btn btn-success w-auto" (click)="onPageChange(currentPageMouvement-1,'mouvement')" [disabled]="currentPageMouvement === 1">
-            <i class="bi bi-arrow-left-circle"></i>
-          </button>
-          <span class="h3">{{ currentPageMouvement }} / {{ getTotalPages(filteredMouvements) }}</span>
-          <button class="btn btn-success w-auto" (click)="onPageChange(currentPageMouvement+1,'mouvement')"
-            [disabled]="currentPageMouvement >= getTotalPages(filteredMouvements)">
-            <i class="bi bi-arrow-right-circle"></i>
-          </button>
-        </div>
+      <!-- Pagination -->
+      <div class="d-flex justify-content-center align-items-center">
+        <button
+          class="btn btn-success w-auto"
+          (click)="onPageChange(currentPageMouvement - 1, 'mouvement')"
+          [disabled]="currentPageMouvement === 1"
+        >
+          <i class="bi bi-arrow-left-circle"></i>
+        </button>
+        <span class="h3">{{ currentPageMouvement }} / {{ getTotalPages(filteredMouvements) }}</span>
+        <button
+          class="btn btn-success w-auto"
+          (click)="onPageChange(currentPageMouvement + 1, 'mouvement')"
+          [disabled]="currentPageMouvement >= getTotalPages(filteredMouvements)"
+        >
+          <i class="bi bi-arrow-right-circle"></i>
+        </button>
+      </div>
 
       <!-- Modal pour ajouter un mouvement -->
-      <div class="modal fade" id="mouvementModal" tabindex="-1" aria-labelledby="mouvementModalLabel" aria-hidden="true">
+      <div
+        class="modal fade"
+        id="mouvementModal"
+        tabindex="-1"
+        aria-labelledby="mouvementModalLabel"
+        aria-hidden="true"
+      >
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header d-flex justify-content-between">
-              <h2 class="modal-title">{{ isEditing ? 'Modifier un mouvement' : 'Ajouter un nouveau mouvement' }}</h2>
-              <button type="button" class="w-auto bg-danger border border-3 px-2" data-bs-dismiss="modal" aria-label="Close">
+              <h2 class="modal-title">
+                {{ isEditing ? 'Modifier un mouvement' : 'Ajouter un nouveau mouvement' }}
+              </h2>
+              <button
+                type="button"
+                class="w-auto bg-danger border border-3 px-2"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              >
                 <i class="bi bi-x-lg text-white"></i>
               </button>
             </div>
@@ -98,56 +176,80 @@
                     <option value="Entrée">Entrée</option>
                     <option value="Sortie">Sortie</option>
                   </select>
-                  <div *ngIf="mouvementForm.controls['typeMouvement'].invalid && mouvementForm.controls['typeMouvement'].touched" class="text-danger">
+                  <div
+                    *ngIf="
+                      mouvementForm.controls['typeMouvement'].invalid &&
+                      mouvementForm.controls['typeMouvement'].touched
+                    "
+                    class="text-danger"
+                  >
                     Ce champ est requis.
                   </div>
                 </div>
                 <!-- Conteneur pour les champs conditionnels -->
                 <div *ngIf="mouvementForm.get('typeMouvement')?.value">
-                      <!-- Produit avec autocomplétion basée sur ngModel -->
-                      <div class="mb-3 position-relative">
-                        <label for="produitInput" class="form-label">Produit</label>
-                        <input type="text" class="form-control" id="produitInput"
-                              [(ngModel)]="searchInput"
-                              (input)="filterProduits()"
-                              placeholder="Rechercher un produit..."
-                              [ngModelOptions]="{ standalone: true }"
-                              required />
+                  <!-- Produit avec autocomplétion basée sur ngModel -->
+                  <div class="mb-3 position-relative">
+                    <label for="produitInput" class="form-label">Produit</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="produitInput"
+                      [(ngModel)]="searchInput"
+                      (input)="filterProduits()"
+                      placeholder="Rechercher un produit..."
+                      [ngModelOptions]="{ standalone: true }"
+                      required
+                    />
 
-                        <!-- Liste déroulante des résultats -->
-                        <ul *ngIf="filteredProduits.length > 0 && searchInput"
-                            class="list-group position-absolute mt-1 zindex-dropdown"
-                            style="width: 100%; max-height: 150px; overflow-y: auto;">
-                          <li *ngFor="let prod of filteredProduits"
-                              class="list-group-item list-group-item-action"
-                              (click)="selectProduit(prod)">
-                            {{ prod.designation }}
-                          </li>
-                        </ul>
+                    <!-- Liste déroulante des résultats -->
+                    <ul
+                      *ngIf="filteredProduits.length > 0 && searchInput"
+                      class="list-group position-absolute mt-1 zindex-dropdown"
+                      style="width: 100%; max-height: 150px; overflow-y: auto"
+                    >
+                      <li
+                        *ngFor="let prod of filteredProduits"
+                        class="list-group-item list-group-item-action"
+                        (click)="selectProduit(prod)"
+                      >
+                        {{ prod.designation }}
+                      </li>
+                    </ul>
 
-                        <!-- Message d'erreur si aucun produit n'est sélectionné -->
-                        <!-- <div *ngIf="mouvementForm.controls['produitId'].invalid && mouvementForm.controls['produitId'].touched"
+                    <!-- Message d'erreur si aucun produit n'est sélectionné -->
+                    <!-- <div *ngIf="mouvementForm.controls['produitId'].invalid && mouvementForm.controls['produitId'].touched"
                             class="text-danger mt-1">
                           Le produit est requis.
                         </div> -->
-                      </div>
+                  </div>
 
-                      <!-- Prix unitaire du produit -->
-                      <div class="mb-3">
-                        <label for="prixUnitaire" class="form-label">Prix unitaire</label>
-                        <input type="text" class="form-control" id="prixUnitaire"
-                              formControlName="prixUnitaire" readonly>
-                      </div>
+                  <!-- Prix unitaire du produit -->
+                  <div class="mb-3">
+                    <label for="prixUnitaire" class="form-label">Prix unitaire</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="prixUnitaire"
+                      formControlName="prixUnitaire"
+                      readonly
+                    />
+                  </div>
 
-                      <!-- Unité de stock (readonly, rempli automatiquement) -->
-                      <div class="mb-3">
-                        <label for="uniteStock" class="form-label">Unité de Stock</label>
-                        <input type="text" class="form-control" id="uniteStock"
-                              formControlName="uniteStock" readonly>
-                      </div>
+                  <!-- Unité de stock (readonly, rempli automatiquement) -->
+                  <div class="mb-3">
+                    <label for="uniteStock" class="form-label">Unité de Stock</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="uniteStock"
+                      formControlName="uniteStock"
+                      readonly
+                    />
+                  </div>
 
-                      <!-- Fournisseur -->
-                      <div class="mb-3">
+                  <!-- Fournisseur -->
+                  <!-- <div class="mb-3">
                         <label for="fournisseur" class="form-label">Fournisseur</label>
                         <select id="fournisseur" class="form-select" formControlName="fournisseurId" required>
                           <option value="" disabled selected>Choisir un fournisseur</option>
@@ -156,58 +258,99 @@
                         <div *ngIf="mouvementForm.controls['fournisseurId'].invalid && mouvementForm.controls['fournisseurId'].touched" class="text-danger">
                           Le fournisseur est requis.
                         </div>
-                      </div>
+                      </div> -->
 
-                      <!-- Quantité -->
-                      <div class="mb-3">
-                        <label for="quantite" class="form-label">Quantité</label>
-                        <input type="number" class="form-control" id="quantite" formControlName="quantite">
-                        <div *ngIf="mouvementForm.controls['quantite'].invalid && mouvementForm.controls['quantite'].touched" class="text-danger">
-                          La quantité est requise et doit être > 0.
-                        </div>
-                      </div>
-
-                      <!-- Description -->
-                      <div class="mb-3">
-                        <label for="description" class="form-label">Description/Commentaire</label>
-                        <textarea class="form-control" id="description" formControlName="description"></textarea>
-                        <div *ngIf="mouvementForm.controls['description'].invalid && mouvementForm.controls['description'].touched" class="text-danger">
-                          La description est requise.
-                        </div>
-                      </div>
-
-                      <!-- Boutons -->
-                      <div class="d-flex justify-content-center">
-                        <button type="submit" class="btn btn-success me-4 w-25" [disabled]="mouvementForm.invalid">
-                          {{ isEditing ? 'Mettre à jour' : 'Enregistrer' }}
-                        </button>
-                        <button type="reset" class="btn btn-secondary w-25" data-bs-dismiss="modal">Annuler</button>
-                      </div>
+                  <!-- Quantité -->
+                  <div class="mb-3">
+                    <label for="quantite" class="form-label">Quantité</label>
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="quantite"
+                      formControlName="quantite"
+                    />
+                    <div
+                      *ngIf="
+                        mouvementForm.controls['quantite'].invalid &&
+                        mouvementForm.controls['quantite'].touched
+                      "
+                      class="text-danger"
+                    >
+                      La quantité est requise et doit être > 0.
                     </div>
+                  </div>
+
+                  <!-- Description -->
+                  <div class="mb-3">
+                    <label for="description" class="form-label">Description/Commentaire</label>
+                    <textarea
+                      class="form-control"
+                      id="description"
+                      formControlName="description"
+                    ></textarea>
+                    <div
+                      *ngIf="
+                        mouvementForm.controls['description'].invalid &&
+                        mouvementForm.controls['description'].touched
+                      "
+                      class="text-danger"
+                    >
+                      La description est requise.
+                    </div>
+                  </div>
+
+                  <!-- Boutons -->
+                  <div class="d-flex justify-content-center">
+                    <button
+                      type="submit"
+                      class="btn btn-success me-4 w-25"
+                      [disabled]="mouvementForm.invalid"
+                    >
+                      {{ isEditing ? 'Mettre à jour' : 'Enregistrer' }}
+                    </button>
+                    <button type="reset" class="btn btn-secondary w-25" data-bs-dismiss="modal">
+                      Annuler
+                    </button>
+                  </div>
+                </div>
               </form>
             </div>
           </div>
         </div>
       </div>
-
-
     </div>
 
-
-    <div class="tab-pane fade" id="nav-reconciliation" role="tabpanel" aria-labelledby="nav-reconciliation-tab">
-
+    <div
+      class="tab-pane fade"
+      id="nav-reconciliation"
+      role="tabpanel"
+      aria-labelledby="nav-reconciliation-tab"
+    >
       <div class="table-responsive">
-
         <div class="d-flex justify-content-between">
-          <input [(ngModel)]="searchTextReconciliation" type="text" placeholder="Rechercher une réconciliation..." class="form-control w-50 mb-3" (input)="onSearchReconciliation()">
-          <button class="btn btn-success mb-3 w-auto" data-bs-toggle="modal" data-bs-target="#reconciliationModal">
+          <input
+            [(ngModel)]="searchTextReconciliation"
+            type="text"
+            placeholder="Rechercher une réconciliation..."
+            class="form-control w-50 mb-3"
+            (input)="onSearchReconciliation()"
+          />
+          <button
+            class="btn btn-success mb-3 w-auto"
+            data-bs-toggle="modal"
+            data-bs-target="#reconciliationModal"
+          >
             <i class="bi bi-plus-circle me-1"></i> Nouvelle réconciliation
           </button>
         </div>
         <!-- Sélection du nombre de lignes à afficher -->
         <div class="d-flex justify-content-between align-items-center mb-2 float-end">
           <label for="rowsPerPage1" class="me-2">Afficher</label>
-          <select id="rowsPerPage1" class="form-select w-auto me-2" (change)="onRowsPerPageChange($event)">
+          <select
+            id="rowsPerPage1"
+            class="form-select w-auto me-2"
+            (change)="onRowsPerPageChange($event)"
+          >
             <option *ngFor="let option of [5, 10, 20, 50]" [value]="option">{{ option }}</option>
           </select>
           <span>lignes par page</span>
@@ -226,14 +369,22 @@
           </thead>
           <tbody>
             <tr *ngFor="let reconciliation of getPaginatedReconciliations">
-              <td>{{ getNomProduitById (reconciliation.produitId, produits) }}</td>
+              <td>{{ getNomProduitById(reconciliation.produitId, produits) }}</td>
               <td>{{ reconciliation.stockTheorique }}</td>
               <td>{{ reconciliation.stockPhysique }}</td>
-              <td [ngClass]="{'text-danger': reconciliation.ecart < 0, 'text-success': reconciliation.ecart >= 0}">
+              <td
+                [ngClass]="{
+                  'text-danger': reconciliation.ecart < 0,
+                  'text-success': reconciliation.ecart >= 0,
+                }"
+              >
                 {{ reconciliation.ecart }}
               </td>
               <td class="d-flex justify-content-center">
-                <button class="btn btn-info btn-sm w-auto h-auto" (click)="voirHistorique(reconciliation)">
+                <button
+                  class="btn btn-info btn-sm w-auto h-auto"
+                  (click)="voirHistorique(reconciliation)"
+                >
                   <i class="bi bi-clock-history"></i>
                 </button>
               </td>
@@ -245,45 +396,71 @@
                 </ul>
               </td> -->
               <td>
-                <button class="btn btn-warning btn-sm  w-auto me-3 h-auto" (click)="modifierReconciliation(reconciliation)">
+                <button
+                  class="btn btn-warning btn-sm w-auto me-3 h-auto"
+                  (click)="modifierReconciliation(reconciliation)"
+                >
                   <i class="bi bi-pencil"></i>
                 </button>
-                <button class="btn btn-danger btn-sm w-auto h-auto" (click)="supprimerReconciliation(reconciliation)">
+                <button
+                  class="btn btn-danger btn-sm w-auto h-auto"
+                  (click)="supprimerReconciliation(reconciliation)"
+                >
                   <i class="bi bi-trash"></i>
                 </button>
               </td>
             </tr>
           </tbody>
         </table>
-    </div>
+      </div>
       <!-- Pagination -->
       <div class="d-flex justify-content-center align-items-center">
-        <button class="btn btn-success w-auto" (click)="onPageChange(currentPageReconcialiation-1,'reconciliation')" [disabled]="currentPageReconcialiation === 1">
+        <button
+          class="btn btn-success w-auto"
+          (click)="onPageChange(currentPageReconcialiation - 1, 'reconciliation')"
+          [disabled]="currentPageReconcialiation === 1"
+        >
           <i class="bi bi-arrow-left-circle"></i>
         </button>
-        <span class="h3">{{ currentPageReconcialiation }} / {{ getTotalPages(filteredReconciliations) }}</span>
-        <button class="btn btn-success w-auto" (click)="onPageChange(currentPageReconcialiation+1,'reconciliation')"
-          [disabled]="currentPageReconcialiation >= getTotalPages(filteredReconciliations)">
+        <span class="h3"
+          >{{ currentPageReconcialiation }} / {{ getTotalPages(filteredReconciliations) }}</span
+        >
+        <button
+          class="btn btn-success w-auto"
+          (click)="onPageChange(currentPageReconcialiation + 1, 'reconciliation')"
+          [disabled]="currentPageReconcialiation >= getTotalPages(filteredReconciliations)"
+        >
           <i class="bi bi-arrow-right-circle"></i>
         </button>
       </div>
     </div>
 
-    <div class="modal fade" id="historiqueModal" tabindex="-1" aria-labelledby="historiqueModalLabel" aria-hidden="true">
+    <div
+      class="modal fade"
+      id="historiqueModal"
+      tabindex="-1"
+      aria-labelledby="historiqueModalLabel"
+      aria-hidden="true"
+    >
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header d-flex justify-content-between align-items-center">
             <h3 class="modal-title">Historique des Écarts</h3>
-            <button type="button" class="w-auto bg-danger border border-3 px-2" data-bs-dismiss="modal" aria-label="Close">
+            <button
+              type="button"
+              class="w-auto bg-danger border border-3 px-2"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            >
               <i class="bi bi-x-lg text-white"></i>
             </button>
           </div>
           <div class="modal-body">
             <ul class="list-group">
               <li class="list-group-item" *ngFor="let historique of historiqueSelectionne">
-                <b>{{ historique.date | date:'yyyy-MM-dd HH:mm' }}</b> :
+                <b>{{ historique.date | date: 'yyyy-MM-dd HH:mm' }}</b> :
                 <span class="text-danger">{{ historique.ecart }}</span>
-                <br>
+                <br />
                 <small>{{ historique.note || 'Pas de note' }}</small>
               </li>
             </ul>
@@ -292,21 +469,30 @@
       </div>
     </div>
 
-
     <!-- Analyse des écarts -->
     <div class="tab-pane fade" id="nav-analyse" role="tabpanel" aria-labelledby="nav-analyse-tab">
       <div class="table-responsive">
-          <div class="d-flex justify-content-between">
-            <input [(ngModel)]="searchTextEcart" type="text" placeholder="Rechercher un produit à analyser..." class="form-control w-50 mb-3"  (input)="onSearchChangeEcart()">
-            <!-- Sélection du nombre de lignes à afficher -->
+        <div class="d-flex justify-content-between">
+          <input
+            [(ngModel)]="searchTextEcart"
+            type="text"
+            placeholder="Rechercher un produit à analyser..."
+            class="form-control w-50 mb-3"
+            (input)="onSearchChangeEcart()"
+          />
+          <!-- Sélection du nombre de lignes à afficher -->
           <div class="d-flex justify-content-between align-items-center mb-2 float-end">
-              <label for="rowsPerPage" class="me-2">Afficher</label>
-              <select id="rowsPerPage" class="form-select w-auto me-2" (change)="onRowsPerPageChange($event)">
-                <option *ngFor="let option of [5, 10, 20, 50]" [value]="option">{{ option }}</option>
-              </select>
-              <span>lignes par page</span>
-            </div>
+            <label for="rowsPerPage" class="me-2">Afficher</label>
+            <select
+              id="rowsPerPage"
+              class="form-select w-auto me-2"
+              (change)="onRowsPerPageChange($event)"
+            >
+              <option *ngFor="let option of [5, 10, 20, 50]" [value]="option">{{ option }}</option>
+            </select>
+            <span>lignes par page</span>
           </div>
+        </div>
 
         <table class="table table-bordered">
           <thead class="table-success">
@@ -322,8 +508,13 @@
           </thead>
           <tbody>
             <tr *ngFor="let analyse of getPaginatedEcarts">
-              <td>{{ getNomProduitById (analyse.produitId, produits) }}</td>
-              <td [ngClass]="{'text-danger': analyse.ecartTotal < 0, 'text-success': analyse.ecartTotal >= 0}">
+              <td>{{ getNomProduitById(analyse.produitId, produits) }}</td>
+              <td
+                [ngClass]="{
+                  'text-danger': analyse.ecartTotal < 0,
+                  'text-success': analyse.ecartTotal >= 0,
+                }"
+              >
                 {{ analyse.ecartTotal }}
               </td>
               <td>{{ analyse.dernierEcart | date: 'yyyy-MM-dd' }}</td>
@@ -338,48 +529,63 @@
             </tr>
           </tbody>
         </table>
-    </div>
+      </div>
       <div class="d-flex justify-content-center align-items-center">
-        <button class="btn btn-success w-auto" (click)="onPageChange(currentPageEcarts-1,'ecart')" [disabled]="currentPageEcarts === 1">
+        <button
+          class="btn btn-success w-auto"
+          (click)="onPageChange(currentPageEcarts - 1, 'ecart')"
+          [disabled]="currentPageEcarts === 1"
+        >
           <i class="bi bi-arrow-left-circle"></i>
         </button>
         <span class="h3">{{ currentPageEcarts }} / {{ getTotalPages(filteredEcarts) }}</span>
-        <button class="btn btn-success w-auto" (click)="onPageChange(currentPageEcarts+1,'ecart')"
-          [disabled]="currentPageEcarts >= getTotalPages(filteredEcarts)">
+        <button
+          class="btn btn-success w-auto"
+          (click)="onPageChange(currentPageEcarts + 1, 'ecart')"
+          [disabled]="currentPageEcarts >= getTotalPages(filteredEcarts)"
+        >
           <i class="bi bi-arrow-right-circle"></i>
         </button>
       </div>
     </div>
 
     <!-- Modal des Détails des Écarts -->
-<div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header d-flex justify-content-between align-items-center">
-        <h3 class="modal-title">Détails des Écarts</h3>
-        <button type="button" class="w-auto text-white bg-danger border border-3 px-2" data-bs-dismiss="modal" aria-label="Close">
-          <i class="bi bi-x-lg"></i>
-        </button>
-      </div>
-      <div class="modal-body">
-        <ul class="list-group">
-          <li class="list-group-item" *ngFor="let detail of detailsSelectionnes">
-            <b>{{ detail.date | date:'yyyy-MM-dd HH:mm' }}</b> :
-            <span [ngClass]="{'text-danger': detail.ecart < 0, 'text-success': detail.ecart >= 0}">
-              {{ detail.ecart }}
-            </span>
-            <br>
-            <small *ngIf="detail.corrige; else nonCorrige" class="badge bg-success">Corrigé ✔️</small>
-            <ng-template #nonCorrige>
-              <span class="badge bg-warning">Non corrigé ❌</span>
-            </ng-template>
-          </li>
-        </ul>
+    <div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header d-flex justify-content-between align-items-center">
+            <h3 class="modal-title">Détails des Écarts</h3>
+            <button
+              type="button"
+              class="w-auto text-white bg-danger border border-3 px-2"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            >
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+          <div class="modal-body">
+            <ul class="list-group">
+              <li class="list-group-item" *ngFor="let detail of detailsSelectionnes">
+                <b>{{ detail.date | date: 'yyyy-MM-dd HH:mm' }}</b> :
+                <span
+                  [ngClass]="{ 'text-danger': detail.ecart < 0, 'text-success': detail.ecart >= 0 }"
+                >
+                  {{ detail.ecart }}
+                </span>
+                <br />
+                <small *ngIf="detail.corrige; else nonCorrige" class="badge bg-success"
+                  >Corrigé ✔️</small
+                >
+                <ng-template #nonCorrige>
+                  <span class="badge bg-warning">Non corrigé ❌</span>
+                </ng-template>
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-</div>
-
 
     <!-- Modal de Réconciliation -->
     <div class="modal fade" id="reconciliationModal" tabindex="-1" aria-hidden="true">
@@ -389,41 +595,105 @@
             <h2 class="modal-title">
               {{ isEditingReconciliation ? 'Modifier Réconciliation' : 'Nouvelle Réconciliation' }}
             </h2>
-            <button type="button" class="w-auto bg-danger text-white border border-3 px-2" data-bs-dismiss="modal" aria-label="Close">
-              <i class="bi bi-x-lg"></i> <!-- Icône de fermeture -->
+            <button
+              type="button"
+              class="w-auto bg-danger text-white border border-3 px-2"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            >
+              <i class="bi bi-x-lg"></i>
+              <!-- Icône de fermeture -->
             </button>
           </div>
           <div class="modal-body">
             <form [formGroup]="reconciliationForm" (ngSubmit)="enregistrerReconciliation()">
-              <div class="mb-3">
+              <!-- <div class="mb-3">
                 <label for="produitId" class="form-label">Produit</label>
                 <input type="number" class="form-control" id="produitId" formControlName="produitId" required>
+              </div> -->
+              <!-- Produit avec autocomplétion basée sur ngModel -->
+              <div class="mb-3 position-relative">
+                <label for="produitInput" class="form-label">Produit</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="produitInput"
+                  [(ngModel)]="searchInputBis"
+                  (input)="filterProduitsReconciliation()"
+                  placeholder="Rechercher un produit..."
+                  [ngModelOptions]="{ standalone: true }"
+                  required
+                />
+
+                <!-- Liste déroulante des résultats -->
+                <ul
+                  *ngIf="filteredProduits.length > 0 && searchInputBis"
+                  class="list-group position-absolute mt-1 zindex-dropdown"
+                  style="width: 100%; max-height: 150px; overflow-y: auto"
+                >
+                  <li
+                    *ngFor="let prod of filteredProduits"
+                    class="list-group-item list-group-item-action"
+                    (click)="selectProduitReconciliation(prod)"
+                  >
+                    {{ prod.designation }}
+                  </li>
+                </ul>
+
+                <!-- Message d'erreur si aucun produit n'est sélectionné -->
+                <!-- <div *ngIf="mouvementForm.controls['produitId'].invalid && mouvementForm.controls['produitId'].touched"
+                    class="text-danger mt-1">
+                  Le produit est requis.
+                </div> -->
               </div>
               <div class="mb-3">
                 <label for="stockTheorique" class="form-label">Stock Théorique</label>
-                <input type="number" class="form-control" id="stockTheorique" formControlName="stockTheorique" required>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="stockTheorique"
+                  formControlName="stockTheorique"
+                  required
+                />
               </div>
               <div class="mb-3">
                 <label for="stockPhysique" class="form-label">Stock Physique</label>
-                <input type="number" class="form-control" id="stockPhysique" formControlName="stockPhysique" required>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="stockPhysique"
+                  formControlName="stockPhysique"
+                  required
+                />
               </div>
-              <!-- ✅ Nouveau champ "note" (optionnel) -->
+              <!-- Nouveau champ "note" (optionnel) -->
               <div class="mb-3">
                 <label for="note" class="form-label">Note (facultatif)</label>
-                <textarea class="form-control" id="note" formControlName="note" rows="3" placeholder="Ajoutez une note ici..."></textarea>
+                <textarea
+                  class="form-control"
+                  id="note"
+                  formControlName="note"
+                  rows="3"
+                  placeholder="Ajoutez une note ici..."
+                ></textarea>
               </div>
               <div class="d-flex justify-content-center">
                 <button type="submit" class="btn btn-success me-3 w-25">
                   {{ isEditingReconciliation ? 'Mettre à jour' : 'Enregistrer' }}
                 </button>
-                <button type="reset" class="btn btn-secondary w-25" data-bs-dismiss="modal" aria-label="Close">Annuler</button>
+                <button
+                  type="reset"
+                  class="btn btn-secondary w-25"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"
+                >
+                  Annuler
+                </button>
               </div>
             </form>
           </div>
         </div>
       </div>
     </div>
-
-
   </div>
 </div>

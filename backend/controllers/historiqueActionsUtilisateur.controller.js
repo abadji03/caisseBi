@@ -1,4 +1,4 @@
-const db = require("../models");
+const db = require('../models');
 const Historique = db.HistoriqueActionsUtilisateur;
 
 exports.create = async (req, res) => {
@@ -17,10 +17,10 @@ exports.findByUser = async (req, res) => {
     const { userId } = req.params;
     const data = await Historique.findAll({
       where: { userId },
-      order: [["date", "DESC"]]
+      order: [['date', 'DESC']],
     });
     res.json(data);
   } catch (error) {
-    res.status(500).json({ message: "Erreur lors de la récupération des actions", error });
+    res.status(500).json({ message: 'Erreur lors de la récupération des actions', error });
   }
 };

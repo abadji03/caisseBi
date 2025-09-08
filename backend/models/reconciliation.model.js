@@ -1,25 +1,25 @@
 module.exports = (sequelize, DataTypes) => {
-  const Reconciliation = sequelize.define("Reconciliation", {
+  const Reconciliation = sequelize.define('Reconciliation', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
-      autoIncrement: true
+      autoIncrement: true,
     },
     code_structure: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
     },
     produitId: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
     },
     stockTheorique: {
       type: DataTypes.DECIMAL(10, 2),
-      allowNull: false
+      allowNull: false,
     },
     stockPhysique: {
       type: DataTypes.DECIMAL(10, 2),
-      allowNull: false
+      allowNull: false,
     },
     ecart: {
       type: DataTypes.DECIMAL(10, 2),
@@ -27,14 +27,14 @@ module.exports = (sequelize, DataTypes) => {
     },
     dateReconciliation: {
       type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW
+      defaultValue: DataTypes.NOW,
     },
     responsable: {
-      type: DataTypes.STRING
+      type: DataTypes.STRING,
     },
     note: {
-      type: DataTypes.TEXT
-    }
+      type: DataTypes.TEXT,
+    },
   });
 
   return Reconciliation;

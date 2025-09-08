@@ -1,4 +1,4 @@
-const db = require("../models");
+const db = require('../models');
 const Role = db.role;
 const Permission = db.permission;
 
@@ -26,7 +26,7 @@ exports.findAll = async (req, res) => {
 exports.getRoleById = async (req, res) => {
   try {
     const role = await Role.findByPk(req.params.id);
-    if (!role) return res.status(404).json({ message: "Rôle non trouvé" });
+    if (!role) return res.status(404).json({ message: 'Rôle non trouvé' });
     res.json(role);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -37,12 +37,12 @@ exports.getRoleById = async (req, res) => {
 exports.updateRole = async (req, res) => {
   try {
     const role = await Role.findByPk(req.params.id);
-    if (!role) return res.status(404).json({ message: "Rôle non trouvé" });
+    if (!role) return res.status(404).json({ message: 'Rôle non trouvé' });
 
     const { nom } = req.body;
     await role.update({ nom });
 
-    res.json({ message: "Rôle mis à jour", role });
+    res.json({ message: 'Rôle mis à jour', role });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -52,10 +52,10 @@ exports.updateRole = async (req, res) => {
 exports.deleteRole = async (req, res) => {
   try {
     const role = await Role.findByPk(req.params.id);
-    if (!role) return res.status(404).json({ message: "Rôle non trouvé" });
+    if (!role) return res.status(404).json({ message: 'Rôle non trouvé' });
 
     await role.destroy();
-    res.json({ message: "Rôle supprimé" });
+    res.json({ message: 'Rôle supprimé' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -65,14 +65,14 @@ exports.deleteRole = async (req, res) => {
 exports.assignPermissions = async (req, res) => {
   try {
     const role = await Role.findByPk(req.params.id);
-    if (!role) return res.status(404).json({ message: "Rôle non trouvé" });
+    if (!role) return res.status(404).json({ message: 'Rôle non trouvé' });
 
     const permissions = await Permission.findAll({
-      where: { id: req.body.permissionIds }
+      where: { id: req.body.permissionIds },
     });
 
     await role.setPermissions(permissions);
-    res.json({ message: "Permissions assignées au rôle" });
+    res.json({ message: 'Permissions assignées au rôle' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -3,63 +3,102 @@
     <h1 class="fw-bold text-uppercase">Catalogue des produits</h1>
   </div>
   <hr> -->
-    <div class="row"> 
-      <!-- Colonne gauche (liste des produits) -->
-      <div [ngClass]="{ 'col-md-12': !isRowSelected, 'col-md-10': isRowSelected }">
-        <div class="d-flex justify-content-between mb-2">
-          <div class="w-auto mb-3">
-                <button class="btn btn-info w-auto me-1" data-bs-toggle="tooltip" title="Exporter les produits" (click)="onAction('Exporter')"><i class="bi bi-box-arrow-up-right me-2"></i></button>
-                <button class="btn btn-danger w-auto me-1" data-bs-toggle="tooltip" title="Importer des produits" (click)="onAction('Importer')"><i class="bi bi-box-arrow-in-right me-2"></i></button>
-                <button class="btn btn-light w-auto" data-bs-toggle="tooltip" title="Rafraîchir le tableau" (click)="onAction('Rafraîchir')"><i class="bi bi-arrow-clockwise me-2"></i></button>
-            </div>
-          <div class="">
-            <!-- Bouton pour ouvrir le modal -->
-            <button type="button" class="btn btn-secondary me-2" (click)="openCategoriesModal()">
-                <i class="bi bi-list-ul me-2"></i> Voir les catégories
-            </button>
-            <button class="btn btn-info w-auto me-2" (click)="afficherFormCategorie()"><i class="bi bi-plus-circle me-2"></i>Nouvelle catégorie</button>
-            <button class="btn btn-success w-auto" id="btnAjout" (click)="openModal('ajouter')"><i class="bi bi-plus-circle text-white me-2"></i>Nouveau produit</button>
-            <div *ngIf="ajoutCategorie" class="mt-3">
-                <!-- Formulaire de recherche -->
-                    <form [formGroup]="categorieForm" (ngSubmit)="onSubmitCategorie()"> 
-                        <div class="input-group mb-3 w-auto d-flex align-items-start flex-column">
-                          <!-- Champ Nom -->
-                          <div class="mb-4 w-100">
-                            <label for="nom" class="form-label">Nom catégorie</label>
-                            <input type="text" class="form-control" id="nom" formControlName="nom" required=""/>
-                            <!-- Messages d'erreur pour nom -->
-                            <div *ngIf="categorieForm.get('nom')?.touched && categorieForm.get('nom')?.invalid" class="text-danger mt-1">
-                              <div *ngIf="categorieForm.get('nom')?.errors?.['required']">
-                                Le nom est requis.
-                              </div>
-                              <div *ngIf="categorieForm.get('nom')?.errors?.['minlength']">
-                                Le nom doit contenir au moins 3 caractères.
-                              </div>
-                              <div *ngIf="categorieForm.get('nom')?.errors?.['maxlength']">
-                                Le nom ne doit pas dépasser 50 caractères.
-                              </div>
-                            </div>
-                          </div>
+  <div class="row">
+    <!-- Colonne gauche (liste des produits) -->
+    <div [ngClass]="{ 'col-md-12': !isRowSelected, 'col-md-10': isRowSelected }">
+      <div class="d-flex justify-content-between mb-2">
+        <div class="w-auto mb-3">
+          <button
+            class="btn btn-info w-auto me-1"
+            data-bs-toggle="tooltip"
+            title="Exporter les produits"
+            (click)="onAction('Exporter')"
+          >
+            <i class="bi bi-box-arrow-up-right me-2"></i>
+          </button>
+          <button
+            class="btn btn-danger w-auto me-1"
+            data-bs-toggle="tooltip"
+            title="Importer des produits"
+            (click)="onAction('Importer')"
+          >
+            <i class="bi bi-box-arrow-in-right me-2"></i>
+          </button>
+          <button
+            class="btn btn-light w-auto"
+            data-bs-toggle="tooltip"
+            title="Rafraîchir le tableau"
+            (click)="onAction('Rafraîchir')"
+          >
+            <i class="bi bi-arrow-clockwise me-2"></i>
+          </button>
+        </div>
+        <div class="">
+          <!-- Bouton pour ouvrir le modal -->
+          <button type="button" class="btn btn-secondary me-2" (click)="openCategoriesModal()">
+            <i class="bi bi-list-ul me-2"></i> Voir les catégories
+          </button>
+          <button class="btn btn-info w-auto me-2" (click)="afficherFormCategorie()">
+            <i class="bi bi-plus-circle me-2"></i>Nouvelle catégorie
+          </button>
+          <button class="btn btn-success w-auto" id="btnAjout" (click)="openModal('ajouter')">
+            <i class="bi bi-plus-circle text-white me-2"></i>Nouveau produit
+          </button>
+          <div *ngIf="ajoutCategorie" class="mt-3">
+            <!-- Formulaire de recherche -->
+            <form [formGroup]="categorieForm" (ngSubmit)="onSubmitCategorie()">
+              <div class="input-group mb-3 w-auto d-flex align-items-start flex-column">
+                <!-- Champ Nom -->
+                <div class="mb-4 w-100">
+                  <label for="nom" class="form-label">Nom catégorie</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="nom"
+                    formControlName="nom"
+                    required=""
+                  />
+                  <!-- Messages d'erreur pour nom -->
+                  <div
+                    *ngIf="categorieForm.get('nom')?.touched && categorieForm.get('nom')?.invalid"
+                    class="text-danger mt-1"
+                  >
+                    <div *ngIf="categorieForm.get('nom')?.errors?.['required']">
+                      Le nom est requis.
+                    </div>
+                    <div *ngIf="categorieForm.get('nom')?.errors?.['minlength']">
+                      Le nom doit contenir au moins 3 caractères.
+                    </div>
+                    <div *ngIf="categorieForm.get('nom')?.errors?.['maxlength']">
+                      Le nom ne doit pas dépasser 50 caractères.
+                    </div>
+                  </div>
+                </div>
 
-                          <!-- Champ Description -->
-                          <div class="mb-2 w-100">
-                            <label for="description" class="form-label">Description catégorie</label>
-                            <textarea class="form-control" id="desc_categorie" formControlName="description"></textarea>
-                          </div>
-                        </div>
+                <!-- Champ Description -->
+                <div class="mb-2 w-100">
+                  <label for="description" class="form-label">Description catégorie</label>
+                  <textarea
+                    class="form-control"
+                    id="desc_categorie"
+                    formControlName="description"
+                  ></textarea>
+                </div>
+              </div>
 
-                            <button class="btn btn-success w-auto" type="submit" [disabled]="categorieForm.invalid">
-                                <i class="bi bi-save text-white me-2"></i> Enregistrer
-                            </button>
-                            
-                            
-                      </form>
-
-            </div>
+              <button
+                class="btn btn-success w-auto"
+                type="submit"
+                [disabled]="categorieForm.invalid"
+              >
+                <i class="bi bi-save text-white me-2"></i> Enregistrer
+              </button>
+            </form>
           </div>
         </div>
+      </div>
 
-           <!--  <div class="w-50">
+      <!--  <div class="w-50">
           
                     <div class="input-group mb-3 w-auto">
                       <input
@@ -71,119 +110,135 @@
                       placeholder="Rechercher par désignation, famille, fournisseur, etc...." />
                     </div>
             </div> -->
-            
-        
-            <div class="d-flex justify-content-center">
-                <h1>Liste des produits</h1>
-            </div>
-        <!-- Barre de recherche et filtres -->
-        <div class="d-flex justify-content-between mb-3">
-          <div class="input-group w-50">
-            <span class="input-group-text"><i class="bi bi-search"></i></span>
-            <input type="text" class="form-control" placeholder="Rechercher un produit..." [(ngModel)]="searchTerm" (input)="onSearchChange()">
-          </div>
-          <div>
-            <select class="form-select" [(ngModel)]="itemsPerPage" (change)="onRowsPerPageChange($event)">
-              <option value="5">5 éléments/page</option>
-              <option value="10">10 éléments/page</option>
-              <option value="20">20 éléments/page</option>
-            </select>
-          </div>
-        </div> 
-        
-        <!-- Tableau des produits -->
-        <div class="table-responsive">
-          <table class="table table-bordered table-hover">
-            <thead class="table-success">
-              <tr>
-                <!-- Colonne pour les cases à cocher -->
-                <th class="petit-colonne">
-                  <input type="checkbox" id="checkAll" (click)="selectAllProd()">
-                  <label for="checkAll"></label>
-                </th>
-                <!-- Colonne ID existante -->
-                <th class="petit-colonne">ID</th>
 
-                <!-- Colonne pour l'image du produit -->
-                <th>Image</th>
+      <div class="d-flex justify-content-center">
+        <h1>Liste des produits</h1>
+      </div>
+      <!-- Barre de recherche et filtres -->
+      <div class="d-flex justify-content-between mb-3">
+        <div class="input-group w-50">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Rechercher un produit..."
+            [(ngModel)]="searchTerm"
+            (input)="onSearchChange()"
+          />
+        </div>
+        <div>
+          <select
+            class="form-select"
+            [(ngModel)]="itemsPerPage"
+            (change)="onRowsPerPageChange($event)"
+          >
+            <option value="5">5 éléments/page</option>
+            <option value="10">10 éléments/page</option>
+            <option value="20">20 éléments/page</option>
+          </select>
+        </div>
+      </div>
 
-                <!-- Autres colonnes -->
-                <th>Famille</th>
-                <th>Désignation</th>
-                <th>Fournisseur</th>
-                <!-- <th>Magasin</th> -->
-                <th>Quantité</th>
-                <th>Unité Stock</th>
-                <th>P.A.U</th>
-                <th>P.V.U</th>
-                <th>Date ajout</th>
-                <th>Agent</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let produit of paginatedProducts" (click)="onRowSelect(produit)">
-                <!-- Case à cocher pour chaque produit -->
-                <td class="petit-colonne">
-                  <input type="checkbox" id="check" name="checkCase" (click)="verifyCheckedCase()">
-                  <label for="check"></label>
+      <!-- Tableau des produits -->
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+          <thead class="table-success">
+            <tr>
+              <!-- Colonne pour les cases à cocher -->
+              <th class="petit-colonne">
+                <input type="checkbox" id="checkAll" (click)="selectAllProd()" />
+                <label for="checkAll"></label>
+              </th>
+              <!-- Colonne ID existante -->
+              <th class="petit-colonne">ID</th>
+
+              <!-- Colonne pour l'image du produit -->
+              <th>Image</th>
+
+              <!-- Autres colonnes -->
+              <th>Famille</th>
+              <th>Désignation</th>
+              <th>Fournisseur</th>
+              <!-- <th>Magasin</th> -->
+              <th>Quantité</th>
+              <th>Unité Stock</th>
+              <th>P.A.U</th>
+              <th>P.V.U</th>
+              <th>Date ajout</th>
+              <th>Agent</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let produit of paginatedProducts" (click)="onRowSelect(produit)">
+              <!-- Case à cocher pour chaque produit -->
+              <td class="petit-colonne">
+                <input type="checkbox" id="check" name="checkCase" (click)="verifyCheckedCase()" />
+                <label for="check"></label>
               </td>
 
-                <!-- ID -->
-                <td class="petit-colonne">{{ produit.id }}</td>
+              <!-- ID -->
+              <td class="petit-colonne">{{ produit.id }}</td>
 
-                 <!-- Image du produit ou icône si pas d'image -->
-                 <td>
-                  <ng-container *ngIf="produit.image; else noImage">
-                    <img [src]="produit.image" alt="Image produit" width="50" height="50" />
-                  </ng-container>
-                  <ng-template #noImage>
-                    <i class="bi bi-camera-video-off" style="font-size: 24px;"></i>
-                  </ng-template>
-                </td>
+              <!-- Image du produit ou icône si pas d'image -->
+              <td>
+                <ng-container *ngIf="produit.image; else noImage">
+                  <img [src]="produit.image" alt="Image produit" width="50" height="50" />
+                </ng-container>
+                <ng-template #noImage>
+                  <i class="bi bi-camera-video-off" style="font-size: 24px"></i>
+                </ng-template>
+              </td>
 
-                <!-- Autres informations sur le produit -->
-                <td>{{ getNomCategorieById(produit.categorieId)}}</td>
-                <td>{{ produit.designation }}</td>
-                <td>{{ getNomFournisseurById(produit.fournisseurId!) }}</td>
-                <td>{{ getQteById(produit.id) }}</td>
-                <!-- <td>{{ 0 }} à corriger</td> -->
-                <td>{{ produit.unite }}</td>
-                <td>{{ produit.prixAchatUnitaire }}</td>
-                <td>{{ produit.prixVenteUnitaire }}</td>
-                <td>{{ produit.dateCreation | date:'short' }}</td>
-                <td>{{ getNomUserById(produit.agentId!) }}</td>
-                <td>{{ produit.description }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+              <!-- Autres informations sur le produit -->
+              <td>{{ getNomCategorieById(produit.categorieId) }}</td>
+              <td>{{ produit.designation }}</td>
+              <td>{{ getNomFournisseurById(produit.fournisseurId!) }}</td>
+              <td>{{ getQteById(produit.id) }}</td>
+              <!-- <td>{{ 0 }} à corriger</td> -->
+              <td>{{ produit.unite }}</td>
+              <td>{{ produit.prixAchatUnitaire }}</td>
+              <td>{{ produit.prixVenteUnitaire }}</td>
+              <td>{{ produit.dateCreation | date: 'short' }}</td>
+              <td>{{ getNomUserById(produit.agentId!) }}</td>
+              <td>{{ produit.description }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-        <!-- Pagination -->
-       <!--  <div class="pagination d-flex justify-content-center align-items-center">
+      <!-- Pagination -->
+      <!--  <div class="pagination d-flex justify-content-center align-items-center">
             <button class="w-auto btn btn-success" (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 1"><i class="bi bi-arrow-left-circle fs-3"></i></button>
             <span class="h3">{{ currentPage }}</span>
             <button class="w-auto btn btn-success" (click)="onPageChange(currentPage + 1)" [disabled]="currentPage * itemsPerPage >= filteredProducts.length"><i class="bi bi-arrow-right-circle fs-3"></i></button>
         </div> -->
-        <div class="d-flex justify-content-between align-items-center">
-              <div>
-                Affichage de {{ (currentPage - 1) * itemsPerPage + 1 }} à 
-                {{ min(currentPage * itemsPerPage, filteredProducts.length) }} 
-                sur {{ filteredProducts.length }} fournisseurs
-              </div>
-              <div>
-                <button class="btn btn-success" (click)="onPageChange(currentPage-1)" [disabled]="currentPage === 1">
-                  <i class="bi bi-arrow-left-circle"></i>
-                </button>
-                <!-- <span class="h3">{{ currentPageFournisseur }} / {{ getTotalPages(filteredFournisseurs) }}</span> -->
-                <span class="h3">{{ currentPage }} </span>
-                <button class="btn btn-success" (click)="onPageChange(currentPage+1)"
-                  [disabled]="currentPage >= getTotalPages(filteredProducts)">
-                  <i class="bi bi-arrow-right-circle"></i>
-                </button>
-              </div>
-          </div>
-        <!-- <div class="d-flex justify-content-center">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          Affichage de {{ (currentPage - 1) * itemsPerPage + 1 }} à
+          {{ min(currentPage * itemsPerPage, filteredProducts.length) }}
+          sur {{ filteredProducts.length }} fournisseurs
+        </div>
+        <div>
+          <button
+            class="btn btn-success"
+            (click)="onPageChange(currentPage - 1)"
+            [disabled]="currentPage === 1"
+          >
+            <i class="bi bi-arrow-left-circle"></i>
+          </button>
+          <!-- <span class="h3">{{ currentPageFournisseur }} / {{ getTotalPages(filteredFournisseurs) }}</span> -->
+          <span class="h3">{{ currentPage }} </span>
+          <button
+            class="btn btn-success"
+            (click)="onPageChange(currentPage + 1)"
+            [disabled]="currentPage >= getTotalPages(filteredProducts)"
+          >
+            <i class="bi bi-arrow-right-circle"></i>
+          </button>
+        </div>
+      </div>
+      <!-- <div class="d-flex justify-content-center">
           <ul class="pagination">
             <li class="page-item" [class.disabled]="currentPage === 1" (click)="onPageChange(currentPage - 1)">
               <span class="page-link">Précédent</span>
@@ -193,205 +248,364 @@
             </li>
           </ul>
         </div> -->
-      </div>
+    </div>
 
-      <!-- Colonne droite (actions) -->
-      <div *ngIf="isRowSelected" class="col-md-2 bg-light">
-        <div class="float-end">
-            <button class="btn btn-danger w-auto float-end" (click)="closeActions()"><i class="bi bi-x-lg text-white"></i></button>
-        </div>
-        <div class="mt-2 float-start">
-          <h2>Action pour :</h2>
-          <p>Id: {{selectedProduits?.id}}</p>
-          <p>Nom: {{selectedProduits?.designation}}</p>
-        </div>
-        <div class="btn-group-vertical">
-          <button class="btn btn-warning d-flex align-items-center" data-bs-toggle="tooltip" title="Cliquer pour ouvrir le formulaire" (click)="onAction('modifier')"><i class="bi bi-pencil me-2"></i>Modifier</button>
-          <!-- <button class="btn btn-warning d-flex align-items-center text-white fw-bold" data-bs-toggle="tooltip" title="Mettre le produit en archive" (click)="onAction('archiver')"><i class="bi bi-archive me-2"></i>Archiver</button> -->
-          <!-- <button class="btn btn-success d-flex align-items-center" data-bs-toggle="tooltip" title="Ajouter de nouvelles entrées pour le produit" (click)="onAction('entree')"><mat-icon>arrow_downward</mat-icon>Entrée</button>
+    <!-- Colonne droite (actions) -->
+    <div *ngIf="isRowSelected" class="col-md-2 bg-light">
+      <div class="float-end">
+        <button class="btn btn-danger w-auto float-end" (click)="closeActions()">
+          <i class="bi bi-x-lg text-white"></i>
+        </button>
+      </div>
+      <div class="mt-2 float-start">
+        <h2>Action pour :</h2>
+        <p>Id: {{ selectedProduits?.id }}</p>
+        <p>Nom: {{ selectedProduits?.designation }}</p>
+      </div>
+      <div class="btn-group-vertical">
+        <button
+          class="btn btn-warning d-flex align-items-center"
+          data-bs-toggle="tooltip"
+          title="Cliquer pour ouvrir le formulaire"
+          (click)="onAction('modifier')"
+        >
+          <i class="bi bi-pencil me-2"></i>Modifier
+        </button>
+        <!-- <button class="btn btn-warning d-flex align-items-center text-white fw-bold" data-bs-toggle="tooltip" title="Mettre le produit en archive" (click)="onAction('archiver')"><i class="bi bi-archive me-2"></i>Archiver</button> -->
+        <!-- <button class="btn btn-success d-flex align-items-center" data-bs-toggle="tooltip" title="Ajouter de nouvelles entrées pour le produit" (click)="onAction('entree')"><mat-icon>arrow_downward</mat-icon>Entrée</button>
           <button class="btn btn-danger d-flex align-items-center" data-bs-toggle="tooltip" title="Ajouter de nouvelles sorties pour le produit" (click)="onAction('sortie')"><mat-icon>arrow_upward </mat-icon>Sortie</button> -->
-          <button *ngIf="selectedProduits?.codeBarre === '' || selectedProduits?.codeBarre ===null" class="btn btn-primary d-flex align-items-center" data-bs-toggle="tooltip" title="Associer un code-barre au produit" (click)="onAction('code-barre')"><i class="bi bi-list me-2"></i>code-barre</button>
-          <button class="btn btn-secondary d-flex align-items-center" (click)="onAction('statut')"><i class="me-2 bi" [ngClass]="selectedProduits?.statut ? 'bi-x-circle-fill' : 'bi-check-circle-fill'"></i>{{ selectedProduits?.statut ? 'Désactiver' : 'Activer' }}</button>
-          <button  *ngIf="selectedProduits?.image === '' || selectedProduits?.image ===null" class="btn btn-info d-flex align-items-center text-white  fw-bold" data-bs-toggle="tooltip" title="Asocier une image et une galerie au produit" (click)="onAction('image')"><i class="bi bi-camera-fill me-2"></i>Image</button>
-        </div>
+        <button
+          *ngIf="selectedProduits?.codeBarre === '' || selectedProduits?.codeBarre === null"
+          class="btn btn-primary d-flex align-items-center"
+          data-bs-toggle="tooltip"
+          title="Associer un code-barre au produit"
+          (click)="onAction('code-barre')"
+        >
+          <i class="bi bi-list me-2"></i>code-barre
+        </button>
+        <button class="btn btn-secondary d-flex align-items-center" (click)="onAction('statut')">
+          <i
+            class="me-2 bi"
+            [ngClass]="selectedProduits?.statut ? 'bi-x-circle-fill' : 'bi-check-circle-fill'"
+          ></i
+          >{{ selectedProduits?.statut ? 'Désactiver' : 'Activer' }}
+        </button>
+        <button
+          *ngIf="selectedProduits?.image === '' || selectedProduits?.image === null"
+          class="btn btn-info d-flex align-items-center text-white fw-bold"
+          data-bs-toggle="tooltip"
+          title="Asocier une image et une galerie au produit"
+          (click)="onAction('image')"
+        >
+          <i class="bi bi-camera-fill me-2"></i>Image
+        </button>
       </div>
     </div>
   </div>
-  <div class="modal fade" id="produitModal" tabindex="-1" aria-labelledby="produitModalLabel">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header bg-success">
-          <h1 class="modal-title text-white" id="produitModalLabel">{{ getModalTitle() }}</h1>
-          <button type="button" class="btn-close bg-danger " data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg text-white"></i></button>
-        </div>
-        <div class="modal-body">
-          <!-- Formulaire réactif pour ajouter ou modifier un produit -->
-          <!-- Formulaire réactif pour ajouter ou modifier un produit -->
-          <form [formGroup]="produitForm" (ngSubmit)="onSubmit()">
+</div>
+<div class="modal fade" id="produitModal" tabindex="-1" aria-labelledby="produitModalLabel">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-success">
+        <h1 class="modal-title text-white" id="produitModalLabel">{{ getModalTitle() }}</h1>
+        <button
+          type="button"
+          class="btn-close bg-danger"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        >
+          <i class="bi bi-x-lg text-white"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- Formulaire réactif pour ajouter ou modifier un produit -->
+        <!-- Formulaire réactif pour ajouter ou modifier un produit -->
+        <form [formGroup]="produitForm" (ngSubmit)="onSubmit()">
+          <!-- Message d'erreur général -->
+          <div *ngIf="errorMessage" class="alert alert-danger mb-3">
+            {{ errorMessage }}
+          </div>
 
-            <!-- Message d'erreur général -->
-            <div *ngIf="errorMessage" class="alert alert-danger mb-3">
-              {{ errorMessage }}
-            </div>
-
-            <div class="row mb-3">
-              <!-- Désignation -->
-              <div class="col-md-6">
-                <label for="designation" class="form-label">Désignation <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="designation" formControlName="designation"
-                      [ngClass]="{'is-invalid': f['designation'].touched && f['designation'].errors}">
-                <div *ngIf="f['designation'].touched && f['designation'].errors" class="invalid-feedback">
-                  <div *ngIf="f['designation'].errors['required']">La désignation est obligatoire</div>
-                </div>
-              </div>
-              
-              <!-- Famille/Catégorie -->
-              <div class="col-md-6">
-                <label for="categorieId" class="form-label">Famille/Catégorie <span class="text-danger">*</span></label>
-                <select class="form-select" id="categorieId" formControlName="categorieId"
-                        [ngClass]="{'is-invalid': f['categorieId'].touched && f['categorieId'].errors}">
-                  <option value="">Sélectionner une famille</option>
-                  <option *ngFor="let famille of categories" [value]="famille.id">{{ famille.nom }}</option>
-                </select>
-                <div *ngIf="f['categorieId'].touched && f['categorieId'].errors" class="invalid-feedback">
-                  <div *ngIf="f['categorieId'].errors['required']">La famille est obligatoire</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <!-- Fournisseur -->
-              <div class="col-md-6">
-                <label for="fournisseur" class="form-label">Fournisseur <span class="text-danger">*</span></label>
-                <select class="form-select" id="fournisseur" formControlName="fournisseurId"
-                        [ngClass]="{'is-invalid': f['fournisseurId'].touched && f['fournisseurId'].errors}">
-                  <option value="">Sélectionner un fournisseur</option>
-                  <option *ngFor="let four of fournisseur" [value]="four.id">{{ four.nomComplet }}</option>
-                </select>
-                <div *ngIf="f['fournisseurId'].touched && f['fournisseurId'].errors" class="invalid-feedback">
-                  <div *ngIf="f['fournisseurId'].errors['required']">Le fournisseur est obligatoire</div>
-                </div>
-              </div>
-              
-              <!-- Unité de stockage (modifié en input texte) -->
-              <div class="col-md-6">
-                <label for="unite" class="form-label">Unité de stockage <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="unite" formControlName="unite"
-                      [ngClass]="{'is-invalid': f['unite'].touched && f['unite'].errors}">
-                <div *ngIf="f['unite'].touched && f['unite'].errors" class="invalid-feedback">
-                  <div *ngIf="f['unite'].errors['required']">L'unité est obligatoire</div>
+          <div class="row mb-3">
+            <!-- Désignation -->
+            <div class="col-md-6">
+              <label for="designation" class="form-label"
+                >Désignation <span class="text-danger">*</span></label
+              >
+              <input
+                type="text"
+                class="form-control"
+                id="designation"
+                formControlName="designation"
+                [ngClass]="{ 'is-invalid': f['designation'].touched && f['designation'].errors }"
+              />
+              <div
+                *ngIf="f['designation'].touched && f['designation'].errors"
+                class="invalid-feedback"
+              >
+                <div *ngIf="f['designation'].errors['required']">
+                  La désignation est obligatoire
                 </div>
               </div>
             </div>
 
-            <div class="row mb-3">
-              <!-- Prix d'achat unitaire -->
-              <div class="col-md-6">
-                <label for="prixAchatUnitaire" class="form-label">Prix d'achat unitaire <span class="text-danger">*</span></label>
-                <input type="number" step="0.01" class="form-control" id="prixAchatUnitaire" formControlName="prixAchatUnitaire"
-                      [ngClass]="{'is-invalid': f['prixAchatUnitaire'].touched && f['prixAchatUnitaire'].errors}">
-                <div *ngIf="f['prixAchatUnitaire'].touched && f['prixAchatUnitaire'].errors" class="invalid-feedback">
-                  <div *ngIf="f['prixAchatUnitaire'].errors['required']">Le prix d'achat est obligatoire</div>
-                  <div *ngIf="f['prixAchatUnitaire'].errors['min']">Le prix doit être positif</div>
+            <!-- Famille/Catégorie -->
+            <div class="col-md-6">
+              <label for="categorieId" class="form-label"
+                >Famille/Catégorie <span class="text-danger">*</span></label
+              >
+              <select
+                class="form-select"
+                id="categorieId"
+                formControlName="categorieId"
+                [ngClass]="{ 'is-invalid': f['categorieId'].touched && f['categorieId'].errors }"
+              >
+                <option value="">Sélectionner une famille</option>
+                <option *ngFor="let famille of categories" [value]="famille.id">
+                  {{ famille.nom }}
+                </option>
+              </select>
+              <div
+                *ngIf="f['categorieId'].touched && f['categorieId'].errors"
+                class="invalid-feedback"
+              >
+                <div *ngIf="f['categorieId'].errors['required']">La famille est obligatoire</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <!-- Fournisseur -->
+            <div class="col-md-6">
+              <label for="fournisseur" class="form-label"
+                >Fournisseur <span class="text-danger">*</span></label
+              >
+              <select
+                class="form-select"
+                id="fournisseur"
+                formControlName="fournisseurId"
+                [ngClass]="{
+                  'is-invalid': f['fournisseurId'].touched && f['fournisseurId'].errors,
+                }"
+              >
+                <option value="">Sélectionner un fournisseur</option>
+                <option *ngFor="let four of fournisseur" [value]="four.id">
+                  {{ four.nomComplet }}
+                </option>
+              </select>
+              <div
+                *ngIf="f['fournisseurId'].touched && f['fournisseurId'].errors"
+                class="invalid-feedback"
+              >
+                <div *ngIf="f['fournisseurId'].errors['required']">
+                  Le fournisseur est obligatoire
                 </div>
               </div>
-              
-              <!-- Prix de vente unitaire -->
-              <div class="col-md-6">
-                <label for="prixVenteUnitaire" class="form-label">Prix de vente unitaire <span class="text-danger">*</span></label>
-                <input type="number" step="0.01" class="form-control" id="prixVenteUnitaire" formControlName="prixVenteUnitaire"
-                      [ngClass]="{'is-invalid': f['prixVenteUnitaire'].touched && f['prixVenteUnitaire'].errors}">
-                <div *ngIf="f['prixVenteUnitaire'].touched && f['prixVenteUnitaire'].errors" class="invalid-feedback">
-                  <div *ngIf="f['prixVenteUnitaire'].errors['required']">Le prix de vente est obligatoire</div>
-                  <div *ngIf="f['prixVenteUnitaire'].errors['min']">Le prix doit être positif</div>
+            </div>
+
+            <!-- Unité de stockage (modifié en input texte) -->
+            <div class="col-md-6">
+              <label for="unite" class="form-label"
+                >Unité de stockage <span class="text-danger">*</span></label
+              >
+              <input
+                type="text"
+                class="form-control"
+                id="unite"
+                formControlName="unite"
+                [ngClass]="{ 'is-invalid': f['unite'].touched && f['unite'].errors }"
+              />
+              <div *ngIf="f['unite'].touched && f['unite'].errors" class="invalid-feedback">
+                <div *ngIf="f['unite'].errors['required']">L'unité est obligatoire</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <!-- Prix d'achat unitaire -->
+            <div class="col-md-6">
+              <label for="prixAchatUnitaire" class="form-label"
+                >Prix d'achat unitaire <span class="text-danger">*</span></label
+              >
+              <input
+                type="number"
+                step="0.01"
+                class="form-control"
+                id="prixAchatUnitaire"
+                formControlName="prixAchatUnitaire"
+                [ngClass]="{
+                  'is-invalid': f['prixAchatUnitaire'].touched && f['prixAchatUnitaire'].errors,
+                }"
+              />
+              <div
+                *ngIf="f['prixAchatUnitaire'].touched && f['prixAchatUnitaire'].errors"
+                class="invalid-feedback"
+              >
+                <div *ngIf="f['prixAchatUnitaire'].errors['required']">
+                  Le prix d'achat est obligatoire
                 </div>
+                <div *ngIf="f['prixAchatUnitaire'].errors['min']">Le prix doit être positif</div>
               </div>
             </div>
 
-            <!-- Description -->
-            <div class="mb-3">
-              <label for="description" class="form-label">Description / Commentaire</label>
-              <textarea class="form-control" id="description" formControlName="description"></textarea>
+            <!-- Prix de vente unitaire -->
+            <div class="col-md-6">
+              <label for="prixVenteUnitaire" class="form-label"
+                >Prix de vente unitaire <span class="text-danger">*</span></label
+              >
+              <input
+                type="number"
+                step="0.01"
+                class="form-control"
+                id="prixVenteUnitaire"
+                formControlName="prixVenteUnitaire"
+                [ngClass]="{
+                  'is-invalid': f['prixVenteUnitaire'].touched && f['prixVenteUnitaire'].errors,
+                }"
+              />
+              <div
+                *ngIf="f['prixVenteUnitaire'].touched && f['prixVenteUnitaire'].errors"
+                class="invalid-feedback"
+              >
+                <div *ngIf="f['prixVenteUnitaire'].errors['required']">
+                  Le prix de vente est obligatoire
+                </div>
+                <div *ngIf="f['prixVenteUnitaire'].errors['min']">Le prix doit être positif</div>
+              </div>
             </div>
+          </div>
 
-            <div class="row mb-3 d-flex align-items-center">
-              <!-- champs code barre -->
-              <div class="col-md-6">
-                <input type="text" step="0.01" class="form-control" id="codeBarre" formControlName="codeBarre" placeholder="Entrer le code barre">
-              </div>
-              <span class="text-muted col-md-1">OU</span>
-              <!-- Bouton pour générer un code barre -->
-              <div class="col-md-5">
-                <button class="btn btn-success w-100">
-                  Lire un code
-                </button>
-              </div>
-            </div>
+          <!-- Description -->
+          <div class="mb-3">
+            <label for="description" class="form-label">Description / Commentaire</label>
+            <textarea
+              class="form-control"
+              id="description"
+              formControlName="description"
+            ></textarea>
+          </div>
 
-            <!-- Image (facultative) -->
-            <div class="mb-3">
-              <label for="image" class="form-label">Image</label>
-              <input type="file" class="form-control" id="image" accept="image/*" (change)="onFileChange($event)">
-              <small class="text-muted">Format acceptés: JPG, PNG (max 2MB)</small>
+          <div class="row mb-3 d-flex align-items-center">
+            <!-- champs code barre -->
+            <div class="col-md-6">
+              <input
+                type="text"
+                step="0.01"
+                class="form-control"
+                id="codeBarre"
+                formControlName="codeBarre"
+                placeholder="Entrer le code barre"
+              />
             </div>
-            <!-- Nom du fichier affiché -->
-            <div *ngIf="imageFilename" class="mt-1 text-primary small">
-              Fichier actuel : {{ imageFilename }}
+            <span class="text-muted col-md-1">OU</span>
+            <!-- Bouton pour générer un code barre -->
+            <div class="col-md-5">
+              <button class="btn btn-success w-100">Lire un code</button>
             </div>
-            <div class="image-preview-container mb-3">
-              <img [src]="logoPreview || 'assets/images/default-structure.png'" 
-                  class="img-thumbnail image-preview" 
-                  alt="image preview" width="50" height="50">
-            </div>
+          </div>
 
-            <!-- Produit périssable (remplace le type de produit) -->
-            <div class="mb-3">
-              <label class="form-label">Produit périssable ?</label>
-              <div class="form-check">
-                <input class="form-check-input" type="radio" formControlName="perissable" id="perissableOui" value="true" required>
-                <label class="form-check-label" for="perissableOui">Oui</label>
-              </div>
-              <div class="form-check">
-                <input class="form-check-input" type="radio" formControlName="perissable" id="perissableNon" value="false">
-                <label class="form-check-label" for="perissableNon">Non</label>
-              </div>
-              <div *ngIf="f['perissable'].touched && f['perissable'].errors" class="invalid-feedback d-block">
-                <div *ngIf="f['perissable'].errors['required']">Veuillez spécifier si le produit est périssable</div>
+          <!-- Image (facultative) -->
+          <div class="mb-3">
+            <label for="image" class="form-label">Image</label>
+            <input
+              type="file"
+              class="form-control"
+              id="image"
+              accept="image/*"
+              (change)="onFileChange($event)"
+            />
+            <small class="text-muted">Format acceptés: JPG, PNG (max 2MB)</small>
+          </div>
+          <!-- Nom du fichier affiché -->
+          <div *ngIf="imageFilename" class="mt-1 text-primary small">
+            Fichier actuel : {{ imageFilename }}
+          </div>
+          <div class="image-preview-container mb-3">
+            <img
+              [src]="logoPreview || 'assets/images/default-structure.png'"
+              class="img-thumbnail image-preview"
+              alt="image preview"
+              width="50"
+              height="50"
+            />
+          </div>
+
+          <!-- Produit périssable (remplace le type de produit) -->
+          <div class="mb-3">
+            <label for="perissable" class="form-label">Produit périssable ?</label>
+            <div class="form-check">
+              <input
+                name="perissable"
+                class="form-check-input"
+                type="radio"
+                formControlName="perissable"
+                id="perissableOui"
+                value="true"
+                required
+              />
+              <label class="form-check-label" for="perissableOui">Oui</label>
+            </div>
+            <div class="form-check">
+              <input
+                class="form-check-input"
+                type="radio"
+                formControlName="perissable"
+                id="perissableNon"
+                value="false"
+              />
+              <label class="form-check-label" for="perissableNon">Non</label>
+            </div>
+            <div
+              *ngIf="f['perissable'].touched && f['perissable'].errors"
+              class="invalid-feedback d-block"
+            >
+              <div *ngIf="f['perissable'].errors['required']">
+                Veuillez spécifier si le produit est périssable
               </div>
             </div>
+          </div>
 
-            <!-- BoutonS -->
-            <!-- <div class="mb-3 d-flex justify-content-center p-3">
+          <!-- BoutonS -->
+          <!-- <div class="mb-3 d-flex justify-content-center p-3">
               <button type="submit" class="btn btn-success w-100" [disabled]="produitForm.invalid">
                 {{ getButtonLabel() }}
               </button>
             </div> -->
-              <div class="d-flex justify-content-center mt-4">
-              <button type="button" class="btn btn-outline-secondary w-50 me-2" data-bs-dismiss="modal">Annuler</button>
-              <!--<button type="button" class="btn btn-outline-primary w-50" 
+          <div class="d-flex justify-content-center mt-4">
+            <button
+              type="button"
+              class="btn btn-outline-secondary w-50 me-2"
+              data-bs-dismiss="modal"
+            >
+              Annuler
+            </button>
+            <!--<button type="button" class="btn btn-outline-primary w-50" 
                       [disabled]="produitForm.invalid"
                       (click)="showStockSection = true; initStockForm()">
                 <i *ngIf="actionType ==='ajouter'" class="bi bi-box-seam me-2"></i> {{getButtonLabel()}}
               </button>-->
-              <button type="button"
-                  class="btn btn-outline-primary w-50"
-                  [disabled]="produitForm.invalid"
-                  (click)="handleProduitAction()">
-                <i class="bi me-2"
-                  [ngClass]="actionType === 'ajouter' ? 'bi-box-seam' : 'bi-save'"></i>
-                {{ getButtonLabel() }}
-              </button>
-            </div> 
+            <button
+              type="button"
+              class="btn btn-outline-primary w-50"
+              [disabled]="produitForm.invalid"
+              (click)="handleProduitAction()"
+            >
+              <i
+                class="bi me-2"
+                [ngClass]="actionType === 'ajouter' ? 'bi-box-seam' : 'bi-save'"
+              ></i>
+              {{ getButtonLabel() }}
+            </button>
+          </div>
+        </form>
 
-          </form>
+        <div *ngIf="showStockSection">
+          <h5 class="mb-4 border-bottom pb-2">Informations sur le stock initial</h5>
 
-           <div *ngIf="showStockSection">
-            <h5 class="mb-4 border-bottom pb-2">Informations sur le stock initial</h5>
-            
-            <form [formGroup]="stockForm" (ngSubmit)="onSubmitWithStock()">
-              <div class="row mb-3">
-                <!-- Magasin -->
-                <!-- <div class="col-md-6">
+          <form [formGroup]="stockForm" (ngSubmit)="onSubmitWithStock()">
+            <div class="row mb-3">
+              <!-- Magasin -->
+              <!-- <div class="col-md-6">
                   <label class="form-label">Magasin <span class="text-danger">*</span></label>
                   <select class="form-select" formControlName="magasinId"
                           [ngClass]="{'is-invalid': stockForm.get('magasinId')?.invalid && (stockForm.get('magasinId')?.dirty || stockForm.get('magasinId')?.touched)}">
@@ -402,211 +616,326 @@
                     Le magasin est obligatoire
                   </div>
                 </div> -->
-                
-                <!-- Quantité totale -->
-                <div class="col-md-12">
-                  <label class="form-label">Quantité initiale <span class="text-danger">*</span></label>
-                  <input type="number" step="0.01" class="form-control" formControlName="quantiteTotale"
-                        [ngClass]="{'is-invalid': stockForm.get('quantiteTotale')?.invalid && (stockForm.get('quantiteTotale')?.dirty || stockForm.get('quantiteTotale')?.touched)}">
-                  <div *ngIf="stockForm.get('quantiteTotale')?.invalid && (stockForm.get('quantiteTotale')?.dirty || stockForm.get('quantiteTotale')?.touched)" class="invalid-feedback">
-                    <div *ngIf="stockForm.get('quantiteTotale')?.errors?.['required']">La quantité est obligatoire</div>
-                    <div *ngIf="stockForm.get('quantiteTotale')?.errors?.['min']">La quantité doit être positive</div>
+
+              <!-- Quantité totale -->
+              <div class="col-md-12">
+                <label for="qteInitial" class="form-label"
+                  >Quantité initiale <span class="text-danger">*</span></label
+                >
+                <input
+                  name="qteInitial"
+                  type="number"
+                  step="0.01"
+                  class="form-control"
+                  formControlName="quantiteTotale"
+                  [ngClass]="{
+                    'is-invalid':
+                      stockForm.get('quantiteTotale')?.invalid &&
+                      (stockForm.get('quantiteTotale')?.dirty ||
+                        stockForm.get('quantiteTotale')?.touched),
+                  }"
+                />
+                <div
+                  *ngIf="
+                    stockForm.get('quantiteTotale')?.invalid &&
+                    (stockForm.get('quantiteTotale')?.dirty ||
+                      stockForm.get('quantiteTotale')?.touched)
+                  "
+                  class="invalid-feedback"
+                >
+                  <div *ngIf="stockForm.get('quantiteTotale')?.errors?.['required']">
+                    La quantité est obligatoire
+                  </div>
+                  <div *ngIf="stockForm.get('quantiteTotale')?.errors?.['min']">
+                    La quantité doit être positive
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div class="row mb-3">
-                <!-- Seuils -->
-                <div class="col-md-4">
-                  <label class="form-label">Seuil d'alerte</label>
-                  <input type="number" step="0.01" class="form-control" formControlName="seuilAlerte">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label">Seuil de réapprovisionnement</label>
-                  <input type="number" step="0.01" class="form-control" formControlName="seuilReapprovisionnement">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label">Stock de sécurité</label>
-                  <input type="number" step="0.01" class="form-control" formControlName="stockSecurite">
-                </div>
+            <div class="row mb-3">
+              <!-- Seuils -->
+              <div class="col-md-4">
+                <label for="seuilAlerte" class="form-label">Seuil d'alerte</label>
+                <input
+                  name="seuilAlerte"
+                  type="number"
+                  step="0.01"
+                  class="form-control"
+                  formControlName="seuilAlerte"
+                />
               </div>
-
-              <!-- Date péremption si produit périssable -->
-              <div class="mb-3" *ngIf="produitForm.get('perissable')?.value === 'true'">
-                <label class="form-label">Date de péremption</label>
-                <input type="date" class="form-control" formControlName="datePeremption">
+              <div class="col-md-4">
+                <label for="seuilReapprovisionnement" class="form-label"
+                  >Seuil de réapprovisionnement</label
+                >
+                <input
+                  name="seuilReapprovisionnement"
+                  type="number"
+                  step="0.01"
+                  class="form-control"
+                  formControlName="seuilReapprovisionnement"
+                />
               </div>
-
-              <!-- Boutons -->
-              <div class="d-flex justify-content-between mt-4">
-                <button type="button" class="btn btn-secondary" (click)="showStockSection = false">
-                  <i class="bi bi-arrow-left me-2"></i> Retour
-                </button>
-                <button type="submit" class="btn btn-success" [disabled]="stockForm.invalid">
-                  <i class="bi bi-save me-2"></i> Enregistrer avec Stock
-                </button>
+              <div class="col-md-4">
+                <label for="stockSecurite" class="form-label">Stock de sécurité</label>
+                <input
+                  name="stockSecurite"
+                  type="number"
+                  step="0.01"
+                  class="form-control"
+                  formControlName="stockSecurite"
+                />
               </div>
-            </form>
-          </div>
+            </div>
 
+            <!-- Date péremption si produit périssable -->
+            <div class="mb-3" *ngIf="produitForm.get('perissable')?.value === 'true'">
+              <label for="datePeremption" class="form-label">Date de péremption</label>
+              <input
+                type="date"
+                name="datePeremption"
+                class="form-control"
+                formControlName="datePeremption"
+              />
+            </div>
+
+            <!-- Boutons -->
+            <div class="d-flex justify-content-between mt-4">
+              <button type="button" class="btn btn-secondary" (click)="showStockSection = false">
+                <i class="bi bi-arrow-left me-2"></i> Retour
+              </button>
+              <button type="submit" class="btn btn-success" [disabled]="stockForm.invalid">
+                <i class="bi bi-save me-2"></i> Enregistrer avec Stock
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
   </div>
-
-  <!-- Modal pour afficher les catégories -->
-<div class="modal fade" id="categoriesModal" tabindex="-1" aria-labelledby="categoriesModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-light">
-                <h3 class="modal-title" id="categoriesModalLabel">Liste des catégories</h3>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover">
-                        <thead class="table-dark">
-                            <tr>
-                                <th>Nom</th>
-                                <th>Description</th>
-                                <th>Statut</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr *ngFor="let categorie of categories">
-                                <!-- Si la ligne n'est pas en mode édition -->
-                                <ng-container *ngIf="editingCategorieId !== categorie.id; else editRow">
-                                    <td>{{ categorie.nom }}</td>
-                                    <td>{{ categorie.description }}</td>
-                                    <td>
-                                        <span class="badge" [ngClass]="categorie.statut ? 'bg-success' : 'bg-secondary'">
-                                            {{ categorie.statut ? 'Actif' : 'Inactif' }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex gap-2">
-                                            <!-- Bouton Modifier -->
-                                            <button class="btn btn-sm btn-warning" (click)="editCategorieBis(categorie)">
-                                                <i class="bi bi-pencil-square"></i>
-                                            </button>
-
-                                            <!-- Bouton Activer/Désactiver -->
-                                            <button class="btn btn-sm me-2"
-                                                [ngClass]="categorie.statut ? 'btn-secondary' : 'btn-success'"
-                                                (click)="toggleCategorieStatus(categorie)">
-                                                <i class="bi" [ngClass]="categorie.statut ? 'bi-x-circle-fill' : 'bi-check-circle-fill'"></i>
-                                            </button>
-
-                                            <!-- Bouton Supprimer -->
-                                            <button class="btn btn-sm btn-danger" (click)="deleteCategorie(categorie.id!)">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </ng-container>
-
-                                <!-- Bloc édition -->
-                                <ng-template #editRow>
-                                    <td colspan="4">
-                                        <form (ngSubmit)="saveCategorieEdit()">
-                                            <table class="table mb-0">
-                                                <tr>
-                                                    <td style="width: 40%;">
-                                                        <input type="text" class="form-control" [(ngModel)]="editedCategorie.nom" name="nom" required>
-                                                    </td>
-                                                    <td style="width: 40%;">
-                                                        <input type="text" class="form-control" [(ngModel)]="editedCategorie.description" name="description">
-                                                    </td>
-                                                    <td style="width: 20%;" class="text-end">
-                                                        <button class="btn btn-success me-2" type="submit">
-                                                            <i class="bi bi-check-circle"></i>
-                                                        </button>
-                                                        <button class="btn btn-secondary" type="button" (click)="cancelEdit()">
-                                                            <i class="bi bi-x-circle"></i>
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            </table>
-                                        </form>
-                                    </td>
-                                </ng-template>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
-            </div>
-        </div>
-    </div>
 </div>
 
-   <!-- Modal pour confirmer l'archivage -->
-   <div class="modal fade" id="confirmArchiveModal" tabindex="-1" aria-labelledby="confirmArchiveModalLabel">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header bg-warning">
-          <h5 class="modal-title" id="confirmArchiveModalLabel">Confirmer l'archivage</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<!-- Modal pour afficher les catégories -->
+<div
+  class="modal fade"
+  id="categoriesModal"
+  tabindex="-1"
+  aria-labelledby="categoriesModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h3 class="modal-title" id="categoriesModalLabel">Liste des catégories</h3>
+        <button
+          type="button"
+          class="btn-close btn-close-white"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover">
+            <thead class="table-dark">
+              <tr>
+                <th>Nom</th>
+                <th>Description</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let categorie of categories">
+                <!-- Si la ligne n'est pas en mode édition -->
+                <ng-container *ngIf="editingCategorieId !== categorie.id; else editRow">
+                  <td>{{ categorie.nom }}</td>
+                  <td>{{ categorie.description }}</td>
+                  <td>
+                    <span
+                      class="badge"
+                      [ngClass]="categorie.statut ? 'bg-success' : 'bg-secondary'"
+                    >
+                      {{ categorie.statut ? 'Actif' : 'Inactif' }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="d-flex gap-2">
+                      <!-- Bouton Modifier -->
+                      <button class="btn btn-sm btn-warning" (click)="editCategorieBis(categorie)">
+                        <i class="bi bi-pencil-square"></i>
+                      </button>
+
+                      <!-- Bouton Activer/Désactiver -->
+                      <button
+                        class="btn btn-sm me-2"
+                        [ngClass]="categorie.statut ? 'btn-secondary' : 'btn-success'"
+                        (click)="toggleCategorieStatus(categorie)"
+                      >
+                        <i
+                          class="bi"
+                          [ngClass]="categorie.statut ? 'bi-x-circle-fill' : 'bi-check-circle-fill'"
+                        ></i>
+                      </button>
+
+                      <!-- Bouton Supprimer -->
+                      <button
+                        class="btn btn-sm btn-danger"
+                        (click)="deleteCategorie(categorie.id!)"
+                      >
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </ng-container>
+
+                <!-- Bloc édition -->
+                <ng-template #editRow>
+                  <td colspan="4">
+                    <form (ngSubmit)="saveCategorieEdit()">
+                      <table class="table mb-0">
+                        <tr>
+                          <td style="width: 40%">
+                            <input
+                              type="text"
+                              class="form-control"
+                              [(ngModel)]="editedCategorie.nom"
+                              name="nom"
+                              required
+                            />
+                          </td>
+                          <td style="width: 40%">
+                            <input
+                              type="text"
+                              class="form-control"
+                              [(ngModel)]="editedCategorie.description"
+                              name="description"
+                            />
+                          </td>
+                          <td style="width: 20%" class="text-end">
+                            <button class="btn btn-success me-2" type="submit">
+                              <i class="bi bi-check-circle"></i>
+                            </button>
+                            <button class="btn btn-secondary" type="button" (click)="cancelEdit()">
+                              <i class="bi bi-x-circle"></i>
+                            </button>
+                          </td>
+                        </tr>
+                      </table>
+                    </form>
+                  </td>
+                </ng-template>
+              </tr>
+            </tbody>
+          </table>
         </div>
-        <div class="modal-body">
-          Êtes-vous sûr de vouloir archiver ce produit ?
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="button" class="btn btn-warning" data-bs-dismiss="modal" (click)="confirmArchiver()">Confirmer</button>
-        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Modal pour afficher ou générer un code-barre -->
-  <div class="modal fade" id="codeBarreModal" tabindex="-1" aria-labelledby="codeBarreModalLabel">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header bg-primary">
-          <h5 class="modal-title" id="codeBarreModalLabel">Code-barre du produit</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div *ngIf="selectedProduits?.codeBarre; else noBarcode">
-            <p>Code-barre: {{ selectedProduits?.codeBarre }}</p>
-          </div>
-            <!-- Élément pour afficher le code-barres -->
-            <canvas id="barcode"></canvas>  <!-- Utilisation de canvas -->
-          <ng-template #noBarcode>
-            <p>Ce produit n'a pas de code-barre associé.</p>
-          </ng-template>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="button" *ngIf="!barcodeGenerated" class="btn btn-success" (click)="generateBarcode()">Générer un code-barre</button>
-          <button type="button" *ngIf="impressionBarcode" [disabled]="!impressionBarcode" class="btn btn-success" (click)="imprimer()">Imprimer</button>
-          <button type="button" *ngIf="barcodeGenerated" class="btn btn-success" (click)="mettreAJourCodeBarre()">Enregistrer</button>
-        </div>
+<!-- Modal pour confirmer l'archivage -->
+<div
+  class="modal fade"
+  id="confirmArchiveModal"
+  tabindex="-1"
+  aria-labelledby="confirmArchiveModalLabel"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title" id="confirmArchiveModalLabel">Confirmer l'archivage</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">Êtes-vous sûr de vouloir archiver ce produit ?</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button
+          type="button"
+          class="btn btn-warning"
+          data-bs-dismiss="modal"
+          (click)="confirmArchiver()"
+        >
+          Confirmer
+        </button>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Modal pour associer une image au produit -->
-  <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header bg-info">
-          <h5 class="modal-title" id="imageModalLabel">Associer une image au produit</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<!-- Modal pour afficher ou générer un code-barre -->
+<div class="modal fade" id="codeBarreModal" tabindex="-1" aria-labelledby="codeBarreModalLabel">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h5 class="modal-title" id="codeBarreModalLabel">Code-barre du produit</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="selectedProduits?.codeBarre; else noBarcode">
+          <p>Code-barre: {{ selectedProduits?.codeBarre }}</p>
         </div>
-        <div class="modal-body">
-          <p>Choisissez une image à associer à ce produit.</p>
-          <input type="file" (change)="onImageSelected($event)" accept="image/*">
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="button" class="btn btn-success" (click)="saveImage()">Associer l'image</button>
-        </div>
+        <!-- Élément pour afficher le code-barres -->
+        <canvas id="barcode"></canvas>
+        <!-- Utilisation de canvas -->
+        <ng-template #noBarcode>
+          <p>Ce produit n'a pas de code-barre associé.</p>
+        </ng-template>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button
+          type="button"
+          *ngIf="!barcodeGenerated"
+          class="btn btn-success"
+          (click)="generateBarcode()"
+        >
+          Générer un code-barre
+        </button>
+        <button
+          type="button"
+          *ngIf="impressionBarcode"
+          [disabled]="!impressionBarcode"
+          class="btn btn-success"
+          (click)="imprimer()"
+        >
+          Imprimer
+        </button>
+        <button
+          type="button"
+          *ngIf="barcodeGenerated"
+          class="btn btn-success"
+          (click)="mettreAJourCodeBarre()"
+        >
+          Enregistrer
+        </button>
       </div>
     </div>
   </div>
+</div>
 
+<!-- Modal pour associer une image au produit -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-info">
+        <h5 class="modal-title" id="imageModalLabel">Associer une image au produit</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Choisissez une image à associer à ce produit.</p>
+        <input type="file" (change)="onImageSelected($event)" accept="image/*" />
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="button" class="btn btn-success" (click)="saveImage()">
+          Associer l'image
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

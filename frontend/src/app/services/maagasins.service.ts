@@ -1,22 +1,22 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { AuthService } from './auth.service';
 import { Magasin } from '../modeles/magasin.model';
 import { Observable } from 'rxjs';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class MaagasinsService {
+  private apiUrl = 'http://localhost:5000/api/magasins';
 
-   private apiUrl = 'http://localhost:5000/api/magasins';
-
-  constructor(private http: HttpClient, private authService: AuthService) {}
+  private http = inject(HttpClient);
+  private authService = inject(AuthService);
 
   private getHeaders(): HttpHeaders {
     const token = this.authService.getToken();
     return new HttpHeaders({
-      'Authorization': `Bearer ${token}`
+      Authorization: `Bearer ${token}`,
     });
   }
 
@@ -31,8 +31,8 @@ export class MaagasinsService {
   }
 
   // Supprimer un magasin
-  deleteMagasin(id: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
+  deleteMagasin(id: number): Observable<Magasin> {
+    return this.http.delete<Magasin>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
   }
 
   // Obtenir tous les magasins
@@ -42,7 +42,9 @@ export class MaagasinsService {
 
   // Obtenir les magasins d'une structure
   getMagasinsByStructure(codeStructure: string): Observable<Magasin[]> {
-    return this.http.get<Magasin[]>(`${this.apiUrl}/structure/${codeStructure}`, { headers: this.getHeaders() });
+    return this.http.get<Magasin[]>(`${this.apiUrl}/structure/${codeStructure}`, {
+      headers: this.getHeaders(),
+    });
   }
 
   // Obtenir un magasin par son ID
@@ -52,6 +54,10 @@ export class MaagasinsService {
 
   // Mettre à jour le statut d'un magasin
   updateMagasinStatus(id: number, statut: 'Actif' | 'Inactif'): Observable<Magasin> {
-    return this.http.patch<Magasin>(`${this.apiUrl}/${id}/statut`, { statut }, { headers: this.getHeaders() });
+    return this.http.patch<Magasin>(
+      `${this.apiUrl}/${id}/statut`,
+      { statut },
+      { headers: this.getHeaders() },
+    );
   }
 }

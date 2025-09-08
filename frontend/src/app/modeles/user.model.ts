@@ -7,8 +7,8 @@ export class User {
   password!: string;
   status!: boolean; // Actif ou inactif
   role!: string; // Ex : "ADMIN", "CAISSIER", "GERANT"
- 
-
+  roles?: Role[]; // Pour stocker les rôles complets
+  permissions?: Permission[]; // Pour stocker les permissions complètes
   // Champs optionnels
   adresse?: string;
   poste?: string; // Ex : "Caissier", "Gérant", "Employé"
@@ -23,15 +23,14 @@ export class User {
   structure_id?: number | null;
 
   constructor(data?: Partial<User>) {
-      Object.assign(this, data);
- 
-      // Valeurs par défaut si non définies
-      this.dateCreation = this.dateCreation || new Date();
-      this.historiqueConnexions = this.historiqueConnexions || [];
-      this.historiqueActions = this.historiqueActions || [];
+    Object.assign(this, data);
+
+    // Valeurs par défaut si non définies
+    this.dateCreation = this.dateCreation || new Date();
+    this.historiqueConnexions = this.historiqueConnexions || [];
+    this.historiqueActions = this.historiqueActions || [];
   }
 }
-
 
 // models/utilisateur.model.ts
 export interface Utilisateur {
@@ -47,6 +46,13 @@ export interface Role {
   id: number;
   nom: string;
   description: string;
+  permissions?: Permission[]; // Pour stocker les permissions complètes
+
+}
+
+export interface Permission {
+  id: number;
+  nom: string;
 }
 
 // models/parametre-configuration.model.ts

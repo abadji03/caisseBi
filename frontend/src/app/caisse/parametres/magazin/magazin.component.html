@@ -1,337 +1,428 @@
 <div class="container-fluid mt-4">
   <div class="row" *ngIf="showPartie1">
     <div class="col-12">
-       <!-- Section supérieure avec bouton d'ajout -->
-        <div class="row mb-3">
-          <div class="col-md-12 d-flex justify-content-between align-items-center">
-            <h2><i class="bi bi-shop me-2"></i> Gestion des magasins</h2>
-            <button class="btn btn-success" (click)="nouveauMagasin()" data-bs-toggle="modal" data-bs-target="#modalMagasin">
-              <i class="bi bi-plus-circle"></i> Nouveau magasin
-            </button>
-          </div>
+      <!-- Section supérieure avec bouton d'ajout -->
+      <div class="row mb-3">
+        <div class="col-md-12 d-flex justify-content-between align-items-center">
+          <h2><i class="bi bi-shop me-2"></i> Gestion des magasins</h2>
+          <button
+            class="btn btn-success"
+            (click)="nouveauMagasin()"
+            data-bs-toggle="modal"
+            data-bs-target="#modalMagasin"
+          >
+            <i class="bi bi-plus-circle"></i> Nouveau magasin
+          </button>
         </div>
+      </div>
 
-        <!-- Tableau des magasins -->
-        <div class="row mb-4">
-          <div class="col-md-12">
-            <div class="card shadow-sm">
-              <div class="card-body">
-                <!-- Barre de recherche et filtres -->
-                <div class="d-flex justify-content-between mb-3">
-                  <div class="input-group w-50">
-                    <span class="input-group-text"><i class="bi bi-search"></i></span>
-                    <input type="text" class="form-control" placeholder="Rechercher un magasin..." [(ngModel)]="searchTerm" (input)="onSearchChange1()">
-                  </div>
-                  <div>
-                    <select class="form-select" [(ngModel)]="itemsPerPage" (change)="setItemsPerPage($event)">
-                      <option value="5">5 éléments/page</option>
-                      <option value="10">10 éléments/page</option>
-                      <option value="20">20 éléments/page</option>
-                    </select>
-                  </div>
+      <!-- Tableau des magasins -->
+      <div class="row mb-4">
+        <div class="col-md-12">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <!-- Barre de recherche et filtres -->
+              <div class="d-flex justify-content-between mb-3">
+                <div class="input-group w-50">
+                  <span class="input-group-text"><i class="bi bi-search"></i></span>
+                  <input
+                    type="text"
+                    class="form-control"
+                    placeholder="Rechercher un magasin..."
+                    [(ngModel)]="searchTerm"
+                    (input)="onSearchChange1()"
+                  />
                 </div>
+                <div>
+                  <select
+                    class="form-select"
+                    [(ngModel)]="itemsPerPage"
+                    (change)="setItemsPerPage($event)"
+                  >
+                    <option value="5">5 éléments/page</option>
+                    <option value="10">10 éléments/page</option>
+                    <option value="20">20 éléments/page</option>
+                  </select>
+                </div>
+              </div>
 
-                <!-- Tableau principal -->
-                <div class="table-responsive">
-                  <table class="table table-hover table-bordered">
-                    <thead class="table-dark">
-                      <tr>
-                        <th>Nom</th>
-                        <th>Structure</th>
-                        <th>Adresse</th>
-                        <th>Responsable</th>
-                        <th>Statut</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr *ngFor="let magasin of getPaginatedMagasins()">
-                        <td>{{ magasin.nom }}</td>
-                        <td>{{ magasin.code_structure }}</td>
-                        <td>{{ magasin.adresse }}</td>
-                        <td>{{ getResponsableName(magasin.responsableId!) }}</td>
-                        <!-- <td>{{ magasin.responsableId}}</td> -->
-                        <td>
-                          <span class="badge" [ngClass]="{
+              <!-- Tableau principal -->
+              <div class="table-responsive">
+                <table class="table table-hover table-bordered">
+                  <thead class="table-dark">
+                    <tr>
+                      <th>Nom</th>
+                      <th>Structure</th>
+                      <th>Adresse</th>
+                      <th>Responsable</th>
+                      <th>Statut</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let magasin of getPaginatedMagasins()">
+                      <td>{{ magasin.nom }}</td>
+                      <td>{{ magasin.code_structure }}</td>
+                      <td>{{ magasin.adresse }}</td>
+                      <td>{{ getResponsableName(magasin.responsableId!) }}</td>
+                      <!-- <td>{{ magasin.responsableId}}</td> -->
+                      <td>
+                        <span
+                          class="badge"
+                          [ngClass]="{
                             'bg-success': magasin.statut === 'Actif',
-                            'bg-secondary': magasin.statut === 'Inactif'
-                          }">
-                            {{ magasin.statut }}
-                          </span>
-                        </td>
-                        <td>
-                          <div class="btn-group btn-group-sm" role="group">
-                            <!-- Bouton Voir Détails -->
-                            <button class="btn btn-info me-2" (click)="toggleDetailsMagasin(magasin.id)" title="Voir détails">
-                              <i class="bi bi-eye"></i>
-                            </button>
-                            
-                            <!-- Bouton Modifier -->
-                            <button class="btn btn-warning me-2" (click)="preparerEditionMagasin(magasin)" 
-                                    data-bs-toggle="modal" data-bs-target="#modalMagasin" title="Modifier">
-                              <i class="bi bi-pencil"></i>
-                            </button>
-                            
-                            <!-- Bouton Activer/Désactiver -->
-                            <button class="btn me-2" 
-                                    [class.btn-success]="magasin.statut === 'Inactif'"
-                                    [class.btn-secondary]="magasin.statut === 'Actif'"
-                                    (click)="toggleStatutMagasin(magasin)" 
-                                    title="{{ magasin.statut === 'Actif' ? 'Désactiver' : 'Activer' }}">
-                              <i class="bi" [class.bi-toggle-off]="magasin.statut === 'Inactif'" 
-                                            [class.bi-toggle-on]="magasin.statut === 'Actif'"></i>
-                            </button>
-                            
-                            <!-- Bouton Supprimer -->
-                            <button class="btn btn-danger" (click)="supprimerMagasin(magasin.id)" title="Supprimer">
-                              <i class="bi bi-trash"></i>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                      
-                      <!-- Ligne des détails -->
-                      <tr *ngIf="selectedMagasinId !== null" class="bg-light">
-                        <td colspan="6">
-                          <div *ngIf="getSelectedMagasin() as magasin" class="p-3">
-                            <div class="row">
-                              <div class="col-md-6">
-                                <h5>Détails du magasin</h5>
-                                <ul class="list-group list-group-flush">
-                                  <li class="list-group-item">
-                                    <strong>Nom:</strong> {{ magasin.nom }}
-                                  </li>
-                                  <li class="list-group-item">
-                                    <strong>Adresse:</strong> {{ magasin.adresse }}, {{ magasin.ville }}
-                                  </li>
-                                  <li class="list-group-item">
-                                    <strong>Contact:</strong> {{ magasin.telephone }} | {{ magasin.email }}
-                                  </li>
-                                  <li class="list-group-item">
-                                    <strong>Responsable:</strong> {{ getResponsableName(magasin.responsableId!) }} 
-                                  </li>
-                                </ul>
-                              </div>
-                              <div class="col-md-6">
-                                <h5>Informations complémentaires</h5>
-                                <ul class="list-group list-group-flush">
-                                  <li class="list-group-item">
-                                    <strong>Capacité de stock:</strong> {{ magasin.capaciteStock || 'Non spécifiée' }} m²
-                                  </li>
-                                  <li class="list-group-item">
-                                    <strong>Statut:</strong> 
-                                    <span class="badge" [ngClass]="{
-                                      'bg-success': magasin.statut === 'Actif',
-                                      'bg-secondary': magasin.statut === 'Inactif'
-                                    }">
-                                      {{ magasin.statut }}
-                                    </span>
-                                  </li>
-                                  <li class="list-group-item">
-                                    <strong>Dernière mise à jour:</strong> 
-                                    {{ magasin.derniereMiseAJour | date:'dd/MM/yyyy HH:mm'}}
-                                  </li>
-                                </ul>
-                              </div>
-                            </div>
-                            
-                            <!-- Bouton pour accéder aux détails complets -->
-                            <div class="d-flex justify-content-end mt-3">
-                              <button class="btn btn-outline-success" (click)="toggleParts()">
-                                <i class="bi bi-box-arrow-in-right me-2"></i>Plus de détails....
-                              </button>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                  
-                </div>
+                            'bg-secondary': magasin.statut === 'Inactif',
+                          }"
+                        >
+                          {{ magasin.statut }}
+                        </span>
+                      </td>
+                      <td>
+                        <div class="btn-group btn-group-sm" role="group">
+                          <!-- Bouton Voir Détails -->
+                          <button
+                            class="btn btn-info me-2"
+                            (click)="toggleDetailsMagasin(magasin.id)"
+                            title="Voir détails"
+                          >
+                            <i class="bi bi-eye"></i>
+                          </button>
 
-                <!-- Pagination -->
-                <div class="d-flex justify-content-between align-items-center mt-3">
-                  <div>
-                    Affichage de {{ (currentPage - 1) * itemsPerPage + 1 }} à 
-                    {{ min(currentPage * itemsPerPage, filteredMagasins.length) }} 
-                    sur {{ filteredMagasins.length }} magasins
-                  </div>
-                  <div>
-                    <nav>
-                      <ul class="pagination">
-                        <li class="page-item" [class.disabled]="currentPage === 1">
-                          <a class="page-link" (click)="onPageChange(currentPage - 1,'magasin')">
-                            <i class="bi bi-chevron-left"></i>
-                          </a>
-                        </li>
-                        <li class="page-item" *ngFor="let page of getPages()" [class.active]="page === currentPage">
-                          <a class="page-link" (click)="onPageChange(page,'magasin')">{{ page }}</a>
-                        </li>
-                        <li class="page-item" [class.disabled]="currentPage === getTotalPages(filteredMagasins)">
-                          <a class="page-link" (click)="onPageChange(currentPage + 1,'magasin')">
-                            <i class="bi bi-chevron-right"></i>
-                          </a>
-                        </li>
-                      </ul>
-                    </nav>
-                  </div>
+                          <!-- Bouton Modifier -->
+                          <button
+                            class="btn btn-warning me-2"
+                            (click)="preparerEditionMagasin(magasin)"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalMagasin"
+                            title="Modifier"
+                          >
+                            <i class="bi bi-pencil"></i>
+                          </button>
+
+                          <!-- Bouton Activer/Désactiver -->
+                          <button
+                            class="btn me-2"
+                            [class.btn-success]="magasin.statut === 'Inactif'"
+                            [class.btn-secondary]="magasin.statut === 'Actif'"
+                            (click)="toggleStatutMagasin(magasin)"
+                            title="{{ magasin.statut === 'Actif' ? 'Désactiver' : 'Activer' }}"
+                          >
+                            <i
+                              class="bi"
+                              [class.bi-toggle-off]="magasin.statut === 'Inactif'"
+                              [class.bi-toggle-on]="magasin.statut === 'Actif'"
+                            ></i>
+                          </button>
+
+                          <!-- Bouton Supprimer -->
+                          <button
+                            class="btn btn-danger"
+                            (click)="supprimerMagasin(magasin.id)"
+                            title="Supprimer"
+                          >
+                            <i class="bi bi-trash"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+
+                    <!-- Ligne des détails -->
+                    <tr *ngIf="selectedMagasinId !== null" class="bg-light">
+                      <td colspan="6">
+                        <div *ngIf="getSelectedMagasin() as magasin" class="p-3">
+                          <div class="row">
+                            <div class="col-md-6">
+                              <h5>Détails du magasin</h5>
+                              <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                  <strong>Nom:</strong> {{ magasin.nom }}
+                                </li>
+                                <li class="list-group-item">
+                                  <strong>Adresse:</strong> {{ magasin.adresse }},
+                                  {{ magasin.ville }}
+                                </li>
+                                <li class="list-group-item">
+                                  <strong>Contact:</strong> {{ magasin.telephone }} |
+                                  {{ magasin.email }}
+                                </li>
+                                <li class="list-group-item">
+                                  <strong>Responsable:</strong>
+                                  {{ getResponsableName(magasin.responsableId!) }}
+                                </li>
+                              </ul>
+                            </div>
+                            <div class="col-md-6">
+                              <h5>Informations complémentaires</h5>
+                              <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                  <strong>Capacité de stock:</strong>
+                                  {{ magasin.capaciteStock || 'Non spécifiée' }} m²
+                                </li>
+                                <li class="list-group-item">
+                                  <strong>Statut:</strong>
+                                  <span
+                                    class="badge"
+                                    [ngClass]="{
+                                      'bg-success': magasin.statut === 'Actif',
+                                      'bg-secondary': magasin.statut === 'Inactif',
+                                    }"
+                                  >
+                                    {{ magasin.statut }}
+                                  </span>
+                                </li>
+                                <li class="list-group-item">
+                                  <strong>Dernière mise à jour:</strong>
+                                  {{ magasin.derniereMiseAJour | date: 'dd/MM/yyyy HH:mm' }}
+                                </li>
+                              </ul>
+                            </div>
+                          </div>
+
+                          <!-- Bouton pour accéder aux détails complets -->
+                          <div class="d-flex justify-content-end mt-3">
+                            <button class="btn btn-outline-success" (click)="toggleParts()">
+                              <i class="bi bi-box-arrow-in-right me-2"></i>Plus de détails....
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Pagination -->
+              <div class="d-flex justify-content-between align-items-center mt-3">
+                <div>
+                  Affichage de {{ (currentPage - 1) * itemsPerPage + 1 }} à
+                  {{ min(currentPage * itemsPerPage, filteredMagasins.length) }}
+                  sur {{ filteredMagasins.length }} magasins
+                </div>
+                <div>
+                  <nav>
+                    <ul class="pagination">
+                      <li class="page-item" [class.disabled]="currentPage === 1">
+                        <button
+                          class="page-link"
+                          (click)="onPageChange(currentPage - 1, 'magasin')"
+                        >
+                          <i class="bi bi-chevron-left"></i>
+                        </button>
+                      </li>
+                      <li
+                        class="page-item"
+                        *ngFor="let page of getPages()"
+                        [class.active]="page === currentPage"
+                      >
+                        <button class="page-link" (click)="onPageChange(page, 'magasin')">
+                          {{ page }}
+                        </button>
+                      </li>
+                      <li
+                        class="page-item"
+                        [class.disabled]="currentPage === getTotalPages(filteredMagasins)"
+                      >
+                        <button
+                          class="page-link"
+                          (click)="onPageChange(currentPage + 1, 'magasin')"
+                        >
+                          <i class="bi bi-chevron-right"></i>
+                        </button>
+                      </li>
+                    </ul>
+                  </nav>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
     </div>
   </div>
- 
-  <div  class="row" *ngIf="!showPartie1">
+
+  <div class="row" *ngIf="!showPartie1">
     <div class="col-12" *ngIf="magasinSelectionne">
       <button class="btn btn-outline-secondary mb-3" (click)="toggleParts()">
-                <i class="bi bi-arrow-left-circle ms-2 me-3"></i>Retour
-        </button>
-        <!-- Onglets de navigation -->
-        <nav>
-          <div class="nav nav-tabs" id="nav-tab" role="tablist">
-            <a class="nav-link active" id="nav-produits-tab" data-bs-toggle="tab" href="#nav-produits" role="tab">Stock</a>
-            <a class="nav-link" id="nav-caisse-tab" data-bs-toggle="tab" href="#nav-caisse" role="tab">Caisse</a>
-            <a class="nav-link" id="nav-decaissements-tab" data-bs-toggle="tab" href="#nav-decaissements" role="tab">Dépenses</a>
-            <a class="nav-link" id="nav-dettes-tab" data-bs-toggle="tab" href="#nav-dettes" role="tab">Mouvements</a>
-            <a class="nav-link" id="nav-transfert-tab" data-bs-toggle="tab" href="#nav-transfert" role="tab">Transferts</a>
+        <i class="bi bi-arrow-left-circle ms-2 me-3"></i>Retour
+      </button>
+      <!-- Onglets de navigation -->
+      <nav>
+        <div class="nav nav-tabs" id="nav-tab" role="tablist">
+          <a
+            class="nav-link active"
+            id="nav-produits-tab"
+            data-bs-toggle="tab"
+            href="#nav-produits"
+            role="tab"
+            >Stock</a
+          >
+          <a class="nav-link" id="nav-caisse-tab" data-bs-toggle="tab" href="#nav-caisse" role="tab"
+            >Caisse</a
+          >
+          <a
+            class="nav-link"
+            id="nav-decaissements-tab"
+            data-bs-toggle="tab"
+            href="#nav-decaissements"
+            role="tab"
+            >Dépenses</a
+          >
+          <a class="nav-link" id="nav-dettes-tab" data-bs-toggle="tab" href="#nav-dettes" role="tab"
+            >Mouvements</a
+          >
+          <a
+            class="nav-link"
+            id="nav-transfert-tab"
+            data-bs-toggle="tab"
+            href="#nav-transfert"
+            role="tab"
+            >Transferts</a
+          >
+        </div>
+      </nav>
+
+      <div class="tab-content mt-4" id="nav-tabContent">
+        <!-- Produits -->
+        <div class="tab-pane fade show active" id="nav-produits" role="tabpanel">
+          <!-- Résumé du stock -->
+          <div class="d-flex justify-content-between">
+            <h3 class="mb-4">
+              <i class="bi bi-box-seam me-2"></i> Résumé du stock magasin
+              <b>{{ magasinSelectionne.nom }} </b> à la date du
+              <b>{{ currentDate | date: 'dd/mm/yyyy' }}</b>
+            </h3>
+            <button class="btn btn-success mb-3">
+              Aller à la page de gestion <i class="bi bi-arrow-right ms-2"></i>
+            </button>
           </div>
-        </nav>
 
-        <div class="tab-content mt-4" id="nav-tabContent">
-          <!-- Produits -->
-          <div class="tab-pane fade show active" id="nav-produits" role="tabpanel">
-            <!-- Résumé du stock -->
-            <div class="d-flex justify-content-between">
-              <h3 class="mb-4">
-                <i class="bi bi-box-seam me-2"></i> Résumé du stock magasin <b>{{magasinSelectionne.nom}} </b> à la date du <b>{{currentDate | date:'dd/mm/yyyy'}}</b>
-              </h3>
-              <button class="btn btn-success mb-3">
-                Aller à la page de gestion <i class="bi bi-arrow-right ms-2"></i>
-              </button>
-            </div>
-
-            <!-- Résumé du stock -->
-            <div class="row mb-4">
-              <div class="col-md-6 col-lg-4">
-                <div class="card border-info shadow-sm">
-                  <div class="card-body d-flex align-items-center">
-                    <i class="bi bi-list-check fs-2 text-info me-3"></i>
-                    <div>
-                      <h6 class="text-muted mb-1">Total Produits</h6>
-                      <!-- <p class="fs-5 fw-bold mb-0">{{ getTotalProduits(magasinSelectionne.stock) }}</p> -->
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-md-6 col-lg-4">
-                <div class="card border-success shadow-sm">
-                  <div class="card-body d-flex align-items-center">
-                    <i class="bi bi-cash-stack fs-2 text-success me-3"></i>
-                    <div>
-                      <h6 class="text-muted mb-1">Valeur achat du Stock</h6>
-                      <!-- <p class="fs-5 fw-bold mb-0">{{ getValeurTotaleStock(magasinSelectionne.stock) | number }} F CFA</p> -->
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-6 col-lg-4">
-                <div class="card border-primary shadow-sm">
-                  <div class="card-body d-flex align-items-center">
-                    <i class="bi bi-graph-up-arrow fs-2 text-primary me-3"></i>
-                    <div>
-                      <h6 class="text-muted mb-1">Valeur Vente du Stock</h6>
-                      <!-- <p class="fs-5 fw-bold mb-0">{{ getValeurTotaleStockVente(magasinSelectionne.stock) | number }} F CFA</p> -->
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-6 col-lg-4 mt-3">
-                <div class="card border-secondary shadow-sm">
-                  <div class="card-body d-flex align-items-center">
-                    <i class="bi bi-tags fs-2 text-secondary me-3"></i>
-                    <div>
-                      <h6 class="text-muted mb-1">Produits Uniques</h6>
-  <!--                     <p class="fs-5 fw-bold mb-0">{{ getProduitsUniques(magasinSelectionne.stock) }}</p>
-  -->                  </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-md-6 col-lg-4 mt-3">
-                <div class="card border-danger shadow-sm">
-                  <div class="card-body d-flex align-items-center">
-                    <i class="bi bi-exclamation-circle fs-2 text-danger me-3"></i>
-                    <div>
-                      <h6 class="text-muted mb-1">Produits en Rupture</h6>
-                      <!-- <p class="fs-5 fw-bold mb-0">{{ getProduitsEnRupture(magasinSelectionne.stock) }}</p> -->
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-md-6 col-lg-4 mt-3">
-                <div class="card border-warning shadow-sm">
-                  <div class="card-body d-flex align-items-center">
-                    <i class="bi bi-exclamation-triangle fs-2 text-warning me-3"></i>
-                    <div>
-                      <h6 class="text-muted mb-1">Produits sous Alerte</h6>
-                      <!-- <p class="fs-5 fw-bold mb-0">{{ getProduitsSousSeuil(magasinSelectionne.stock) }}</p> -->
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-md-6 col-lg-4 mt-3">
-                <div class="card border-warning shadow-sm">
-                  <div class="card-body d-flex align-items-center">
-                    <i class="bi bi-arrow-down-circle fs-2 text-warning me-3"></i>
-                    <div>
-                      <h6 class="text-muted mb-1">Produits à Réapprovisionner</h6>
-                      <!-- <p class="fs-5 fw-bold mb-0">{{ getProduitsAReapprovisionner(magasinSelectionne.stock) }}</p> -->
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-md-6 col-lg-4 mt-3">
-                <div class="card border-dark shadow-sm">
-                  <div class="card-body d-flex align-items-center">
-                    <i class="bi bi-box-arrow-up fs-2 text-dark me-3"></i>
-                    <div>
-                      <h6 class="text-muted mb-1">Produits en Surstock</h6>
-                      <!-- <p class="fs-5 fw-bold mb-0">{{ getProduitsEnSurstock(magasinSelectionne.stock) }}</p> -->
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-md-6 col-lg-4 mt-3">
-                <div class="card border-primary shadow-sm">
-                  <div class="card-body d-flex align-items-center">
-                    <i class="bi bi-calendar-x fs-2 text-primary me-3"></i>
-                    <div>
-                      <h6 class="text-muted mb-1">Produits Périssables</h6>
-                      <!-- <p class="fs-5 fw-bold mb-0">{{ getProduitsPerissables(magasinSelectionne.stock) }}</p> -->
-                    </div>
+          <!-- Résumé du stock -->
+          <div class="row mb-4">
+            <div class="col-md-6 col-lg-4">
+              <div class="card border-info shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-list-check fs-2 text-info me-3"></i>
+                  <div>
+                    <h6 class="text-muted mb-1">Total Produits</h6>
+                    <!-- <p class="fs-5 fw-bold mb-0">{{ getTotalProduits(magasinSelectionne.stock) }}</p> -->
                   </div>
                 </div>
               </div>
             </div>
-            <div class="d-flex justify-content-center pt-2 bg-light mb-2">
-              <h2> Liste des produits en stock </h2>
-            </div>
-              <!-- Barre de recherche et sélection du nombre de lignes -->
-              <div class="d-flex justify-content-between mb-2">
-                <input type="text" class="form-control w-50" placeholder="Rechercher par nom, catégorie, unité stock, prix...." [(ngModel)]="searchTerm" (input)="onSearchChange('stock')">
-                <select class="form-select w-auto" (change)="setItemsPerPage($event)">
-                    <option [value]="5">5 lignes</option>
-                    <option [value]="10">10 lignes</option>
-                    <option [value]="20">20 lignes</option>
-                </select>
+
+            <div class="col-md-6 col-lg-4">
+              <div class="card border-success shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-cash-stack fs-2 text-success me-3"></i>
+                  <div>
+                    <h6 class="text-muted mb-1">Valeur achat du Stock</h6>
+                    <!-- <p class="fs-5 fw-bold mb-0">{{ getValeurTotaleStock(magasinSelectionne.stock) | number }} F CFA</p> -->
+                  </div>
+                </div>
               </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+              <div class="card border-primary shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-graph-up-arrow fs-2 text-primary me-3"></i>
+                  <div>
+                    <h6 class="text-muted mb-1">Valeur Vente du Stock</h6>
+                    <!-- <p class="fs-5 fw-bold mb-0">{{ getValeurTotaleStockVente(magasinSelectionne.stock) | number }} F CFA</p> -->
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-4 mt-3">
+              <div class="card border-secondary shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-tags fs-2 text-secondary me-3"></i>
+                  <div>
+                    <h6 class="text-muted mb-1">Produits Uniques</h6>
+                    <!--                     <p class="fs-5 fw-bold mb-0">{{ getProduitsUniques(magasinSelectionne.stock) }}</p>
+  -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4 mt-3">
+              <div class="card border-danger shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-exclamation-circle fs-2 text-danger me-3"></i>
+                  <div>
+                    <h6 class="text-muted mb-1">Produits en Rupture</h6>
+                    <!-- <p class="fs-5 fw-bold mb-0">{{ getProduitsEnRupture(magasinSelectionne.stock) }}</p> -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4 mt-3">
+              <div class="card border-warning shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-exclamation-triangle fs-2 text-warning me-3"></i>
+                  <div>
+                    <h6 class="text-muted mb-1">Produits sous Alerte</h6>
+                    <!-- <p class="fs-5 fw-bold mb-0">{{ getProduitsSousSeuil(magasinSelectionne.stock) }}</p> -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4 mt-3">
+              <div class="card border-warning shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-arrow-down-circle fs-2 text-warning me-3"></i>
+                  <div>
+                    <h6 class="text-muted mb-1">Produits à Réapprovisionner</h6>
+                    <!-- <p class="fs-5 fw-bold mb-0">{{ getProduitsAReapprovisionner(magasinSelectionne.stock) }}</p> -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4 mt-3">
+              <div class="card border-dark shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-box-arrow-up fs-2 text-dark me-3"></i>
+                  <div>
+                    <h6 class="text-muted mb-1">Produits en Surstock</h6>
+                    <!-- <p class="fs-5 fw-bold mb-0">{{ getProduitsEnSurstock(magasinSelectionne.stock) }}</p> -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4 mt-3">
+              <div class="card border-primary shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-calendar-x fs-2 text-primary me-3"></i>
+                  <div>
+                    <h6 class="text-muted mb-1">Produits Périssables</h6>
+                    <!-- <p class="fs-5 fw-bold mb-0">{{ getProduitsPerissables(magasinSelectionne.stock) }}</p> -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="d-flex justify-content-center pt-2 bg-light mb-2">
+            <h2>Liste des produits en stock</h2>
+          </div>
+          <!-- Barre de recherche et sélection du nombre de lignes -->
+          <div class="d-flex justify-content-between mb-2">
+            <input
+              type="text"
+              class="form-control w-50"
+              placeholder="Rechercher par nom, catégorie, unité stock, prix...."
+              [(ngModel)]="searchTerm"
+              (input)="onSearchChange('stock')"
+            />
+            <select class="form-select w-auto" (change)="setItemsPerPage($event)">
+              <option [value]="5">5 lignes</option>
+              <option [value]="10">10 lignes</option>
+              <option [value]="20">20 lignes</option>
+            </select>
+          </div>
 
           <!-- Tableau des produits -->
           <table class="table table-bordered">
@@ -350,599 +441,823 @@
             </thead>
             <tbody>
               <ng-container *ngFor="let stock of getPaginatedStock; let i = index">
-              <tr>
-                <td>{{ stock.designation }}</td>
-                <td>{{ stock.famille }}</td>
-                <td>{{ getQteById(stock.id!, magasinSelectionne.stock) }}</td>
-                <td>{{ stock.unite }}</td>
-                <td>{{ stock.prixAchatUnitaire }} F CFA</td>
-                <td>{{ stock.prixVenteUnitaire }} F CFA</td>
-                <td>{{ stock.perissable ? 'Oui' : 'Non' }}</td>
-                <td>
-                  <ng-container *ngIf="!stock.perissable; else datePeremption">
-                    Aucune date
-                  </ng-container>
-                  <ng-template #datePeremption>
-                    {{ getDatePeremtionProduitById(stock.id!, magasinSelectionne.stock) | date:'dd/MM/yyyy à HH:mm' }}
-                  </ng-template>
-                </td>
-                <td>
-                  <button class="btn btn-warning btn-sm" (click)="toggleForm(i)">
-                    <i class="bi bi-arrow-left-right"></i> Transférer
-                  </button>
-                </td>
-              </tr>
+                <tr>
+                  <td>{{ stock.designation }}</td>
+                  <td>{{ stock.famille }}</td>
+                  <td>{{ getQteById(stock.id!, magasinSelectionne.stock) }}</td>
+                  <td>{{ stock.unite }}</td>
+                  <td>{{ stock.prixAchatUnitaire }} F CFA</td>
+                  <td>{{ stock.prixVenteUnitaire }} F CFA</td>
+                  <td>{{ stock.perissable ? 'Oui' : 'Non' }}</td>
+                  <td>
+                    <ng-container *ngIf="!stock.perissable; else datePeremption">
+                      Aucune date
+                    </ng-container>
+                    <ng-template #datePeremption>
+                      {{
+                        getDatePeremtionProduitById(stock.id!, magasinSelectionne.stock)
+                          | date: 'dd/MM/yyyy à HH:mm'
+                      }}
+                    </ng-template>
+                  </td>
+                  <td>
+                    <button class="btn btn-warning btn-sm" (click)="toggleForm(i)">
+                      <i class="bi bi-arrow-left-right"></i> Transférer
+                    </button>
+                  </td>
+                </tr>
 
-              <!-- Ligne du formulaire de transfert -->
-              <tr *ngIf="showFormIndex !== null && showFormIndex === i">
-                <td colspan="9">
-                  <table class="table table-borderless mb-0">
-                    <tr>
-                      <!-- Magasin Source -->
-                      <td>
-                        <input type="text" class="form-control form-control-sm" [value]="magasinSelectionne.nom" disabled placeholder="Magasin Source">
-                      </td>
-                      <!-- Magasin Destinataire -->
-                      <td>
-                        <select class="form-control form-control-sm" [(ngModel)]="magasinDestinataire" name="magasinDestinataire">
-                          <option [ngValue]="null" disabled>Choisir destinataire</option>
-                          <option *ngFor="let magasin of magasins" [value]="magasin.id">{{ magasin.nom }}</option>
-                        </select>
-                      </td>
-                      <!-- Quantité -->
-                      <td>
-                        <input type="number" class="form-control form-control-sm" [(ngModel)]="quantite" min="1" name="quantite" placeholder="Quantité à transférer">
-                      </td>
-                      <!-- Motif -->
-                      <td>
-                        <input type="text" class="form-control form-control-sm" [(ngModel)]="motif" name="motif" placeholder="Motif (optionnel)">
-                      </td>
-                      <!-- Boutons -->
-                      <td>
-                        <button class="btn btn-success btn-sm" (click)="transferer(getPaginatedStock[showFormIndex])">
-                          <i class="bi bi-check-circle"></i> Transférer
-                        </button>
-                        <button class="btn btn-danger btn-sm ms-2" (click)="cancelForm()">
-                          <i class="bi bi-x-circle"></i> Annuler
-                        </button>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </ng-container>
+                <!-- Ligne du formulaire de transfert -->
+                <tr *ngIf="showFormIndex !== null && showFormIndex === i">
+                  <td colspan="9">
+                    <table class="table table-borderless mb-0">
+                      <tr>
+                        <!-- Magasin Source -->
+                        <td>
+                          <input
+                            type="text"
+                            class="form-control form-control-sm"
+                            [value]="magasinSelectionne.nom"
+                            disabled
+                            placeholder="Magasin Source"
+                          />
+                        </td>
+                        <!-- Magasin Destinataire -->
+                        <td>
+                          <select
+                            class="form-control form-control-sm"
+                            [(ngModel)]="magasinDestinataire"
+                            name="magasinDestinataire"
+                          >
+                            <option [ngValue]="null" disabled>Choisir destinataire</option>
+                            <option *ngFor="let magasin of magasins" [value]="magasin.id">
+                              {{ magasin.nom }}
+                            </option>
+                          </select>
+                        </td>
+                        <!-- Quantité -->
+                        <td>
+                          <input
+                            type="number"
+                            class="form-control form-control-sm"
+                            [(ngModel)]="quantite"
+                            min="1"
+                            name="quantite"
+                            placeholder="Quantité à transférer"
+                          />
+                        </td>
+                        <!-- Motif -->
+                        <td>
+                          <input
+                            type="text"
+                            class="form-control form-control-sm"
+                            [(ngModel)]="motif"
+                            name="motif"
+                            placeholder="Motif (optionnel)"
+                          />
+                        </td>
+                        <!-- Boutons -->
+                        <td>
+                          <button
+                            class="btn btn-success btn-sm"
+                            (click)="transferer(getPaginatedStock[showFormIndex])"
+                          >
+                            <i class="bi bi-check-circle"></i> Transférer
+                          </button>
+                          <button class="btn btn-danger btn-sm ms-2" (click)="cancelForm()">
+                            <i class="bi bi-x-circle"></i> Annuler
+                          </button>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </ng-container>
             </tbody>
           </table>
 
-            <!-- Pagination -->
-            <div class="d-flex justify-content-center align-items-center">
-              <button class="btn btn-success" (click)="onPageChange(currentPageStock-1,'stock')" [disabled]="currentPageStock === 1">
-                <i class="bi bi-arrow-left-circle"></i>
-              </button>
-              <span class="h3">{{ currentPageStock }} / {{ getTotalPages(filteredStock) }}</span>
-              <button class="btn btn-success" (click)="onPageChange(currentPageStock+1,'stock')"
-                [disabled]="currentPageStock >= getTotalPages(filteredStock)">
-                <i class="bi bi-arrow-right-circle"></i>
-              </button>
-            </div>
-          </div>
-
-          <!-- Onglet Caisse -->
-          <div class="tab-pane fade" id="nav-caisse" role="tabpanel">
-
-            <div class="d-flex justify-content-between">
-              <h3 class="mb-4">
-                <i class="bi bi-box-seam me-2"></i> Résumé des ventes du magasin <b>{{magasinSelectionne.nom}} </b> à la date du <b>{{currentDate | date:'dd/mm/yyyy'}}</b>
-              </h3>
-              <button class="btn btn-success mb-3">
-                Aller à la page de gestion <i class="bi bi-arrow-right ms-2"></i>
-              </button>
-            </div>
-            <!-- 📌 Résumé de la caisse -->
-            <div class="row g-3 mb-4">
-              <div class="col-md-6 col-lg-4 mt-3">
-                <div class="card border-success shadow-sm">
-                  <div class="card-body d-flex align-items-center">
-                    <i class="bi bi-cash-coin fs-2 me-3"></i>
-                    <div>
-                      <h6 class="card-title text-success">Total des ventes du jour</h6>
-                    <p class="fs-5 fw-bold mb-0">{{ getTotalVentesDuJour() }} F CFA</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-md-6 col-lg-4 mt-3">
-                <div class="card border-primary shadow-sm">
-                  <div class="card-body d-flex align-items-center">
-                    <i class="bi bi-cart-check fs-2 me-3"></i>
-                    <div>
-                      <h6 class="card-title text-primary">Ventes réalisées</h6>
-                      <p class="fs-5 fw-bold mb-0">{{ getNombreVentesDuJour() }} ventes</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-md-6 col-lg-4 mt-3">
-                <div class="card border-info shadow-sm">
-                  <div class="card-body d-flex align-items-center">
-                    <i class="bi bi-coin fs-2 me-3"></i>
-                    <div>
-                      <h6 class="card-title text-info">Montant moyen par vente</h6>
-                      <p class="fs-5 fw-bold mb-0">{{ getMontantMoyenVente() }} F CFA</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-md-6 col-lg-4 mt-3">
-                <div class="card border-danger shadow-sm">
-                  <div class="card-body d-flex align-items-center">
-                    <i class="bi bi-x-circle fs-2 me-3"></i>
-                    <div>
-                      <h6 class="card-title text-danger">Ventes annulées</h6>
-                      <p class="fs-5 fw-bold mb-0">{{ getNombreVentesAnnulees() }} ventes</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-md-6 col-lg-4 mt-3">
-                <div class="card border-warning shadow-sm">
-                  <div class="card-body d-flex align-items-center">
-                    <i class="bi bi-percent fs-2 me-3"></i>
-                    <div>
-                      <h6 class="card-title text-warning">TVA collectée</h6>
-                      <p class="fs-5 fw-bold mb-0">{{ getTVACollectee() }} F CFA</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-md-6 col-lg-4 mt-3">
-                <div class="card border-secondary shadow-sm">
-                  <div class="card-body d-flex align-items-center">
-                    <i class="bi bi-cash-stack fs-2 me-3"></i>
-                    <div>
-                      <h6 class="card-title text-secondary">Montant net encaissé</h6>
-                      <p class="fs-5 fw-bold mb-0">{{ getMontantNetEncaisse() }} F CFA</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="d-flex justify-content-center bg-light pt-2 mb-2">
-              <h2> Liste des ventes </h2>
-            </div>
-            <!-- Barre de recherche et sélection du nombre de lignes -->
-            <div class="d-flex justify-content-between mb-2">
-              <input type="text" class="form-control w-50" placeholder="Rechercher par montant, date, client...." [(ngModel)]="searchTerm" (input)="onSearchChange('caisse')">
-              <select class="form-select w-auto" (change)="setItemsPerPage($event)">
-                  <option [value]="5">5 lignes</option>
-                  <option [value]="10">10 lignes</option>
-                  <option [value]="20">20 lignes</option>
-              </select>
-            </div>
-            <!-- Tableau des paniers -->
-            <table class="table table-bordered">
-              <thead class="table-dark">
-                <tr>
-                  <th>Id Panier</th>
-                  <th>Client</th>
-                  <th>Montant Total</th>
-                  <th>Montant à payer</th>
-                  <th>Date</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <ng-container *ngFor="let panier of getPaginatedCaisse">
-                  <tr>
-                    <td>{{ panier.id }}</td>
-                    <td>{{ panier.clientId }}</td>
-                    <td>{{ panier.totalHT }} F CFA</td>
-                    <td>{{ panier.totalTTC }} F CFA</td>
-                    <td>{{ panier.dateCreation | date:'dd/MM/yyyy à HH:mm' }}</td>
-                    <td>
-                      <button class="btn btn-info btn-sm me-2" (click)="toggleDetails(panier.id)">
-                        <i class="bi bi-eye"></i>
-                      </button>
-                    </td>
-                  </tr>
-                  <!-- Détails du panier affichés sous la ligne -->
-                  <tr *ngIf="selectedPanierId === panier.id">
-                    <td colspan="6">
-                      <div class="p-3 border rounded">
-                        <div class="d-flex flex-wrap gap-3 align-items-center">
-                          <!-- <h5 class="mb-0">Détails du Panier #{{ panier.id }}</h5> -->
-                          <p class="mb-0"><strong>Client :</strong> {{ panier.clientId }}</p>
-                          <p class="mb-0"><strong>Statut :</strong> {{ panier.statut }}</p>
-                          <p class="mb-0"><strong>Total HT :</strong> {{ panier.totalHT }} F CFA</p>
-                          <p class="mb-0"><strong>TVA :</strong> {{ panier.tva }} F CFA</p>
-                          <p class="mb-0"><strong>Total TTC :</strong> {{ panier.totalTTC }} F CFA</p>
-                        </div>
-
-                        <!-- Tableau des produits -->
-                        <h3 class="mt-3">Liste des Produits :</h3>
-                        <table class="table table-striped">
-                          <thead class="table-light">
-                            <tr>
-                              <th>Produit</th>
-                              <th>Quantité</th>
-                              <th>Unité</th>
-                              <th>Prix Unitaire</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <ng-container *ngFor="let produit of panier.articles">
-                              <tr>
-                                <td>{{ produit.designation }}</td>
-                                <td>{{getQteById(produit.id!, magasinSelectionne.stock) }}</td>
-                                <td>{{ produit.unite }}</td>
-                                <td>{{ produit.prixVenteUnitaire }} F CFA</td>
-                              </tr>
-                            </ng-container>
-                          </tbody>
-                        </table>
-                      </div>
-                    </td>
-                  </tr>
-                </ng-container>
-              </tbody>
-            </table>
-
-            <!-- Pagination -->
+          <!-- Pagination -->
           <div class="d-flex justify-content-center align-items-center">
-            <button class="btn btn-success" (click)="onPageChange(currentPageCaisse-1,'caisse')" [disabled]="currentPageCaisse === 1">
+            <button
+              class="btn btn-success"
+              (click)="onPageChange(currentPageStock - 1, 'stock')"
+              [disabled]="currentPageStock === 1"
+            >
               <i class="bi bi-arrow-left-circle"></i>
             </button>
-            <span class="h3">{{ currentPageCaisse }} / {{ getTotalPages(filteredPanier) }}</span>
-            <button class="btn btn-success" (click)="onPageChange(currentPageCaisse+1,'caisse')"
-              [disabled]="currentPageCaisse >= getTotalPages(filteredPanier)">
+            <span class="h3">{{ currentPageStock }} / {{ getTotalPages(filteredStock) }}</span>
+            <button
+              class="btn btn-success"
+              (click)="onPageChange(currentPageStock + 1, 'stock')"
+              [disabled]="currentPageStock >= getTotalPages(filteredStock)"
+            >
               <i class="bi bi-arrow-right-circle"></i>
             </button>
           </div>
         </div>
 
-          <!-- Onglet Dépenses -->
-          <div class="tab-pane fade" id="nav-decaissements" role="tabpanel">
-            <div class="d-flex justify-content-between">
-              <h3 class="mb-4">
-                <i class="bi bi-box-seam me-2"></i> Résumé des dépenses du magasin <b>{{magasinSelectionne.nom}} </b> à la date du <b>{{currentDate | date:'dd/mm/yyyy'}}</b>
-              </h3>
-              <button class="btn btn-success mb-3">
-                Aller à la page de gestion <i class="bi bi-arrow-right ms-2"></i>
-              </button>
-            </div>
-            <!-- Résumé des indicateurs financiers -->
-            <div class="row mb-3">
-              <div class="col-md-6 col-lg-4 mt-3">
-                <div class="card border-info">
-                  <div class="card-body d-flex align-items-center">
-                    <i class="bi bi-cash-stack fs-2 text-info me-3"></i>
-                    <div>
-                      <h6>Total Dépenses du Jour</h6>
-                      <p class="fs-5 fw-bold mb-0">{{ getTotalDepensesDuJour() | number }} F CFA</p>
-                    </div>
+        <!-- Onglet Caisse -->
+        <div class="tab-pane fade" id="nav-caisse" role="tabpanel">
+          <div class="d-flex justify-content-between">
+            <h3 class="mb-4">
+              <i class="bi bi-box-seam me-2"></i> Résumé des ventes du magasin
+              <b>{{ magasinSelectionne.nom }} </b> à la date du
+              <b>{{ currentDate | date: 'dd/mm/yyyy' }}</b>
+            </h3>
+            <button class="btn btn-success mb-3">
+              Aller à la page de gestion <i class="bi bi-arrow-right ms-2"></i>
+            </button>
+          </div>
+          <!-- 📌 Résumé de la caisse -->
+          <div class="row g-3 mb-4">
+            <div class="col-md-6 col-lg-4 mt-3">
+              <div class="card border-success shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-cash-coin fs-2 me-3"></i>
+                  <div>
+                    <h6 class="card-title text-success">Total des ventes du jour</h6>
+                    <p class="fs-5 fw-bold mb-0">{{ getTotalVentesDuJour() }} F CFA</p>
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div class="col-md-6 col-lg-4 mt-3">
-                <div class="card border-warning">
-                  <div class="card-body d-flex align-items-center">
-                    <i class="bi bi-list-ol fs-2 text-warning me-3"></i>
-                    <div>
-                      <h6> Nombre de Dépenses du Jour</h6>
-                      <p class="fs-5 fw-bold mb-0">{{ getNombreDepensesDuJour() }}</p>
-                    </div>
+            <div class="col-md-6 col-lg-4 mt-3">
+              <div class="card border-primary shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-cart-check fs-2 me-3"></i>
+                  <div>
+                    <h6 class="card-title text-primary">Ventes réalisées</h6>
+                    <p class="fs-5 fw-bold mb-0">{{ getNombreVentesDuJour() }} ventes</p>
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div class="col-md-6 col-lg-4 mt-3">
-                <div class="card border-success">
-                  <div class="card-body d-flex align-items-center">
-                    <i class="bi bi-wallet2 fs-2 text-success me-3"></i>
-                    <div>
-                      <h6> Solde Disponible Après Dépenses</h6>
-                      <p class="fs-5 fw-bold mb-0">{{ getSoldeApresDepenses() | number }} F CFA</p>
-                    </div>
+            <div class="col-md-6 col-lg-4 mt-3">
+              <div class="card border-info shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-coin fs-2 me-3"></i>
+                  <div>
+                    <h6 class="card-title text-info">Montant moyen par vente</h6>
+                    <p class="fs-5 fw-bold mb-0">{{ getMontantMoyenVente() }} F CFA</p>
                   </div>
                 </div>
               </div>
-
             </div>
 
-            <div class="d-flex justify-content-center bg-light pt-2 mb-2">
-              <h2> Liste des ventes </h2>
+            <div class="col-md-6 col-lg-4 mt-3">
+              <div class="card border-danger shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-x-circle fs-2 me-3"></i>
+                  <div>
+                    <h6 class="card-title text-danger">Ventes annulées</h6>
+                    <p class="fs-5 fw-bold mb-0">{{ getNombreVentesAnnulees() }} ventes</p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <!-- Barre de recherche et sélection du nombre de lignes -->
-            <div class="d-flex justify-content-between mb-2">
-              <input type="text" class="form-control w-50" placeholder="Rechercher par date, montant et type de dépense...." [(ngModel)]="searchTerm" (input)="onSearchChange('depense')">
-              <select class="form-select w-auto" (change)="setItemsPerPage($event)">
-                  <option [value]="5">5 lignes</option>
-                  <option [value]="10">10 lignes</option>
-                  <option [value]="20">20 lignes</option> 
-              </select>
+
+            <div class="col-md-6 col-lg-4 mt-3">
+              <div class="card border-warning shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-percent fs-2 me-3"></i>
+                  <div>
+                    <h6 class="card-title text-warning">TVA collectée</h6>
+                    <p class="fs-5 fw-bold mb-0">{{ getTVACollectee() }} F CFA</p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <!-- Tableau des dépenses -->
-            <table class="table table-bordered table-hover">
-              <thead class="table-dark">
+
+            <div class="col-md-6 col-lg-4 mt-3">
+              <div class="card border-secondary shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-cash-stack fs-2 me-3"></i>
+                  <div>
+                    <h6 class="card-title text-secondary">Montant net encaissé</h6>
+                    <p class="fs-5 fw-bold mb-0">{{ getMontantNetEncaisse() }} F CFA</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-center bg-light pt-2 mb-2">
+            <h2>Liste des ventes</h2>
+          </div>
+          <!-- Barre de recherche et sélection du nombre de lignes -->
+          <div class="d-flex justify-content-between mb-2">
+            <input
+              type="text"
+              class="form-control w-50"
+              placeholder="Rechercher par montant, date, client...."
+              [(ngModel)]="searchTerm"
+              (input)="onSearchChange('caisse')"
+            />
+            <select class="form-select w-auto" (change)="setItemsPerPage($event)">
+              <option [value]="5">5 lignes</option>
+              <option [value]="10">10 lignes</option>
+              <option [value]="20">20 lignes</option>
+            </select>
+          </div>
+          <!-- Tableau des paniers -->
+          <table class="table table-bordered">
+            <thead class="table-dark">
+              <tr>
+                <th>Id Panier</th>
+                <th>Client</th>
+                <th>Montant Total</th>
+                <th>Montant à payer</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <ng-container *ngFor="let panier of getPaginatedCaisse">
                 <tr>
-                  <th> Id</th>
-                  <th> Type</th>
-                  <th> Montant</th>
-                  <th> Date</th>
-                  <th> Description</th>
-                  <!-- <th> Actions</th> -->
+                  <td>{{ panier.id }}</td>
+                  <td>{{ panier.clientId }}</td>
+                  <td>{{ panier.totalHT }} F CFA</td>
+                  <td>{{ panier.totalTTC }} F CFA</td>
+                  <td>{{ panier.dateCreation | date: 'dd/MM/yyyy à HH:mm' }}</td>
+                  <td>
+                    <button class="btn btn-info btn-sm me-2" (click)="toggleDetails(panier.id)">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let depense of getPaginatedDepense">
-                  <td>{{ depense.id }}</td>
-                  <td>{{ depense.type }}</td>
-                  <td class="text-danger fw-bold">{{ depense.amount | number }} F CFA</td>
-                  <td>{{ depense.date | date:'dd/MM/yyyy à HH:mm' }}</td>
-                  <td>{{ depense.description }}</td>
-                  <!-- <td>
+                <!-- Détails du panier affichés sous la ligne -->
+                <tr *ngIf="selectedPanierId === panier.id">
+                  <td colspan="6">
+                    <div class="p-3 border rounded">
+                      <div class="d-flex flex-wrap gap-3 align-items-center">
+                        <!-- <h5 class="mb-0">Détails du Panier #{{ panier.id }}</h5> -->
+                        <p class="mb-0"><strong>Client :</strong> {{ panier.clientId }}</p>
+                        <p class="mb-0"><strong>Statut :</strong> {{ panier.statut }}</p>
+                        <p class="mb-0"><strong>Total HT :</strong> {{ panier.totalHT }} F CFA</p>
+                        <p class="mb-0"><strong>TVA :</strong> {{ panier.tva }} F CFA</p>
+                        <p class="mb-0"><strong>Total TTC :</strong> {{ panier.totalTTC }} F CFA</p>
+                      </div>
+
+                      <!-- Tableau des produits -->
+                      <h3 class="mt-3">Liste des Produits :</h3>
+                      <table class="table table-striped">
+                        <thead class="table-light">
+                          <tr>
+                            <th>Produit</th>
+                            <th>Quantité</th>
+                            <th>Unité</th>
+                            <th>Prix Unitaire</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <ng-container *ngFor="let produit of panier.articles">
+                            <tr>
+                              <td>{{ produit.designation }}</td>
+                              <td>{{ getQteById(produit.id!, magasinSelectionne.stock) }}</td>
+                              <td>{{ produit.unite }}</td>
+                              <td>{{ produit.prixVenteUnitaire }} F CFA</td>
+                            </tr>
+                          </ng-container>
+                        </tbody>
+                      </table>
+                    </div>
+                  </td>
+                </tr>
+              </ng-container>
+            </tbody>
+          </table>
+
+          <!-- Pagination -->
+          <div class="d-flex justify-content-center align-items-center">
+            <button
+              class="btn btn-success"
+              (click)="onPageChange(currentPageCaisse - 1, 'caisse')"
+              [disabled]="currentPageCaisse === 1"
+            >
+              <i class="bi bi-arrow-left-circle"></i>
+            </button>
+            <span class="h3">{{ currentPageCaisse }} / {{ getTotalPages(filteredPanier) }}</span>
+            <button
+              class="btn btn-success"
+              (click)="onPageChange(currentPageCaisse + 1, 'caisse')"
+              [disabled]="currentPageCaisse >= getTotalPages(filteredPanier)"
+            >
+              <i class="bi bi-arrow-right-circle"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Onglet Dépenses -->
+        <div class="tab-pane fade" id="nav-decaissements" role="tabpanel">
+          <div class="d-flex justify-content-between">
+            <h3 class="mb-4">
+              <i class="bi bi-box-seam me-2"></i> Résumé des dépenses du magasin
+              <b>{{ magasinSelectionne.nom }} </b> à la date du
+              <b>{{ currentDate | date: 'dd/mm/yyyy' }}</b>
+            </h3>
+            <button class="btn btn-success mb-3">
+              Aller à la page de gestion <i class="bi bi-arrow-right ms-2"></i>
+            </button>
+          </div>
+          <!-- Résumé des indicateurs financiers -->
+          <div class="row mb-3">
+            <div class="col-md-6 col-lg-4 mt-3">
+              <div class="card border-info">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-cash-stack fs-2 text-info me-3"></i>
+                  <div>
+                    <h6>Total Dépenses du Jour</h6>
+                    <p class="fs-5 fw-bold mb-0">{{ getTotalDepensesDuJour() | number }} F CFA</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4 mt-3">
+              <div class="card border-warning">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-list-ol fs-2 text-warning me-3"></i>
+                  <div>
+                    <h6>Nombre de Dépenses du Jour</h6>
+                    <p class="fs-5 fw-bold mb-0">{{ getNombreDepensesDuJour() }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4 mt-3">
+              <div class="card border-success">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-wallet2 fs-2 text-success me-3"></i>
+                  <div>
+                    <h6>Solde Disponible Après Dépenses</h6>
+                    <p class="fs-5 fw-bold mb-0">{{ getSoldeApresDepenses() | number }} F CFA</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-center bg-light pt-2 mb-2">
+            <h2>Liste des ventes</h2>
+          </div>
+          <!-- Barre de recherche et sélection du nombre de lignes -->
+          <div class="d-flex justify-content-between mb-2">
+            <input
+              type="text"
+              class="form-control w-50"
+              placeholder="Rechercher par date, montant et type de dépense...."
+              [(ngModel)]="searchTerm"
+              (input)="onSearchChange('depense')"
+            />
+            <select class="form-select w-auto" (change)="setItemsPerPage($event)">
+              <option [value]="5">5 lignes</option>
+              <option [value]="10">10 lignes</option>
+              <option [value]="20">20 lignes</option>
+            </select>
+          </div>
+          <!-- Tableau des dépenses -->
+          <table class="table table-bordered table-hover">
+            <thead class="table-dark">
+              <tr>
+                <th>Id</th>
+                <th>Type</th>
+                <th>Montant</th>
+                <th>Date</th>
+                <th>Description</th>
+                <!-- <th> Actions</th> -->
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let depense of getPaginatedDepense">
+                <td>{{ depense.id }}</td>
+                <td>{{ depense.type }}</td>
+                <td class="text-danger fw-bold">{{ depense.amount | number }} F CFA</td>
+                <td>{{ depense.date | date: 'dd/MM/yyyy à HH:mm' }}</td>
+                <td>{{ depense.description }}</td>
+                <!-- <td>
                     <button class="btn btn-warning btn-sm me-2"><i class="bi bi-pencil"></i></button>
                     <button class="btn btn-danger btn-sm" (click)="supprimerDepense(depense.id)">
                       <i class="bi bi-trash"></i></button>
                   </td> -->
-                </tr>
-              </tbody>
-            </table>
-            <!-- Pagination -->
+              </tr>
+            </tbody>
+          </table>
+          <!-- Pagination -->
           <div class="d-flex justify-content-center align-items-center">
-            <button class="btn btn-success" (click)="onPageChange(currentPageDepnse-1,'depense')" [disabled]="currentPageDepnse === 1">
+            <button
+              class="btn btn-success"
+              (click)="onPageChange(currentPageDepnse - 1, 'depense')"
+              [disabled]="currentPageDepnse === 1"
+            >
               <i class="bi bi-arrow-left-circle"></i>
             </button>
             <span class="h3">{{ currentPageDepnse }} / {{ getTotalPages(filteredDepnse) }}</span>
-            <button class="btn btn-success" (click)="onPageChange(currentPageDepnse+1,'depense')"
-              [disabled]="currentPageDepnse >= getTotalPages(filteredDepnse)">
+            <button
+              class="btn btn-success"
+              (click)="onPageChange(currentPageDepnse + 1, 'depense')"
+              [disabled]="currentPageDepnse >= getTotalPages(filteredDepnse)"
+            >
               <i class="bi bi-arrow-right-circle"></i>
             </button>
           </div>
-          </div>
+        </div>
 
-          <!-- Liste des mouvements de produits -->
-          <div class="tab-pane fade" id="nav-dettes" role="tabpanel">
-            <div class="d-flex justify-content-end">
-              <button class="btn btn-success mb-3">
-                Aller à la page de gestion <i class="bi bi-arrow-right ms-2"></i>
-              </button>
-            </div>
-            <div class="d-flex justify-content-center bg-light pt-2 mb-2">
-              <h2> Liste des transferts de produits </h2>
-            </div>
-            <!-- Barre de recherche et sélection du nombre de lignes -->
-            <div class="d-flex justify-content-between mb-2">
-              <input type="text" class="form-control w-50" placeholder="Rechercher par date, nom produit, prix achat et type de mouvement...." [(ngModel)]="searchTerm" (input)="onSearchChange('mouvement')">
-              <select class="form-select w-auto" (change)="setItemsPerPage($event)">
-                  <option [value]="5">5 lignes</option>
-                  <option [value]="10">10 lignes</option>
-                  <option [value]="20">20 lignes</option>
-              </select>
-            </div>
-            <table class="table table-bordered">
-              <thead class="table-dark">
-                <tr>
-                  <th>Type mouvement</th>
-                  <th>Produit</th>
-                  <th>Quantité</th>
-                  <th>Unite stock</th>
-                  <th>Prix d'achat unitaire</th>
-                  <th>Date et heure</th>
-                  <!-- <th>Actions</th> -->
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let mvt of getPaginatedMouvements">
-                  <td>{{ mvt.typeMouvement }}</td>
-                  <td>{{ getNomProduitById(mvt.produitId,produits ) }}</td>
-                  <td>{{ mvt.quantite }}</td>
-                  <td>{{ getUniteProduitById(mvt.produitId,produits ) }}</td>
-                  <td>{{  mvt.prixUnitaire }}</td>
-                  <td>{{ mvt.dateMouvement | date : 'dd/mm/yyyy à HH:mm' }}</td>
-                  <!-- <td>
+        <!-- Liste des mouvements de produits -->
+        <div class="tab-pane fade" id="nav-dettes" role="tabpanel">
+          <div class="d-flex justify-content-end">
+            <button class="btn btn-success mb-3">
+              Aller à la page de gestion <i class="bi bi-arrow-right ms-2"></i>
+            </button>
+          </div>
+          <div class="d-flex justify-content-center bg-light pt-2 mb-2">
+            <h2>Liste des transferts de produits</h2>
+          </div>
+          <!-- Barre de recherche et sélection du nombre de lignes -->
+          <div class="d-flex justify-content-between mb-2">
+            <input
+              type="text"
+              class="form-control w-50"
+              placeholder="Rechercher par date, nom produit, prix achat et type de mouvement...."
+              [(ngModel)]="searchTerm"
+              (input)="onSearchChange('mouvement')"
+            />
+            <select class="form-select w-auto" (change)="setItemsPerPage($event)">
+              <option [value]="5">5 lignes</option>
+              <option [value]="10">10 lignes</option>
+              <option [value]="20">20 lignes</option>
+            </select>
+          </div>
+          <table class="table table-bordered">
+            <thead class="table-dark">
+              <tr>
+                <th>Type mouvement</th>
+                <th>Produit</th>
+                <th>Quantité</th>
+                <th>Unite stock</th>
+                <th>Prix d'achat unitaire</th>
+                <th>Date et heure</th>
+                <!-- <th>Actions</th> -->
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let mvt of getPaginatedMouvements">
+                <td>{{ mvt.typeMouvement }}</td>
+                <td>{{ getNomProduitById(mvt.produitId, produits) }}</td>
+                <td>{{ mvt.quantite }}</td>
+                <td>{{ getUniteProduitById(mvt.produitId, produits) }}</td>
+                <td>{{ mvt.prixUnitaire }}</td>
+                <td>{{ mvt.dateMouvement | date: 'dd/mm/yyyy à HH:mm' }}</td>
+                <!-- <td>
                     <button class="btn btn-primary btn-sm">Voir</button>
                     <button class="btn btn-danger btn-sm">Annuler</button>
                   </td> -->
-                </tr>
-              </tbody>
-            </table>
-            <!-- Pagination -->
-            <div class="d-flex justify-content-center align-items-center">
-              <button class="btn btn-success" (click)="onPageChange(currentPageMouvement-1,'mouvement')" [disabled]="currentPageMouvement === 1">
-                <i class="bi bi-arrow-left-circle"></i>
-              </button>
-              <span class="h3">{{ currentPageMouvement }} / {{ getTotalPages(filteredMouvement) }}</span>
-              <button class="btn btn-success" (click)="onPageChange(currentPageMouvement+1,'mouvement')"
-                [disabled]="currentPageMouvement >= getTotalPages(filteredMouvement)">
-                <i class="bi bi-arrow-right-circle"></i>
-              </button>
-            </div>
+              </tr>
+            </tbody>
+          </table>
+          <!-- Pagination -->
+          <div class="d-flex justify-content-center align-items-center">
+            <button
+              class="btn btn-success"
+              (click)="onPageChange(currentPageMouvement - 1, 'mouvement')"
+              [disabled]="currentPageMouvement === 1"
+            >
+              <i class="bi bi-arrow-left-circle"></i>
+            </button>
+            <span class="h3"
+              >{{ currentPageMouvement }} / {{ getTotalPages(filteredMouvement) }}</span
+            >
+            <button
+              class="btn btn-success"
+              (click)="onPageChange(currentPageMouvement + 1, 'mouvement')"
+              [disabled]="currentPageMouvement >= getTotalPages(filteredMouvement)"
+            >
+              <i class="bi bi-arrow-right-circle"></i>
+            </button>
           </div>
+        </div>
 
-          <!-- Onglet des transferts -->
-          <div class="tab-pane fade" id="nav-transfert" role="tabpanel">
-            <div class="d-flex justify-content-end">
-              <button class="btn btn-success mb-3">
-                Aller à la page de gestion <i class="bi bi-arrow-right ms-2"></i>
-              </button>
-            </div>
-            <div class="d-flex justify-content-center bg-light pt-2 mb-2">
-              <h2> Liste des transferts de produits </h2>
-            </div>
-            <!-- Barre de recherche et sélection du nombre de lignes -->
-            <div class="d-flex justify-content-between mb-2">
-              <input type="text" class="form-control w-50" placeholder="Rechercher par date, nom produir, nom magasin ...." [(ngModel)]="searchTerm" (input)="onSearchChange('transfert')">
-              <select class="form-select w-auto" (change)="setItemsPerPage($event)">
-                  <option [value]="5">5 lignes</option>
-                  <option [value]="10">10 lignes</option>
-                  <option [value]="20">20 lignes</option>
-              </select>
-            </div>
-            <table class="table table-bordered">
-              <thead class="table-dark">
-                <tr>
-                  <th>Id Transfert</th>
-                  <th>Produit</th>
-                  <th>Quantité</th>
-                  <th>Magasin d'origine</th>
-                  <th>Magasin de destination</th>
-                  <th>Date</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let transfert of getPaginatedTransfert">
-                  <td>{{ transfert.id }}</td>
-                  <td>{{ getNomProduitById(transfert.produitId,produits ) }}</td>
-                  <td>{{ transfert.quantite }}</td>
-                  <td>{{ getNomMagazin( transfert.magasinSource) }}</td>
-                  <td>{{ getNomMagazin(transfert.magasinDestination) }}</td>
-                  <td>{{ transfert.dateTransfert | date : 'dd/mm/yyyy à HH:mm' }}</td>
-                  <td>
-                    <button class="btn btn-dark btn-sm" [disabled]="transfert.statut === 'Validé'" (click)="validerTransfert(transfert)">Valider</button>
-                    <!-- <button class="btn btn-danger btn-sm">Annuler</button> -->
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <!-- Pagination -->
-            <div class="d-flex justify-content-center align-items-center">
-              <button class="btn btn-success" (click)="onPageChange(currentPageTransferts-1,'transfert')" [disabled]="currentPageTransferts === 1">
-                <i class="bi bi-arrow-left-circle"></i>
-              </button>
-              <span class="h3">{{ currentPageTransferts }} / {{ getTotalPages(filteredTransferts) }}</span>
-              <button class="btn btn-success" (click)="onPageChange(currentPageTransferts+1,'transfert')"
-                [disabled]="currentPageTransferts >= getTotalPages(filteredTransferts)">
-                <i class="bi bi-arrow-right-circle"></i>
-              </button>
-            </div>
+        <!-- Onglet des transferts -->
+        <div class="tab-pane fade" id="nav-transfert" role="tabpanel">
+          <div class="d-flex justify-content-end">
+            <button class="btn btn-success mb-3">
+              Aller à la page de gestion <i class="bi bi-arrow-right ms-2"></i>
+            </button>
+          </div>
+          <div class="d-flex justify-content-center bg-light pt-2 mb-2">
+            <h2>Liste des transferts de produits</h2>
+          </div>
+          <!-- Barre de recherche et sélection du nombre de lignes -->
+          <div class="d-flex justify-content-between mb-2">
+            <input
+              type="text"
+              class="form-control w-50"
+              placeholder="Rechercher par date, nom produir, nom magasin ...."
+              [(ngModel)]="searchTerm"
+              (input)="onSearchChange('transfert')"
+            />
+            <select class="form-select w-auto" (change)="setItemsPerPage($event)">
+              <option [value]="5">5 lignes</option>
+              <option [value]="10">10 lignes</option>
+              <option [value]="20">20 lignes</option>
+            </select>
+          </div>
+          <table class="table table-bordered">
+            <thead class="table-dark">
+              <tr>
+                <th>Id Transfert</th>
+                <th>Produit</th>
+                <th>Quantité</th>
+                <th>Magasin d'origine</th>
+                <th>Magasin de destination</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let transfert of getPaginatedTransfert">
+                <td>{{ transfert.id }}</td>
+                <td>{{ getNomProduitById(transfert.produitId, produits) }}</td>
+                <td>{{ transfert.quantite }}</td>
+                <td>{{ getNomMagazin(transfert.magasinSource) }}</td>
+                <td>{{ getNomMagazin(transfert.magasinDestination) }}</td>
+                <td>{{ transfert.dateTransfert | date: 'dd/mm/yyyy à HH:mm' }}</td>
+                <td>
+                  <button
+                    class="btn btn-dark btn-sm"
+                    [disabled]="transfert.statut === 'Validé'"
+                    (click)="validerTransfert(transfert)"
+                  >
+                    Valider
+                  </button>
+                  <!-- <button class="btn btn-danger btn-sm">Annuler</button> -->
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <!-- Pagination -->
+          <div class="d-flex justify-content-center align-items-center">
+            <button
+              class="btn btn-success"
+              (click)="onPageChange(currentPageTransferts - 1, 'transfert')"
+              [disabled]="currentPageTransferts === 1"
+            >
+              <i class="bi bi-arrow-left-circle"></i>
+            </button>
+            <span class="h3"
+              >{{ currentPageTransferts }} / {{ getTotalPages(filteredTransferts) }}</span
+            >
+            <button
+              class="btn btn-success"
+              (click)="onPageChange(currentPageTransferts + 1, 'transfert')"
+              [disabled]="currentPageTransferts >= getTotalPages(filteredTransferts)"
+            >
+              <i class="bi bi-arrow-right-circle"></i>
+            </button>
           </div>
         </div>
       </div>
+    </div>
   </div>
 </div>
 
 <!-- Modal d'ajout/modification de magasin (inchangé) -->
-<div class="modal fade" id="modalMagasin" tabindex="-1" aria-labelledby="modalMagasinLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg"> <!-- Fenêtre plus large -->
+<div
+  class="modal fade"
+  id="modalMagasin"
+  tabindex="-1"
+  aria-labelledby="modalMagasinLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg">
+    <!-- Fenêtre plus large -->
     <div class="modal-content">
       <div class="modal-header d-flex justify-content-between">
-        <h2 class="modal-title" id="modalMagasinLabel">{{ modeEdition ? 'Modifier' : 'Ajouter' }} un magasin</h2>
-        <button type="button" class="btn btn-danger" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x"></i></button>
+        <h2 class="modal-title" id="modalMagasinLabel">
+          {{ modeEdition ? 'Modifier' : 'Ajouter' }} un magasin
+        </h2>
+        <button type="button" class="btn btn-danger" data-bs-dismiss="modal" aria-label="Close">
+          <i class="bi bi-x"></i>
+        </button>
       </div>
       <div class="modal-body">
-        <form [formGroup]="magasinForm" (ngSubmit)="modeEdition ? modifierMagasin() : ajouterMagasin()">
-            <div class="row g-3">
-              <!-- Structure rattachée -->
-              <div class="col-md-6">
-                <label for="structure" class="form-label">Structure rattachée <span class="text-danger">*</span></label>
-                <select class="form-select" id="structure" formControlName="code_structure" (change)="onStructureChange($event)"
-                  [ngClass]="{'is-invalid': magasinForm.get('code_structure')?.invalid && (magasinForm.get('code_structure')?.dirty || magasinForm.get('code_structure')?.touched)}">
-                  <option value="" disabled>Sélectionnez une structure</option>
-                  <option *ngFor="let structure of structures" [value]="structure.code_structure">{{ structure.nom_structure }}</option>
-                </select>
-                <div *ngIf="magasinForm.get('code_structure')?.invalid && (magasinForm.get('code_structure')?.dirty || magasinForm.get('code_structure')?.touched)" class="invalid-feedback">
-                  La structure rattachée est obligatoire
-                </div>
-              </div>
-
-              <!-- Nom du magasin -->
-              <div class="col-md-6">
-                <label for="nomMagasin" class="form-label">Nom du magasin <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="nomMagasin" formControlName="nom"
-                  [ngClass]="{'is-invalid': magasinForm.get('nom')?.invalid && (magasinForm.get('nom')?.dirty || magasinForm.get('nom')?.touched)}">
-                <div *ngIf="magasinForm.get('nom')?.errors?.['required'] && (magasinForm.get('nom')?.dirty || magasinForm.get('nom')?.touched)" class="invalid-feedback">
-                  Le nom du magasin est obligatoire
-                </div>
-              </div>
-
-              <!-- Adresse -->
-              <div class="col-md-6">
-                <label for="adresse" class="form-label">Adresse <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="adresse" formControlName="adresse"
-                  [ngClass]="{'is-invalid': magasinForm.get('adresse')?.invalid && (magasinForm.get('adresse')?.dirty || magasinForm.get('adresse')?.touched)}">
-                <div *ngIf="magasinForm.get('adresse')?.errors?.['required'] && (magasinForm.get('adresse')?.dirty || magasinForm.get('adresse')?.touched)" class="invalid-feedback">
-                  L'adresse est obligatoire
-                </div>
-              </div>
-
-              <!-- Ville -->
-              <div class="col-md-6">
-                <label for="ville" class="form-label">Ville</label>
-                <input type="text" class="form-control" id="ville" formControlName="ville">
-              </div>
-
-              <!-- Téléphone -->
-              <div class="col-md-6">
-                <label for="telephone" class="form-label">Téléphone</label>
-                <input type="tel" class="form-control" id="telephone" formControlName="telephone">
-              </div>
-
-              <!-- Email -->
-              <div class="col-md-6">
-                <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="email" formControlName="email"
-                  [ngClass]="{'is-invalid': magasinForm.get('email')?.invalid && (magasinForm.get('email')?.dirty || magasinForm.get('email')?.touched)}">
-                <div *ngIf="magasinForm.get('email')?.errors?.['email'] && (magasinForm.get('email')?.dirty || magasinForm.get('email')?.touched)" class="invalid-feedback">
-                  Veuillez entrer un email valide
-                </div>
-              </div>
-
-              <!-- Responsable -->
-              <div class="col-md-6">
-                <label for="responsable" class="form-label">Responsable <span class="text-danger">*</span></label>
-                <select class="form-select" id="responsable" formControlName="responsableId"
-                  [ngClass]="{'is-invalid': magasinForm.get('responsableId')?.invalid && (magasinForm.get('responsableId')?.dirty || magasinForm.get('responsableId')?.touched)}">
-                  <option value="" disabled>Sélectionnez un responsable</option>
-                  <option *ngFor="let responsable of responsables" [value]="responsable.id">
-                    {{ responsable.nom }}
-                  </option>
-                </select>
-                <div *ngIf="magasinForm.get('responsableId')?.errors?.['required'] && (magasinForm.get('responsableId')?.dirty || magasinForm.get('responsableId')?.touched)" class="invalid-feedback">
-                  Le responsable est obligatoire
-                </div>
-              </div>
-
-              <!-- Capacité de stock -->
-              <div class="col-md-6">
-                <label for="capaciteStock" class="form-label">Capacité de stock (m²)</label>
-                <input type="number" class="form-control" id="capaciteStock" formControlName="capaciteStock" min="0"
-                  [ngClass]="{'is-invalid': magasinForm.get('capaciteStock')?.invalid && (magasinForm.get('capaciteStock')?.dirty || magasinForm.get('capaciteStock')?.touched)}">
-                <div *ngIf="magasinForm.get('capaciteStock')?.errors?.['min'] && (magasinForm.get('capaciteStock')?.dirty || magasinForm.get('capaciteStock')?.touched)" class="invalid-feedback">
-                  La capacité ne peut pas être négative
-                </div>
-              </div>
-
-              <!-- Statut (uniquement en mode édition) -->
-              <div class="col-md-6" *ngIf="modeEdition">
-                <label for="statut" class="form-label">Statut</label>
-                <select class="form-select" id="statut" formControlName="statut">
-                  <option value="Actif">Actif</option>
-                  <option value="Inactif">Inactif</option>
-                </select>
+        <form
+          [formGroup]="magasinForm"
+          (ngSubmit)="modeEdition ? modifierMagasin() : ajouterMagasin()"
+        >
+          <div class="row g-3">
+            <!-- Structure rattachée -->
+            <div class="col-md-6">
+              <label for="structure" class="form-label"
+                >Structure rattachée <span class="text-danger">*</span></label
+              >
+              <select
+                class="form-select"
+                id="structure"
+                formControlName="code_structure"
+                (change)="onStructureChange($event)"
+                [ngClass]="{
+                  'is-invalid':
+                    magasinForm.get('code_structure')?.invalid &&
+                    (magasinForm.get('code_structure')?.dirty ||
+                      magasinForm.get('code_structure')?.touched),
+                }"
+              >
+                <option value="" disabled>Sélectionnez une structure</option>
+                <option *ngFor="let structure of structures" [value]="structure.code_structure">
+                  {{ structure.nom_structure }}
+                </option>
+              </select>
+              <div
+                *ngIf="
+                  magasinForm.get('code_structure')?.invalid &&
+                  (magasinForm.get('code_structure')?.dirty ||
+                    magasinForm.get('code_structure')?.touched)
+                "
+                class="invalid-feedback"
+              >
+                La structure rattachée est obligatoire
               </div>
             </div>
 
-            <div class="modal-footer d-flex justify-content-center mt-4">
-              <button type="button" class="btn btn-secondary w-25" data-bs-dismiss="modal">Annuler</button>
-              <button type="submit" class="btn btn-success w-25" [disabled]="magasinForm.invalid">
-                {{ modeEdition ? 'Modifier' : 'Ajouter' }}
-              </button>
+            <!-- Nom du magasin -->
+            <div class="col-md-6">
+              <label for="nomMagasin" class="form-label"
+                >Nom du magasin <span class="text-danger">*</span></label
+              >
+              <input
+                type="text"
+                class="form-control"
+                id="nomMagasin"
+                formControlName="nom"
+                [ngClass]="{
+                  'is-invalid':
+                    magasinForm.get('nom')?.invalid &&
+                    (magasinForm.get('nom')?.dirty || magasinForm.get('nom')?.touched),
+                }"
+              />
+              <div
+                *ngIf="
+                  magasinForm.get('nom')?.errors?.['required'] &&
+                  (magasinForm.get('nom')?.dirty || magasinForm.get('nom')?.touched)
+                "
+                class="invalid-feedback"
+              >
+                Le nom du magasin est obligatoire
+              </div>
             </div>
 
-            <!-- Message d'erreur général -->
-                <div *ngIf="errorMessage" class="alert alert-danger mt-3">
-                  {{ errorMessage }}
-                </div>
-          </form>
+            <!-- Adresse -->
+            <div class="col-md-6">
+              <label for="adresse" class="form-label"
+                >Adresse <span class="text-danger">*</span></label
+              >
+              <input
+                type="text"
+                class="form-control"
+                id="adresse"
+                formControlName="adresse"
+                [ngClass]="{
+                  'is-invalid':
+                    magasinForm.get('adresse')?.invalid &&
+                    (magasinForm.get('adresse')?.dirty || magasinForm.get('adresse')?.touched),
+                }"
+              />
+              <div
+                *ngIf="
+                  magasinForm.get('adresse')?.errors?.['required'] &&
+                  (magasinForm.get('adresse')?.dirty || magasinForm.get('adresse')?.touched)
+                "
+                class="invalid-feedback"
+              >
+                L'adresse est obligatoire
+              </div>
+            </div>
+
+            <!-- Ville -->
+            <div class="col-md-6">
+              <label for="ville" class="form-label">Ville</label>
+              <input type="text" class="form-control" id="ville" formControlName="ville" />
+            </div>
+
+            <!-- Téléphone -->
+            <div class="col-md-6">
+              <label for="telephone" class="form-label">Téléphone</label>
+              <input type="tel" class="form-control" id="telephone" formControlName="telephone" />
+            </div>
+
+            <!-- Email -->
+            <div class="col-md-6">
+              <label for="email" class="form-label">Email</label>
+              <input
+                type="email"
+                class="form-control"
+                id="email"
+                formControlName="email"
+                [ngClass]="{
+                  'is-invalid':
+                    magasinForm.get('email')?.invalid &&
+                    (magasinForm.get('email')?.dirty || magasinForm.get('email')?.touched),
+                }"
+              />
+              <div
+                *ngIf="
+                  magasinForm.get('email')?.errors?.['email'] &&
+                  (magasinForm.get('email')?.dirty || magasinForm.get('email')?.touched)
+                "
+                class="invalid-feedback"
+              >
+                Veuillez entrer un email valide
+              </div>
+            </div>
+
+            <!-- Responsable -->
+            <div class="col-md-6">
+              <label for="responsable" class="form-label"
+                >Responsable <span class="text-danger">*</span></label
+              >
+              <select
+                class="form-select"
+                id="responsable"
+                formControlName="responsableId"
+                [ngClass]="{
+                  'is-invalid':
+                    magasinForm.get('responsableId')?.invalid &&
+                    (magasinForm.get('responsableId')?.dirty ||
+                      magasinForm.get('responsableId')?.touched),
+                }"
+              >
+                <option value="" disabled>Sélectionnez un responsable</option>
+                <option *ngFor="let responsable of responsables" [value]="responsable.id">
+                  {{ responsable.nom }}
+                </option>
+              </select>
+              <div
+                *ngIf="
+                  magasinForm.get('responsableId')?.errors?.['required'] &&
+                  (magasinForm.get('responsableId')?.dirty ||
+                    magasinForm.get('responsableId')?.touched)
+                "
+                class="invalid-feedback"
+              >
+                Le responsable est obligatoire
+              </div>
+            </div>
+
+            <!-- Capacité de stock -->
+            <div class="col-md-6">
+              <label for="capaciteStock" class="form-label">Capacité de stock (m²)</label>
+              <input
+                type="number"
+                class="form-control"
+                id="capaciteStock"
+                formControlName="capaciteStock"
+                min="0"
+                [ngClass]="{
+                  'is-invalid':
+                    magasinForm.get('capaciteStock')?.invalid &&
+                    (magasinForm.get('capaciteStock')?.dirty ||
+                      magasinForm.get('capaciteStock')?.touched),
+                }"
+              />
+              <div
+                *ngIf="
+                  magasinForm.get('capaciteStock')?.errors?.['min'] &&
+                  (magasinForm.get('capaciteStock')?.dirty ||
+                    magasinForm.get('capaciteStock')?.touched)
+                "
+                class="invalid-feedback"
+              >
+                La capacité ne peut pas être négative
+              </div>
+            </div>
+
+            <!-- Statut (uniquement en mode édition) -->
+            <div class="col-md-6" *ngIf="modeEdition">
+              <label for="statut" class="form-label">Statut</label>
+              <select class="form-select" id="statut" formControlName="statut">
+                <option value="Actif">Actif</option>
+                <option value="Inactif">Inactif</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="modal-footer d-flex justify-content-center mt-4">
+            <button type="button" class="btn btn-secondary w-25" data-bs-dismiss="modal">
+              Annuler
+            </button>
+            <button type="submit" class="btn btn-success w-25" [disabled]="magasinForm.invalid">
+              {{ modeEdition ? 'Modifier' : 'Ajouter' }}
+            </button>
+          </div>
+
+          <!-- Message d'erreur général -->
+          <div *ngIf="errorMessage" class="alert alert-danger mt-3">
+            {{ errorMessage }}
+          </div>
+        </form>
       </div>
     </div>
   </div>

@@ -1,22 +1,22 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { Structure } from '../modeles/structure.model';
 import { AuthService } from './auth.service';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class StructureService {
-
   private apiUrl = 'http://localhost:5000/api/structures'; //URL API
 
-  constructor(private http: HttpClient, private authService: AuthService) {}
+  private http = inject(HttpClient);
+  private authService = inject(AuthService);
 
   private getHeaders(): HttpHeaders {
     const token = this.authService.getToken();
     return new HttpHeaders({
-      'Authorization': `Bearer ${token}`
+      Authorization: `Bearer ${token}`,
     });
   }
 
@@ -33,21 +33,29 @@ export class StructureService {
   }
 
   update(id: number, structure: FormData): Observable<Structure> {
-    return this.http.put<Structure>(`${this.apiUrl}/${id}`, structure, { headers: this.getHeaders() });
+    return this.http.put<Structure>(`${this.apiUrl}/${id}`, structure, {
+      headers: this.getHeaders(),
+    });
   }
 
   updateBis(id: number, structure: Structure): Observable<Structure> {
-    return this.http.put<Structure>(`${this.apiUrl}/${id}`, structure, { headers: this.getHeaders() });
+    return this.http.put<Structure>(`${this.apiUrl}/${id}`, structure, {
+      headers: this.getHeaders(),
+    });
   }
 
-  delete(id: number): Observable<any> {
+  delete(id: number): Observable<unknown> {
     return this.http.delete(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
   }
 
   updateStatus(id: number, estActive: boolean): Observable<Structure> {
-    return this.http.patch<Structure>(`${this.apiUrl}/${id}/status`, { estActive }, { headers: this.getHeaders() });
+    return this.http.patch<Structure>(
+      `${this.apiUrl}/${id}/status`,
+      { estActive },
+      { headers: this.getHeaders() },
+    );
   }
-/*   //Créer une structure
+  /*   //Créer une structure
   create(structure: Structure): Observable<Structure> {
     return this.http.post<Structure>(this.apiUrl, structure);
   }
@@ -68,7 +76,7 @@ export class StructureService {
   }
 
   //Supprimer une structure
-  delete(id: number): Observable<any> {
+  delete(id: number): Observable<unknown> {
     return this.http.delete(`${this.apiUrl}/${id}`);
   }
 
@@ -76,4 +84,4 @@ export class StructureService {
   toggleStatus(id: number, actif: boolean): Observable<Structure> {
     return this.http.patch<Structure>(`${this.apiUrl}/${id}/status`, { actif });
   }*/
-} 
+}

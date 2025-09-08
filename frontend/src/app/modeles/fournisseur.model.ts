@@ -1,6 +1,6 @@
-import { Bon } from "./bon.model";
-import { Operation } from "./operation.model";
-import { Paiement } from "./paiement.model";
+import { Bon } from './bon.model';
+import { Operation } from './operation.model';
+import { Paiement } from './paiement.model';
 
 export class Fournisseur {
   id?: number;
@@ -12,7 +12,7 @@ export class Fournisseur {
   banque!: string;
   numeroCompte!: string;
   dateCreation: Date = new Date();
-  statut: boolean = true;
+  statut = true;
   montantAPayer?: number;
   termePaiement?: string;
   termeLivraison?: string;

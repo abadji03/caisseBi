@@ -27,7 +27,7 @@ exports.create = async (req, res) => {
     const existingUser = await User.findOne({ where: { email: data.email } });
 
     if (existingUser) {
-      return res.status(400).json({ message: "Un utilisateur avec cet email existe déjà." });
+      return res.status(400).json({ message: 'Un utilisateur avec cet email existe déjà.' });
     }
 
     // Si un mot de passe est fourni, on le hache
@@ -38,19 +38,19 @@ exports.create = async (req, res) => {
 
     const user = await User.create(data);
     res.status(201).json(user);
-
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Erreur lors de la création de l'utilisateur.", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Erreur lors de la création de l'utilisateur.", error: error.message });
   }
 };
-
 
 // Récupérer tous les utilisateurs
 exports.findAll = async (req, res) => {
   try {
     const users = await User.findAll({
-      order: [['createdAt', 'DESC']] 
+      order: [['createdAt', 'DESC']],
     });
     res.json(users);
   } catch (error) {
@@ -84,7 +84,7 @@ exports.update = async (req, res) => {
     }
 
     const [updated] = await User.update(data, {
-      where: { id: req.params.id }
+      where: { id: req.params.id },
     });
 
     if (updated) {
@@ -102,7 +102,7 @@ exports.update = async (req, res) => {
 exports.delete = async (req, res) => {
   try {
     const deleted = await User.destroy({
-      where: { id: req.params.id }
+      where: { id: req.params.id },
     });
     if (deleted) {
       res.json({ message: 'Utilisateur supprimé' });
@@ -121,7 +121,7 @@ exports.findByStructure = async (req, res) => {
 
     const users = await User.findAll({
       where: { code_structure },
-      order: [['createdAt', 'DESC']] 
+      order: [['createdAt', 'DESC']],
     });
 
     res.json(users);

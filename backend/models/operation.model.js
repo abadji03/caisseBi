@@ -3,16 +3,24 @@ module.exports = (sequelize, DataTypes) => {
   const Operation = sequelize.define('Operation', {
     code_structure: { type: DataTypes.STRING, allowNull: false },
     type: {
-      type: DataTypes.ENUM('COMMANDE', 'VERSEMENT', 'FACTURE', 'TICKET_CAISSE', 'RETOUR', 'AVOIR', 'LIVRAISON'),
-      allowNull: false
+      type: DataTypes.ENUM(
+        'COMMANDE',
+        'VERSEMENT',
+        'FACTURE',
+        'TICKET_CAISSE',
+        'RETOUR',
+        'AVOIR',
+        'LIVRAISON'
+      ),
+      allowNull: false,
     },
     montantPaye: {
       type: DataTypes.DECIMAL(12, 2),
-      allowNull: false
+      allowNull: false,
     },
     moyenPaiement: {
       type: DataTypes.ENUM('ESPECES', 'MOBILE_MONEY', 'CARTE_BANCAIRE', 'VIREMENT', 'CHEQUE'),
-      allowNull: false
+      allowNull: false,
     },
     numeroBon: DataTypes.STRING,
     numeroFacture: DataTypes.STRING,
@@ -22,13 +30,13 @@ module.exports = (sequelize, DataTypes) => {
     numeroRetour: DataTypes.STRING,
     statut: {
       type: DataTypes.ENUM('PAYE', 'PARTIELLEMENT_PAYE', 'IMPAYE', 'ANNULE'),
-      allowNull: false
+      allowNull: false,
     },
     dateOperation: {
       type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW
+      defaultValue: DataTypes.NOW,
     },
-    commentaire: DataTypes.TEXT
+    commentaire: DataTypes.TEXT,
   });
 
   /* Operation.associate = models => {

@@ -1,4 +1,4 @@
-const db = require("../models");
+const db = require('../models');
 const Permission = db.permission;
 
 exports.create = async (req, res) => {
@@ -22,7 +22,7 @@ exports.findAll = async (req, res) => {
 exports.findOne = async (req, res) => {
   try {
     const data = await Permission.findByPk(req.params.id);
-    if (!data) return res.status(404).json({ message: "Permission non trouvée" });
+    if (!data) return res.status(404).json({ message: 'Permission non trouvée' });
     res.json(data);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -32,10 +32,10 @@ exports.findOne = async (req, res) => {
 exports.update = async (req, res) => {
   try {
     const [updated] = await Permission.update(req.body, {
-      where: { id: req.params.id }
+      where: { id: req.params.id },
     });
-    if (!updated) return res.status(404).json({ message: "Permission non trouvée" });
-    res.json({ message: "Permission mise à jour" });
+    if (!updated) return res.status(404).json({ message: 'Permission non trouvée' });
+    res.json({ message: 'Permission mise à jour' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -44,8 +44,8 @@ exports.update = async (req, res) => {
 exports.delete = async (req, res) => {
   try {
     const deleted = await Permission.destroy({ where: { id: req.params.id } });
-    if (!deleted) return res.status(404).json({ message: "Permission non trouvée" });
-    res.json({ message: "Permission supprimée" });
+    if (!deleted) return res.status(404).json({ message: 'Permission non trouvée' });
+    res.json({ message: 'Permission supprimée' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

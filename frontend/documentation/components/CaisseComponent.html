@@ -1,0 +1,2693 @@
+<!doctype html>
+<html class="no-js" lang="">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title>frontend documentation</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="icon" type="image/x-icon" href="../images/favicon.ico">
+	   <link rel="stylesheet" href="../styles/style.css">
+        <link rel="stylesheet" href="../styles/dark.css">
+    </head>
+    <body>
+          <script>
+               // Blocking script to avoid flickering dark mode
+               // Dark mode toggle button
+               var useDark = window.matchMedia('(prefers-color-scheme: dark)');
+               var darkModeState = useDark.matches;
+               var $darkModeToggleSwitchers = document.querySelectorAll('.dark-mode-switch input');
+               var $darkModeToggles = document.querySelectorAll('.dark-mode-switch');
+               var darkModeStateLocal = localStorage.getItem('compodoc_darkmode-state');
+
+               function checkToggle(check) {
+                    for (var i = 0; i < $darkModeToggleSwitchers.length; i++) {
+                         $darkModeToggleSwitchers[i].checked = check;
+                    }
+               }
+
+               function toggleDarkMode(state) {
+                    if (window.localStorage) {
+                         localStorage.setItem('compodoc_darkmode-state', state);
+                    }
+
+                    checkToggle(state);
+
+                    const hasClass = document.body.classList.contains('dark');
+
+                    if (state) {
+                         for (var i = 0; i < $darkModeToggles.length; i++) {
+                              $darkModeToggles[i].classList.add('dark');
+                         }
+                         if (!hasClass) {
+                              document.body.classList.add('dark');
+                         }
+                    } else {
+                         for (var i = 0; i < $darkModeToggles.length; i++) {
+                              $darkModeToggles[i].classList.remove('dark');
+                         }
+                         if (hasClass) {
+                              document.body.classList.remove('dark');
+                         }
+                    }
+               }
+
+               useDark.addEventListener('change', function (evt) {
+                    toggleDarkMode(evt.matches);
+               });
+               if (darkModeStateLocal) {
+                    darkModeState = darkModeStateLocal === 'true';
+               }
+               toggleDarkMode(darkModeState);
+          </script>
+
+        <div class="navbar navbar-default navbar-fixed-top d-md-none p-0">
+               <div class="d-flex">
+                    <a href="../" class="navbar-brand">frontend documentation</a>
+                    <button type="button" class="btn btn-default btn-menu ion-ios-menu" id="btn-menu"></button>
+               </div>
+        </div>
+
+        <div class="xs-menu menu" id="mobile-menu">
+                <div id="book-search-input" role="search"><input type="text" placeholder="Type to search"></div>            <compodoc-menu></compodoc-menu>
+        </div>
+
+        <div class="container-fluid main">
+           <div class="row main">
+               <div class="d-none d-md-block menu">
+                   <compodoc-menu mode="normal"></compodoc-menu>
+               </div>
+               <!-- START CONTENT -->
+               <div class="content component">
+                   <div class="content-data">
+
+
+
+
+<ol class="breadcrumb">
+  <li class="breadcrumb-item">Components</li>
+  <li class="breadcrumb-item"
+  >
+  CaisseComponent</li>
+</ol>
+
+<ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item">
+            <a href="#info" class="nav-link active"
+                role="tab" id="info-tab" data-bs-toggle="tab" data-link="info">Info</a>
+        </li>
+        <li class="nav-item">
+            <a href="#source" class="nav-link"
+                role="tab" id="source-tab" data-bs-toggle="tab" data-link="source">Source</a>
+        </li>
+        <li class="nav-item">
+            <a href="#templateData" class="nav-link"
+                role="tab" id="templateData-tab" data-bs-toggle="tab" data-link="template">Template</a>
+        </li>
+        <li class="nav-item">
+            <a href="#tree" class="nav-link"
+                role="tab" id="tree-tab" data-bs-toggle="tab" data-link="dom-tree">DOM Tree</a>
+        </li>
+</ul>
+
+<div class="tab-content">
+    <div class="tab-pane fade active in" id="info"><p class="comment">
+    <h3>File</h3>
+</p>
+<p class="comment">
+    <code>src/app/caisse/vente/caisse/caisse.component.ts</code>
+</p>
+
+
+
+
+    <p class="comment">
+        <h3>Implements</h3>
+    </p>
+    <p class="comment">
+                <code>OnInit</code>
+    </p>
+
+
+<section data-compodoc="block-metadata">
+    <h3>Metadata</h3>
+    <table class="table table-sm table-hover metadata">
+        <tbody>
+
+
+
+
+
+
+
+
+
+
+
+
+            <tr>
+                <td class="col-md-3">selector</td>
+                <td class="col-md-9"><code>app-caisse</code></td>
+            </tr>
+
+            <tr>
+                <td class="col-md-3">standalone</td>
+                <td class="col-md-9"><code>true</code></td>
+            </tr>
+
+            <tr>
+                <td class="col-md-3">imports</td>
+                <td class="col-md-9">
+                            <code>CommonModule</code>
+                            <code>ReactiveFormsModule</code>
+                            <code>FormsModule</code>
+                </td>
+            </tr>
+
+
+
+
+            <tr>
+                <td class="col-md-3">templateUrl</td>
+                <td class="col-md-9"><code>./caisse.component.html</code></td>
+            </tr>
+
+
+
+            <tr>
+                <td class="col-md-3">styleUrl</td>
+                <td class="col-md-9"><code>./caisse.component.css</code></td>
+            </tr>
+
+
+
+
+
+        </tbody>
+    </table>
+</section>
+
+    <section data-compodoc="block-index">
+    <h3 id="index">Index</h3>
+    <table class="table table-sm table-bordered index-table">
+        <tbody>
+                <tr>
+                    <td class="col-md-4">
+                        <h6><b>Properties</b></h6>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <ul class="index-list">
+                            <li>
+                                <a href="#clientForm" >clientForm</a>
+                            </li>
+                            <li>
+                                <a href="#clients" >clients</a>
+                            </li>
+                            <li>
+                                <a href="#currentDate" >currentDate</a>
+                            </li>
+                            <li>
+                                <a href="#currentTime" >currentTime</a>
+                            </li>
+                            <li>
+                                <a href="#dateJournal" >dateJournal</a>
+                            </li>
+                            <li>
+                                    <span class="modifier">Private</span>
+                                <a href="#fb" >fb</a>
+                            </li>
+                            <li>
+                                <a href="#filteredProduits" >filteredProduits</a>
+                            </li>
+                            <li>
+                                <a href="#panier" >panier</a>
+                            </li>
+                            <li>
+                                <a href="#panierDisabled" >panierDisabled</a>
+                            </li>
+                            <li>
+                                <a href="#panierForm" >panierForm</a>
+                            </li>
+                            <li>
+                                <a href="#paniers" >paniers</a>
+                            </li>
+                            <li>
+                                <a href="#produits" >produits</a>
+                            </li>
+                            <li>
+                                <a href="#searchInput" >searchInput</a>
+                            </li>
+                            <li>
+                                <a href="#showClientSection" >showClientSection</a>
+                            </li>
+                            <li>
+                                <a href="#showPanierSection" >showPanierSection</a>
+                            </li>
+                            <li>
+                                <a href="#tauxTVAList" >tauxTVAList</a>
+                            </li>
+                            <li>
+                                <a href="#totalAPayer" >totalAPayer</a>
+                            </li>
+                            <li>
+                                <a href="#totalCaisse" >totalCaisse</a>
+                            </li>
+                            <li>
+                                <a href="#totalPanier" >totalPanier</a>
+                            </li>
+                            <li>
+                                <a href="#tvaInclu" >tvaInclu</a>
+                            </li>
+                        </ul>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="col-md-4">
+                        <h6><b>Methods</b></h6>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <ul class="index-list">
+                            <li>
+                                <a href="#afficherDetails" >afficherDetails</a>
+                            </li>
+                            <li>
+                                <a href="#ajouterClient" >ajouterClient</a>
+                            </li>
+                            <li>
+                                <a href="#annulerPanier" >annulerPanier</a>
+                            </li>
+                            <li>
+                                <a href="#disablePanier" >disablePanier</a>
+                            </li>
+                            <li>
+                                <a href="#enablePanier" >enablePanier</a>
+                            </li>
+                            <li>
+                                <a href="#enregistrerBon" >enregistrerBon</a>
+                            </li>
+                            <li>
+                                <a href="#filterProduits" >filterProduits</a>
+                            </li>
+                            <li>
+                                <a href="#imprimerTicket" >imprimerTicket</a>
+                            </li>
+                            <li>
+                                <a href="#loadFakeData" >loadFakeData</a>
+                            </li>
+                            <li>
+                                <a href="#ngOnInit" >ngOnInit</a>
+                            </li>
+                            <li>
+                                <a href="#nouvelleVente" >nouvelleVente</a>
+                            </li>
+                            <li>
+                                <a href="#onSelectionClient" >onSelectionClient</a>
+                            </li>
+                            <li>
+                                <a href="#removeArticle" >removeArticle</a>
+                            </li>
+                            <li>
+                                <a href="#resetPanier" >resetPanier</a>
+                            </li>
+                            <li>
+                                <a href="#selectProduit" >selectProduit</a>
+                            </li>
+                            <li>
+                                <a href="#toggleTVA" >toggleTVA</a>
+                            </li>
+                            <li>
+                                <a href="#updateTotal" >updateTotal</a>
+                            </li>
+                            <li>
+                                <a href="#updateTVA" >updateTVA</a>
+                            </li>
+                        </ul>
+                    </td>
+                </tr>
+
+
+
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <h6><b>Accessors</b></h6>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="col-md-4">
+                            <ul class="index-list">
+                                <li>
+                                    <a href="#panierArray" >panierArray</a>
+                                </li>
+                                <li>
+                                    <a href="#calculateTotal" >calculateTotal</a>
+                                </li>
+                            </ul>
+                        </td>
+                    </tr>
+        </tbody>
+    </table>
+</section>
+
+    <section data-compodoc="block-constructor">
+    <h3 id="constructor">Constructor</h3>
+        <table class="table table-sm table-bordered">
+            <tbody>
+                <tr>
+                    <td class="col-md-4">
+<code>constructor()</code>
+                    </td>
+                </tr>
+                        <tr>
+                            <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="50" class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:50</a></div>
+                            </td>
+                        </tr>
+
+            </tbody>
+        </table>
+</section>
+
+
+
+
+
+    <section data-compodoc="block-methods">
+    
+    <h3 id="methods">
+        Methods
+    </h3>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="afficherDetails"></a>
+                    <span class="name">
+                        <span ><b>afficherDetails</b></span>
+                        <a href="#afficherDetails"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>afficherDetails(panier: <a href="../classes/Panier.html" target="_self">Panier</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="311"
+                                    class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:311</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>panier</td>
+                                            <td>
+                                                            <code><a href="../classes/Panier.html" target="_self" >Panier</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="ajouterClient"></a>
+                    <span class="name">
+                        <span ><b>ajouterClient</b></span>
+                        <a href="#ajouterClient"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>ajouterClient()</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="201"
+                                    class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:201</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+                        <div class="io-description"><p>Ajouter un nouveau client</p>
+</div>
+
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="annulerPanier"></a>
+                    <span class="name">
+                        <span ><b>annulerPanier</b></span>
+                        <a href="#annulerPanier"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>annulerPanier(panier: <a href="../classes/Panier.html" target="_self">Panier</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="315"
+                                    class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:315</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>panier</td>
+                                            <td>
+                                                            <code><a href="../classes/Panier.html" target="_self" >Panier</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="disablePanier"></a>
+                    <span class="name">
+                        <span ><b>disablePanier</b></span>
+                        <a href="#disablePanier"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>disablePanier()</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="261"
+                                    class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:261</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+                        <div class="io-description"><p>Désactiver le panier</p>
+</div>
+
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="enablePanier"></a>
+                    <span class="name">
+                        <span ><b>enablePanier</b></span>
+                        <a href="#enablePanier"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>enablePanier()</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="267"
+                                    class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:267</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+                        <div class="io-description"><p>Activer la modification du panier</p>
+</div>
+
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="enregistrerBon"></a>
+                    <span class="name">
+                        <span ><b>enregistrerBon</b></span>
+                        <a href="#enregistrerBon"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>enregistrerBon()</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="282"
+                                    class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:282</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+                        <div class="io-description"><p>Enregistrer une vente</p>
+</div>
+
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="filterProduits"></a>
+                    <span class="name">
+                        <span ><b>filterProduits</b></span>
+                        <a href="#filterProduits"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>filterProduits()</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="224"
+                                    class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:224</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+                        <div class="io-description"><p>Filtrer les produits</p>
+</div>
+
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="imprimerTicket"></a>
+                    <span class="name">
+                        <span ><b>imprimerTicket</b></span>
+                        <a href="#imprimerTicket"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>imprimerTicket(panier: <a href="../classes/Panier.html" target="_self">Panier</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="321"
+                                    class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:321</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>panier</td>
+                                            <td>
+                                                            <code><a href="../classes/Panier.html" target="_self" >Panier</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="loadFakeData"></a>
+                    <span class="name">
+                        <span ><b>loadFakeData</b></span>
+                        <a href="#loadFakeData"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>loadFakeData()</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="95"
+                                    class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:95</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+                        <div class="io-description"><p>Charger des données fictives</p>
+</div>
+
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="ngOnInit"></a>
+                    <span class="name">
+                        <span ><b>ngOnInit</b></span>
+                        <a href="#ngOnInit"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>ngOnInit()</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="71"
+                                    class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:71</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="nouvelleVente"></a>
+                    <span class="name">
+                        <span ><b>nouvelleVente</b></span>
+                        <a href="#nouvelleVente"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>nouvelleVente()</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="219"
+                                    class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:219</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+                        <div class="io-description"><p>Activer la section du panier</p>
+</div>
+
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="onSelectionClient"></a>
+                    <span class="name">
+                        <span ><b>onSelectionClient</b></span>
+                        <a href="#onSelectionClient"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>onSelectionClient(event: <a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank">any</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="192"
+                                    class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:192</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+                        <div class="io-description"><p>Sélectionner un client</p>
+</div>
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>event</td>
+                                            <td>
+                                                            <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >any</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="removeArticle"></a>
+                    <span class="name">
+                        <span ><b>removeArticle</b></span>
+                        <a href="#removeArticle"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>removeArticle(index: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank">number</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="291"
+                                    class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:291</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+                        <div class="io-description"><p>Supprimer un article du panier</p>
+</div>
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>index</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="resetPanier"></a>
+                    <span class="name">
+                        <span ><b>resetPanier</b></span>
+                        <a href="#resetPanier"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>resetPanier()</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="275"
+                                    class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:275</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+                        <div class="io-description"><p>Réinitialiser le panier</p>
+</div>
+
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="selectProduit"></a>
+                    <span class="name">
+                        <span ><b>selectProduit</b></span>
+                        <a href="#selectProduit"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>selectProduit(produit: <a href="../classes/Produits.html" target="_self">Produits</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="231"
+                                    class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:231</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+                        <div class="io-description"><p>Sélectionner un produit</p>
+</div>
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>produit</td>
+                                            <td>
+                                                            <code><a href="../classes/Produits.html" target="_self" >Produits</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="toggleTVA"></a>
+                    <span class="name">
+                        <span ><b>toggleTVA</b></span>
+                        <a href="#toggleTVA"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>toggleTVA(event: <a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank">any</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="338"
+                                    class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:338</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>event</td>
+                                            <td>
+                                                            <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >any</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="updateTotal"></a>
+                    <span class="name">
+                        <span ><b>updateTotal</b></span>
+                        <a href="#updateTotal"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>updateTotal()</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="83"
+                                    class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:83</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="updateTVA"></a>
+                    <span class="name">
+                        <span ><b>updateTVA</b></span>
+                        <a href="#updateTVA"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>updateTVA()</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="349"
+                                    class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:349</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+    <section data-compodoc="block-properties">
+    
+    <h3 id="inputs">
+        Properties
+    </h3>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="clientForm"></a>
+                    <span class="name">
+                        <span ><b>clientForm</b></span>
+                        <a href="#clientForm"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>FormGroup</code>
+
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="34" class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:34</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="clients"></a>
+                    <span class="name">
+                        <span ><b>clients</b></span>
+                        <a href="#clients"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="../classes/Client.html" target="_self" >Client[]</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[]</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="33" class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:33</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="currentDate"></a>
+                    <span class="name">
+                        <span ><b>currentDate</b></span>
+                        <a href="#currentDate"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>&#x27; &#x27;</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="37" class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:37</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="currentTime"></a>
+                    <span class="name">
+                        <span ><b>currentTime</b></span>
+                        <a href="#currentTime"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>&#x27;&#x27;</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="38" class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:38</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="dateJournal"></a>
+                    <span class="name">
+                        <span ><b>dateJournal</b></span>
+                        <a href="#dateJournal"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date" target="_blank" >Date</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>new Date()</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="23" class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:23</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="fb"></a>
+                    <span class="name">
+                            <span class="modifier">Private</span>
+                        <span ><b>fb</b></span>
+                        <a href="#fb"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>inject(FormBuilder)</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="50" class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:50</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="filteredProduits"></a>
+                    <span class="name">
+                        <span ><b>filteredProduits</b></span>
+                        <a href="#filteredProduits"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>Produits[]</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[]</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="44" class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:44</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="panier"></a>
+                    <span class="name">
+                        <span ><b>panier</b></span>
+                        <a href="#panier"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="../classes/Panier.html" target="_self" >Panier</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>new Panier()</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="43" class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:43</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="panierDisabled"></a>
+                    <span class="name">
+                        <span ><b>panierDisabled</b></span>
+                        <a href="#panierDisabled"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>false</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="47" class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:47</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="panierForm"></a>
+                    <span class="name">
+                        <span ><b>panierForm</b></span>
+                        <a href="#panierForm"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>FormGroup</code>
+
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="42" class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:42</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="paniers"></a>
+                    <span class="name">
+                        <span ><b>paniers</b></span>
+                        <a href="#paniers"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="../classes/Panier.html" target="_self" >Panier[]</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[]</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="48" class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:48</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="produits"></a>
+                    <span class="name">
+                        <span ><b>produits</b></span>
+                        <a href="#produits"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>Produits[]</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[]</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="45" class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:45</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="searchInput"></a>
+                    <span class="name">
+                        <span ><b>searchInput</b></span>
+                        <a href="#searchInput"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>&#x27;&#x27;</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="46" class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:46</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="showClientSection"></a>
+                    <span class="name">
+                        <span ><b>showClientSection</b></span>
+                        <a href="#showClientSection"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>false</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="32" class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:32</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="showPanierSection"></a>
+                    <span class="name">
+                        <span ><b>showPanierSection</b></span>
+                        <a href="#showPanierSection"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>false</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="41" class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:41</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="tauxTVAList"></a>
+                    <span class="name">
+                        <span ><b>tauxTVAList</b></span>
+                        <a href="#tauxTVAList"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>number[]</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[0, 5, 10, 18]</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="29" class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:29</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="totalAPayer"></a>
+                    <span class="name">
+                        <span ><b>totalAPayer</b></span>
+                        <a href="#totalAPayer"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>0</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="26" class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:26</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="totalCaisse"></a>
+                    <span class="name">
+                        <span ><b>totalCaisse</b></span>
+                        <a href="#totalCaisse"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>0</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="24" class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:24</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="totalPanier"></a>
+                    <span class="name">
+                        <span ><b>totalPanier</b></span>
+                        <a href="#totalPanier"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>0</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="25" class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:25</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="tvaInclu"></a>
+                    <span class="name">
+                        <span ><b>tvaInclu</b></span>
+                        <a href="#tvaInclu"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>false</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="35" class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:35</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+</section>
+
+    <section data-compodoc="block-accessors">
+    <h3 id="accessors">
+        Accessors
+    </h3>
+        <table class="table table-sm table-bordered">
+            <tbody>
+                <tr>
+                    <td class="col-md-4">
+                        <a name="panierArray"></a>
+                        <span class="name"><b>panierArray</b><a href="#panierArray"><span class="icon ion-ios-link"></span></a></span>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="col-md-4">
+                        <span class="accessor"><b>get</b><code>panierArray()</code></span>
+                    </td>
+                </tr>
+                            <tr>
+                                <td class="col-md-4">
+                                    <div class="io-line">Defined in <a href="" data-line="271" class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:271</a></div>
+                                </td>
+                            </tr>
+
+            </tbody>
+        </table>
+        <table class="table table-sm table-bordered">
+            <tbody>
+                <tr>
+                    <td class="col-md-4">
+                        <a name="calculateTotal"></a>
+                        <span class="name"><b>calculateTotal</b><a href="#calculateTotal"><span class="icon ion-ios-link"></span></a></span>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="col-md-4">
+                        <span class="accessor"><b>get</b><code>calculateTotal()</code></span>
+                    </td>
+                </tr>
+                            <tr>
+                                <td class="col-md-4">
+                                    <div class="io-line">Defined in <a href="" data-line="297" class="link-to-prism">src/app/caisse/vente/caisse/caisse.component.ts:297</a></div>
+                                </td>
+                            </tr>
+
+            </tbody>
+        </table>
+</section>
+</div>
+
+
+    <div class="tab-pane fade  tab-source-code" id="source">
+        <pre class="line-numbers compodoc-sourcecode"><code class="language-typescript">import { Component, inject, OnInit } from &#x27;@angular/core&#x27;;
+import { CommonModule } from &#x27;@angular/common&#x27;;
+import { Client } from &#x27;../../../modeles/clients.model&#x27;;
+import { Produits } from &#x27;../../../modeles/produit.modele&#x27;;
+import { ArticlePanier, Panier } from &#x27;../../../modeles/panier.model&#x27;;
+import {
+  FormArray,
+  FormBuilder,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from &#x27;@angular/forms&#x27;;
+
+@Component({
+  selector: &#x27;app-caisse&#x27;,
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, FormsModule],
+  templateUrl: &#x27;./caisse.component.html&#x27;,
+  styleUrl: &#x27;./caisse.component.css&#x27;,
+})
+export class CaisseComponent implements OnInit {
+  dateJournal: Date &#x3D; new Date();
+  totalCaisse &#x3D; 0;
+  totalPanier &#x3D; 0;
+  totalAPayer &#x3D; 0;
+
+  // Liste des taux de TVA disponibles dans l&#x27;application
+  tauxTVAList: number[] &#x3D; [0, 5, 10, 18]; // Exemple : 0% (pas de TVA), 5%, 10%, 18%
+
+  // Gestion des clients
+  showClientSection &#x3D; false;
+  clients: Client[] &#x3D; [];
+  clientForm: FormGroup;
+  tvaInclu &#x3D; false;
+
+  currentDate &#x3D; &#x27; &#x27;;
+  currentTime &#x3D; &#x27;&#x27;;
+
+  // Gestion du panier
+  showPanierSection &#x3D; false;
+  panierForm: FormGroup;
+  panier: Panier &#x3D; new Panier();
+  filteredProduits: Produits[] &#x3D; [];
+  produits: Produits[] &#x3D; [];
+  searchInput &#x3D; &#x27;&#x27;;
+  panierDisabled &#x3D; false;
+  paniers: Panier[] &#x3D; [];
+
+  private fb &#x3D; inject(FormBuilder);
+  constructor() {
+    // Initialisation du formulaire client
+    this.clientForm &#x3D; this.fb.group({
+      nomComplet: [&#x27;&#x27;, Validators.required],
+      telephone: [&#x27;&#x27;],
+      email: [&#x27;&#x27;],
+      adresse: [&#x27;&#x27;],
+    });
+
+    // Initialisation du formulaire panier
+    this.panierForm &#x3D; this.fb.group({
+      remise: [],
+      //avance: [],
+      inclureTVA: [false], // Par défaut, la TVA est incluse
+      tauxTVA: [18], // TVA par défaut à 18%
+      typePaiement: [&#x27;&#x27;, Validators.required],
+      panier: this.fb.array([]),
+    });
+  }
+
+  ngOnInit() {
+    this.loadFakeData();
+    // Date et heure actuelles
+    const currentDateObj &#x3D; new Date();
+    this.currentDate &#x3D; currentDateObj.toLocaleDateString();
+    this.currentTime &#x3D; currentDateObj.toLocaleTimeString();
+
+    this.panierForm.valueChanges.subscribe(() &#x3D;&gt; {
+      this.updateTotal();
+    });
+  }
+
+  updateTotal(): void {
+    let total &#x3D; 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    this.panierArray.controls.forEach((group: any) &#x3D;&gt; {
+      total +&#x3D; group.value.quantite * group.value.prixUnitaire;
+    });
+    this.totalPanier &#x3D; total;
+    this.totalAPayer &#x3D; total - this.panierForm.value.remise;
+    /*this.panierForm.get(&#x27;total&#x27;)?.setValue(total); */
+  }
+
+  /** Charger des données fictives */
+  loadFakeData() {
+    this.clients &#x3D; [
+      {
+        id: 1,
+        nomComplet: &#x27;Aliou Ndiaye&#x27;,
+        email: &#x27;aliou@mail.com&#x27;,
+        telephone: &#x27;771234567&#x27;,
+        adresse: &#x27;Dakar&#x27;,
+        solde: 0,
+        estEmploye: false,
+        paniers: [],
+        bons: [],
+        paiements: [],
+        operations: [],
+      },
+      {
+        id: 2,
+        nomComplet: &#x27;Fatou Diop&#x27;,
+        email: &#x27;fatou@mail.com&#x27;,
+        telephone: &#x27;778765432&#x27;,
+        adresse: &#x27;Thiès&#x27;,
+        solde: 5000,
+        estEmploye: false,
+        paniers: [],
+        bons: [],
+        paiements: [],
+        operations: [],
+      },
+    ];
+
+    this.produits &#x3D; [
+      {
+        id: 1,
+        designation: &#x27;Lait Caillé&#x27;,
+        categorieId: 1,
+        fournisseurId: 1,
+        unite: &#x27;L&#x27;,
+        prixVenteUnitaire: 500,
+        prixTotalVente: 500,
+        description: &#x27;Boisson lactée&#x27;,
+        codeBarre: &#x27;123456&#x27;,
+      },
+      {
+        id: 2,
+        designation: &#x27;Thiakri&#x27;,
+        categorieId: 2,
+        fournisseurId: 2,
+        unite: &#x27;Kg&#x27;,
+        prixVenteUnitaire: 800,
+        prixTotalVente: 800,
+        description: &#x27;Couscous sucré&#x27;,
+        codeBarre: &#x27;7891011&#x27;,
+      },
+    ];
+
+    // Transactions journalières
+    this.paniers &#x3D; [
+      new Panier({
+        id: 1,
+        clientId: 101,
+        bonId: 201,
+        articles: [
+          new ArticlePanier({
+            id: this.produits[0].id,
+            produit: this.produits[0],
+            quantite: 10,
+            prixVenteUnitaire: this.produits[0].prixVenteUnitaire,
+            prixAchatUnitaire: this.produits[0].prixAchatUnitaire,
+          }),
+          new ArticlePanier({
+            id: this.produits[1].id,
+            produit: this.produits[1],
+            quantite: 10,
+            prixVenteUnitaire: this.produits[1].prixVenteUnitaire,
+            prixAchatUnitaire: this.produits[1].prixAchatUnitaire,
+          }),
+        ],
+      }),
+      new Panier({
+        id: 2,
+        clientId: 102,
+        bonId: 202,
+        articles: [
+          new ArticlePanier({
+            id: this.produits[0].id,
+            produit: this.produits[0],
+            quantite: 20,
+            prixVenteUnitaire: this.produits[0].prixVenteUnitaire,
+            prixAchatUnitaire: this.produits[0].prixAchatUnitaire,
+          }),
+        ],
+      }),
+    ];
+  }
+
+  /** Sélectionner un client */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onSelectionClient(event: any) {
+    const nom &#x3D; event.target.value;
+    const client &#x3D; this.clients.find((c) &#x3D;&gt; c.nomComplet &#x3D;&#x3D;&#x3D; nom);
+    if (client) {
+      this.clientForm.patchValue(client);
+    }
+  }
+
+  /** Ajouter un nouveau client */
+  ajouterClient() {
+    if (this.clientForm.valid) {
+      const nouveauClient: Client &#x3D; {
+        ...this.clientForm.value,
+        id: this.clients.length + 1,
+        paniers: [],
+        bons: [],
+        paiements: [],
+        operations: [],
+      };
+      this.clients.push(nouveauClient);
+      alert(&#x27;Client ajouté avec succès !&#x27;);
+      //this.clientForm.reset();
+      this.showPanierSection &#x3D; !this.showPanierSection;
+    }
+  }
+
+  /** Activer la section du panier */
+  nouvelleVente() {
+    this.showClientSection &#x3D; !this.showClientSection;
+  }
+
+  /** Filtrer les produits */
+  filterProduits() {
+    this.filteredProduits &#x3D; this.produits.filter((prod) &#x3D;&gt;
+      prod.designation?.toLowerCase().includes(this.searchInput.toLowerCase()),
+    );
+  }
+
+  /** Sélectionner un produit */
+  selectProduit(produit: Produits) {
+    const panierArray &#x3D; this.panierForm.get(&#x27;panier&#x27;) as FormArray;
+
+    const article &#x3D; this.fb.group({
+      produit: [produit.designation, Validators.required],
+      uniteStock: [produit.unite, Validators.required],
+      quantite: [1, Validators.required],
+      prixUnitaire: [produit.prixVenteUnitaire, Validators.required],
+    });
+
+    panierArray.push(article);
+
+    // ✅ Création d’un ArticlePanier valide
+    const articlePanier &#x3D; new ArticlePanier({
+      id: produit.id,
+      produit: produit,
+      quantite: 1,
+      prixVenteUnitaire: produit.prixVenteUnitaire ?? 0,
+      prixAchatUnitaire: produit.prixAchatUnitaire ?? 0,
+    });
+
+    this.panier.articles.push(articlePanier);
+    this.panier.calculerTotals();
+
+    this.searchInput &#x3D; &#x27;&#x27;;
+    this.filteredProduits &#x3D; [];
+    this.updateTotal(); // si cette méthode existe toujours pour mettre à jour le total
+  }
+
+  /** Désactiver le panier */
+  disablePanier() {
+    this.panierDisabled &#x3D; true;
+    this.panierForm.disable();
+  }
+
+  /** Activer la modification du panier */
+  enablePanier() {
+    this.panierDisabled &#x3D; false;
+    this.panierForm.enable();
+  }
+  get panierArray(): FormArray {
+    return this.panierForm.get(&#x27;panier&#x27;) as FormArray;
+  }
+  /** Réinitialiser le panier */
+  resetPanier() {
+    this.panier &#x3D; new Panier();
+    this.panierForm.reset();
+    (this.panierForm.get(&#x27;panier&#x27;) as FormArray).clear();
+  }
+
+  /** Enregistrer une vente */
+  enregistrerBon() {
+    this.panier.statut &#x3D; &#x27;VALIDE&#x27;;
+    this.paniers.push(this.panier);
+    this.totalCaisse +&#x3D; this.panier.totalTTC;
+    this.resetPanier();
+    alert(&#x27;Vente enregistrée avec succès !&#x27;);
+  }
+
+  /** Supprimer un article du panier */
+  removeArticle(index: number) {
+    (this.panierForm.get(&#x27;panier&#x27;) as FormArray).removeAt(index);
+    this.panier.articles.splice(index, 1);
+    this.panier.calculerTotals();
+  }
+
+  get calculateTotal() {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const totalHT &#x3D; this.panierForm.value.panier.reduce((total: number, item: any) &#x3D;&gt; {
+      return total + item.quantite * item.prixUnitaire;
+    }, 0);
+
+    const remise &#x3D; this.panierForm.value.remise || 0;
+    const totalApresRemise &#x3D; totalHT - remise;
+    const tva &#x3D; totalApresRemise * 0.18; // 18% de TVA
+    const totalTTC &#x3D; totalApresRemise + tva;
+
+    return { totalHT, remise, totalApresRemise, tva, totalTTC };
+  }
+
+  afficherDetails(panier: Panier) {
+    panier.detailsVisible &#x3D; !panier.detailsVisible;
+  }
+
+  annulerPanier(panier: Panier) {
+    if (confirm(&#x27;Voulez-vous vraiment annuler ce panier ?&#x27;)) {
+      panier.annuler();
+    }
+  }
+
+  imprimerTicket(panier: Panier) {
+    let ticket &#x3D; &#x60;🔹 **Ticket de Caisse** 🔹\n&#x60;;
+    ticket +&#x3D; &#x60;🛒 Vente #${panier.id}\n&#x60;;
+    ticket +&#x3D; &#x60;📅 Date: ${panier.dateCreation.toLocaleDateString()}\n&#x60;;
+    ticket +&#x3D; &#x60;------------------------------\n&#x60;;
+    panier.articles.forEach((article) &#x3D;&gt; {
+      ticket +&#x3D; &#x60;${article.produit.designation} x${0} - ${article.quantite * article.prixVenteUnitaire} F CFA\n&#x60;;
+    });
+    ticket +&#x3D; &#x60;------------------------------\n&#x60;;
+    ticket +&#x3D; &#x60;💰 Total TTC: ${panier.totalTTC} F CFA\n&#x60;;
+
+    console.log(ticket);
+    alert(&#x27;Impression du ticket en cours... (voir console)&#x27;);
+  }
+
+  // Méthode pour gérer l&#x27;activation/désactivation de la TVA
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  toggleTVA(event: any): void {
+    const checked &#x3D; event.target.checked;
+    this.tvaInclu &#x3D; checked;
+    /* if (checked) {
+    this.panier.totalTTC &#x3D; this.panier.totalHT * 1.18; // Application de la TVA (18%)
+  } else {
+    this.panier.totalTTC &#x3D; this.panier.totalHT; // Pas de TVA
+  } */
+  }
+
+  // Méthode pour mettre à jour le total en fonction de la TVA sélectionnée
+  updateTVA(): void {
+    const tauxTVA &#x3D; this.panierForm.get(&#x27;tauxTVA&#x27;)?.value;
+    this.panier.totalTTC &#x3D; this.panier.totalHT * (1 + tauxTVA / 100);
+  }
+}
+</code></pre>
+    </div>
+
+    <div class="tab-pane fade " id="templateData">
+        <pre class="line-numbers"><code class="language-html">&lt;div class&#x3D;&quot;container-fluid&quot;&gt;
+  &lt;!-- BANNIÈRE DU JOURNAL --&gt;
+  &lt;div class&#x3D;&quot;alert alert-light d-flex justify-content-between align-items-center&quot;&gt;
+    &lt;h1&gt;Journal du {{ dateJournal | date: &#x27;dd/MM/yyyy&#x27; }}&lt;/h1&gt;
+    &lt;h3&gt;
+      Total de la caisse :&lt;b&gt;{{ totalCaisse }} F CFA &lt;/b&gt;
+    &lt;/h3&gt;
+    &lt;button class&#x3D;&quot;btn btn-success&quot; (click)&#x3D;&quot;nouvelleVente()&quot;&gt;Nouvelle Vente&lt;/button&gt;
+  &lt;/div&gt;
+
+  &lt;!-- Sélection ou ajout d&#x27;un client (caché par défaut) --&gt;
+  &lt;div *ngIf&#x3D;&quot;showClientSection&quot; class&#x3D;&quot;card mb-3&quot;&gt;
+    &lt;div class&#x3D;&quot;card-header&quot;&gt;Informations sur le client&lt;/div&gt;
+    &lt;div class&#x3D;&quot;card-body&quot;&gt;
+      &lt;div class&#x3D;&quot;row&quot;&gt;
+        &lt;!-- Section Clients existants --&gt;
+        &lt;div class&#x3D;&quot;col-md-3&quot;&gt;
+          &lt;h5&gt;Clients existants&lt;/h5&gt;
+          &lt;input
+            list&#x3D;&quot;clientList&quot;
+            class&#x3D;&quot;form-control mb-2&quot;
+            placeholder&#x3D;&quot;Rechercher un client...&quot;
+            (input)&#x3D;&quot;onSelectionClient($event)&quot;
+          /&gt;
+          &lt;datalist id&#x3D;&quot;clientList&quot;&gt;
+            &lt;option *ngFor&#x3D;&quot;let client of clients&quot; [value]&#x3D;&quot;client.nomComplet&quot;&gt;&lt;/option&gt;
+          &lt;/datalist&gt;
+        &lt;/div&gt;
+
+        &lt;!-- Section Nouveau client --&gt;
+        &lt;div class&#x3D;&quot;col-md-9&quot;&gt;
+          &lt;form [formGroup]&#x3D;&quot;clientForm&quot;&gt;
+            &lt;h5&gt;Nouveau client&lt;/h5&gt;
+            &lt;div class&#x3D;&quot;row&quot;&gt;
+              &lt;div class&#x3D;&quot;col-md-3&quot;&gt;
+                &lt;input
+                  formControlName&#x3D;&quot;nomComplet&quot;
+                  class&#x3D;&quot;form-control mb-2&quot;
+                  placeholder&#x3D;&quot;Nom complet&quot;
+                /&gt;
+              &lt;/div&gt;
+              &lt;div class&#x3D;&quot;col-md-2&quot;&gt;
+                &lt;input
+                  formControlName&#x3D;&quot;telephone&quot;
+                  class&#x3D;&quot;form-control mb-2&quot;
+                  placeholder&#x3D;&quot;Téléphone&quot;
+                /&gt;
+              &lt;/div&gt;
+              &lt;div class&#x3D;&quot;col-md-3&quot;&gt;
+                &lt;input formControlName&#x3D;&quot;email&quot; class&#x3D;&quot;form-control mb-2&quot; placeholder&#x3D;&quot;Email&quot; /&gt;
+              &lt;/div&gt;
+              &lt;div class&#x3D;&quot;col-md-3&quot;&gt;
+                &lt;input formControlName&#x3D;&quot;adresse&quot; class&#x3D;&quot;form-control mb-2&quot; placeholder&#x3D;&quot;Adresse&quot; /&gt;
+              &lt;/div&gt;
+              &lt;div class&#x3D;&quot;col-md-1&quot;&gt;
+                &lt;button type&#x3D;&quot;button&quot; class&#x3D;&quot;btn btn-success&quot; (click)&#x3D;&quot;ajouterClient()&quot;&gt;
+                  &lt;i class&#x3D;&quot;bi bi-check&quot;&gt;&lt;/i&gt;
+                &lt;/button&gt;
+              &lt;/div&gt;
+            &lt;/div&gt;
+          &lt;/form&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;!-- Ajout des produits au panier (caché par défaut) --&gt;
+  &lt;div *ngIf&#x3D;&quot;showPanierSection&quot; class&#x3D;&quot;card mb-3&quot;&gt;
+    &lt;div class&#x3D;&quot;card-header&quot;&gt;Ajout des Produits&lt;/div&gt;
+    &lt;div class&#x3D;&quot;card-body&quot;&gt;
+      &lt;div class&#x3D;&quot;mt-3 d-flex justify-content-center&quot;&gt;
+        &lt;h2&gt;🛒 Panier&lt;/h2&gt;
+      &lt;/div&gt;
+
+      &lt;div
+        class&#x3D;&quot;bg-secondary d-flex justify-content-between align-items-center mt-1 p-2 text-white&quot;
+      &gt;
+        &lt;span&gt;📌 Panier en cours...&lt;/span&gt;
+        &lt;span&gt;📅 Heure: {{ currentTime }}&lt;/span&gt;
+        &lt;span
+          &gt;💰 Total panier : &lt;strong&gt;{{ totalPanier }} F CFA&lt;/strong&gt;&lt;/span
+        &gt;
+        &lt;span
+          &gt;💰 Total à payer : &lt;strong&gt;{{ totalAPayer }} F CFA&lt;/strong&gt;&lt;/span
+        &gt;
+      &lt;/div&gt;
+
+      &lt;form [formGroup]&#x3D;&quot;panierForm&quot; (ngSubmit)&#x3D;&quot;enregistrerBon()&quot;&gt;
+        &lt;div class&#x3D;&quot;row mt-2&quot;&gt;
+          &lt;div class&#x3D;&quot;col-md-3 searchChamp&quot;&gt;
+            &lt;input
+              type&#x3D;&quot;text&quot;
+              class&#x3D;&quot;form-control&quot;
+              [(ngModel)]&#x3D;&quot;searchInput&quot;
+              placeholder&#x3D;&quot;Rechercher un produit...&quot;
+              (input)&#x3D;&quot;filterProduits()&quot;
+              [ngModelOptions]&#x3D;&quot;{ standalone: true }&quot;
+            /&gt;
+            &lt;ul
+              *ngIf&#x3D;&quot;filteredProduits.length &gt; 0 &amp;&amp; searchInput&quot;
+              class&#x3D;&quot;list-group position-absolute&quot;
+              style&#x3D;&quot;width: 230px&quot;
+            &gt;
+              &lt;li *ngFor&#x3D;&quot;let prod of filteredProduits&quot; class&#x3D;&quot;list-group-item bg-info&quot;&gt;
+                &lt;button
+                  type&#x3D;&quot;button&quot;
+                  class&#x3D;&quot;list-group-item-action w-100 text-start bg-transparent border-0&quot;
+                  (click)&#x3D;&quot;selectProduit(prod)&quot;
+                &gt;
+                  {{ prod.designation }}
+                &lt;/button&gt;
+              &lt;/li&gt;
+            &lt;/ul&gt;
+          &lt;/div&gt;
+
+          &lt;div class&#x3D;&quot;col-md-2&quot;&gt;
+            &lt;input
+              type&#x3D;&quot;number&quot;
+              class&#x3D;&quot;form-control&quot;
+              formControlName&#x3D;&quot;remise&quot;
+              placeholder&#x3D;&quot;Remise&quot;
+            /&gt;
+          &lt;/div&gt;
+          &lt;!-- &lt;div class&#x3D;&quot;col-md-2&quot;&gt;
+            &lt;input type&#x3D;&quot;number&quot; class&#x3D;&quot;form-control&quot; formControlName&#x3D;&quot;avance&quot; placeholder&#x3D;&quot;Avancement&quot;&gt;
+          &lt;/div&gt; --&gt;
+          &lt;div class&#x3D;&quot;col-md-2 d-flex align-items-center&quot;&gt;
+            &lt;input
+              type&#x3D;&quot;checkbox&quot;
+              class&#x3D;&quot;form-check-input me-2&quot;
+              formControlName&#x3D;&quot;inclureTVA&quot;
+              (change)&#x3D;&quot;toggleTVA($event)&quot;
+            /&gt;
+            &lt;label for&#x3D;&quot;tauxTVA&quot; class&#x3D;&quot;form-check-label&quot;&gt;Inclure TVA&lt;/label&gt;
+          &lt;/div&gt;
+          &lt;div *ngIf&#x3D;&quot;tvaInclu&quot; class&#x3D;&quot;col-md-2&quot;&gt;
+            &lt;select class&#x3D;&quot;form-select&quot; formControlName&#x3D;&quot;tauxTVA&quot; (change)&#x3D;&quot;updateTVA()&quot;&gt;
+              &lt;option *ngFor&#x3D;&quot;let taux of tauxTVAList&quot; [value]&#x3D;&quot;taux&quot;&gt;{{ taux }}%&lt;/option&gt;
+            &lt;/select&gt;
+          &lt;/div&gt;
+          &lt;div class&#x3D;&quot;col-md-2&quot;&gt;
+            &lt;select class&#x3D;&quot;form-select&quot; formControlName&#x3D;&quot;typePaiement&quot;&gt;
+              &lt;option value&#x3D;&quot;&quot; disabled selected&gt;Mode de paiement&lt;/option&gt;
+              &lt;option value&#x3D;&quot;caisse&quot;&gt;Caisse&lt;/option&gt;
+              &lt;option value&#x3D;&quot;mobile money&quot;&gt;Mobile Money&lt;/option&gt;
+              &lt;option value&#x3D;&quot;banque&quot;&gt;Banque&lt;/option&gt;
+              &lt;option value&#x3D;&quot;bon&quot;&gt;Bon&lt;/option&gt;
+            &lt;/select&gt;
+          &lt;/div&gt;
+
+          &lt;!-- &lt;div class&#x3D;&quot;col-md-2&quot;&gt;
+            &lt;button *ngIf&#x3D;&quot;!panierDisabled&quot; type&#x3D;&quot;button&quot; class&#x3D;&quot;btn btn-success me-2&quot; (click)&#x3D;&quot;disablePanier()&quot;&gt;
+              &lt;i class&#x3D;&quot;bi bi-check&quot;&gt;&lt;/i&gt;
+            &lt;/button&gt;
+            &lt;button *ngIf&#x3D;&quot;!panierDisabled&quot; type&#x3D;&quot;button&quot; class&#x3D;&quot;btn btn-danger me-2&quot; (click)&#x3D;&quot;resetPanier()&quot;&gt;
+              &lt;i class&#x3D;&quot;bi bi-trash&quot;&gt;&lt;/i&gt;
+            &lt;/button&gt;
+            &lt;button *ngIf&#x3D;&quot;panierDisabled&quot; type&#x3D;&quot;button&quot; class&#x3D;&quot;btn btn-warning&quot; (click)&#x3D;&quot;enablePanier()&quot;&gt;
+              &lt;i class&#x3D;&quot;bi bi-pencil&quot;&gt;&lt;/i&gt;
+            &lt;/button&gt;
+          &lt;/div&gt; --&gt;
+        &lt;/div&gt;
+
+        &lt;!-- Tableau du panier --&gt;
+        &lt;table class&#x3D;&quot;table mt-2&quot;&gt;
+          &lt;thead&gt;
+            &lt;tr&gt;
+              &lt;th&gt;Produit&lt;/th&gt;
+              &lt;th&gt;Unité Stock&lt;/th&gt;
+              &lt;th&gt;Quantité&lt;/th&gt;
+              &lt;th&gt;Prix Unitaire&lt;/th&gt;
+              &lt;th&gt;Actions&lt;/th&gt;
+            &lt;/tr&gt;
+          &lt;/thead&gt;
+          &lt;tbody formArrayName&#x3D;&quot;panier&quot;&gt;
+            &lt;tr *ngIf&#x3D;&quot;panierArray.length &#x3D;&#x3D;&#x3D; 0&quot;&gt;
+              &lt;td colspan&#x3D;&quot;5&quot; class&#x3D;&quot;text-center text-muted&quot;&gt;🛒 Panier vide&lt;/td&gt;
+            &lt;/tr&gt;
+            &lt;tr *ngFor&#x3D;&quot;let article of panierArray.controls; let i &#x3D; index&quot; [formGroupName]&#x3D;&quot;i&quot;&gt;
+              &lt;td&gt;
+                &lt;input type&#x3D;&quot;text&quot; class&#x3D;&quot;form-control&quot; formControlName&#x3D;&quot;produit&quot; readonly /&gt;
+              &lt;/td&gt;
+              &lt;td&gt;
+                &lt;input type&#x3D;&quot;text&quot; class&#x3D;&quot;form-control&quot; formControlName&#x3D;&quot;uniteStock&quot; readonly /&gt;
+              &lt;/td&gt;
+              &lt;td&gt;
+                &lt;input type&#x3D;&quot;number&quot; class&#x3D;&quot;form-control&quot; formControlName&#x3D;&quot;quantite&quot; /&gt;
+              &lt;/td&gt;
+              &lt;td&gt;
+                &lt;input type&#x3D;&quot;number&quot; class&#x3D;&quot;form-control&quot; formControlName&#x3D;&quot;prixUnitaire&quot; /&gt;
+              &lt;/td&gt;
+              &lt;td&gt;
+                &lt;button type&#x3D;&quot;button&quot; class&#x3D;&quot;btn btn-danger&quot; (click)&#x3D;&quot;removeArticle(i)&quot;&gt;🗑&lt;/button&gt;
+              &lt;/td&gt;
+            &lt;/tr&gt;
+          &lt;/tbody&gt;
+        &lt;/table&gt;
+
+        &lt;!-- Bouton de soumission --&gt;
+        &lt;div class&#x3D;&quot;d-flex justify-content-center&quot;&gt;
+          &lt;button type&#x3D;&quot;submit&quot; class&#x3D;&quot;btn btn-success w-25 me-3&quot;&gt;💾 Enregistrer&lt;/button&gt;
+          &lt;button type&#x3D;&quot;reset&quot; class&#x3D;&quot;btn btn-warning w-25&quot;&gt;❌ Annuler&lt;/button&gt;
+        &lt;/div&gt;
+      &lt;/form&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;!-- Transactions journalières --&gt;
+  &lt;!-- &lt;div class&#x3D;&quot;card mb-3&quot;&gt;
+    &lt;div class&#x3D;&quot;card-header&quot;&gt;Transactions Journalières&lt;/div&gt;
+    &lt;ul class&#x3D;&quot;list-group&quot;&gt;
+      &lt;li *ngFor&#x3D;&quot;let transaction of paniers&quot; class&#x3D;&quot;list-group-item&quot;&gt;
+        Vente #{{ transaction.id }} - Total: {{ transaction.totalTTC }} FCFA
+      &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/div&gt; --&gt;
+
+  &lt;!-- Transactions journalières --&gt;
+  &lt;div class&#x3D;&quot;card mb-3&quot;&gt;
+    &lt;div class&#x3D;&quot;card-header&quot;&gt;Transactions Journalières&lt;/div&gt;
+    &lt;ul class&#x3D;&quot;list-group&quot;&gt;
+      &lt;li *ngFor&#x3D;&quot;let transaction of paniers&quot; class&#x3D;&quot;list-group-item&quot;&gt;
+        &lt;div class&#x3D;&quot;d-flex justify-content-between align-items-center&quot;&gt;
+          &lt;div class&#x3D;&quot;d-flex justify-content-between&quot;&gt;
+            &lt;span class&#x3D;&quot;me-3&quot;
+              &gt;Vente Nº : &lt;b&gt;{{ transaction.id }}&lt;/b&gt;&lt;/span
+            &gt;
+            &lt;span class&#x3D;&quot;me-3&quot;
+              &gt;Date et heure :
+              &lt;b&gt;{{ transaction.dateCreation | date: &#x27;dd/mm/yyyy à HH:MM&#x27; }}&lt;/b&gt;&lt;/span
+            &gt;
+            &lt;span class&#x3D;&quot;me-3&quot;
+              &gt;Client :&lt;b&gt;{{ transaction.clientId }}&lt;/b&gt;&lt;/span
+            &gt;
+            &lt;span
+              &gt;Total: &lt;b&gt;{{ transaction.totalTTC }} FCFA&lt;/b&gt;&lt;/span
+            &gt;
+          &lt;/div&gt;
+
+          &lt;div&gt;
+            &lt;button class&#x3D;&quot;btn btn-info btn-sm me-2&quot; (click)&#x3D;&quot;afficherDetails(transaction)&quot;&gt;
+              📝 Détails
+            &lt;/button&gt;
+            &lt;button
+              *ngIf&#x3D;&quot;transaction.statut !&#x3D;&#x3D; &#x27;ANNULE&#x27;&quot;
+              class&#x3D;&quot;btn btn-danger btn-sm me-2&quot;
+              (click)&#x3D;&quot;annulerPanier(transaction)&quot;
+            &gt;
+              🔄 Retourner
+            &lt;/button&gt;
+            &lt;button class&#x3D;&quot;btn btn-success btn-sm&quot; (click)&#x3D;&quot;imprimerTicket(transaction)&quot;&gt;
+              🖨 Imprimer
+            &lt;/button&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;!-- Affichage des détails du panier --&gt;
+        &lt;div *ngIf&#x3D;&quot;transaction.detailsVisible&quot; class&#x3D;&quot;mt-3 p-3 border rounded bg-light&quot;&gt;
+          &lt;h5&gt;Détails du panier&lt;/h5&gt;
+          &lt;p&gt;&lt;strong&gt;Date :&lt;/strong&gt; {{ transaction.dateCreation | date: &#x27;dd/MM/yyyy HH:mm&#x27; }}&lt;/p&gt;
+          &lt;p&gt;&lt;strong&gt;Statut :&lt;/strong&gt; {{ transaction.statut }}&lt;/p&gt;
+          &lt;table class&#x3D;&quot;table&quot;&gt;
+            &lt;thead&gt;
+              &lt;tr&gt;
+                &lt;th&gt;Produit&lt;/th&gt;
+                &lt;th&gt;Quantité&lt;/th&gt;
+                &lt;th&gt;Prix Unitaire&lt;/th&gt;
+                &lt;th&gt;Prix Total&lt;/th&gt;
+              &lt;/tr&gt;
+            &lt;/thead&gt;
+            &lt;tbody&gt;
+              &lt;tr *ngFor&#x3D;&quot;let article of transaction.articles&quot;&gt;
+                &lt;td&gt;{{ &#x27;article.designation&#x27; }}&lt;/td&gt;
+                &lt;td&gt;{{ 0 }} à corriger&lt;/td&gt;
+                &lt;td&gt;{{ article.prixVenteUnitaire }} F CFA&lt;/td&gt;
+                &lt;td&gt;{{ &#x27;article.prixTotalVente&#x27; }} F CFA&lt;/td&gt;
+              &lt;/tr&gt;
+            &lt;/tbody&gt;
+          &lt;/table&gt;
+          &lt;p&gt;&lt;strong&gt;Total HT :&lt;/strong&gt; {{ transaction.totalHT }} F CFA&lt;/p&gt;
+          &lt;p&gt;&lt;strong&gt;TVA (18%) :&lt;/strong&gt; {{ transaction.tva }} F CFA&lt;/p&gt;
+          &lt;p&gt;&lt;strong&gt;Total TTC :&lt;/strong&gt; {{ transaction.totalTTC }} F CFA&lt;/p&gt;
+        &lt;/div&gt;
+      &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+</code></pre>
+    </div>
+
+
+    <div class="tab-pane fade " id="tree">
+        <div id="tree-container"></div>
+        <div class="tree-legend">
+            <div class="title">
+                <b>Legend</b>
+            </div>
+            <div>
+                <div class="color htmlelement"></div><span>Html element</span>
+            </div>
+            <div>
+                <div class="color component"></div><span>Component</span>
+            </div>
+            <div>
+                <div class="color directive"></div><span>Html element with directive</span>
+            </div>
+        </div>
+    </div>
+
+    
+</div>
+
+<script src="../js/libs/vis.min.js"></script>
+<script src="../js/libs/htmlparser.js"></script>
+<script src="../js/libs/deep-iterator.js"></script>
+<script>
+        var COMPONENT_TEMPLATE = '<div><div class="container-fluid">  <!-- BANNIÈRE DU JOURNAL -->  <div class="alert alert-light d-flex justify-content-between align-items-center">    <h1>Journal du {{ dateJournal | date: \'dd/MM/yyyy\' }}</h1>    <h3>      Total de la caisse :<b>{{ totalCaisse }} F CFA </b>    </h3>    <button class="btn btn-success" (click)="nouvelleVente()">Nouvelle Vente</button>  </div>  <!-- Sélection ou ajout d\'un client (caché par défaut) -->  <div *ngIf="showClientSection" class="card mb-3">    <div class="card-header">Informations sur le client</div>    <div class="card-body">      <div class="row">        <!-- Section Clients existants -->        <div class="col-md-3">          <h5>Clients existants</h5>          <input            list="clientList"            class="form-control mb-2"            placeholder="Rechercher un client..."            (input)="onSelectionClient($event)"          />          <datalist id="clientList">            <option *ngFor="let client of clients" [value]="client.nomComplet"></option>          </datalist>        </div>        <!-- Section Nouveau client -->        <div class="col-md-9">          <form [formGroup]="clientForm">            <h5>Nouveau client</h5>            <div class="row">              <div class="col-md-3">                <input                  formControlName="nomComplet"                  class="form-control mb-2"                  placeholder="Nom complet"                />              </div>              <div class="col-md-2">                <input                  formControlName="telephone"                  class="form-control mb-2"                  placeholder="Téléphone"                />              </div>              <div class="col-md-3">                <input formControlName="email" class="form-control mb-2" placeholder="Email" />              </div>              <div class="col-md-3">                <input formControlName="adresse" class="form-control mb-2" placeholder="Adresse" />              </div>              <div class="col-md-1">                <button type="button" class="btn btn-success" (click)="ajouterClient()">                  <i class="bi bi-check"></i>                </button>              </div>            </div>          </form>        </div>      </div>    </div>  </div>  <!-- Ajout des produits au panier (caché par défaut) -->  <div *ngIf="showPanierSection" class="card mb-3">    <div class="card-header">Ajout des Produits</div>    <div class="card-body">      <div class="mt-3 d-flex justify-content-center">        <h2>🛒 Panier</h2>      </div>      <div        class="bg-secondary d-flex justify-content-between align-items-center mt-1 p-2 text-white"      >        <span>📌 Panier en cours...</span>        <span>📅 Heure: {{ currentTime }}</span>        <span          >💰 Total panier : <strong>{{ totalPanier }} F CFA</strong></span        >        <span          >💰 Total à payer : <strong>{{ totalAPayer }} F CFA</strong></span        >      </div>      <form [formGroup]="panierForm" (ngSubmit)="enregistrerBon()">        <div class="row mt-2">          <div class="col-md-3 searchChamp">            <input              type="text"              class="form-control"              [(ngModel)]="searchInput"              placeholder="Rechercher un produit..."              (input)="filterProduits()"              [ngModelOptions]="{ standalone: true }"            />            <ul              *ngIf="filteredProduits.length > 0 && searchInput"              class="list-group position-absolute"              style="width: 230px"            >              <li *ngFor="let prod of filteredProduits" class="list-group-item bg-info">                <button                  type="button"                  class="list-group-item-action w-100 text-start bg-transparent border-0"                  (click)="selectProduit(prod)"                >                  {{ prod.designation }}                </button>              </li>            </ul>          </div>          <div class="col-md-2">            <input              type="number"              class="form-control"              formControlName="remise"              placeholder="Remise"            />          </div>          <!-- <div class="col-md-2">            <input type="number" class="form-control" formControlName="avance" placeholder="Avancement">          </div> -->          <div class="col-md-2 d-flex align-items-center">            <input              type="checkbox"              class="form-check-input me-2"              formControlName="inclureTVA"              (change)="toggleTVA($event)"            />            <label for="tauxTVA" class="form-check-label">Inclure TVA</label>          </div>          <div *ngIf="tvaInclu" class="col-md-2">            <select class="form-select" formControlName="tauxTVA" (change)="updateTVA()">              <option *ngFor="let taux of tauxTVAList" [value]="taux">{{ taux }}%</option>            </select>          </div>          <div class="col-md-2">            <select class="form-select" formControlName="typePaiement">              <option value="" disabled selected>Mode de paiement</option>              <option value="caisse">Caisse</option>              <option value="mobile money">Mobile Money</option>              <option value="banque">Banque</option>              <option value="bon">Bon</option>            </select>          </div>          <!-- <div class="col-md-2">            <button *ngIf="!panierDisabled" type="button" class="btn btn-success me-2" (click)="disablePanier()">              <i class="bi bi-check"></i>            </button>            <button *ngIf="!panierDisabled" type="button" class="btn btn-danger me-2" (click)="resetPanier()">              <i class="bi bi-trash"></i>            </button>            <button *ngIf="panierDisabled" type="button" class="btn btn-warning" (click)="enablePanier()">              <i class="bi bi-pencil"></i>            </button>          </div> -->        </div>        <!-- Tableau du panier -->        <table class="table mt-2">          <thead>            <tr>              <th>Produit</th>              <th>Unité Stock</th>              <th>Quantité</th>              <th>Prix Unitaire</th>              <th>Actions</th>            </tr>          </thead>          <tbody formArrayName="panier">            <tr *ngIf="panierArray.length === 0">              <td colspan="5" class="text-center text-muted">🛒 Panier vide</td>            </tr>            <tr *ngFor="let article of panierArray.controls; let i = index" [formGroupName]="i">              <td>                <input type="text" class="form-control" formControlName="produit" readonly />              </td>              <td>                <input type="text" class="form-control" formControlName="uniteStock" readonly />              </td>              <td>                <input type="number" class="form-control" formControlName="quantite" />              </td>              <td>                <input type="number" class="form-control" formControlName="prixUnitaire" />              </td>              <td>                <button type="button" class="btn btn-danger" (click)="removeArticle(i)">🗑</button>              </td>            </tr>          </tbody>        </table>        <!-- Bouton de soumission -->        <div class="d-flex justify-content-center">          <button type="submit" class="btn btn-success w-25 me-3">💾 Enregistrer</button>          <button type="reset" class="btn btn-warning w-25">❌ Annuler</button>        </div>      </form>    </div>  </div>  <!-- Transactions journalières -->  <!-- <div class="card mb-3">    <div class="card-header">Transactions Journalières</div>    <ul class="list-group">      <li *ngFor="let transaction of paniers" class="list-group-item">        Vente #{{ transaction.id }} - Total: {{ transaction.totalTTC }} FCFA      </li>    </ul>  </div> -->  <!-- Transactions journalières -->  <div class="card mb-3">    <div class="card-header">Transactions Journalières</div>    <ul class="list-group">      <li *ngFor="let transaction of paniers" class="list-group-item">        <div class="d-flex justify-content-between align-items-center">          <div class="d-flex justify-content-between">            <span class="me-3"              >Vente Nº : <b>{{ transaction.id }}</b></span            >            <span class="me-3"              >Date et heure :              <b>{{ transaction.dateCreation | date: \'dd/mm/yyyy à HH:MM\' }}</b></span            >            <span class="me-3"              >Client :<b>{{ transaction.clientId }}</b></span            >            <span              >Total: <b>{{ transaction.totalTTC }} FCFA</b></span            >          </div>          <div>            <button class="btn btn-info btn-sm me-2" (click)="afficherDetails(transaction)">              📝 Détails            </button>            <button              *ngIf="transaction.statut !== \'ANNULE\'"              class="btn btn-danger btn-sm me-2"              (click)="annulerPanier(transaction)"            >              🔄 Retourner            </button>            <button class="btn btn-success btn-sm" (click)="imprimerTicket(transaction)">              🖨 Imprimer            </button>          </div>        </div>        <!-- Affichage des détails du panier -->        <div *ngIf="transaction.detailsVisible" class="mt-3 p-3 border rounded bg-light">          <h5>Détails du panier</h5>          <p><strong>Date :</strong> {{ transaction.dateCreation | date: \'dd/MM/yyyy HH:mm\' }}</p>          <p><strong>Statut :</strong> {{ transaction.statut }}</p>          <table class="table">            <thead>              <tr>                <th>Produit</th>                <th>Quantité</th>                <th>Prix Unitaire</th>                <th>Prix Total</th>              </tr>            </thead>            <tbody>              <tr *ngFor="let article of transaction.articles">                <td>{{ \'article.designation\' }}</td>                <td>{{ 0 }} à corriger</td>                <td>{{ article.prixVenteUnitaire }} F CFA</td>                <td>{{ \'article.prixTotalVente\' }} F CFA</td>              </tr>            </tbody>          </table>          <p><strong>Total HT :</strong> {{ transaction.totalHT }} F CFA</p>          <p><strong>TVA (18%) :</strong> {{ transaction.tva }} F CFA</p>          <p><strong>Total TTC :</strong> {{ transaction.totalTTC }} F CFA</p>        </div>      </li>    </ul>  </div></div></div>'
+    var COMPONENTS = [{'name': 'AppComponent', 'selector': 'app-root'},{'name': 'CaisseComponent', 'selector': 'app-caisse'},{'name': 'CatalogueProduitComponent', 'selector': 'app-catalogue-produit'},{'name': 'ClientsComponent', 'selector': 'app-clients'},{'name': 'ConnexionComponent', 'selector': 'app-connexion'},{'name': 'EntreesSortiesComponent', 'selector': 'app-entrees-sorties'},{'name': 'EspaceVendeursComponent', 'selector': 'app-espace-vendeurs'},{'name': 'FinanceComponent', 'selector': 'app-finance'},{'name': 'FournisseursComponent', 'selector': 'app-fournisseurs'},{'name': 'GerantComponent', 'selector': 'app-gerant'},{'name': 'MagasinComponent', 'selector': 'app-magasin'},{'name': 'MagazinComponent', 'selector': 'app-magazin'},{'name': 'OverviewComponent', 'selector': 'app-overview'},{'name': 'ParametresComponent', 'selector': 'app-parametres'},{'name': 'RapportsComponent', 'selector': 'app-rapports'},{'name': 'RapportsFinanciersComponent', 'selector': 'app-rapports-financiers'},{'name': 'RapportsStocksComponent', 'selector': 'app-rapports-stocks'},{'name': 'RapportsVentesComponent', 'selector': 'app-rapports-ventes'},{'name': 'RolesPermissionsComponent', 'selector': 'app-roles-permissions'},{'name': 'StockInventairesComponent', 'selector': 'app-stock-inventaires'},{'name': 'StructureComponent', 'selector': 'app-structure'},{'name': 'UserComponent', 'selector': 'app-user'},{'name': 'VentesComponent', 'selector': 'app-ventes'}];
+    var DIRECTIVES = [];
+    var ACTUAL_COMPONENT = {'name': 'CaisseComponent'};
+</script>
+<script src="../js/tree.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                   </div><div class="search-results">
+    <div class="has-results">
+        <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+        <ul class="search-results-list"></ul>
+    </div>
+    <div class="no-results">
+        <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+    </div>
+</div>
+</div>
+               <!-- END CONTENT -->
+           </div>
+       </div>
+
+          <label class="dark-mode-switch">
+               <input type="checkbox">
+               <span class="slider">
+                    <svg class="slider-icon" viewBox="0 0 24 24" fill="none" height="20" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" width="20" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>
+                    </svg>
+               </span>
+          </label>
+
+       <script>
+            var COMPODOC_CURRENT_PAGE_DEPTH = 1;
+            var COMPODOC_CURRENT_PAGE_CONTEXT = 'component';
+            var COMPODOC_CURRENT_PAGE_URL = 'CaisseComponent.html';
+            var MAX_SEARCH_RESULTS = 15;
+       </script>
+
+       <script>
+               $darkModeToggleSwitchers = document.querySelectorAll('.dark-mode-switch input');
+               checkToggle(darkModeState);
+               if ($darkModeToggleSwitchers.length > 0) {
+                    for (var i = 0; i < $darkModeToggleSwitchers.length; i++) {
+                         $darkModeToggleSwitchers[i].addEventListener('change', function (event) {
+                              darkModeState = !darkModeState;
+                              toggleDarkMode(darkModeState);
+                         });
+                    }
+               }
+          </script>
+
+       <script src="../js/libs/custom-elements.min.js"></script>
+       <script src="../js/libs/lit-html.js"></script>
+
+       <script src="../js/menu-wc.js" defer></script>
+       <script nomodule src="../js/menu-wc_es5.js" defer></script>
+
+       <script src="../js/libs/bootstrap-native.js"></script>
+
+       <script src="../js/libs/es6-shim.min.js"></script>
+       <script src="../js/libs/EventDispatcher.js"></script>
+       <script src="../js/libs/promise.min.js"></script>
+
+       <script src="../js/compodoc.js"></script>
+
+       <script src="../js/tabs.js"></script>
+       <script src="../js/menu.js"></script>
+       <script src="../js/libs/clipboard.min.js"></script>
+       <script src="../js/libs/prism.js"></script>
+       <script src="../js/sourceCode.js"></script>
+          <script src="../js/search/search.js"></script>
+          <script src="../js/search/lunr.min.js"></script>
+          <script src="../js/search/search-lunr.js"></script>
+          <script src="../js/search/search_index.js"></script>
+       <script src="../js/lazy-load-graphs.js"></script>
+
+
+    </body>
+</html>

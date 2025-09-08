@@ -6,7 +6,7 @@ export class Transfert {
   public magasinSource!: number;
   public magasinDestination!: number;
   public dateTransfert!: Date;
-  public statut!: "En attente" | "Validé" | "Refusé";
+  public statut!: 'En attente' | 'Validé' | 'Refusé';
   public motif?: string;
   public agentResponsable!: number;
   public dateValidation?: Date;

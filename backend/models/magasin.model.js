@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-  const Magasin = sequelize.define("Magasin", {
+  const Magasin = sequelize.define('Magasin', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
@@ -20,8 +20,8 @@ module.exports = (sequelize, DataTypes) => {
     responsableId: DataTypes.INTEGER,
     capaciteStock: DataTypes.DECIMAL(10, 2),
     statut: {
-      type: DataTypes.ENUM("Actif", "Inactif"),
-      defaultValue: "Actif",
+      type: DataTypes.ENUM('Actif', 'Inactif'),
+      defaultValue: 'Actif',
     },
     derniereMiseAJour: {
       type: DataTypes.DATE,

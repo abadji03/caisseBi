@@ -1,23 +1,29 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Client } from '../../../modeles/clients.model';
 import { Produits } from '../../../modeles/produit.modele';
 import { ArticlePanier, Panier } from '../../../modeles/panier.model';
-import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormArray,
+  FormBuilder,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 
 @Component({
   selector: 'app-caisse',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, FormsModule],
   templateUrl: './caisse.component.html',
-  styleUrl: './caisse.component.css'
+  styleUrl: './caisse.component.css',
 })
 export class CaisseComponent implements OnInit {
-
   dateJournal: Date = new Date();
-  totalCaisse: number = 0;
+  totalCaisse = 0;
   totalPanier = 0;
-  totalAPayer=0;
+  totalAPayer = 0;
 
   // Liste des taux de TVA disponibles dans l'application
   tauxTVAList: number[] = [0, 5, 10, 18]; // Exemple : 0% (pas de TVA), 5%, 10%, 18%
@@ -26,10 +32,10 @@ export class CaisseComponent implements OnInit {
   showClientSection = false;
   clients: Client[] = [];
   clientForm: FormGroup;
-  tvaInclu:boolean = false;
+  tvaInclu = false;
 
-  currentDate: string =' ';
-  currentTime: string = '';
+  currentDate = ' ';
+  currentTime = '';
 
   // Gestion du panier
   showPanierSection = false;
@@ -37,18 +43,18 @@ export class CaisseComponent implements OnInit {
   panier: Panier = new Panier();
   filteredProduits: Produits[] = [];
   produits: Produits[] = [];
-  searchInput: string = '';
+  searchInput = '';
   panierDisabled = false;
   paniers: Panier[] = [];
 
-
-  constructor(private fb: FormBuilder) {
+  private fb = inject(FormBuilder);
+  constructor() {
     // Initialisation du formulaire client
     this.clientForm = this.fb.group({
       nomComplet: ['', Validators.required],
       telephone: [''],
       email: [''],
-      adresse: ['']
+      adresse: [''],
     });
 
     // Initialisation du formulaire panier
@@ -58,7 +64,7 @@ export class CaisseComponent implements OnInit {
       inclureTVA: [false], // Par défaut, la TVA est incluse
       tauxTVA: [18], // TVA par défaut à 18%
       typePaiement: ['', Validators.required],
-      panier: this.fb.array([])
+      panier: this.fb.array([]),
     });
   }
 
@@ -75,54 +81,117 @@ export class CaisseComponent implements OnInit {
   }
 
   updateTotal(): void {
-
     let total = 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.panierArray.controls.forEach((group: any) => {
-      total += (group.value.quantite * group.value.prixUnitaire);
+      total += group.value.quantite * group.value.prixUnitaire;
     });
     this.totalPanier = total;
-     this.totalAPayer = total - this.panierForm.value.remise;
+    this.totalAPayer = total - this.panierForm.value.remise;
     /*this.panierForm.get('total')?.setValue(total); */
   }
 
   /** Charger des données fictives */
   loadFakeData() {
     this.clients = [
-      { id: 1, nomComplet: 'Aliou Ndiaye', email: 'aliou@mail.com', telephone: '771234567', adresse: 'Dakar', solde: 0, estEmploye: false, paniers: [], bons: [], paiements: [], operations: [] },
-      { id: 2, nomComplet: 'Fatou Diop', email: 'fatou@mail.com', telephone: '778765432', adresse: 'Thiès', solde: 5000, estEmploye: false, paniers: [], bons: [], paiements: [], operations: [] }
+      {
+        id: 1,
+        nomComplet: 'Aliou Ndiaye',
+        email: 'aliou@mail.com',
+        telephone: '771234567',
+        adresse: 'Dakar',
+        solde: 0,
+        estEmploye: false,
+        paniers: [],
+        bons: [],
+        paiements: [],
+        operations: [],
+      },
+      {
+        id: 2,
+        nomComplet: 'Fatou Diop',
+        email: 'fatou@mail.com',
+        telephone: '778765432',
+        adresse: 'Thiès',
+        solde: 5000,
+        estEmploye: false,
+        paniers: [],
+        bons: [],
+        paiements: [],
+        operations: [],
+      },
     ];
 
     this.produits = [
-      { id: 1, designation: 'Lait Caillé', categorieId: 1, fournisseurId: 1, unite: 'L', prixVenteUnitaire: 500, prixTotalVente: 500, description: 'Boisson lactée', codeBarre: '123456' },
-      { id: 2, designation: 'Thiakri', categorieId: 2, fournisseurId: 2, unite: 'Kg', prixVenteUnitaire: 800, prixTotalVente: 800, description: 'Couscous sucré', codeBarre: '7891011' }
+      {
+        id: 1,
+        designation: 'Lait Caillé',
+        categorieId: 1,
+        fournisseurId: 1,
+        unite: 'L',
+        prixVenteUnitaire: 500,
+        prixTotalVente: 500,
+        description: 'Boisson lactée',
+        codeBarre: '123456',
+      },
+      {
+        id: 2,
+        designation: 'Thiakri',
+        categorieId: 2,
+        fournisseurId: 2,
+        unite: 'Kg',
+        prixVenteUnitaire: 800,
+        prixTotalVente: 800,
+        description: 'Couscous sucré',
+        codeBarre: '7891011',
+      },
     ];
 
     // Transactions journalières
-  this.paniers = [
-    new Panier({
-      id: 1,
-      clientId: 101,
-      bonId: 201,
-      articles: [
-        new ArticlePanier({id:this.produits[0].id, produit: this.produits[0], quantite: 10, prixVenteUnitaire: this.produits[0].prixVenteUnitaire, prixAchatUnitaire: this.produits[0].prixAchatUnitaire }),
-        new ArticlePanier({id:this.produits[1].id, produit: this.produits[1], quantite: 10, prixVenteUnitaire: this.produits[1].prixVenteUnitaire, prixAchatUnitaire: this.produits[1].prixAchatUnitaire  })
-      ]
-    }),
-    new Panier({
-      id: 2,
-      clientId: 102,
-      bonId: 202,
-      articles: [
-        new ArticlePanier({id:this.produits[0].id, produit: this.produits[0], quantite: 20, prixVenteUnitaire: this.produits[0].prixVenteUnitaire, prixAchatUnitaire: this.produits[0].prixAchatUnitaire })
-      ]
-    })
-  ];
+    this.paniers = [
+      new Panier({
+        id: 1,
+        clientId: 101,
+        bonId: 201,
+        articles: [
+          new ArticlePanier({
+            id: this.produits[0].id,
+            produit: this.produits[0],
+            quantite: 10,
+            prixVenteUnitaire: this.produits[0].prixVenteUnitaire,
+            prixAchatUnitaire: this.produits[0].prixAchatUnitaire,
+          }),
+          new ArticlePanier({
+            id: this.produits[1].id,
+            produit: this.produits[1],
+            quantite: 10,
+            prixVenteUnitaire: this.produits[1].prixVenteUnitaire,
+            prixAchatUnitaire: this.produits[1].prixAchatUnitaire,
+          }),
+        ],
+      }),
+      new Panier({
+        id: 2,
+        clientId: 102,
+        bonId: 202,
+        articles: [
+          new ArticlePanier({
+            id: this.produits[0].id,
+            produit: this.produits[0],
+            quantite: 20,
+            prixVenteUnitaire: this.produits[0].prixVenteUnitaire,
+            prixAchatUnitaire: this.produits[0].prixAchatUnitaire,
+          }),
+        ],
+      }),
+    ];
   }
 
   /** Sélectionner un client */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onSelectionClient(event: any) {
     const nom = event.target.value;
-    const client = this.clients.find(c => c.nomComplet === nom);
+    const client = this.clients.find((c) => c.nomComplet === nom);
     if (client) {
       this.clientForm.patchValue(client);
     }
@@ -131,22 +200,31 @@ export class CaisseComponent implements OnInit {
   /** Ajouter un nouveau client */
   ajouterClient() {
     if (this.clientForm.valid) {
-      const nouveauClient: Client = { ...this.clientForm.value, id: this.clients.length + 1, paniers: [], bons: [], paiements: [], operations: [] };
+      const nouveauClient: Client = {
+        ...this.clientForm.value,
+        id: this.clients.length + 1,
+        paniers: [],
+        bons: [],
+        paiements: [],
+        operations: [],
+      };
       this.clients.push(nouveauClient);
       alert('Client ajouté avec succès !');
       //this.clientForm.reset();
-      this.showPanierSection = ! this.showPanierSection;
+      this.showPanierSection = !this.showPanierSection;
     }
   }
 
   /** Activer la section du panier */
   nouvelleVente() {
-    this.showClientSection = !this.showClientSection ;
+    this.showClientSection = !this.showClientSection;
   }
 
   /** Filtrer les produits */
   filterProduits() {
-    this.filteredProduits = this.produits.filter(prod => prod.designation?.toLowerCase().includes(this.searchInput.toLowerCase()));
+    this.filteredProduits = this.produits.filter((prod) =>
+      prod.designation?.toLowerCase().includes(this.searchInput.toLowerCase()),
+    );
   }
 
   /** Sélectionner un produit */
@@ -157,7 +235,7 @@ export class CaisseComponent implements OnInit {
       produit: [produit.designation, Validators.required],
       uniteStock: [produit.unite, Validators.required],
       quantite: [1, Validators.required],
-      prixUnitaire: [produit.prixVenteUnitaire, Validators.required]
+      prixUnitaire: [produit.prixVenteUnitaire, Validators.required],
     });
 
     panierArray.push(article);
@@ -178,7 +256,6 @@ export class CaisseComponent implements OnInit {
     this.filteredProduits = [];
     this.updateTotal(); // si cette méthode existe toujours pour mettre à jour le total
   }
-
 
   /** Désactiver le panier */
   disablePanier() {
@@ -218,14 +295,15 @@ export class CaisseComponent implements OnInit {
   }
 
   get calculateTotal() {
-    let totalHT = this.panierForm.value.panier.reduce((total: number, item: any) => {
-      return total + (item.quantite * item.prixUnitaire);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const totalHT = this.panierForm.value.panier.reduce((total: number, item: any) => {
+      return total + item.quantite * item.prixUnitaire;
     }, 0);
 
-    let remise = this.panierForm.value.remise || 0;
-    let totalApresRemise = totalHT - remise;
-    let tva = totalApresRemise * 0.18; // 18% de TVA
-    let totalTTC = totalApresRemise + tva;
+    const remise = this.panierForm.value.remise || 0;
+    const totalApresRemise = totalHT - remise;
+    const tva = totalApresRemise * 0.18; // 18% de TVA
+    const totalTTC = totalApresRemise + tva;
 
     return { totalHT, remise, totalApresRemise, tva, totalTTC };
   }
@@ -235,7 +313,7 @@ export class CaisseComponent implements OnInit {
   }
 
   annulerPanier(panier: Panier) {
-    if (confirm("Voulez-vous vraiment annuler ce panier ?")) {
+    if (confirm('Voulez-vous vraiment annuler ce panier ?')) {
       panier.annuler();
     }
   }
@@ -245,30 +323,31 @@ export class CaisseComponent implements OnInit {
     ticket += `🛒 Vente #${panier.id}\n`;
     ticket += `📅 Date: ${panier.dateCreation.toLocaleDateString()}\n`;
     ticket += `------------------------------\n`;
-    panier.articles.forEach(article => {
+    panier.articles.forEach((article) => {
       ticket += `${article.produit.designation} x${0} - ${article.quantite * article.prixVenteUnitaire} F CFA\n`;
     });
     ticket += `------------------------------\n`;
     ticket += `💰 Total TTC: ${panier.totalTTC} F CFA\n`;
 
     console.log(ticket);
-    alert("Impression du ticket en cours... (voir console)");
+    alert('Impression du ticket en cours... (voir console)');
   }
 
   // Méthode pour gérer l'activation/désactivation de la TVA
-toggleTVA(event: any): void {
-  const checked = event.target.checked;
-  this.tvaInclu = checked;
-  /* if (checked) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  toggleTVA(event: any): void {
+    const checked = event.target.checked;
+    this.tvaInclu = checked;
+    /* if (checked) {
     this.panier.totalTTC = this.panier.totalHT * 1.18; // Application de la TVA (18%)
   } else {
     this.panier.totalTTC = this.panier.totalHT; // Pas de TVA
   } */
-}
+  }
 
-// Méthode pour mettre à jour le total en fonction de la TVA sélectionnée
-updateTVA(): void {
-  const tauxTVA = this.panierForm.get('tauxTVA')?.value;
-  this.panier.totalTTC = this.panier.totalHT * (1 + tauxTVA / 100);
-}
+  // Méthode pour mettre à jour le total en fonction de la TVA sélectionnée
+  updateTVA(): void {
+    const tauxTVA = this.panierForm.get('tauxTVA')?.value;
+    this.panier.totalTTC = this.panier.totalHT * (1 + tauxTVA / 100);
+  }
 }

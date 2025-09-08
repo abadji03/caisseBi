@@ -1,5 +1,3 @@
-import { Produits } from "./produit.modele";
-
 export class Operation {
   id?: number;
   clientId?: number;

@@ -1,0 +1,4623 @@
+<!doctype html>
+<html class="no-js" lang="">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title>frontend documentation</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="icon" type="image/x-icon" href="../images/favicon.ico">
+	   <link rel="stylesheet" href="../styles/style.css">
+        <link rel="stylesheet" href="../styles/dark.css">
+    </head>
+    <body>
+          <script>
+               // Blocking script to avoid flickering dark mode
+               // Dark mode toggle button
+               var useDark = window.matchMedia('(prefers-color-scheme: dark)');
+               var darkModeState = useDark.matches;
+               var $darkModeToggleSwitchers = document.querySelectorAll('.dark-mode-switch input');
+               var $darkModeToggles = document.querySelectorAll('.dark-mode-switch');
+               var darkModeStateLocal = localStorage.getItem('compodoc_darkmode-state');
+
+               function checkToggle(check) {
+                    for (var i = 0; i < $darkModeToggleSwitchers.length; i++) {
+                         $darkModeToggleSwitchers[i].checked = check;
+                    }
+               }
+
+               function toggleDarkMode(state) {
+                    if (window.localStorage) {
+                         localStorage.setItem('compodoc_darkmode-state', state);
+                    }
+
+                    checkToggle(state);
+
+                    const hasClass = document.body.classList.contains('dark');
+
+                    if (state) {
+                         for (var i = 0; i < $darkModeToggles.length; i++) {
+                              $darkModeToggles[i].classList.add('dark');
+                         }
+                         if (!hasClass) {
+                              document.body.classList.add('dark');
+                         }
+                    } else {
+                         for (var i = 0; i < $darkModeToggles.length; i++) {
+                              $darkModeToggles[i].classList.remove('dark');
+                         }
+                         if (hasClass) {
+                              document.body.classList.remove('dark');
+                         }
+                    }
+               }
+
+               useDark.addEventListener('change', function (evt) {
+                    toggleDarkMode(evt.matches);
+               });
+               if (darkModeStateLocal) {
+                    darkModeState = darkModeStateLocal === 'true';
+               }
+               toggleDarkMode(darkModeState);
+          </script>
+
+        <div class="navbar navbar-default navbar-fixed-top d-md-none p-0">
+               <div class="d-flex">
+                    <a href="../" class="navbar-brand">frontend documentation</a>
+                    <button type="button" class="btn btn-default btn-menu ion-ios-menu" id="btn-menu"></button>
+               </div>
+        </div>
+
+        <div class="xs-menu menu" id="mobile-menu">
+                <div id="book-search-input" role="search"><input type="text" placeholder="Type to search"></div>            <compodoc-menu></compodoc-menu>
+        </div>
+
+        <div class="container-fluid main">
+           <div class="row main">
+               <div class="d-none d-md-block menu">
+                   <compodoc-menu mode="normal"></compodoc-menu>
+               </div>
+               <!-- START CONTENT -->
+               <div class="content miscellaneous-variables">
+                   <div class="content-data">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<ol class="breadcrumb">
+  <li class="breadcrumb-item">Miscellaneous</li>
+  <li class="breadcrumb-item">Variables</li>
+</ol>
+
+<section data-compodoc="block-index">
+    <h3 id="index">Index</h3>
+    <table class="table table-sm table-bordered index-table">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <ul class="index-list">
+                        <li>
+                            <a href="#appConfig" title="src/app/app.config.ts" ><b>appConfig</b>&nbsp;&nbsp;&nbsp;(src/.../app.config.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#authGuard" title="src/app/guards/auth.guard.ts" ><b>authGuard</b>&nbsp;&nbsp;&nbsp;(src/.../auth.guard.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#categories" title="src/app/modeles/donnees_fictives.ts" ><b>categories</b>&nbsp;&nbsp;&nbsp;(src/.../donnees_fictives.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#clients" title="src/app/modeles/donnees_fictives.ts" ><b>clients</b>&nbsp;&nbsp;&nbsp;(src/.../donnees_fictives.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#Constant" title="src/app/services/contant.ts" ><b>Constant</b>&nbsp;&nbsp;&nbsp;(src/.../contant.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#depenses" title="src/app/modeles/donnees_fictives.ts" ><b>depenses</b>&nbsp;&nbsp;&nbsp;(src/.../donnees_fictives.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#magasins" title="src/app/modeles/donnees_fictives.ts" ><b>magasins</b>&nbsp;&nbsp;&nbsp;(src/.../donnees_fictives.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#modesPaiement" title="src/app/modeles/donnees_fictives.ts" ><b>modesPaiement</b>&nbsp;&nbsp;&nbsp;(src/.../donnees_fictives.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#mouvements" title="src/app/modeles/donnees_fictives.ts" ><b>mouvements</b>&nbsp;&nbsp;&nbsp;(src/.../donnees_fictives.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#paiements" title="src/app/modeles/donnees_fictives.ts" ><b>paiements</b>&nbsp;&nbsp;&nbsp;(src/.../donnees_fictives.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#paniers" title="src/app/modeles/donnees_fictives.ts" ><b>paniers</b>&nbsp;&nbsp;&nbsp;(src/.../donnees_fictives.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#produits" title="src/app/modeles/donnees_fictives.ts" ><b>produits</b>&nbsp;&nbsp;&nbsp;(src/.../donnees_fictives.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#recettes" title="src/app/modeles/donnees_fictives.ts" ><b>recettes</b>&nbsp;&nbsp;&nbsp;(src/.../donnees_fictives.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#roleGuard" title="src/app/guards/role.guard.ts" ><b>roleGuard</b>&nbsp;&nbsp;&nbsp;(src/.../role.guard.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#stocks" title="src/app/modeles/donnees_fictives.ts" ><b>stocks</b>&nbsp;&nbsp;&nbsp;(src/.../donnees_fictives.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#transferts" title="src/app/modeles/donnees_fictives.ts" ><b>transferts</b>&nbsp;&nbsp;&nbsp;(src/.../donnees_fictives.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#vendeurs" title="src/app/modeles/donnees_fictives.ts" ><b>vendeurs</b>&nbsp;&nbsp;&nbsp;(src/.../donnees_fictives.ts)</a>
+                        </li>
+                    </ul>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+
+    <h3>src/app/app.config.ts</h3>
+    <section data-compodoc="block-properties">
+    <h3></h3>    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="appConfig"></a>
+                    <span class="name">
+                        <span ><b>appConfig</b></span>
+                        <a href="#appConfig"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>ApplicationConfig</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>{
+  providers: [
+    provideRouter(
+      routes,
+      withInMemoryScrolling({
+        scrollPositionRestoration: &#x27;top&#x27;, // Fait remonter en haut à chaque navigation
+        anchorScrolling: &#x27;enabled&#x27;, // Optionnel : permet le scroll vers les ancres
+      }),
+    ),
+    provideHttpClient(),
+    provideAnimationsAsync(),
+    provideToastr(),
+    provideCharts(),
+  ],
+}</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+</section>
+    <h3>src/app/guards/auth.guard.ts</h3>
+    <section data-compodoc="block-properties">
+    <h3></h3>    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="authGuard"></a>
+                    <span class="name">
+                        <span ><b>authGuard</b></span>
+                        <a href="#authGuard"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>CanActivateFn</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>() &#x3D;&gt; {
+  const authService &#x3D; inject(AuthService);
+  const router &#x3D; inject(Router);
+
+  const isAuthenticated &#x3D; authService.isAuthenticated(); // ✅ vérification ici
+
+  if (!isAuthenticated) {
+    return router.createUrlTree([&#x27;/login&#x27;]);
+  }
+
+  return true;
+}</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+</section>
+    <h3>src/app/modeles/donnees_fictives.ts</h3>
+    <section data-compodoc="block-properties">
+    <h3></h3>    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="categories"></a>
+                    <span class="name">
+                        <span ><b>categories</b></span>
+                        <a href="#categories"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="../classes/Categorie.html" target="_self" >Categorie[]</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[
+  // Catégories de Dépenses (type: &#x27;DEPENSE&#x27;)
+  new Categorie({
+    id: 1,
+    name: &#x27;Achat Stock Alimentaire&#x27;,
+    description: &#x27;Achats de produits pour revente (nourriture, boissons)&#x27;,
+    type: &#x27;DEPENSE&#x27;,
+    isActive: true,
+  }),
+  new Categorie({
+    id: 2,
+    name: &#x27;Frais Logistiques&#x27;,
+    description: &#x27;Transport, maintenance et fonctionnement du magasin&#x27;,
+    type: &#x27;DEPENSE&#x27;,
+    isActive: true,
+  }),
+  new Categorie({
+    id: 3,
+    name: &#x27;Achat Produits Frais&#x27;,
+    description: &#x27;Viandes, poissons, produits laitiers et frais&#x27;,
+    type: &#x27;DEPENSE&#x27;,
+    isActive: true,
+  }),
+  new Categorie({
+    id: 4,
+    name: &#x27;Fournitures Bureau&#x27;,
+    description: &#x27;Matériel administratif et de caisse&#x27;,
+    type: &#x27;DEPENSE&#x27;,
+    isActive: true,
+  }),
+  new Categorie({
+    id: 5,
+    name: &#x27;Marketing &amp; Communication&#x27;,
+    description: &#x27;Publicité, promotions et décorations&#x27;,
+    type: &#x27;DEPENSE&#x27;,
+    isActive: true,
+  }),
+  new Categorie({
+    id: 6,
+    name: &#x27;Frais Généraux&#x27;,
+    description: &#x27;Divers frais de fonctionnement&#x27;,
+    type: &#x27;DEPENSE&#x27;,
+    isActive: true,
+  }),
+
+  // Catégories de Recettes (type: &#x27;RECETTE&#x27;)
+  new Categorie({
+    id: 101,
+    name: &#x27;Ventes Alimentaires&#x27;,
+    description: &#x27;Recettes des ventes de produits alimentaires&#x27;,
+    type: &#x27;RECETTE&#x27;,
+    isActive: true,
+  }),
+  new Categorie({
+    id: 102,
+    name: &#x27;Ventes Promotions&#x27;,
+    description: &#x27;Recettes issues des opérations promotionnelles&#x27;,
+    type: &#x27;RECETTE&#x27;,
+    isActive: true,
+  }),
+  new Categorie({
+    id: 103,
+    name: &#x27;Ventes Événementielles&#x27;,
+    description: &#x27;Recettes spéciales (soirées, événements)&#x27;,
+    type: &#x27;RECETTE&#x27;,
+    isActive: true,
+  }),
+  new Categorie({
+    id: 104,
+    name: &#x27;Subventions&#x27;,
+    description: &#x27;Aides et subventions exceptionnelles&#x27;,
+    type: &#x27;RECETTE&#x27;,
+    isActive: false,
+  }),
+  new Categorie({
+    id: 105,
+    name: &#x27;Services Annexes&#x27;,
+    description: &#x27;Recettes des services complémentaires&#x27;,
+    type: &#x27;RECETTE&#x27;,
+    isActive: true,
+  }),
+]</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="clients"></a>
+                    <span class="name">
+                        <span ><b>clients</b></span>
+                        <a href="#clients"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="../classes/Client.html" target="_self" >Client[]</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[
+  // Clients pour Magasin 1 (Paris)
+  new Client({
+    id: 1,
+    nomComplet: &#x27;Jean Dupont&#x27;,
+    email: &#x27;jean.dupont@email.com&#x27;,
+    telephone: &#x27;0612345678&#x27;,
+    adresse: &#x27;10 Rue de Paris, 75001 Paris&#x27;,
+    dateCreation: new Date(&#x27;2023-01-10&#x27;),
+    solde: 1500,
+    estEmploye: false,
+  }),
+  new Client({
+    id: 2,
+    nomComplet: &#x27;Marie Martin&#x27;,
+    email: &#x27;marie.martin@email.com&#x27;,
+    telephone: &#x27;0623456789&#x27;,
+    adresse: &#x27;22 Avenue des Champs, 75008 Paris&#x27;,
+    dateCreation: new Date(&#x27;2023-02-15&#x27;),
+    solde: 750,
+    estEmploye: false,
+  }),
+  new Client({
+    id: 3,
+    nomComplet: &#x27;Pierre Durand&#x27;,
+    email: &#x27;pierre.durand@email.com&#x27;,
+    telephone: &#x27;0634567890&#x27;,
+    adresse: &#x27;5 Boulevard Saint-Germain, 75005 Paris&#x27;,
+    dateCreation: new Date(&#x27;2023-03-20&#x27;),
+    solde: 2000,
+    estEmploye: true,
+  }),
+  new Client({
+    id: 4,
+    nomComplet: &#x27;Sophie Lambert&#x27;,
+    email: &#x27;sophie.lambert@email.com&#x27;,
+    telephone: &#x27;0645678901&#x27;,
+    adresse: &#x27;15 Rue de Rivoli, 75004 Paris&#x27;,
+    dateCreation: new Date(&#x27;2023-04-05&#x27;),
+    solde: 500,
+    estEmploye: false,
+  }),
+  new Client({
+    id: 5,
+    nomComplet: &#x27;Thomas Moreau&#x27;,
+    email: &#x27;thomas.moreau@email.com&#x27;,
+    telephone: &#x27;0656789012&#x27;,
+    adresse: &#x27;30 Rue de la Paix, 75002 Paris&#x27;,
+    dateCreation: new Date(&#x27;2023-05-12&#x27;),
+    solde: 1200,
+    estEmploye: false,
+  }),
+
+  // Clients pour Magasin 2 (Lyon)
+  new Client({
+    id: 6,
+    nomComplet: &#x27;Lucie Bernard&#x27;,
+    email: &#x27;lucie.bernard@email.com&#x27;,
+    telephone: &#x27;0678901234&#x27;,
+    adresse: &#x27;8 Rue de la République, 69001 Lyon&#x27;,
+    dateCreation: new Date(&#x27;2023-01-15&#x27;),
+    solde: 1800,
+    estEmploye: false,
+  }),
+  new Client({
+    id: 7,
+    nomComplet: &#x27;Antoine Petit&#x27;,
+    email: &#x27;antoine.petit@email.com&#x27;,
+    telephone: &#x27;0689012345&#x27;,
+    adresse: &#x27;12 Rue Victor Hugo, 69002 Lyon&#x27;,
+    dateCreation: new Date(&#x27;2023-02-20&#x27;),
+    solde: 950,
+    estEmploye: false,
+  }),
+  new Client({
+    id: 8,
+    nomComplet: &#x27;Elodie Roux&#x27;,
+    email: &#x27;elodie.roux@email.com&#x27;,
+    telephone: &#x27;0690123456&#x27;,
+    adresse: &#x27;4 Place Bellecour, 69002 Lyon&#x27;,
+    dateCreation: new Date(&#x27;2023-03-25&#x27;),
+    solde: 600,
+    estEmploye: true,
+  }),
+  new Client({
+    id: 9,
+    nomComplet: &#x27;Nicolas Leroy&#x27;,
+    email: &#x27;nicolas.leroy@email.com&#x27;,
+    telephone: &#x27;0612340987&#x27;,
+    adresse: &#x27;18 Rue de la Charité, 69007 Lyon&#x27;,
+    dateCreation: new Date(&#x27;2023-04-10&#x27;),
+    solde: 2200,
+    estEmploye: false,
+  }),
+  new Client({
+    id: 10,
+    nomComplet: &#x27;Camille Fournier&#x27;,
+    email: &#x27;camille.fournier@email.com&#x27;,
+    telephone: &#x27;0623459876&#x27;,
+    adresse: &#x27;7 Quai Saint-Antoine, 69002 Lyon&#x27;,
+    dateCreation: new Date(&#x27;2023-05-15&#x27;),
+    solde: 850,
+    estEmploye: false,
+  }),
+
+  // Clients pour Magasin 3 (Marseille)
+  new Client({
+    id: 11,
+    nomComplet: &#x27;Alexandre Michel&#x27;,
+    email: &#x27;alexandre.michel@email.com&#x27;,
+    telephone: &#x27;0634568765&#x27;,
+    adresse: &#x27;25 Rue Paradis, 13006 Marseille&#x27;,
+    dateCreation: new Date(&#x27;2023-01-20&#x27;),
+    solde: 1700,
+    estEmploye: false,
+  }),
+  new Client({
+    id: 12,
+    nomComplet: &#x27;Julie Laurent&#x27;,
+    email: &#x27;julie.laurent@email.com&#x27;,
+    telephone: &#x27;0645677654&#x27;,
+    adresse: &#x27;10 Rue Saint-Ferréol, 13001 Marseille&#x27;,
+    dateCreation: new Date(&#x27;2023-02-25&#x27;),
+    solde: 1100,
+    estEmploye: false,
+  }),
+  new Client({
+    id: 13,
+    nomComplet: &#x27;Maxime Simon&#x27;,
+    email: &#x27;maxime.simon@email.com&#x27;,
+    telephone: &#x27;0656786543&#x27;,
+    adresse: &#x27;3 Cours Belsunce, 13001 Marseille&#x27;,
+    dateCreation: new Date(&#x27;2023-03-30&#x27;),
+    solde: 650,
+    estEmploye: true,
+  }),
+  new Client({
+    id: 14,
+    nomComplet: &#x27;Laura Lefebvre&#x27;,
+    email: &#x27;laura.lefebvre@email.com&#x27;,
+    telephone: &#x27;0667895432&#x27;,
+    adresse: &#x27;15 Rue de Rome, 13006 Marseille&#x27;,
+    dateCreation: new Date(&#x27;2023-04-15&#x27;),
+    solde: 1900,
+    estEmploye: false,
+  }),
+  new Client({
+    id: 15,
+    nomComplet: &#x27;Hugo Martinez&#x27;,
+    email: &#x27;hugo.martinez@email.com&#x27;,
+    telephone: &#x27;0678904321&#x27;,
+    adresse: &#x27;8 Boulevard Longchamp, 13001 Marseille&#x27;,
+    dateCreation: new Date(&#x27;2023-05-20&#x27;),
+    solde: 800,
+    estEmploye: false,
+  }),
+]</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="depenses"></a>
+                    <span class="name">
+                        <span ><b>depenses</b></span>
+                        <a href="#depenses"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="../classes/Depense.html" target="_self" >Depense[]</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[
+  // Magasin Paris (ID 1) - 10 dépenses
+  new Depense({
+    id: 1,
+    date: new Date(&#x27;2025-05-02&#x27;),
+    categoryId: 1,
+    montant: 1200.0,
+    type: &#x27;STOCK&#x27;,
+    description: &#x27;Achat pâtes Barilla&#x27;,
+    paymentMode: &#x27;Virement&#x27;,
+    magasinId: 1,
+  }),
+  new Depense({
+    id: 2,
+    date: new Date(&#x27;2025-05-03&#x27;),
+    categoryId: 2,
+    montant: 450.5,
+    type: &#x27;STANDARD&#x27;,
+    description: &#x27;Entretien camion livraison&#x27;,
+    paymentMode: &#x27;Chèque&#x27;,
+    magasinId: 1,
+  }),
+  new Depense({
+    id: 7,
+    date: new Date(&#x27;2025-05-07&#x27;),
+    categoryId: 2,
+    montant: 150.0,
+    type: &#x27;STANDARD&#x27;,
+    description: &#x27;Nettoyage magasin&#x27;,
+    paymentMode: &#x27;Espèces&#x27;,
+    magasinId: 1,
+  }),
+  new Depense({
+    id: 10,
+    date: new Date(&#x27;2025-05-10&#x27;),
+    categoryId: 1,
+    montant: 1650.0,
+    type: &#x27;STOCK&#x27;,
+    description: &#x27;Achat fruits et légumes&#x27;,
+    paymentMode: &#x27;Virement&#x27;,
+    magasinId: 1,
+  }),
+  new Depense({
+    id: 13,
+    date: new Date(&#x27;2025-05-15&#x27;),
+    categoryId: 3,
+    montant: 850.0,
+    type: &#x27;STOCK&#x27;,
+    description: &#x27;Achat produits surgelés&#x27;,
+    paymentMode: &#x27;Virement&#x27;,
+    magasinId: 1,
+  }),
+  new Depense({
+    id: 16,
+    date: new Date(&#x27;2025-05-18&#x27;),
+    categoryId: 4,
+    montant: 320.75,
+    type: &#x27;STANDARD&#x27;,
+    description: &#x27;Matériel de caisse&#x27;,
+    paymentMode: &#x27;Carte&#x27;,
+    magasinId: 1,
+  }),
+  new Depense({
+    id: 19,
+    date: new Date(&#x27;2025-05-22&#x27;),
+    categoryId: 5,
+    montant: 280.0,
+    type: &#x27;STANDARD&#x27;,
+    description: &#x27;Formation employés&#x27;,
+    paymentMode: &#x27;Chèque&#x27;,
+    magasinId: 1,
+  }),
+  new Depense({
+    id: 22,
+    date: new Date(&#x27;2025-05-25&#x27;),
+    categoryId: 1,
+    montant: 1350.0,
+    type: &#x27;STOCK&#x27;,
+    description: &#x27;Achat produits bio&#x27;,
+    paymentMode: &#x27;Virement&#x27;,
+    magasinId: 1,
+  }),
+  new Depense({
+    id: 25,
+    date: new Date(&#x27;2025-05-28&#x27;),
+    categoryId: 2,
+    montant: 175.5,
+    type: &#x27;STANDARD&#x27;,
+    description: &#x27;Réparation chariot&#x27;,
+    paymentMode: &#x27;Espèces&#x27;,
+    magasinId: 1,
+  }),
+  new Depense({
+    id: 28,
+    date: new Date(&#x27;2025-05-30&#x27;),
+    categoryId: 3,
+    montant: 920.0,
+    type: &#x27;STOCK&#x27;,
+    description: &#x27;Achat produits secs&#x27;,
+    paymentMode: &#x27;Virement&#x27;,
+    magasinId: 1,
+  }),
+
+  // Magasin Lyon (ID 2) - 10 dépenses
+  new Depense({
+    id: 3,
+    date: new Date(&#x27;2025-05-05&#x27;),
+    categoryId: 3,
+    montant: 3200.0,
+    type: &#x27;STOCK&#x27;,
+    description: &#x27;Achat viandes&#x27;,
+    paymentMode: &#x27;Virement&#x27;,
+    magasinId: 2,
+  }),
+  new Depense({
+    id: 4,
+    date: new Date(&#x27;2025-05-08&#x27;),
+    categoryId: 4,
+    montant: 180.75,
+    type: &#x27;STANDARD&#x27;,
+    description: &#x27;Fournitures bureau&#x27;,
+    paymentMode: &#x27;Carte&#x27;,
+    magasinId: 2,
+  }),
+  new Depense({
+    id: 8,
+    date: new Date(&#x27;2025-05-12&#x27;),
+    categoryId: 3,
+    montant: 2800.0,
+    type: &#x27;STOCK&#x27;,
+    description: &#x27;Achat boissons&#x27;,
+    paymentMode: &#x27;Virement&#x27;,
+    magasinId: 2,
+  }),
+  new Depense({
+    id: 11,
+    date: new Date(&#x27;2025-05-13&#x27;),
+    categoryId: 5,
+    montant: 420.3,
+    type: &#x27;STANDARD&#x27;,
+    description: &#x27;Publicité locale&#x27;,
+    paymentMode: &#x27;Chèque&#x27;,
+    magasinId: 2,
+  }),
+  new Depense({
+    id: 14,
+    date: new Date(&#x27;2025-05-16&#x27;),
+    categoryId: 1,
+    montant: 1100.0,
+    type: &#x27;STOCK&#x27;,
+    description: &#x27;Achat épicerie&#x27;,
+    paymentMode: &#x27;Virement&#x27;,
+    magasinId: 2,
+  }),
+  new Depense({
+    id: 17,
+    date: new Date(&#x27;2025-05-19&#x27;),
+    categoryId: 2,
+    montant: 380.0,
+    type: &#x27;STANDARD&#x27;,
+    description: &#x27;Carburant livraison&#x27;,
+    paymentMode: &#x27;Carte&#x27;,
+    magasinId: 2,
+  }),
+  new Depense({
+    id: 20,
+    date: new Date(&#x27;2025-05-23&#x27;),
+    categoryId: 4,
+    montant: 210.5,
+    type: &#x27;STANDARD&#x27;,
+    description: &#x27;Logiciel caisse&#x27;,
+    paymentMode: &#x27;Virement&#x27;,
+    magasinId: 2,
+  }),
+  new Depense({
+    id: 23,
+    date: new Date(&#x27;2025-05-26&#x27;),
+    categoryId: 3,
+    montant: 1950.0,
+    type: &#x27;STOCK&#x27;,
+    description: &#x27;Achat poissons&#x27;,
+    paymentMode: &#x27;Virement&#x27;,
+    magasinId: 2,
+  }),
+  new Depense({
+    id: 26,
+    date: new Date(&#x27;2025-05-29&#x27;),
+    categoryId: 5,
+    montant: 150.0,
+    type: &#x27;STANDARD&#x27;,
+    description: &#x27;Fleurs accueil&#x27;,
+    paymentMode: &#x27;Espèces&#x27;,
+    magasinId: 2,
+  }),
+  new Depense({
+    id: 29,
+    date: new Date(&#x27;2025-05-31&#x27;),
+    categoryId: 1,
+    montant: 1250.0,
+    type: &#x27;STOCK&#x27;,
+    description: &#x27;Achat produits boulangerie&#x27;,
+    paymentMode: &#x27;Virement&#x27;,
+    magasinId: 2,
+  }),
+
+  // Magasin Marseille (ID 3) - 10 dépenses
+  new Depense({
+    id: 5,
+    date: new Date(&#x27;2025-05-10&#x27;),
+    categoryId: 1,
+    montant: 950.0,
+    type: &#x27;STOCK&#x27;,
+    description: &#x27;Achat produits laitiers&#x27;,
+    paymentMode: &#x27;Virement&#x27;,
+    magasinId: 3,
+  }),
+  new Depense({
+    id: 6,
+    date: new Date(&#x27;2025-05-11&#x27;),
+    categoryId: 5,
+    montant: 420.3,
+    type: &#x27;STANDARD&#x27;,
+    description: &#x27;Publicité locale&#x27;,
+    paymentMode: &#x27;Chèque&#x27;,
+    magasinId: 3,
+  }),
+  new Depense({
+    id: 9,
+    date: new Date(&#x27;2025-05-14&#x27;),
+    categoryId: 4,
+    montant: 75.6,
+    type: &#x27;STANDARD&#x27;,
+    description: &#x27;Petit matériel&#x27;,
+    paymentMode: &#x27;Carte&#x27;,
+    magasinId: 3,
+  }),
+  new Depense({
+    id: 12,
+    date: new Date(&#x27;2025-05-15&#x27;),
+    categoryId: 2,
+    montant: 290.0,
+    type: &#x27;STANDARD&#x27;,
+    description: &#x27;Uniforme personnel&#x27;,
+    paymentMode: &#x27;Chèque&#x27;,
+    magasinId: 3,
+  }),
+  new Depense({
+    id: 15,
+    date: new Date(&#x27;2025-05-17&#x27;),
+    categoryId: 3,
+    montant: 1800.0,
+    type: &#x27;STOCK&#x27;,
+    description: &#x27;Achat charcuterie&#x27;,
+    paymentMode: &#x27;Virement&#x27;,
+    magasinId: 3,
+  }),
+  new Depense({
+    id: 18,
+    date: new Date(&#x27;2025-05-20&#x27;),
+    categoryId: 1,
+    montant: 1350.0,
+    type: &#x27;STOCK&#x27;,
+    description: &#x27;Achat fruits exotiques&#x27;,
+    paymentMode: &#x27;Virement&#x27;,
+    magasinId: 3,
+  }),
+  new Depense({
+    id: 21,
+    date: new Date(&#x27;2025-05-24&#x27;),
+    categoryId: 5,
+    montant: 350.0,
+    type: &#x27;STANDARD&#x27;,
+    description: &#x27;Décorations saisonnières&#x27;,
+    paymentMode: &#x27;Espèces&#x27;,
+    magasinId: 3,
+  }),
+  new Depense({
+    id: 24,
+    date: new Date(&#x27;2025-05-27&#x27;),
+    categoryId: 4,
+    montant: 120.0,
+    type: &#x27;STANDARD&#x27;,
+    description: &#x27;Abonnements logiciels&#x27;,
+    paymentMode: &#x27;Virement&#x27;,
+    magasinId: 3,
+  }),
+  new Depense({
+    id: 27,
+    date: new Date(&#x27;2025-05-30&#x27;),
+    categoryId: 2,
+    montant: 410.0,
+    type: &#x27;STANDARD&#x27;,
+    description: &#x27;Maintenance équipement&#x27;,
+    paymentMode: &#x27;Carte&#x27;,
+    magasinId: 3,
+  }),
+  new Depense({
+    id: 30,
+    date: new Date(&#x27;2025-02-01&#x27;),
+    categoryId: 3,
+    montant: 2200.0,
+    type: &#x27;STOCK&#x27;,
+    description: &#x27;Achat vins et spiritueux&#x27;,
+    paymentMode: &#x27;Virement&#x27;,
+    magasinId: 3,
+  }),
+]</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="magasins"></a>
+                    <span class="name">
+                        <span ><b>magasins</b></span>
+                        <a href="#magasins"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="../classes/Magasin.html" target="_self" >Magasin[]</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[
+  new Magasin({
+    id: 1,
+    nom: &#x27;SuperMarket Paris&#x27;,
+    adresse: &#x27;12 Rue de la République&#x27;,
+    ville: &#x27;Paris&#x27;,
+    telephone: &#x27;0145863254&#x27;,
+    email: &#x27;paris@supermarket.com&#x27;,
+    responsableId: 101,
+    capaciteStock: 5000,
+    chiffreAffaires: 25000,
+    statut: &#x27;Actif&#x27;,
+    dateCreation: new Date(&#x27;2022-01-15&#x27;),
+  }),
+  new Magasin({
+    id: 2,
+    nom: &#x27;SuperMarket Lyon&#x27;,
+    adresse: &#x27;45 Avenue des Ternes&#x27;,
+    ville: &#x27;Lyon&#x27;,
+    telephone: &#x27;0478563214&#x27;,
+    email: &#x27;lyon@supermarket.com&#x27;,
+    responsableId: 102,
+    capaciteStock: 3500,
+    chiffreAffaires: 18000,
+    statut: &#x27;Actif&#x27;,
+    dateCreation: new Date(&#x27;2022-03-20&#x27;),
+  }),
+  new Magasin({
+    id: 3,
+    nom: &#x27;SuperMarket Marseille&#x27;,
+    adresse: &#x27;30 Boulevard Michelet&#x27;,
+    ville: &#x27;Marseille&#x27;,
+    telephone: &#x27;0491326547&#x27;,
+    email: &#x27;marseille@supermarket.com&#x27;,
+    responsableId: 103,
+    capaciteStock: 4000,
+    chiffreAffaires: 21000,
+    statut: &#x27;Inactif&#x27;,
+    dateCreation: new Date(&#x27;2022-05-10&#x27;),
+  }),
+]</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="modesPaiement"></a>
+                    <span class="name">
+                        <span ><b>modesPaiement</b></span>
+                        <a href="#modesPaiement"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>ModePaiement[]</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[
+  new ModePaiement({ id: 1, libelle: &#x27;Espèce&#x27; }),
+  new ModePaiement({ id: 2, libelle: &#x27;Carte&#x27; }),
+  new ModePaiement({ id: 3, libelle: &#x27;Mobile Money&#x27; }),
+  new ModePaiement({ id: 4, libelle: &#x27;Virement&#x27; }),
+]</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="mouvements"></a>
+                    <span class="name">
+                        <span ><b>mouvements</b></span>
+                        <a href="#mouvements"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>MouvementsStock[]</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[
+  // Magasin 1 (Paris) - 15 mouvements
+  new MouvementsStock({
+    id: 1,
+    ref: &#x27;MV-PAR-2025-001&#x27;,
+    produitId: 1,
+    magasinId: 1,
+    stockId: 1,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 50,
+    prixUnitaire: 1.2,
+    acteurId: 201,
+    description: &#x27;Livraison initiale&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-15&#x27;),
+  }),
+  new MouvementsStock({
+    id: 2,
+    ref: &#x27;MV-PAR-2025-002&#x27;,
+    produitId: 1,
+    magasinId: 1,
+    stockId: 1,
+    typeMouvement: &#x27;Sortie&#x27;,
+    quantite: 30,
+    prixUnitaire: 2.5,
+    acteurId: 301,
+    description: &#x27;Vente client&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-15&#x27;),
+  }),
+  new MouvementsStock({
+    id: 3,
+    ref: &#x27;MV-PAR-2025-003&#x27;,
+    produitId: 2,
+    magasinId: 1,
+    stockId: 2,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 100,
+    prixUnitaire: 0.3,
+    acteurId: 202,
+    description: &#x27;Réapprovisionnement&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-16&#x27;),
+  }),
+  new MouvementsStock({
+    id: 4,
+    ref: &#x27;MV-PAR-2025-004&#x27;,
+    produitId: 3,
+    magasinId: 1,
+    stockId: 3,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 40,
+    prixUnitaire: 1.5,
+    acteurId: 203,
+    description: &#x27;Livraison fruits&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-14&#x27;),
+  }),
+  new MouvementsStock({
+    id: 5,
+    ref: &#x27;MV-PAR-2025-005&#x27;,
+    produitId: 4,
+    magasinId: 1,
+    stockId: 4,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 80,
+    prixUnitaire: 0.8,
+    acteurId: 204,
+    description: &#x27;Livraison laitage&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-17&#x27;),
+  }),
+  new MouvementsStock({
+    id: 6,
+    ref: &#x27;MV-PAR-2025-006&#x27;,
+    produitId: 5,
+    magasinId: 1,
+    stockId: 5,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 120,
+    prixUnitaire: 0.6,
+    acteurId: 205,
+    description: &#x27;Livraison boulangerie&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-18&#x27;),
+  }),
+  new MouvementsStock({
+    id: 7,
+    ref: &#x27;MV-PAR-2025-007&#x27;,
+    produitId: 6,
+    magasinId: 1,
+    stockId: 6,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 30,
+    prixUnitaire: 8.5,
+    acteurId: 206,
+    description: &#x27;Livraison viande&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-19&#x27;),
+  }),
+  new MouvementsStock({
+    id: 8,
+    ref: &#x27;MV-PAR-2025-008&#x27;,
+    produitId: 7,
+    magasinId: 1,
+    stockId: 7,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 15,
+    prixUnitaire: 25.0,
+    acteurId: 207,
+    description: &#x27;Livraison électroménager&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-20&#x27;),
+  }),
+  new MouvementsStock({
+    id: 9,
+    ref: &#x27;MV-PAR-2025-009&#x27;,
+    produitId: 8,
+    magasinId: 1,
+    stockId: 8,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 40,
+    prixUnitaire: 5.8,
+    acteurId: 208,
+    description: &#x27;Livraison entretien&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-21&#x27;),
+  }),
+  new MouvementsStock({
+    id: 10,
+    ref: &#x27;MV-PAR-2025-050&#x27;,
+    produitId: 9,
+    magasinId: 1,
+    stockId: 9,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 50,
+    prixUnitaire: 2.3,
+    acteurId: 209,
+    description: &#x27;Livraison surgelés&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-22&#x27;),
+  }),
+  new MouvementsStock({
+    id: 11,
+    ref: &#x27;MV-PAR-2025-051&#x27;,
+    produitId: 10,
+    magasinId: 1,
+    stockId: 10,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 100,
+    prixUnitaire: 1.1,
+    acteurId: 210,
+    description: &#x27;Livraison hygiène&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-23&#x27;),
+  }),
+  new MouvementsStock({
+    id: 12,
+    ref: &#x27;MV-PAR-2025-052&#x27;,
+    produitId: 2,
+    magasinId: 1,
+    stockId: 2,
+    typeMouvement: &#x27;Sortie&#x27;,
+    quantite: 70,
+    prixUnitaire: 0.8,
+    acteurId: 302,
+    description: &#x27;Vente client&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-16&#x27;),
+  }),
+  new MouvementsStock({
+    id: 13,
+    ref: &#x27;MV-PAR-2025-053&#x27;,
+    produitId: 3,
+    magasinId: 1,
+    stockId: 3,
+    typeMouvement: &#x27;Sortie&#x27;,
+    quantite: 35,
+    prixUnitaire: 2.8,
+    acteurId: 303,
+    description: &#x27;Vente client&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-14&#x27;),
+  }),
+  new MouvementsStock({
+    id: 14,
+    ref: &#x27;MV-PAR-2025-054&#x27;,
+    produitId: 5,
+    magasinId: 1,
+    stockId: 5,
+    typeMouvement: &#x27;Sortie&#x27;,
+    quantite: 80,
+    prixUnitaire: 1.2,
+    acteurId: 304,
+    description: &#x27;Vente client&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-18&#x27;),
+  }),
+  new MouvementsStock({
+    id: 15,
+    ref: &#x27;MV-PAR-2025-055&#x27;,
+    produitId: 7,
+    magasinId: 1,
+    stockId: 7,
+    typeMouvement: &#x27;Sortie&#x27;,
+    quantite: 10,
+    prixUnitaire: 39.99,
+    acteurId: 305,
+    description: &#x27;Vente client&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-20&#x27;),
+  }),
+
+  // Magasin 2 (Lyon) - 15 mouvements
+  new MouvementsStock({
+    id: 16,
+    ref: &#x27;MV-LYO-2025-001&#x27;,
+    produitId: 11,
+    magasinId: 2,
+    stockId: 11,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 60,
+    prixUnitaire: 1.8,
+    acteurId: 211,
+    description: &#x27;Livraison initiale&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-15&#x27;),
+  }),
+  new MouvementsStock({
+    id: 17,
+    ref: &#x27;MV-LYO-2025-002&#x27;,
+    produitId: 11,
+    magasinId: 2,
+    stockId: 11,
+    typeMouvement: &#x27;Sortie&#x27;,
+    quantite: 35,
+    prixUnitaire: 3.2,
+    acteurId: 306,
+    description: &#x27;Vente client&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-15&#x27;),
+  }),
+  new MouvementsStock({
+    id: 18,
+    ref: &#x27;MV-LYO-2025-003&#x27;,
+    produitId: 12,
+    magasinId: 2,
+    stockId: 12,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 80,
+    prixUnitaire: 1.2,
+    acteurId: 212,
+    description: &#x27;Réapprovisionnement&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-16&#x27;),
+  }),
+  new MouvementsStock({
+    id: 19,
+    ref: &#x27;MV-LYO-2025-004&#x27;,
+    produitId: 13,
+    magasinId: 2,
+    stockId: 13,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 50,
+    prixUnitaire: 1.2,
+    acteurId: 213,
+    description: &#x27;Livraison fruits&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-17&#x27;),
+  }),
+  new MouvementsStock({
+    id: 20,
+    ref: &#x27;MV-LYO-2025-005&#x27;,
+    produitId: 14,
+    magasinId: 2,
+    stockId: 14,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 120,
+    prixUnitaire: 0.4,
+    acteurId: 214,
+    description: &#x27;Livraison laitage&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-18&#x27;),
+  }),
+  new MouvementsStock({
+    id: 21,
+    ref: &#x27;MV-LYO-2025-006&#x27;,
+    produitId: 15,
+    magasinId: 2,
+    stockId: 15,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 100,
+    prixUnitaire: 0.35,
+    acteurId: 215,
+    description: &#x27;Livraison boulangerie&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-19&#x27;),
+  }),
+  new MouvementsStock({
+    id: 22,
+    ref: &#x27;MV-LYO-2025-007&#x27;,
+    produitId: 16,
+    magasinId: 2,
+    stockId: 16,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 40,
+    prixUnitaire: 6.5,
+    acteurId: 216,
+    description: &#x27;Livraison viande&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-20&#x27;),
+  }),
+  new MouvementsStock({
+    id: 23,
+    ref: &#x27;MV-LYO-2025-008&#x27;,
+    produitId: 17,
+    magasinId: 2,
+    stockId: 17,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 20,
+    prixUnitaire: 18.0,
+    acteurId: 217,
+    description: &#x27;Livraison électroménager&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-21&#x27;),
+  }),
+  new MouvementsStock({
+    id: 24,
+    ref: &#x27;MV-LYO-2025-009&#x27;,
+    produitId: 18,
+    magasinId: 2,
+    stockId: 18,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 50,
+    prixUnitaire: 3.5,
+    acteurId: 218,
+    description: &#x27;Livraison entretien&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-22&#x27;),
+  }),
+  new MouvementsStock({
+    id: 25,
+    ref: &#x27;MV-LYO-2025-050&#x27;,
+    produitId: 19,
+    magasinId: 2,
+    stockId: 19,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 60,
+    prixUnitaire: 2.8,
+    acteurId: 219,
+    description: &#x27;Livraison surgelés&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-23&#x27;),
+  }),
+  new MouvementsStock({
+    id: 26,
+    ref: &#x27;MV-LYO-2025-051&#x27;,
+    produitId: 20,
+    magasinId: 2,
+    stockId: 20,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 100,
+    prixUnitaire: 2.3,
+    acteurId: 220,
+    description: &#x27;Livraison hygiène&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-24&#x27;),
+  }),
+  new MouvementsStock({
+    id: 27,
+    ref: &#x27;MV-LYO-2025-052&#x27;,
+    produitId: 12,
+    magasinId: 2,
+    stockId: 12,
+    typeMouvement: &#x27;Sortie&#x27;,
+    quantite: 50,
+    prixUnitaire: 2.5,
+    acteurId: 307,
+    description: &#x27;Vente client&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-16&#x27;),
+  }),
+  new MouvementsStock({
+    id: 28,
+    ref: &#x27;MV-LYO-2025-053&#x27;,
+    produitId: 13,
+    magasinId: 2,
+    stockId: 13,
+    typeMouvement: &#x27;Sortie&#x27;,
+    quantite: 30,
+    prixUnitaire: 2.3,
+    acteurId: 308,
+    description: &#x27;Vente client&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-17&#x27;),
+  }),
+  new MouvementsStock({
+    id: 29,
+    ref: &#x27;MV-LYO-2025-054&#x27;,
+    produitId: 15,
+    magasinId: 2,
+    stockId: 15,
+    typeMouvement: &#x27;Sortie&#x27;,
+    quantite: 60,
+    prixUnitaire: 0.9,
+    acteurId: 309,
+    description: &#x27;Vente client&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-19&#x27;),
+  }),
+  new MouvementsStock({
+    id: 30,
+    ref: &#x27;MV-LYO-2025-055&#x27;,
+    produitId: 17,
+    magasinId: 2,
+    stockId: 17,
+    typeMouvement: &#x27;Sortie&#x27;,
+    quantite: 12,
+    prixUnitaire: 29.99,
+    acteurId: 310,
+    description: &#x27;Vente client&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-21&#x27;),
+  }),
+
+  // Magasin 3 (Marseille) - 15 mouvements
+  new MouvementsStock({
+    id: 31,
+    ref: &#x27;MV-MAR-2025-001&#x27;,
+    produitId: 21,
+    magasinId: 3,
+    stockId: 21,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 60,
+    prixUnitaire: 0.9,
+    acteurId: 221,
+    description: &#x27;Livraison initiale&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-15&#x27;),
+  }),
+  new MouvementsStock({
+    id: 32,
+    ref: &#x27;MV-MAR-2025-002&#x27;,
+    produitId: 21,
+    magasinId: 3,
+    stockId: 21,
+    typeMouvement: &#x27;Sortie&#x27;,
+    quantite: 40,
+    prixUnitaire: 1.8,
+    acteurId: 311,
+    description: &#x27;Vente client&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-15&#x27;),
+  }),
+  new MouvementsStock({
+    id: 33,
+    ref: &#x27;MV-MAR-2025-003&#x27;,
+    produitId: 22,
+    magasinId: 3,
+    stockId: 22,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 100,
+    prixUnitaire: 0.8,
+    acteurId: 222,
+    description: &#x27;Réapprovisionnement&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-16&#x27;),
+  }),
+  new MouvementsStock({
+    id: 34,
+    ref: &#x27;MV-MAR-2025-004&#x27;,
+    produitId: 23,
+    magasinId: 3,
+    stockId: 23,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 50,
+    prixUnitaire: 1.6,
+    acteurId: 223,
+    description: &#x27;Livraison fruits&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-17&#x27;),
+  }),
+  new MouvementsStock({
+    id: 35,
+    ref: &#x27;MV-MAR-2025-005&#x27;,
+    produitId: 24,
+    magasinId: 3,
+    stockId: 24,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 30,
+    prixUnitaire: 7.5,
+    acteurId: 224,
+    description: &#x27;Livraison laitage&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-18&#x27;),
+  }),
+  new MouvementsStock({
+    id: 36,
+    ref: &#x27;MV-MAR-2025-006&#x27;,
+    produitId: 25,
+    magasinId: 3,
+    stockId: 25,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 100,
+    prixUnitaire: 0.45,
+    acteurId: 225,
+    description: &#x27;Livraison boulangerie&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-19&#x27;),
+  }),
+  new MouvementsStock({
+    id: 37,
+    ref: &#x27;MV-MAR-2025-007&#x27;,
+    produitId: 26,
+    magasinId: 3,
+    stockId: 26,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 25,
+    prixUnitaire: 12.0,
+    acteurId: 226,
+    description: &#x27;Livraison poisson&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-20&#x27;),
+  }),
+  new MouvementsStock({
+    id: 38,
+    ref: &#x27;MV-MAR-2025-008&#x27;,
+    produitId: 27,
+    magasinId: 3,
+    stockId: 27,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 15,
+    prixUnitaire: 15.0,
+    acteurId: 227,
+    description: &#x27;Livraison électroménager&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-21&#x27;),
+  }),
+  new MouvementsStock({
+    id: 39,
+    ref: &#x27;MV-MAR-2025-009&#x27;,
+    produitId: 28,
+    magasinId: 3,
+    stockId: 28,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 50,
+    prixUnitaire: 2.2,
+    acteurId: 228,
+    description: &#x27;Livraison entretien&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-22&#x27;),
+  }),
+  new MouvementsStock({
+    id: 40,
+    ref: &#x27;MV-MAR-2025-050&#x27;,
+    produitId: 29,
+    magasinId: 3,
+    stockId: 29,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 40,
+    prixUnitaire: 2.5,
+    acteurId: 229,
+    description: &#x27;Livraison surgelés&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-23&#x27;),
+  }),
+  new MouvementsStock({
+    id: 41,
+    ref: &#x27;MV-MAR-2025-051&#x27;,
+    produitId: 30,
+    magasinId: 3,
+    stockId: 30,
+    typeMouvement: &#x27;Entree&#x27;,
+    quantite: 120,
+    prixUnitaire: 0.8,
+    acteurId: 230,
+    description: &#x27;Livraison hygiène&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-24&#x27;),
+  }),
+  new MouvementsStock({
+    id: 42,
+    ref: &#x27;MV-MAR-2025-052&#x27;,
+    produitId: 22,
+    magasinId: 3,
+    stockId: 22,
+    typeMouvement: &#x27;Sortie&#x27;,
+    quantite: 80,
+    prixUnitaire: 1.9,
+    acteurId: 312,
+    description: &#x27;Vente client&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-16&#x27;),
+  }),
+  new MouvementsStock({
+    id: 43,
+    ref: &#x27;MV-MAR-2025-053&#x27;,
+    produitId: 23,
+    magasinId: 3,
+    stockId: 23,
+    typeMouvement: &#x27;Sortie&#x27;,
+    quantite: 35,
+    prixUnitaire: 2.9,
+    acteurId: 313,
+    description: &#x27;Vente client&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-17&#x27;),
+  }),
+  new MouvementsStock({
+    id: 44,
+    ref: &#x27;MV-MAR-2025-054&#x27;,
+    produitId: 25,
+    magasinId: 3,
+    stockId: 25,
+    typeMouvement: &#x27;Sortie&#x27;,
+    quantite: 60,
+    prixUnitaire: 1.0,
+    acteurId: 314,
+    description: &#x27;Vente client&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-19&#x27;),
+  }),
+  new MouvementsStock({
+    id: 45,
+    ref: &#x27;MV-MAR-2025-055&#x27;,
+    produitId: 27,
+    magasinId: 3,
+    stockId: 27,
+    typeMouvement: &#x27;Sortie&#x27;,
+    quantite: 10,
+    prixUnitaire: 24.99,
+    acteurId: 315,
+    description: &#x27;Vente client&#x27;,
+    dateMouvement: new Date(&#x27;2025-05-21&#x27;),
+  }),
+]</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="paiements"></a>
+                    <span class="name">
+                        <span ><b>paiements</b></span>
+                        <a href="#paiements"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="../classes/Paiement.html" target="_self" >Paiement[]</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>paniers.flatMap((p) &#x3D;&gt; p.paiements || [])</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="paniers"></a>
+                    <span class="name">
+                        <span ><b>paniers</b></span>
+                        <a href="#paniers"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="../classes/Panier.html" target="_self" >Panier[]</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[
+  // Paniers pour Magasin 1 (Paris)
+  new Panier({
+    id: 1,
+    clientId: 1,
+    magasinId: 1,
+    agentId: 101,
+    dateCreation: new Date(&#x27;2025-05-01T10:15:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[0],
+        quantite: 2,
+        prixVenteUnitaire: produits[0].prixVenteUnitaire,
+        prixAchatUnitaire: produits[0].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[0].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 1),
+      }),
+      new ArticlePanier({
+        produit: produits[2],
+        quantite: 1,
+        prixVenteUnitaire: produits[2].prixVenteUnitaire,
+        prixAchatUnitaire: produits[2].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[2].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 1),
+      }),
+      new ArticlePanier({
+        produit: produits[4],
+        quantite: 3,
+        prixVenteUnitaire: produits[4].prixVenteUnitaire,
+        prixAchatUnitaire: produits[4].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[4].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 1),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 1,
+        montant: 6.5,
+        methodePaiement: 1, // Espèce
+        date: new Date(&#x27;2025-05-01T10:20:00&#x27;),
+        panierId: 1,
+        clientId: 1,
+        magasinId: 1,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 2,
+    clientId: 2,
+    magasinId: 1,
+    agentId: 102,
+    dateCreation: new Date(&#x27;2025-05-02T11:30:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[1],
+        quantite: 5,
+        prixVenteUnitaire: produits[1].prixVenteUnitaire,
+        prixAchatUnitaire: produits[1].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[1].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 1),
+      }),
+      new ArticlePanier({
+        produit: produits[3],
+        quantite: 2,
+        prixVenteUnitaire: produits[3].prixVenteUnitaire,
+        prixAchatUnitaire: produits[3].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[3].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 1),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 2,
+        montant: 2.3,
+        methodePaiement: 2, // Carte
+        date: new Date(&#x27;2025-05-02T11:35:00&#x27;),
+        panierId: 2,
+        clientId: 2,
+        magasinId: 1,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 3,
+    clientId: 3,
+    magasinId: 1,
+    agentId: 101,
+    dateCreation: new Date(&#x27;2025-05-03T14:45:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[5],
+        quantite: 1,
+        prixVenteUnitaire: produits[5].prixVenteUnitaire,
+        prixAchatUnitaire: produits[5].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[5].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 1),
+      }),
+      new ArticlePanier({
+        produit: produits[7],
+        quantite: 1,
+        prixVenteUnitaire: produits[7].prixVenteUnitaire,
+        prixAchatUnitaire: produits[7].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[7].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 1),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 3,
+        montant: 21.5,
+        methodePaiement: 3, // Mobile Money
+        date: new Date(&#x27;2025-05-03T14:50:00&#x27;),
+        panierId: 3,
+        clientId: 3,
+        magasinId: 1,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 4,
+    clientId: 4,
+    magasinId: 1,
+    agentId: 102,
+    dateCreation: new Date(&#x27;2025-05-04T16:20:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[6],
+        quantite: 1,
+        prixVenteUnitaire: produits[6].prixVenteUnitaire,
+        prixAchatUnitaire: produits[6].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[6].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 1),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 4,
+        montant: 39.99,
+        methodePaiement: 2, // Carte
+        date: new Date(&#x27;2025-05-04T16:25:00&#x27;),
+        panierId: 4,
+        clientId: 4,
+        magasinId: 1,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 5,
+    clientId: 5,
+    magasinId: 1,
+    agentId: 101,
+    dateCreation: new Date(&#x27;2025-05-05T09:10:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[8],
+        quantite: 1,
+        prixVenteUnitaire: produits[8].prixVenteUnitaire,
+        prixAchatUnitaire: produits[8].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[8].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 1),
+      }),
+      new ArticlePanier({
+        produit: produits[9],
+        quantite: 2,
+        prixVenteUnitaire: produits[9].prixVenteUnitaire,
+        prixAchatUnitaire: produits[9].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[9].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 1),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 5,
+        montant: 6.7,
+        methodePaiement: 1, // Espèce
+        date: new Date(&#x27;2025-05-05T09:15:00&#x27;),
+        panierId: 5,
+        clientId: 5,
+        magasinId: 1,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 6,
+    clientId: 1,
+    magasinId: 1,
+    agentId: 102,
+    dateCreation: new Date(&#x27;2025-05-06T17:30:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[0],
+        quantite: 1,
+        prixVenteUnitaire: produits[0].prixVenteUnitaire,
+        prixAchatUnitaire: produits[0].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[0].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 1),
+      }),
+      new ArticlePanier({
+        produit: produits[1],
+        quantite: 3,
+        prixVenteUnitaire: produits[1].prixVenteUnitaire,
+        prixAchatUnitaire: produits[1].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[1].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 1),
+      }),
+      new ArticlePanier({
+        produit: produits[3],
+        quantite: 1,
+        prixVenteUnitaire: produits[3].prixVenteUnitaire,
+        prixAchatUnitaire: produits[3].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[3].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 1),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 6,
+        montant: 4.8,
+        methodePaiement: 3, // Mobile Money
+        date: new Date(&#x27;2025-05-06T17:35:00&#x27;),
+        panierId: 6,
+        clientId: 1,
+        magasinId: 1,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 7,
+    clientId: 2,
+    magasinId: 1,
+    agentId: 101,
+    dateCreation: new Date(&#x27;2025-05-07T12:45:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[2],
+        quantite: 2,
+        prixVenteUnitaire: produits[2].prixVenteUnitaire,
+        prixAchatUnitaire: produits[2].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[2].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 1),
+      }),
+      new ArticlePanier({
+        produit: produits[4],
+        quantite: 1,
+        prixVenteUnitaire: produits[4].prixVenteUnitaire,
+        prixAchatUnitaire: produits[4].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[4].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 1),
+      }),
+      new ArticlePanier({
+        produit: produits[6],
+        quantite: 1,
+        prixVenteUnitaire: produits[6].prixVenteUnitaire,
+        prixAchatUnitaire: produits[6].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[6].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 1),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 7,
+        montant: 43.99,
+        methodePaiement: 2, // Carte
+        date: new Date(&#x27;2025-05-07T12:50:00&#x27;),
+        panierId: 7,
+        clientId: 2,
+        magasinId: 1,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 8,
+    clientId: 3,
+    magasinId: 1,
+    agentId: 102,
+    dateCreation: new Date(&#x27;2025-05-08T15:20:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[5],
+        quantite: 1,
+        prixVenteUnitaire: produits[5].prixVenteUnitaire,
+        prixAchatUnitaire: produits[5].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[5].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 1),
+      }),
+      new ArticlePanier({
+        produit: produits[7],
+        quantite: 1,
+        prixVenteUnitaire: produits[7].prixVenteUnitaire,
+        prixAchatUnitaire: produits[7].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[7].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 1),
+      }),
+      new ArticlePanier({
+        produit: produits[9],
+        quantite: 3,
+        prixVenteUnitaire: produits[9].prixVenteUnitaire,
+        prixAchatUnitaire: produits[9].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[9].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 1),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 8,
+        montant: 23.7,
+        methodePaiement: 1, // Espèce
+        date: new Date(&#x27;2025-05-08T15:25:00&#x27;),
+        panierId: 8,
+        clientId: 3,
+        magasinId: 1,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 9,
+    clientId: 4,
+    magasinId: 1,
+    agentId: 101,
+    dateCreation: new Date(&#x27;2025-05-09T11:10:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[8],
+        quantite: 1,
+        prixVenteUnitaire: produits[8].prixVenteUnitaire,
+        prixAchatUnitaire: produits[8].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[8].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 1),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 9,
+        montant: 4.5,
+        methodePaiement: 2, // Carte
+        date: new Date(&#x27;2025-05-09T11:15:00&#x27;),
+        panierId: 9,
+        clientId: 4,
+        magasinId: 1,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 10,
+    clientId: 5,
+    magasinId: 1,
+    agentId: 102,
+    dateCreation: new Date(&#x27;2025-05-10T18:30:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[0],
+        quantite: 1,
+        prixVenteUnitaire: produits[0].prixVenteUnitaire,
+        prixAchatUnitaire: produits[0].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[0].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 1),
+      }),
+      new ArticlePanier({
+        produit: produits[2],
+        quantite: 2,
+        prixVenteUnitaire: produits[2].prixVenteUnitaire,
+        prixAchatUnitaire: produits[2].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[2].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 1),
+      }),
+      new ArticlePanier({
+        produit: produits[4],
+        quantite: 2,
+        prixVenteUnitaire: produits[4].prixVenteUnitaire,
+        prixAchatUnitaire: produits[4].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[4].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 1),
+      }),
+      new ArticlePanier({
+        produit: produits[6],
+        quantite: 1,
+        prixVenteUnitaire: produits[6].prixVenteUnitaire,
+        prixAchatUnitaire: produits[6].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[6].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 1),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 10,
+        montant: 46.49,
+        methodePaiement: 3, // Mobile Money
+        date: new Date(&#x27;2025-05-10T18:35:00&#x27;),
+        panierId: 10,
+        clientId: 5,
+        magasinId: 1,
+      }),
+    ],
+  }),
+
+  // Paniers pour Magasin 2 (Lyon)
+  new Panier({
+    id: 11,
+    clientId: 6,
+    magasinId: 2,
+    agentId: 103,
+    dateCreation: new Date(&#x27;2025-05-01T09:15:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[10],
+        quantite: 1,
+        prixVenteUnitaire: produits[10].prixVenteUnitaire,
+        prixAchatUnitaire: produits[10].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[10].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 2),
+      }),
+      new ArticlePanier({
+        produit: produits[12],
+        quantite: 2,
+        prixVenteUnitaire: produits[12].prixVenteUnitaire,
+        prixAchatUnitaire: produits[12].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[12].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 2),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 11,
+        montant: 5.5,
+        methodePaiement: 1, // Espèce
+        date: new Date(&#x27;2025-05-01T09:20:00&#x27;),
+        panierId: 11,
+        clientId: 6,
+        magasinId: 2,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 12,
+    clientId: 7,
+    magasinId: 2,
+    agentId: 103,
+    dateCreation: new Date(&#x27;2025-05-02T10:30:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[11],
+        quantite: 1,
+        prixVenteUnitaire: produits[11].prixVenteUnitaire,
+        prixAchatUnitaire: produits[11].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[11].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 2),
+      }),
+      new ArticlePanier({
+        produit: produits[13],
+        quantite: 4,
+        prixVenteUnitaire: produits[13].prixVenteUnitaire,
+        prixAchatUnitaire: produits[13].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[13].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 2),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 12,
+        montant: 3.3,
+        methodePaiement: 2, // Carte
+        date: new Date(&#x27;2025-05-02T10:35:00&#x27;),
+        panierId: 12,
+        clientId: 7,
+        magasinId: 2,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 13,
+    clientId: 8,
+    magasinId: 2,
+    agentId: 103,
+    dateCreation: new Date(&#x27;2025-05-03T13:45:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[14],
+        quantite: 3,
+        prixVenteUnitaire: produits[14].prixVenteUnitaire,
+        prixAchatUnitaire: produits[14].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[14].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 2),
+      }),
+      new ArticlePanier({
+        produit: produits[16],
+        quantite: 1,
+        prixVenteUnitaire: produits[16].prixVenteUnitaire,
+        prixAchatUnitaire: produits[16].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[16].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 2),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 13,
+        montant: 10.8,
+        methodePaiement: 3, // Mobile Money
+        date: new Date(&#x27;2025-05-03T13:50:00&#x27;),
+        panierId: 13,
+        clientId: 8,
+        magasinId: 2,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 14,
+    clientId: 9,
+    magasinId: 2,
+    agentId: 103,
+    dateCreation: new Date(&#x27;2025-05-04T15:20:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[15],
+        quantite: 1,
+        prixVenteUnitaire: produits[15].prixVenteUnitaire,
+        prixAchatUnitaire: produits[15].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[15].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 2),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 14,
+        montant: 29.99,
+        methodePaiement: 2, // Carte
+        date: new Date(&#x27;2025-05-04T15:25:00&#x27;),
+        panierId: 14,
+        clientId: 9,
+        magasinId: 2,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 15,
+    clientId: 10,
+    magasinId: 2,
+    agentId: 103,
+    dateCreation: new Date(&#x27;2025-05-05T08:10:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[17],
+        quantite: 1,
+        prixVenteUnitaire: produits[17].prixVenteUnitaire,
+        prixAchatUnitaire: produits[17].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[17].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 2),
+      }),
+      new ArticlePanier({
+        produit: produits[19],
+        quantite: 2,
+        prixVenteUnitaire: produits[19].prixVenteUnitaire,
+        prixAchatUnitaire: produits[19].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[19].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 2),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 15,
+        montant: 10.7,
+        methodePaiement: 1, // Espèce
+        date: new Date(&#x27;2025-05-05T08:15:00&#x27;),
+        panierId: 15,
+        clientId: 10,
+        magasinId: 2,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 16,
+    clientId: 6,
+    magasinId: 2,
+    agentId: 103,
+    dateCreation: new Date(&#x27;2025-05-06T16:30:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[10],
+        quantite: 1,
+        prixVenteUnitaire: produits[10].prixVenteUnitaire,
+        prixAchatUnitaire: produits[10].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[10].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 2),
+      }),
+      new ArticlePanier({
+        produit: produits[12],
+        quantite: 1,
+        prixVenteUnitaire: produits[12].prixVenteUnitaire,
+        prixAchatUnitaire: produits[12].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[12].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 2),
+      }),
+      new ArticlePanier({
+        produit: produits[14],
+        quantite: 2,
+        prixVenteUnitaire: produits[14].prixVenteUnitaire,
+        prixAchatUnitaire: produits[14].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[14].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 2),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 16,
+        montant: 7.0,
+        methodePaiement: 3, // Mobile Money
+        date: new Date(&#x27;2025-05-06T16:35:00&#x27;),
+        panierId: 16,
+        clientId: 6,
+        magasinId: 2,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 17,
+    clientId: 7,
+    magasinId: 2,
+    agentId: 103,
+    dateCreation: new Date(&#x27;2025-05-07T11:45:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[11],
+        quantite: 2,
+        prixVenteUnitaire: produits[11].prixVenteUnitaire,
+        prixAchatUnitaire: produits[11].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[11].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 2),
+      }),
+      new ArticlePanier({
+        produit: produits[13],
+        quantite: 6,
+        prixVenteUnitaire: produits[13].prixVenteUnitaire,
+        prixAchatUnitaire: produits[13].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[13].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 2),
+      }),
+      new ArticlePanier({
+        produit: produits[15],
+        quantite: 1,
+        prixVenteUnitaire: produits[15].prixVenteUnitaire,
+        prixAchatUnitaire: produits[15].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[15].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 2),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 17,
+        montant: 33.29,
+        methodePaiement: 2, // Carte
+        date: new Date(&#x27;2025-05-07T11:50:00&#x27;),
+        panierId: 17,
+        clientId: 7,
+        magasinId: 2,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 18,
+    clientId: 8,
+    magasinId: 2,
+    agentId: 103,
+    dateCreation: new Date(&#x27;2025-05-08T14:20:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[16],
+        quantite: 1,
+        prixVenteUnitaire: produits[16].prixVenteUnitaire,
+        prixAchatUnitaire: produits[16].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[16].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 2),
+      }),
+      new ArticlePanier({
+        produit: produits[18],
+        quantite: 2,
+        prixVenteUnitaire: produits[18].prixVenteUnitaire,
+        prixAchatUnitaire: produits[18].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[18].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 2),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 18,
+        montant: 15.1,
+        methodePaiement: 1, // Espèce
+        date: new Date(&#x27;2025-05-08T14:25:00&#x27;),
+        panierId: 18,
+        clientId: 8,
+        magasinId: 2,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 19,
+    clientId: 9,
+    magasinId: 2,
+    agentId: 103,
+    dateCreation: new Date(&#x27;2025-05-09T10:10:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[17],
+        quantite: 1,
+        prixVenteUnitaire: produits[17].prixVenteUnitaire,
+        prixAchatUnitaire: produits[17].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[17].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 2),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 19,
+        montant: 6.2,
+        methodePaiement: 2, // Carte
+        date: new Date(&#x27;2025-05-09T10:15:00&#x27;),
+        panierId: 19,
+        clientId: 9,
+        magasinId: 2,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 20,
+    clientId: 10,
+    magasinId: 2,
+    agentId: 103,
+    dateCreation: new Date(&#x27;2025-05-10T17:30:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[10],
+        quantite: 2,
+        prixVenteUnitaire: produits[10].prixVenteUnitaire,
+        prixAchatUnitaire: produits[10].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[10].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 2),
+      }),
+      new ArticlePanier({
+        produit: produits[12],
+        quantite: 3,
+        prixVenteUnitaire: produits[12].prixVenteUnitaire,
+        prixAchatUnitaire: produits[12].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[12].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 2),
+      }),
+      new ArticlePanier({
+        produit: produits[14],
+        quantite: 1,
+        prixVenteUnitaire: produits[14].prixVenteUnitaire,
+        prixAchatUnitaire: produits[14].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[14].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 2),
+      }),
+      new ArticlePanier({
+        produit: produits[16],
+        quantite: 1,
+        prixVenteUnitaire: produits[16].prixVenteUnitaire,
+        prixAchatUnitaire: produits[16].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[16].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 2),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 20,
+        montant: 18.2,
+        methodePaiement: 3, // Mobile Money
+        date: new Date(&#x27;2025-05-10T17:35:00&#x27;),
+        panierId: 20,
+        clientId: 10,
+        magasinId: 2,
+      }),
+    ],
+  }),
+
+  // Paniers pour Magasin 3 (Marseille)
+  new Panier({
+    id: 21,
+    clientId: 11,
+    magasinId: 3,
+    agentId: 104,
+    dateCreation: new Date(&#x27;2025-05-01T08:15:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[20],
+        quantite: 2,
+        prixVenteUnitaire: produits[20].prixVenteUnitaire,
+        prixAchatUnitaire: produits[20].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[20].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 3),
+      }),
+      new ArticlePanier({
+        produit: produits[22],
+        quantite: 1,
+        prixVenteUnitaire: produits[22].prixVenteUnitaire,
+        prixAchatUnitaire: produits[22].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[22].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 3),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 21,
+        montant: 4.7,
+        methodePaiement: 1, // Espèce
+        date: new Date(&#x27;2025-05-01T08:20:00&#x27;),
+        panierId: 21,
+        clientId: 11,
+        magasinId: 3,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 22,
+    clientId: 12,
+    magasinId: 3,
+    agentId: 105,
+    dateCreation: new Date(&#x27;2025-05-02T09:30:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[21],
+        quantite: 5,
+        prixVenteUnitaire: produits[21].prixVenteUnitaire,
+        prixAchatUnitaire: produits[21].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[21].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 3),
+      }),
+      new ArticlePanier({
+        produit: produits[23],
+        quantite: 1,
+        prixVenteUnitaire: produits[23].prixVenteUnitaire,
+        prixAchatUnitaire: produits[23].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[23].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 3),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 22,
+        montant: 13.9,
+        methodePaiement: 2, // Carte
+        date: new Date(&#x27;2025-05-02T09:35:00&#x27;),
+        panierId: 22,
+        clientId: 12,
+        magasinId: 3,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 23,
+    clientId: 13,
+    magasinId: 3,
+    agentId: 104,
+    dateCreation: new Date(&#x27;2025-05-03T12:45:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[24],
+        quantite: 3,
+        prixVenteUnitaire: produits[24].prixVenteUnitaire,
+        prixAchatUnitaire: produits[24].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[24].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 3),
+      }),
+      new ArticlePanier({
+        produit: produits[26],
+        quantite: 1,
+        prixVenteUnitaire: produits[26].prixVenteUnitaire,
+        prixAchatUnitaire: produits[26].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[26].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 3),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 23,
+        montant: 19.5,
+        methodePaiement: 3, // Mobile Money
+        date: new Date(&#x27;2025-05-03T12:50:00&#x27;),
+        panierId: 23,
+        clientId: 13,
+        magasinId: 3,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 24,
+    clientId: 14,
+    magasinId: 3,
+    agentId: 105,
+    dateCreation: new Date(&#x27;2025-05-04T14:20:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[25],
+        quantite: 1,
+        prixVenteUnitaire: produits[25].prixVenteUnitaire,
+        prixAchatUnitaire: produits[25].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[25].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 3),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 24,
+        montant: 24.99,
+        methodePaiement: 2, // Carte
+        date: new Date(&#x27;2025-05-04T14:25:00&#x27;),
+        panierId: 24,
+        clientId: 14,
+        magasinId: 3,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 25,
+    clientId: 15,
+    magasinId: 3,
+    agentId: 104,
+    dateCreation: new Date(&#x27;2025-05-05T07:10:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[27],
+        quantite: 1,
+        prixVenteUnitaire: produits[27].prixVenteUnitaire,
+        prixAchatUnitaire: produits[27].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[27].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 3),
+      }),
+      new ArticlePanier({
+        produit: produits[29],
+        quantite: 2,
+        prixVenteUnitaire: produits[29].prixVenteUnitaire,
+        prixAchatUnitaire: produits[29].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[29].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 3),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 25,
+        montant: 5.5,
+        methodePaiement: 1, // Espèce
+        date: new Date(&#x27;2025-05-05T07:15:00&#x27;),
+        panierId: 25,
+        clientId: 15,
+        magasinId: 3,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 26,
+    clientId: 11,
+    magasinId: 3,
+    agentId: 105,
+    dateCreation: new Date(&#x27;2025-05-06T15:30:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[20],
+        quantite: 1,
+        prixVenteUnitaire: produits[20].prixVenteUnitaire,
+        prixAchatUnitaire: produits[20].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[20].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 3),
+      }),
+      new ArticlePanier({
+        produit: produits[22],
+        quantite: 2,
+        prixVenteUnitaire: produits[22].prixVenteUnitaire,
+        prixAchatUnitaire: produits[22].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[22].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 3),
+      }),
+      new ArticlePanier({
+        produit: produits[24],
+        quantite: 1,
+        prixVenteUnitaire: produits[24].prixVenteUnitaire,
+        prixAchatUnitaire: produits[24].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[24].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 3),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 26,
+        montant: 5.7,
+        methodePaiement: 3, // Mobile Money
+        date: new Date(&#x27;2025-05-06T15:35:00&#x27;),
+        panierId: 26,
+        clientId: 11,
+        magasinId: 3,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 27,
+    clientId: 12,
+    magasinId: 3,
+    agentId: 104,
+    dateCreation: new Date(&#x27;2025-05-07T10:45:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[21],
+        quantite: 2,
+        prixVenteUnitaire: produits[21].prixVenteUnitaire,
+        prixAchatUnitaire: produits[21].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[21].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 3),
+      }),
+      new ArticlePanier({
+        produit: produits[23],
+        quantite: 1,
+        prixVenteUnitaire: produits[23].prixVenteUnitaire,
+        prixAchatUnitaire: produits[23].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[23].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 3),
+      }),
+      new ArticlePanier({
+        produit: produits[25],
+        quantite: 1,
+        prixVenteUnitaire: produits[25].prixVenteUnitaire,
+        prixAchatUnitaire: produits[25].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[25].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 3),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 27,
+        montant: 38.89,
+        methodePaiement: 2, // Carte
+        date: new Date(&#x27;2025-05-07T10:50:00&#x27;),
+        panierId: 27,
+        clientId: 12,
+        magasinId: 3,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 28,
+    clientId: 13,
+    magasinId: 3,
+    agentId: 105,
+    dateCreation: new Date(&#x27;2025-05-08T13:20:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[26],
+        quantite: 1,
+        prixVenteUnitaire: produits[26].prixVenteUnitaire,
+        prixAchatUnitaire: produits[26].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[26].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 3),
+      }),
+      new ArticlePanier({
+        produit: produits[28],
+        quantite: 3,
+        prixVenteUnitaire: produits[28].prixVenteUnitaire,
+        prixAchatUnitaire: produits[28].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[28].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 3),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 28,
+        montant: 23.3,
+        methodePaiement: 1, // Espèce
+        date: new Date(&#x27;2025-05-08T13:25:00&#x27;),
+        panierId: 28,
+        clientId: 13,
+        magasinId: 3,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 29,
+    clientId: 14,
+    magasinId: 3,
+    agentId: 104,
+    dateCreation: new Date(&#x27;2025-05-09T09:10:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[27],
+        quantite: 1,
+        prixVenteUnitaire: produits[27].prixVenteUnitaire,
+        prixAchatUnitaire: produits[27].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[27].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 3),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 29,
+        montant: 4.0,
+        methodePaiement: 2, // Carte
+        date: new Date(&#x27;2025-05-09T09:15:00&#x27;),
+        panierId: 29,
+        clientId: 14,
+        magasinId: 3,
+      }),
+    ],
+  }),
+  new Panier({
+    id: 30,
+    clientId: 15,
+    magasinId: 3,
+    agentId: 105,
+    dateCreation: new Date(&#x27;2025-05-10T16:30:00&#x27;),
+    statut: &#x27;VALIDE&#x27;,
+    articles: [
+      new ArticlePanier({
+        produit: produits[20],
+        quantite: 2,
+        prixVenteUnitaire: produits[20].prixVenteUnitaire,
+        prixAchatUnitaire: produits[20].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[20].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 3),
+      }),
+      new ArticlePanier({
+        produit: produits[22],
+        quantite: 1,
+        prixVenteUnitaire: produits[22].prixVenteUnitaire,
+        prixAchatUnitaire: produits[22].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[22].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 3),
+      }),
+      new ArticlePanier({
+        produit: produits[24],
+        quantite: 2,
+        prixVenteUnitaire: produits[24].prixVenteUnitaire,
+        prixAchatUnitaire: produits[24].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[24].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 3),
+      }),
+      new ArticlePanier({
+        produit: produits[26],
+        quantite: 1,
+        prixVenteUnitaire: produits[26].prixVenteUnitaire,
+        prixAchatUnitaire: produits[26].prixAchatUnitaire,
+        stock: stocks.find((s) &#x3D;&gt; s.produitId &#x3D;&#x3D;&#x3D; produits[26].id &amp;&amp; s.magasinId &#x3D;&#x3D;&#x3D; 3),
+      }),
+    ],
+    paiements: [
+      new Paiement({
+        id: 30,
+        montant: 24.2,
+        methodePaiement: 3, // Mobile Money
+        date: new Date(&#x27;2025-05-10T16:35:00&#x27;),
+        panierId: 30,
+        clientId: 15,
+        magasinId: 3,
+      }),
+    ],
+  }),
+]</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="produits"></a>
+                    <span class="name">
+                        <span ><b>produits</b></span>
+                        <a href="#produits"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>Produits[]</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[
+  // Produits pour Magasin 1 (1-10)
+  new Produits({
+    id: 1,
+    categorieId: 1,
+    designation: &#x27;Pâtes Barilla&#x27;,
+    unite: &#x27;Kg&#x27;,
+    prixAchatUnitaire: 1.2,
+    prixVenteUnitaire: 2.5,
+    perissable: false,
+    codeBarre: &#x27;123456789012&#x27;,
+  }),
+  new Produits({
+    id: 2,
+    categorieId: 2,
+    designation: &#x27;Eau minérale 1L&#x27;,
+    unite: &#x27;Bouteille&#x27;,
+    prixAchatUnitaire: 0.3,
+    prixVenteUnitaire: 0.8,
+    perissable: false,
+    codeBarre: &#x27;234567890123&#x27;,
+  }),
+  new Produits({
+    id: 3,
+    categorieId: 3,
+    designation: &#x27;Pommes Golden&#x27;,
+    unite: &#x27;Kg&#x27;,
+    prixAchatUnitaire: 1.5,
+    prixVenteUnitaire: 2.8,
+    perissable: true,
+    codeBarre: &#x27;345678901234&#x27;,
+  }),
+  new Produits({
+    id: 4,
+    categorieId: 4,
+    designation: &#x27;Lait entier&#x27;,
+    unite: &#x27;Litre&#x27;,
+    prixAchatUnitaire: 0.8,
+    prixVenteUnitaire: 1.5,
+    perissable: true,
+    codeBarre: &#x27;456789012345&#x27;,
+  }),
+  new Produits({
+    id: 5,
+    categorieId: 5,
+    designation: &#x27;Pain complet&#x27;,
+    unite: &#x27;Pièce&#x27;,
+    prixAchatUnitaire: 0.6,
+    prixVenteUnitaire: 1.2,
+    perissable: true,
+    codeBarre: &#x27;567890123456&#x27;,
+  }),
+  new Produits({
+    id: 6,
+    categorieId: 5,
+    designation: &#x27;Steak haché&#x27;,
+    unite: &#x27;Kg&#x27;,
+    prixAchatUnitaire: 8.5,
+    prixVenteUnitaire: 12.0,
+    perissable: true,
+    codeBarre: &#x27;678901234567&#x27;,
+  }),
+  new Produits({
+    id: 7,
+    categorieId: 5,
+    designation: &#x27;Cafetière&#x27;,
+    unite: &#x27;Pièce&#x27;,
+    prixAchatUnitaire: 25.0,
+    prixVenteUnitaire: 39.99,
+    perissable: false,
+    codeBarre: &#x27;789012345678&#x27;,
+  }),
+  new Produits({
+    id: 8,
+    categorieId: 5,
+    designation: &#x27;Lessive 3L&#x27;,
+    unite: &#x27;Bouteille&#x27;,
+    prixAchatUnitaire: 5.8,
+    prixVenteUnitaire: 9.5,
+    perissable: false,
+    codeBarre: &#x27;890123456789&#x27;,
+  }),
+  new Produits({
+    id: 9,
+    categorieId: 5,
+    designation: &#x27;Pizza 4 fromages&#x27;,
+    unite: &#x27;Pièce&#x27;,
+    prixAchatUnitaire: 2.3,
+    prixVenteUnitaire: 4.5,
+    perissable: true,
+    codeBarre: &#x27;901234567890&#x27;,
+  }),
+  new Produits({
+    id: 10,
+    categorieId: 5,
+    designation: &#x27;Dentifrice&#x27;,
+    unite: &#x27;Tube&#x27;,
+    prixAchatUnitaire: 1.1,
+    prixVenteUnitaire: 2.2,
+    perissable: false,
+    codeBarre: &#x27;012345678901&#x27;,
+  }),
+
+  // Produits pour Magasin 2 (11-20)
+  new Produits({
+    id: 11,
+    categorieId: 5,
+    designation: &#x27;Riz Basmati&#x27;,
+    unite: &#x27;Kg&#x27;,
+    prixAchatUnitaire: 1.8,
+    prixVenteUnitaire: 3.2,
+    perissable: false,
+    codeBarre: &#x27;112345678901&#x27;,
+  }),
+  new Produits({
+    id: 12,
+    categorieId: 5,
+    designation: &quot;Jus d&#x27;orange 1L&quot;,
+    unite: &#x27;Bouteille&#x27;,
+    prixAchatUnitaire: 1.2,
+    prixVenteUnitaire: 2.5,
+    perissable: true,
+    codeBarre: &#x27;212345678901&#x27;,
+  }),
+  new Produits({
+    id: 13,
+    categorieId: 5,
+    designation: &#x27;Bananes&#x27;,
+    unite: &#x27;Kg&#x27;,
+    prixAchatUnitaire: 1.2,
+    prixVenteUnitaire: 2.3,
+    perissable: true,
+    codeBarre: &#x27;312345678901&#x27;,
+  }),
+  new Produits({
+    id: 14,
+    categorieId: 5,
+    designation: &#x27;Yaourt nature&#x27;,
+    unite: &#x27;Pot&#x27;,
+    prixAchatUnitaire: 0.4,
+    prixVenteUnitaire: 0.8,
+    perissable: true,
+    codeBarre: &#x27;412345678901&#x27;,
+  }),
+  new Produits({
+    id: 15,
+    categorieId: 5,
+    designation: &#x27;Baguette&#x27;,
+    unite: &#x27;Pièce&#x27;,
+    prixAchatUnitaire: 0.35,
+    prixVenteUnitaire: 0.9,
+    perissable: true,
+    codeBarre: &#x27;512345678901&#x27;,
+  }),
+  new Produits({
+    id: 16,
+    categorieId: 5,
+    designation: &#x27;Poulet entier&#x27;,
+    unite: &#x27;Kg&#x27;,
+    prixAchatUnitaire: 6.5,
+    prixVenteUnitaire: 9.9,
+    perissable: true,
+    codeBarre: &#x27;612345678901&#x27;,
+  }),
+  new Produits({
+    id: 17,
+    categorieId: 5,
+    designation: &#x27;Grille-pain&#x27;,
+    unite: &#x27;Pièce&#x27;,
+    prixAchatUnitaire: 18.0,
+    prixVenteUnitaire: 29.99,
+    perissable: false,
+    codeBarre: &#x27;712345678901&#x27;,
+  }),
+  new Produits({
+    id: 18,
+    categorieId: 5,
+    designation: &#x27;Nettoyant sol&#x27;,
+    unite: &#x27;Litre&#x27;,
+    prixAchatUnitaire: 3.5,
+    prixVenteUnitaire: 6.2,
+    perissable: false,
+    codeBarre: &#x27;812345678901&#x27;,
+  }),
+  new Produits({
+    id: 19,
+    categorieId: 5,
+    designation: &#x27;Lasagnes&#x27;,
+    unite: &#x27;Pièce&#x27;,
+    prixAchatUnitaire: 2.8,
+    prixVenteUnitaire: 5.2,
+    perissable: true,
+    codeBarre: &#x27;912345678901&#x27;,
+  }),
+  new Produits({
+    id: 20,
+    categorieId: 5,
+    designation: &#x27;Shampoing&#x27;,
+    unite: &#x27;Flacon&#x27;,
+    prixAchatUnitaire: 2.3,
+    prixVenteUnitaire: 4.5,
+    perissable: false,
+    codeBarre: &#x27;022345678901&#x27;,
+  }),
+
+  // Produits pour Magasin 3 (21-30)
+  new Produits({
+    id: 21,
+    categorieId: 5,
+    designation: &#x27;Farine T55&#x27;,
+    unite: &#x27;Kg&#x27;,
+    prixAchatUnitaire: 0.9,
+    prixVenteUnitaire: 1.8,
+    perissable: false,
+    codeBarre: &#x27;122345678901&#x27;,
+  }),
+  new Produits({
+    id: 22,
+    categorieId: 5,
+    designation: &#x27;Soda 1.5L&#x27;,
+    unite: &#x27;Bouteille&#x27;,
+    prixAchatUnitaire: 0.8,
+    prixVenteUnitaire: 1.9,
+    perissable: false,
+    codeBarre: &#x27;222345678901&#x27;,
+  }),
+  new Produits({
+    id: 23,
+    categorieId: 5,
+    designation: &#x27;Oranges&#x27;,
+    unite: &#x27;Kg&#x27;,
+    prixAchatUnitaire: 1.6,
+    prixVenteUnitaire: 2.9,
+    perissable: true,
+    codeBarre: &#x27;322345678901&#x27;,
+  }),
+  new Produits({
+    id: 24,
+    categorieId: 5,
+    designation: &#x27;Fromage râpé&#x27;,
+    unite: &#x27;Kg&#x27;,
+    prixAchatUnitaire: 7.5,
+    prixVenteUnitaire: 12.0,
+    perissable: true,
+    codeBarre: &#x27;422345678901&#x27;,
+  }),
+  new Produits({
+    id: 25,
+    categorieId: 5,
+    designation: &#x27;Croissant&#x27;,
+    unite: &#x27;Pièce&#x27;,
+    prixAchatUnitaire: 0.45,
+    prixVenteUnitaire: 1.0,
+    perissable: true,
+    codeBarre: &#x27;522345678901&#x27;,
+  }),
+  new Produits({
+    id: 26,
+    categorieId: 5,
+    designation: &#x27;Saumon frais&#x27;,
+    unite: &#x27;Kg&#x27;,
+    prixAchatUnitaire: 12.0,
+    prixVenteUnitaire: 18.5,
+    perissable: true,
+    codeBarre: &#x27;622345678901&#x27;,
+  }),
+  new Produits({
+    id: 27,
+    categorieId: 5,
+    designation: &#x27;Bouilloire&#x27;,
+    unite: &#x27;Pièce&#x27;,
+    prixAchatUnitaire: 15.0,
+    prixVenteUnitaire: 24.99,
+    perissable: false,
+    codeBarre: &#x27;722345678901&#x27;,
+  }),
+  new Produits({
+    id: 28,
+    categorieId: 5,
+    designation: &#x27;Désodorisant&#x27;,
+    unite: &#x27;Spray&#x27;,
+    prixAchatUnitaire: 2.2,
+    prixVenteUnitaire: 4.0,
+    perissable: false,
+    codeBarre: &#x27;822345678901&#x27;,
+  }),
+  new Produits({
+    id: 29,
+    categorieId: 5,
+    designation: &#x27;Glace vanille&#x27;,
+    unite: &#x27;Pot&#x27;,
+    prixAchatUnitaire: 2.5,
+    prixVenteUnitaire: 4.8,
+    perissable: true,
+    codeBarre: &#x27;922345678901&#x27;,
+  }),
+  new Produits({
+    id: 30,
+    categorieId: 5,
+    designation: &#x27;Savon&#x27;,
+    unite: &#x27;Pièce&#x27;,
+    prixAchatUnitaire: 0.8,
+    prixVenteUnitaire: 1.5,
+    perissable: false,
+    codeBarre: &#x27;032345678901&#x27;,
+  }),
+]</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="recettes"></a>
+                    <span class="name">
+                        <span ><b>recettes</b></span>
+                        <a href="#recettes"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="../classes/Recette.html" target="_self" >Recette[]</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[
+  // Magasin Paris (ID 1) - 10 recettes
+  new Recette({
+    id: 1,
+    date: new Date(&#x27;2025-05-02&#x27;),
+    categoryId: 101,
+    montant: 3500.75,
+    description: &#x27;Vente produits alimentaires&#x27;,
+    paymentMode: &#x27;Mixte&#x27;,
+    magasinId: 1,
+  }),
+  new Recette({
+    id: 4,
+    date: new Date(&#x27;2025-05-05&#x27;),
+    categoryId: 101,
+    montant: 4200.0,
+    description: &#x27;Vente weekend produits alimentaires&#x27;,
+    paymentMode: &#x27;Mixte&#x27;,
+    magasinId: 1,
+  }),
+  new Recette({
+    id: 7,
+    date: new Date(&#x27;2025-05-09&#x27;),
+    categoryId: 102,
+    montant: 3800.25,
+    description: &#x27;Vente promotion printemps&#x27;,
+    paymentMode: &#x27;Mixte&#x27;,
+    magasinId: 1,
+  }),
+  new Recette({
+    id: 10,
+    date: new Date(&#x27;2025-05-12&#x27;),
+    categoryId: 102,
+    montant: 3650.5,
+    description: &#x27;Promotion spéciale clients fidèles&#x27;,
+    paymentMode: &#x27;Mixte&#x27;,
+    magasinId: 1,
+  }),
+  new Recette({
+    id: 13,
+    date: new Date(&#x27;2025-05-16&#x27;),
+    categoryId: 103,
+    montant: 4100.0,
+    description: &#x27;Soirée gastronomique&#x27;,
+    paymentMode: &#x27;Mixte&#x27;,
+    magasinId: 1,
+  }),
+  new Recette({
+    id: 16,
+    date: new Date(&#x27;2025-05-19&#x27;),
+    categoryId: 101,
+    montant: 3200.75,
+    description: &#x27;Vente quotidienne alimentaire&#x27;,
+    paymentMode: &#x27;Mixte&#x27;,
+    magasinId: 1,
+  }),
+  new Recette({
+    id: 19,
+    date: new Date(&#x27;2025-05-23&#x27;),
+    categoryId: 103,
+    montant: 2850.5,
+    description: &#x27;Événement vin fromage&#x27;,
+    paymentMode: &#x27;Mixte&#x27;,
+    magasinId: 1,
+  }),
+  new Recette({
+    id: 22,
+    date: new Date(&#x27;2025-05-26&#x27;),
+    categoryId: 105,
+    montant: 3950.0,
+    description: &#x27;Service traiteur entreprise&#x27;,
+    paymentMode: &#x27;Virement&#x27;,
+    magasinId: 1,
+  }),
+  new Recette({
+    id: 25,
+    date: new Date(&#x27;2025-05-29&#x27;),
+    categoryId: 101,
+    montant: 2750.25,
+    description: &#x27;Vente produits bio&#x27;,
+    paymentMode: &#x27;Mixte&#x27;,
+    magasinId: 1,
+  }),
+  new Recette({
+    id: 28,
+    date: new Date(&#x27;2025-05-04&#x27;),
+    categoryId: 104,
+    montant: 4300.0,
+    description: &#x27;Subvention mairie Paris&#x27;,
+    paymentMode: &#x27;Virement&#x27;,
+    magasinId: 1,
+  }),
+
+  // Magasin Lyon (ID 2) - 10 recettes
+  new Recette({
+    id: 2,
+    date: new Date(&#x27;2025-05-03&#x27;),
+    categoryId: 101,
+    montant: 2800.5,
+    description: &#x27;Vente produits régionaux&#x27;,
+    paymentMode: &#x27;Mixte&#x27;,
+    magasinId: 2,
+  }),
+  new Recette({
+    id: 5,
+    date: new Date(&#x27;2025-05-06&#x27;),
+    categoryId: 102,
+    montant: 3100.75,
+    description: &#x27;Promotion produits lyonnais&#x27;,
+    paymentMode: &#x27;Mixte&#x27;,
+    magasinId: 2,
+  }),
+  new Recette({
+    id: 8,
+    date: new Date(&#x27;2025-05-10&#x27;),
+    categoryId: 101,
+    montant: 2950.0,
+    description: &#x27;Vente charcuterie&#x27;,
+    paymentMode: &#x27;Mixte&#x27;,
+    magasinId: 2,
+  }),
+  new Recette({
+    id: 11,
+    date: new Date(&#x27;2025-05-14&#x27;),
+    categoryId: 102,
+    montant: 3400.5,
+    description: &#x27;Promotion vins&#x27;,
+    paymentMode: &#x27;Mixte&#x27;,
+    magasinId: 2,
+  }),
+  new Recette({
+    id: 14,
+    date: new Date(&#x27;2025-05-17&#x27;),
+    categoryId: 103,
+    montant: 2650.0,
+    description: &#x27;Dégustation vins&#x27;,
+    paymentMode: &#x27;Mixte&#x27;,
+    magasinId: 2,
+  }),
+  new Recette({
+    id: 17,
+    date: new Date(&#x27;2025-05-20&#x27;),
+    categoryId: 105,
+    montant: 3050.75,
+    description: &#x27;Service livraison entreprises&#x27;,
+    paymentMode: &#x27;Virement&#x27;,
+    magasinId: 2,
+  }),
+  new Recette({
+    id: 20,
+    date: new Date(&#x27;2025-05-24&#x27;),
+    categoryId: 101,
+    montant: 3750.0,
+    description: &#x27;Vente primeurs&#x27;,
+    paymentMode: &#x27;Mixte&#x27;,
+    magasinId: 2,
+  }),
+  new Recette({
+    id: 23,
+    date: new Date(&#x27;2025-05-27&#x27;),
+    categoryId: 103,
+    montant: 2900.5,
+    description: &#x27;Atelier cuisine&#x27;,
+    paymentMode: &#x27;Mixte&#x27;,
+    magasinId: 2,
+  }),
+  new Recette({
+    id: 26,
+    date: new Date(&#x27;2025-05-30&#x27;),
+    categoryId: 101,
+    montant: 2450.25,
+    description: &#x27;Vente fromagerie&#x27;,
+    paymentMode: &#x27;Mixte&#x27;,
+    magasinId: 2,
+  }),
+  new Recette({
+    id: 29,
+    date: new Date(&#x27;2025-05-05&#x27;),
+    categoryId: 104,
+    montant: 3300.0,
+    description: &#x27;Aide région Rhône-Alpes&#x27;,
+    paymentMode: &#x27;Virement&#x27;,
+    magasinId: 2,
+  }),
+
+  // Magasin Marseille (ID 3) - 10 recettes
+  new Recette({
+    id: 3,
+    date: new Date(&#x27;2025-05-04&#x27;),
+    categoryId: 101,
+    montant: 1950.25,
+    description: &#x27;Vente produits méditerranéens&#x27;,
+    paymentMode: &#x27;Mixte&#x27;,
+    magasinId: 3,
+  }),
+  new Recette({
+    id: 6,
+    date: new Date(&#x27;2025-05-07&#x27;),
+    categoryId: 102,
+    montant: 2450.5,
+    description: &#x27;Promotion poissons&#x27;,
+    paymentMode: &#x27;Mixte&#x27;,
+    magasinId: 3,
+  }),
+  new Recette({
+    id: 9,
+    date: new Date(&#x27;2025-05-11&#x27;),
+    categoryId: 103,
+    montant: 2100.75,
+    description: &#x27;Soirée tapas&#x27;,
+    paymentMode: &#x27;Mixte&#x27;,
+    magasinId: 3,
+  }),
+  new Recette({
+    id: 12,
+    date: new Date(&#x27;2025-05-15&#x27;),
+    categoryId: 102,
+    montant: 2300.0,
+    description: &quot;Promotion huiles d&#x27;olive&quot;,
+    paymentMode: &#x27;Mixte&#x27;,
+    magasinId: 3,
+  }),
+  new Recette({
+    id: 15,
+    date: new Date(&#x27;2025-05-18&#x27;),
+    categoryId: 101,
+    montant: 1850.5,
+    description: &#x27;Vente épicerie fine&#x27;,
+    paymentMode: &#x27;Mixte&#x27;,
+    magasinId: 3,
+  }),
+  new Recette({
+    id: 18,
+    date: new Date(&#x27;2025-05-21&#x27;),
+    categoryId: 105,
+    montant: 2000.75,
+    description: &#x27;Service plateau-repas&#x27;,
+    paymentMode: &#x27;Carte&#x27;,
+    magasinId: 3,
+  }),
+  new Recette({
+    id: 21,
+    date: new Date(&#x27;2025-05-25&#x27;),
+    categoryId: 103,
+    montant: 2550.0,
+    description: &#x27;Animation produits locaux&#x27;,
+    paymentMode: &#x27;Mixte&#x27;,
+    magasinId: 3,
+  }),
+  new Recette({
+    id: 24,
+    date: new Date(&#x27;2025-05-28&#x27;),
+    categoryId: 101,
+    montant: 1900.5,
+    description: &#x27;Vente produits bio&#x27;,
+    paymentMode: &#x27;Mixte&#x27;,
+    magasinId: 3,
+  }),
+  new Recette({
+    id: 27,
+    date: new Date(&#x27;2025-05-31&#x27;),
+    categoryId: 102,
+    montant: 1750.25,
+    description: &#x27;Promotion de fin mois&#x27;,
+    paymentMode: &#x27;Mixte&#x27;,
+    magasinId: 3,
+  }),
+  new Recette({
+    id: 30,
+    date: new Date(&#x27;2025-05-03&#x27;),
+    categoryId: 104,
+    montant: 2250.0,
+    description: &#x27;Subvention ville Marseille&#x27;,
+    paymentMode: &#x27;Virement&#x27;,
+    magasinId: 3,
+  }),
+]</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="stocks"></a>
+                    <span class="name">
+                        <span ><b>stocks</b></span>
+                        <a href="#stocks"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="../classes/Stock.html" target="_self" >Stock[]</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[
+  // Magasin 1 (Paris) - Stocks pour produits 1-10
+  new Stock({
+    id: 1,
+    produitId: 1,
+    magasinId: 1,
+    quantiteTotale: 150,
+    quantiteReservee: 20,
+    seuilAlerte: 10,
+    seuilReapprovisionnement: 20,
+    dernierPrixAchat: 1.2,
+    prixVenteUnitaire: 2.5,
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-15&#x27;),
+  }),
+  new Stock({
+    id: 2,
+    produitId: 2,
+    magasinId: 1,
+    quantiteTotale: 300,
+    quantiteReservee: 50,
+    seuilAlerte: 20,
+    seuilReapprovisionnement: 30,
+    dernierPrixAchat: 0.3,
+    prixVenteUnitaire: 0.8,
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-16&#x27;),
+  }),
+  new Stock({
+    id: 3,
+    produitId: 3,
+    magasinId: 1,
+    quantiteTotale: 80,
+    quantiteReservee: 15,
+    seuilAlerte: 5,
+    seuilReapprovisionnement: 10,
+    dernierPrixAchat: 1.5,
+    prixVenteUnitaire: 2.8,
+    datePeremption: new Date(&#x27;2025-11-20&#x27;),
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-14&#x27;),
+  }),
+  new Stock({
+    id: 4,
+    produitId: 4,
+    magasinId: 1,
+    quantiteTotale: 120,
+    quantiteReservee: 30,
+    seuilAlerte: 10,
+    seuilReapprovisionnement: 15,
+    dernierPrixAchat: 0.8,
+    prixVenteUnitaire: 1.5,
+    datePeremption: new Date(&#x27;2025-11-05&#x27;),
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-17&#x27;),
+  }),
+  new Stock({
+    id: 5,
+    produitId: 5,
+    magasinId: 1,
+    quantiteTotale: 200,
+    quantiteReservee: 40,
+    seuilAlerte: 15,
+    seuilReapprovisionnement: 25,
+    dernierPrixAchat: 0.6,
+    prixVenteUnitaire: 1.2,
+    datePeremption: new Date(&#x27;2025-05-25&#x27;),
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-18&#x27;),
+  }),
+  new Stock({
+    id: 6,
+    produitId: 6,
+    magasinId: 1,
+    quantiteTotale: 50,
+    quantiteReservee: 10,
+    seuilAlerte: 5,
+    seuilReapprovisionnement: 10,
+    dernierPrixAchat: 8.5,
+    prixVenteUnitaire: 12.0,
+    datePeremption: new Date(&#x27;2025-11-10&#x27;),
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-19&#x27;),
+  }),
+  new Stock({
+    id: 7,
+    produitId: 7,
+    magasinId: 1,
+    quantiteTotale: 25,
+    quantiteReservee: 5,
+    seuilAlerte: 3,
+    seuilReapprovisionnement: 5,
+    dernierPrixAchat: 25.0,
+    prixVenteUnitaire: 39.99,
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-20&#x27;),
+  }),
+  new Stock({
+    id: 8,
+    produitId: 8,
+    magasinId: 1,
+    quantiteTotale: 60,
+    quantiteReservee: 12,
+    seuilAlerte: 5,
+    seuilReapprovisionnement: 10,
+    dernierPrixAchat: 5.8,
+    prixVenteUnitaire: 9.5,
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-21&#x27;),
+  }),
+  new Stock({
+    id: 9,
+    produitId: 9,
+    magasinId: 1,
+    quantiteTotale: 75,
+    quantiteReservee: 20,
+    seuilAlerte: 10,
+    seuilReapprovisionnement: 15,
+    dernierPrixAchat: 2.3,
+    prixVenteUnitaire: 4.5,
+    datePeremption: new Date(&#x27;2024-02-15&#x27;),
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-22&#x27;),
+  }),
+  new Stock({
+    id: 10,
+    produitId: 10,
+    magasinId: 1,
+    quantiteTotale: 180,
+    quantiteReservee: 35,
+    seuilAlerte: 15,
+    seuilReapprovisionnement: 20,
+    dernierPrixAchat: 1.1,
+    prixVenteUnitaire: 2.2,
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-23&#x27;),
+  }),
+
+  // Magasin 2 (Lyon) - Stocks pour produits 11-20
+  new Stock({
+    id: 11,
+    produitId: 11,
+    magasinId: 2,
+    quantiteTotale: 120,
+    quantiteReservee: 25,
+    seuilAlerte: 10,
+    seuilReapprovisionnement: 20,
+    dernierPrixAchat: 1.8,
+    prixVenteUnitaire: 3.2,
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-15&#x27;),
+  }),
+  new Stock({
+    id: 12,
+    produitId: 12,
+    magasinId: 2,
+    quantiteTotale: 150,
+    quantiteReservee: 30,
+    seuilAlerte: 15,
+    seuilReapprovisionnement: 25,
+    dernierPrixAchat: 1.2,
+    prixVenteUnitaire: 2.5,
+    datePeremption: new Date(&#x27;2025-11-15&#x27;),
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-16&#x27;),
+  }),
+  new Stock({
+    id: 13,
+    produitId: 13,
+    magasinId: 2,
+    quantiteTotale: 90,
+    quantiteReservee: 20,
+    seuilAlerte: 5,
+    seuilReapprovisionnement: 10,
+    dernierPrixAchat: 1.2,
+    prixVenteUnitaire: 2.3,
+    datePeremption: new Date(&#x27;2025-11-01&#x27;),
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-17&#x27;),
+  }),
+  new Stock({
+    id: 14,
+    produitId: 14,
+    magasinId: 2,
+    quantiteTotale: 200,
+    quantiteReservee: 40,
+    seuilAlerte: 20,
+    seuilReapprovisionnement: 30,
+    dernierPrixAchat: 0.4,
+    prixVenteUnitaire: 0.8,
+    datePeremption: new Date(&#x27;2025-11-10&#x27;),
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-18&#x27;),
+  }),
+  new Stock({
+    id: 15,
+    produitId: 15,
+    magasinId: 2,
+    quantiteTotale: 180,
+    quantiteReservee: 50,
+    seuilAlerte: 20,
+    seuilReapprovisionnement: 30,
+    dernierPrixAchat: 0.35,
+    prixVenteUnitaire: 0.9,
+    datePeremption: new Date(&#x27;2025-05-28&#x27;),
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-19&#x27;),
+  }),
+  new Stock({
+    id: 16,
+    produitId: 16,
+    magasinId: 2,
+    quantiteTotale: 60,
+    quantiteReservee: 15,
+    seuilAlerte: 5,
+    seuilReapprovisionnement: 10,
+    dernierPrixAchat: 6.5,
+    prixVenteUnitaire: 9.9,
+    datePeremption: new Date(&#x27;2025-11-05&#x27;),
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-20&#x27;),
+  }),
+  new Stock({
+    id: 17,
+    produitId: 17,
+    magasinId: 2,
+    quantiteTotale: 30,
+    quantiteReservee: 8,
+    seuilAlerte: 3,
+    seuilReapprovisionnement: 5,
+    dernierPrixAchat: 18.0,
+    prixVenteUnitaire: 29.99,
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-21&#x27;),
+  }),
+  new Stock({
+    id: 18,
+    produitId: 18,
+    magasinId: 2,
+    quantiteTotale: 70,
+    quantiteReservee: 15,
+    seuilAlerte: 5,
+    seuilReapprovisionnement: 10,
+    dernierPrixAchat: 3.5,
+    prixVenteUnitaire: 6.2,
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-22&#x27;),
+  }),
+  new Stock({
+    id: 19,
+    produitId: 19,
+    magasinId: 2,
+    quantiteTotale: 85,
+    quantiteReservee: 25,
+    seuilAlerte: 10,
+    seuilReapprovisionnement: 15,
+    dernierPrixAchat: 2.8,
+    prixVenteUnitaire: 5.2,
+    datePeremption: new Date(&#x27;2024-01-20&#x27;),
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-23&#x27;),
+  }),
+  new Stock({
+    id: 20,
+    produitId: 20,
+    magasinId: 2,
+    quantiteTotale: 140,
+    quantiteReservee: 30,
+    seuilAlerte: 15,
+    seuilReapprovisionnement: 20,
+    dernierPrixAchat: 2.3,
+    prixVenteUnitaire: 4.5,
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-24&#x27;),
+  }),
+
+  // Magasin 3 (Marseille) - Stocks pour produits 21-30
+  new Stock({
+    id: 21,
+    produitId: 21,
+    magasinId: 3,
+    quantiteTotale: 100,
+    quantiteReservee: 20,
+    seuilAlerte: 10,
+    seuilReapprovisionnement: 20,
+    dernierPrixAchat: 0.9,
+    prixVenteUnitaire: 1.8,
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-15&#x27;),
+  }),
+  new Stock({
+    id: 22,
+    produitId: 22,
+    magasinId: 3,
+    quantiteTotale: 180,
+    quantiteReservee: 35,
+    seuilAlerte: 15,
+    seuilReapprovisionnement: 25,
+    dernierPrixAchat: 0.8,
+    prixVenteUnitaire: 1.9,
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-16&#x27;),
+  }),
+  new Stock({
+    id: 23,
+    produitId: 23,
+    magasinId: 3,
+    quantiteTotale: 70,
+    quantiteReservee: 15,
+    seuilAlerte: 5,
+    seuilReapprovisionnement: 10,
+    dernierPrixAchat: 1.6,
+    prixVenteUnitaire: 2.9,
+    datePeremption: new Date(&#x27;2025-11-05&#x27;),
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-17&#x27;),
+  }),
+  new Stock({
+    id: 24,
+    produitId: 24,
+    magasinId: 3,
+    quantiteTotale: 40,
+    quantiteReservee: 10,
+    seuilAlerte: 5,
+    seuilReapprovisionnement: 10,
+    dernierPrixAchat: 7.5,
+    prixVenteUnitaire: 12.0,
+    datePeremption: new Date(&#x27;2025-11-15&#x27;),
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-18&#x27;),
+  }),
+  new Stock({
+    id: 25,
+    produitId: 25,
+    magasinId: 3,
+    quantiteTotale: 150,
+    quantiteReservee: 40,
+    seuilAlerte: 20,
+    seuilReapprovisionnement: 30,
+    dernierPrixAchat: 0.45,
+    prixVenteUnitaire: 1.0,
+    datePeremption: new Date(&#x27;2025-05-30&#x27;),
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-19&#x27;),
+  }),
+  new Stock({
+    id: 26,
+    produitId: 26,
+    magasinId: 3,
+    quantiteTotale: 35,
+    quantiteReservee: 8,
+    seuilAlerte: 5,
+    seuilReapprovisionnement: 10,
+    dernierPrixAchat: 12.0,
+    prixVenteUnitaire: 18.5,
+    datePeremption: new Date(&#x27;2025-11-08&#x27;),
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-20&#x27;),
+  }),
+  new Stock({
+    id: 27,
+    produitId: 27,
+    magasinId: 3,
+    quantiteTotale: 20,
+    quantiteReservee: 5,
+    seuilAlerte: 3,
+    seuilReapprovisionnement: 5,
+    dernierPrixAchat: 15.0,
+    prixVenteUnitaire: 24.99,
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-21&#x27;),
+  }),
+  new Stock({
+    id: 28,
+    produitId: 28,
+    magasinId: 3,
+    quantiteTotale: 65,
+    quantiteReservee: 15,
+    seuilAlerte: 5,
+    seuilReapprovisionnement: 10,
+    dernierPrixAchat: 2.2,
+    prixVenteUnitaire: 4.0,
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-22&#x27;),
+  }),
+  new Stock({
+    id: 29,
+    produitId: 29,
+    magasinId: 3,
+    quantiteTotale: 55,
+    quantiteReservee: 15,
+    seuilAlerte: 5,
+    seuilReapprovisionnement: 10,
+    dernierPrixAchat: 2.5,
+    prixVenteUnitaire: 4.8,
+    datePeremption: new Date(&#x27;2024-03-15&#x27;),
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-23&#x27;),
+  }),
+  new Stock({
+    id: 30,
+    produitId: 30,
+    magasinId: 3,
+    quantiteTotale: 160,
+    quantiteReservee: 35,
+    seuilAlerte: 15,
+    seuilReapprovisionnement: 20,
+    dernierPrixAchat: 0.8,
+    prixVenteUnitaire: 1.5,
+    statutStock: &#x27;En stock&#x27;,
+    dateDerniereMiseAJour: new Date(&#x27;2025-05-24&#x27;),
+  }),
+]</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="transferts"></a>
+                    <span class="name">
+                        <span ><b>transferts</b></span>
+                        <a href="#transferts"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="../classes/Transfert.html" target="_self" >Transfert[]</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[
+  // Transferts depuis Magasin 1 (Paris) - 15 transferts
+  new Transfert({
+    id: 1,
+    reference: &#x27;TRF-PAR-001&#x27;,
+    produitId: 1,
+    quantite: 10,
+    magasinSource: 1,
+    magasinDestination: 2,
+    dateTransfert: new Date(&#x27;2025-05-05&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 401,
+  }),
+  new Transfert({
+    id: 2,
+    reference: &#x27;TRF-PAR-002&#x27;,
+    produitId: 2,
+    quantite: 20,
+    magasinSource: 1,
+    magasinDestination: 3,
+    dateTransfert: new Date(&#x27;2025-05-07&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 402,
+  }),
+  new Transfert({
+    id: 3,
+    reference: &#x27;TRF-PAR-003&#x27;,
+    produitId: 3,
+    quantite: 5,
+    magasinSource: 1,
+    magasinDestination: 2,
+    dateTransfert: new Date(&#x27;2025-05-09&#x27;),
+    statut: &#x27;En attente&#x27;,
+    agentResponsable: 403,
+  }),
+  new Transfert({
+    id: 4,
+    reference: &#x27;TRF-PAR-004&#x27;,
+    produitId: 4,
+    quantite: 8,
+    magasinSource: 1,
+    magasinDestination: 3,
+    dateTransfert: new Date(&#x27;2025-05-11&#x27;),
+    statut: &#x27;Refusé&#x27;,
+    motif: &#x27;Stock insuffisant&#x27;,
+    agentResponsable: 404,
+  }),
+  new Transfert({
+    id: 5,
+    reference: &#x27;TRF-PAR-005&#x27;,
+    produitId: 5,
+    quantite: 15,
+    magasinSource: 1,
+    magasinDestination: 2,
+    dateTransfert: new Date(&#x27;2025-05-13&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 405,
+  }),
+  new Transfert({
+    id: 6,
+    reference: &#x27;TRF-PAR-006&#x27;,
+    produitId: 6,
+    quantite: 3,
+    magasinSource: 1,
+    magasinDestination: 3,
+    dateTransfert: new Date(&#x27;2025-05-15&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 406,
+  }),
+  new Transfert({
+    id: 7,
+    reference: &#x27;TRF-PAR-007&#x27;,
+    produitId: 7,
+    quantite: 2,
+    magasinSource: 1,
+    magasinDestination: 2,
+    dateTransfert: new Date(&#x27;2025-05-17&#x27;),
+    statut: &#x27;En attente&#x27;,
+    agentResponsable: 407,
+  }),
+  new Transfert({
+    id: 8,
+    reference: &#x27;TRF-PAR-008&#x27;,
+    produitId: 8,
+    quantite: 4,
+    magasinSource: 1,
+    magasinDestination: 3,
+    dateTransfert: new Date(&#x27;2025-05-19&#x27;),
+    statut: &#x27;Refusé&#x27;,
+    motif: &#x27;Produit endommagé&#x27;,
+    agentResponsable: 408,
+  }),
+  new Transfert({
+    id: 9,
+    reference: &#x27;TRF-PAR-009&#x27;,
+    produitId: 9,
+    quantite: 6,
+    magasinSource: 1,
+    magasinDestination: 2,
+    dateTransfert: new Date(&#x27;2025-05-21&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 409,
+  }),
+  new Transfert({
+    id: 10,
+    reference: &#x27;TRF-PAR-010&#x27;,
+    produitId: 10,
+    quantite: 8,
+    magasinSource: 1,
+    magasinDestination: 3,
+    dateTransfert: new Date(&#x27;2025-05-23&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 410,
+  }),
+  new Transfert({
+    id: 11,
+    reference: &#x27;TRF-PAR-011&#x27;,
+    produitId: 1,
+    quantite: 5,
+    magasinSource: 1,
+    magasinDestination: 2,
+    dateTransfert: new Date(&#x27;2025-05-25&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 411,
+  }),
+  new Transfert({
+    id: 12,
+    reference: &#x27;TRF-PAR-012&#x27;,
+    produitId: 2,
+    quantite: 10,
+    magasinSource: 1,
+    magasinDestination: 3,
+    dateTransfert: new Date(&#x27;2025-05-27&#x27;),
+    statut: &#x27;En attente&#x27;,
+    agentResponsable: 412,
+  }),
+  new Transfert({
+    id: 13,
+    reference: &#x27;TRF-PAR-013&#x27;,
+    produitId: 3,
+    quantite: 4,
+    magasinSource: 1,
+    magasinDestination: 2,
+    dateTransfert: new Date(&#x27;2025-05-29&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 413,
+  }),
+  new Transfert({
+    id: 14,
+    reference: &#x27;TRF-PAR-014&#x27;,
+    produitId: 4,
+    quantite: 6,
+    magasinSource: 1,
+    magasinDestination: 3,
+    dateTransfert: new Date(&#x27;2025-05-31&#x27;),
+    statut: &#x27;Refusé&#x27;,
+    motif: &#x27;Date péremption proche&#x27;,
+    agentResponsable: 414,
+  }),
+  new Transfert({
+    id: 15,
+    reference: &#x27;TRF-PAR-015&#x27;,
+    produitId: 5,
+    quantite: 12,
+    magasinSource: 1,
+    magasinDestination: 2,
+    dateTransfert: new Date(&#x27;2025-02-02&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 415,
+  }),
+
+  // Transferts depuis Magasin 2 (Lyon) - 15 transferts
+  new Transfert({
+    id: 16,
+    reference: &#x27;TRF-LYO-001&#x27;,
+    produitId: 11,
+    quantite: 15,
+    magasinSource: 2,
+    magasinDestination: 1,
+    dateTransfert: new Date(&#x27;2025-05-06&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 416,
+  }),
+  new Transfert({
+    id: 17,
+    reference: &#x27;TRF-LYO-002&#x27;,
+    produitId: 12,
+    quantite: 10,
+    magasinSource: 2,
+    magasinDestination: 3,
+    dateTransfert: new Date(&#x27;2025-05-08&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 417,
+  }),
+  new Transfert({
+    id: 18,
+    reference: &#x27;TRF-LYO-003&#x27;,
+    produitId: 13,
+    quantite: 8,
+    magasinSource: 2,
+    magasinDestination: 1,
+    dateTransfert: new Date(&#x27;2025-05-10&#x27;),
+    statut: &#x27;En attente&#x27;,
+    agentResponsable: 418,
+  }),
+  new Transfert({
+    id: 19,
+    reference: &#x27;TRF-LYO-004&#x27;,
+    produitId: 14,
+    quantite: 12,
+    magasinSource: 2,
+    magasinDestination: 3,
+    dateTransfert: new Date(&#x27;2025-05-12&#x27;),
+    statut: &#x27;Refusé&#x27;,
+    motif: &#x27;Stock critique&#x27;,
+    agentResponsable: 419,
+  }),
+  new Transfert({
+    id: 20,
+    reference: &#x27;TRF-LYO-005&#x27;,
+    produitId: 15,
+    quantite: 20,
+    magasinSource: 2,
+    magasinDestination: 1,
+    dateTransfert: new Date(&#x27;2025-05-14&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 420,
+  }),
+  new Transfert({
+    id: 21,
+    reference: &#x27;TRF-LYO-006&#x27;,
+    produitId: 16,
+    quantite: 5,
+    magasinSource: 2,
+    magasinDestination: 3,
+    dateTransfert: new Date(&#x27;2025-05-16&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 421,
+  }),
+  new Transfert({
+    id: 22,
+    reference: &#x27;TRF-LYO-007&#x27;,
+    produitId: 17,
+    quantite: 3,
+    magasinSource: 2,
+    magasinDestination: 1,
+    dateTransfert: new Date(&#x27;2025-05-18&#x27;),
+    statut: &#x27;En attente&#x27;,
+    agentResponsable: 422,
+  }),
+  new Transfert({
+    id: 23,
+    reference: &#x27;TRF-LYO-008&#x27;,
+    produitId: 18,
+    quantite: 6,
+    magasinSource: 2,
+    magasinDestination: 3,
+    dateTransfert: new Date(&#x27;2025-05-20&#x27;),
+    statut: &#x27;Refusé&#x27;,
+    motif: &#x27;Emballage abîmé&#x27;,
+    agentResponsable: 423,
+  }),
+  new Transfert({
+    id: 24,
+    reference: &#x27;TRF-LYO-009&#x27;,
+    produitId: 19,
+    quantite: 10,
+    magasinSource: 2,
+    magasinDestination: 1,
+    dateTransfert: new Date(&#x27;2025-05-22&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 424,
+  }),
+  new Transfert({
+    id: 25,
+    reference: &#x27;TRF-LYO-010&#x27;,
+    produitId: 20,
+    quantite: 7,
+    magasinSource: 2,
+    magasinDestination: 3,
+    dateTransfert: new Date(&#x27;2025-05-24&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 425,
+  }),
+  new Transfert({
+    id: 26,
+    reference: &#x27;TRF-LYO-011&#x27;,
+    produitId: 11,
+    quantite: 8,
+    magasinSource: 2,
+    magasinDestination: 1,
+    dateTransfert: new Date(&#x27;2025-05-26&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 426,
+  }),
+  new Transfert({
+    id: 27,
+    reference: &#x27;TRF-LYO-012&#x27;,
+    produitId: 12,
+    quantite: 12,
+    magasinSource: 2,
+    magasinDestination: 3,
+    dateTransfert: new Date(&#x27;2025-05-28&#x27;),
+    statut: &#x27;En attente&#x27;,
+    agentResponsable: 427,
+  }),
+  new Transfert({
+    id: 28,
+    reference: &#x27;TRF-LYO-013&#x27;,
+    produitId: 13,
+    quantite: 5,
+    magasinSource: 2,
+    magasinDestination: 1,
+    dateTransfert: new Date(&#x27;2025-05-30&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 428,
+  }),
+  new Transfert({
+    id: 29,
+    reference: &#x27;TRF-LYO-014&#x27;,
+    produitId: 14,
+    quantite: 9,
+    magasinSource: 2,
+    magasinDestination: 3,
+    dateTransfert: new Date(&#x27;2025-02-01&#x27;),
+    statut: &#x27;Refusé&#x27;,
+    motif: &#x27;Produit périmé&#x27;,
+    agentResponsable: 429,
+  }),
+  new Transfert({
+    id: 30,
+    reference: &#x27;TRF-LYO-015&#x27;,
+    produitId: 15,
+    quantite: 15,
+    magasinSource: 2,
+    magasinDestination: 1,
+    dateTransfert: new Date(&#x27;2025-02-03&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 430,
+  }),
+
+  // Transferts depuis Magasin 3 (Marseille) - 15 transferts
+  new Transfert({
+    id: 31,
+    reference: &#x27;TRF-MAR-001&#x27;,
+    produitId: 21,
+    quantite: 12,
+    magasinSource: 3,
+    magasinDestination: 1,
+    dateTransfert: new Date(&#x27;2025-05-07&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 431,
+  }),
+  new Transfert({
+    id: 32,
+    reference: &#x27;TRF-MAR-002&#x27;,
+    produitId: 22,
+    quantite: 8,
+    magasinSource: 3,
+    magasinDestination: 2,
+    dateTransfert: new Date(&#x27;2025-05-09&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 432,
+  }),
+  new Transfert({
+    id: 33,
+    reference: &#x27;TRF-MAR-003&#x27;,
+    produitId: 23,
+    quantite: 6,
+    magasinSource: 3,
+    magasinDestination: 1,
+    dateTransfert: new Date(&#x27;2025-05-11&#x27;),
+    statut: &#x27;En attente&#x27;,
+    agentResponsable: 433,
+  }),
+  new Transfert({
+    id: 34,
+    reference: &#x27;TRF-MAR-004&#x27;,
+    produitId: 24,
+    quantite: 4,
+    magasinSource: 3,
+    magasinDestination: 2,
+    dateTransfert: new Date(&#x27;2025-05-13&#x27;),
+    statut: &#x27;Refusé&#x27;,
+    motif: &#x27;Stock réservé&#x27;,
+    agentResponsable: 434,
+  }),
+  new Transfert({
+    id: 35,
+    reference: &#x27;TRF-MAR-005&#x27;,
+    produitId: 25,
+    quantite: 18,
+    magasinSource: 3,
+    magasinDestination: 1,
+    dateTransfert: new Date(&#x27;2025-05-15&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 435,
+  }),
+  new Transfert({
+    id: 36,
+    reference: &#x27;TRF-MAR-006&#x27;,
+    produitId: 26,
+    quantite: 3,
+    magasinSource: 3,
+    magasinDestination: 2,
+    dateTransfert: new Date(&#x27;2025-05-17&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 436,
+  }),
+  new Transfert({
+    id: 37,
+    reference: &#x27;TRF-MAR-007&#x27;,
+    produitId: 27,
+    quantite: 2,
+    magasinSource: 3,
+    magasinDestination: 1,
+    dateTransfert: new Date(&#x27;2025-05-19&#x27;),
+    statut: &#x27;En attente&#x27;,
+    agentResponsable: 437,
+  }),
+  new Transfert({
+    id: 38,
+    reference: &#x27;TRF-MAR-008&#x27;,
+    produitId: 28,
+    quantite: 10,
+    magasinSource: 3,
+    magasinDestination: 2,
+    dateTransfert: new Date(&#x27;2025-05-21&#x27;),
+    statut: &#x27;Refusé&#x27;,
+    motif: &#x27;Commande annulée&#x27;,
+    agentResponsable: 438,
+  }),
+  new Transfert({
+    id: 39,
+    reference: &#x27;TRF-MAR-009&#x27;,
+    produitId: 29,
+    quantite: 7,
+    magasinSource: 3,
+    magasinDestination: 1,
+    dateTransfert: new Date(&#x27;2025-05-23&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 439,
+  }),
+  new Transfert({
+    id: 40,
+    reference: &#x27;TRF-MAR-010&#x27;,
+    produitId: 30,
+    quantite: 5,
+    magasinSource: 3,
+    magasinDestination: 2,
+    dateTransfert: new Date(&#x27;2025-05-25&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 440,
+  }),
+  new Transfert({
+    id: 41,
+    reference: &#x27;TRF-MAR-011&#x27;,
+    produitId: 21,
+    quantite: 9,
+    magasinSource: 3,
+    magasinDestination: 1,
+    dateTransfert: new Date(&#x27;2025-05-27&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 441,
+  }),
+  new Transfert({
+    id: 42,
+    reference: &#x27;TRF-MAR-012&#x27;,
+    produitId: 22,
+    quantite: 6,
+    magasinSource: 3,
+    magasinDestination: 2,
+    dateTransfert: new Date(&#x27;2025-05-29&#x27;),
+    statut: &#x27;En attente&#x27;,
+    agentResponsable: 442,
+  }),
+  new Transfert({
+    id: 43,
+    reference: &#x27;TRF-MAR-013&#x27;,
+    produitId: 23,
+    quantite: 5,
+    magasinSource: 3,
+    magasinDestination: 1,
+    dateTransfert: new Date(&#x27;2025-05-31&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 443,
+  }),
+  new Transfert({
+    id: 44,
+    reference: &#x27;TRF-MAR-014&#x27;,
+    produitId: 24,
+    quantite: 3,
+    magasinSource: 3,
+    magasinDestination: 2,
+    dateTransfert: new Date(&#x27;2025-02-02&#x27;),
+    statut: &#x27;Refusé&#x27;,
+    motif: &#x27;Quantité insuffisante&#x27;,
+    agentResponsable: 444,
+  }),
+  new Transfert({
+    id: 45,
+    reference: &#x27;TRF-MAR-015&#x27;,
+    produitId: 25,
+    quantite: 12,
+    magasinSource: 3,
+    magasinDestination: 1,
+    dateTransfert: new Date(&#x27;2025-02-04&#x27;),
+    statut: &#x27;Validé&#x27;,
+    agentResponsable: 445,
+  }),
+]</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="vendeurs"></a>
+                    <span class="name">
+                        <span ><b>vendeurs</b></span>
+                        <a href="#vendeurs"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="../classes/User.html" target="_self" >User[]</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[
+  // Vendeurs pour Magasin 1 (Paris)
+  new User({
+    id: 101,
+    nom: &#x27;Sophie Garnier&#x27;,
+    telephone: &#x27;0611223344&#x27;,
+    email: &#x27;sophie.garnier@supermarket.com&#x27;,
+    password: &#x27;password123&#x27;,
+    status: true,
+    role: &#x27;CAISSIER&#x27;,
+    adresse: &#x27;5 Rue de Paris, 75001 Paris&#x27;,
+    poste: &#x27;Caissier&#x27;,
+    dateCreation: new Date(&#x27;2022-02-01&#x27;),
+    salaire: 1800,
+    typeContrat: &#x27;CDI&#x27;,
+  }),
+  new User({
+    id: 102,
+    nom: &#x27;Thomas Leroux&#x27;,
+    telephone: &#x27;0622334455&#x27;,
+    email: &#x27;thomas.leroux@supermarket.com&#x27;,
+    password: &#x27;password123&#x27;,
+    status: true,
+    role: &#x27;VENDEUR&#x27;,
+    adresse: &#x27;12 Avenue de Clichy, 75017 Paris&#x27;,
+    poste: &#x27;Vendeur&#x27;,
+    dateCreation: new Date(&#x27;2022-02-15&#x27;),
+    salaire: 2000,
+    typeContrat: &#x27;CDI&#x27;,
+  }),
+
+  // Vendeurs pour Magasin 2 (Lyon)
+  new User({
+    id: 103,
+    nom: &#x27;Laura Dumont&#x27;,
+    telephone: &#x27;0633445566&#x27;,
+    email: &#x27;laura.dumont@supermarket.com&#x27;,
+    password: &#x27;password123&#x27;,
+    status: true,
+    role: &#x27;CAISSIER&#x27;,
+    adresse: &#x27;8 Rue de Lyon, 69001 Lyon&#x27;,
+    poste: &#x27;Caissier&#x27;,
+    dateCreation: new Date(&#x27;2022-03-10&#x27;),
+    salaire: 1750,
+    typeContrat: &#x27;CDI&#x27;,
+  }),
+
+  // Vendeurs pour Magasin 3 (Marseille)
+  new User({
+    id: 104,
+    nom: &#x27;Julien Morel&#x27;,
+    telephone: &#x27;0644556677&#x27;,
+    email: &#x27;julien.morel@supermarket.com&#x27;,
+    password: &#x27;password123&#x27;,
+    status: true,
+    role: &#x27;CAISSIER&#x27;,
+    adresse: &#x27;10 Rue de Marseille, 13001 Marseille&#x27;,
+    poste: &#x27;Caissier&#x27;,
+    dateCreation: new Date(&#x27;2022-05-15&#x27;),
+    salaire: 1700,
+    typeContrat: &#x27;CDD&#x27;,
+  }),
+  new User({
+    id: 105,
+    nom: &#x27;Amélie Petit&#x27;,
+    telephone: &#x27;0655667788&#x27;,
+    email: &#x27;amelie.petit@supermarket.com&#x27;,
+    password: &#x27;password123&#x27;,
+    status: true,
+    role: &#x27;VENDEUR&#x27;,
+    adresse: &#x27;15 Boulevard National, 13001 Marseille&#x27;,
+    poste: &#x27;Vendeur&#x27;,
+    dateCreation: new Date(&#x27;2022-05-20&#x27;),
+    salaire: 1850,
+    typeContrat: &#x27;CDI&#x27;,
+  }),
+]</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+</section>
+    <h3>src/app/services/contant.ts</h3>
+    <section data-compodoc="block-properties">
+    <h3></h3>    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="Constant"></a>
+                    <span class="name">
+                        <span ><b>Constant</b></span>
+                        <a href="#Constant"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/object" target="_blank" >object</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>{
+  API_END_POINT: &#x27;https://freeapi.miniprojectideas.com/api/BigBasket/&#x27;,
+  METHODS: {
+    GET_ALL_PRODUCT: &#x27;GetAllProducts&#x27;,
+    GET_ALL_CATEGORY: &#x27;GetAllCategory&#x27;,
+    GET_ALL_PRODUCT_BY_CATEGORY: &#x27;GetAllProductsByCategoryId?id&#x3D;&#x27;,
+
+    CREATE_PRODUCT: &#x27;CreateProduct&#x27;,
+    UPDATE_PRODUCT: &#x27;UpdateProduct&#x27;,
+    DELETE_PRODUCT: &#x27;DeleteProductById?id&#x3D;&#x27;,
+  },
+}</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+</section>
+    <h3>src/app/guards/role.guard.ts</h3>
+    <section data-compodoc="block-properties">
+    <h3></h3>    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="roleGuard"></a>
+                    <span class="name">
+                        <span ><b>roleGuard</b></span>
+                        <a href="#roleGuard"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>CanActivateFn</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>(route: ActivatedRouteSnapshot) &#x3D;&gt; {
+  const authService &#x3D; inject(AuthService);
+  const router &#x3D; inject(Router);
+
+  const expectedRoles &#x3D; route.data[&#x27;roles&#x27;] as string[];
+
+  const isAuthorized &#x3D;
+    authService.isAuthenticated() &amp;&amp; expectedRoles.some((role) &#x3D;&gt; authService.hasRole(role));
+
+  if (isAuthorized) {
+    return true;
+  }
+
+  return router.createUrlTree([&#x27;/unauthorized&#x27;]);
+}</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+</section>
+
+
+
+                   </div><div class="search-results">
+    <div class="has-results">
+        <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+        <ul class="search-results-list"></ul>
+    </div>
+    <div class="no-results">
+        <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+    </div>
+</div>
+</div>
+               <!-- END CONTENT -->
+           </div>
+       </div>
+
+          <label class="dark-mode-switch">
+               <input type="checkbox">
+               <span class="slider">
+                    <svg class="slider-icon" viewBox="0 0 24 24" fill="none" height="20" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" width="20" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>
+                    </svg>
+               </span>
+          </label>
+
+       <script>
+            var COMPODOC_CURRENT_PAGE_DEPTH = 1;
+            var COMPODOC_CURRENT_PAGE_CONTEXT = 'miscellaneous-variables';
+            var COMPODOC_CURRENT_PAGE_URL = 'variables.html';
+            var MAX_SEARCH_RESULTS = 15;
+       </script>
+
+       <script>
+               $darkModeToggleSwitchers = document.querySelectorAll('.dark-mode-switch input');
+               checkToggle(darkModeState);
+               if ($darkModeToggleSwitchers.length > 0) {
+                    for (var i = 0; i < $darkModeToggleSwitchers.length; i++) {
+                         $darkModeToggleSwitchers[i].addEventListener('change', function (event) {
+                              darkModeState = !darkModeState;
+                              toggleDarkMode(darkModeState);
+                         });
+                    }
+               }
+          </script>
+
+       <script src="../js/libs/custom-elements.min.js"></script>
+       <script src="../js/libs/lit-html.js"></script>
+
+       <script src="../js/menu-wc.js" defer></script>
+       <script nomodule src="../js/menu-wc_es5.js" defer></script>
+
+       <script src="../js/libs/bootstrap-native.js"></script>
+
+       <script src="../js/libs/es6-shim.min.js"></script>
+       <script src="../js/libs/EventDispatcher.js"></script>
+       <script src="../js/libs/promise.min.js"></script>
+
+       <script src="../js/compodoc.js"></script>
+
+       <script src="../js/tabs.js"></script>
+       <script src="../js/menu.js"></script>
+       <script src="../js/libs/clipboard.min.js"></script>
+       <script src="../js/libs/prism.js"></script>
+       <script src="../js/sourceCode.js"></script>
+          <script src="../js/search/search.js"></script>
+          <script src="../js/search/lunr.min.js"></script>
+          <script src="../js/search/search-lunr.js"></script>
+          <script src="../js/search/search_index.js"></script>
+       <script src="../js/lazy-load-graphs.js"></script>
+
+
+    </body>
+</html>

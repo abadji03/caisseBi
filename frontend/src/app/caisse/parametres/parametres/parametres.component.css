@@ -1,56 +1,55 @@
 /* Style de base pour la navigation verticale */
 .nav.flex-column.nav-pills {
-    background-color: #f8f9fa; /* Couleur de fond */
-    /* padding: 10px; */
-    border-radius: 8px;
-    width: 172px; /* Largeur de la barre latérale */
+  background-color: #f8f9fa; /* Couleur de fond */
+  /* padding: 10px; */
+  border-radius: 8px;
+  width: 172px; /* Largeur de la barre latérale */
 }
 
 /* Style des boutons */
 .nav-link {
-    font-weight: bold; /* Texte en gras */
-    color: #333; /* Couleur du texte */
-    border-radius: 5px;
-    width: 170px;
-    /* padding: 12px 15px; */
-    /* transition: all 0.3s ease-in-out; */
+  font-weight: bold; /* Texte en gras */
+  color: #333; /* Couleur du texte */
+  border-radius: 5px;
+  width: 170px;
+  /* padding: 12px 15px; */
+  /* transition: all 0.3s ease-in-out; */
 }
 
 /* Style du bouton actif */
 .nav-link.active {
-    background-color: black; /* Couleur de fond bleu */
-    color: white; /* Texte en blanc */
-    font-weight: bold;
+  background-color: black; /* Couleur de fond bleu */
+  color: white; /* Texte en blanc */
+  font-weight: bold;
 }
 
 /* Effet au survol */
 .nav-link:hover {
-    background-color: darkgrey;
-    color: white;
+  background-color: darkgrey;
+  color: white;
 }
 
 .table {
-    table-layout: auto !important;
-    width: 100%;
-    border-collapse: collapse;
-  }
+  table-layout: auto !important;
+  width: 100%;
+  border-collapse: collapse;
+}
 
+/* Style pour le survol des lignes du tableau */
+.table tbody tr:hover {
+  background-color: #f0f0f0; /* Couleur de fond lors du survol */
+  cursor: pointer; /* Change le curseur pour indiquer que c'est interactif */
+}
 
-  /* Style pour le survol des lignes du tableau */
-  .table tbody tr:hover {
-    background-color: #f0f0f0; /* Couleur de fond lors du survol */
-    cursor: pointer; /* Change le curseur pour indiquer que c'est interactif */
-  }
+/* Style pour une ligne sélectionnée */
+.table tbody tr.selected {
+  background-color: #007bff; /* Couleur de fond de la ligne sélectionnée */
+  color: white; /* Changer la couleur du texte lors de la sélection */
+}
 
-  /* Style pour une ligne sélectionnée */
-  .table tbody tr.selected {
-    background-color: #007bff; /* Couleur de fond de la ligne sélectionnée */
-    color: white; /* Changer la couleur du texte lors de la sélection */
-  }
-
-  .table-responsive,tab-pane {
-    overflow-y: auto; /* Pour activer la barre de défilement verticale */
-    overflow-x: auto; /* Pour activer la barre de défilement horizontale */
-    max-height: 450px; /* Hauteur maximale pour activer la barre de défilement */
-  }
-
+.table-responsive,
+tab-pane {
+  overflow-y: auto; /* Pour activer la barre de défilement verticale */
+  overflow-x: auto; /* Pour activer la barre de défilement horizontale */
+  max-height: 450px; /* Hauteur maximale pour activer la barre de défilement */
+}

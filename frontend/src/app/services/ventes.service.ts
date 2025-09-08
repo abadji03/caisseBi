@@ -1,19 +1,18 @@
-import { Injectable } from '@angular/core';
-import {Observable, of } from 'rxjs';
+import { inject, Injectable } from '@angular/core';
+import { Observable, of } from 'rxjs';
 import { Panier } from '../modeles/panier.model';
 import { HttpClient } from '@angular/common/http';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class VentesService {
-
   private apiUrl = 'http://localhost:3000/api/ventes';
 
-  constructor(private http: HttpClient) {}
+  private http = inject(HttpClient);
 
-  enregistrerVente(panier: Panier): Observable<any> {
-    return this.http.post<any>(this.apiUrl, panier);
+  enregistrerVente(panier: Panier): Observable<unknown> {
+    return this.http.post<unknown>(this.apiUrl, panier);
   }
 
   getTotalCaisse(): Observable<number> {
@@ -24,9 +23,8 @@ export class VentesService {
     return this.http.get<Panier[]>(`${this.apiUrl}/transactions`);
   }
 
-
   // Exemple de données statiques ou récupérées d'une API
-  getSalesHistory(): Observable<any> {
+  getSalesHistory(): Observable<unknown> {
     // Remplacez ceci par une API réelle
     return of({
       history: [
@@ -53,8 +51,7 @@ export class VentesService {
       salesByPeriod: [
         { period: 'Week 1', totalSales: 10000 },
         { period: 'Week 2', totalSales: 15000 },
-      ]
+      ],
     });
   }
-
 }

@@ -1,34 +1,34 @@
 // models/panier.js
 module.exports = (sequelize, DataTypes) => {
-  const Panier = sequelize.define("Panier", {
+  const Panier = sequelize.define('Panier', {
     code_structure: { type: DataTypes.STRING, allowNull: false },
     totalHT: {
       type: DataTypes.DECIMAL(12, 2),
-      defaultValue: 0
+      defaultValue: 0,
     },
     tva: {
       type: DataTypes.DECIMAL(12, 2),
-      defaultValue: 0
+      defaultValue: 0,
     },
     totalTTC: {
       type: DataTypes.DECIMAL(12, 2),
-      defaultValue: 0
+      defaultValue: 0,
     },
     statut: {
       type: DataTypes.ENUM('EN_COURS', 'VALIDE', 'ANNULE'),
-      defaultValue: 'EN_COURS'
+      defaultValue: 'EN_COURS',
     },
     dateCreation: {
       type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW
+      defaultValue: DataTypes.NOW,
     },
     dateMiseAJour: {
-      type: DataTypes.DATE
+      type: DataTypes.DATE,
     },
     detailsVisible: {
       type: DataTypes.BOOLEAN,
-      defaultValue: false
-    }
+      defaultValue: false,
+    },
   });
 
   /* Panier.associate = models => {

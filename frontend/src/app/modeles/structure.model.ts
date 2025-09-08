@@ -6,32 +6,32 @@ export class Structure {
   nombreMagasins!: number;
   type_structure!: 'boutique' | 'alimentation' | 'ferme';
   devise!: 'FCFA' | 'USD' | 'EUR';
-  
+
   // Contact
   email!: string;
   telephone!: string;
   adresse!: string;
-  
+
   // Informations fiscales
   numeroIdentificationFiscale?: string;
   registreCommerce?: string;
   statutJuridique?: string;
-  
+
   // Informations bancaires
   nomBanque?: string;
   numeroCompteBancaire?: string;
   fournisseurMobileMoney?: 'Orange Money' | 'Wave' | 'Free Money';
-  
+
   // Informations administratives
   nombreEmployes?: number;
   responsableAdministratif?: string;
   horairesOuverture?: string;
-  
+
   // Activité
   joursFermeture?: string;
   siteWeb?: string;
   reseauxSociaux?: string;
-  
+
   // Sécurité
   personneConfiance?: string;
   assurances?: string;
@@ -40,11 +40,11 @@ export class Structure {
   description?: string;
 
   code_structure!: string;
-  
+
   // Métadonnées
   dateCreationStructure?: Date;
   dateMiseAJour?: Date;
-  estActive: boolean = true;
+  estActive = true;
 
   constructor(data?: Partial<Structure>) {
     if (data) {

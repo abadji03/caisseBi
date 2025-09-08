@@ -1,0 +1,2146 @@
+<!doctype html>
+<html class="no-js" lang="">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title>frontend documentation</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="icon" type="image/x-icon" href="../images/favicon.ico">
+	   <link rel="stylesheet" href="../styles/style.css">
+        <link rel="stylesheet" href="../styles/dark.css">
+    </head>
+    <body>
+          <script>
+               // Blocking script to avoid flickering dark mode
+               // Dark mode toggle button
+               var useDark = window.matchMedia('(prefers-color-scheme: dark)');
+               var darkModeState = useDark.matches;
+               var $darkModeToggleSwitchers = document.querySelectorAll('.dark-mode-switch input');
+               var $darkModeToggles = document.querySelectorAll('.dark-mode-switch');
+               var darkModeStateLocal = localStorage.getItem('compodoc_darkmode-state');
+
+               function checkToggle(check) {
+                    for (var i = 0; i < $darkModeToggleSwitchers.length; i++) {
+                         $darkModeToggleSwitchers[i].checked = check;
+                    }
+               }
+
+               function toggleDarkMode(state) {
+                    if (window.localStorage) {
+                         localStorage.setItem('compodoc_darkmode-state', state);
+                    }
+
+                    checkToggle(state);
+
+                    const hasClass = document.body.classList.contains('dark');
+
+                    if (state) {
+                         for (var i = 0; i < $darkModeToggles.length; i++) {
+                              $darkModeToggles[i].classList.add('dark');
+                         }
+                         if (!hasClass) {
+                              document.body.classList.add('dark');
+                         }
+                    } else {
+                         for (var i = 0; i < $darkModeToggles.length; i++) {
+                              $darkModeToggles[i].classList.remove('dark');
+                         }
+                         if (hasClass) {
+                              document.body.classList.remove('dark');
+                         }
+                    }
+               }
+
+               useDark.addEventListener('change', function (evt) {
+                    toggleDarkMode(evt.matches);
+               });
+               if (darkModeStateLocal) {
+                    darkModeState = darkModeStateLocal === 'true';
+               }
+               toggleDarkMode(darkModeState);
+          </script>
+
+        <div class="navbar navbar-default navbar-fixed-top d-md-none p-0">
+               <div class="d-flex">
+                    <a href="../" class="navbar-brand">frontend documentation</a>
+                    <button type="button" class="btn btn-default btn-menu ion-ios-menu" id="btn-menu"></button>
+               </div>
+        </div>
+
+        <div class="xs-menu menu" id="mobile-menu">
+                <div id="book-search-input" role="search"><input type="text" placeholder="Type to search"></div>            <compodoc-menu></compodoc-menu>
+        </div>
+
+        <div class="container-fluid main">
+           <div class="row main">
+               <div class="d-none d-md-block menu">
+                   <compodoc-menu mode="normal"></compodoc-menu>
+               </div>
+               <!-- START CONTENT -->
+               <div class="content injectable">
+                   <div class="content-data">
+
+
+
+
+
+
+
+
+<ol class="breadcrumb">
+  <li class="breadcrumb-item">Injectables</li>
+  <li class="breadcrumb-item" >ApplicationService</li>
+</ol>
+
+<ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item">
+            <a href="#info" 
+                class="nav-link"
+                class="nav-link active"
+                role="tab" id="info-tab" data-bs-toggle="tab" data-link="info">Info</a>
+        </li>
+        <li class="nav-item">
+            <a href="#source" 
+                class="nav-link"
+                
+                role="tab" id="source-tab" data-bs-toggle="tab" data-link="source">Source</a>
+        </li>
+</ul>
+
+<div class="tab-content">
+    <div class="tab-pane fade active in" id="info">
+        <p class="comment">
+            <h3>File</h3>
+        </p>
+        <p class="comment">
+            <code>src/app/services/application.service.ts</code>
+        </p>
+
+
+
+
+
+            <section data-compodoc="block-index">
+    <h3 id="index">Index</h3>
+    <table class="table table-sm table-bordered index-table">
+        <tbody>
+                <tr>
+                    <td class="col-md-4">
+                        <h6><b>Properties</b></h6>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <ul class="index-list">
+                            <li>
+                                <a href="#arraySize$" >arraySize$</a>
+                            </li>
+                            <li>
+                                    <span class="modifier">Private</span>
+                                <a href="#arrProduits_source" >arrProduits_source</a>
+                            </li>
+                            <li>
+                                <a href="#cartTotal$" >cartTotal$</a>
+                            </li>
+                            <li>
+                                <a href="#cartTotalSubject" >cartTotalSubject</a>
+                            </li>
+                            <li>
+                                <a href="#current_prodArr$" >current_prodArr$</a>
+                            </li>
+                            <li>
+                                    <span class="modifier">Private</span>
+                                <a href="#product$" >product$</a>
+                            </li>
+                            <li>
+                                <a href="#produits" >produits</a>
+                            </li>
+                            <li>
+                                <a href="#selectedProduct$" >selectedProduct$</a>
+                            </li>
+                        </ul>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="col-md-4">
+                        <h6><b>Methods</b></h6>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <ul class="index-list">
+                            <li>
+                                <a href="#addProduit" >addProduit</a>
+                            </li>
+                            <li>
+                                    <span class="modifier">Public</span>
+                                <a href="#clearData" >clearData</a>
+                            </li>
+                            <li>
+                                <a href="#deleteProduct" >deleteProduct</a>
+                            </li>
+                            <li>
+                                <a href="#getCategory" >getCategory</a>
+                            </li>
+                            <li>
+                                    <span class="modifier">Public</span>
+                                <a href="#getData" >getData</a>
+                            </li>
+                            <li>
+                                <a href="#getProductById" >getProductById</a>
+                            </li>
+                            <li>
+                                <a href="#getProducts" >getProducts</a>
+                            </li>
+                            <li>
+                                <a href="#getProductsByCategory" >getProductsByCategory</a>
+                            </li>
+                            <li>
+                                <a href="#getSingleProduct" >getSingleProduct</a>
+                            </li>
+                            <li>
+                                <a href="#paginate" >paginate</a>
+                            </li>
+                            <li>
+                                    <span class="modifier">Public</span>
+                                <a href="#removeData" >removeData</a>
+                            </li>
+                            <li>
+                                    <span class="modifier">Public</span>
+                                <a href="#removeProduct" >removeProduct</a>
+                            </li>
+                            <li>
+                                <a href="#removeProduit" >removeProduit</a>
+                            </li>
+                            <li>
+                                    <span class="modifier">Public</span>
+                                <a href="#saveData" >saveData</a>
+                            </li>
+                            <li>
+                                <a href="#saveProduct" >saveProduct</a>
+                            </li>
+                            <li>
+                                <a href="#setProduct" >setProduct</a>
+                            </li>
+                            <li>
+                                <a href="#updateProduct" >updateProduct</a>
+                            </li>
+                            <li>
+                                <a href="#updateQteProduct" >updateQteProduct</a>
+                            </li>
+                        </ul>
+                    </td>
+                </tr>
+
+
+
+
+
+        </tbody>
+    </table>
+</section>
+
+
+            <section data-compodoc="block-methods">
+    
+    <h3 id="methods">
+        Methods
+    </h3>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="addProduit"></a>
+                    <span class="name">
+                        <span ><b>addProduit</b></span>
+                        <a href="#addProduit"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>addProduit(product: <a href="../classes/Produit.html" target="_self">Produit</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="199"
+                                    class="link-to-prism">src/app/services/application.service.ts:199</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>product</td>
+                                            <td>
+                                                            <code><a href="../classes/Produit.html" target="_self" >Produit</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="clearData"></a>
+                    <span class="name">
+                            <span class="modifier">Public</span>
+                        <span ><b>clearData</b></span>
+                        <a href="#clearData"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>clearData()</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="297"
+                                    class="link-to-prism">src/app/services/application.service.ts:297</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="deleteProduct"></a>
+                    <span class="name">
+                        <span ><b>deleteProduct</b></span>
+                        <a href="#deleteProduct"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>deleteProduct(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank">number</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="187"
+                                    class="link-to-prism">src/app/services/application.service.ts:187</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>id</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="getCategory"></a>
+                    <span class="name">
+                        <span ><b>getCategory</b></span>
+                        <a href="#getCategory"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>getCategory()</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="161"
+                                    class="link-to-prism">src/app/services/application.service.ts:161</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                        <div class="io-description">
+                            <b>Returns : </b>    <code>string[]</code>
+
+                        </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="getData"></a>
+                    <span class="name">
+                            <span class="modifier">Public</span>
+                        <span ><b>getData</b></span>
+                        <a href="#getData"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>getData()</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="254"
+                                    class="link-to-prism">src/app/services/application.service.ts:254</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >any</a></code>
+
+                        </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="getProductById"></a>
+                    <span class="name">
+                        <span ><b>getProductById</b></span>
+                        <a href="#getProductById"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>getProductById(valueToFind: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="277"
+                                    class="link-to-prism">src/app/services/application.service.ts:277</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>valueToFind</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="getProducts"></a>
+                    <span class="name">
+                        <span ><b>getProducts</b></span>
+                        <a href="#getProducts"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>getProducts()</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="153"
+                                    class="link-to-prism">src/app/services/application.service.ts:153</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="../classes/Produit.html" target="_self" >Produit[]</a></code>
+
+                        </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="getProductsByCategory"></a>
+                    <span class="name">
+                        <span ><b>getProductsByCategory</b></span>
+                        <a href="#getProductsByCategory"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>getProductsByCategory(categ: <a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank">any</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="172"
+                                    class="link-to-prism">src/app/services/application.service.ts:172</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>categ</td>
+                                            <td>
+                                                            <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >any</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="../classes/Produit.html" target="_self" >Produit[]</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="getSingleProduct"></a>
+                    <span class="name">
+                        <span ><b>getSingleProduct</b></span>
+                        <a href="#getSingleProduct"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>getSingleProduct(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank">number</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="157"
+                                    class="link-to-prism">src/app/services/application.service.ts:157</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>id</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="../classes/Produit.html" target="_self" >Produit</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="paginate"></a>
+                    <span class="name">
+                        <span ><b>paginate</b></span>
+                        <a href="#paginate"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>paginate(items: any[], currentPage: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank">number</a>, itemsPerPage: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank">number</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="291"
+                                    class="link-to-prism">src/app/services/application.service.ts:291</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>items</td>
+                                            <td>
+                                                        <code>any[]</code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>currentPage</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>itemsPerPage</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>    <code>any[]</code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="removeData"></a>
+                    <span class="name">
+                            <span class="modifier">Public</span>
+                        <span ><b>removeData</b></span>
+                        <a href="#removeData"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>removeData(key: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="257"
+                                    class="link-to-prism">src/app/services/application.service.ts:257</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>key</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="removeProduct"></a>
+                    <span class="name">
+                            <span class="modifier">Public</span>
+                        <span ><b>removeProduct</b></span>
+                        <a href="#removeProduct"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>removeProduct(product: <a href="../classes/Produit.html" target="_self">Produit</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="261"
+                                    class="link-to-prism">src/app/services/application.service.ts:261</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>product</td>
+                                            <td>
+                                                            <code><a href="../classes/Produit.html" target="_self" >Produit</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="removeProduit"></a>
+                    <span class="name">
+                        <span ><b>removeProduit</b></span>
+                        <a href="#removeProduit"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>removeProduit(product: <a href="../classes/Produit.html" target="_self">Produit</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="223"
+                                    class="link-to-prism">src/app/services/application.service.ts:223</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>product</td>
+                                            <td>
+                                                            <code><a href="../classes/Produit.html" target="_self" >Produit</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="saveData"></a>
+                    <span class="name">
+                            <span class="modifier">Public</span>
+                        <span ><b>saveData</b></span>
+                        <a href="#saveData"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>saveData(prod: <a href="../classes/Produit.html" target="_self">Produit</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="241"
+                                    class="link-to-prism">src/app/services/application.service.ts:241</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>prod</td>
+                                            <td>
+                                                            <code><a href="../classes/Produit.html" target="_self" >Produit</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="saveProduct"></a>
+                    <span class="name">
+                        <span ><b>saveProduct</b></span>
+                        <a href="#saveProduct"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>saveProduct(obj: <a href="../classes/Produit.html" target="_self">Produit</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="180"
+                                    class="link-to-prism">src/app/services/application.service.ts:180</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>obj</td>
+                                            <td>
+                                                            <code><a href="../classes/Produit.html" target="_self" >Produit</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="setProduct"></a>
+                    <span class="name">
+                        <span ><b>setProduct</b></span>
+                        <a href="#setProduct"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>setProduct(product: <a href="../classes/Produit.html" target="_self">Produit</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="196"
+                                    class="link-to-prism">src/app/services/application.service.ts:196</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>product</td>
+                                            <td>
+                                                            <code><a href="../classes/Produit.html" target="_self" >Produit</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="updateProduct"></a>
+                    <span class="name">
+                        <span ><b>updateProduct</b></span>
+                        <a href="#updateProduct"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>updateProduct(obj: <a href="../classes/Produit.html" target="_self">Produit</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="183"
+                                    class="link-to-prism">src/app/services/application.service.ts:183</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>obj</td>
+                                            <td>
+                                                            <code><a href="../classes/Produit.html" target="_self" >Produit</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="updateQteProduct"></a>
+                    <span class="name">
+                        <span ><b>updateQteProduct</b></span>
+                        <a href="#updateQteProduct"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+<code>updateQteProduct(prod: <a href="../classes/Produit.html" target="_self">Produit</a>, qte: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank">number</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="212"
+                                    class="link-to-prism">src/app/services/application.service.ts:212</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>prod</td>
+                                            <td>
+                                                            <code><a href="../classes/Produit.html" target="_self" >Produit</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>qte</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >void</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+            <section data-compodoc="block-properties">
+    
+    <h3 id="inputs">
+        Properties
+    </h3>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="arraySize$"></a>
+                    <span class="name">
+                        <span ><b>arraySize$</b></span>
+                        <a href="#arraySize$"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>this.arrProduits_source.pipe(map((dataArray) &#x3D;&gt; dataArray.length))</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="16" class="link-to-prism">src/app/services/application.service.ts:16</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="arrProduits_source"></a>
+                    <span class="name">
+                            <span class="modifier">Private</span>
+                        <span ><b>arrProduits_source</b></span>
+                        <a href="#arrProduits_source"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>new BehaviorSubject&lt;Produit[]&gt;([])</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="12" class="link-to-prism">src/app/services/application.service.ts:12</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="cartTotal$"></a>
+                    <span class="name">
+                        <span ><b>cartTotal$</b></span>
+                        <a href="#cartTotal$"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>this.cartTotalSubject.asObservable()</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="15" class="link-to-prism">src/app/services/application.service.ts:15</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="cartTotalSubject"></a>
+                    <span class="name">
+                        <span ><b>cartTotalSubject</b></span>
+                        <a href="#cartTotalSubject"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>new BehaviorSubject&lt;number&gt;(0)</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="14" class="link-to-prism">src/app/services/application.service.ts:14</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="current_prodArr$"></a>
+                    <span class="name">
+                        <span ><b>current_prodArr$</b></span>
+                        <a href="#current_prodArr$"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>this.arrProduits_source.asObservable()</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="13" class="link-to-prism">src/app/services/application.service.ts:13</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="product$"></a>
+                    <span class="name">
+                            <span class="modifier">Private</span>
+                        <span ><b>product$</b></span>
+                        <a href="#product$"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>new BehaviorSubject&lt;Produit&gt;({} as Produit)</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="10" class="link-to-prism">src/app/services/application.service.ts:10</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="produits"></a>
+                    <span class="name">
+                        <span ><b>produits</b></span>
+                        <a href="#produits"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="../classes/Produit.html" target="_self" >Produit[]</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[
+    {
+      id: 1,
+      sku: &#x27;&#x27;,
+      nomComplet: &#x27;Banane best product 3&#x27;,
+      prix: 500,
+      nomCourt: &#x27;Banane&#x27;,
+      description: &#x27;Banane très mure et originaire de la Guinée-Conakry&#x27;,
+      quantite: 1,
+      dateCreation: new Date(),
+      deliveryTimeSpan: &#x27;&#x27;,
+      categorie: &#x27;Fruit banane&#x27;,
+      imageUrl: &#x27;./assets/best-product-3.jpg&#x27;,
+    },
+    {
+      id: 2,
+      sku: &#x27;&#x27;,
+      nomComplet: &#x27;Banane fruite item 3&#x27;,
+      prix: 500,
+      nomCourt: &#x27;Banane&#x27;,
+      description: &#x27;Banane très mure et originaire de la Guinée-Conakry&#x27;,
+      quantite: 1,
+      dateCreation: new Date(),
+      deliveryTimeSpan: &#x27;&#x27;,
+      categorie: &#x27;Fruit banane&#x27;,
+      imageUrl: &#x27;./assets/fruite-item-3.jpg&#x27;,
+    },
+    {
+      id: 3,
+      sku: &#x27;&#x27;,
+      nomComplet: &#x27;Banane vegetable-item-3&#x27;,
+      prix: 500,
+      nomCourt: &#x27;Banane&#x27;,
+      description: &#x27;Banane très mure et originaire de la Guinée-Conakry&#x27;,
+      quantite: 1,
+      dateCreation: new Date(),
+      deliveryTimeSpan: &#x27;&#x27;,
+      categorie: &#x27;Fruit banane&#x27;,
+      imageUrl: &#x27;./assets/vegetable-item-3.png&#x27;,
+    },
+
+    {
+      id: 4,
+      sku: &#x27;&#x27;,
+      nomComplet: &#x27;Orange best-product-1&#x27;,
+      prix: 400,
+      nomCourt: &#x27;Orange&#x27;,
+      description: &#x27;Orange très mure et originaire de la Guinée-Conakry&#x27;,
+      quantite: 1,
+      dateCreation: new Date(),
+      deliveryTimeSpan: &#x27;&#x27;,
+      categorie: &#x27;Fruit orange&#x27;,
+      imageUrl: &#x27;./assets/best-product-1.jpg&#x27;,
+    },
+    {
+      id: 5,
+      sku: &#x27;&#x27;,
+      nomComplet: &#x27;Orange fruite-item-1&#x27;,
+      prix: 300,
+      nomCourt: &#x27;Orange&#x27;,
+      description: &#x27;Orange très mure et originaire de la Guinée-Conakry&#x27;,
+      quantite: 1,
+      dateCreation: new Date(),
+      deliveryTimeSpan: &#x27;&#x27;,
+      categorie: &#x27;Fruit orange&#x27;,
+      imageUrl: &#x27;./assets/fruite-item-1.jpg&#x27;,
+    },
+    {
+      id: 6,
+      sku: &#x27;&#x27;,
+      nomComplet: &#x27;Fraise vegetable-item-1&#x27;,
+      prix: 500,
+      nomCourt: &#x27;Fraise&#x27;,
+      description: &#x27;Fraise très mure et originaire de la Guinée-Conakry&#x27;,
+      quantite: 1,
+      dateCreation: new Date(),
+      deliveryTimeSpan: &#x27;&#x27;,
+      categorie: &#x27;Fruit fraise&#x27;,
+      imageUrl: &#x27;./assets/vegetable-item-1.jpg&#x27;,
+    },
+    {
+      id: 7,
+      sku: &#x27;&#x27;,
+      nomComplet: &#x27;Produit catégorie A&#x27;,
+      prix: 500,
+      nomCourt: &#x27;Banane&#x27;,
+      description: &#x27;Description produit catégorie&#x27;,
+      quantite: 1,
+      dateCreation: new Date(),
+      deliveryTimeSpan: &#x27;&#x27;,
+      categorie: &#x27;Catégorie A&#x27;,
+      imageUrl: &#x27;./assets/best-product-2.jpg&#x27;,
+    },
+    {
+      id: 8,
+      sku: &#x27;&#x27;,
+      nomComplet: &#x27;Produit catégorie AA&#x27;,
+      prix: 500,
+      nomCourt: &#x27;Banane&#x27;,
+      description: &#x27;Description produit catégorie&#x27;,
+      quantite: 1,
+      dateCreation: new Date(),
+      deliveryTimeSpan: &#x27;&#x27;,
+      categorie: &#x27;Catégorie A&#x27;,
+      imageUrl: &#x27;./assets/best-product-4.jpg&#x27;,
+    },
+
+    {
+      id: 9,
+      sku: &#x27;&#x27;,
+      nomComplet: &#x27;Produit catégorie AAA&#x27;,
+      prix: 500,
+      nomCourt: &#x27;Banane&#x27;,
+      description: &#x27;Description produit catégorie&#x27;,
+      quantite: 1,
+      dateCreation: new Date(),
+      deliveryTimeSpan: &#x27;&#x27;,
+      categorie: &#x27;Catégorie A&#x27;,
+      imageUrl: &#x27;./assets/best-product-5.jpg&#x27;,
+    },
+    {
+      id: 10,
+      sku: &#x27;&#x27;,
+      nomComplet: &#x27;Produit catégorie AAAA&#x27;,
+      prix: 500,
+      nomCourt: &#x27;Banane&#x27;,
+      description: &#x27;Description produit catégorie&#x27;,
+      quantite: 1,
+      dateCreation: new Date(),
+      deliveryTimeSpan: &#x27;&#x27;,
+      categorie: &#x27;Catégorie A&#x27;,
+      imageUrl: &#x27;./assets/best-product-6.jpg&#x27;,
+    },
+  ]</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="18" class="link-to-prism">src/app/services/application.service.ts:18</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="selectedProduct$"></a>
+                    <span class="name">
+                        <span ><b>selectedProduct$</b></span>
+                        <a href="#selectedProduct$"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>this.product$.asObservable()</code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="11" class="link-to-prism">src/app/services/application.service.ts:11</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+</section>
+
+    </div>
+
+
+    <div class="tab-pane fade  tab-source-code" id="source">
+        <pre class="line-numbers compodoc-sourcecode"><code class="language-typescript">import { Injectable } from &#x27;@angular/core&#x27;;
+import { Produit } from &#x27;../modeles/produit.modele&#x27;;
+import { BehaviorSubject } from &#x27;rxjs&#x27;;
+import { map } from &#x27;rxjs&#x27;;
+
+@Injectable({
+  providedIn: &#x27;root&#x27;,
+})
+export class ApplicationService {
+  private product$ &#x3D; new BehaviorSubject&lt;Produit&gt;({} as Produit);
+  selectedProduct$ &#x3D; this.product$.asObservable();
+  private arrProduits_source &#x3D; new BehaviorSubject&lt;Produit[]&gt;([]);
+  current_prodArr$ &#x3D; this.arrProduits_source.asObservable();
+  cartTotalSubject &#x3D; new BehaviorSubject&lt;number&gt;(0);
+  cartTotal$ &#x3D; this.cartTotalSubject.asObservable();
+  arraySize$ &#x3D; this.arrProduits_source.pipe(map((dataArray) &#x3D;&gt; dataArray.length));
+
+  produits: Produit[] &#x3D; [
+    {
+      id: 1,
+      sku: &#x27;&#x27;,
+      nomComplet: &#x27;Banane best product 3&#x27;,
+      prix: 500,
+      nomCourt: &#x27;Banane&#x27;,
+      description: &#x27;Banane très mure et originaire de la Guinée-Conakry&#x27;,
+      quantite: 1,
+      dateCreation: new Date(),
+      deliveryTimeSpan: &#x27;&#x27;,
+      categorie: &#x27;Fruit banane&#x27;,
+      imageUrl: &#x27;./assets/best-product-3.jpg&#x27;,
+    },
+    {
+      id: 2,
+      sku: &#x27;&#x27;,
+      nomComplet: &#x27;Banane fruite item 3&#x27;,
+      prix: 500,
+      nomCourt: &#x27;Banane&#x27;,
+      description: &#x27;Banane très mure et originaire de la Guinée-Conakry&#x27;,
+      quantite: 1,
+      dateCreation: new Date(),
+      deliveryTimeSpan: &#x27;&#x27;,
+      categorie: &#x27;Fruit banane&#x27;,
+      imageUrl: &#x27;./assets/fruite-item-3.jpg&#x27;,
+    },
+    {
+      id: 3,
+      sku: &#x27;&#x27;,
+      nomComplet: &#x27;Banane vegetable-item-3&#x27;,
+      prix: 500,
+      nomCourt: &#x27;Banane&#x27;,
+      description: &#x27;Banane très mure et originaire de la Guinée-Conakry&#x27;,
+      quantite: 1,
+      dateCreation: new Date(),
+      deliveryTimeSpan: &#x27;&#x27;,
+      categorie: &#x27;Fruit banane&#x27;,
+      imageUrl: &#x27;./assets/vegetable-item-3.png&#x27;,
+    },
+
+    {
+      id: 4,
+      sku: &#x27;&#x27;,
+      nomComplet: &#x27;Orange best-product-1&#x27;,
+      prix: 400,
+      nomCourt: &#x27;Orange&#x27;,
+      description: &#x27;Orange très mure et originaire de la Guinée-Conakry&#x27;,
+      quantite: 1,
+      dateCreation: new Date(),
+      deliveryTimeSpan: &#x27;&#x27;,
+      categorie: &#x27;Fruit orange&#x27;,
+      imageUrl: &#x27;./assets/best-product-1.jpg&#x27;,
+    },
+    {
+      id: 5,
+      sku: &#x27;&#x27;,
+      nomComplet: &#x27;Orange fruite-item-1&#x27;,
+      prix: 300,
+      nomCourt: &#x27;Orange&#x27;,
+      description: &#x27;Orange très mure et originaire de la Guinée-Conakry&#x27;,
+      quantite: 1,
+      dateCreation: new Date(),
+      deliveryTimeSpan: &#x27;&#x27;,
+      categorie: &#x27;Fruit orange&#x27;,
+      imageUrl: &#x27;./assets/fruite-item-1.jpg&#x27;,
+    },
+    {
+      id: 6,
+      sku: &#x27;&#x27;,
+      nomComplet: &#x27;Fraise vegetable-item-1&#x27;,
+      prix: 500,
+      nomCourt: &#x27;Fraise&#x27;,
+      description: &#x27;Fraise très mure et originaire de la Guinée-Conakry&#x27;,
+      quantite: 1,
+      dateCreation: new Date(),
+      deliveryTimeSpan: &#x27;&#x27;,
+      categorie: &#x27;Fruit fraise&#x27;,
+      imageUrl: &#x27;./assets/vegetable-item-1.jpg&#x27;,
+    },
+    {
+      id: 7,
+      sku: &#x27;&#x27;,
+      nomComplet: &#x27;Produit catégorie A&#x27;,
+      prix: 500,
+      nomCourt: &#x27;Banane&#x27;,
+      description: &#x27;Description produit catégorie&#x27;,
+      quantite: 1,
+      dateCreation: new Date(),
+      deliveryTimeSpan: &#x27;&#x27;,
+      categorie: &#x27;Catégorie A&#x27;,
+      imageUrl: &#x27;./assets/best-product-2.jpg&#x27;,
+    },
+    {
+      id: 8,
+      sku: &#x27;&#x27;,
+      nomComplet: &#x27;Produit catégorie AA&#x27;,
+      prix: 500,
+      nomCourt: &#x27;Banane&#x27;,
+      description: &#x27;Description produit catégorie&#x27;,
+      quantite: 1,
+      dateCreation: new Date(),
+      deliveryTimeSpan: &#x27;&#x27;,
+      categorie: &#x27;Catégorie A&#x27;,
+      imageUrl: &#x27;./assets/best-product-4.jpg&#x27;,
+    },
+
+    {
+      id: 9,
+      sku: &#x27;&#x27;,
+      nomComplet: &#x27;Produit catégorie AAA&#x27;,
+      prix: 500,
+      nomCourt: &#x27;Banane&#x27;,
+      description: &#x27;Description produit catégorie&#x27;,
+      quantite: 1,
+      dateCreation: new Date(),
+      deliveryTimeSpan: &#x27;&#x27;,
+      categorie: &#x27;Catégorie A&#x27;,
+      imageUrl: &#x27;./assets/best-product-5.jpg&#x27;,
+    },
+    {
+      id: 10,
+      sku: &#x27;&#x27;,
+      nomComplet: &#x27;Produit catégorie AAAA&#x27;,
+      prix: 500,
+      nomCourt: &#x27;Banane&#x27;,
+      description: &#x27;Description produit catégorie&#x27;,
+      quantite: 1,
+      dateCreation: new Date(),
+      deliveryTimeSpan: &#x27;&#x27;,
+      categorie: &#x27;Catégorie A&#x27;,
+      imageUrl: &#x27;./assets/best-product-6.jpg&#x27;,
+    },
+  ];
+
+  getProducts(): Produit[] {
+    return this.produits;
+  }
+
+  getSingleProduct(id: number): Produit {
+    return this.produits[id];
+  }
+
+  getCategory(): string[] {
+    const category: string[] &#x3D; [];
+
+    // eslint-disable-next-line @typescript-eslint/prefer-for-of
+    for (let i &#x3D; 0; i &lt; this.produits.length; i++) {
+      category.push(this.produits[i].categorie);
+    }
+    return Array.from(new Set(category));
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getProductsByCategory(categ: any): Produit[] {
+    //const prod &#x3D; this.produits.find(prod &#x3D;&gt; prod.id &#x3D;&#x3D;&#x3D; id);
+    let categoryProd: Produit[] &#x3D; [];
+    categoryProd &#x3D; this.produits.filter((prod) &#x3D;&gt; prod.categorie &#x3D;&#x3D;&#x3D; categ);
+
+    return categoryProd;
+  }
+
+  saveProduct(obj: Produit): void {
+    this.produits.push(obj);
+  }
+  updateProduct(obj: Produit) {
+    this.produits.push(obj);
+  }
+
+  deleteProduct(id: number): void {
+    const prod &#x3D; this.produits.find((prod) &#x3D;&gt; prod.id &#x3D;&#x3D;&#x3D; id);
+    if (!prod) {
+      throw new Error(&#x27;FaceSnap not found!&#x27;);
+    } else {
+      const index: number &#x3D; this.produits.indexOf(prod);
+      this.produits.splice(index, 1);
+    }
+  }
+  setProduct(product: Produit) {
+    this.product$.next(product);
+  }
+  addProduit(product: Produit) {
+    //this.arrProduits_source.next(this.arrProduits_source.getValue().concat([data]));
+    const currentItems &#x3D; [...this.arrProduits_source.value];
+    const index &#x3D; currentItems.indexOf(product);
+    if (index &#x3D;&#x3D;&#x3D; -1) {
+      currentItems.push(product);
+      this.arrProduits_source.next(currentItems);
+
+      const newTotal &#x3D; currentItems.reduce((total, item) &#x3D;&gt; total + item.prix * item.quantite, 0);
+      this.cartTotalSubject.next(newTotal);
+    }
+  }
+
+  updateQteProduct(prod: Produit, qte: number) {
+    const currentItems &#x3D; [...this.arrProduits_source.value];
+    const index &#x3D; currentItems.indexOf(prod);
+    if (index !&#x3D;&#x3D; -1) {
+      currentItems[index].quantite &#x3D; qte;
+      this.arrProduits_source.next(currentItems);
+    }
+    const newTotal &#x3D; currentItems.reduce((total, item) &#x3D;&gt; total + item.prix * item.quantite, 0);
+    this.cartTotalSubject.next(newTotal);
+  }
+
+  removeProduit(product: Produit) {
+    /*  const ProdArr: any[] &#x3D; this.arrProduits_source.getValue();
+
+  ProdArr.forEach((item, index) &#x3D;&gt; {
+    if (item &#x3D;&#x3D;&#x3D; data) { ProdArr.splice(index, 1); }
+  });
+
+  this.arrProduits_source.next(ProdArr); */
+    const currentItems &#x3D; [...this.arrProduits_source.value];
+    const index &#x3D; currentItems.indexOf(product);
+    if (index !&#x3D;&#x3D; -1) {
+      currentItems.splice(index, 1);
+      this.arrProduits_source.next(currentItems);
+    }
+
+    const newTotal &#x3D; currentItems.reduce((total, item) &#x3D;&gt; total + item.prix * item.quantite, 0);
+    this.cartTotalSubject.next(newTotal);
+  }
+  public saveData(prod: Produit) {
+    const objectsFromStorage &#x3D; localStorage.getItem(&#x27;list_produits&#x27;);
+    if (objectsFromStorage !&#x3D;&#x3D; null) {
+      this.produits &#x3D; JSON.parse(objectsFromStorage);
+      this.produits.push(prod);
+      localStorage.setItem(&#x27;list_produits&#x27;, JSON.stringify(this.produits));
+      window.location.reload();
+    } else {
+      this.produits.push(prod);
+      localStorage.setItem(&#x27;list_produits&#x27;, JSON.stringify(this.produits));
+      window.location.reload();
+    }
+  }
+  public getData() {
+    return JSON.parse(localStorage.getItem(&#x27;list_produits&#x27;) || &#x27;{}&#x27;);
+  }
+  public removeData(key: string) {
+    localStorage.removeItem(key);
+  }
+
+  public removeProduct(product: Produit) {
+    //const fromStorage &#x3D; this.getData()!;
+    const objectsFromStorage &#x3D; this.getData();
+    console.log(&#x27;Un &#x27; + objectsFromStorage.length);
+    const index &#x3D; objectsFromStorage.findIndex((prod: Produit) &#x3D;&gt; prod.id &#x3D;&#x3D;&#x3D; product.id);
+    console.log(&#x27;index &#x27; + index);
+    if (index !&#x3D;&#x3D; -1) {
+      objectsFromStorage.splice(index, 1);
+      console.log(&#x27;Deux &#x27; + objectsFromStorage.length);
+      this.produits &#x3D; objectsFromStorage;
+      const stringToStore &#x3D; JSON.stringify(this.produits);
+      localStorage.setItem(&#x27;list_produits&#x27;, stringToStore);
+      window.location.reload();
+    }
+  }
+
+  getProductById(valueToFind: string) {
+    const fromStorage &#x3D; this.getData() || &#x27;{}&#x27;;
+    const objectsFromStorage &#x3D; JSON.parse(fromStorage);
+    console.log(objectsFromStorage);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const toFind &#x3D; objectsFromStorage.filter(function (obj: any) {
+      return obj &#x3D;&#x3D; valueToFind;
+    });
+
+    console.log(toFind);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  paginate(items: any[], currentPage: number, itemsPerPage: number): any[] {
+    const start &#x3D; (currentPage - 1) * itemsPerPage;
+    //console.log(&#x27;item affiches&#x27;, items.slice(start, start + itemsPerPage));
+    return items.slice(start, start + itemsPerPage);
+  }
+
+  public clearData() {
+    localStorage.clear();
+  }
+  /*constructor(private http: HttpClient) { }
+
+   getCategory() {
+    return this.http.get(Constant.API_END_POINT + Constant.METHODS.GET_ALL_CATEGORY);
+  }
+
+  getProductsByCategory(id: number) {
+    return this.http.get(Constant.API_END_POINT + Constant.METHODS.GET_ALL_PRODUCT_BY_CATEGORY +  id);
+  }
+  getProducts() {
+    return this.http.get(Constant.API_END_POINT + Constant.METHODS.GET_ALL_PRODUCT);
+  }
+  saveProduct(obj: any) {
+    return this.http.post(Constant.API_END_POINT + Constant.METHODS.CREATE_PRODUCT, obj);
+  }
+  updateProduct(obj: any) {
+    return this.http.post(Constant.API_END_POINT + Constant.METHODS.UPDATE_PRODUCT, obj);
+  }
+
+  deleteProduct(id: any) {
+    return this.http.get(Constant.API_END_POINT + Constant.METHODS.DELETE_PRODUCT + id);
+  } */
+}
+</code></pre>
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+                   </div><div class="search-results">
+    <div class="has-results">
+        <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+        <ul class="search-results-list"></ul>
+    </div>
+    <div class="no-results">
+        <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+    </div>
+</div>
+</div>
+               <!-- END CONTENT -->
+           </div>
+       </div>
+
+          <label class="dark-mode-switch">
+               <input type="checkbox">
+               <span class="slider">
+                    <svg class="slider-icon" viewBox="0 0 24 24" fill="none" height="20" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" width="20" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>
+                    </svg>
+               </span>
+          </label>
+
+       <script>
+            var COMPODOC_CURRENT_PAGE_DEPTH = 1;
+            var COMPODOC_CURRENT_PAGE_CONTEXT = 'injectable';
+            var COMPODOC_CURRENT_PAGE_URL = 'ApplicationService.html';
+            var MAX_SEARCH_RESULTS = 15;
+       </script>
+
+       <script>
+               $darkModeToggleSwitchers = document.querySelectorAll('.dark-mode-switch input');
+               checkToggle(darkModeState);
+               if ($darkModeToggleSwitchers.length > 0) {
+                    for (var i = 0; i < $darkModeToggleSwitchers.length; i++) {
+                         $darkModeToggleSwitchers[i].addEventListener('change', function (event) {
+                              darkModeState = !darkModeState;
+                              toggleDarkMode(darkModeState);
+                         });
+                    }
+               }
+          </script>
+
+       <script src="../js/libs/custom-elements.min.js"></script>
+       <script src="../js/libs/lit-html.js"></script>
+
+       <script src="../js/menu-wc.js" defer></script>
+       <script nomodule src="../js/menu-wc_es5.js" defer></script>
+
+       <script src="../js/libs/bootstrap-native.js"></script>
+
+       <script src="../js/libs/es6-shim.min.js"></script>
+       <script src="../js/libs/EventDispatcher.js"></script>
+       <script src="../js/libs/promise.min.js"></script>
+
+       <script src="../js/compodoc.js"></script>
+
+       <script src="../js/tabs.js"></script>
+       <script src="../js/menu.js"></script>
+       <script src="../js/libs/clipboard.min.js"></script>
+       <script src="../js/libs/prism.js"></script>
+       <script src="../js/sourceCode.js"></script>
+          <script src="../js/search/search.js"></script>
+          <script src="../js/search/lunr.min.js"></script>
+          <script src="../js/search/search-lunr.js"></script>
+          <script src="../js/search/search_index.js"></script>
+       <script src="../js/lazy-load-graphs.js"></script>
+
+
+    </body>
+</html>

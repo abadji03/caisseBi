@@ -36,19 +36,19 @@ module.exports = (sequelize, DataTypes) => {
     },
     compte: {
       type: DataTypes.ENUM('Bon', 'Caisse', 'Mobile Money', 'Banque'),
-      defaultValue: 'Caisse'
+      defaultValue: 'Caisse',
     },
     date: {
       type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW
+      defaultValue: DataTypes.NOW,
     },
     methodePaiement: DataTypes.INTEGER, // À lier à une table si tu en as une
     dateMiseAJour: DataTypes.DATE,
     typePaiement: {
       type: DataTypes.ENUM('fournisseur', 'client'),
-      defaultValue: 'client'
+      defaultValue: 'client',
     },
-    fichier: DataTypes.TEXT
+    fichier: DataTypes.TEXT,
   });
 
   /* Paiement.associate = models => {

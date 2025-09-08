@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-  const Fournisseur = sequelize.define("Fournisseur", {
+  const Fournisseur = sequelize.define('Fournisseur', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
