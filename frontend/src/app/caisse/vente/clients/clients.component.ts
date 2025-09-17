@@ -374,7 +374,7 @@ export class ClientsComponent implements OnInit {
           date: new Date(),
           description: `Paiement ${j} du client ${i}`,
           montant: Math.floor(Math.random() * 10000) + 500,
-          methodePaiement: Math.floor(Math.random() * 10) + 10, // ['Espèce', 'Carte', 'Mobile Money', 'Virement'][Math.floor(Math.random() * 4)],
+          //methodePaiement: Math.floor(Math.random() * 10) + 10, // ['Espèce', 'Carte', 'Mobile Money', 'Virement'][Math.floor(Math.random() * 4)],
           clientId: client.id,
           bonId: bon.id,
         });

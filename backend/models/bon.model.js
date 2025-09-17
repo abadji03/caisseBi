@@ -25,11 +25,23 @@ module.exports = (sequelize, DataTypes) => {
     },
     netAPayer: {
       type: DataTypes.DECIMAL(12, 2),
-      allowNull: false,
+      get() {
+        const montant = this.getDataValue('montantTotal') || 0;
+        const remise = this.getDataValue('remise') || 0;
+        return montant - remise;
+      },
     },
     resteAPayer: {
       type: DataTypes.DECIMAL(12, 2),
-      allowNull: false,
+      get() {
+        const net = this.get('netAPayer') || 0;
+        const avance = this.getDataValue('avance') || 0;
+        return net - avance;
+      },
+    },
+    avance: {
+      type: DataTypes.DECIMAL(12, 2),
+      defaultValue: 0,
     },
     dateBon: {
       type: DataTypes.DATE,

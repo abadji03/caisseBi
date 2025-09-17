@@ -1,0 +1,47 @@
+<div class="sidebar" [class.collapsed]="isSidebarCollapsed">
+  <nav> 
+    <div class="sidebar-header"> 
+     <button class="menu-toggle" (click)="toggleCollapse()">
+        <i class="bi bi-list"></i>
+      </button>
+      <img src="./assets/CMP.png" class="avatar img-fluid rounded me-1" alt="User" width="50" height="50" />
+      <!-- <span class="text-dark" *ngIf="!isSidebarCollapsed">User</span> -->
+      <h4 *ngIf="!isSidebarCollapsed">Nom Structure</h4>
+    </div>
+    <div class="accordion" id="accordionSidebar">
+      @for (item of sidebarItems; track item.label) {
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button
+              class="accordion-button no-arrow"
+              (click)="toggleSubtitre(item.label)"
+              [attr.aria-expanded]="isSubtitreOpen(item.label)"
+            >
+              <i class="{{ item.icon }} me-2"></i>
+              <span *ngIf="!isSidebarCollapsed">{{ item.label }}</span>
+            </button>
+          </h2>
+          <div
+            [id]="item.label + 'Menu'"
+            class="accordion-collapse collapse"
+            [class.show]="isSubtitreOpen(item.label)"
+            data-bs-parent="#accordionSidebar"
+          >
+            <div class="accordion-body my-auto">
+              @for (child of item.children || []; track child.label) {
+                <button
+                  class="nav-link"
+                  [routerLink]="child.route"
+                  routerLinkActive="active"
+                  (click)="onSelect(child)"
+                >
+                  {{ child.label }}
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </nav>
+</div>

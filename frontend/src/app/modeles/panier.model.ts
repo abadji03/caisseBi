@@ -12,6 +12,8 @@ export class Panier {
   totalHT = 0;
   tva = 0;
   totalTTC = 0;
+  remise = 0;
+  avance = 0;
   statut: 'EN_COURS' | 'VALIDE' | 'ANNULE' = 'EN_COURS';
   dateCreation: Date = new Date();
   dateMiseAJour: Date = new Date();

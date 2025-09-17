@@ -1,0 +1,27 @@
+/* paiement.component.css */
+.paiement-form {
+  background-color: #f8f9fa;
+  padding: 20px;
+  border-radius: 5px;
+  border: 1px solid #dee2e6;
+  margin-bottom: 20px;
+}
+
+.paiement-form .table {
+  margin-bottom: 0;
+}
+
+.paiement-form .table th {
+  background-color: #e9ecef;
+  border-top: none;
+}
+
+.paiement-form .invalid-feedback {
+  display: block;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+.paiement-form .btn {
+  padding: 0.375rem 0.75rem;
+}

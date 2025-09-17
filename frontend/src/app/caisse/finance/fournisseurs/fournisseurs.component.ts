@@ -20,11 +20,18 @@ import { FournisseursService } from '../../../services/fournisseurs.service';
 import { ToastrService } from 'ngx-toastr';
 import { finalize, forkJoin } from 'rxjs';
 import { normalize } from '../../../utils/string-utils';
+import { BonComponent } from '../../../sharedComposants/bon/bon.component';
+import { Panier } from '../../../modeles/panier.model';
+import { ProduitsService } from '../../../services/produits.service';
+import { StockInventaireService } from '../../../services/stock-inventaire.service';
+import { Stock } from '../../../modeles/entrees-sorties.model';
+import { PaiementComponent } from '../../../sharedComposants/paiement/paiement.component';
+import { BonsService } from '../../../services/bons.service';
 
 @Component({
   selector: 'app-fournisseurs',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, BonComponent, PaiementComponent],
   templateUrl: './fournisseurs.component.html',
   styleUrl: './fournisseurs.component.css',
 })
@@ -53,6 +60,8 @@ export class FournisseursComponent implements OnInit {
   showPaiementForm = false; // Pour afficher ou masquer le formulaire de paiement
   actionType = 'ajouter';
   magasins: Magasin[] = [];
+  magasinId = 1;
+  agentId = 1;
 
   showProductsSection = false; // Affichage de la section des produits à ajouter
   searchProduct = ''; // Champ de recherche pour les produits
@@ -111,13 +120,7 @@ export class FournisseursComponent implements OnInit {
   rowsPerPage = 5; // Nombre par défaut de lignes par page
 
   produits: Produits[] = [];
-
-  /* produitsDisponibles: any[] = [
-    { nom: 'Produit A', quantite: 100, unite: 'pièce', prixAchat: 500, prixVente: 750 },
-    { nom: 'Produit B', quantite: 50, unite: 'kg', prixAchat: 2000, prixVente: 2500 },
-    { nom: 'Produit C', quantite: 200, unite: 'pièce', prixAchat: 300, prixVente: 450 },
-    { nom: 'Produit D', quantite: 150, unite: 'litre', prixAchat: 1500, prixVente: 2000 },
-  ]; */
+  stocks: Stock[] = [];
   banques: string[] = [
     "Banque de l'Habitat du Sénégal (BHS)",
     'Banque Sénégalaise de Développement (BSD)',
@@ -132,27 +135,26 @@ export class FournisseursComponent implements OnInit {
     // Ajoutez d'autres banques ici selon vos besoins
   ];
 
+  // Variables pour les composants réutilisables
+  showPanierComponent = false;
+  showBonComponent = false;
+  typeEntite: 'client' | 'fournisseur' = 'fournisseur';
+  showPaiementComponent = false;
   private fb = inject(FormBuilder);
   private paginationService = inject(ApplicationService);
   private cdr = inject(ChangeDetectorRef);
   private magasinService = inject(MaagasinsService);
   private fournisseurService = inject(FournisseursService);
   private toastr = inject(ToastrService);
+  private produitsServices = inject(ProduitsService);
+  private stockService = inject(StockInventaireService);
+  private bonService = inject(BonsService);
 
   ngOnInit(): void {
     // Chargement des données des fournisseurs (par exemple via un service)
-    //this.loadDataFournisseurs();
     this.loadData();
-    //this.loadMagasinForStrucure();
+    this.loadDataProduits();
     this.initForm();
-    //console.log('Valeur de code_structure:', this.code_structure); // Ajoutez ce log pour vérifier la valeur
-    // Date et heure actuelles
-    /* const currentDateObj = new Date();
-    this.currentDate = currentDateObj.toLocaleDateString();
-    this.currentTime = currentDateObj.toLocaleTimeString();
-    // Générer le numéro du bon à partir de la date et de l'heure courantes
-    this.generatedNumero = this.generateBonNumber(currentDateObj); */
-
     this.onTypeBonChange(); // Met à jour les champs au chargement
   }
 
@@ -210,6 +212,72 @@ export class FournisseursComponent implements OnInit {
       dateLivraison: [''],
       instructionsLivraison: [''],
     });
+  }
+
+  // Méthodes pour gérer l'affichage des composants
+  /* togglePanierComponent(): void {
+    this.showPanierComponent = !this.showPanierComponent;
+    this.showBonComponent = false;
+    this.showPaiementForm = !this.showPaiementForm;
+  } */
+ /*  toggleBonComponent(): void {
+    this.showBonComponent = !this.showBonComponent;
+    this.showPanierComponent = false;
+    this.showPaiementForm = false;
+  } */
+  onBonEnregistre(bon: Bon): void {
+    console.log('Bon enregistré:', bon);
+    // Associer le bon au fournisseur sélectionné
+    if (this.selectedFournisseur && bon) {
+      bon.fournisseurId = this.selectedFournisseur.id;
+      // Enregistrer le bon
+      this.enregistrerBon(bon);
+    }
+    this.showBonComponent = false;
+  }
+  
+  // Méthodes pour gérer les événements des composants
+  onPanierEnregistre(panier: Panier): void {
+    console.log('Panier enregistré:', panier);
+    // Logique pour enregistrer le panier
+    this.showPanierComponent = false;
+  }
+  
+  onPanierAnnule(): void {
+    this.showPanierComponent = false;
+  }
+  onBonAnnule(): void {
+    this.showBonComponent = false;
+  }
+
+   // Autres méthodes existantes...
+  private enregistrerBon(bon: Bon): void {
+    // Logique pour enregistrer le bon
+    const bonToSave = { 
+      ...bon,
+      code_structure: this.code_structure,
+      magasinId: this.magasinId,
+      agentId: this.agentId,
+     };
+     console.log('Bon enregistré avec succès:', bonToSave.avance, bonToSave.remise, bonToSave.code_structure, bonToSave.magasinId, bonToSave.agentId);
+    /* this.isLoading = true;
+    this.bonService.createBon(bon).pipe(finalize(() => (this.isLoading = false))).subscribe({
+      next: (newBon) => {
+        console.log('Bon enregistré avec succès:', newBon);
+      },
+      error: (err) => {
+        console.error('Erreur lors de l\'enregistrement du bon', err);
+        this.toastr.error('Erreur lors de l\'enregistrement du bon', 'Erreur');
+      },
+    }); */
+    //console.log('Enregistrement du bon:', bon);
+  }
+  
+  private loadProduitsDisponibles(): void {
+    // Charger les produits disponibles
+    // this.produitService.getProduits().subscribe(produits => {
+    //   this.produitsDisponibles = produits;
+    // });
   }
 
   // Getter pour accéder facilement aux contrôles du formulaire
@@ -403,7 +471,7 @@ export class FournisseursComponent implements OnInit {
           date: new Date(),
           description: `Paiement ${j} au fournisseur ${i}`,
           montant: Math.floor(Math.random() * 10000) + 500,
-          methodePaiement: Math.floor(Math.random() * 10) + 10, // methodePaiement[Math.floor(Math.random() * methodePaiement.length)],
+          //methodePaiement: Math.floor(Math.random() * 10) + 10, // methodePaiement[Math.floor(Math.random() * methodePaiement.length)],
           fournisseurId: fournisseur.id,
           bonId: bon.id,
         });
@@ -581,6 +649,11 @@ export class FournisseursComponent implements OnInit {
     //console.log('Fournisseur sélectionné :', fournisseur.nomComplet);
     //console.log('Total bons :', this.filteredBons.length, 'Total paiements :', this.filteredPaiements.length);
     //this.cdr.detectChanges(); // Forcer la mise à jour de l'affichage
+    /* if (type === 'bon') {
+      this.toggleBonComponent();
+    } else if (type === 'panier') {
+      this.togglePanierComponent();
+    } */
     if (!this.selectedFournisseur) return;
     const today = new Date();
     this.startDate = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]; // 1er jour du mois
@@ -622,6 +695,7 @@ export class FournisseursComponent implements OnInit {
   // Fonction pour afficher ou masquer le formulaire
   toggleBonForm(): void {
     this.showBonForm = !this.showBonForm;
+    this.showPaiementForm = false;
   }
 
   resetFormPaiement() {
@@ -669,6 +743,25 @@ export class FournisseursComponent implements OnInit {
     }
   }
 
+ loadDataProduits(): void {
+      this.isLoading = true;
+      forkJoin([
+        this.produitsServices.getAllProduits(this.code_structure),
+        this.stockService.getStocksByStructure(this.code_structure),
+      ])
+        .pipe(finalize(() => (this.isLoading = false)))
+        .subscribe({
+          next: ([produit, stock]) => {
+            //this.fournisseurs = four
+            this.produits = produit;
+            this.stocks = stock;
+            this.filteredProducts = this.produits;
+            console.log('Produits chargés', this.produits);
+            console.log('Produits chargés', this.filteredProducts);
+          },
+          error: (err) => console.error('Erreur chargement données', err),
+        });
+    }
   submitBon(): void {
     console.log('Bon enregistré', this.bonForm.value);
   }
@@ -698,9 +791,9 @@ export class FournisseursComponent implements OnInit {
 } */
 
   // Fonction pour afficher ou masquer le formulaire de paiement
-  togglePaiementForm(): void {
+  /* togglePaiementForm(): void {
     this.showPaiementForm = !this.showPaiementForm;
-  }
+  } */
 
   // Fonction pour soumettre le formulaire du paiement
   onPaiementFormSubmit(): void {
@@ -970,6 +1063,34 @@ get getPaginatedPaiementsBis() {
     this.updateTotal();
   }
 
+  // Méthode pour afficher le formulaire de paiement
+  togglePaiementForm(): void {
+    this.showBonForm = false;
+    this.showPaiementForm = !this.showPaiementForm;
+
+  }
+  
+  // Gérer l'événement d'enregistrement du paiement
+  onPaiementEnregistre(paiement: Paiement): void {
+    // Associer le fournisseur au paiement
+    if (this.selectedFournisseur) {
+      paiement.fournisseurId = this.selectedFournisseur.id;
+    }
+    
+    // Enregistrer le paiement
+    this.enregistrerPaiement(paiement);
+    this.showPaiementComponent = false;
+  }
+  
+  onPaiementAnnule(): void {
+    this.showPaiementComponent = false;
+  }
+  
+  private enregistrerPaiement(paiement: Paiement): void {
+    // Logique d'enregistrement du paiement
+    console.log('Paiement enregistré:', paiement);
+    // this.paiementService.create(paiement).subscribe(...);
+  }
   // Méthode pour retourner un bon
   retournerBon(bon: Bon) {
     const confirmation = confirm(`Voulez-vous vraiment retourner le bon Nº ${bon.numero} ?`);

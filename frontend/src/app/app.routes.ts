@@ -11,7 +11,7 @@ import { DetailsProduitComponent } from './e-commerce/details-produit/details-pr
 import { CaisseComponent } from './caisse/vente/caisse/caisse.component';
 // import { VenteComponent } from './caisse/vente/vente/vente.component';
 //import { EnregistrementActeurComponent } from './caisse/acces_accueil/enregistrement-acteur/enregistrement-acteur.component';
-import { EspaceVendeursComponent } from './caisse/acces_accueil/espace-vendeurs/espace-vendeurs.component';
+//import { EspaceVendeursComponent } from './caisse/acces_accueil/espace-vendeurs/espace-vendeurs.component';
 import { OverviewComponent } from './caisse/parametres/overview/overview.component';
 import { VentesComponent } from './caisse/vente/ventes/ventes.component';
 import { FournisseursComponent } from './caisse/finance/fournisseurs/fournisseurs.component';
@@ -27,6 +27,8 @@ import { FinanceComponent } from './caisse/finance/finance/finance.component';
 import { RapportsComponent } from './caisse/rapports/rapports/rapports.component';
 import { RapportsVentesComponent } from './caisse/rapports/rapports-ventes/rapports-ventes.component';
 import { RapportsStocksComponent } from './caisse/rapports/rapports-stocks/rapports-stocks.component';
+import { DashboardComponent } from './caisse/acces_accueil/dashboard/dashboard.component';
+//import { FournisseurComponent } from './caisse/finance/fournisseur/fournisseur.component';
 /* import { LandingComponent } from './e-commerce/landing/landing.component';
 import { UserLoginComponent } from './e-commerce/user-login/user-login.component';
 import { UserAccountComponent } from './e-commerce/user-account/user-account.component';
@@ -44,8 +46,10 @@ export const routes: Routes = [
     }, */
 
   {
-    path: 'espace-vendeurs',
-    component: EspaceVendeursComponent,
+    //path: 'espace-vendeurs',
+    //component: EspaceVendeursComponent,
+    path: 'caisse-bi',
+    component: DashboardComponent,
     children: [
       {
         path: '', // Redirection par défaut
@@ -60,6 +64,10 @@ export const routes: Routes = [
         path: 'fournisseurs',
         component: FournisseursComponent,
       },
+      /* {
+        path: 'fournisseur',
+        component: FournisseurComponent,
+      }, */
       {
         path: 'catalogue-produits',
         component: CatalogueProduitComponent,

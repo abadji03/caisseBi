@@ -436,7 +436,7 @@
                 <td>
                   <div *ngIf="vente.paiements?.length; else noPaiement">
                     <div *ngFor="let paiement of vente.paiements">
-                      {{ getNomModePaiement(paiement.methodePaiement) }}:
+                      {{ "getNomModePaiement(paiement.methodePaiement) "}}:
                       {{ paiement.montant | number }} F CFA
                     </div>
                   </div>

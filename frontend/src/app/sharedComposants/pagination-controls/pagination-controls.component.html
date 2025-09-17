@@ -1,0 +1,19 @@
+<div class="d-flex justify-content-center align-items-center">
+  <button
+    class="btn btn-success me-2"
+    (click)="onPreviousPage()"
+    [disabled]="currentPage === 1 || disabled"
+  >
+    <i class="bi bi-arrow-left-circle"></i>
+  </button>
+  <span class="h4 mb-0">
+    {{ currentPage }} / {{ totalPages }}
+  </span>
+  <button
+    class="btn btn-success ms-2"
+    (click)="onNextPage()"
+    [disabled]="currentPage >= totalPages || disabled"
+  >
+    <i class="bi bi-arrow-right-circle"></i>
+  </button>
+</div>

@@ -15,7 +15,7 @@ export class Stock {
   public statutStock = 'En stock'; // État du stock ("En stock", "Rupture", etc.)
   public dateDerniereMiseAJour!: Date; // Date de la dernière mise à jour
 
-  // 🔹 Propriétés calculées
+  //Propriétés calculées
   public get quantiteDisponible(): number {
     return this.quantiteTotale - this.quantiteReservee;
   }
@@ -33,7 +33,7 @@ export class Stock {
     //this.dateDerniereMiseAJour = new Date();
   }
 
-  // 🔹 Méthodes statiques pour les calculs globaux
+  //Méthodes statiques pour les calculs globaux
   public static calculerValeurTotaleStocks(stocks: Stock[]): number {
     return stocks.reduce((total, stock) => total + stock.valeurTotaleStock, 0);
   }
@@ -83,7 +83,7 @@ export class MouvementsStock {
   public ref!: string;
   public produitId!: number;
   public magasinId!: number;
-  public stockId!: number; // 🔹 Ajout du lien avec le stock
+  public stockId!: number; // Ajout du lien avec le stock
   public typeMouvement!: 'Entree' | 'Sortie';
   public quantite!: number;
   public prixUnitaire!: number;
@@ -92,7 +92,7 @@ export class MouvementsStock {
   public motif?: string;
   public dateMouvement: Date = new Date();
 
-  // 🔹 Calcul du prix total
+  //Calcul du prix total
   public get prixTotal(): number {
     return (this.prixUnitaire || 0) * this.quantite;
   }
@@ -104,12 +104,12 @@ export class MouvementsStock {
     }
   }
 
-  // 🔹 Réinitialiser l'heure d'une date pour éviter les erreurs de comparaison
+  //Réinitialiser l'heure d'une date pour éviter les erreurs de comparaison
   private static resetTime(date: Date): Date {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
   }
 
-  // 🔹 Méthode pour calculer les statistiques de stock
+  //Méthode pour calculer les statistiques de stock
   public static calculerStatistiques(
     mouvements: MouvementsStock[],
     stocks: Stock[],
@@ -141,7 +141,7 @@ export class MouvementsStock {
       );
     });
 
-    // 🔹 Regrouper les entrées et sorties
+    //Regrouper les entrées et sorties
     const entrees = mouvementsFiltres
       .filter((mvt) => mvt.typeMouvement === 'Entree')
       .reduce((total, mvt) => total + mvt.quantite, 0);
@@ -150,17 +150,17 @@ export class MouvementsStock {
       .filter((mvt) => mvt.typeMouvement === 'Sortie')
       .reduce((total, mvt) => total + mvt.quantite, 0);
 
-    // 🔹 Calcul du stock final
+    //Calcul du stock final
     const stockFinal = stockInitial + entrees - sorties;
 
-    // 🔹 Calcul des valeurs du stock
+    //Calcul des valeurs du stock
     const valeurStockInitial = stockInitial * dernierPrixAchat;
     const valeurStockFinal = stockFinal * dernierPrixAchat;
 
-    // 🔹 Calcul du stock moyen
+    //Calcul du stock moyen
     const stockMoyen = (stockInitial + stockFinal) / 2;
 
-    // 🔹 Calcul du taux de rotation
+    //Calcul du taux de rotation
     const tauxRotation = stockMoyen > 0 ? sorties / stockMoyen : 0;
 
     return {
@@ -174,7 +174,7 @@ export class MouvementsStock {
     };
   }
 
-  // 🔹 Méthode pour calculer le stock initial
+  //Méthode pour calculer le stock initial
   private static getStockInitial(
     produitId: number,
     magasinId: number,
@@ -185,7 +185,7 @@ export class MouvementsStock {
     const dateDebutReset = this.resetTime(dateDebut);
 
     if (magasinId !== -1) {
-      // ✅ Calcul pour un magasin spécifique
+      //Calcul pour un magasin spécifique
       const stockEnregistre = stocks
         .filter((stock) => stock.produitId === produitId && stock.magasinId === magasinId)
         .sort((a, b) => b.dateDerniereMiseAJour.getTime() - a.dateDerniereMiseAJour.getTime())
@@ -195,7 +195,7 @@ export class MouvementsStock {
         return stockEnregistre.quantiteDisponible;
       }
 
-      // 🔹 Calcul via les mouvements
+      //Calcul via les mouvements
       const totalEntrees = mouvements
         .filter(
           (mvt) =>
@@ -219,7 +219,7 @@ export class MouvementsStock {
       return totalEntrees - totalSorties;
     }
 
-    // ✅ Cas où tous les magasins sont pris en compte
+    //Cas où tous les magasins sont pris en compte
     const stockTotal = stocks
       .filter((stock) => stock.produitId === produitId)
       .reduce((total, stock) => total + stock.quantiteDisponible, 0);
@@ -364,39 +364,35 @@ export class Reconciliation {
       this.dateReconciliation = new Date(this.dateReconciliation);
     }
 
-    this._ecart = this.calculerEcart(); // ✅ Utilisation correcte
-    this.ajouterHistorique("Initialisation de l'écart");
+    this._ecart = this.calculerEcart(); // Utilisation correcte
+    //this.ajouterHistorique("Initialisation de l'écart");
   }
 
-  // 🔥 Getter pour `ecart`
+  //  Getter pour `ecart`
   get ecart(): number {
     return this._ecart;
   }
 
-  // 🔥 Setter pour `ecart` (met à jour et ajoute à l'historique)
+  //  Setter pour `ecart
   set ecart(value: number) {
-    if (this._ecart !== undefined && this._ecart !== value) {
-      // Si changement de valeur
-      this.ajouterHistorique(`Mise à jour de l'écart : ${this._ecart} → ${value}`);
-    }
     this._ecart = value;
   }
 
-  // 🔥 Calcul automatique de l'écart
+  //  Calcul automatique de l'écart
   private calculerEcart(): number {
     return (this.stockPhysique ?? 0) - (this.stockTheorique ?? 0);
   }
 
-  // 🔥 Ajouter un écart au suivi historique
-  ajouterHistorique(note?: string): void {
+  // Ajouter un écart au suivi historique
+  /* ajouterHistorique(note?: string): void {
     this.historiqueEcart?.push({
       date: new Date(),
       ecart: this._ecart,
       note,
     });
-  }
+  } */
 
-  // 🔥 Transformer un objet brut en instance de `Reconciliation`
+  //Transformer un objet brut en instance de `Reconciliation`
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static fromRaw(data: any): Reconciliation {
     return new Reconciliation({
@@ -429,6 +425,10 @@ export class AnalyseEcart {
 
   constructor(data?: Partial<AnalyseEcart>) {
     Object.assign(this, data);
+
+      //Mettre à jour automatiquement corrige
+    this.mettreAJourCorrections();
+
     this.moyenneEcart = this.calculerMoyenneEcart();
     this.tauxCorrection = this.calculerTauxCorrection();
   }
@@ -445,9 +445,16 @@ export class AnalyseEcart {
     return (corriges / this.ecartsDetail.length) * 100;
   }
 
-  // 🔥 Ajout d'une méthode statique pour convertir un objet brut en instance de la classe
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  static fromRaw(data: any): AnalyseEcart {
+  // Met à jour la propriété corrige selon l’écart
+  mettreAJourCorrections(): void {
+    if (!this.ecartsDetail) return;
+    this.ecartsDetail = this.ecartsDetail.map((item) => ({
+      ...item,
+      corrige: item.ecart === 0,
+    }));
+  }
+  // Ajout d'une méthode statique pour convertir un objet brut en instance de la classe
+  /* static fromRaw(data: any): AnalyseEcart {
     return new AnalyseEcart({
       produitId: data.produitId,
       ecartTotal: data.ecartTotal,
@@ -462,5 +469,29 @@ export class AnalyseEcart {
           }))
         : [],
     });
+  } */
+
+    //Conversion objet brut → instance
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  static fromRaw(data: any): AnalyseEcart {
+    const instance = new AnalyseEcart({
+      produitId: data.produitId,
+      ecartTotal: data.ecartTotal,
+      dernierEcart: new Date(data.dernierEcart),
+      nombreReconciliations: data.nombreReconciliations,
+      ecartsDetail: data.ecartsDetail
+        ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          data.ecartsDetail.map((item: any) => ({
+            date: new Date(item.date),
+            ecart: item.ecart,
+            corrige: item.corrige, // sera recalculé par mettreAJourCorrections()
+          }))
+        : [],
+    });
+
+    //S’assurer que corrige est bien recalculé
+    instance.mettreAJourCorrections();
+
+    return instance;
   }
 }

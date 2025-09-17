@@ -1,0 +1,164 @@
+<!-- bon.component.html -->
+  <!-- <div *ngIf="showBonForm" class="formBon"> -->
+  <div class="alert alert-warning d-flex justify-content-between align-items-center mt-3">
+    <span>📌 Bon en cours...</span>
+    <span>📅 Date: {{ currentDate }}</span>
+    <span>📅 Heure: {{ currentTime }}</span>
+    <span>📄 Numéro : <strong>{{ generatedNumero }}</strong></span>
+  </div>
+
+  <form [formGroup]="bonForm" (ngSubmit)="submitBon()">
+    <!-- Type de Bon -->
+    <div class="row mb-3">
+      <div class="col-md-3">
+        <select class="form-select" formControlName="type" (change)="onTypeBonChange()">
+          <option value="" disabled selected>Type de bon</option>
+          <option value="commande">Commande</option>
+          <option value="retour">Retour</option>
+          <option value="livraison">Livraison</option>
+        </select>
+      </div>
+      
+      <div *ngIf="typeBon === 'commande' || typeBon === 'livraison'" class="col-md-3">
+        <input
+          type="number"
+          class="form-control"
+          formControlName="montant"
+          placeholder="Montant"
+        />
+      </div>
+      
+      <div *ngIf="typeBon === 'commande' || typeBon === 'livraison'" class="col-md-3">
+        <textarea
+          class="form-control"
+          formControlName="description"
+          placeholder="Description"
+        ></textarea>
+      </div>
+      
+      <div *ngIf="typeBon === 'retour'" class="col-md-3">
+        <input
+          type="text"
+          class="form-control"
+          formControlName="refBonOrigine"
+          placeholder="Bon d'Origine"
+        />
+      </div>
+    </div>
+
+    <div class="row mb-3" *ngIf="typeBon === 'retour'">
+      <div class="col-md-3">
+        <textarea
+          class="form-control"
+          formControlName="motifAvoir"
+          placeholder="Motif de l'Avoir"
+        ></textarea>
+      </div>
+      
+      <div class="col-md-3">
+        <input
+          type="number"
+          class="form-control"
+          formControlName="montantAvoir"
+          placeholder="Montant de l'Avoir"
+        />
+      </div>
+
+      <div class="col-md-3">
+        <input
+          type="date"
+          class="form-control"
+          formControlName="dateBonOrigine"
+          placeholder="Date du Bon d'Origine"
+        />
+      </div>
+    </div>
+    <!-- Nouveaux champs Remise et Avance au niveau du bon -->
+  <div class="row mb-3" *ngIf="typeBon !== ''">
+    <div class="col-md-3">
+      <label for="remise" class="form-label">Remise sur le bon</label>
+      <input
+        name="remise"
+        type="number"
+        [disabled]="!isMontantValide"
+        class="form-control"
+        formControlName="remise"
+        placeholder="Remise"
+        min="0"
+        step="0.01"
+      />
+      <small *ngIf="!isMontantValide" class="text-muted">
+      Le montant doit être supérieur à 0 pour ajouter une remise
+    </small>
+    </div>
+    
+    <div class="col-md-3">
+      <label for="avance" class="form-label">Avance sur le bon</label>
+      <input
+        type="number"
+        name="avance"
+        class="form-control"
+        formControlName="avance"
+        [disabled]="!isMontantValide"
+        placeholder="Avance"
+        min="0"
+        step="0.01"
+      />
+      <small *ngIf="!isMontantValide" class="text-muted">
+      Le montant doit être supérieur à 0 pour ajouter une avance
+    </small>
+    </div>
+    
+    <div class="col-md-3">
+      <label for="netAPayer" class="form-label">Net à payer</label>
+      <input
+      name="netAPayer"
+        type="number"
+        class="form-control"
+        [value]="totalBon"
+        readonly
+        placeholder="Net à payer"
+      />
+    </div>
+  </div>
+    <!-- Panier -->
+    <div class="mt-3 d-flex justify-content-center" *ngIf="typeBon !==''">
+      <h2>Produits associés au bon</h2>
+    </div>
+
+    <div *ngIf="typeBon !==''" class="bg-secondary d-flex justify-content-between align-items-center mt-1 p-2 text-white">
+      <span>💰 Total panier : <strong>{{ totalPanier }} F CFA</strong></span>
+      <span>💰 Total bon : <strong>{{ totalBon }} F CFA</strong></span>
+    </div>
+    
+    <!-- Dans bon.component.html -->
+    <app-panier
+    *ngIf="typeBon !==''"
+      [produitsDisponibles]="produitsDisponibles"
+      [showPanierSection]="showPanier"
+      [titre]="'Panier du bon'"
+      [inclureTVA]="true"
+      [modeCompact]="true"
+      [showHeader]="false"
+      [showActions]="true"
+      [showRemiseField]="false" 
+      [showAvanceField]="false" 
+      (onEnregistrer)="onPanierEnregistre($event)"
+      (onAnnuler)="onPanierAnnule()"
+      (totalPanierChange)="onTotalPanierChange($event)"
+    ></app-panier>
+
+    <div *ngIf="typeBon !==''" class="d-flex justify-content-center mt-3">
+      <!-- <button 
+        type="button" 
+        class="btn btn-success me-2" 
+        (click)="addArticle()" 
+        [disabled]="panierDisabled"
+      >
+         Ajouter un article
+      </button> -->
+      <button type="submit" class="btn btn-primary me-2">Enregistrer le Bon</button>
+      <button type="button" class="btn btn-secondary" (click)="annulerBon()"> Annuler</button>
+    </div>
+  </form>
+<!-- </div> -->

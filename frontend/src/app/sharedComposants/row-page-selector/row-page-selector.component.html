@@ -1,0 +1,14 @@
+<div class="d-flex align-items-center mb-2">
+  <label for="rowsPerPage" class="me-2">Afficher</label>
+  <select
+    id="rowsPerPage"
+    class="form-select w-auto me-2"
+    [(ngModel)]="rowsPerPage"
+    (change)="onRowsPerPageChange($event)"
+  >
+    <option *ngFor="let option of rowsPerPageOptions" [value]="option">
+      {{ option }} éléments/page
+    </option>
+  </select>
+  <span>lignes par page</span>
+</div>

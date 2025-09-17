@@ -435,7 +435,7 @@ export class FinanceComponent implements OnInit {
         montant: 150000,
         compte: 'Banque',
         typePaiement: 'fournisseur',
-        methodePaiement: 1,
+        //methodePaiement: 1,
       }),
       new Paiement({
         id: 2,
@@ -444,7 +444,7 @@ export class FinanceComponent implements OnInit {
         montant: 50000,
         compte: 'Mobile Money',
         typePaiement: 'client',
-        methodePaiement: 3,
+        //methodePaiement: 3,
       }),
       new Paiement({
         id: 3,
@@ -453,7 +453,7 @@ export class FinanceComponent implements OnInit {
         montant: 200000,
         compte: 'Caisse',
         typePaiement: 'fournisseur',
-        methodePaiement: 2,
+        //methodePaiement: 2,
       }),
       new Paiement({
         id: 4,
@@ -462,7 +462,7 @@ export class FinanceComponent implements OnInit {
         montant: 75000,
         compte: 'Banque',
         typePaiement: 'client',
-        methodePaiement: 4,
+        //methodePaiement: 4,
       }),
       new Paiement({
         id: 5,
@@ -471,7 +471,7 @@ export class FinanceComponent implements OnInit {
         montant: 125000,
         compte: 'Mobile Money',
         typePaiement: 'fournisseur',
-        methodePaiement: 1,
+        //methodePaiement: 1,
       }),
       new Paiement({
         id: 6,
@@ -480,7 +480,7 @@ export class FinanceComponent implements OnInit {
         montant: 60000,
         compte: 'Banque',
         typePaiement: 'client',
-        methodePaiement: 2,
+        //methodePaiement: 2,
       }),
       new Paiement({
         id: 7,
@@ -489,7 +489,7 @@ export class FinanceComponent implements OnInit {
         montant: 95000,
         compte: 'Caisse',
         typePaiement: 'fournisseur',
-        methodePaiement: 2,
+        //methodePaiement: 2,
       }),
       new Paiement({
         id: 8,
@@ -498,7 +498,7 @@ export class FinanceComponent implements OnInit {
         montant: 110000,
         compte: 'Banque',
         typePaiement: 'client',
-        methodePaiement: 2,
+        //methodePaiement: 2,
       }),
       new Paiement({
         id: 9,
@@ -507,7 +507,7 @@ export class FinanceComponent implements OnInit {
         montant: 300000,
         compte: 'Mobile Money',
         typePaiement: 'fournisseur',
-        methodePaiement: 4,
+        //methodePaiement: 4,
       }),
       new Paiement({
         id: 10,
@@ -516,7 +516,7 @@ export class FinanceComponent implements OnInit {
         montant: 85000,
         compte: 'Banque',
         typePaiement: 'client',
-        methodePaiement: 4,
+        //methodePaiement: 4,
       }),
     ];
   }

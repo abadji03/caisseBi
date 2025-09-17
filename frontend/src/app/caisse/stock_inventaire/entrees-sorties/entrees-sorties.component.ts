@@ -20,6 +20,7 @@ import { ProduitsService } from '../../../services/produits.service';
 import { StockInventaireService } from '../../../services/stock-inventaire.service';
 import { ToastrService } from 'ngx-toastr';
 import { MouvementsStockService } from '../../../services/mouvements-stock.service';
+import { ReconciliationService } from '../../../services/reconciliation.service';
 @Component({
   selector: 'app-entrees-sorties',
   standalone: true,
@@ -75,11 +76,12 @@ export class EntreesSortiesComponent implements OnInit {
   private stockServcice = inject(StockInventaireService);
   // private fournisseurService = inject(FournisseursService);
   private mouvementsStockService = inject(MouvementsStockService);
-  //private reconciliationService = inject(ReconciliationService);
+  private reconciliationService = inject(ReconciliationService);
   private toastr = inject(ToastrService);
 
   ngOnInit() {
     this.loadMouvementStock();
+    this.loadReconciliation();
     this.loadDataProdFourStock();
 
     this.mouvementForm = this.fb.group({
@@ -103,179 +105,6 @@ export class EntreesSortiesComponent implements OnInit {
     this.mouvementForm.get('typeMouvement')!.valueChanges.subscribe((type) => {
       this.updatePrixUnitaire(type);
     });
-
-    /*  this.mouvementForm = this.fb.group({
-    produitId: new FormControl(null), // ou this.fb.control(null)
-    produitNom: new FormControl('', Validators.required),
-    uniteStock: new FormControl({ value: '', disabled: true }, Validators.required),
-    quantite: new FormControl(null, [Validators.required, Validators.min(0.01)]),
-    typeMouvement: new FormControl('', Validators.required),
-    description: new FormControl('', Validators.required),
-    fournisseurId: new FormControl('', Validators.required)
-  }); */
-
-    this.produits = [
-      /*   new Produits({ id: 101, categorieId: "Boissons", designation: "Lait Caillé 1L", fournisseurId: 10, unite: "Litre", prixAchatUnitaire: 100, prixVenteUnitaire: 150, codeBarre: "123456789101", description: "Lait caillé frais de qualité supérieure" }),
-
-      new Produits({ id: 102, famille: "Alimentation", designation: "Couscous de mil 500g", fournisseurId: 11, unite: "Paquet", prixAchatUnitaire: 150, prixVenteUnitaire: 200, codeBarre: "223344556677", description: "Couscous traditionnel 100% mil" }),
-
-      new Produits({ id: 103, famille: "Biscuits", designation: "Biscuits Chocolatés", fournisseurId: 12, unite: "Carton", prixAchatUnitaire: 80, prixVenteUnitaire: 120, codeBarre: "334455667788", description: "Biscuits croquants au chocolat" }),
-
-      new Produits({ id: 104, famille: "Électronique", designation: "Clavier Sans Fil", fournisseurId: 20, unite: "Pièce", prixAchatUnitaire: 700, prixVenteUnitaire: 900, codeBarre: "445566778899", description: "Clavier ergonomique sans fil avec connexion Bluetooth" }),
-
-      new Produits({ id: 105, famille: "Boissons", designation: "Jus de Bissap 1L", fournisseurId: 13, unite: "Litre", prixAchatUnitaire: 90, prixVenteUnitaire: 130, codeBarre: "556677889900", description: "Jus naturel à base de fleurs d'hibiscus" }),
-
-      new Produits({ id: 201, famille: "Électronique", designation: "Casque Bluetooth", fournisseurId: 21, unite: "Pièce", prixAchatUnitaire: 200, prixVenteUnitaire: 300, codeBarre: "667788990011", description: "Casque sans fil avec réduction de bruit" }),
-
-      new Produits({ id: 202, famille: "Électroménager", designation: "Mixeur Multifonctions", fournisseurId: 22, unite: "Pièce", prixAchatUnitaire: 500, prixVenteUnitaire: 700, codeBarre: "778899001122", description: "Mixeur performant avec accessoires complets" }),
-
-      new Produits({ id: 203, famille: "Alimentation", designation: "Riz Basmati 5kg", fournisseurId: 14, unite: "Sachet", prixAchatUnitaire: 350, prixVenteUnitaire: 450, codeBarre: "889900112233", description: "Riz parfumé de haute qualité" }),
-
-      new Produits({ id: 204, famille: "Vêtements", designation: "T-shirt Coton XL", fournisseurId: 23, unite: "Pièce", prixAchatUnitaire: 250, prixVenteUnitaire: 400, codeBarre: "990011223344", description: "T-shirt 100% coton taille XL" }),
-
-      new Produits({ id: 205, famille: "Accessoires", designation: "Montre Connectée", fournisseurId: 24, unite: "Pièce", prixAchatUnitaire: 450, prixVenteUnitaire: 650, codeBarre: "001122334455", description: "Montre connectée avec suivi de santé et notifications" }), */
-    ];
-
-    /* this.mouvements = [
-      new MouvementsStock({ id: 1, ref: "REF123", produitId: 101, quantite: 50, prixUnitaire: 100, prixTotal: 5000, acteurId: 200, typeMouvement: "Entree",  description: "Commande d'approvisionnement", dateMouvement: new Date('2025-01-20')  }),
-      new MouvementsStock({ id: 2, ref: "REF201", produitId: 201, quantite: 30, prixUnitaire: 200, prixTotal: 6000, acteurId: 250, typeMouvement: "Sortie", description: "Vente de produits électroniques", dateMouvement: new Date('2025-01-20') }),
-      new MouvementsStock({ id: 3, ref: "REF305", produitId: 102, quantite: 20, prixUnitaire: 150, prixTotal: 3000, acteurId: 300, typeMouvement: "Entree",  description: "Réception de marchandise", dateMouvement: new Date('2025-01-22') }),
-      new MouvementsStock({ id: 4, ref: "REF409", produitId: 202, quantite: 15, prixUnitaire: 500, prixTotal: 7500, acteurId: 350, typeMouvement: "Sortie", description: "Livraison à un client", dateMouvement: new Date('2025-01-23') }),
-      new MouvementsStock({ id: 5, ref: "REF517", produitId: 103, quantite: 60, prixUnitaire: 80, prixTotal: 4800, acteurId: 400, typeMouvement: "Entree", description: "Stock réapprovisionné", dateMouvement: new Date('2025-01-25')}),
-      new MouvementsStock({ id: 6, ref: "REF628", produitId: 203, quantite: 25, prixUnitaire: 350, prixTotal: 8750, acteurId: 450, typeMouvement: "Sortie",  description: "Vente en gros", dateMouvement: new Date('2025-01-26')}),
-      new MouvementsStock({ id: 7, ref: "REF731", produitId: 104, quantite: 10, prixUnitaire: 700, prixTotal: 7000, acteurId: 500, typeMouvement: "Entree",  description: "Achat de matériel informatique", dateMouvement: new Date('2025-01-28')}),
-      new MouvementsStock({ id: 8, ref: "REF846", produitId: 204, quantite: 18, prixUnitaire: 250, prixTotal: 4500, acteurId: 550, typeMouvement: "Sortie",  description: "Expédition vers un magasin", dateMouvement: new Date('2025-01-29') }),
-      new MouvementsStock({ id: 9, ref: "REF952", produitId: 105, quantite: 40, prixUnitaire: 90, prixTotal: 3600, acteurId: 600, typeMouvement: "Entree",  description: "Approvisionnement de stock", dateMouvement: new Date('2025-01-30')}),
-      new MouvementsStock({ id: 10, ref: "REF1057", produitId: 205, quantite: 22, prixUnitaire: 450, prixTotal: 9900, acteurId: 650, typeMouvement: "Sortie",  description: "Vente directe à un client", dateMouvement: new Date('2025-02-01')}),
-    ];
- */
-    this.reconciliations = [
-      new Reconciliation({
-        id: 1,
-        produitId: 101,
-        stockTheorique: 50,
-        stockPhysique: 48,
-        ecart: -2,
-        dateReconciliation: new Date('2025-02-10'),
-        note: "Erreur d'inventaire",
-        historiqueEcart: [
-          { date: new Date('2025-02-08'), ecart: -1, note: 'Première vérification' },
-          { date: new Date('2025-02-09'), ecart: -2, note: 'Correction appliquée' },
-        ],
-      }),
-      new Reconciliation({
-        id: 2,
-        produitId: 201,
-        stockTheorique: 30,
-        stockPhysique: 32,
-        ecart: 2,
-        dateReconciliation: new Date('2025-02-12'),
-        note: 'Erreur de comptage',
-        historiqueEcart: [
-          { date: new Date('2025-02-11'), ecart: 1, note: 'Vérification initiale' },
-          { date: new Date('2025-02-12'), ecart: 2, note: 'Correction appliquée' },
-        ],
-      }),
-      new Reconciliation({
-        id: 3,
-        produitId: 102,
-        stockTheorique: 20,
-        stockPhysique: 18,
-        ecart: -2,
-        dateReconciliation: new Date('2025-02-15'),
-        note: 'Produit détérioré',
-        historiqueEcart: [
-          { date: new Date('2025-02-14'), ecart: -1, note: 'Écart détecté' },
-          { date: new Date('2025-02-15'), ecart: -2, note: 'Vérification finale' },
-        ],
-      }),
-      new Reconciliation({
-        id: 4,
-        produitId: 202,
-        stockTheorique: 15,
-        stockPhysique: 14,
-        ecart: -1,
-        dateReconciliation: new Date('2025-02-18'),
-        note: 'Manque de stock',
-        historiqueEcart: [{ date: new Date('2025-02-17'), ecart: -1, note: 'Réduction confirmée' }],
-      }),
-      new Reconciliation({
-        id: 5,
-        produitId: 103,
-        stockTheorique: 60,
-        stockPhysique: 60,
-        ecart: 0,
-        dateReconciliation: new Date('2025-02-20'),
-        note: 'Stock exact',
-        historiqueEcart: [],
-      }),
-      new Reconciliation({
-        id: 6,
-        produitId: 203,
-        stockTheorique: 25,
-        stockPhysique: 22,
-        ecart: -3,
-        dateReconciliation: new Date('2025-02-22'),
-        note: 'Erreur de saisie',
-        historiqueEcart: [
-          { date: new Date('2025-02-21'), ecart: -2, note: 'Première vérification' },
-          { date: new Date('2025-02-22'), ecart: -3, note: 'Correction finale' },
-        ],
-      }),
-      new Reconciliation({
-        id: 7,
-        produitId: 104,
-        stockTheorique: 10,
-        stockPhysique: 9,
-        ecart: -1,
-        dateReconciliation: new Date('2025-02-25'),
-        note: 'Produit manquant',
-        historiqueEcart: [{ date: new Date('2025-02-24'), ecart: -1, note: 'Inventaire vérifié' }],
-      }),
-      new Reconciliation({
-        id: 8,
-        produitId: 204,
-        stockTheorique: 18,
-        stockPhysique: 19,
-        ecart: 1,
-        dateReconciliation: new Date('2025-02-28'),
-        note: 'Erreur positive',
-        historiqueEcart: [{ date: new Date('2025-02-27'), ecart: 1, note: 'Ajout détecté' }],
-      }),
-      new Reconciliation({
-        id: 9,
-        produitId: 105,
-        stockTheorique: 40,
-        stockPhysique: 37,
-        ecart: -3,
-        dateReconciliation: new Date('2025-03-01'),
-        note: 'Stock mal compté',
-        historiqueEcart: [
-          { date: new Date('2025-02-29'), ecart: -2, note: 'Première vérification' },
-          { date: new Date('2025-03-01'), ecart: -3, note: 'Confirmation' },
-        ],
-      }),
-      new Reconciliation({
-        id: 10,
-        produitId: 205,
-        stockTheorique: 22,
-        stockPhysique: 23,
-        ecart: 1,
-        dateReconciliation: new Date('2025-03-03'),
-        note: 'Correction après comptage',
-        historiqueEcart: [{ date: new Date('2025-03-02'), ecart: 1, note: 'Ajout détecté' }],
-      }),
-    ];
-
-    this.filteredReconciliations = [...this.reconciliations];
-
-    this.filteredMouvements = [...this.mouvements];
-    this.updateTable('mouvement');
-    this.updateTable('reconciliation');
-    /* console.log('Taille analyseEcart:',this.analysesEcarts.length);
-    console.log('Taille filteredEcart:',this.filteredEcarts.length); */
-    this.chargerAnalysesEcarts();
-    this.updateTable('ecart');
   }
 
   filterProduits(): void {
@@ -291,18 +120,6 @@ export class EntreesSortiesComponent implements OnInit {
       p.designation.toLowerCase().includes(input),
     );
   }
-
-  /* selectProduit(prod: any): void {
-  this.searchInput = prod.designation;
-  this.filteredProduits = [];
-
-  this.mouvementForm.patchValue({
-    produitId: prod.id,
-    uniteStock: prod.unite
-  });
-
-  this.mouvementForm.controls['produitId'].markAsTouched();
-} */
 
   selectProduit(prod: Produits): void {
     this.selectedProduct = prod; // ➜ mémorisé
@@ -333,9 +150,6 @@ export class EntreesSortiesComponent implements OnInit {
       stockTheorique: stk?.quantiteTotale,
     });
 
-    // Met à jour le prix selon le type déjà choisi (si l’utilisateur l’a sélectionné avant)
-    //this.updatePrixUnitaire(this.mouvementForm.get('typeMouvement')!.value);
-    //this.mouvementForm.controls['produitId'].markAsTouched();
   }
 
   private updatePrixUnitaire(type: 'Entrée' | 'Sortie' | null) {
@@ -367,6 +181,46 @@ export class EntreesSortiesComponent implements OnInit {
       },
     });
   }
+
+  loadReconciliation(): void {
+  this.isLoading = true;
+
+  this.reconciliationService.getByStructure(this.code_structure).subscribe({
+    next: (data) => {
+      this.isLoading = false;
+
+      // Transformer en instances de `Reconciliation`
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      this.reconciliations = data.map((raw: any) => Reconciliation.fromRaw(raw));
+
+      // Construire l’historique pour chaque réconciliation
+      this.reconciliations.forEach((rec) => {
+        rec.historiqueEcart = this.reconciliations
+          .filter((r) => r.produitId === rec.produitId) // même produit
+          .filter((r) => r.dateReconciliation <= rec.dateReconciliation) // jusqu’à la date courante
+          .map((r) => ({
+            date: r.dateReconciliation,
+            ecart: r.ecart,
+            note: r.note,
+          }))
+          .sort((a, b) => a.date.getTime() - b.date.getTime()); // tri chronologique
+      });
+
+      // Dupliquer pour la table filtrée
+      this.filteredReconciliations = [...this.reconciliations];
+
+      // Mise à jour de la table
+      this.updateTable('reconciliation');
+      this.chargerAnalysesEcarts();
+      this.updateTable('ecart');
+    },
+    error: (err) => {
+      this.isLoading = false;
+      console.error(err);
+    },
+  });
+}
+
 
   loadDataProdFourStock(): void {
     this.isLoading = true;
@@ -686,54 +540,53 @@ export class EntreesSortiesComponent implements OnInit {
     return produit ? produit.unite : 'Produit introuvable';
   }
 
-  ajouterMouvement(data: MouvementsStock): void {
-    // Logique pour ajouter un mouvement
-    console.log('Ajout du mouvement', data);
-  }
-
-  mettreAJourMouvement(data: MouvementsStock): void {
-    // Logique pour mettre à jour un mouvement
-    console.log('Mise à jour du mouvement', data);
-    // Vous pouvez ici appeler un service pour effectuer la mise à jour
-  }
 
   enregistrerReconciliation() {
-    if (this.reconciliationForm.invalid) return;
+      if (this.reconciliationForm.invalid) return;
 
-    const { produitId, stockTheorique, stockPhysique } = this.reconciliationForm.value;
+      // Récupération des valeurs du formulaire
+      const reconciliationData = this.reconciliationForm.value;
 
-    // Création instance locale
-    /* const nouvelleReconciliation = new Reconciliation({
-      produitId,
-      stockTheorique,
-      stockPhysique,
-      dateReconciliation: new Date(),
-      responsable: this.agentId, // ou tout autre champ récupéré
-      note: this.reconciliationForm.value.note || '',
-    }); */
+      // Création de l’objet à envoyer en JSON
+      const reconciliation = {
+        ...reconciliationData, // toutes les valeurs du formulaire
+        code_structure: this.code_structure,
+        responsable: this.agentId,
+      };
 
-    if (this.isEditingReconciliation && this.selectedReconciliation) {
-      this.selectedReconciliation.produitId = produitId;
-      this.selectedReconciliation.stockTheorique = stockTheorique;
-      this.selectedReconciliation.stockPhysique = stockPhysique;
-      this.selectedReconciliation.ecart = stockPhysique - stockTheorique;
-    } else {
-      // Création correcte d'une instance de `Reconciliation`
-      /* const nouvelleReconciliation = new Reconciliation({
-      //id: this.reconciliations.length + 1,
-      produitId,
-      stockTheorique,
-      stockPhysique,
-      dateReconciliation: new Date(),
-    });
+      if (this.isEditingReconciliation && this.selectedReconciliation) {
+        this.reconciliationService.update(this.selectedReconciliation.id!, reconciliation).subscribe({
+          next: () => {
+            this.toastr.success('Réconciliation mise à jour avec succès');
+            this.reconciliationForm.reset();
+            this.isEditingReconciliation = false;
+            this.selectedReconciliation = null;
+            this.selectedProduct = null;
+            this.searchInputBis = '';
+            this.loadReconciliation();            
+          },
+          error: (err) => {
+            const message = err.error?.message || 'Erreur lors de la mise à jour de la réconciliation.';
+            this.toastr.error(message);
+          },
+        });
+      } else {
+        this.reconciliationService.create(reconciliation).subscribe({
+          next: () => {
+            this.toastr.success('Réconciliation enregistrée avec succès');
+            this.reconciliationForm.reset();
+            this.selectedProduct = null;
+            this.searchInputBis = '';
+            this.loadReconciliation();
+          },
+          error: (err) => {
+            const message = err.error?.message || 'Erreur lors de l\'enregistrement de la réconciliation.';
+            this.toastr.error(message);
+          },
+        });
+      }
+ }
 
-    this.reconciliations.push(nouvelleReconciliation); */
-    }
-
-    /* this.reconciliationForm.reset();
-  this.isEditingReconciliation = false;
-  this.chargerAnalysesEcarts(); */
-  }
 
   modifierReconciliation(reconciliation: Reconciliation) {
     this.isEditingReconciliation = true;
@@ -749,8 +602,23 @@ export class EntreesSortiesComponent implements OnInit {
   }
 
   supprimerReconciliation(reconciliation: Reconciliation) {
-    this.reconciliations = this.reconciliations.filter((r) => r.id !== reconciliation.id);
-    this.chargerAnalysesEcarts();
+    /* this.reconciliations = this.reconciliations.filter((r) => r.id !== reconciliation.id);
+    this.chargerAnalysesEcarts(); */
+     if (confirm('Êtes-vous sûr de vouloir supprimer ce mouvement ?')) {
+      this.isLoading = true;
+      this.reconciliationService.delete(reconciliation.id!).subscribe({
+        next: () => {
+            this.isLoading = false;
+            this.toastr.success("Reconciliation supprimé avec succès");
+            this.loadReconciliation();
+        },
+        error: (err) => {
+          this.isLoading = false;
+          const message = err.error?.message || 'Erreur lors de la suppressionde la réconciliation.';
+            this.toastr.error(message);
+        }
+      });
+     }
   }
 
   chargerAnalysesEcarts() {
@@ -769,7 +637,7 @@ export class EntreesSortiesComponent implements OnInit {
         });
         existing.dernierEcart = reconciliation.dateReconciliation;
       } else {
-        // ✅ Créer une instance de `AnalyseEcart`
+        // Créer une instance de `AnalyseEcart`
         existing = new AnalyseEcart({
           produitId: reconciliation.produitId,
           ecartTotal: reconciliation.ecart,

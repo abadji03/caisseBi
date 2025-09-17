@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DECIMAL(12, 2),
       allowNull: false,
     },
-    remise: {
+    /* remise: {
       type: DataTypes.DECIMAL(10, 2),
       defaultValue: 0,
     },
@@ -33,7 +33,7 @@ module.exports = (sequelize, DataTypes) => {
         const avance = this.getDataValue('avance') || 0;
         return net - avance;
       },
-    },
+    }, */
     compte: {
       type: DataTypes.ENUM('Bon', 'Caisse', 'Mobile Money', 'Banque'),
       defaultValue: 'Caisse',

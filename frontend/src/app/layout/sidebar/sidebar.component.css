@@ -1,0 +1,64 @@
+.sidebar {
+  width: 200px;
+  background-color: black;
+  color: white;
+  height: 100%;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  transition: width 0.3s;
+}
+.menu-toggle {
+  color: white;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  position: relative;
+  float: right;
+}
+.sidebar.collapsed {
+  width: 70px;
+}
+
+.sidebar.collapsed .sidebar-header span,
+.sidebar.collapsed .sidebar-header h4 {
+  display: none;
+}
+
+.sidebar.collapsed .accordion-button span {
+  display: none;
+}
+
+.accordion-item button {
+  width: 100%;
+  padding: 2px;
+  text-align: left;
+  background-color: #34495e;
+  border: none;
+  color: #ecf0f1;
+  font-size: 15px;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: all 0.3s;
+}
+
+.accordion-item button:hover {
+  background-color: white;
+  margin: 2px;
+  color: black;
+}
+.sidebar-header {
+  text-align: center;
+  margin-bottom: 5px;
+  border-radius: 10px;
+}
+
+.sidebar-header img {
+  border-radius: 50%;
+  margin-bottom: 10px;
+}
+
+.sidebar-header h4 {
+  font-size: 18px;
+  font-weight: bold;
+  color: white;
+}

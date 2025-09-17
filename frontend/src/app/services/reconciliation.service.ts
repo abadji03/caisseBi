@@ -2,6 +2,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { AuthService } from './auth.service';
 import { Observable } from 'rxjs';
+import { Reconciliation } from '../modeles/entrees-sorties.model';
 
 @Injectable({
   providedIn: 'root',
@@ -22,39 +23,39 @@ export class ReconciliationService {
   }
 
   /** Créer une réconciliation */
-  create(reconciliation: unknown): Observable<unknown> {
-    return this.http.post<unknown>(this.apiUrl, reconciliation, { headers: this.getHeaders() });
+  create(reconciliation: Reconciliation): Observable<Reconciliation> {
+    return this.http.post<Reconciliation>(this.apiUrl, reconciliation, { headers: this.getHeaders() });
   }
 
   /** Récupérer les réconciliations d'une structure */
-  getByStructure(codeStructure: string): Observable<unknown[]> {
-    return this.http.get<unknown[]>(`${this.apiUrl}/structure/${codeStructure}`, {
+  getByStructure(codeStructure: string): Observable<Reconciliation[]> {
+    return this.http.get<Reconciliation[]>(`${this.apiUrl}/structure/${codeStructure}`, {
       headers: this.getHeaders(),
     });
   }
 
   /** Récupérer les réconciliations d'un produit */
-  getByProduit(produitId: number): Observable<unknown[]> {
-    return this.http.get<unknown[]>(`${this.apiUrl}/produit/${produitId}`, {
+  getByProduit(produitId: number): Observable<Reconciliation[]> {
+    return this.http.get<Reconciliation[]>(`${this.apiUrl}/produit/${produitId}`, {
       headers: this.getHeaders(),
     });
   }
 
   /** Récupérer une réconciliation par ID */
-  getById(id: number): Observable<unknown> {
-    return this.http.get<unknown>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
+  getById(id: number): Observable<Reconciliation> {
+    return this.http.get<Reconciliation>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
   }
 
   /** Mettre à jour une réconciliation */
-  update(id: number, reconciliation: unknown): Observable<unknown> {
-    return this.http.put<unknown>(`${this.apiUrl}/${id}`, reconciliation, {
+  update(id: number, reconciliation: Reconciliation): Observable<Reconciliation> {
+    return this.http.put<Reconciliation>(`${this.apiUrl}/${id}`, reconciliation, {
       headers: this.getHeaders(),
     });
   }
 
   /** Supprimer une réconciliation */
-  delete(id: number): Observable<unknown> {
-    return this.http.delete<unknown>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
+  delete(id: number): Observable<Reconciliation> {
+    return this.http.delete<Reconciliation>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
   }
 
   /*.....................................................................................*/

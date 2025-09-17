@@ -2828,7 +2828,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 1,
         montant: 6.5,
-        methodePaiement: 1, // Espèce
+        //methodePaiement: 3, // Espèce
         date: new Date('2025-05-01T10:20:00'),
         panierId: 1,
         clientId: 1,
@@ -2863,7 +2863,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 2,
         montant: 2.3,
-        methodePaiement: 2, // Carte
+        ////methodePaiement: 3, // Carte
         date: new Date('2025-05-02T11:35:00'),
         panierId: 2,
         clientId: 2,
@@ -2898,7 +2898,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 3,
         montant: 21.5,
-        methodePaiement: 3, // Mobile Money
+        //methodePaiement: 3, // Mobile Money
         date: new Date('2025-05-03T14:50:00'),
         panierId: 3,
         clientId: 3,
@@ -2926,7 +2926,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 4,
         montant: 39.99,
-        methodePaiement: 2, // Carte
+        //methodePaiement: 3, // Carte
         date: new Date('2025-05-04T16:25:00'),
         panierId: 4,
         clientId: 4,
@@ -2961,7 +2961,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 5,
         montant: 6.7,
-        methodePaiement: 1, // Espèce
+        //methodePaiement: 3, // Espèce
         date: new Date('2025-05-05T09:15:00'),
         panierId: 5,
         clientId: 5,
@@ -3003,7 +3003,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 6,
         montant: 4.8,
-        methodePaiement: 3, // Mobile Money
+        //methodePaiement: 3, // Mobile Money
         date: new Date('2025-05-06T17:35:00'),
         panierId: 6,
         clientId: 1,
@@ -3045,7 +3045,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 7,
         montant: 43.99,
-        methodePaiement: 2, // Carte
+        //methodePaiement: 3, // Carte
         date: new Date('2025-05-07T12:50:00'),
         panierId: 7,
         clientId: 2,
@@ -3087,7 +3087,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 8,
         montant: 23.7,
-        methodePaiement: 1, // Espèce
+        //methodePaiement: 3, // Espèce
         date: new Date('2025-05-08T15:25:00'),
         panierId: 8,
         clientId: 3,
@@ -3115,7 +3115,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 9,
         montant: 4.5,
-        methodePaiement: 2, // Carte
+        //methodePaiement: 3, // Carte
         date: new Date('2025-05-09T11:15:00'),
         panierId: 9,
         clientId: 4,
@@ -3164,7 +3164,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 10,
         montant: 46.49,
-        methodePaiement: 3, // Mobile Money
+        //methodePaiement: 3, // Mobile Money
         date: new Date('2025-05-10T18:35:00'),
         panierId: 10,
         clientId: 5,
@@ -3201,7 +3201,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 11,
         montant: 5.5,
-        methodePaiement: 1, // Espèce
+        //methodePaiement: 3, // Espèce
         date: new Date('2025-05-01T09:20:00'),
         panierId: 11,
         clientId: 6,
@@ -3236,7 +3236,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 12,
         montant: 3.3,
-        methodePaiement: 2, // Carte
+        //methodePaiement: 3, // Carte
         date: new Date('2025-05-02T10:35:00'),
         panierId: 12,
         clientId: 7,
@@ -3271,7 +3271,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 13,
         montant: 10.8,
-        methodePaiement: 3, // Mobile Money
+        //methodePaiement: 3, // Mobile Money
         date: new Date('2025-05-03T13:50:00'),
         panierId: 13,
         clientId: 8,
@@ -3299,7 +3299,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 14,
         montant: 29.99,
-        methodePaiement: 2, // Carte
+        //methodePaiement: 3, // Carte
         date: new Date('2025-05-04T15:25:00'),
         panierId: 14,
         clientId: 9,
@@ -3334,7 +3334,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 15,
         montant: 10.7,
-        methodePaiement: 1, // Espèce
+        //methodePaiement: 3, // Espèce
         date: new Date('2025-05-05T08:15:00'),
         panierId: 15,
         clientId: 10,
@@ -3376,7 +3376,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 16,
         montant: 7.0,
-        methodePaiement: 3, // Mobile Money
+        //methodePaiement: 3, // Mobile Money
         date: new Date('2025-05-06T16:35:00'),
         panierId: 16,
         clientId: 6,
@@ -3418,7 +3418,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 17,
         montant: 33.29,
-        methodePaiement: 2, // Carte
+        //methodePaiement: 3, // Carte
         date: new Date('2025-05-07T11:50:00'),
         panierId: 17,
         clientId: 7,
@@ -3453,7 +3453,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 18,
         montant: 15.1,
-        methodePaiement: 1, // Espèce
+        //methodePaiement: 3, // Espèce
         date: new Date('2025-05-08T14:25:00'),
         panierId: 18,
         clientId: 8,
@@ -3481,7 +3481,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 19,
         montant: 6.2,
-        methodePaiement: 2, // Carte
+        //methodePaiement: 3, // Carte
         date: new Date('2025-05-09T10:15:00'),
         panierId: 19,
         clientId: 9,
@@ -3530,7 +3530,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 20,
         montant: 18.2,
-        methodePaiement: 3, // Mobile Money
+        //methodePaiement: 3, // Mobile Money
         date: new Date('2025-05-10T17:35:00'),
         panierId: 20,
         clientId: 10,
@@ -3567,7 +3567,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 21,
         montant: 4.7,
-        methodePaiement: 1, // Espèce
+        //methodePaiement: 3, // Espèce
         date: new Date('2025-05-01T08:20:00'),
         panierId: 21,
         clientId: 11,
@@ -3602,7 +3602,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 22,
         montant: 13.9,
-        methodePaiement: 2, // Carte
+        //methodePaiement: 3, // Carte
         date: new Date('2025-05-02T09:35:00'),
         panierId: 22,
         clientId: 12,
@@ -3637,7 +3637,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 23,
         montant: 19.5,
-        methodePaiement: 3, // Mobile Money
+        //methodePaiement: 3, // Mobile Money
         date: new Date('2025-05-03T12:50:00'),
         panierId: 23,
         clientId: 13,
@@ -3665,7 +3665,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 24,
         montant: 24.99,
-        methodePaiement: 2, // Carte
+        //methodePaiement: 3, // Carte
         date: new Date('2025-05-04T14:25:00'),
         panierId: 24,
         clientId: 14,
@@ -3700,7 +3700,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 25,
         montant: 5.5,
-        methodePaiement: 1, // Espèce
+        //methodePaiement: 3, // Espèce
         date: new Date('2025-05-05T07:15:00'),
         panierId: 25,
         clientId: 15,
@@ -3742,7 +3742,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 26,
         montant: 5.7,
-        methodePaiement: 3, // Mobile Money
+        //methodePaiement: 3, // Mobile Money
         date: new Date('2025-05-06T15:35:00'),
         panierId: 26,
         clientId: 11,
@@ -3784,7 +3784,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 27,
         montant: 38.89,
-        methodePaiement: 2, // Carte
+        //methodePaiement: 3, // Carte
         date: new Date('2025-05-07T10:50:00'),
         panierId: 27,
         clientId: 12,
@@ -3819,7 +3819,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 28,
         montant: 23.3,
-        methodePaiement: 1, // Espèce
+        //methodePaiement: 3, // Espèce
         date: new Date('2025-05-08T13:25:00'),
         panierId: 28,
         clientId: 13,
@@ -3847,7 +3847,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 29,
         montant: 4.0,
-        methodePaiement: 2, // Carte
+        //methodePaiement: 3, // Carte
         date: new Date('2025-05-09T09:15:00'),
         panierId: 29,
         clientId: 14,
@@ -3896,7 +3896,7 @@ export const paniers: Panier[] = [
       new Paiement({
         id: 30,
         montant: 24.2,
-        methodePaiement: 3, // Mobile Money
+        //methodePaiement: 3, // Mobile Money
         date: new Date('2025-05-10T16:35:00'),
         panierId: 30,
         clientId: 15,

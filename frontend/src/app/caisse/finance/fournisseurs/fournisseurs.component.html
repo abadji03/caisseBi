@@ -302,354 +302,30 @@
 
             <!-- Formulaire d'ajout d'un Paiement -->
             <div *ngIf="showPaiementForm" class="mt-3 mb-5">
-              <div class="d-flex justify-content-center mt-4 mb-2">
-                <h3 class="text-warning">Formulaire d'ajout d'un paiement</h3>
-              </div>
-              <form [formGroup]="paiementForm" (ngSubmit)="onPaiementFormSubmit()">
-                <table class="table table-bordered">
-                  <thead>
-                    <tr>
-                      <!-- Libellés dans la première ligne -->
-                      <th>Description</th>
-                      <th>Montant</th>
-                      <th>Date</th>
-                      <th>Méthode de Paiement</th>
-                      <th>Joindre un fichier</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <!-- Champs dans la deuxième ligne -->
-                      <td>
-                        <input
-                          formControlName="description"
-                          class="form-control"
-                          id="description"
-                          type="text"
-                          required
-                        />
-                      </td>
-                      <td>
-                        <input
-                          formControlName="montant"
-                          class="form-control"
-                          id="montant"
-                          type="number"
-                          required
-                        />
-                      </td>
-                      <td>
-                        <input
-                          formControlName="date"
-                          class="form-control"
-                          id="date"
-                          type="date"
-                          required
-                        />
-                      </td>
-                      <td>
-                        <select formControlName="methodePaiement" class="form-control" required>
-                          <option value="Carte">Carte</option>
-                          <option value="Virement">Virement</option>
-                          <option value="Chèque">Chèque</option>
-                        </select>
-                      </td>
-                      <td>
-                        <input
-                          type="file"
-                          class="form-control"
-                          (change)="onFileSelected($event, 'paiement')"
-                        />
-                      </td>
-
-                      <td class="d-flex justify-content-center">
-                        <button
-                          type="submit"
-                          class="btn btn-success me-2"
-                          [disabled]="paiementForm.invalid"
-                        >
-                          <i class="bi bi-plus-circle"></i>
-                        </button>
-                        <button type="button" class="btn btn-danger" (click)="resetFormPaiement()">
-                          <i class="bi bi-x"></i>
-                        </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </form>
+                <!-- Composant Paiement Réutilisable -->
+                <app-paiement
+                  [showPaiementForm]="showPaiementComponent"
+                  [titre]="'Formulaire d\'ajout d\'un paiement fournisseur'"
+                  [typeEntite]="'fournisseur'"
+                  [entiteId]="selectedFournisseur?.id"
+                  [entiteNom]="selectedFournisseur?.nomComplet"
+                  [showFichierField]="true"
+                  (onEnregistrerPaiement)="onPaiementEnregistre($event)"
+                  (onAnnulerPaiement)="onPaiementAnnule()"
+                ></app-paiement>
             </div>
 
             <!-- Formulaire pour ajouter un nouveau bon -->
             <div *ngIf="showBonForm" class="formBon">
-              <!-- <div class="d-flex justify-content-center">
-                  <h2 class="text-warning"> Formulaire d'ajout d'un nouveau bon</h2>
-                </div> -->
-              <div
-                class="alert alert-warning d-flex justify-content-between align-items-center mt-3"
-              >
-                <span>📌 Bon en cours...</span>
-                <span>📅 Date: {{ currentDate }}</span>
-                <span>📅 Heure: {{ currentTime }}</span>
-                <span
-                  >📄 Numéro : <strong>{{ generatedNumero }}</strong></span
-                >
-                <!-- <span>💰 Total : <strong>{{ totalBon}} F CFA</strong></span> -->
-              </div>
-
-              <form [formGroup]="bonForm" (ngSubmit)="submitBon()">
-                <!-- Remise, Avance, Type de Paiement -->
-                <div class="row">
-                  <!-- Type de Bon -->
-                  <div class="col-md-2">
-                    <!-- <label class="form-label">Type de Bon</label> -->
-                    <select class="form-select" formControlName="type" (change)="onTypeBonChange()">
-                      <option value="" disabled selected>Type de bon</option>
-                      <option value="commande">Commande</option>
-                      <option value="retour">Retour</option>
-                      <option value="livraison">Livraison</option>
-                    </select>
-                  </div>
-                  <div *ngIf="typeBon === 'commande' || typeBon === 'livraison'" class="col-md-2">
-                    <!-- <label class="form-label">Montant de l'Avoir</label> -->
-                    <input
-                      type="number"
-                      class="form-control"
-                      formControlName="montant"
-                      placeholder="Montant"
-                    />
-                  </div>
-                  <div *ngIf="typeBon === 'commande' || typeBon === 'livraison'" class="col-md-2">
-                    <!-- <label class="form-label">Instructions Spéciales</label> -->
-                    <textarea
-                      class="form-control"
-                      formControlName="description"
-                      placeholder="Description "
-                    ></textarea>
-                  </div>
-                  <div *ngIf="typeBon === 'commande' || typeBon === 'livraison'" class="col-md-4">
-                    <!-- <label class="form-label">Joindre un fichier</label> -->
-                    <input
-                      type="file"
-                      class="form-control"
-                      (change)="onFileSelected($event, 'bon')"
-                    />
-                  </div>
-                  <!-- 🎯 Champs spécifiques pour les AVOIRS -->
-                  <!-- Sélection du bon d'origine -->
-                  <div *ngIf="typeBon === 'retour'" class="col-md-2">
-                    <!-- <label class="form-label">Sélectionner un Bon d'Origine</label> -->
-                    <!-- <input type="text" class="form-control" formControlName="refBonOrigine" (change)="loadPanierBonOrigine()"> -->
-                    <input
-                      type="text"
-                      class="form-control"
-                      formControlName="refBonOrigine"
-                      placeholder="Bon d'Origine"
-                    />
-                  </div>
-                  <div *ngIf="typeBon === 'retour'" class="col-md-2">
-                    <!-- <label class="form-label">Motif de l'Avoir</label> -->
-                    <textarea
-                      class="form-control"
-                      formControlName="motifAvoir"
-                      placeholder="Motif de l'Avoir"
-                    ></textarea>
-                  </div>
-                  <div *ngIf="typeBon === 'retour'" class="col-md-2">
-                    <!-- <label class="form-label">Montant de l'Avoir</label> -->
-                    <input
-                      type="number"
-                      class="form-control"
-                      formControlName="montantAvoir"
-                      placeholder="Montant de l'Avoir"
-                    />
-                  </div>
-
-                  <div *ngIf="typeBon === 'retour'" class="col-md-2">
-                    <!-- <label class="form-label">Date du Bon d'Origine</label> -->
-                    <input
-                      type="date"
-                      class="form-control"
-                      formControlName="dateBonOrigine"
-                      placeholder="Date du Bon d'Origine"
-                    />
-                  </div>
-
-                  <!-- 🚚 Champs spécifiques pour les LIVRAISONS -->
-                  <!--<div *ngIf="typeBon === 'livraison'" class="col-md-2">
-                         <label class="form-label">Adresse de Livraison</label>
-                        <input type="text" class="form-control" formControlName="adresseLivraison" placeholder="Adresse Livraison">
-                      </div>-->
-
-                  <!--<div *ngIf="typeBon === 'livraison'" class="col-md-2">
-                         <label class="form-label">Nom du Livreur</label>
-                        <input type="text" class="form-control" formControlName="livreur" placeholder="Nom livreur">
-                      </div>-->
-
-                  <!--<div *ngIf="typeBon === 'livraison'" class="col-md-2">
-                         <label class="form-label">Téléphone du Livreur</label>
-                        <input type="text" class="form-control" formControlName="telephoneLivreur" placeholder="Téléphone livreur">
-                      </div>-->
-
-                  <!--<div *ngIf="typeBon === 'livraison'" class="col-md-2">
-                         <label class="form-label">Date de Livraison Prévue</label>
-                        <input type="date" class="form-control" formControlName="dateLivraison" placeholder="Date livraison prévue">
-                      </div>-->
-
-                  <!--<div *ngIf="typeBon === 'livraison'" class="col-md-2">
-                         <label class="form-label">Instructions Spéciales</label>
-                        <textarea class="form-control" formControlName="instructionsLivraison" placeholder="Instructions "></textarea>
-                      </div>-->
-                </div>
-
-                <!-- Panier sous forme de tableau -->
-                <div class="mt-3 d-flex justify-content-center">
-                  <h2>🛒 Produits associés au bon</h2>
-                </div>
-
-                <div class="bg-secondary d-flex justify-content-between align-items-center mt-1">
-                  <!-- <span>📌 Panier en cours...</span> -->
-                  <!-- <span>📅 Heure: {{ currentTime }}</span> -->
-                  <!-- <span>📄 Numéro : <strong>{{ generatedNumero }}</strong></span> -->
-                  <!-- <span>💰 Total panier : <strong>{{ totalPanier}} F CFA</strong></span>
-                    <!-- <span>💰 Total à payer : <strong>{{ totalBon}} F CFA</strong></span> -->
-                </div>
-                <div class="row mt-2">
-                  <div class="col-md-3 searchChamp">
-                    <input
-                      type="text"
-                      class="form-control searchChamp"
-                      [(ngModel)]="searchInput"
-                      placeholder="Rechercher un produit..."
-                      (input)="filterProduits()"
-                      [ngModelOptions]="{ standalone: true }"
-                    />
-                    <ul
-                      *ngIf="filteredProduits.length > 0 && searchInput"
-                      class="list-group position-absolute"
-                      style="width: 230px"
-                    >
-                      <li
-                        *ngFor="let prod of filteredProduits"
-                        class="list-group-item list-group-item-action bg-info"
-                        (click)="selectProduit(prod)"
-                        (keydown.enter)="selectProduit(prod)"
-                        (keydown.space)="selectProduit(prod)"
-                        tabindex="0"
-                        role="button"
-                      >
-                        {{ prod.designation }}
-                      </li>
-                    </ul>
-                  </div>
-                  <!--<div class="col-md-2">
-                       <label class="form-label">Remise</label>
-                      <input type="number" class="form-control" formControlName="remise" placeholder="Remise"/>
-                    </div>-->
-                  <!--<div class="col-md-2">
-                       <label class="form-label">Avance</label>
-                      <input type="number" class="form-control" formControlName="avance" placeholder="Avancement"/>
-                    </div>-->
-                  <!--<div class="col-md-2">
-                       <label class="form-label">Type de Paiement</label>
-                      <select class="form-select" formControlName="typePaiement">
-                        <option value="" disabled selected>Mode de paiement</option>
-                        <option value="caisse">Caisse</option>
-                        <option value="mobile money">Mobile Money</option>
-                        <option value="banque">Banque</option>
-                        <option value="bon">Bon</option>
-                      </select>
-                    </div>-->
-                  <div class="col-md-2">
-                    <button
-                      *ngIf="!panierDisabled"
-                      type="button"
-                      class="btn btn-success me-2"
-                      (click)="disablePanier()"
-                    >
-                      <i class="bi bi-check"></i>
-                    </button>
-                    <button
-                      *ngIf="!panierDisabled"
-                      type="button"
-                      class="btn btn-danger me-2"
-                      (click)="resetPanier()"
-                    >
-                      <i class="bi bi-trash"></i>
-                    </button>
-                    <button
-                      *ngIf="panierDisabled"
-                      type="button"
-                      class="btn btn-warning"
-                      (click)="enablePanier()"
-                    >
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                  </div>
-                </div>
-
-                <table class="table mt-2">
-                  <thead>
-                    <tr>
-                      <th>Produit</th>
-                      <th>Unité Stock</th>
-                      <th>Quantité</th>
-                      <th>Prix Unitaire</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody formArrayName="panier">
-                    <tr *ngIf="panier.length === 0">
-                      <td colspan="5" class="text-center text-muted">🛒 Panier vide</td>
-                    </tr>
-                    <tr *ngFor="let article of panier.controls; let i = index" [formGroupName]="i">
-                      <td>
-                        <input
-                          type="text"
-                          class="form-control searchChamp2"
-                          formControlName="produit"
-                          readonly
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          class="form-control"
-                          formControlName="uniteStock"
-                          readonly
-                        />
-                      </td>
-                      <td>
-                        <input type="number" class="form-control" formControlName="quantite" />
-                      </td>
-                      <td>
-                        <input type="number" class="form-control" formControlName="prixUnitaire" />
-                      </td>
-                      <td>
-                        <button type="button" class="btn btn-danger" (click)="removeArticle(i)">
-                          🗑
-                        </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-
-                <!-- <button type="button" class="btn btn-success" (click)="addArticle()" [disabled]="panierDisabled">➕ Ajouter un article</button> -->
-
-                <!-- Statut -->
-                <!-- <div class="mb-3 mt-3">
-                    <label class="form-label">Statut</label>
-                    <select class="form-select" formControlName="statut">
-                      <option value="payé">Payé</option>
-                      <option value="impayé">Impayé</option>
-                      <option value="annulé">Annulé</option>
-                    </select>
-                  </div> -->
-
-                <!-- Bouton de soumission -->
-                <button type="submit" class="btn btn-primary">💾 Enregistrer le Bon</button>
-              </form>
+              <app-bon
+              [produitsDisponibles]="filteredProducts"
+              [showBonForm]="showBonComponent"
+              [typeEntite]="typeEntite"
+              [entiteId]="selectedFournisseur?.id"
+              [entiteNom]="selectedFournisseur?.nomComplet"
+              (onEnregistrerBon)="onBonEnregistre($event)"
+              (onAnnulerBon)="onBonAnnule()"
+            ></app-bon>
             </div>
 
             <div class="table-responsive">
@@ -695,13 +371,10 @@
                               </h2>
                               <div class="">
                                 <!-- Bouton Valider (si bon livré mais pas encore validé) -->
-                                <!-- <button *ngIf="operation.type === 'LIVRAISON' && bon.statut === 'livré'"
-                                      class="btn btn-success me-2"
-                                      (click)="validerBon(bon)">
-                                ✅ Valider
+                                <!-- Valider
                               </button> -->
                                 <button class="btn btn-success me-2" (click)="validerBon(bon)">
-                                  ✅ Valider
+                                  Valider
                                 </button>
 
                                 <!-- Modifier uniquement si brouillon -->

@@ -1,0 +1,42 @@
+<div class="container">
+  <!-- Barre de recherche -->
+  <app-search-bar
+    [placeholder]="placeholder"
+    [(searchQuery)]="searchQuery"
+    (searchQueryChange)="onSearchQueryChange($event)"
+  ></app-search-bar>
+
+  <!-- Sélecteur de lignes par page -->
+  <app-row-page-selector
+    [(rowsPerPage)]="rowsPerPage"
+    (rowsPerPageChange)="onRowsPerPageChange($event)"
+  ></app-row-page-selector>
+
+  <!-- Tableau -->
+  <div class="table-responsive">
+    <table class="table table-bordered table-hover">
+      <thead class="table-light">
+        <tr>
+          <th *ngFor="let column of columns">{{ column.label }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of paginatedData">
+          <td *ngFor="let column of columns">{{ item[column.key] }}</td>
+        </tr>
+        <tr *ngIf="paginatedData.length === 0">
+          <td [attr.colspan]="columns.length" class="text-center text-muted">
+            Aucune donnée disponible
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <app-pagination-controls
+    [currentPage]="currentPage"
+    [totalPages]="totalPages"
+    (pageChange)="onPageChange($event)"
+  ></app-pagination-controls>
+</div>

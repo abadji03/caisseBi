@@ -1,0 +1,32 @@
+/* Style pour les badges de statut */
+.paye {
+  background-color: #28a745;
+  color: white;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 0.8em;
+}
+
+.partiellement-paye {
+  background-color: #ffc107;
+  color: black;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 0.8em;
+}
+
+.impaye {
+  background-color: #dc3545;
+  color: white;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 0.8em;
+}
+
+.annule {
+  background-color: #6c757d;
+  color: white;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 0.8em;
+}

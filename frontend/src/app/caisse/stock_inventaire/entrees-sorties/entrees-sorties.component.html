@@ -75,12 +75,12 @@
           <thead class="table-success">
             <tr>
               <th>Type</th>
-              <th>Référence</th>
+              <!-- <th>Référence</th> -->
               <th>Produit</th>
               <th>Quantité</th>
               <th>Unité Stock</th>
-              <th>Date</th>
-              <th>Heure</th>
+              <th>Date / Heure</th>
+              <!-- <th>Heure</th> -->
               <th>Description</th>
               <th>Actions</th>
             </tr>
@@ -98,12 +98,12 @@
                   {{ mouvement.typeMouvement }}
                 </span>
               </td>
-              <td>{{ mouvement.ref }}</td>
+              <!-- <td>{{ mouvement.ref }}</td> -->
               <td>{{ getNomProduitById(mouvement.produitId, produits) }}</td>
               <td>{{ mouvement.quantite }}</td>
               <td>{{ getUniteProduitById(mouvement.produitId, produits) }}</td>
-              <td>{{ mouvement.dateMouvement | date: 'yyyy-MM-dd' }}</td>
-              <td>{{ mouvement.dateMouvement | date: 'HH:mm' }}</td>
+              <td>{{ mouvement.dateMouvement | date: 'yyyy-MM-dd à HH:mm'  }}</td>
+             <!--  <td>{{ mouvement.dateMouvement | date: 'HH:mm' }}</td> -->
               <td>{{ mouvement.description }}</td>
               <td>
                 <button
@@ -159,7 +159,7 @@
               </h2>
               <button
                 type="button"
-                class="w-auto bg-danger border border-3 px-2"
+                class="w-auto bg-danger  border-3 px-2"
                 data-bs-dismiss="modal"
                 aria-label="Close"
               >
@@ -448,7 +448,7 @@
             <h3 class="modal-title">Historique des Écarts</h3>
             <button
               type="button"
-              class="w-auto bg-danger border border-3 px-2"
+              class="w-auto bg-danger  border-3 px-2"
               data-bs-dismiss="modal"
               aria-label="Close"
             >
@@ -557,7 +557,7 @@
             <h3 class="modal-title">Détails des Écarts</h3>
             <button
               type="button"
-              class="w-auto text-white bg-danger border border-3 px-2"
+              class="w-auto text-white bg-danger border-3 px-2"
               data-bs-dismiss="modal"
               aria-label="Close"
             >
@@ -575,10 +575,10 @@
                 </span>
                 <br />
                 <small *ngIf="detail.corrige; else nonCorrige" class="badge bg-success"
-                  >Corrigé ✔️</small
+                  >Corrigé </small
                 >
                 <ng-template #nonCorrige>
-                  <span class="badge bg-warning">Non corrigé ❌</span>
+                  <span class="badge bg-danger">Non corrigé</span>
                 </ng-template>
               </li>
             </ul>
@@ -597,7 +597,7 @@
             </h2>
             <button
               type="button"
-              class="w-auto bg-danger text-white border border-3 px-2"
+              class="w-auto bg-danger text-white border-3 px-2"
               data-bs-dismiss="modal"
               aria-label="Close"
             >
@@ -613,8 +613,9 @@
               </div> -->
               <!-- Produit avec autocomplétion basée sur ngModel -->
               <div class="mb-3 position-relative">
-                <label for="produitInput" class="form-label">Produit</label>
+                <label *ngIf="!isEditingReconciliation"  for="produitInput" class="form-label">Produit</label>
                 <input
+                  *ngIf="!isEditingReconciliation"
                   type="text"
                   class="form-control"
                   id="produitInput"
@@ -629,7 +630,7 @@
                 <ul
                   *ngIf="filteredProduits.length > 0 && searchInputBis"
                   class="list-group position-absolute mt-1 zindex-dropdown"
-                  style="width: 100%; max-height: 150px; overflow-y: auto"
+                  style="width: 100%; max-height: 150px; overflow-y: auto cursor pointer; background-color: greenyellow;"
                 >
                   <li
                     *ngFor="let prod of filteredProduits"
@@ -640,11 +641,11 @@
                   </li>
                 </ul>
 
-                <!-- Message d'erreur si aucun produit n'est sélectionné -->
-                <!-- <div *ngIf="mouvementForm.controls['produitId'].invalid && mouvementForm.controls['produitId'].touched"
-                    class="text-danger mt-1">
-                  Le produit est requis.
-                </div> -->
+                <!-- Message -->
+                <div *ngIf="isEditingReconciliation"
+                    class="text-muted mt-1">
+                  Reconciliation du produit : <b>{{ getNomProduitById(reconciliationForm.get('produitId')?.value, produits) }}</b>
+                </div>
               </div>
               <div class="mb-3">
                 <label for="stockTheorique" class="form-label">Stock Théorique</label>

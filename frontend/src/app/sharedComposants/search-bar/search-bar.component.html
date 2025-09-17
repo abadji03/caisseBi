@@ -1,0 +1,12 @@
+<div class="input-group mb-3">
+  <span class="input-group-text">
+    <i class="bi bi-search"></i>
+  </span>
+  <input
+    type="text"
+    class="form-control"
+    [(ngModel)]="searchQuery"
+    (ngModelChange)="onSearchChange()"
+    [placeholder]="placeholder"
+  />
+</div>

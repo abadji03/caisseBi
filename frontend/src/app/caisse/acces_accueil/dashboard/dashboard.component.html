@@ -1,0 +1,19 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="sidebar-container" [ngClass]="{ 'col-2': !isSidebarCollapsed, 'col-1': isSidebarCollapsed }">
+        <app-sidebar
+            (toggleSidebar)="onToggleSidebar()"
+            [isCollapsed]="isSidebarCollapsed">
+        </app-sidebar>
+    </div>
+    <div
+      class="col-10 main-content"
+      [ngClass]="{ 'col-10': !isSidebarCollapsed, 'col-11': isSidebarCollapsed }"
+    >
+      <app-header></app-header>
+      <div class="dashboard-overview">
+        <router-outlet></router-outlet>
+      </div>
+    </div>
+  </div>
+</div>

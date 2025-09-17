@@ -9,8 +9,9 @@ export class Bon {
   description!: string;
   montantTotal!: number;
   remise?: number;
-  netAPayer!: number;
-  resteAPayer!: number;
+  netAPayer?: number;
+  avance ?: number;
+  resteAPayer?: number;
   dateBon: Date = new Date();
   statutBon?:
     | 'brouillon'

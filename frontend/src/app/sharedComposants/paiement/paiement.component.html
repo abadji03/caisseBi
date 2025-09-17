@@ -1,0 +1,148 @@
+<div class="d-flex justify-content-center mt-4 mb-2">
+    <h3 class="text-warning">{{ titre }}</h3>
+  </div>
+  
+  <form [formGroup]="paiementForm" (ngSubmit)="submitPaiement()">
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th>Montant</th>
+          <th>Date</th>
+          <th>Méthode de Paiement</th>
+          <th *ngIf="showFichierField">Joindre un fichier</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <!-- Champs de description -->
+          <td>
+            <input
+              formControlName="description"
+              class="form-control"
+              [class.is-invalid]="f['description'].invalid && f['description'].touched"
+              placeholder="Description du paiement"
+            />
+            <div *ngIf="f['description'].invalid && f['description'].touched" class="invalid-feedback">
+              La description est obligatoire
+            </div>
+          </td>
+          
+          <!-- Champ de montant -->
+          <td>
+            <input
+              formControlName="montant"
+              class="form-control"
+              type="number"
+              min="0"
+              step="0.01"
+              [class.is-invalid]="f['montant'].invalid && f['montant'].touched"
+              placeholder="Montant"
+            />
+            <div *ngIf="f['montant'].invalid && f['montant'].touched" class="invalid-feedback">
+              Le montant est obligatoire et doit être positif
+            </div>
+          </td>
+          
+          <!-- Champ de date -->
+          <td>
+            <input
+              formControlName="date"
+              class="form-control"
+              type="date"
+              [class.is-invalid]="f['date'].invalid && f['date'].touched"
+            />
+            <div *ngIf="f['date'].invalid && f['date'].touched" class="invalid-feedback">
+              La date est obligatoire
+            </div>
+          </td>
+          
+          <!-- Sélection de la méthode de paiement -->
+          <td>
+            <select
+              formControlName="methodePaiement"
+              class="form-control"
+              [class.is-invalid]="f['methodePaiement'].invalid && f['methodePaiement'].touched"
+            >
+              <option value="" disabled selected>Sélectionner une méthode</option>
+              <option *ngFor="let mode of modesPaiement" [value]="mode.libelle">
+                {{ mode.libelle }}
+              </option>
+            </select>
+            <div *ngIf="f['methodePaiement'].invalid && f['methodePaiement'].touched" class="invalid-feedback">
+              La méthode de paiement est obligatoire
+            </div>
+          </td>
+          
+          <!-- Champ fichier (conditionnel) -->
+          <td *ngIf="showFichierField">
+            <input
+              type="file"
+              class="form-control"
+              id="fichierPaiement"
+              (change)="onFileSelected($event)"
+              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+            />
+            <small class="form-text text-muted">
+              Formats acceptés: PDF, JPG, PNG, DOC
+            </small>
+          </td>
+          
+          <!-- Actions -->
+          <td class="d-flex justify-content-center">
+            <button
+              type="submit"
+              class="btn btn-success me-2"
+              [disabled]="paiementForm.invalid"
+              title="Enregistrer le paiement"
+            >
+              <i class="bi bi-plus-circle"></i>
+            </button>
+            <button
+              type="button"
+              class="btn btn-danger"
+              (click)="resetForm()"
+              title="Réinitialiser le formulaire"
+            >
+              <i class="bi bi-x"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <!-- Champs supplémentaires optionnels -->
+    <div class="row mt-3" *ngIf="typeEntite === 'client'">
+      <div class="col-md-4">
+        <label for="remise" class="form-label">Remise</label>
+        <input
+          type="number"
+          class="form-control"
+          formControlName="remise"
+          min="0"
+          step="0.01"
+          placeholder="Remise"
+        />
+      </div>
+      <div class="col-md-4">
+        <label for="avance" class="form-label">Avance</label>
+        <input
+          type="number"
+          class="form-control"
+          formControlName="avance"
+          min="0"
+          step="0.01"
+          placeholder="Avance"
+        />
+      </div>
+    </div>
+    
+    <!-- Informations sur l'entité -->
+    <div class="mt-3 p-2 bg-light rounded" *ngIf="entiteNom">
+      <small>
+        Paiement pour <strong>{{ entiteNom }}</strong>
+        ({{ typeEntite === 'client' ? 'Client' : 'Fournisseur' }})
+      </small>
+    </div>
+  </form>

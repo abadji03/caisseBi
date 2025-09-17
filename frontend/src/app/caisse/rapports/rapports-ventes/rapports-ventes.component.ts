@@ -147,7 +147,7 @@ export class RapportsVentesComponent implements OnInit {
       // Parcourir tous les paiements de chaque vente
       vente.paiements?.forEach((paiement) => {
         // Trouver le libellé du mode de paiement à partir de l'ID
-        const modePaiement = this.modesPaiement.find((mp) => mp.id === paiement.methodePaiement);
+        const modePaiement = this.modesPaiement.find((mp) => mp.libelle === paiement.methodePaiement);
         const modeLabel = modePaiement?.libelle || 'Inconnu';
 
         // Récupérer ou initialiser les statistiques pour ce mode de paiement
@@ -963,7 +963,7 @@ export class RapportsVentesComponent implements OnInit {
 
     ventes.forEach((vente) => {
       vente.paiements?.forEach((paiement) => {
-        const modePaiement = this.modesPaiement.find((mp) => mp.id === paiement.methodePaiement);
+        const modePaiement = this.modesPaiement.find((mp) => mp.libelle === paiement.methodePaiement);
         const modeLabel = modePaiement?.libelle || 'Inconnu';
 
         const current = statsMap.get(modeLabel) || { montantTotal: 0, occurrences: 0 };
@@ -1862,7 +1862,7 @@ export class RapportsVentesComponent implements OnInit {
       const paiements =
         vente.paiements
           ?.map(
-            (p) => `${this.getNomModePaiement(p.methodePaiement)}: ${p.montant.toFixed(0)} F CFA`,
+            (p) => `${this.getNomModePaiement(0)}: ${p.montant.toFixed(0)} F CFA`,
           )
           .join('\n') || 'Non spécifié';
 
