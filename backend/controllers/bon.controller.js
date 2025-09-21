@@ -1,101 +1,54 @@
-/* // controllers/bonController.js
-const db = require('../models');
-const Bon = db.Bon;
-
-exports.createBon = async (req, res) => {
-  try {
-    const bon = await Bon.create(req.body);
-    res.status(201).json(bon);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// Lister les bons d'une structure
-exports.getBonsByStructure = async (req, res) => {
-  try {
-    const { code_structure } = req.params;
-    const bons = await Bon.findAll({
-      where: { code_structure },
-      order: [['createdAt', 'DESC']],
-    });
-    res.json(bons);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Erreur lors de la récupération des bons' });
-  }
-};
-
-exports.getAllBons = async (req, res) => {
-  try {
-    const bons = await Bon.findAll({
-      include: ['Fournisseur', 'Client', 'User', 'Magasin'],
-    });
-    res.json(bons);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.getBonById = async (req, res) => {
-  try {
-    const bon = await Bon.findByPk(req.params.id);
-    if (!bon) return res.status(404).json({ message: 'Bon non trouvé' });
-    res.json(bon);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.updateBon = async (req, res) => {
-  try {
-    const [updated] = await Bon.update(req.body, {
-      where: { id: req.params.id },
-    });
-    if (!updated) return res.status(404).json({ message: 'Bon non trouvé' });
-    const bon = await Bon.findByPk(req.params.id);
-    res.json(bon);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.deleteBon = async (req, res) => {
-  try {
-    const deleted = await Bon.destroy({ where: { id: req.params.id } });
-    if (!deleted) return res.status(404).json({ message: 'Bon non trouvé' });
-    res.status(204).send();
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
- */
 // controllers/bonController.js
 const db = require('../models');
 const Bon = db.Bon;
+const fs = require('fs');
+const path = require('path');
+
+const BASE_URL = 'http://localhost:5000/uploads/'; //url de l'emplacement des fichier à stocker
+
 
 exports.createBon = async (req, res) => {
+
   try {
-    const bon = await Bon.create(req.body);
-    return res.status(201).json(bon);
+    const bon = req.body;
+    let fichier = null;
+    if (req.file) {
+      fichier = BASE_URL + req.file.filename;
+    }
+
+    const bonEnd = await Bon.create(
+      ... bon,
+      fichier
+    );
+    
+    res.status(201).json(bonEnd);
   } catch (error) {
-    console.error('Erreur création bon:', error);
-    return res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
 // Lister les bons d'une structure
 exports.getBonsByStructure = async (req, res) => {
+
   try {
-    const { code_structure } = req.params;
     const bons = await Bon.findAll({
-      where: { code_structure },
+      where: { code_structure: req.params.code_structure },
       order: [['createdAt', 'DESC']],
     });
-    return res.json(bons);
+
+    const baseUrl = `${req.protocol}://${req.get('host')}/uploads/`;
+
+    const bonsWithFichierUrl = bons.map((paiement) => {
+      const bn = paiement.toJSON(); // Convertit Sequelize instance en objet pur
+      bn.fichierUrl = bn.fichier ? baseUrl + bn.fichier : null;
+      return bn;
+    });
+
+    res.status(200).json(bonsWithFichierUrl);
+
+    //res.json(produits);
   } catch (error) {
-    console.error('Erreur récupération bons par structure:', error);
-    return res.status(500).json({ message: 'Erreur lors de la récupération des bons' });
+    res.status(500).json({ message: 'Erreur lors de la récupération des bons', error:error.message });
   }
 };
 
@@ -123,26 +76,50 @@ exports.getBonById = async (req, res) => {
   try {
     const bon = await Bon.findByPk(req.params.id);
     if (!bon) return res.status(404).json({ message: 'Bon non trouvé' });
-    return res.json(bon);
+
+    const bonData = bon.toJSON();
+    const baseUrl = `${req.protocol}://${req.get('host')}/uploads/`;
+    bonData.fichierUrl = bonData.fichier ? baseUrl + bonData.fichier : null;
+
+    res.status(200).json(bonData);
   } catch (error) {
-    console.error('Erreur récupération bon par ID:', error);
-    return res.status(500).json({ error: error.message });
+    res.status(500).json({ message: 'Erreur lors de la récupération du bon', error });
   }
 };
 
 // Mettre à jour un bon
 exports.updateBon = async (req, res) => {
+
   try {
-    const [updated] = await Bon.update(req.body, {
-      where: { id: req.params.id },
-    });
-    if (!updated) return res.status(404).json({ message: 'Bon non trouvé' });
     const bon = await Bon.findByPk(req.params.id);
-    return res.json(bon);
-  } catch (error) {
-    console.error('Erreur update bon:', error);
-    return res.status(500).json({ error: error.message });
-  }
+    if (!bon) {
+      return res.status(404).json({ message: 'Bon non trouvé' });
+    }
+    const updatedData = { ...req.body };
+    
+        // Si un nouveau fichier est envoyé
+        if (req.file) {
+          // Supprimer l'ancien fichier si il existe
+          if (bon.fichier) {
+            const oldPath = path.join('uploads', path.basename(bon.fichier)); // attention à ne pas concaténer l'URL complète
+            if (fs.existsSync(oldPath)) {
+              fs.unlinkSync(oldPath);
+            }
+          }
+    
+          // Mettre à jour le champ fichier avec la nouvelle URL
+          updatedData.fichier = BASE_URL + req.file.filename;
+        } else {
+          // Sinon, conserver le fichier existant
+          updatedData.fichier = bon.fichier;
+        }
+    
+        await bon.update(updatedData);
+        console.log('Bon mis à jour avec:', updatedData);
+        res.json({ message: 'Bon mis à jour', bon });
+      } catch (error) {
+        res.status(500).json({ message: 'Erreur lors de la mise à jour', error: error.message });
+      }
 };
 
 // Supprimer un bon
@@ -214,7 +191,32 @@ exports.updateNetAPayer = async (req, res) => {
 };
 
 exports.updateFichier = async (req, res) => {
+
   try {
+      const bon = await Bon.findByPk(req.params.id);
+      if (!bon) return res.status(404).json({ message: 'Bon non trouvé' });
+  
+      if (!req.file) return res.status(400).json({ message: 'Aucune fichier fournie' });
+  
+      // Supprimer l'ancienne image si elle existe
+      if (bon.fichier) {
+        const oldPath = path.join('uploads', path.basename(bon.fichier));
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+      }
+  
+      // Mettre à jour le fichier
+      const nouvelleImageUrl = BASE_URL + req.file.filename;
+      await bon.update({ fichier: nouvelleImageUrl });
+  
+      res.json({ message: 'Fichier du bon mis à jour', bon });
+    } catch (error) {
+      res
+        .status(500)
+        .json({ message: "Erreur lors de la mise à jour de l'image", error: error.message });
+    }
+  /* try {
     const { fichier } = req.body; // chemin ou base64
     const bon = await Bon.findByPk(req.params.id);
     if (!bon) return res.status(404).json({ message: 'Bon non trouvé' });
@@ -226,7 +228,7 @@ exports.updateFichier = async (req, res) => {
   } catch (error) {
     console.error('Erreur update fichier:', error);
     return res.status(500).json({ error: error.message });
-  }
+  } */
 };
 exports.updateMotifsRetour = async (req, res) => {
   try {

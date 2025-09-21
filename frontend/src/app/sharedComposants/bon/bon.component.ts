@@ -1,3 +1,4 @@
+/* eslint-disable prefer-const */
 import { Component, EventEmitter, inject, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -36,7 +37,10 @@ export class BonComponent implements OnInit{
   panierDisabled = false;
   totalPanier = 0; // variable pour le total du panier pour le comparer au montant du bon
 
-   // Variables pour le panier intégré
+  erreurs: string[] = []; // Pour stocker les messages d'erreur
+  modeMontant: 'saisi' | 'panier' = 'panier'; // valeur par défaut
+
+  // Variables pour le panier intégré
   showPanier = true;
   panierData: Panier | null = null;
   
@@ -45,6 +49,11 @@ export class BonComponent implements OnInit{
   ngOnInit() {
     this.updateTime();
     this.bonForm = this.createBonForm();
+
+    // Écouter les changements pour valider en temps réel
+    this.bonForm.valueChanges.subscribe(() => {
+      this.validerMontants();
+    });
   }
   
   onTotalPanierChange(total: number): void {
@@ -54,7 +63,7 @@ export class BonComponent implements OnInit{
     return this.fb.group({
       type: ['', Validators.required],
       description: [''],
-      montant: [[Validators.min(0)]],
+      //montant: [[Validators.min(0)]],
       refBonOrigine: [''],
       motifAvoir: [''],
       montantAvoir: [[Validators.min(0)]],
@@ -65,34 +74,102 @@ export class BonComponent implements OnInit{
     });
   }
   
-  // bon.component.ts
+ // Validateur personnalisé pour la remise
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  maxRemiseValidator(control: any) {
+    const montant = this.montantBase;
+    const remise = control.value;
+    
+    if (montant > 0 && remise > montant) {
+      return { maxRemise: true };
+    }
+    return null;
+  }
 
-// Ajoutez cette méthode pour vérifier si le montant est valide
-get isMontantValide(): boolean {
-  const montant = this.bonForm.get('montant')?.value;
-  return montant !== null && montant !== undefined && montant > 0;
-}
+  // Validateur personnalisé pour l'avance
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  maxAvanceValidator(control: any) {
+    const montant = this.montantBase;
+    const remise = this.bonForm?.get('remise')?.value || 0;
+    const avance = control.value;
+    const montantApresRemise = montant - remise;
+    
+    if (montantApresRemise > 0 && avance > montantApresRemise) {
+      return { maxAvance: true };
+    }
+    return null;
+  }
 
-// Ou pour une vérification plus spécifique
-get montantEstSuperieurAZero(): boolean {
-  const montant = this.bonForm.get('montant')?.value;
-  return Number(montant) > 0;
-}
+  // Getter pour le montant de base (panier ou montant direct)
+  get montantBase(): number {
+    if (this.modeMontant === 'panier') {
+      return this.totalPanier;
+    }
+    return this.bonForm.get('montantAvoir')?.value || 0;
+  }
 
-    get totalBon(): number {
+  // Validation des montants
+  validerMontants(): void {
+    this.erreurs = [];
+    const montant = this.montantBase;
+    const remise = this.bonForm.get('remise')?.value || 0;
+    const avance = this.bonForm.get('avance')?.value || 0;
+
+    const montantApresRemise = montant - remise;
+
+    // Validation de la remise
+    if (remise > montant) {
+      this.erreurs.push(`La remise (${remise} F CFA) ne peut pas dépasser le montant du bon (${montant} F CFA)`);
+    }
+
+    // Validation de l'avance
+
+    if (avance > montantApresRemise || avance > montant) {
+      this.erreurs.push(`L'avance (${avance} F CFA) ne peut pas dépasser le montant après remise (${montantApresRemise} F CFA)`);
+    }
+
+    // Validation du panier
+    /* if (this.totalPanier > 0 && this.totalPanier  > (this.bonForm.get('montant')?.value || 0)) {
+      this.erreurs.push(`Le total du panier (${this.totalPanier } F CFA) ne peut pas dépasser le montant du bon (${this.bonForm.get('montant')?.value || 0} F CFA)`);
+    } */
+  }
+
+  // Ajoutez cette méthode pour vérifier si le montant est valide
+ /*  get isMontantValide(): boolean {
+    const montant = this.bonForm.get('montant')?.value;
+    return montant !== null && montant !== undefined && montant > 0;
+  }
+
+  // Ou pour une vérification plus spécifique
+  get montantEstSuperieurAZero(): boolean {
+    const montant = this.bonForm.get('montant')?.value;
+    return Number(montant) > 0;
+  } */
+
+  get resteAPayer(): number {
+    const total = this.totalBon;
+    const avance = this.bonForm.get('avance')?.value || 0;
+    return Math.max(0, total - avance);
+  }
+  get totalBon(): number {
     const formValue = this.bonForm.value;
-    const montant = formValue.montant || 0;
-    const montantAvoir = formValue.montantAvoir || 0;
+    //const montant = formValue.montant || 0;
+    //const montantAvoir = formValue.montantAvoir || 0;
     const remise = formValue.remise || 0;
+    //const remise = this.bonForm.get('remise')?.value || 0;
     
     if (this.typeBon === 'retour') {
-      return montantAvoir;
+       return 0;
+      //return montantAvoir;
+      //return this.bonForm.get('montantAvoir')?.value || 0;
     }
     
     // Si on a un panier, utiliser son total, sinon utiliser le montant du formulaire
     //return this.panierData ? this.panierData.totalTTC : montant;
-    const totalBase = this.panierData ? this.panierData.totalTTC : montant;
-    return totalBase - remise;
+    //const totalBase = this.panierData ? this.panierData.totalTTC : montant;
+    //return totalBase - remise;
+    const base = this.montantBase;
+    return Math.max(0, base - remise);
   }
   
   generateNumero(): string {
@@ -103,6 +180,12 @@ get montantEstSuperieurAZero(): boolean {
   
   onTypeBonChange(): void {
     this.typeBon = this.bonForm.get('type')?.value;
+    if (this.typeBon === 'commande' || this.typeBon === 'livraison') {
+      this.modeMontant = 'panier';
+    } 
+    else if (this.typeBon === 'retour') {
+      this.modeMontant = 'saisi';
+    }
   }
   
   updateTime(): void {
@@ -132,20 +215,21 @@ get montantEstSuperieurAZero(): boolean {
 prepareBonData(): Bon {
   const formValue = this.bonForm.value;
   // Récupérer remise et avance du formulaire bon
-    const remiseBon = Number(formValue.remise) || 0;
-    const avanceBon = Number(formValue.avance) || 0;
+    const remise = Number(formValue.remise) || 0;
+    const avance = Number(formValue.avance) || 0;
   // Si on a un panier, utiliser ses données
-  if (this.panierData) {
+  let base = this.montantBase;
+  if (this.modeMontant === 'panier' && this.panierData) {
     
     return new Bon({
       numero: this.generatedNumero,
       type: formValue.type,
       description: formValue.description,
-      montantTotal: this.panierData.totalTTC - remiseBon, // Total après remise du bon
-      remise: remiseBon, // Remise au niveau du bon
-      avance: avanceBon, // Avance au niveau du bon
-      netAPayer: this.panierData.totalTTC - remiseBon - avanceBon, // Net à payer
-      resteAPayer: this.panierData.totalTTC - remiseBon - avanceBon, // Reste à payer
+      montantTotal: base - remise, // Total après remise du bon
+      remise, // Remise au niveau du bon
+      avance, // Avance au niveau du bon
+      netAPayer: base - remise - avance, // Net à payer
+      resteAPayer: base- remise - avance, // Reste à payer
       dateBon: new Date(),
       statutBon: 'brouillon',
       panier: {
@@ -161,16 +245,16 @@ prepareBonData(): Bon {
   }
   
   // Sinon, créer un bon sans panier détaillé
-   const montantBase = formValue.montant || 0;
+  //const montantBase = formValue.montant || 0;
   return new Bon({
     numero: this.generatedNumero,
     type: formValue.type,
     description: formValue.description,
-    montantTotal: montantBase - remiseBon,
-    remise: remiseBon,
-    avance: avanceBon,
-    netAPayer: montantBase - remiseBon - avanceBon,
-    resteAPayer: montantBase - remiseBon - avanceBon,
+    montantTotal: base - remise,
+    remise,
+    avance,
+    netAPayer: base - remise - avance,
+    resteAPayer: base - remise - avance,
     dateBon: new Date(),
     statutBon: 'brouillon'
   });

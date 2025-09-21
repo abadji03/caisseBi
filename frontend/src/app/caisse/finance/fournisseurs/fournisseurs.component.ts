@@ -1109,6 +1109,22 @@ get getPaginatedPaiementsBis() {
     return this.bonForm.get('panier') as FormArray;
   }
 
+  prepareFormData(formsGroup: FormGroup, prop:string): FormData {
+    const formData = new FormData();
+    const formValue = formsGroup.value;
+
+    Object.keys(formValue).forEach((key) => {
+      if (key !== prop && formValue[key] !== null && formValue[key] !== undefined) {
+        formData.append(key, formValue[key]);
+      }
+    });
+
+    if (formsGroup.get(prop)?.value instanceof File) {
+      formData.append(prop, formsGroup.get(prop)?.value);
+    }
+
+    return formData;
+  }
   addArticle(): void {
     this.panier.push(
       this.fb.group({

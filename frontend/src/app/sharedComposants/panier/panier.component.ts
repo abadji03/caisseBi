@@ -22,6 +22,7 @@ export class PanierComponent implements OnInit {
   @Input() modeCompact = false;
   @Input() showHeader = true;
   @Input() showActions = true;
+   @Input() showButtonsActions = true;
   @Input() showRemiseField = true; 
   @Input() showAvanceField = true; 
 
@@ -44,7 +45,10 @@ export class PanierComponent implements OnInit {
   ngOnInit() {
     this.updateTime();
     this.filteredProduits = [...this.produitsDisponibles];
-     this.panierForm = this.createPanierForm();
+    this.panierForm = this.createPanierForm();
+    this.panierForm.valueChanges.subscribe(() => {
+      this.totalPanierChange.emit(this.totalAPayer);
+    });
   }
   
   createPanierForm(): FormGroup {

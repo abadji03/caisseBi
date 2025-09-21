@@ -7,6 +7,14 @@
     <span>📄 Numéro : <strong>{{ generatedNumero }}</strong></span>
   </div>
 
+  <!-- Affichage des erreurs -->
+  <div *ngIf="erreurs.length > 0" class="alert alert-danger">
+    <h5>Erreurs de validation :</h5>
+    <ul>
+      <li *ngFor="let erreur of erreurs">{{ erreur }}</li>
+    </ul>
+  </div>
+
   <form [formGroup]="bonForm" (ngSubmit)="submitBon()">
     <!-- Type de Bon -->
     <div class="row mb-3">
@@ -19,14 +27,15 @@
         </select>
       </div>
       
-      <div *ngIf="typeBon === 'commande' || typeBon === 'livraison'" class="col-md-3">
+      <!-- <div *ngIf="typeBon === 'commande' || typeBon === 'livraison'" class="col-md-3"> -->
+      <!-- <div *ngIf="modeMontant === 'saisi'"  class="col-md-3">
         <input
           type="number"
           class="form-control"
           formControlName="montant"
           placeholder="Montant"
         />
-      </div>
+      </div> -->
       
       <div *ngIf="typeBon === 'commande' || typeBon === 'livraison'" class="col-md-3">
         <textarea
@@ -51,7 +60,7 @@
         <textarea
           class="form-control"
           formControlName="motifAvoir"
-          placeholder="Motif de l'Avoir"
+          placeholder="Motif"
         ></textarea>
       </div>
       
@@ -60,7 +69,7 @@
           type="number"
           class="form-control"
           formControlName="montantAvoir"
-          placeholder="Montant de l'Avoir"
+          placeholder="Montant"
         />
       </div>
 
@@ -74,66 +83,139 @@
       </div>
     </div>
     <!-- Nouveaux champs Remise et Avance au niveau du bon -->
-  <div class="row mb-3" *ngIf="typeBon !== ''">
-    <div class="col-md-3">
-      <label for="remise" class="form-label">Remise sur le bon</label>
-      <input
-        name="remise"
-        type="number"
-        [disabled]="!isMontantValide"
-        class="form-control"
-        formControlName="remise"
-        placeholder="Remise"
-        min="0"
-        step="0.01"
-      />
-      <small *ngIf="!isMontantValide" class="text-muted">
-      Le montant doit être supérieur à 0 pour ajouter une remise
-    </small>
-    </div>
-    
-    <div class="col-md-3">
-      <label for="avance" class="form-label">Avance sur le bon</label>
-      <input
-        type="number"
-        name="avance"
-        class="form-control"
-        formControlName="avance"
-        [disabled]="!isMontantValide"
-        placeholder="Avance"
-        min="0"
-        step="0.01"
-      />
-      <small *ngIf="!isMontantValide" class="text-muted">
-      Le montant doit être supérieur à 0 pour ajouter une avance
-    </small>
-    </div>
-    
-    <div class="col-md-3">
-      <label for="netAPayer" class="form-label">Net à payer</label>
-      <input
-      name="netAPayer"
-        type="number"
-        class="form-control"
-        [value]="totalBon"
-        readonly
-        placeholder="Net à payer"
-      />
-    </div>
-  </div>
+<!--     <div class="row mb-3" *ngIf="typeBon !== ''">
+      <div class="col-md-3">
+        <label for="remise" class="form-label">Remise sur le bon</label>
+        <input
+          name="remise"
+          type="number"
+          [disabled]="!isMontantValide"
+          class="form-control"
+          formControlName="remise"
+          placeholder="Remise"
+          min="0"
+          step="0.01"
+        />
+        <small *ngIf="!isMontantValide" class="text-muted">
+        Le montant doit être supérieur à 0 pour ajouter une remise
+      </small>
+      </div>
+      
+      <div class="col-md-3">
+        <label for="avance" class="form-label">Avance sur le bon</label>
+        <input
+          type="number"
+          name="avance"
+          class="form-control"
+          formControlName="avance"
+          [disabled]="!isMontantValide"
+          placeholder="Avance"
+          min="0"
+          step="0.01"
+        />
+        <small *ngIf="!isMontantValide" class="text-muted">
+        Le montant doit être supérieur à 0 pour ajouter une avance
+      </small>
+      </div>
+      
+      <div class="col-md-3">
+        <label for="netAPayer" class="form-label">Net à payer</label>
+        <input
+        name="netAPayer"
+          type="number"
+          class="form-control"
+          [value]="totalBon"
+          readonly
+          placeholder="Net à payer"
+        />
+      </div>
+    </div> -->
+    <div class="row mb-3" *ngIf="typeBon !== ''">
+        <!-- Montant de base -->
+        <div class="col-md-3" *ngIf="modeMontant === 'panier'">
+          <label for="montantBase" class="form-label">Montant du bon</label>
+          <input
+            type="number"
+            class="form-control"
+            [value]="montantBase"
+            readonly
+            [class.is-invalid]="totalPanier && totalPanier > (bonForm.get('montant')?.value || 0)"
+          />
+          <div *ngIf="totalPanier && totalPanier > (bonForm.get('montant')?.value || 0)" 
+              class="invalid-feedback">
+            Le panier dépasse le montant du bon
+          </div>
+        </div>
+        
+        <!-- Remise -->
+        <div class="col-md-3" *ngIf="typeBon !== 'retour'">
+          <label for="remise" class="form-label">Remise sur le bon</label>
+          <input
+            type="number"
+            class="form-control"
+            formControlName="remise"
+            placeholder="Remise"
+            min="0"
+            [max]="montantBase"
+            step="0.01"
+            [class.is-invalid]="bonForm.get('remise')?.errors?.['maxRemise']"
+          />
+          <div *ngIf="bonForm.get('remise')?.errors?.['maxRemise']" class="invalid-feedback">
+            La remise ne peut pas dépasser {{ montantBase }}F CFA
+          </div>
+          <small class="form-text text-muted">
+            Max: {{ montantBase}} F CFA
+          </small>
+        </div>
+        
+        <!-- Avance -->
+        <div class="col-md-3" *ngIf="typeBon !== 'retour'">
+          <label for="avance" class="form-label">Avance sur le bon</label>
+          <input
+            type="number"
+            class="form-control"
+            formControlName="avance"
+            placeholder="Avance"
+            min="0"
+            [max]="totalBon"
+            step="0.01"
+            [class.is-invalid]="bonForm.get('avance')?.errors?.['maxAvance']"
+          />
+          <div *ngIf="bonForm.get('avance')?.errors?.['maxAvance']" class="invalid-feedback">
+            L'avance ne peut pas dépasser {{ totalBon }} F CFA
+          </div>
+          <small class="form-text text-muted">
+            Max: {{ totalBon }}F CFA
+          </small>
+        </div>
+        
+        <!-- Net à payer et reste à payer -->
+        <div class="col-md-3" *ngIf="typeBon !== 'retour'">
+          <label for="netAPayer" class="form-label">Net à payer</label>
+          <input
+            type="number"
+            class="form-control bg-light"
+            [value]="totalBon"
+            readonly
+          />
+          <small class="form-text text-muted">
+            Reste: {{ resteAPayer}}F CFA
+          </small>
+        </div>
+      </div>
     <!-- Panier -->
-    <div class="mt-3 d-flex justify-content-center" *ngIf="typeBon !==''">
+    <!-- <div class="mt-3 d-flex justify-content-center" *ngIf="typeBon !==''">
       <h2>Produits associés au bon</h2>
-    </div>
+    </div> -->
 
-    <div *ngIf="typeBon !==''" class="bg-secondary d-flex justify-content-between align-items-center mt-1 p-2 text-white">
+    <!-- <div *ngIf="typeBon !==''" class="bg-secondary d-flex justify-content-between align-items-center mt-1 p-2 text-white">
       <span>💰 Total panier : <strong>{{ totalPanier }} F CFA</strong></span>
       <span>💰 Total bon : <strong>{{ totalBon }} F CFA</strong></span>
-    </div>
+    </div> -->
     
     <!-- Dans bon.component.html -->
     <app-panier
-    *ngIf="typeBon !==''"
+    *ngIf="typeBon ==='commande' || typeBon === 'livraison'"
       [produitsDisponibles]="produitsDisponibles"
       [showPanierSection]="showPanier"
       [titre]="'Panier du bon'"
@@ -141,7 +223,8 @@
       [modeCompact]="true"
       [showHeader]="false"
       [showActions]="true"
-      [showRemiseField]="false" 
+      [showRemiseField]="false"
+      [showButtonsActions]="false"  
       [showAvanceField]="false" 
       (onEnregistrer)="onPanierEnregistre($event)"
       (onAnnuler)="onPanierAnnule()"
@@ -157,8 +240,8 @@
       >
          Ajouter un article
       </button> -->
-      <button type="submit" class="btn btn-primary me-2">Enregistrer le Bon</button>
-      <button type="button" class="btn btn-secondary" (click)="annulerBon()"> Annuler</button>
+      <button type="submit" class="btn btn-outline-success me-2 w-25"><i class="bi bi-floppy2-fill"></i> Enregistrer le Bon</button>
+      <button type="button" class="btn btn-outline-secondary w-25" (click)="annulerBon()"> <i class="bi bi-x-lg text-danger fb-1"></i> Annuler</button>
     </div>
   </form>
 <!-- </div> -->
