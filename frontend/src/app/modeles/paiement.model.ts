@@ -49,9 +49,10 @@ export class Paiement {
   //reste?: number;
   compte: 'Bon' | 'Caisse' | 'Mobile Money' | 'Banque' = 'Caisse';
   date: Date = new Date();
-  methodePaiement!: string; // Changé de number à string pour correspondre aux options
+  methodePaiement:  'Espèce' | 'Carte' | 'Orange Money'| 'Wave' | 'Chèque' | 'Virement' | 'Autre' = 'Espèce'; // Changé de number à string pour correspondre aux options
   clientId?: number;
   fournisseurId?: number;
+  //typeEntite!:'client' | 'fournisseur';
   bonId?: number;
   dateMiseAJour?: Date;
   panierId?: number;

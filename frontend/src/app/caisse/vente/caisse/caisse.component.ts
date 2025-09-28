@@ -324,7 +324,7 @@ export class CaisseComponent implements OnInit {
     ticket += `📅 Date: ${panier.dateCreation.toLocaleDateString()}\n`;
     ticket += `------------------------------\n`;
     panier.articles.forEach((article) => {
-      ticket += `${article.produit.designation} x${0} - ${article.quantite * article.prixVenteUnitaire} F CFA\n`;
+      ticket += `${article?.produit?.designation} x${0} - ${article.quantite * article.prixVenteUnitaire} F CFA\n`;
     });
     ticket += `------------------------------\n`;
     ticket += `💰 Total TTC: ${panier.totalTTC} F CFA\n`;

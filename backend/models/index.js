@@ -66,6 +66,8 @@ db.Paiement = require('./paiement.model')(sequelize, Sequelize);
 db.permission = require('./permission.model')(sequelize, Sequelize);
 //Chargement et initialisation du modèle Role
 db.role = require('./role.model')(sequelize, Sequelize);
+db.HistoriqueStatut = require('./historiqueStatut.model')(sequelize, Sequelize);
+
 
 /* Définition des relations entre les modèles */
 
@@ -370,5 +372,24 @@ db.permission.belongsToMany(db.role, { through: 'role_permissions', foreignKey: 
 db.Users.belongsToMany(db.role, { through: 'users_roles', foreignKey: 'user_id' });
 db.role.belongsToMany(db.Users, { through: 'users_roles', foreignKey: 'role_id' });
 
+// Relation Bon -> HistoriqueStatut
+db.Bon.hasMany(db.HistoriqueStatut, {
+  foreignKey: 'bonId',
+  as: 'historiques'
+});
+db.HistoriqueStatut.belongsTo(db.Bon, {
+  foreignKey: 'bonId',
+  as: 'bons'
+});
+
+// Relation Agent -> HistoriqueStatut
+db.Users.hasMany(db.HistoriqueStatut, {
+  foreignKey: 'agentId',
+  as: 'historiques'
+});
+db.HistoriqueStatut.belongsTo(db.Users, {
+  foreignKey: 'agentId',
+  as: 'users'
+});
 //Exportation de l’objet `db` contenant Sequelize, la connexion, et tous les modèles
 module.exports = db;

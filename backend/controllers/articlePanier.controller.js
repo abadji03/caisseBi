@@ -11,6 +11,39 @@ exports.create = async (req, res) => {
   }
 };
 
+// Créer plusieurs articles de panier en lot
+exports.createBatch = async (req, res) => {
+  try {
+    const articles = req.body;
+    
+    // Validation des données
+    if (!Array.isArray(articles)) {
+      return res.status(400).json({ error: 'Le corps de la requête doit être un tableau d\'articles' });
+    }
+
+    // Validation de chaque article
+    for (const article of articles) {
+      if (!article.produitId || !article.quantite || !article.prixVenteUnitaire) {
+        return res.status(400).json({ 
+          error: 'Chaque article doit avoir produitId, quantite et prixVenteUnitaire' 
+        });
+      }
+    }
+
+    // Création en lot
+    const createdArticles = await ArticlePanier.bulkCreate(articles, {
+      returning: true,
+      validate: true
+    });
+
+    res.status(201).json(createdArticles);
+  } catch (err) {
+    console.error('Erreur création batch articles:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
 exports.findAll = async (req, res) => {
   try {
     const articles = await ArticlePanier.findAll({
@@ -52,5 +85,20 @@ exports.delete = async (req, res) => {
     res.status(204).send();
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+// Lister les articles d'un panier d'une structure
+exports.getArticlesPanierByStructure = async (req, res) => {
+  try {
+    const { code_structure } = req.params;
+    const paniers = await ArticlePanier.findAll({
+      where: { code_structure },
+      order: [['createdAt', 'DESC']],
+    });
+    return res.json(paniers);
+  } catch (error) {
+    console.error('Erreur récupération des articles des paniers par structure:', error);
+    return res.status(500).json({ message: 'Erreur lors de la récupération des articles' });
   }
 };

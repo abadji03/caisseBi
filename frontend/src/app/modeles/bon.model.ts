@@ -1,15 +1,18 @@
 import { Operation } from './operation.model';
-import { Produits } from './produit.modele';
+import { Panier } from './panier.model';
 
 export class Bon {
   id?: number;
   numero!: string;
   numeroFacture?: string;
+  code_structure!:string;
   type!: 'Livraison' | 'Commande' | 'Retour' | 'Avoir';
   description!: string;
+  typeEntite!:'client' | 'fournisseur';
   montantTotal!: number;
   remise?: number;
   netAPayer?: number;
+  magasinId!:number;
   avance ?: number;
   resteAPayer?: number;
   dateBon: Date = new Date();
@@ -32,12 +35,12 @@ export class Bon {
   agentId?: number;
   //produits: Produits[] = [];
   operations: Operation[] = [];
-  panier?: {
+  panier?: Panier /* {
     produits: Produits[];
     totalHT: number;
     tva: number;
     totalTTC: number;
-  };
+  }; */
 
   constructor(data?: Partial<Bon>) {
     Object.assign(this, data);

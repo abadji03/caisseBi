@@ -324,6 +324,7 @@
               [entiteId]="selectedFournisseur?.id"
               [entiteNom]="selectedFournisseur?.nomComplet"
               (onEnregistrerBon)="onBonEnregistre($event)"
+              (showFileField)=true
               (onAnnulerBon)="onBonAnnule()"
             ></app-bon>
             </div>
@@ -469,13 +470,13 @@
                             <tbody>
                               <tr
                                 *ngFor="
-                                  let produit of getBonByOperation(operation)?.panier?.produits
+                                  let produit of getBonByOperation(operation)?.panier?.articles
                                 "
                               >
-                                <td>{{ produit.designation }}</td>
+                                <td>{{ "produit.designation" }}</td>
                                 <td>{{ 'produit.quantite à corriger' }}</td>
-                                <td>{{ produit.unite }}</td>
-                                <td>{{ produit.prixAchatUnitaire }} F CFA</td>
+                                <td>{{ "produit.unite "}}</td>
+                                <td>{{ "produit.prixAchatUnitaire" }} F CFA</td>
                                 <td>
                                   <button
                                     class="btn btn-danger"
@@ -972,11 +973,11 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let produit of getBonBypaiement(paiement)?.panier?.produits">
-                          <td>{{ produit.designation }}</td>
+                        <tr *ngFor="let produit of getBonBypaiement(paiement)?.panier?.articles">
+                          <td>{{ "produit.designation" }}</td>
                           <td>{{ 'produit.quantite à corriger' }}</td>
-                          <td>{{ produit.unite }}</td>
-                          <td>{{ produit.prixAchatUnitaire }} F CFA</td>
+                          <td>{{ "produit.unite" }}</td>
+                          <td>{{ "produit.prixAchatUnitaire" }} F CFA</td>
                         </tr>
                       </tbody>
                     </table>

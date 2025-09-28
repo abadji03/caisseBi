@@ -19,6 +19,7 @@
         <div class="col-md-2 searchChamp">
           <input
             type="text"
+            [disabled]="isFormDisabled"
             class="form-control"
             [(ngModel)]="searchInput"
             placeholder="Rechercher un produit..."
@@ -87,7 +88,6 @@
         </div>
         <div class="col-md-2">
           <select class="form-select" formControlName="typePaiement">
-            <option value="" disabled selected>Mode de paiement</option>
             <option value="caisse">Caisse</option>
             <option value="mobile money">Mobile Money</option>
             <option value="banque">Banque</option>
@@ -133,8 +133,14 @@
 
       <!-- Bouton de soumission -->
       <div class="d-flex justify-content-center" *ngIf="showButtonsActions">
-        <button type="submit" class="btn btn-success w-25 me-3"><i class="bi bi-floppy2-fill"></i> Enregistrer</button>
-        <button type="button" class="btn btn-warning w-25" (click)="annulerPanier()"> <i class="bi bi-x-lg text-danger fb-1"></i> Annuler</button>
+        <!-- <button type="submit" class="btn btn-success w-25 me-3" >
+          <i [class]="isFormDisabled ? 'bi bi-pencil' : 'bi bi-check'"></i>
+        </button> -->
+        <!-- bouton valider -->
+        <button type="button" class="btn btn-success me-3" (click)="isFormDisabled ? toggleEdition() : enregistrerPanier()">
+          <i [class]="isFormDisabled ? 'bi bi-pencil' : 'bi bi-check'"></i>
+        </button>
+        <button type="button" class="btn btn-warning" (click)="annulerPanier()"> <i class="bi bi-x-lg text-danger fb-1"></i></button>
       </div>
     </form>    
   </div>

@@ -44,6 +44,18 @@
           placeholder="Description"
         ></textarea>
       </div>
+      <div *ngIf="showFileField && typeBon !==''"  class="col-md-3">
+        <input
+              type="file"
+              class="form-control"
+              id="fichierPaiement"
+              (change)="onFileSelected($event)"
+              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+            />
+            <small class="form-text text-muted">
+              Formats acceptés: PDF, JPG, PNG, DOC
+            </small>
+      </div> 
       
       <div *ngIf="typeBon === 'retour'" class="col-md-3">
         <input
@@ -224,7 +236,7 @@
       [showHeader]="false"
       [showActions]="true"
       [showRemiseField]="false"
-      [showButtonsActions]="false"  
+      [showButtonsActions]="true"  
       [showAvanceField]="false" 
       (onEnregistrer)="onPanierEnregistre($event)"
       (onAnnuler)="onPanierAnnule()"

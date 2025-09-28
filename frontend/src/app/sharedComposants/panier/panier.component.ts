@@ -25,6 +25,8 @@ export class PanierComponent implements OnInit {
    @Input() showButtonsActions = true;
   @Input() showRemiseField = true; 
   @Input() showAvanceField = true; 
+  isFormDisabled = false; // false par défaut
+
 
 // Et mettre à jour le template conditionnellement
   
@@ -53,9 +55,9 @@ export class PanierComponent implements OnInit {
   
   createPanierForm(): FormGroup {
     return this.fb.group({
-      remise: [[Validators.min(0)]],
-      avance: [[Validators.min(0)]],
-      typePaiement: ['', Validators.required],
+      remise: [0,[Validators.min(0)]],
+      avance: [0,[Validators.min(0)]],
+      typePaiement: ['caisse', Validators.required],
       tauxTVA: [this.tauxTVAList[0] || 0],
       inclureTVA: [this.inclureTVA],
       panier: this.fb.array([])
@@ -149,9 +151,35 @@ export class PanierComponent implements OnInit {
   }
   
   enregistrerPanier(): void {
-    if (this.panierForm.valid && this.panierArray.length > 0) {
-      const panierData: Panier = this.preparePanierData();
-      this.onEnregistrer.emit(panierData);
+   /*  if (this.panierForm.valid && this.panierArray.length > 0) {
+    const panierData: Panier = this.preparePanierData();
+    console.log("Depuis panier : ", panierData)
+    this.onEnregistrer.emit(panierData);
+    } else {
+    console.log('typePaiement valide ?', this.panierForm.get('typePaiement')?.valid);
+    console.log("Formulaire invalide", this.panierForm.errors, this.panierForm.controls);
+    } */
+   
+      if (this.panierForm.valid && this.panierArray.length > 0) {
+        const panierData: Panier = this.preparePanierData();
+        
+        this.onEnregistrer.emit(panierData);
+         // désactive après validation
+          this.isFormDisabled = true;
+          this.panierForm.disable();
+
+    } 
+    else {
+       console.log('Formulaire invalide', this.panierForm.controls);
+    }
+  }
+  toggleEdition(): void {
+    this.isFormDisabled = !this.isFormDisabled;
+
+    if (this.isFormDisabled) {
+      this.panierForm.disable(); // désactive tous les champs
+    } else {
+      this.panierForm.enable();  // réactive tous les champs
     }
   }
 

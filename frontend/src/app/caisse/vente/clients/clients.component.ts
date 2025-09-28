@@ -365,7 +365,7 @@ export class ClientsComponent implements OnInit {
             | 'Avoir',
           numeroFacture: `FACT${i}${j}`,
           clientId: client.id,
-          panier: panier,
+          //panier: panier,
         });
 
         const paiement = new Paiement({

@@ -6,6 +6,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false,
     },
+    typeEntite: {
+      type: DataTypes.ENUM('client', 'fournisseur'),
+      allowNull: false,
+      defaultValue: 'fournisseur'
+    },
     numeroFacture: DataTypes.STRING,
     type: {
       type: DataTypes.ENUM('Livraison', 'Commande', 'Retour', 'Avoir'),

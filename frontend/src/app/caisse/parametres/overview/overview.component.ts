@@ -674,7 +674,7 @@ export class OverviewComponent implements OnInit, AfterViewInit {
       const produitsDéjàComptés = new Set<number>(); // pour cette vente
 
       v.articles.forEach((a) => {
-        const produitId = a.produit.id!;
+        const produitId = a.produit?.id?? 0;
         const quantite = a.quantite || 0;
         const prixVente = a.prixVenteUnitaire || 0;
         const prixAchat = a.prixAchatUnitaire || 0;
@@ -690,7 +690,8 @@ export class OverviewComponent implements OnInit, AfterViewInit {
         const dejaCompte = produitsDéjàComptés.has(produitId);
 
         produitsMap.set(produitId, {
-          produit: a.produit,
+          //produit: a.produit,
+          produit: a.produit ? new Produits(a.produit) : new Produits(),
           quantite: existant.quantite + quantite,
           ca: existant.ca + quantite * prixVente,
           marge: existant.marge + quantite * (prixVente - prixAchat),

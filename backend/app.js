@@ -55,6 +55,10 @@ app.use('/api/mouvements-stock', require('./routers/mouvementStock.routes'));
 app.use('/api/user-roles', require('./routers/user-role.routes'));
 app.use('/api/role-permissions', require('./routers/role-permission.routes'));
 app.use('/api/auth', require('./routers/auth.routes'));
+app.use('/api/bons-complet', require('./routers/bonComplet.routes')); // Ajouter cette ligne
+app.use('/api/historique-status', require('./routers/historiqueStatut.routes'));
+
+
 
 // Test route
 app.get('/', (req, res) => {

@@ -38,11 +38,16 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.ENUM('Bon', 'Caisse', 'Mobile Money', 'Banque'),
       defaultValue: 'Caisse',
     },
+    /* typeEntite: {
+      type: DataTypes.ENUM('client', 'fournisseur'),
+      allowNull: false,
+      defaultValue: 'fournisseur'
+    }, */
     date: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
-    methodePaiement: DataTypes.INTEGER, // À lier à une table si tu en as une
+    methodePaiement: DataTypes.ENUM('Espèce', 'Carte', 'Orange Money', 'Wave','Virement', 'Chèque', 'Autre'), // À lier à une table si tu en as une
     dateMiseAJour: DataTypes.DATE,
     typePaiement: {
       type: DataTypes.ENUM('fournisseur', 'client'),

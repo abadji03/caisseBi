@@ -2,7 +2,6 @@ import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { Fournisseur } from '../../../modeles/fournisseur.model';
 import { CommonModule } from '@angular/common';
 import {
-  FormArray,
   FormBuilder,
   FormGroup,
   FormsModule,
@@ -21,12 +20,16 @@ import { ToastrService } from 'ngx-toastr';
 import { finalize, forkJoin } from 'rxjs';
 import { normalize } from '../../../utils/string-utils';
 import { BonComponent } from '../../../sharedComposants/bon/bon.component';
-import { Panier } from '../../../modeles/panier.model';
+import {  Panier } from '../../../modeles/panier.model';
 import { ProduitsService } from '../../../services/produits.service';
 import { StockInventaireService } from '../../../services/stock-inventaire.service';
 import { Stock } from '../../../modeles/entrees-sorties.model';
 import { PaiementComponent } from '../../../sharedComposants/paiement/paiement.component';
 import { BonsService } from '../../../services/bons.service';
+import { PaniersService } from '../../../services/paniers.service';
+import { PaiementsService } from '../../../services/paiements.service';
+import { MouvementsStockService } from '../../../services/mouvements-stock.service';
+import { ArticlesPanierService } from '../../../services/articles-panier.service';
 
 @Component({
   selector: 'app-fournisseurs',
@@ -49,14 +52,10 @@ export class FournisseursComponent implements OnInit {
   showModal = false; // Affichage du modal d'ajout/édition
   isEditMode = false; // Mode édition ou ajout
   isRowSelected = false; // Indique si une ligne est sélectionnée
-  //selectedBon: Bon[] = []; // Détails du bon sélectionné
-  //selectedPaiement: Paiement[] = []; // Détails du paiement sélectionné
   fournisseurForm!: FormGroup; // Formulaire de fournisseur
   selectedFournisseur: Fournisseur | null = null; // Fournisseur sélectionné pour modification
-  bonForm!: FormGroup; // Formulaire pour ajouter un bon
   showBonForm = false; // Variable pour afficher ou masquer le formulaire de bon
   // Autres variables existantes...
-  paiementForm!: FormGroup; // Formulaire pour ajouter un paiement
   showPaiementForm = false; // Pour afficher ou masquer le formulaire de paiement
   actionType = 'ajouter';
   magasins: Magasin[] = [];
@@ -149,13 +148,17 @@ export class FournisseursComponent implements OnInit {
   private produitsServices = inject(ProduitsService);
   private stockService = inject(StockInventaireService);
   private bonService = inject(BonsService);
+  private panierService = inject(PaniersService);
+  private paiementService = inject(PaiementsService);
+  private MouvementsStockService = inject(MouvementsStockService);
+  private artticlesPanierService = inject(ArticlesPanierService);
 
   ngOnInit(): void {
     // Chargement des données des fournisseurs (par exemple via un service)
     this.loadData();
     this.loadDataProduits();
     this.initForm();
-    this.onTypeBonChange(); // Met à jour les champs au chargement
+    //this.onTypeBonChange(); // Met à jour les champs au chargement
   }
 
   initForm(): void {
@@ -177,64 +180,32 @@ export class FournisseursComponent implements OnInit {
     });
     //console.log('Valeur de code_structure dans le formulaire:', this.fournisseurForm.value.code_structure); // Vérifiez la valeur dans le formulaire
 
-    // Initialisation du formulaire réactif pour un paiement
-    this.paiementForm = this.fb.group({
-      description: ['', Validators.required],
-      montant: ['', [Validators.required, Validators.min(0)]],
-      date: ['', Validators.required],
-      methodePaiement: ['Virement', Validators.required],
-      fichier: [null], // Stockera le fichier sélectionné
-    });
-    // Initialisation du formulaire réactif pour un bon
-    this.bonForm = this.fb.group({
-      numero: ['', Validators.required],
-      date: ['', Validators.required],
-      montant: [0, Validators.required],
-      statut: ['Impayé', Validators.required],
-      type: ['', Validators.required],
-      description: ['', Validators.required],
-      remise: [],
-      avance: [],
-      typePaiement: ['', Validators.required],
-      panier: this.fb.array([]),
-
-      // Champs spécifiques aux avoirs
-      refBonOrigine: [''],
-      motifAvoir: [''],
-      montantAvoir: [''],
-      dateBonOrigine: [''],
-      clientAvoir: [''],
-      fichier: [null], // Stockera le fichier sélectionné
-      // Champs spécifiques aux livraisons
-      adresseLivraison: [''],
-      livreur: [''],
-      telephoneLivreur: [''],
-      dateLivraison: [''],
-      instructionsLivraison: [''],
-    });
   }
 
-  // Méthodes pour gérer l'affichage des composants
-  /* togglePanierComponent(): void {
-    this.showPanierComponent = !this.showPanierComponent;
-    this.showBonComponent = false;
-    this.showPaiementForm = !this.showPaiementForm;
-  } */
- /*  toggleBonComponent(): void {
-    this.showBonComponent = !this.showBonComponent;
-    this.showPanierComponent = false;
-    this.showPaiementForm = false;
-  } */
   onBonEnregistre(bon: Bon): void {
-    console.log('Bon enregistré:', bon);
-    // Associer le bon au fournisseur sélectionné
-    if (this.selectedFournisseur && bon) {
+      console.log('Bon enregistré:', bon);
+
+      if (!this.selectedFournisseur) {
+        this.toastr.error('Aucun fournisseur sélectionné');
+        return;
+      }
+
+      if (!bon.panier || bon.panier.articles.length === 0) {
+        this.toastr.error('Aucun panier à enregistrer pour ce bon');
+        return;
+      }
+
+      //this.toastr.success('bon et panier existent');
+      //console.log(bon)
+
+      // Associer fournisseurId
       bon.fournisseurId = this.selectedFournisseur.id;
-      // Enregistrer le bon
-      this.enregistrerBon(bon);
-    }
-    this.showBonComponent = false;
+
+      // Appel API
+      this.enregistrerBon(bon, bon.panier);
+      this.showBonComponent = false;
   }
+
   
   // Méthodes pour gérer les événements des composants
   onPanierEnregistre(panier: Panier): void {
@@ -250,28 +221,72 @@ export class FournisseursComponent implements OnInit {
     this.showBonComponent = false;
   }
 
-   // Autres méthodes existantes...
-  private enregistrerBon(bon: Bon): void {
-    // Logique pour enregistrer le bon
-    const bonToSave = { 
-      ...bon,
-      code_structure: this.code_structure,
-      magasinId: this.magasinId,
-      agentId: this.agentId,
-     };
-     console.log('Bon enregistré avec succès:', bonToSave.avance, bonToSave.remise, bonToSave.code_structure, bonToSave.magasinId, bonToSave.agentId);
-    /* this.isLoading = true;
-    this.bonService.createBon(bon).pipe(finalize(() => (this.isLoading = false))).subscribe({
-      next: (newBon) => {
-        console.log('Bon enregistré avec succès:', newBon);
-      },
-      error: (err) => {
-        console.error('Erreur lors de l\'enregistrement du bon', err);
-        this.toastr.error('Erreur lors de l\'enregistrement du bon', 'Erreur');
-      },
-    }); */
-    //console.log('Enregistrement du bon:', bon);
+// fournisseurs.component.ts
+private enregistrerBon(bon: Bon, panier: Panier): void {
+  if (!this.selectedFournisseur) {
+    this.toastr.error('Aucun fournisseur sélectionné', 'Erreur');
+    return;
   }
+
+  // Préparer les données pour l'API unifiée
+  const bonCompletData = {
+    bon: {
+      ...bon,
+      fournisseurId: this.selectedFournisseur.id
+    },
+    panier: {
+      ...panier,
+      fournisseurId: this.selectedFournisseur.id
+    },
+    articles: panier.articles.map(article => ({
+      produitId: article.produit?.id,
+      quantite: article.quantite,
+      prixVenteUnitaire: article.prixVenteUnitaire,
+      prixAchatUnitaire: article.prixAchatUnitaire
+    })),
+    code_structure: this.code_structure,
+    magasinId: this.magasinId,
+    agentId: this.agentId,
+    fournisseurId: this.selectedFournisseur.id,
+    typeEntite:this.typeEntite,
+    paiement: bon.avance?? 0 > 0 ? {
+      methodePaiement: 'Caisse',
+      description: `Avance pour bon ${bon.numero}`,
+      typePaiement: 'fournisseur'
+    } : undefined
+  };
+
+  this.isLoading = true;
+
+  this.bonService.createBonComplet(bonCompletData).subscribe({
+    next: (result) => {
+      this.toastr.success('Bon enregistré avec succès!', 'Succès');
+      console.log('✅ Enregistrement complet:', result);
+      this.reinitialiserFormulaires();
+      this.actualiserDonnees();
+    },
+    error: (error) => {
+      console.error('❌ Erreur:', error);
+      this.toastr.error(error.error?.error || 'Erreur lors de l\'enregistrement', 'Erreur');
+    },
+    complete: () => {
+      this.isLoading = false;
+    }
+  });
+}
+// Réinitialisation des formulaires
+private reinitialiserFormulaires() {
+  this.showBonComponent = false;
+  this.showPanierComponent = false;
+  /* this.bonForm.reset();
+  this.panierData = null; */
+}
+
+// Actualisation des données
+private actualiserDonnees() {
+  this.loadData();
+  this.loadDataProduits();
+}
   
   private loadProduitsDisponibles(): void {
     // Charger les produits disponibles
@@ -331,187 +346,6 @@ export class FournisseursComponent implements OnInit {
   }
 
   // Chargement des fournisseurs
-  loadFournisseurs(): void {
-    // Liste des noms des fournisseurs
-    const nomsFournisseurs = [
-      'Dakar Distribution',
-      'Sénégal Agro',
-      'Global Marché',
-      'Thiès Commerce',
-      'Kaolack Import',
-      'Touba Marchandises',
-      'Saint-Louis Trade',
-      'Casamance Export',
-      'Saly Distribution',
-      'Matam Commerce',
-    ];
-
-    const operationTypes = [
-      'COMMANDE',
-      'VERSEMENT',
-      'LIVRAISON',
-      'TICKET_CAISSE',
-      'RETOUR',
-      'AVOIR',
-      'FACTURE',
-    ] as const;
-    const methodePaiement = [
-      'ESPECES',
-      'MOBILE_MONEY',
-      'CARTE_BANCAIRE',
-      'VIREMENT',
-      'CHEQUE',
-    ] as const;
-    const produitsDisponibles = [
-      'Lait',
-      'Sucre',
-      'Riz',
-      'Farine',
-      'Huile',
-      'Pain',
-      'Fromage',
-      'Tomates',
-      'Jus',
-      'Café',
-    ];
-    const bonstuatut = [
-      'brouillon',
-      'commandé',
-      'expédié',
-      'livré',
-      'validé',
-      'retourné',
-      'facturé',
-      'payé',
-      'annulé',
-    ] as const;
-    // Génération des Fournisseurs
-    for (let i = 1; i <= 10; i++) {
-      const fournisseur = new Fournisseur({
-        id: i,
-        nomComplet: nomsFournisseurs[i - 1],
-        email: `fournisseur${i}@example.com`,
-        telephone: `77654${i}210`,
-        banque: `Banque ${i}`,
-        numeroCompte: `SN00BANK${i}45678`,
-        adresse: `Zone ${i}, Ville`,
-        dateCreation: new Date(),
-        montantAPayer: Math.floor(Math.random() * 30000) + 10000,
-        statut: Math.random() < 0.5, // Génère aléatoirement true ou false,
-        bons: [],
-        paiements: [],
-        operations: [],
-      });
-
-      // Génération de 5 bons et paiements par fournisseur
-      for (let j = 1; j <= 5; j++) {
-        // Création du panier avec 3 à 4 produits
-        const nombreProduits = Math.floor(Math.random() * 2) + 3;
-        const panier: {
-          produits: Produits[]; // 👈 Déclare le type explicitement ici !
-          totalHT: number;
-          tva: number;
-          totalTTC: number;
-        } = {
-          produits: [], // ✅ Plus d'erreur
-          totalHT: 0,
-          tva: 0,
-          totalTTC: 0,
-        };
-
-        for (let k = 0; k < nombreProduits; k++) {
-          const prixUnitaire = Math.floor(Math.random() * 1000) + 500;
-          const quantite = Math.floor(Math.random() * 5) + 1;
-
-          const produit = {
-            id: k + 1,
-            designation:
-              produitsDisponibles[Math.floor(Math.random() * produitsDisponibles.length)],
-            quantite: quantite,
-            prixAchatUnitaire: prixUnitaire,
-            prixVenteUnitaire: prixUnitaire,
-            categorieId: 0,
-            fournisseur: '',
-            magasin: '',
-            unite: 'Unité',
-          };
-
-          panier.produits.push(produit);
-          panier.totalHT += prixUnitaire * quantite;
-        }
-
-        panier.tva = panier.totalHT * 0.18;
-        panier.totalTTC = panier.totalHT + panier.tva;
-
-        const bon = new Bon({
-          id: j,
-          numero: `FB${i}${j}`,
-          dateBon: new Date(),
-          description: `Bon fournisseur ${j} du fournisseur ${i}`,
-          montantTotal: Math.floor(Math.random() * 20000) + 2000,
-          remise: Math.floor(Math.random() * 500) + 500,
-          netAPayer:
-            Math.floor(Math.random() * 20000) + 2000 - Math.floor(Math.random() * 500) + 500,
-          resteAPayer: Math.floor(Math.random() * 10000) + 1000,
-          statutBon: bonstuatut[Math.floor(Math.random() * bonstuatut.length)],
-          type: ['Livraison', 'Commande', 'Retour', 'Avoir'][Math.floor(Math.random() * 4)] as
-            | 'Livraison'
-            | 'Commande'
-            | 'Retour'
-            | 'Avoir',
-          numeroFacture: `F-FCT${i}${j}`,
-          fournisseurId: fournisseur.id,
-          //produits:panier.produits
-          panier: panier,
-        });
-
-        const paiement = new Paiement({
-          id: j,
-          numero: `PF${i}${j}`,
-          date: new Date(),
-          description: `Paiement ${j} au fournisseur ${i}`,
-          montant: Math.floor(Math.random() * 10000) + 500,
-          //methodePaiement: Math.floor(Math.random() * 10) + 10, // methodePaiement[Math.floor(Math.random() * methodePaiement.length)],
-          fournisseurId: fournisseur.id,
-          bonId: bon.id,
-        });
-
-        // Création d'une opération associée
-        const operation = new Operation({
-          id: j,
-          clientId: fournisseur.id,
-          bonId: bon.id,
-          paiementId: paiement.id,
-          type: operationTypes[Math.floor(Math.random() * operationTypes.length)],
-          montantPaye: paiement.montant,
-          statut: panier.totalTTC - paiement.montant === 0 ? 'PAYE' : 'PARTIELLEMENT_PAYE',
-          dateOperation: new Date(),
-          moyenPaiement: methodePaiement[Math.floor(Math.random() * methodePaiement.length)],
-        });
-
-        fournisseur.bons.push(bon);
-        fournisseur.paiements.push(paiement);
-        fournisseur.operations.push(operation);
-      }
-
-      this.fournisseurs.push(fournisseur);
-    }
-
-    this.filteredFournisseurs = [...this.fournisseurs];
-    this.updateFilteredFournisseurs();
-
-    // Mise à jour des bons et paiements globaux
-    this.fournisseurs.forEach((fournisseur) => {
-      this.allBons.push(...fournisseur.bons);
-      this.allPaiements.push(...fournisseur.paiements);
-    });
-
-    this.filteredBons = [...this.allBons];
-    this.filteredPaiements = [...this.allPaiements];
-    this.updateFilteredBons();
-    this.updateFilteredPaiements();
-  }
-
   // Méthode pour mettre à jour les fournisseurs affichés en fonction de la page courante
   updateFilteredFournisseurs(): void {
     this.filteredFournisseurs = this.fournisseurs.slice(
@@ -532,17 +366,6 @@ export class FournisseursComponent implements OnInit {
     return `BON-${year}${month}${day}-${hour}${minute}${second}`;
   }
   // Gestion de la recherche
-  /* onSearchChange(): void {
-    this.filteredFournisseurs = this.fournisseurs.filter(fournisseur =>
-      fournisseur.nomComplet.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-      fournisseur.adresse?.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-      fournisseur.telephone?.toString().toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-      fournisseur.banque!.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-      fournisseur.montantAPayer?.toString().toLowerCase().includes(this.searchQuery.toLowerCase())
-    );
-      this.currentPageFournisseur = 1;
-
-  } */
   onSearchChange(): void {
     const query = normalize(this.searchQuery);
 
@@ -641,44 +464,12 @@ export class FournisseursComponent implements OnInit {
   showBonDetails(): void {
     this.showDetails = true;
     this.showBonDetailsSection = true;
-    //this.selectedFournisseur = fournisseur;
-    //this.filteredBonsBis = [...fournisseur.bons];
-    //this.filteredPaiementsBis = [...fournisseur.paiements];
-    //this.currentPageBonBis =1;
-    //this.currentPagePaiement =1;
-    //console.log('Fournisseur sélectionné :', fournisseur.nomComplet);
-    //console.log('Total bons :', this.filteredBons.length, 'Total paiements :', this.filteredPaiements.length);
-    //this.cdr.detectChanges(); // Forcer la mise à jour de l'affichage
-    /* if (type === 'bon') {
-      this.toggleBonComponent();
-    } else if (type === 'panier') {
-      this.togglePanierComponent();
-    } */
     if (!this.selectedFournisseur) return;
     const today = new Date();
     this.startDate = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]; // 1er jour du mois
     this.endDate = today.toISOString().split('T')[0]; // Aujourd'hui
     this.filtrerOperations();
 
-    /* if(typeDetails === 'bon') {
-    //this.updateFilteredBons();
-    //this.selectedBon = this.selectedFournisseur.bons;
-    this.showBonDetailsSection = true;  // Afficher les détails des bons
-    this.showPaiementDetailsSection = false;  // Masquer les détails des paiements
-    //this.updateFilteredBons();
-    //console.log('Bon',this.filteredBons.length);
-    //console.log('Paiement',this.filteredPaiements.length);
-  }
-  else if (typeDetails === 'paiement') {
-    //this.updateFilteredPaiements();
-    //this.selectedPaiement = this.selectedFournisseur.paiements;
-    this.showPaiementDetailsSection = true;  // Afficher les détails des paiements
-    this.showBonDetailsSection = false;  // Masquer les détails des bons
-    //this.updateFilteredPaiements
-  }
-  else{
-    console.log("Pas de détails à affichier")
-  } */
   }
 
   // Fermer les détails (bons ou paiements)
@@ -698,9 +489,9 @@ export class FournisseursComponent implements OnInit {
     this.showPaiementForm = false;
   }
 
-  resetFormPaiement() {
+  /* resetFormPaiement() {
     this.paiementForm.reset();
-  }
+  } */
   toggleDetails(index: number, typeInstance: unknown) {
     if (typeInstance instanceof Fournisseur) {
       this.selectedBonIndexF = this.selectedBonIndexF === index ? null : index;
@@ -762,49 +553,14 @@ export class FournisseursComponent implements OnInit {
           error: (err) => console.error('Erreur chargement données', err),
         });
     }
-  submitBon(): void {
+  /* submitBon(): void {
     console.log('Bon enregistré', this.bonForm.value);
-  }
+  } */
 
   removeProduct(produit: Produits): void {
     const index = this.produitsAjoutes.indexOf(produit);
     if (index > -1) {
       this.produitsAjoutes.splice(index, 1);
-    }
-  }
-
-  // Fonction pour valider et soumettre le bon
-  /* onSubmitBonForm(): void {
-   // Traiter l'envoi du formulaire
-   console.log('Form Submitted', {
-    numero: this.numero,
-    typeBon: this.typeBon,
-    description: this.description,
-    montant: this.montant,
-    dateBon: this.dateBon,
-    dateReceptionPrevu: this.dateReceptionPrevu,
-    dateLivraison: this.dateLivraison,
-    motifsRetour: this.motifsRetour,
-    fichier: this.fichier
-  });
-  this.showProductsSection = true;
-} */
-
-  // Fonction pour afficher ou masquer le formulaire de paiement
-  /* togglePaiementForm(): void {
-    this.showPaiementForm = !this.showPaiementForm;
-  } */
-
-  // Fonction pour soumettre le formulaire du paiement
-  onPaiementFormSubmit(): void {
-    if (this.paiementForm.valid) {
-      // Traitement pour ajouter un paiement
-      const newPaiement = this.paiementForm.value;
-      console.log('Nouveau Paiement:', newPaiement);
-
-      // Réinitialiser le formulaire après soumission
-      this.paiementForm.reset();
-      this.showPaiementForm = false; // Masquer le formulaire
     }
   }
 
@@ -895,14 +651,6 @@ get getPaginatedPaiementsBis() {
 
     this.cdr.detectChanges(); // Forcer la mise à jour de la vue
   }
-
-  /*  onTypeBonChange(): void {
-    // Mettre à jour les champs visibles et désactiver les champs non visibles
-    this.bonForm.get('dateBon')?.updateValueAndValidity();
-    this.bonForm.get('dateReceptionPrevu')?.updateValueAndValidity();
-    this.bonForm.get('dateLivraison')?.updateValueAndValidity();
-    this.bonForm.get('motifsRetour')?.updateValueAndValidity();
-  } */
 
   // Filtrer les bons
   onSearchChangeBon() {
@@ -999,33 +747,7 @@ get getPaginatedPaiementsBis() {
 
     console.log('📌 Opérations filtrées :', this.filteredOperations);
   }
-  selectProduit(prod: Produits) {
-    // Ajouter directement le produit au panier
-    console.log('Produit sélectionné :', prod); // Vérifier que le bon produit est sélectionné
-    this.panier.push(
-      this.fb.group({
-        produit: [prod.designation, Validators.required],
-        uniteStock: [prod.unite, Validators.required],
-        quantite: [1, [Validators.required, Validators.min(1)]],
-        prixUnitaire: [prod.prixVenteUnitaire, Validators.required],
-      }),
-    );
 
-    // Effacer la recherche et la liste des suggestions
-    this.searchInput = '';
-    this.filteredProduits = [];
-    this.updateTotal();
-  }
-  updateTotal(): void {
-    let total = 0;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    this.panier.controls.forEach((group: any) => {
-      total += group.value.quantite * group.value.prixUnitaire;
-    });
-    this.totalPanier = total;
-    this.totalBon = total - this.bonForm.value.remise;
-    this.bonForm.get('total')?.setValue(total);
-  }
   filterProduits() {
     console.log('Recherche :', this.searchInput); // Vérifier si la saisie est bien détectée
     const search = this.searchInput.trim().toLowerCase();
@@ -1038,31 +760,6 @@ get getPaginatedPaiementsBis() {
       this.filteredProduits = [];
     }
   }
-
-  // Désactiver tous les champs du panier et le bouton "Ajouter un article"
-  disablePanier() {
-    this.panier.disable(); // Désactive tous les champs du panier
-    this.panierDisabled = true; // Désactive le bouton "Ajouter un article"
-  }
-
-  // Réinitialiser tous les champs du panier et réactiver le bouton "Ajouter un article"
-  resetPanier() {
-    this.panier.clear(); // Réinitialise tous les champs du panier
-    this.panier.enable(); // Réactive les champs du panier
-    this.panierDisabled = false; // Réactive le bouton "Ajouter un article"
-  }
-
-  enablePanier() {
-    this.panier.enable(); // Réactive tous les champs du panier
-    this.panierDisabled = false;
-  }
-
-  removeArticle(index: number): void {
-    this.panier.removeAt(index);
-    this.filteredProduits.splice(index, 1);
-    this.updateTotal();
-  }
-
   // Méthode pour afficher le formulaire de paiement
   togglePaiementForm(): void {
     this.showBonForm = false;
@@ -1105,9 +802,9 @@ get getPaginatedPaiementsBis() {
       alert(`Le bon Nº ${bon.numero} a été retourné avec succès !`);
     }
   }
-  get panier(): FormArray {
+  /* get panier(): FormArray {
     return this.bonForm.get('panier') as FormArray;
-  }
+  } */
 
   prepareFormData(formsGroup: FormGroup, prop:string): FormData {
     const formData = new FormData();
@@ -1125,103 +822,6 @@ get getPaginatedPaiementsBis() {
 
     return formData;
   }
-  addArticle(): void {
-    this.panier.push(
-      this.fb.group({
-        produit: ['', Validators.required],
-        uniteStock: [''],
-        quantite: [1, Validators.required],
-        prixUnitaire: [0, Validators.required],
-      }),
-    );
-    //this.filteredProduits.push([]);
-  }
-
-  onTypeBonChange(): void {
-    this.typeBon = this.bonForm.get('type')?.value;
-
-    // Réinitialiser les champs inutilisés pour éviter d'enregistrer des valeurs incorrectes
-    if (this.typeBon !== 'avoir') {
-      this.bonForm.patchValue({
-        refBonOrigine: '',
-        motifAvoir: '',
-        montantAvoir: '',
-        dateBonOrigine: '',
-        clientAvoir: '',
-      });
-    }
-
-    if (this.typeBon !== 'livraison') {
-      this.bonForm.patchValue({
-        adresseLivraison: '',
-        livreur: '',
-        telephoneLivreur: '',
-        dateLivraison: '',
-        instructionsLivraison: '',
-      });
-    }
-
-    // Gestion des validations dynamiques
-    this.updateValidations();
-  }
-
-  updateValidations(): void {
-    // Reset des validations
-    const fields = [
-      'refBonOrigine',
-      'motifAvoir',
-      'montantAvoir',
-      'dateBonOrigine',
-      'clientAvoir',
-      'adresseLivraison',
-      'livreur',
-      'telephoneLivreur',
-      'dateLivraison',
-      'instructionsLivraison',
-    ];
-
-    fields.forEach((field) => this.bonForm.get(field)?.clearValidators());
-
-    // Appliquer les validations selon le type de bon
-    if (this.typeBon === 'retour') {
-      this.bonForm.get('refBonOrigine')?.setValidators(Validators.required);
-      this.bonForm.get('motifAvoir')?.setValidators(Validators.required);
-      this.bonForm.get('montantAvoir')?.setValidators([Validators.required, Validators.min(1)]);
-      this.bonForm.get('dateBonOrigine')?.setValidators(Validators.required);
-      this.bonForm.get('clientAvoir')?.setValidators(Validators.required);
-    }
-
-    if (this.typeBon === 'livraison') {
-      this.bonForm.get('adresseLivraison')?.setValidators(Validators.required);
-      this.bonForm.get('livreur')?.setValidators(Validators.required);
-      this.bonForm
-        .get('telephoneLivreur')
-        ?.setValidators([Validators.required, Validators.pattern(/^\d{9,15}$/)]);
-      this.bonForm.get('dateLivraison')?.setValidators(Validators.required);
-      this.bonForm.get('instructionsLivraison')?.setValidators(Validators.maxLength(500));
-    }
-
-    this.bonForm.updateValueAndValidity();
-  }
-
-  onFileSelected(event: Event, formType: 'bon' | 'paiement'): void {
-    const input = event.target as HTMLInputElement;
-
-    if (input.files && input.files.length > 0) {
-      const fichier = input.files[0]; // Récupérer le premier fichier sélectionné
-
-      if (formType === 'bon') {
-        this.bonForm.patchValue({ fichier });
-        this.bonForm.get('fichier')?.updateValueAndValidity();
-      } else if (formType === 'paiement') {
-        this.paiementForm.patchValue({ fichier });
-        this.paiementForm.get('fichier')?.updateValueAndValidity();
-      }
-    }
-  }
-
-  // Assurez-vous d'avoir une liste de tous les bons
-  bons: unknown[] = []; // Remplir avec les bons correspondants
 
   // Fonction pour valider un bon
   validerBon(bon: Bon): void {

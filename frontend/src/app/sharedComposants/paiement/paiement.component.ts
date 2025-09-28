@@ -14,7 +14,7 @@ export class PaiementComponent implements OnInit {
 
   @Input() showPaiementForm  = false;
   @Input() titre = 'Formulaire d\'ajout d\'un paiement';
-  @Input() typeEntite: 'client' | 'fournisseur' = 'client';
+  @Input() typeEntite: 'client' | 'fournisseur' = 'fournisseur';
   @Input() entiteId?: number;
   @Input() entiteNom?: string;
   @Input() showFichierField= true;
@@ -74,6 +74,7 @@ export class PaiementComponent implements OnInit {
       montant: formValue.montant,
       date: new Date(formValue.date),
       methodePaiement: formValue.methodePaiement,
+      //typeEntite:this.typeEntite,
       //remise: formValue.remise,
       //avance: formValue.avance,
       fichierFile: this.fichierSelectionne || undefined

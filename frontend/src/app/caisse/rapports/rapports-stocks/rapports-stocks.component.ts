@@ -587,7 +587,7 @@ export class RapportsStocksComponent implements OnInit {
 } */
 
   getStatProduit(prod: Produits) {
-    const prixUnitaire = this.getDernierPrixAchatById(prod.id);
+    const prixUnitaire = this.getDernierPrixAchatById(prod.id?? 0);
     return MouvementsStock.calculerStatistiques(
       this.filteredMouvements,
       this.stocks,
@@ -595,7 +595,7 @@ export class RapportsStocksComponent implements OnInit {
       new Date(this.dateDebut),
       new Date(this.dateFin),
       this.selectedMagasinId,
-      prod.id,
+      prod.id?? 0,
     );
   }
 
@@ -841,12 +841,12 @@ export class RapportsStocksComponent implements OnInit {
         designation: produit.designation,
         categorieId: produit.categorieId,
         unite: produit.unite,
-        prixAchat: this.getDernierPrixAchatById(produit.id),
+        prixAchat: this.getDernierPrixAchatById(produit.id?? 0),
         stockInitial: `${stat.stockInitial} (${stat.valeurStockInitial?.toFixed(2)})`,
         entrees: stat.entrees,
         sorties: stat.sorties,
         stockFinal: `${stat.stockFinal} (${stat.valeurStockFinal?.toFixed(2)})`,
-        statut: this.getStatutProduitById(produit.id),
+        statut: this.getStatutProduitById(produit.id?? 0),
       });
     });
 
@@ -945,7 +945,7 @@ export class RapportsStocksComponent implements OnInit {
     if (typeSearch === 'stock') {
       this.filteredProduits = this.allProduits.filter((prod) =>
         //this.removeAccents(prod.famille?.toLowerCase()).includes(search) ||
-        this.removeAccents(this.getStatutProduitById(prod.id).toLowerCase()).includes(search),
+        this.removeAccents(this.getStatutProduitById(prod?.id?? 0).toLowerCase()).includes(search),
       );
       this.currentPage = 1;
     } else if (typeSearch === 'mouvement') {

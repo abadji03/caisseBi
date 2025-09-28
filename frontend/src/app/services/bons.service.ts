@@ -5,6 +5,8 @@ import { Bon } from '../modeles/bon.model';
 import { NGXLogger } from 'ngx-logger';
 import { AuthService } from './auth.service';
 const API_URL = 'http://localhost:5000/api/bons'; 
+const API_URL_BIS = 'http://localhost:5000/api/bons-complet'; 
+
 
 @Injectable({
   providedIn: 'root'
@@ -25,6 +27,13 @@ export class BonsService {
   private handleError(error: Bon): Observable<never> {
     this.logger.error('Erreur API Bon:', error);
     return throwError(() => error);
+  }
+
+  // bon.service.ts (frontend)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  createBonComplet(bonCompletData: any): Observable<any> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return this.http.post<any>(`${API_URL_BIS}/complet`, bonCompletData);
   }
 
   createBon(data: Bon): Observable<Bon> {

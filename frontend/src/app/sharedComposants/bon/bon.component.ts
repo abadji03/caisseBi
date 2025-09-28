@@ -1,4 +1,3 @@
-/* eslint-disable prefer-const */
 import { Component, EventEmitter, inject, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -18,9 +17,10 @@ export class BonComponent implements OnInit{
   
  @Input() produitsDisponibles: Produits[] = [];
   @Input() showBonForm = false;
-  @Input() typeEntite: 'client' | 'fournisseur' = 'client';
+  @Input() typeEntite: 'client' | 'fournisseur' = 'fournisseur';
   @Input() entiteId?: number;
   @Input() entiteNom?: string;
+  @Input() showFileField = true;
   
   // eslint-disable-next-line @angular-eslint/no-output-on-prefix
   @Output() onEnregistrerBon = new EventEmitter<Bon>();
@@ -43,6 +43,9 @@ export class BonComponent implements OnInit{
   // Variables pour le panier intégré
   showPanier = true;
   panierData: Panier | null = null;
+
+  fichierSelectionne: File | null = null;
+
   
   private fb = inject(FormBuilder);
   
@@ -178,6 +181,14 @@ export class BonComponent implements OnInit{
     return `BON-${timestamp}-${random}`;
   }
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onFileSelected(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      this.fichierSelectionne = file;
+    }
+  }
+
   onTypeBonChange(): void {
     this.typeBon = this.bonForm.get('type')?.value;
     if (this.typeBon === 'commande' || this.typeBon === 'livraison') {
@@ -195,16 +206,34 @@ export class BonComponent implements OnInit{
   }
   
   submitBon(): void {
-    if (this.bonForm.valid) {
+    /* if (this.bonForm.valid) {
       const bonData: Bon = this.prepareBonData();
       console.log('Bon à enregistrer :', bonData);
+      // ⚡️ Associer le panierData si présent
+      if (this.panierData) {
+        bonData.panier = this.panierData;
+      }
       this.onEnregistrerBon.emit(bonData);
+    } */
+   if (this.bonForm.valid) {
+      const bonData: Bon = this.prepareBonData();
+
+      if (!this.panierData || this.panierData.articles.length === 0) {
+        console.log('Veuillez ajouter des articles au panier avant d’enregistrer le bon');
+        return;
+      }
+
+      console.log('Bon à enregistrer :', bonData);
+      this.onEnregistrerBon.emit(bonData);
+    } else {
+      console.log('Veuillez remplir correctement le formulaire du bon');
     }
   }
 
    // Méthode pour gérer l'événement du panier
   onPanierEnregistre(panier: Panier): void {
     this.panierData = panier;
+    console.log("Dépuis bon : "+this.panierData );
   }
   
   // Méthode pour gérer l'annulation du panier
@@ -212,7 +241,7 @@ export class BonComponent implements OnInit{
     this.panierData = null;
   }
 
-prepareBonData(): Bon {
+/* prepareBonData(): Bon {
   const formValue = this.bonForm.value;
   // Récupérer remise et avance du formulaire bon
     const remise = Number(formValue.remise) || 0;
@@ -258,10 +287,86 @@ prepareBonData(): Bon {
     dateBon: new Date(),
     statutBon: 'brouillon'
   });
+} */
+
+prepareBonData(): Bon {
+  const formValue = this.bonForm.value;
+  const remise = Number(formValue.remise) || 0;
+  const avance = Number(formValue.avance) || 0;
+  const base = this.montantBase;
+
+  if (this.modeMontant === 'panier' && this.panierData) {
+     /* const panierInstance = new Panier({
+      ...this.panierData,
+      typeEntite: this.typeEntite || 'fournisseur',
+      
+    }); */
+    
+    // Correction : Créez des objets Produits valides avec toutes les propriétés requises
+    /* const produits = this.panierData.articles
+      .filter(article => article.produit) // Filtre les produits undefined
+      .map(article => {
+        // Créez un nouvel objet Produits avec des valeurs par défaut
+        return new Produits({
+          id: article.produit?.id || 0,
+          categorieId: article.produit?.categorieId || 0,
+          designation: article.produit?.designation || 'Produit sans nom',
+          fournisseurId: article.produit?.fournisseurId,
+          unite: article.produit?.unite || 'unité',
+          prixAchatUnitaire: article.produit?.prixAchatUnitaire,
+          prixVenteUnitaire: article.produit?.prixVenteUnitaire || 0,
+          perissable: article.produit?.perissable || false,
+          description: article.produit?.description,
+          codeBarre: article.produit?.codeBarre,
+          image: article.produit?.image,
+          dateCreation: article.produit?.dateCreation || new Date(),
+          agentId: article.produit?.agentId,
+          dernierPrixAchat: article.produit?.dernierPrixAchat,
+          statut: article.produit?.statut ?? true,
+          // Note: quantite n'est pas une propriété normale de Produits,
+          // mais nous l'ajoutons temporairement pour le panier
+          //quantite: article.quantite
+        });
+      }); */
+
+    return new Bon({
+      numero: this.generatedNumero,
+      type: formValue.type,
+      description: formValue.description,
+      montantTotal: base - remise,
+      remise,
+      typeEntite:this.typeEntite,
+      avance,
+      netAPayer: base - remise - avance,
+      resteAPayer: base - remise - avance,
+      dateBon: new Date(),
+      statutBon: 'brouillon',
+      panier: this.panierData ?? undefined /* {
+        produits: produits,
+        totalHT: this.panierData.totalHT,
+        tva: this.panierData.tva,
+        totalTTC: this.panierData.totalTTC
+      } */
+    });
+  }
+
+  return new Bon({
+    numero: this.generatedNumero,
+    type: formValue.type,
+    description: formValue.description,
+    montantTotal: base - remise,
+    typeEntite:'fournisseur',
+    remise,
+    avance,
+    netAPayer: base - remise - avance,
+    resteAPayer: base - remise - avance,
+    dateBon: new Date(),
+    statutBon: 'brouillon'
+  });
 }
 
 // Dans BonComponent
-get produitsPanier(): Produits[] {
+/* get produitsPanier(): Produits[] {
   if (!this.panierData) return [];
   
   return this.panierData.articles.map(article => {
@@ -271,7 +376,34 @@ get produitsPanier(): Produits[] {
       prixVenteUnitaire: article.prixVenteUnitaire
     };
   });
-}
+} */
+
+// Correction de la méthode get produitsPanier()
+/* get produitsPanier(): Produits[] {
+  if (!this.panierData) return [];
+  
+  return this.panierData.articles
+    .filter(article => article.produit)
+    .map(article => {
+      return new Produits({
+        id: article.produit!.id || 0,
+        categorieId: article.produit!.categorieId || 0,
+        designation: article.produit!.designation || '',
+        fournisseurId: article.produit!.fournisseurId,
+        unite: article.produit!.unite || '',
+        prixAchatUnitaire: article.produit!.prixAchatUnitaire,
+        prixVenteUnitaire: article.produit!.prixVenteUnitaire || 0,
+        perissable: article.produit!.perissable || false,
+        description: article.produit!.description,
+        codeBarre: article.produit!.codeBarre,
+        image: article.produit!.image,
+        dateCreation: article.produit!.dateCreation || new Date(),
+        agentId: article.produit!.agentId,
+        dernierPrixAchat: article.produit!.dernierPrixAchat,
+        statut: article.produit!.statut ?? true
+      });
+    });
+} */
   
   annulerBon(): void {
     this.bonForm.reset();

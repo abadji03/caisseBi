@@ -14,6 +14,8 @@ export class Panier {
   totalTTC = 0;
   remise = 0;
   avance = 0;
+  //typeEntite!:'client' | 'fournisseur';
+  code_structure?:string;
   statut: 'EN_COURS' | 'VALIDE' | 'ANNULE' = 'EN_COURS';
   dateCreation: Date = new Date();
   dateMiseAJour: Date = new Date();
@@ -21,12 +23,13 @@ export class Panier {
   magasinId?: number;
   agentId?: number;
   paiements?: Paiement[];
+
   constructor(data?: Partial<Panier>) {
     Object.assign(this, data);
     this.calculerTotals();
   }
 
-  // ✅ Nouvelle méthode pour calculer les totaux
+  // Nouvelle méthode pour calculer les totaux
   public calculerTotals(): void {
     this.totalHT = this.articles.reduce((sum, article) => {
       const quantite = article.quantite ?? 0;
@@ -44,8 +47,10 @@ export class Panier {
 }
 
 export class ArticlePanier {
-  id!: number;
-  produit!: Produits;
+  id?: number;
+  produitId?: number;
+  panierId?: number;
+  produit?: Produits;
   quantite!: number;
   prixVenteUnitaire!: number;
   prixAchatUnitaire!: number;

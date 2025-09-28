@@ -8,5 +8,9 @@ router.get('/', controller.findAll);
 router.get('/:id', controller.findById);
 router.put('/:id', controller.update);
 router.delete('/:id', controller.delete);
+//Récupérer les aticles de panier d’une structure
+router.get('/structure/:code_structure', controller.getArticlesPanierByStructure);
+router.post('/batch', controller.createBatch);
+
 
 module.exports = router;
