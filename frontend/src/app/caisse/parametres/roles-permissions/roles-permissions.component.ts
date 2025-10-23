@@ -1,9 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { finalize } from 'rxjs/operators';
+import { finalize, takeUntil } from 'rxjs/operators';
 import { Permission, Role, RolePermission } from '../../../modeles/role-permission.model';
 import { RolePermissionsService } from '../../../services/role-permissions.service';
+import { Subject } from 'rxjs';
 
 @Component({
   selector: 'app-roles-permissions',
@@ -12,12 +13,14 @@ import { RolePermissionsService } from '../../../services/role-permissions.servi
   templateUrl: './roles-permissions.component.html',
   styleUrls: ['./roles-permissions.component.css'],
 })
-export class RolesPermissionsComponent implements OnInit {
+export class RolesPermissionsComponent implements OnInit, OnDestroy {
   isEditMode = false;
   isLoading = false;
   roles: Role[] = [];
   allPermissions: Permission[] = [];
   currentRoleId: number | null = null;
+
+  private destroy$ = new Subject<void>();
 
   rolePermission1: RolePermission | null = null;
 
@@ -37,11 +40,19 @@ export class RolesPermissionsComponent implements OnInit {
     this.loadAllPermissions();
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   loadRoles(): void {
     this.isLoading = true;
     this.rolePermissionsService
       .getAllRoles()
-      .pipe(finalize(() => (this.isLoading = false)))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.isLoading = false))
+      )
       .subscribe({
         next: (roles) => (this.roles = roles.filter((m) => m.id !== 1)),
         error: (err) => console.error('Erreur lors du chargement des rôles', err),
@@ -49,7 +60,9 @@ export class RolesPermissionsComponent implements OnInit {
   }
 
   loadAllPermissions(): void {
-    this.rolePermissionsService.getAllPermissions().subscribe({
+    this.rolePermissionsService.getAllPermissions()
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
       next: (permissions) => (this.allPermissions = permissions),
       error: (err) => console.error('Erreur lors du chargement des permissions', err),
     });
@@ -71,7 +84,9 @@ export class RolesPermissionsComponent implements OnInit {
     this.isEditMode = true;
     this.currentRoleId = role.id!;
 
-    this.rolePermissionsService.getPermissionsIdByRole(role.id!).subscribe({
+    this.rolePermissionsService.getPermissionsIdByRole(role.id!)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
       next: (rolePermissions) => {
         this.roleForm.patchValue({
           name: role.nom,
@@ -99,7 +114,9 @@ export class RolesPermissionsComponent implements OnInit {
 
     if (this.isEditMode && this.currentRoleId) {
       // Mise à jour du rôle
-      this.rolePermissionsService.updateRole(this.currentRoleId, roleData).subscribe({
+      this.rolePermissionsService.updateRole(this.currentRoleId, roleData)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
         next: () => {
           // Mise à jour des permissions
           this.rolePermissionsService
@@ -116,7 +133,9 @@ export class RolesPermissionsComponent implements OnInit {
       });
     } else {
       // Création d'un nouveau rôle
-      this.rolePermissionsService.createRole(roleData).subscribe({
+      this.rolePermissionsService.createRole(roleData)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
         next: (newRole) => {
           // Assignation des permissions
           this.rolePermissionsService
@@ -149,7 +168,9 @@ export class RolesPermissionsComponent implements OnInit {
       this.isLoading = true;
 
       // D'abord, récupérer les permissions associées au rôle
-      this.rolePermissionsService.getPermissionsIdByRole(roleId).subscribe({
+      this.rolePermissionsService.getPermissionsIdByRole(roleId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
         next: (rolePermissions) => {
           const permissionIds = rolePermissions.permissionIds || [];
 
@@ -183,7 +204,9 @@ export class RolesPermissionsComponent implements OnInit {
   }
 
   private deleteRoleFinally(roleId: number): void {
-    this.rolePermissionsService.deleteRole(roleId).subscribe({
+    this.rolePermissionsService.deleteRole(roleId)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
       next: () => {
         this.isLoading = false;
         this.loadRoles();

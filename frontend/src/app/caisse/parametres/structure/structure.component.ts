@@ -1,5 +1,5 @@
 // structure.component.ts
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import {
   FormBuilder,
   FormGroup,
@@ -15,7 +15,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { NgbModal, NgbModalModule } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
-import { finalize } from 'rxjs';
+import { finalize, Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-structure',
@@ -31,7 +31,7 @@ import { finalize } from 'rxjs';
   templateUrl: './structure.component.html',
   styleUrl: './structure.component.css',
 })
-export class StructureComponent implements OnInit {
+export class StructureComponent implements OnInit, OnDestroy {
   structures: Structure[] = [];
   generalForm!: FormGroup;
   isEditMode = false;
@@ -49,11 +49,19 @@ export class StructureComponent implements OnInit {
   private authService = inject(AuthService);
   private modalService = inject(NgbModal);
   private toastr = inject(ToastrService);
+  
+  private destroy$ = new Subject<void>();
+
 
   ngOnInit(): void {
     this.initForm();
     this.checkUserRole();
     this.loadData();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   initForm(): void {
@@ -114,7 +122,10 @@ export class StructureComponent implements OnInit {
     this.isloading = true;
     this.structureService
       .getAll()
-      .pipe(finalize(() => (this.isloading = false)))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.isloading = false))
+      )
       .subscribe((data) => {
         this.structures = data;
       });
@@ -123,7 +134,10 @@ export class StructureComponent implements OnInit {
   loadStructureDetails(id: number): void {
     this.structureService
       .getById(id)
-      .pipe(finalize(() => (this.isloading = false)))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.isloading = false))
+      )
       .subscribe((structure) => {
         this.selectedStructure = structure;
         this.currentStructureId = structure.id!;
@@ -167,7 +181,10 @@ export class StructureComponent implements OnInit {
 
     this.structureService
       .updateStatus(structure.id!, newStatus)
-      .pipe(finalize(() => (this.isloading = false)))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.isloading = false))
+      )
       .subscribe({
         next: () => {
           this.toastr.success('Statut mis à jour avec succès');
@@ -193,7 +210,10 @@ export class StructureComponent implements OnInit {
       if (this.isEditMode && this.currentStructureId) {
         this.structureService
           .update(this.currentStructureId, formData)
-          .pipe(finalize(() => (this.isloading = false)))
+          .pipe(
+            takeUntil(this.destroy$),
+            finalize(() => (this.isloading = false))
+          )
           .subscribe({
             next: () => {
               //alert('Structure mise à jour avec succès!');
@@ -211,7 +231,10 @@ export class StructureComponent implements OnInit {
       } else {
         this.structureService
           .create(formData)
-          .pipe(finalize(() => (this.isloading = false)))
+          .pipe(
+            takeUntil(this.destroy$),
+            finalize(() => (this.isloading = false))
+          )
           .subscribe({
             next: () => {
               //alert('Structure créée avec succès!');

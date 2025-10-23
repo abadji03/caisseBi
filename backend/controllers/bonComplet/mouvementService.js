@@ -108,22 +108,34 @@ class MouvementService {
   determinerTypeMouvement(bon) {
     const matrice = {
       'Commande-client': 'Sortie',
-      'Commande-fournisseur': 'Entree',
+      'Commande-fournisseur': 'null',
       'Livraison-client': 'Sortie',
       'Livraison-fournisseur': 'Entree',
       'Retour-client': 'Entree',
       'Retour-fournisseur': 'Sortie'
     };
-    return matrice[`${bon.type}-${bon.typeEntite}`] || 'Sortie';
+    const cle = `${bon.type}-${bon.typeEntite}`;
+    const typeMouvement = matrice[cle];
+    console.log(`Détermination mouvement - Clé: ${cle}, Résultat: ${typeMouvement}`);
+    
+    return typeMouvement;
+    //return matrice[`${bon.type}-${bon.typeEntite}`] || 'Sortie';
   }
 
   /**
    * Traiter un mouvement de stock si le statut le nécessite
    */
   async traiterMouvementStock(article, bon, magasinId, agentId, code_structure, transaction) {
-    const statutsAvecMouvement = ['livré', 'validé', 'facturé', 'payé', 'retourné'];
-    if (!statutsAvecMouvement.includes(bon.statutBon)) return;
+    // const statutsAvecMouvement = ['livré', 'validé', 'facturé', 'payé', 'retourné'];
+    // if (!statutsAvecMouvement.includes(bon.statutBon)) return;
 
+    const typeMouvement = this.determinerTypeMouvement(bon);
+    
+    // Si pas de mouvement défini, ne rien faire
+    if (!typeMouvement) {
+      console.log(`⏭️ Aucun mouvement nécessaire pour ${bon.type}-${bon.typeEntite}`);
+      return;
+    }
     const stock = await stockManager.trouverOuCreerStock(
       article.produitId || article.produit?.id,
       magasinId,
@@ -131,7 +143,7 @@ class MouvementService {
       transaction
     );
 
-    const typeMouvement = this.determinerTypeMouvement(bon);
+    //const typeMouvement = this.determinerTypeMouvement(bon);
     await this.executerMouvementPhysique(article, stock, typeMouvement, bon, agentId, code_structure, transaction);
   }
 
@@ -139,12 +151,17 @@ class MouvementService {
    * Exécuter le mouvement physique
    */
   async executerMouvementPhysique(article, stock, typeMouvement, bon, agentId, code_structure, transaction) {
-    let nouvelleQuantite = stock.quantiteTotale;
+    
+    const ancienneQuantite = stock.quantiteTotale;
+    let nouvelleQuantite = ancienneQuantite;
+
+    console.log(`Mouvement ${typeMouvement} - Produit: ${article.produitId}, Quantité: ${article.quantite}`);
 
     if (typeMouvement === 'Entree') {
       nouvelleQuantite += article.quantite;
-    } else {
-      const stockDisponible = stock.quantiteTotale - stock.quantiteReservee;
+    } 
+    else {
+      const stockDisponible = ancienneQuantite - stock.quantiteReservee;
       if (stockDisponible < article.quantite) {
         throw new Error(`Stock insuffisant pour le produit ${article.produitId}. Disponible: ${stockDisponible}`);
       }
@@ -172,7 +189,7 @@ class MouvementService {
         stockId: stock.id,
         typeMouvement,
         quantite: article.quantite,
-        prixUnitaire: article.prixVenteUnitaire,
+        prixUnitaire: typeMouvement === 'Entree' ? article.prixAchatUnitaire : article.prixVenteUnitaire,
         acteurId: agentId,
         description: this.genererDescriptionMouvement(bon, article, typeMouvement),
         motif: `${bon.type} - ${bon.typeEntite} - ${bon.statutBon}`,
@@ -182,6 +199,7 @@ class MouvementService {
       },
       { transaction }
     );
+    console.log(`Mouvement ${typeMouvement} exécuté - Stock: ${ancienneQuantite} → ${nouvelleQuantite}`);
   }
 
   /**
@@ -197,7 +215,10 @@ class MouvementService {
       'Retour-fournisseur': 'Retour fournisseur'
     };
     const cle = `${bon.type}-${bon.typeEntite}`;
-    return `${actions[cle] || `Mouvement ${typeMouvement}`} - Bon ${bon.numero}`;
+    const action = actions[cle] || `Mouvement ${typeMouvement}`;
+    
+    return `${action} - Bon ${bon.numero}`;
+    //return `${actions[cle] || `Mouvement ${typeMouvement}`} - Bon ${bon.numero}`;
   }
 }
 

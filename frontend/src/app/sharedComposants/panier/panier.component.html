@@ -49,7 +49,7 @@
               (click)="selectProduit(prod)"
             >
               {{ prod.designation }}
-              <small class="text-muted"> - {{ prod.prixVenteUnitaire }} FCFA</small>
+              <small class="text-muted"> - {{typeEntite === 'fournisseur' ? prod.prixAchatUnitaire : prod.prixVenteUnitaire }} FCFA</small>
             </button>
           </div>
         </div>
@@ -123,9 +123,12 @@
             </td>
             <td>
               <input type="number" class="form-control" formControlName="prixUnitaire" />
+              <small class="text-muted">
+                {{ typeEntite === 'fournisseur' ? 'Achat' : 'Vente' }}
+              </small>
             </td>
             <td>
-              <button type="button" class="btn btn-danger" (click)="removeArticle(i)">🗑</button>
+              <button *ngIf="!isFormDisabled" type="button" class="btn btn-danger" (click)="removeArticle(i)"><i class="bi bi-trash"></i></button>
             </td>
           </tr>
         </tbody>

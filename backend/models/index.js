@@ -303,7 +303,7 @@ db.Bon.belongsTo(db.Structure, { foreignKey: 'code_structure', targetKey: 'code_
 //Relation entre Panier et les autres tables
 db.Client.hasMany(db.Panier, { foreignKey: 'clientId' });
 db.Panier.belongsTo(db.Client, { foreignKey: 'clientId' });
-db.Bon.hasMany(db.Panier, { foreignKey: 'bonId' });
+db.Bon.hasOne(db.Panier, { foreignKey: 'bonId' });
 db.Panier.belongsTo(db.Bon, { foreignKey: 'bonId' });
 db.Magasin.hasMany(db.Panier, { foreignKey: 'magasinId' });
 db.Panier.belongsTo(db.Magasin, { foreignKey: 'magasinId' });

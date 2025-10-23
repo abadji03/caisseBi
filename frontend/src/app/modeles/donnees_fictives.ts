@@ -2800,7 +2800,7 @@ export const paniers: Panier[] = [
     magasinId: 1,
     agentId: 101,
     dateCreation: new Date('2025-05-01T10:15:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[0],
@@ -2842,7 +2842,7 @@ export const paniers: Panier[] = [
     magasinId: 1,
     agentId: 102,
     dateCreation: new Date('2025-05-02T11:30:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[1],
@@ -2877,7 +2877,7 @@ export const paniers: Panier[] = [
     magasinId: 1,
     agentId: 101,
     dateCreation: new Date('2025-05-03T14:45:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[5],
@@ -2912,7 +2912,7 @@ export const paniers: Panier[] = [
     magasinId: 1,
     agentId: 102,
     dateCreation: new Date('2025-05-04T16:20:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[6],
@@ -2940,7 +2940,7 @@ export const paniers: Panier[] = [
     magasinId: 1,
     agentId: 101,
     dateCreation: new Date('2025-05-05T09:10:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[8],
@@ -2975,7 +2975,7 @@ export const paniers: Panier[] = [
     magasinId: 1,
     agentId: 102,
     dateCreation: new Date('2025-05-06T17:30:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[0],
@@ -3017,7 +3017,7 @@ export const paniers: Panier[] = [
     magasinId: 1,
     agentId: 101,
     dateCreation: new Date('2025-05-07T12:45:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[2],
@@ -3059,7 +3059,7 @@ export const paniers: Panier[] = [
     magasinId: 1,
     agentId: 102,
     dateCreation: new Date('2025-05-08T15:20:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[5],
@@ -3101,7 +3101,7 @@ export const paniers: Panier[] = [
     magasinId: 1,
     agentId: 101,
     dateCreation: new Date('2025-05-09T11:10:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[8],
@@ -3129,7 +3129,7 @@ export const paniers: Panier[] = [
     magasinId: 1,
     agentId: 102,
     dateCreation: new Date('2025-05-10T18:30:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[0],
@@ -3180,7 +3180,7 @@ export const paniers: Panier[] = [
     magasinId: 2,
     agentId: 103,
     dateCreation: new Date('2025-05-01T09:15:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[10],
@@ -3215,7 +3215,7 @@ export const paniers: Panier[] = [
     magasinId: 2,
     agentId: 103,
     dateCreation: new Date('2025-05-02T10:30:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[11],
@@ -3250,7 +3250,7 @@ export const paniers: Panier[] = [
     magasinId: 2,
     agentId: 103,
     dateCreation: new Date('2025-05-03T13:45:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[14],
@@ -3285,7 +3285,7 @@ export const paniers: Panier[] = [
     magasinId: 2,
     agentId: 103,
     dateCreation: new Date('2025-05-04T15:20:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[15],
@@ -3313,7 +3313,7 @@ export const paniers: Panier[] = [
     magasinId: 2,
     agentId: 103,
     dateCreation: new Date('2025-05-05T08:10:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[17],
@@ -3348,7 +3348,7 @@ export const paniers: Panier[] = [
     magasinId: 2,
     agentId: 103,
     dateCreation: new Date('2025-05-06T16:30:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[10],
@@ -3390,7 +3390,7 @@ export const paniers: Panier[] = [
     magasinId: 2,
     agentId: 103,
     dateCreation: new Date('2025-05-07T11:45:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[11],
@@ -3432,7 +3432,7 @@ export const paniers: Panier[] = [
     magasinId: 2,
     agentId: 103,
     dateCreation: new Date('2025-05-08T14:20:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[16],
@@ -3467,7 +3467,7 @@ export const paniers: Panier[] = [
     magasinId: 2,
     agentId: 103,
     dateCreation: new Date('2025-05-09T10:10:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[17],
@@ -3495,7 +3495,7 @@ export const paniers: Panier[] = [
     magasinId: 2,
     agentId: 103,
     dateCreation: new Date('2025-05-10T17:30:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[10],
@@ -3546,7 +3546,7 @@ export const paniers: Panier[] = [
     magasinId: 3,
     agentId: 104,
     dateCreation: new Date('2025-05-01T08:15:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[20],
@@ -3581,7 +3581,7 @@ export const paniers: Panier[] = [
     magasinId: 3,
     agentId: 105,
     dateCreation: new Date('2025-05-02T09:30:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[21],
@@ -3616,7 +3616,7 @@ export const paniers: Panier[] = [
     magasinId: 3,
     agentId: 104,
     dateCreation: new Date('2025-05-03T12:45:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[24],
@@ -3651,7 +3651,7 @@ export const paniers: Panier[] = [
     magasinId: 3,
     agentId: 105,
     dateCreation: new Date('2025-05-04T14:20:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[25],
@@ -3679,7 +3679,7 @@ export const paniers: Panier[] = [
     magasinId: 3,
     agentId: 104,
     dateCreation: new Date('2025-05-05T07:10:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[27],
@@ -3714,7 +3714,7 @@ export const paniers: Panier[] = [
     magasinId: 3,
     agentId: 105,
     dateCreation: new Date('2025-05-06T15:30:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[20],
@@ -3756,7 +3756,7 @@ export const paniers: Panier[] = [
     magasinId: 3,
     agentId: 104,
     dateCreation: new Date('2025-05-07T10:45:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[21],
@@ -3798,7 +3798,7 @@ export const paniers: Panier[] = [
     magasinId: 3,
     agentId: 105,
     dateCreation: new Date('2025-05-08T13:20:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[26],
@@ -3833,7 +3833,7 @@ export const paniers: Panier[] = [
     magasinId: 3,
     agentId: 104,
     dateCreation: new Date('2025-05-09T09:10:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[27],
@@ -3861,7 +3861,7 @@ export const paniers: Panier[] = [
     magasinId: 3,
     agentId: 105,
     dateCreation: new Date('2025-05-10T16:30:00'),
-    statut: 'VALIDE',
+    statut: 'validé',
     articles: [
       new ArticlePanier({
         produit: produits[20],

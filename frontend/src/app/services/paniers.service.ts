@@ -80,4 +80,10 @@ export class PaniersService {
     return this.http.patch<Panier>(`${API_URL}/${id}/reset`, {}, { headers: this.getHeaders() })
       .pipe(catchError(err => this.handleError(err)));
   }
+  getPanierByBonId(bonId: number): Observable<Panier> {
+  return this.http.get<Panier>(`${API_URL}/bon/${bonId}`, {
+    headers: this.getHeaders(),
+  }).pipe(catchError(err => this.handleError(err)));
+}
+
 }

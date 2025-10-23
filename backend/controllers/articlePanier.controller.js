@@ -102,3 +102,27 @@ exports.getArticlesPanierByStructure = async (req, res) => {
     return res.status(500).json({ message: 'Erreur lors de la récupération des articles' });
   }
 };
+
+// Supprimer un article spécifique d’un panier
+exports.deleteArticleFromPanier = async (req, res) => {
+  try {
+    const { panierId, id } = req.params;
+
+    if (!panierId || !id) {
+      return res.status(400).json({ message: 'panierId et produitId sont requis' });
+    }
+
+    const deleted = await ArticlePanier.destroy({
+      where: { panierId, id },
+    });
+
+    if (!deleted) {
+      return res.status(404).json({ message: 'Aucun article correspondant trouvé dans ce panier' });
+    }
+
+    res.status(200).json({ message: 'Article supprimé du panier avec succès' });
+  } catch (error) {
+    console.error('Erreur lors de la suppression de l’article du panier:', error);
+    res.status(500).json({ message: 'Erreur serveur lors de la suppression' });
+  }
+};

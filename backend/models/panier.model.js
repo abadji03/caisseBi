@@ -6,12 +6,16 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DECIMAL(12, 2),
       defaultValue: 0,
     },
-    /* typeEntite: {
+    typeEntite: {
       type: DataTypes.ENUM('client', 'fournisseur'),
       allowNull: false,
       defaultValue: 'fournisseur'
-    }, */
+    },
     tva: {
+      type: DataTypes.DECIMAL(12, 2),
+      defaultValue: 0,
+    },
+    tauxTVA: {
       type: DataTypes.DECIMAL(12, 2),
       defaultValue: 0,
     },
@@ -20,7 +24,7 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: 0,
     },
     statut: {
-      type: DataTypes.ENUM('EN_COURS', 'VALIDE', 'ANNULE'),
+      type: DataTypes.ENUM('en_cours', 'validé', 'annulé'),
       defaultValue: 'EN_COURS',
     },
     dateCreation: {

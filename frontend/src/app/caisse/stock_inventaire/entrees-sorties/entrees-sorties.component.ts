@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnDestroy, OnInit } from '@angular/core';
 import {
   FormBuilder,
   FormGroup,
@@ -15,7 +15,7 @@ import {
 } from '../../../modeles/entrees-sorties.model';
 import { Produits } from '../../../modeles/produit.modele';
 import { Fournisseur } from '../../../modeles/fournisseur.model';
-import { finalize, forkJoin } from 'rxjs';
+import { finalize, forkJoin, Subject, takeUntil } from 'rxjs';
 import { ProduitsService } from '../../../services/produits.service';
 import { StockInventaireService } from '../../../services/stock-inventaire.service';
 import { ToastrService } from 'ngx-toastr';
@@ -28,7 +28,7 @@ import { ReconciliationService } from '../../../services/reconciliation.service'
   templateUrl: './entrees-sorties.component.html',
   styleUrl: './entrees-sorties.component.css',
 })
-export class EntreesSortiesComponent implements OnInit {
+export class EntreesSortiesComponent implements OnInit, OnDestroy {
   pageSize = 5;
 
   // Formulaire unique pour les mouvements de stock
@@ -70,6 +70,8 @@ export class EntreesSortiesComponent implements OnInit {
   selectedProduct: Produits | null = null; // produit sélectionné
   idStockPoduct = 0;
 
+  private destroy$ = new Subject<void>();
+
   private cdr = inject(ChangeDetectorRef);
   private fb = inject(FormBuilder);
   private produitsService = inject(ProduitsService);
@@ -105,6 +107,11 @@ export class EntreesSortiesComponent implements OnInit {
     this.mouvementForm.get('typeMouvement')!.valueChanges.subscribe((type) => {
       this.updatePrixUnitaire(type);
     });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   filterProduits(): void {
@@ -168,7 +175,9 @@ export class EntreesSortiesComponent implements OnInit {
 
   loadMouvementStock(): void {
     this.isLoading = true;
-    this.mouvementsStockService.getByStructure(this.code_structure).subscribe({
+    this.mouvementsStockService.getByStructure(this.code_structure)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
       next: (data) => {
         this.isLoading = false;
         this.mouvements = data;
@@ -185,7 +194,9 @@ export class EntreesSortiesComponent implements OnInit {
   loadReconciliation(): void {
   this.isLoading = true;
 
-  this.reconciliationService.getByStructure(this.code_structure).subscribe({
+  this.reconciliationService.getByStructure(this.code_structure)
+  .pipe(takeUntil(this.destroy$))
+  .subscribe({
     next: (data) => {
       this.isLoading = false;
 
@@ -230,7 +241,10 @@ export class EntreesSortiesComponent implements OnInit {
       //this.isGeneralAdmin ? this.structureService.getAll() : of([])
       this.stockServcice.getStocksByStructure(this.code_structure),
     ])
-      .pipe(finalize(() => (this.isLoading = false)))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.isLoading = false))
+      )
       .subscribe({
         next: ([produits, stocks]) => {
           //this.fournisseurs = four
@@ -478,7 +492,9 @@ export class EntreesSortiesComponent implements OnInit {
       //dateMouvement:  new Date().toISOString()
     };
     if (this.isEditing && this.currentMouvement) {
-      this.mouvementsStockService.update(this.currentMouvement.id, payload).subscribe({
+      this.mouvementsStockService.update(this.currentMouvement.id, payload)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
         next: () => {
           // Mise à jour du stock après la mise à jour du mouvement
           this.stockServcice.adjustQuantiteTotale(this.idStockPoduct, variation).subscribe({
@@ -499,9 +515,13 @@ export class EntreesSortiesComponent implements OnInit {
         },
       });
     } else {
-      this.mouvementsStockService.create(payload).subscribe({
+      this.mouvementsStockService.create(payload)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
         next: () => {
-          this.stockServcice.adjustQuantiteTotale(this.idStockPoduct, variation).subscribe({
+          this.stockServcice.adjustQuantiteTotale(this.idStockPoduct, variation)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
             next: () => {
               this.toastr.success('Mouvement enregistré avec succès');
               this.loadMouvementStock();
@@ -555,7 +575,9 @@ export class EntreesSortiesComponent implements OnInit {
       };
 
       if (this.isEditingReconciliation && this.selectedReconciliation) {
-        this.reconciliationService.update(this.selectedReconciliation.id!, reconciliation).subscribe({
+        this.reconciliationService.update(this.selectedReconciliation.id!, reconciliation)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
           next: () => {
             this.toastr.success('Réconciliation mise à jour avec succès');
             this.reconciliationForm.reset();
@@ -571,7 +593,9 @@ export class EntreesSortiesComponent implements OnInit {
           },
         });
       } else {
-        this.reconciliationService.create(reconciliation).subscribe({
+        this.reconciliationService.create(reconciliation)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
           next: () => {
             this.toastr.success('Réconciliation enregistrée avec succès');
             this.reconciliationForm.reset();
@@ -606,7 +630,9 @@ export class EntreesSortiesComponent implements OnInit {
     this.chargerAnalysesEcarts(); */
      if (confirm('Êtes-vous sûr de vouloir supprimer ce mouvement ?')) {
       this.isLoading = true;
-      this.reconciliationService.delete(reconciliation.id!).subscribe({
+      this.reconciliationService.delete(reconciliation.id!)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
         next: () => {
             this.isLoading = false;
             this.toastr.success("Reconciliation supprimé avec succès");

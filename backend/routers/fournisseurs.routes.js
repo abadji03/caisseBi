@@ -8,5 +8,6 @@ router.delete('/:id', fournisseurCtrl.deleteFournisseur);
 router.get('/structure/:code_structure', fournisseurCtrl.getFournisseursByStructure);
 router.patch('/:id/statut', fournisseurCtrl.updateFournisseurStatus);
 router.get('/:id', fournisseurCtrl.getFournisseurById);
+router.get('/:code_structure/:id/bons', fournisseurCtrl.getBonsWithPaniersAndProduits);
 
 module.exports = router;

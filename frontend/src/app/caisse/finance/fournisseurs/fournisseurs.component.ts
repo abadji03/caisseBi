@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Fournisseur } from '../../../modeles/fournisseur.model';
 import { CommonModule } from '@angular/common';
 import {
@@ -11,13 +11,13 @@ import {
 import { Produits } from '../../../modeles/produit.modele';
 import { ApplicationService } from '../../../services/application.service';
 import { Operation } from '../../../modeles/operation.model';
-import { Bon } from '../../../modeles/bon.model';
+import { Bon, BonAvecFichier } from '../../../modeles/bon.model';
 import { Paiement } from '../../../modeles/paiement.model';
 import { MaagasinsService } from '../../../services/maagasins.service';
 import { Magasin } from '../../../modeles/magasin.model';
 import { FournisseursService } from '../../../services/fournisseurs.service';
 import { ToastrService } from 'ngx-toastr';
-import { finalize, forkJoin } from 'rxjs';
+import { finalize, forkJoin, Subject, takeUntil } from 'rxjs';
 import { normalize } from '../../../utils/string-utils';
 import { BonComponent } from '../../../sharedComposants/bon/bon.component';
 import {  Panier } from '../../../modeles/panier.model';
@@ -30,6 +30,9 @@ import { PaniersService } from '../../../services/paniers.service';
 import { PaiementsService } from '../../../services/paiements.service';
 import { MouvementsStockService } from '../../../services/mouvements-stock.service';
 import { ArticlesPanierService } from '../../../services/articles-panier.service';
+import { OperationsService } from '../../../services/operations.service';
+import { NGXLogger } from 'ngx-logger';
+import { BonBrouillonService } from '../../../services/bon-brouillon.service';
 
 @Component({
   selector: 'app-fournisseurs',
@@ -38,11 +41,12 @@ import { ArticlesPanierService } from '../../../services/articles-panier.service
   templateUrl: './fournisseurs.component.html',
   styleUrl: './fournisseurs.component.css',
 })
-export class FournisseursComponent implements OnInit {
+export class FournisseursComponent implements OnInit, OnDestroy {
   fournisseurs: Fournisseur[] = []; // Liste des fournisseurs
   isLoading = false;
   code_structure = 'MASTRUCTURET-NZNC';
   filteredOperations: Operation[] = []; // Opérations filtrées
+  operations : Operation[] = [];
   filteredFournisseurs: Fournisseur[] = []; // Liste filtrée pour la recherche
   searchQuery = ''; // Chaîne de recherche
   showDetails = false; // Affichage des détails
@@ -61,7 +65,13 @@ export class FournisseursComponent implements OnInit {
   magasins: Magasin[] = [];
   magasinId = 1;
   agentId = 1;
+  // Ajouter une variable pour contrôler la réinitialisation du panier
+  resetPanierFlag = false;
 
+    // Ajouter une référence au composant Bon
+  @ViewChild(BonComponent) bonComponent!: BonComponent;
+
+  private destroy$ = new Subject<void>(); //Pour se désabonner des lorsqu'on change de composants
   showProductsSection = false; // Affichage de la section des produits à ajouter
   searchProduct = ''; // Champ de recherche pour les produits
   produitsAjoutes: Produits[] = []; // Liste des produits ajoutés au bon
@@ -139,28 +149,43 @@ export class FournisseursComponent implements OnInit {
   showBonComponent = false;
   typeEntite: 'client' | 'fournisseur' = 'fournisseur';
   showPaiementComponent = false;
+
+  bonBrouillon: Bon | null = null;
+  panierBrouillon: Panier | null = null;
+  showConfirmationModal = false;
+  actionEnCours: string | null = null;
+
   private fb = inject(FormBuilder);
   private paginationService = inject(ApplicationService);
   private cdr = inject(ChangeDetectorRef);
   private magasinService = inject(MaagasinsService);
   private fournisseurService = inject(FournisseursService);
   private toastr = inject(ToastrService);
+  private bonBrouillonService = inject(BonBrouillonService);
+  private logger = inject(NGXLogger);
   private produitsServices = inject(ProduitsService);
   private stockService = inject(StockInventaireService);
   private bonService = inject(BonsService);
   private panierService = inject(PaniersService);
+  private operationService = inject(OperationsService);
   private paiementService = inject(PaiementsService);
   private MouvementsStockService = inject(MouvementsStockService);
   private artticlesPanierService = inject(ArticlesPanierService);
+  
 
   ngOnInit(): void {
     // Chargement des données des fournisseurs (par exemple via un service)
     this.loadData();
     this.loadDataProduits();
+    this.loadBonAndPaiement();
     this.initForm();
     //this.onTypeBonChange(); // Met à jour les champs au chargement
   }
 
+   ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
   initForm(): void {
     this.fournisseurForm = this.fb.group({
       nomComplet: ['', Validators.required],
@@ -182,28 +207,40 @@ export class FournisseursComponent implements OnInit {
 
   }
 
-  onBonEnregistre(bon: Bon): void {
-      console.log('Bon enregistré:', bon);
+  onBonEnregistre(event: BonAvecFichier): void {
+      console.log('Bon enregistré:', event.bon);
+      console.log('Bon enregistré:', event.fichier);
 
       if (!this.selectedFournisseur) {
         this.toastr.error('Aucun fournisseur sélectionné');
         return;
       }
 
-      if (!bon.panier || bon.panier.articles.length === 0) {
+      /* if (!event.bon.panier || event.bon.panier.articles.length === 0) {
         this.toastr.error('Aucun panier à enregistrer pour ce bon');
         return;
-      }
+      } */
+     // Associer fournisseurId et s'assurer que le statut est "validé"
+    event.bon.fournisseurId = this.selectedFournisseur.id;
+    event.bon.statutBon = 'validé'; // Changer le statut à validé
+
+    // Si c'était un brouillon, utiliser l'ID existant
+    /* if (this.bonBrouillon) {
+      event.bon.id = this.bonBrouillon.id;
+    } */
 
       //this.toastr.success('bon et panier existent');
       //console.log(bon)
-
-      // Associer fournisseurId
-      bon.fournisseurId = this.selectedFournisseur.id;
+      //console.log('Bon avec fournisseurId:', event.bon);
+      //console.log('Panier du bon:', event.bon.panier);
+      //console.log('Articles du panierrId:', event.bon.panier.articles);
 
       // Appel API
-      this.enregistrerBon(bon, bon.panier);
+      this.enregistrerBon(event.bon, event.bon.panier!,event.fichier);
+       //this.enregistrerBonAvecFichiers(event.bon, event.bon.panier, event.fichier);
       this.showBonComponent = false;
+      // Nettoyer les brouillons après enregistrement
+      this.bonBrouillonService.clearBrouillons();
   }
 
   
@@ -213,16 +250,111 @@ export class FournisseursComponent implements OnInit {
     // Logique pour enregistrer le panier
     this.showPanierComponent = false;
   }
+
+  /* private enregistrerBonAvecFichiers(bon: Bon, panier: Panier, fichier: File|null): void {
+    if (!this.selectedFournisseur) {
+      this.toastr.error('Aucun fournisseur sélectionné', 'Erreur');
+      return;
+    }
+
+    // Créer FormData pour l'envoi des fichiers
+    const formData : FormData = new FormData();
+
+    // Ajouter les données du bon
+    // formData.append('bon', JSON.stringify({
+    //   ...bon,
+    //   fournisseurId: this.selectedFournisseur.id
+    // }));
+    formData.append('bon', new Blob([JSON.stringify({
+      ...bon,
+      fournisseurId: this.selectedFournisseur.id
+    })], { type: 'application/json' }));
+
+    // Ajouter les données du panier
+    // formData.append('panier', JSON.stringify({
+    //   ...panier,
+    //   fournisseurId: this.selectedFournisseur.id
+    // }));
+    formData.append('panier', new Blob([JSON.stringify({
+      ...panier,
+      fournisseurId: this.selectedFournisseur.id
+    })], { type: 'application/json' }));
+
+
+    // Ajouter les articles
+    // formData.append('articles', JSON.stringify(
+    //   panier.articles.map(article => ({
+    //     produitId: article.Produit?.id,
+    //     quantite: article.quantite,
+    //     prixVenteUnitaire: article.prixVenteUnitaire,
+    //     prixAchatUnitaire: article.prixAchatUnitaire
+    //   }))
+    // ));
+    formData.append('articles', new Blob([JSON.stringify(
+    panier.articles.map(article => ({
+      produitId: article.produit?.id,
+      quantite: article.quantite,
+      prixVenteUnitaire: article.prixVenteUnitaire,
+      prixAchatUnitaire: article.prixAchatUnitaire
+    }))
+  )], { type: 'application/json' }));
+
+    // Ajouter les métadonnées
+    formData.append('code_structure', this.code_structure);
+    formData.append('magasinId', this.magasinId.toString());
+    formData.append('agentId', this.agentId.toString());
+    formData.append('fournisseurId', this.selectedFournisseur.id!.toString());
+    formData.append('typeEntite', this.typeEntite);
+
+     // Ajouter le fichier s'il existe
+    if (fichier) {
+      formData.append('fichier', fichier);
+    }
+
+    // Ajouter les informations de paiement si avance
+    if (bon.avance && bon.avance > 0) {
+      formData.append('paiement', JSON.stringify({
+        methodePaiement: 'Caisse',
+        description: `Avance pour bon ${bon.numero}`,
+        typePaiement: 'fournisseur'
+      }));
+    }
+
+    this.isLoading = true;
+
+    this.bonService.createBonComplet(formData)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (result) => {
+          this.toastr.success('Bon et fichiers enregistrés avec succès!', 'Succès');
+          console.log('Enregistrement complet:', result);
+          this.reinitialiserFormulaires();
+          this.loadOperations();
+        },
+        error: (error) => {
+          console.error('Erreur:', error);
+          this.toastr.error(error.error?.error || 'Erreur lors de l\'enregistrement', 'Erreur');
+        },
+        complete: () => {
+          this.isLoading = false;
+        }
+      });
+  }
+ */
   
   onPanierAnnule(): void {
     this.showPanierComponent = false;
+    
   }
   onBonAnnule(): void {
-    this.showBonComponent = false;
+    //this.showBonComponent = false;
+    console.log('Annulation du bon - Réinitialisation');
+    this.reinitialiserEtMasquerFormulaires();
+
   }
 
 // fournisseurs.component.ts
-private enregistrerBon(bon: Bon, panier: Panier): void {
+private enregistrerBon(bon: Bon, panier: Panier, fichier:File|null): void {
   if (!this.selectedFournisseur) {
     this.toastr.error('Aucun fournisseur sélectionné', 'Erreur');
     return;
@@ -258,21 +390,68 @@ private enregistrerBon(bon: Bon, panier: Panier): void {
 
   this.isLoading = true;
 
-  this.bonService.createBonComplet(bonCompletData).subscribe({
+  this.bonService.createBonComplet(bonCompletData).pipe(takeUntil(this.destroy$))
+  .subscribe({
     next: (result) => {
-      this.toastr.success('Bon enregistré avec succès!', 'Succès');
-      console.log('✅ Enregistrement complet:', result);
-      this.reinitialiserFormulaires();
-      this.actualiserDonnees();
+      //this.toastr.success('Bon enregistré avec succès!', 'Succès');
+      //console.log('Enregistrement complet:', result);
+      //this.reinitialiserFormulaires();
+      //this.actualiserDonnees(); 
+      if (fichier && result.bon && result.bon.id) {
+          this.uploadFichierSepare(fichier, result.bon.id, result);
+        } else {
+          // Si pas de fichier, finaliser directement
+          this.finaliserEnregistrement(result, false);
+        }
+
     },
     error: (error) => {
-      console.error('❌ Erreur:', error);
+      console.error('Erreur:', error);
       this.toastr.error(error.error?.error || 'Erreur lors de l\'enregistrement', 'Erreur');
     },
     complete: () => {
       this.isLoading = false;
     }
   });
+} 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+private uploadFichierSepare(fichier: File, bonId: number, resultBon: any): void {
+  const formDataFichier = new FormData();
+  formDataFichier.append('fichier', fichier);
+  formDataFichier.append('bonId', bonId.toString());
+
+  this.bonService.uploadFichier(formDataFichier)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (resultUpload) => {
+        console.log('Fichier uploadé avec succès:', resultUpload);
+        this.toastr.success('Bon et fichier enregistrés avec succès!', 'Succès');
+        this.finaliserEnregistrement(resultBon, true);
+      },
+      error: (error) => {
+        console.error('Erreur upload fichier:', error);
+        // Le bon est déjà créé, on affiche juste un avertissement pour le fichier
+        this.toastr.warning('Bon enregistré mais erreur lors de l\'upload du fichier', 'Attention');
+        this.finaliserEnregistrement(resultBon, true); // On considère quand même que c'est un succès
+      }
+    });
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+private finaliserEnregistrement(result: any, avecFichier: boolean): void {
+  const message = avecFichier 
+    ? 'Bon et fichier enregistrés avec succès!' 
+    : 'Bon enregistré avec succès!';
+  
+  if (!avecFichier) {
+    this.toastr.success(message, 'Succès');
+  }
+  
+  console.log('Enregistrement terminé:', result);
+  this.reinitialiserEtMasquerFormulaires();
+  this.loadOperations();
+  //this.actualiserDonnees();
+  this.isLoading = false;
 }
 // Réinitialisation des formulaires
 private reinitialiserFormulaires() {
@@ -287,13 +466,7 @@ private actualiserDonnees() {
   this.loadData();
   this.loadDataProduits();
 }
-  
-  private loadProduitsDisponibles(): void {
-    // Charger les produits disponibles
-    // this.produitService.getProduits().subscribe(produits => {
-    //   this.produitsDisponibles = produits;
-    // });
-  }
+
 
   // Getter pour accéder facilement aux contrôles du formulaire
   get f() {
@@ -313,12 +486,6 @@ private actualiserDonnees() {
 
   onAction(action: string): void {
     //console.log(`${action} Produits:`, this.selectedFournisseur);
-    /* if (action === 'ajouter') {
-      this.actionType = 'ajouter';
-      this.selectedFournisseur = null;  // S'assurer qu'aucun produit n'est sélectionné
-    } else {
-      this.actionType = action;  // On garde l'action sélectionnée
-    } */
     this.actionType = action;
     //console.log(`${this.actionType} fournisseur:`, this.selectedFournisseur);
     if (this.selectedFournisseur) {
@@ -443,11 +610,6 @@ private actualiserDonnees() {
 
   // Supprimer un fournisseur
   deletFournisseur(): void {
-    /* const index = this.fournisseurs.indexOf(fournisseur);
-    if (index > -1) {
-      this.fournisseurs.splice(index, 1);
-      this.filteredFournisseurs = [...this.fournisseurs]; // Mettre à jour la liste filtrée
-    } */
 
     const confirmation = confirm('Supprimer le fournisseur ?');
     if (confirmation) {
@@ -468,6 +630,7 @@ private actualiserDonnees() {
     const today = new Date();
     this.startDate = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]; // 1er jour du mois
     this.endDate = today.toISOString().split('T')[0]; // Aujourd'hui
+    this.loadOperations();
     this.filtrerOperations();
 
   }
@@ -487,6 +650,125 @@ private actualiserDonnees() {
   toggleBonForm(): void {
     this.showBonForm = !this.showBonForm;
     this.showPaiementForm = false;
+    // S'assurer que showBonComponent est synchronisé
+    this.showBonComponent = this.showBonForm;
+    
+    if (this.showBonForm) {
+      console.log('📝 Affichage du formulaire de bon');
+      // Réinitialiser les flags de reset
+      this.resetPanierFlag = false;
+      console.log('Affichage du formulaire de bon');
+      //this.initialiserBonBrouillon();
+      this.chargerBrouillonsExistants();
+    } else {
+      console.log('Masquage du formulaire de bon');
+      this.reinitialiserEtMasquerFormulaires();
+    }
+  }
+
+  private chargerBrouillonsExistants(): void {
+    if (!this.selectedFournisseur) return;
+
+    this.bonService.getBonsBrouillons(this.code_structure)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (bonsBrouillons) => {
+          const brouillonFournisseur = bonsBrouillons.find(bon => 
+            bon.fournisseurId === this.selectedFournisseur?.id
+          );
+
+          if (brouillonFournisseur) {
+            // Charger le bon brouillon
+            this.bonBrouillonService.setBonBrouillon(brouillonFournisseur);
+            
+            // Charger le panier associé
+            this.panierService.getPanierByBonId(brouillonFournisseur.id!)
+              .pipe(takeUntil(this.destroy$))
+              .subscribe(panier => {
+                this.bonBrouillonService.setPanierBrouillon(panier);
+                this.toastr.info('Brouillon existant chargé');
+              });
+          } else {
+            // Créer un nouveau brouillon
+            this.creerNouveauBrouillon();
+          }
+        },
+        error: (err) => {
+          console.error('Erreur chargement brouillons:', err);
+          this.creerNouveauBrouillon();
+        }
+      });
+  }
+
+    private creerNouveauBrouillon(): void {
+    if (!this.selectedFournisseur) return;
+
+
+    /* const bonBrouillon = new Bon({
+      type: 'Commande',
+      numero: this.generatedNumero,
+      description: 'Nouveau bon',
+      montantTotal: 0,
+      statutBon: 'brouillon',
+      dateBon: new Date(),
+      fournisseurId: this.selectedFournisseur.id,
+      code_structure: this.code_structure,
+      agentId:this.agentId,
+      magasinId:this.magasinId,
+    });
+
+    const panierBrouillon = new Panier({
+      articles: [],
+      totalHT: 0,
+      tva: 0,
+      totalTTC: 0,
+      statut: 'en_cours',
+      typeEntite: this.typeEntite
+    }); */
+    const bonBrouillonData = {
+      bon: {
+        type: 'Commande',
+        numero: this.generatedNumero,
+        description: 'Brouillon de bon',
+        montantTotal: 0,
+        statutBon: 'brouillon',
+        dateBon: new Date(),
+        fournisseurId: this.selectedFournisseur.id,
+        code_structure: this.code_structure,
+        agentId:this.agentId,
+        magasinId:this.magasinId
+      },
+      panier: {
+        articles: [],
+        totalHT: 0,
+        tva: 0,
+        totalTTC: 0,
+        statut: 'en_cours',
+        typeEntite: this.typeEntite
+      },
+      articles: [],
+      code_structure: this.code_structure,
+      magasinId: this.magasinId,
+      agentId: this.agentId,
+      fournisseurId: this.selectedFournisseur.id,
+      typeEntite: this.typeEntite
+    };
+    this.bonService.creerBonBrouillon(bonBrouillonData)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (result) => {
+          //this.bonBrouillon = result.bon;
+          //this.panierBrouillon = result.panier;
+          this.bonBrouillonService.setBonBrouillon(result.bon);
+          this.bonBrouillonService.setPanierBrouillon(result.panier);
+          this.toastr.info('Nouveau bon brouillon créé');
+        },
+        error: (err) => {
+          console.error('Erreur création brouillon:', err);
+          this.toastr.error('Erreur lors de la création du brouillon');
+        }
+      });
+
   }
 
   /* resetFormPaiement() {
@@ -540,7 +822,10 @@ private actualiserDonnees() {
         this.produitsServices.getAllProduits(this.code_structure),
         this.stockService.getStocksByStructure(this.code_structure),
       ])
-        .pipe(finalize(() => (this.isLoading = false)))
+        .pipe(
+          takeUntil(this.destroy$),
+          finalize(() => (this.isLoading = false))
+        )
         .subscribe({
           next: ([produit, stock]) => {
             //this.fournisseurs = four
@@ -623,14 +908,6 @@ private actualiserDonnees() {
 
     this.cdr.detectChanges(); // Forcer la mise à jour de la vue
   }
-
-  /* get getPaginatedBonsBis() {
-  return this.paginationService.paginate(this.filteredBonsBis, this.currentPageBonBis, 2);
-}
-
-get getPaginatedPaiementsBis() {
-  return this.paginationService.paginate(this.filteredPaiementsBis, this.currentPagePaiementBis, 2);
-} */
 
   // Gérer le changement de page
   onPageChange(page: number, instanceObj: string): void {
@@ -722,7 +999,7 @@ get getPaginatedPaiementsBis() {
 
     console.log('🔍 Période de filtrage :', start.toISOString(), '->', end.toISOString());
 
-    this.filteredOperations = this.selectedFournisseur.operations.filter((op) => {
+    this.filteredOperations = this.operations.filter((op) => {
       if (!op.dateOperation) {
         console.log('⚠ Opération ignorée (pas de date) :', op);
         return false;
@@ -953,7 +1230,10 @@ get getPaginatedPaiementsBis() {
       this.magasinService.getMagasinsByStructure(this.code_structure),
       this.fournisseurService.getFournisseursByStructure(this.code_structure),
     ])
-      .pipe(finalize(() => (this.isLoading = false)))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.isLoading = false))
+      )
       .subscribe({
         next: ([mgs, frs]) => {
           this.magasins = mgs;
@@ -970,7 +1250,10 @@ get getPaginatedPaiementsBis() {
 
     this.fournisseurService
       .createFournisseur(fournisseurData as Fournisseur)
-      .pipe(finalize(() => (this.isLoading = false)))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.isLoading = false))
+      )
       .subscribe({
         next: () => {
           this.toastr.success('Fournisseur créé avec succès');
@@ -988,7 +1271,10 @@ get getPaginatedPaiementsBis() {
 
     this.fournisseurService
       .updateFournisseur(id, updateData)
-      .pipe(finalize(() => (this.isLoading = false)))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.isLoading = false))
+      )
       .subscribe({
         next: () => {
           this.toastr.success('Fournisseur mis à jour avec succès');
@@ -1007,7 +1293,10 @@ get getPaginatedPaiementsBis() {
     this.isLoading = true;
     this.fournisseurService
       .updateFournisseurStatus(id, newStatus)
-      .pipe(finalize(() => (this.isLoading = false)))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.isLoading = false))
+      )
       .subscribe({
         next: () => {
           //this.isLoading = false;
@@ -1031,7 +1320,10 @@ get getPaginatedPaiementsBis() {
     if (confirm('Êtes-vous sûr de vouloir supprimer ce fournisseur ?')) {
       this.fournisseurService
         .deleteFournisseur(id)
-        .pipe(finalize(() => (this.isLoading = false)))
+        .pipe(
+          takeUntil(this.destroy$),
+          finalize(() => (this.isLoading = false))
+        )
         .subscribe({
           next: () => {
             this.toastr.success('Fournisseur supprimé avec succès');
@@ -1048,4 +1340,205 @@ get getPaginatedPaiementsBis() {
         });
     }
   }
+
+  loadOperations(): void {
+    if(!this.selectedFournisseur) return;
+    this.isLoading = true;
+    this.operationService.getOperationsByFournisseur(this.code_structure, this.selectedFournisseur.id!)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (ops) => {
+          this.operations = ops;
+          this.logger.debug('Opérations fournisseur chargées', ops);
+          this.filteredOperations = [... this.operations];
+          this.isLoading = false;
+        },
+        error: (err) => {
+          this.errorMessage = 'Erreur lors du chargement des opérations.';
+          this.logger.error('Erreur API opérations fournisseur', err);
+          this.isLoading = false;
+        }
+      });
+  }
+
+  loadBonAndPaiement(): void {
+      this.isLoading = true;
+      forkJoin([
+        this.bonService.getBonsByStructure(this.code_structure),
+        this.paiementService.getByStructure(this.code_structure),
+      ])
+        .pipe(
+          takeUntil(this.destroy$),
+          finalize(() => (this.isLoading = false))
+        )
+        .subscribe({
+          next: ([bon, paie]) => {
+            //this.fournisseurs = four
+            this.allBons = bon;
+            this.allPaiements = paie;
+            this.filteredBons = [...this.allBons];
+            this.filteredPaiements = [...this.allPaiements];
+          },
+          error: (err) => console.error('Erreur chargement données', err),
+        });
+    }
+  
+     // Nouvelle méthode pour réinitialiser et masquer
+  private reinitialiserEtMasquerFormulaires(): void {
+    console.log('Début réinitialisation formulaires...');
+    
+    // 1. Masquer les composants
+    this.showBonComponent = false;
+    this.showPanierComponent = false;
+    
+    // 2. Réinitialiser le composant Bon via ViewChild
+    if (this.bonComponent) {
+      console.log('Réinitialisation du composant Bon');
+      this.bonComponent.reinitialiserFormulaire();
+    } else {
+      console.log('Composant Bon non trouvé');
+    }
+    
+    // 3. Déclencher la réinitialisation du panier
+    this.resetPanierFlag = true;
+    
+    // 4. Réinitialiser après un délai pour la détection Angular
+    setTimeout(() => {
+      this.resetPanierFlag = false;
+      console.log('Réinitialisation terminée');
+    }, 100);
+    
+    this.isLoading = false;
+  }
+
+  /* ......................Gestion des modification bon */
+
+   // Nouvelle méthode pour initialiser un bon brouillon
+  private initialiserBonBrouillon(): void {
+    if (!this.selectedFournisseur) return;
+
+    // Vérifier s'il y a un bon brouillon existant
+    this.bonService.getBonsBrouillons(this.code_structure)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (bonsBrouillons) => {
+          const brouillonExistant = bonsBrouillons.find(bon => 
+            bon.fournisseurId === this.selectedFournisseur?.id && 
+            bon.statutBon === 'brouillon'
+          );
+
+          if (brouillonExistant) {
+            // Charger le brouillon existant
+            this.bonBrouillon = brouillonExistant;
+            this.toastr.info('Un bon brouillon existant a été chargé');
+            this.chargerPanierBrouillon(brouillonExistant.id!);
+          } else {
+            // Créer un nouveau bon brouillon
+            this.creerNouveauBonBrouillon();
+          }
+        },
+        error: (err) => {
+          console.error('Erreur chargement brouillons:', err);
+          this.creerNouveauBonBrouillon();
+        }
+      });
+  }
+
+  private creerNouveauBonBrouillon(): void {
+    if (!this.selectedFournisseur) return;
+
+    const bonBrouillonData = {
+      bon: {
+        type: 'Commande',
+        numero:'',
+        description: 'Brouillon de bon',
+        montantTotal: 0,
+        statutBon: 'brouillon',
+        dateBon: new Date()
+      },
+      panier: {
+        articles: [],
+        totalHT: 0,
+        tva: 0,
+        totalTTC: 0,
+        statut: 'en_cours',
+        typeEntite: this.typeEntite
+      },
+      articles: [],
+      code_structure: this.code_structure,
+      magasinId: this.magasinId,
+      agentId: this.agentId,
+      fournisseurId: this.selectedFournisseur.id,
+      typeEntite: this.typeEntite
+    };
+
+    this.bonService.creerBonBrouillon(bonBrouillonData)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (result) => {
+          this.bonBrouillon = result.bon;
+          this.panierBrouillon = result.panier;
+          this.toastr.info('Nouveau bon brouillon créé');
+        },
+        error: (err) => {
+          console.error('Erreur création brouillon:', err);
+          this.toastr.error('Erreur lors de la création du brouillon');
+        }
+      });
+  }
+
+  private chargerPanierBrouillon(bonId: number): void {
+    this.panierService.getPanierByBonId(bonId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (panier) => {
+          this.panierBrouillon = panier;
+        },
+        error: (err) => {
+          console.error('Erreur chargement panier:', err);
+        }
+      });
+  }
+
+  // Nouvelle méthode pour gérer l'annulation du panier
+  onPanierAnnuleAvecConfirmation(): void {
+    this.actionEnCours = 'annuler_panier';
+    this.showConfirmationModal = true;
+  }
+
+  // Méthode pour confirmer l'action
+  confirmerAction(): void {
+    if (this.actionEnCours === 'annuler_panier' && this.panierBrouillon) {
+      this.annulerPanierDefinitif();
+    }
+    this.showConfirmationModal = false;
+    this.actionEnCours = null;
+  }
+
+  // Annuler l'action
+  annulerAction(): void {
+    this.showConfirmationModal = false;
+    this.actionEnCours = null;
+  }
+
+  private annulerPanierDefinitif(): void {
+    if (!this.panierBrouillon || !this.bonBrouillon) return;
+
+    this.bonService.changerStatutPanier(this.panierBrouillon.id!, 'annulé', true)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.toastr.success('Panier et bon annulés avec succès');
+          this.bonBrouillon = null;
+          this.panierBrouillon = null;
+          this.showBonComponent = false;
+          this.showBonForm = false;
+        },
+        error: (err) => {
+          console.error('Erreur annulation:', err);
+          this.toastr.error('Erreur lors de l\'annulation');
+        }
+      });
+  }
+  
 }

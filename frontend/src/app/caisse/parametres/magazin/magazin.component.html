@@ -985,10 +985,16 @@
                 <td>{{ getNomMagazin(transfert.magasinDestination) }}</td>
                 <td>{{ transfert.dateTransfert | date: 'dd/mm/yyyy à HH:mm' }}</td>
                 <td>
-                  <button
+                  <!-- <button
                     class="btn btn-dark btn-sm"
                     [disabled]="transfert.statut === 'Validé'"
                     (click)="validerTransfert(transfert)"
+                  >
+                    Valider
+                  </button> -->
+                  <button
+                    class="btn btn-dark btn-sm"
+                    [disabled]="transfert.statut === 'Validé'"
                   >
                     Valider
                   </button>

@@ -1,3 +1,6 @@
+import { User } from "@sentry/angular";
+import { Panier } from "./panier.model";
+
 export class Operation {
   id?: number;
   clientId?: number;
@@ -6,11 +9,15 @@ export class Operation {
   bonId?: number;
   paiementId?: number;
 
-  type?: 'COMMANDE' | 'VERSEMENT' | 'FACTURE' | 'TICKET_CAISSE' | 'RETOUR' | 'AVOIR' | 'LIVRAISON';
+  type?: string; //'COMMANDE' | 'VERSEMENT' | 'FACTURE' | 'TICKET_CAISSE' | 'RETOUR' | 'AVOIR' | 'LIVRAISON';
 
   montantPaye!: number;
 
   moyenPaiement?: 'ESPECES' | 'MOBILE_MONEY' | 'CARTE_BANCAIRE' | 'VIREMENT' | 'CHEQUE';
+
+  panier?:Panier;
+  Panier?:Panier 
+  user?:User
 
   numeroBon?: string;
   numeroFacture?: string;

@@ -84,17 +84,30 @@ class StatutManager {
         bonData.statutBon = 'retourné';
         bonData.montantAvoir = bonData.montantTotal || 0;
       }
-    } else if (typeEntite === 'fournisseur') {
+      else if (bon.type === 'commande') {
+        // Statut par défaut pour commande client
+        bonData.statutBon = bonData.statutBon || 'commandé';
+      }
+    } 
+    else if (typeEntite === 'fournisseur') {
       bonData.fournisseurId = fournisseurId;
+      if (bon.type === 'commande') {
+        // Commande fournisseur reste en brouillon jusqu'à validation
+        bonData.statutBon = bonData.statutBon || 'brouillon';
+      } else 
+        if (bon.type === 'livraison') {
+        // Livraison fournisseur peut être directement livrée
+        bonData.statutBon = bonData.statutBon || 'livré';
+      }
     }
 
     // Calcul automatique
-    if (!bonData.netAPayer && bonData.montantTotal) {
+    /* if (!bonData.netAPayer && bonData.montantTotal) {
       bonData.netAPayer = bonData.montantTotal - (bonData.remise || 0);
     }
     if (!bonData.resteAPayer && bonData.netAPayer) {
       bonData.resteAPayer = bonData.netAPayer - (bonData.avance || 0);
-    }
+    } */
 
     return bonData;
   }
@@ -103,7 +116,18 @@ class StatutManager {
    * Mettre à jour le client ou fournisseur selon le bon
    */
   async mettreAJourEntite(bon, typeEntite, clientId, fournisseurId, transaction) {
+     // Ne mettre à jour que pour les statuts terminaux
+    const statutsTerminaux = ['livré', 'validé', 'facturé', 'payé', 'retourné'];
+    if (!statutsTerminaux.includes(bon.statutBon)) {
+      return;
+    }
     if (typeEntite === 'client' && clientId) {
+      await this.mettreAJourClient(bon, clientId, transaction);
+    } 
+    else if (typeEntite === 'fournisseur' && fournisseurId) {
+      await this.mettreAJourFournisseur(bon, fournisseurId, transaction);
+    }
+    /* if (typeEntite === 'client' && clientId) {
       const client = await db.Client.findByPk(clientId, { transaction });
       if (client) {
         await client.update({
@@ -120,6 +144,54 @@ class StatutManager {
           dateMiseAJour: new Date()
         }, { transaction });
       }
+    } */
+  }
+
+  /**
+   * Mettre à jour client
+   */
+  async mettreAJourClient(bon, clientId, transaction) {
+    const client = await db.Client.findByPk(clientId, { transaction });
+    if (!client) return;
+
+    const montant = bon.netAPayer || bon.montantTotal || 0;
+
+    if (bon.type === 'retour') {
+      // Retour = avoir pour le client
+      await client.update({
+        solde: (client.solde || 0) - montant, // Réduction de la dette
+        dateMiseAJour: new Date()
+      }, { transaction });
+    } else {
+      // Commande = augmentation de la dette
+      await client.update({
+        solde: (client.solde || 0) + montant,
+        dateMiseAJour: new Date()
+      }, { transaction });
+    }
+  }
+
+  /**
+   * Mettre à jour fournisseur
+   */
+  async mettreAJourFournisseur(bon, fournisseurId, transaction) {
+    const fournisseur = await db.Fournisseur.findByPk(fournisseurId, { transaction });
+    if (!fournisseur) return;
+
+    const montant = bon.resteAPayer || bon.netAPayer || bon.montantTotal || 0;
+
+    if (bon.type === 'retour') {
+      // Retour fournisseur = réduction de la dette
+      await fournisseur.update({
+        montantAPayer: Math.max(0, (fournisseur.montantAPayer || 0) - montant),
+        dateMiseAJour: new Date()
+      }, { transaction });
+    } else {
+      // Livraison fournisseur = augmentation de la dette
+      await fournisseur.update({
+        montantAPayer: (fournisseur.montantAPayer || 0) + montant,
+        dateMiseAJour: new Date()
+      }, { transaction });
     }
   }
 

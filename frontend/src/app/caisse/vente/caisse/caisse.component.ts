@@ -280,7 +280,7 @@ export class CaisseComponent implements OnInit {
 
   /** Enregistrer une vente */
   enregistrerBon() {
-    this.panier.statut = 'VALIDE';
+    this.panier.statut = 'validé';
     this.paniers.push(this.panier);
     this.totalCaisse += this.panier.totalTTC;
     this.resetPanier();

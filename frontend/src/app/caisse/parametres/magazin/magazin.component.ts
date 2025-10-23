@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnDestroy, OnInit } from '@angular/core';
 import {
   FormBuilder,
   FormGroup,
@@ -20,6 +20,7 @@ import { StructureService } from '../../../services/structure.service';
 import { MaagasinsService } from '../../../services/maagasins.service';
 import { ToastrService } from 'ngx-toastr';
 import { normalize } from '../../../utils/string-utils';
+import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-magazin',
@@ -28,7 +29,7 @@ import { normalize } from '../../../utils/string-utils';
   templateUrl: './magazin.component.html',
   styleUrl: './magazin.component.css',
 })
-export class MagazinComponent implements OnInit {
+export class MagazinComponent implements OnInit, OnDestroy {
   showPartie1 = true;
   isloading = false;
 
@@ -47,6 +48,9 @@ export class MagazinComponent implements OnInit {
   searchTerm = '';
   currentPage = 1;
   itemsPerPage = 10;
+
+  private destroy$ = new Subject<void>();
+
 
   modeVente: unknown;
   // Déclarez la variable produits globalement
@@ -82,31 +86,11 @@ export class MagazinComponent implements OnInit {
   private userService = inject(UserService);
   private toastr = inject(ToastrService);
 
-  constructor() {
-    // Initialisation du formulaire réactif
-    /*  this.magasinForm = this.fb.group({
-    nom: ['', Validators.required],
-    adresse: ['', Validators.required],
-    responsableId: [, Validators.required]
-  }); */
-
-    this.magasinForm = this.fb.group({
-      code_structure: ['', Validators.required],
-      nom: ['', Validators.required],
-      adresse: ['', Validators.required],
-      ville: [''],
-      telephone: [''],
-      email: ['', [Validators.email]],
-      responsableId: ['', Validators.required],
-      capaciteStock: [0],
-      statut: ['Actif'],
-    });
-  }
-
   ngOnInit(): void {
     this.chargerMagasins();
     this.loadStructures();
     this.loadAllUsers();
+    this.iniMagasinForm();
     //this.loadUsers('1');
     //this.loadUsers('1');
     //console.log(this.responsables[0].nom)
@@ -122,7 +106,24 @@ export class MagazinComponent implements OnInit {
   this.updatefilteredTable('mouvement');
   this.updatefilteredTable('transfert'); */
   }
+ ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
+  iniMagasinForm(){
+    this.magasinForm = this.fb.group({
+      code_structure: ['', Validators.required],
+      nom: ['', Validators.required],
+      adresse: ['', Validators.required],
+      ville: [''],
+      telephone: [''],
+      email: ['', [Validators.email]],
+      responsableId: ['', Validators.required],
+      capaciteStock: [0],
+      statut: ['Actif'],
+    });
+  }
   toggleDetails(panierId: number) {
     this.selectedPanierId = this.selectedPanierId === panierId ? null : panierId;
   }
@@ -367,7 +368,7 @@ modifierMagasin(): void {
             clientId: Math.floor(Math.random() * 1000),
             bonId: Math.floor(Math.random() * 500),
             articles: articles,
-            statut: 'VALIDE',
+            statut: 'validé',
             dateCreation: new Date(),
             magasinId: i, // Associer le magasin
             //stockList: stockList // Associer les stocks filtrés
@@ -516,21 +517,21 @@ modifierMagasin(): void {
     if (!this.magasinSelectionne) return 0;
     const paniers = this.getPaniersParMagasin(this.magasinSelectionne) || [];
     return paniers
-      .filter((p) => this.estAujourdHui(p.dateCreation) && p.statut === 'VALIDE')
+      .filter((p) => this.estAujourdHui(p.dateCreation) && p.statut === 'validé')
       .reduce((total, panier) => total + panier.totalTTC, 0);
   }
 
   getNombreVentesDuJour(): number {
     if (!this.magasinSelectionne) return 0; // Vérifie si magasinSelectionne est null
     const paniers = this.getPaniersParMagasin(this.magasinSelectionne) || [];
-    return paniers.filter((p) => this.estAujourdHui(p.dateCreation) && p.statut === 'VALIDE')
+    return paniers.filter((p) => this.estAujourdHui(p.dateCreation) && p.statut === 'validé')
       .length;
   }
 
   getNombreVentesAnnulees(): number {
     if (!this.magasinSelectionne) return 0;
     const paniers = this.getPaniersParMagasin(this.magasinSelectionne) || [];
-    return paniers.filter((p) => this.estAujourdHui(p.dateCreation) && p.statut === 'ANNULE')
+    return paniers.filter((p) => this.estAujourdHui(p.dateCreation) && p.statut === 'annulé')
       .length;
   }
 
@@ -538,7 +539,7 @@ modifierMagasin(): void {
     if (!this.magasinSelectionne) return 0;
     const paniers = this.getPaniersParMagasin(this.magasinSelectionne) || [];
     return paniers
-      .filter((p) => this.estAujourdHui(p.dateCreation) && p.statut === 'VALIDE')
+      .filter((p) => this.estAujourdHui(p.dateCreation) && p.statut === 'validé')
       .reduce((total, panier) => total + panier.tva, 0);
   }
 
@@ -788,7 +789,7 @@ modifierMagasin(): void {
     this.quantite = 1;
     this.motif = '';
   }
-  validerTransfert(transfert: Transfert) {
+  validérTransfert(transfert: Transfert) {
     //console.log('Transfert validé :', transfertId);
     if (transfert.statut === 'Validé') {
       //alert('Le transfert est déjà validé');
@@ -803,7 +804,9 @@ modifierMagasin(): void {
 
   chargerMagasins(): void {
     this.isloading = true;
-    this.magasinService.getAllMagasins().subscribe({
+    this.magasinService.getAllMagasins()
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
       next: (magasins) => {
         this.isloading = false;
         this.magasins = magasins;
@@ -820,20 +823,26 @@ modifierMagasin(): void {
   }
 
   loadStructures(): void {
-    this.structureService.getAll().subscribe((data) => {
+    this.structureService.getAll()
+    .pipe(takeUntil(this.destroy$))
+    .subscribe((data) => {
       this.structures = data;
     });
   }
 
   loadUsersForSelectedStructure(code_structure: string): void {
-    this.userService.getByStructure(code_structure).subscribe((data) => {
+    this.userService.getByStructure(code_structure)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe((data) => {
       this.responsables = data;
       //console.log(this.responsables.length)
     });
   }
 
   loadAllUsers(): void {
-    this.userService.getAlls().subscribe((data) => {
+    this.userService.getAlls()
+    .pipe(takeUntil(this.destroy$))
+    .subscribe((data) => {
       this.allUsers = data;
       console.log(this.allUsers.length);
     });
@@ -851,7 +860,9 @@ modifierMagasin(): void {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onMagasinChange(event: any): void {
     const magasinId = event.target.value;
-    this.magasinService.getMagasinById(Number(magasinId)).subscribe({
+    this.magasinService.getMagasinById(Number(magasinId))
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
       next: (magasin) => {
         this.magasinSelectionne = magasin;
       },
@@ -904,7 +915,9 @@ modifierMagasin(): void {
   ajouterMagasin(): void {
     this.isloading = true;
     if (this.magasinForm.valid) {
-      this.magasinService.createMagasin(this.magasinForm.value).subscribe({
+      this.magasinService.createMagasin(this.magasinForm.value)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
         next: (magasin) => {
           this.toastr.success('Magasin créé avec succès');
           //this.magasins.push(magasin);
@@ -924,7 +937,9 @@ modifierMagasin(): void {
   modifierMagasin(): void {
     if (this.magasinForm.valid && this.magasinSelectionne) {
       const updatedMagasin = { ...this.magasinForm.value };
-      this.magasinService.updateMagasin(this.magasinSelectionne.id, updatedMagasin).subscribe({
+      this.magasinService.updateMagasin(this.magasinSelectionne.id, updatedMagasin)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
         next: () => {
           this.chargerMagasins();
           /* const index = this.magasins.findIndex(m => m.id === magasin.id);
@@ -946,7 +961,9 @@ modifierMagasin(): void {
 
   supprimerMagasin(id: number): void {
     if (confirm('Êtes-vous sûr de vouloir supprimer ce magasin ?')) {
-      this.magasinService.deleteMagasin(id).subscribe({
+      this.magasinService.deleteMagasin(id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
         next: () => {
           this.toastr.success('Magasin supprimé avec succès');
           /* this.magasins = this.magasins.filter(m => m.id !== id);
@@ -1050,7 +1067,9 @@ modifierMagasin(): void {
   toggleStatutMagasin(magasin: Magasin): void {
     console.log('réponse au clique');
     const newStatut = magasin.statut === 'Actif' ? 'Inactif' : 'Actif';
-    this.magasinService.updateMagasinStatus(magasin.id, newStatut).subscribe({
+    this.magasinService.updateMagasinStatus(magasin.id, newStatut)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
       next: () => {
         this.toastr.success('Magasin mis à jour avec succès');
         this.chargerMagasins();

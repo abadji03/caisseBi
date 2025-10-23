@@ -10,7 +10,7 @@ import { ArticlePanier } from '../modeles/panier.model';
 })
 export class ArticlesPanierService {
 
-  private apiUrl = 'http://localhost:5000/api/article-paniers';
+  private apiUrl = 'http://localhost:5000/api/articles-panier';
 
   private http = inject(HttpClient);
   private logger = inject(NGXLogger);
@@ -79,6 +79,10 @@ export class ArticlesPanierService {
       catchError((error) => this.handleError(error, `Erreur lors de la suppression de l’article ${id}`))
     );
   }
+
+  deleteArticleFromPanier(panierId: number, produitId: number) {
+  return this.http.delete(`${this.apiUrl}/panier/${panierId}/produit/${produitId}`,{ headers: this.getHeaders() });
+}
 
   /**Récupérer les paniers d’une structure */
   getByStructure(code_structure: string): Observable<ArticlePanier[]> {

@@ -12,4 +12,10 @@ router.get('/:id', controller.findById);
 router.put('/:id',upload.single('fichier'), controller.update);
 router.delete('/:id', controller.delete);
 
+// Récupérer les paiements d'une structure par fournisseur
+router.get('/:code_structure/fournisseur/:fournisseurId', controller.getPaiementsByFournisseur);
+
+// Récupérer les paiements d'une structure par client
+router.get('/:code_structure/client/:clientId', controller.getPaiementsByClient);
+
 module.exports = router;

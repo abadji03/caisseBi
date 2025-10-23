@@ -20,7 +20,7 @@
     <div class="row mb-3">
       <div class="col-md-3">
         <select class="form-select" formControlName="type" (change)="onTypeBonChange()">
-          <option value="" disabled selected>Type de bon</option>
+          <!-- <option value="" disabled selected>Type de bon</option> -->
           <option value="commande">Commande</option>
           <option value="retour">Retour</option>
           <option value="livraison">Livraison</option>
@@ -53,10 +53,23 @@
               accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
             />
             <small class="form-text text-muted">
-              Formats acceptés: PDF, JPG, PNG, DOC
+              Formats acceptés: PDF, JPG, PNG, DOC (Max taille: 10MB chacun)
             </small>
       </div> 
-      
+      <!-- Affichage du fichier sélectionné -->
+      <div *ngIf="fichierSelectionne" class="mt-2">
+        <div class="d-flex justify-content-between align-items-center p-2 border rounded">
+          <span>
+            {{getFileIcon(fichierSelectionne)}} {{fichierSelectionne.name}} 
+            <small class="text-muted">({{(fichierSelectionne.size / 1024 / 1024).toFixed(2)}} MB)</small>
+          </span>
+          <button type="button" class="btn btn-sm btn-outline-danger" 
+                  (click)="removeFile()">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      </div>
+
       <div *ngIf="typeBon === 'retour'" class="col-md-3">
         <input
           type="text"
@@ -151,7 +164,6 @@
             class="form-control"
             [value]="montantBase"
             readonly
-            [class.is-invalid]="totalPanier && totalPanier > (bonForm.get('montant')?.value || 0)"
           />
           <div *ngIf="totalPanier && totalPanier > (bonForm.get('montant')?.value || 0)" 
               class="invalid-feedback">
@@ -227,7 +239,6 @@
     
     <!-- Dans bon.component.html -->
     <app-panier
-    *ngIf="typeBon ==='commande' || typeBon === 'livraison'"
       [produitsDisponibles]="produitsDisponibles"
       [showPanierSection]="showPanier"
       [titre]="'Panier du bon'"
@@ -235,7 +246,9 @@
       [modeCompact]="true"
       [showHeader]="false"
       [showActions]="true"
+      (showBonButtons)="showBonButtons = $event"
       [showRemiseField]="false"
+      [typeEntite]="typeEntite" 
       [showButtonsActions]="true"  
       [showAvanceField]="false" 
       (onEnregistrer)="onPanierEnregistre($event)"
@@ -243,7 +256,7 @@
       (totalPanierChange)="onTotalPanierChange($event)"
     ></app-panier>
 
-    <div *ngIf="typeBon !==''" class="d-flex justify-content-center mt-3">
+    <div *ngIf="showBonButtons" class="d-flex justify-content-center mt-3">
       <!-- <button 
         type="button" 
         class="btn btn-success me-2" 

@@ -325,7 +325,10 @@
               [entiteNom]="selectedFournisseur?.nomComplet"
               (onEnregistrerBon)="onBonEnregistre($event)"
               (showFileField)=true
+              [resetForm]="!showBonComponent" 
               (onAnnulerBon)="onBonAnnule()"
+              (onReinitialiserPanier)="resetPanierFlag = true"
+
             ></app-bon>
             </div>
 
@@ -353,7 +356,7 @@
                       <td>{{ operation.type }}</td>
                       <td>{{ operation.dateOperation | date: 'dd/MM/yyyy HH:mm' }}</td>
                       <td>{{ operation.montantPaye }} F CFA</td>
-                      <td>{{ operation.agentId || 'N/A' }}</td>
+                      <td>{{ operation.user?.['nom'] }}</td>
                       <td>
                         <button class="btn btn-info" (click)="toggleDetails(i, operation)">
                           <i class="bi bi-eye"></i> Détails
@@ -367,15 +370,19 @@
                         <div *ngIf="getBonByOperation(operation) as bon">
                           <div class="row mb-3">
                             <div class="d-flex justify-content-between align-items-center">
-                              <h2 class="me-3">
-                                Détails du bon Nº:<b>{{ bon.numero }}</b>
-                              </h2>
+                              <h4 class="me-3">
+                                Détails du bon Nº:<em>{{ bon.numero }}</em>
+                              </h4>
                               <div class="">
                                 <!-- Bouton Valider (si bon livré mais pas encore validé) -->
                                 <!-- Valider
                               </button> -->
-                                <button class="btn btn-success me-2" (click)="validerBon(bon)">
-                                  Valider
+                                <button class="btn btn-success me-1" (click)="validerBon(bon)">
+                                  <i class="bi bi-check"></i>
+                                </button>
+
+                                <button class="btn btn-info me-1" (click)="validerBon(bon)">
+                                  <i class="bi bi-send"></i>
                                 </button>
 
                                 <!-- Modifier uniquement si brouillon -->
@@ -384,8 +391,8 @@
                                       (click)="modifierBon(bon)">
                                 ✏️ Modifier
                               </button> -->
-                                <button class="btn btn-primary me-2" (click)="modifierBon(bon)">
-                                  ✏️ Modifier
+                                <button class="btn btn-primary me-1" (click)="modifierBon(bon)">
+                                  <i class="bi bi-pencil"></i>
                                 </button>
 
                                 <!-- Supprimer uniquement si brouillon ou commandé -->
@@ -395,7 +402,7 @@
                                 🗑 Supprimer
                               </button> -->
                                 <button class="btn btn-danger me-2" (click)="supprimerBon(bon)">
-                                  🗑 Supprimer
+                                  <i class="bi bi-trash"></i>
                                 </button>
 
                                 <!-- Annuler uniquement si validé mais pas facturé -->
@@ -404,8 +411,8 @@
                                       (click)="annulerBon(bon)">
                                 ❌ Annuler
                               </button> -->
-                                <button class="btn btn-warning me-2" (click)="annulerBon(bon)">
-                                  ❌ Annuler
+                                <button class="btn btn-warning me-1" (click)="annulerBon(bon)">
+                                  <i class="bi bi-x"></i>
                                 </button>
 
                                 <!-- Facturer uniquement si validé et non facturé -->
@@ -414,8 +421,8 @@
                                       (click)="facturerBon(bon)">
                                 📄 Facturer
                               </button> -->
-                                <button class="btn btn-success me-2" (click)="facturerBon(bon)">
-                                  📄 Facturer
+                                <button class="btn btn-success me-1" (click)="facturerBon(bon)">
+                                  <i class="bi bi-receipt"></i>
                                 </button>
 
                                 <!-- Suivi Paiement uniquement si facturé mais pas payé -->
@@ -426,14 +433,14 @@
                               </button> -->
                                 <button
                                   *ngIf="bon.statutBon === 'facturé'"
-                                  class="btn btn-primary me-2"
+                                  class="btn btn-primary me-1"
                                   (click)="suiviPaiement(bon)"
                                 >
                                   💰 Suivi Paiement
                                 </button>
                                 <!-- Bouton Impression -->
-                                <button class="btn btn-secondary me-2" (click)="imprimerBon(bon)">
-                                  🖨️ Imprimer
+                                <button class="btn btn-secondary me-1" (click)="imprimerBon(bon)">
+                                  <i class="bi bi-printer"></i>
                                 </button>
                               </div>
                             </div>
@@ -448,7 +455,7 @@
                                 >
                                 <span
                                   >💰 Total des produits:
-                                  <strong>{{ bon.panier?.totalHT }} F CFA</strong></span
+                                  <strong>{{ operation.Panier?.totalTTC }} F CFA</strong></span
                                 >
                               </div>
                             </div>
@@ -470,13 +477,14 @@
                             <tbody>
                               <tr
                                 *ngFor="
-                                  let produit of getBonByOperation(operation)?.panier?.articles
+                                  let produit of operation?.Panier?.ArticlePaniers
                                 "
                               >
-                                <td>{{ "produit.designation" }}</td>
-                                <td>{{ 'produit.quantite à corriger' }}</td>
-                                <td>{{ "produit.unite "}}</td>
-                                <td>{{ "produit.prixAchatUnitaire" }} F CFA</td>
+                                <td>{{ produit.Produit?.designation }}</td>
+                                <td>{{ produit.quantite }}</td>
+                                <td>{{ produit.Produit?.unite}}</td>
+                                <td>{{ produit.prixVenteUnitaire }} F CFA</td>
+                                
                                 <td>
                                   <button
                                     class="btn btn-danger"
@@ -496,6 +504,10 @@
                             <p>
                               <strong>Remise :</strong>
                               {{ getBonByOperation(operation)?.remise || null }} F CFA
+                            </p>
+                            <p>
+                              <strong>TVA :</strong>
+                              {{ operation.Panier?.tva }} F CFA
                             </p>
                             <p>
                               <strong>Net à Payer :</strong>
@@ -1073,6 +1085,36 @@
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Ajouter cette modal de confirmation -->
+<div class="modal" tabindex="-1" [ngClass]="{ 'd-block': showConfirmationModal, 'd-none': !showConfirmationModal }">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title">Confirmation requise</h5>
+        <button type="button" class="btn-close" (click)="annulerAction()">
+          <i class="bi bi-x-lg"></i>Activer
+        </button>
+      </div>
+      <div class="modal-body">
+        <p *ngIf="actionEnCours === 'annuler_panier'">
+          Êtes-vous sûr de vouloir annuler ce panier ? Cette action supprimera définitivement 
+          le bon et tous les articles associés.
+        </p>
+        <div class="alert alert-warning">
+          <strong>Attention :</strong> Cette action est irréversible.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="annulerAction()">
+          Non, continuer
+        </button>
+        <button type="button" class="btn btn-danger" (click)="confirmerAction()">
+          Oui, annuler définitivement
+        </button>
       </div>
     </div>
   </div>

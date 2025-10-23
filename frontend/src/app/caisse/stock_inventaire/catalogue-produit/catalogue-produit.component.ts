@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { CategorieProduits, Produits } from '../../../modeles/produit.modele';
 import {
   FormBuilder,
@@ -13,7 +13,7 @@ import JsBarcode from 'jsbarcode';
 import { ProduitsService } from '../../../services/produits.service';
 import { ToastrService } from 'ngx-toastr';
 import { FournisseursService } from '../../../services/fournisseurs.service';
-import { finalize, forkJoin } from 'rxjs';
+import { finalize, forkJoin, Subject, takeUntil } from 'rxjs';
 import { Fournisseur } from '../../../modeles/fournisseur.model';
 import { StockInventaireService } from '../../../services/stock-inventaire.service';
 import { UserService } from '../../../services/user.service';
@@ -28,7 +28,7 @@ import { normalize } from '../../../utils/string-utils';
   templateUrl: './catalogue-produit.component.html',
   styleUrl: './catalogue-produit.component.css',
 })
-export class CatalogueProduitComponent implements OnInit {
+export class CatalogueProduitComponent implements OnInit, OnDestroy {
   prods: Produits[] = []; // Liste de prods
   users: User[] = [];
   stock: Stock[] = [];
@@ -96,6 +96,8 @@ export class CatalogueProduitComponent implements OnInit {
   magasins: string[] = ['Magasin 1', 'Magasin 2', 'Magasin 3', 'Magasin 4']; // Liste des magasins
   selectedImage: File | null = null;
 
+  private destroy$ = new Subject<void>();
+
   private fb = inject(FormBuilder);
   private produitsServices = inject(ProduitsService);
   private toastr = inject(ToastrService);
@@ -112,6 +114,11 @@ export class CatalogueProduitComponent implements OnInit {
     // Charger les prods fictifs
     //this.prods = this.loadMockData();
     // Initialiser filteredProducts avec tous les produits
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   iniFormulaire(): void {
@@ -514,7 +521,9 @@ export class CatalogueProduitComponent implements OnInit {
     console.log(this.categorieForm.get('code_structure')?.value);
     console.log(categorieData);
 
-    this.produitsServices.createCategorie(categorieData).subscribe({
+    this.produitsServices.createCategorie(categorieData)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
       next: () => {
         this.toastr.success('Catégorie créée avec succès');
         //this.loadCategories();
@@ -531,7 +540,9 @@ export class CatalogueProduitComponent implements OnInit {
   loadCategories(): void {
     //onst code_structure = this.authService.getUserStructure();
     this.isLoading = true;
-    this.produitsServices.getAllCategoriesProduits(this.code_structure).subscribe({
+    this.produitsServices.getAllCategoriesProduits(this.code_structure)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
       next: (data) => {
         this.isLoading = false;
         this.categories = data;
@@ -549,7 +560,9 @@ export class CatalogueProduitComponent implements OnInit {
   loadFournisseurs(): void {
     //onst code_structure = this.authService.getUserStructure();
     this.isLoading = true;
-    this.fournisseurService.getFournisseursByStructure(this.code_structure).subscribe({
+    this.fournisseurService.getFournisseursByStructure(this.code_structure)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
       next: (data) => {
         this.isLoading = false;
         this.fournisseur = data;
@@ -591,7 +604,10 @@ export class CatalogueProduitComponent implements OnInit {
       //this.isGeneralAdmin ? this.structureService.getAll() : of([])
       this.stockService.getStocksByStructure(this.code_structure),
     ])
-      .pipe(finalize(() => (this.isLoading = false)))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.isLoading = false))
+      )
       .subscribe({
         next: ([users, produits, stocks]) => {
           this.users = users;
@@ -929,7 +945,10 @@ export class CatalogueProduitComponent implements OnInit {
     const newStatus = !categorie.statut;
     this.produitsServices
       .updateStatutCategorie(categorie.id!, newStatus)
-      .pipe(finalize(() => (this.isLoading = false)))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.isLoading = false))
+      )
       .subscribe({
         next: () => {
           this.toastr.success('Statut catégorie mis à jour avec succès');
@@ -949,7 +968,10 @@ export class CatalogueProduitComponent implements OnInit {
     this.isLoading = true;
     this.produitsServices
       .updateStatusProduit(prod.id, status)
-      .pipe(finalize(() => (this.isLoading = false)))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.isLoading = false))
+      )
       .subscribe({
         next: () => {
           this.toastr.success('Statut produit mis à jour avec succès');
@@ -997,7 +1019,10 @@ export class CatalogueProduitComponent implements OnInit {
     this.isLoading = true;
     this.produitsServices
       .updateCodeBarre(this.selectedProduits.id, nouveauCodeBarre)
-      .pipe(finalize(() => (this.isLoading = false)))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.isLoading = false))
+      )
       .subscribe({
         next: () => {
           this.toastr.success('Code-barre mis à jour !');
@@ -1018,7 +1043,10 @@ export class CatalogueProduitComponent implements OnInit {
     if (confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?')) {
       this.produitsServices
         .deleteCategorie(id)
-        .pipe(finalize(() => (this.isLoading = false)))
+        .pipe(
+          takeUntil(this.destroy$),
+          finalize(() => (this.isLoading = false))
+        )
         .subscribe({
           next: () => {
             this.toastr.success('Catégore supprimée avec succès');
@@ -1046,7 +1074,9 @@ export class CatalogueProduitComponent implements OnInit {
 
   saveCategorieEdit() {
     // Appel à ton service pour faire la mise à jour :
-    this.produitsServices.updateCategorie(this.editedCategorie.id, this.editedCategorie).subscribe({
+    this.produitsServices.updateCategorie(this.editedCategorie.id, this.editedCategorie)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
       next: () => {
         this.toastr.success('Catégore mis à jour avec succès');
         this.loadCategories();
@@ -1158,7 +1188,9 @@ export class CatalogueProduitComponent implements OnInit {
     if (this.actionType === 'ajouter') {
       const stockData = this.stockForm.value;
       // Appel au service pour créer le produit
-      this.produitsServices.createProduit(formData).subscribe({
+      this.produitsServices.createProduit(formData)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
         next: (newProduit) => {
           console.log('Produit ajouté avec succès');
 
@@ -1172,7 +1204,9 @@ export class CatalogueProduitComponent implements OnInit {
           };
 
           // Créer le stock
-          this.stockService.createStock(completeStockData).subscribe({
+          this.stockService.createStock(completeStockData)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
             next: () => {
               this.toastr.success('Produit et stock ajoutés avec succès');
               this.loadData();
@@ -1192,7 +1226,9 @@ export class CatalogueProduitComponent implements OnInit {
         },
       });
     } else if (this.actionType === 'modifier' && this.selectedProduits) {
-      this.produitsServices.updateProduit(this.selectedProduits?.id, formData).subscribe({
+      this.produitsServices.updateProduit(this.selectedProduits?.id, formData)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
         next: () => {
           this.toastr.success('Produit mis à jour avec succès');
           this.loadData();

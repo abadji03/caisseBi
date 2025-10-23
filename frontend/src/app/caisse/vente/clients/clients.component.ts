@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { Client } from '../../../modeles/clients.model';
 import { CommonModule } from '@angular/common';
 import {
@@ -18,7 +18,7 @@ import { Magasin } from '../../../modeles/magasin.model';
 import { ToastrService } from 'ngx-toastr';
 import { ClientsService } from '../../../services/clients.service';
 import { MaagasinsService } from '../../../services/maagasins.service';
-import { finalize, forkJoin } from 'rxjs';
+import { finalize, forkJoin, Subject, takeUntil } from 'rxjs';
 import { normalize } from '../../../utils/string-utils';
 
 @Component({
@@ -28,7 +28,7 @@ import { normalize } from '../../../utils/string-utils';
   templateUrl: './clients.component.html',
   styleUrl: './clients.component.css',
 })
-export class ClientsComponent implements OnInit {
+export class ClientsComponent implements OnInit, OnDestroy {
   isLoading = false;
   code_structure = 'MASTRUCTURET-NZNC';
   magasinId = 1;
@@ -108,6 +108,8 @@ export class ClientsComponent implements OnInit {
   selectedBonIndexP: number | null = null;
   selectedBonIndexO: number | null = null;
 
+  private destroy$ = new Subject<void>();
+
   produits: Produits[] = [
     /* { id: 1, nom: 'Lait', quantite: 10, uniteStock: 'Sachets', prixUnitaire: 1000 },
     { id: 2, nom: 'Biscuits', quantite: 20, uniteStock: 'Sac', prixUnitaire: 500 },
@@ -128,7 +130,9 @@ export class ClientsComponent implements OnInit {
     this.iniForms();
     //this.addArticle();
     // Calcul du total à chaque changement de la remise, de la quantité et du prix unitaire
-    this.bonForm.valueChanges.subscribe(() => {
+    this.bonForm.valueChanges
+    .pipe(takeUntil(this.destroy$))
+    .subscribe(() => {
       this.updateTotal();
     });
     this.onTypeBonChange(); // Met à jour les champs au chargement
@@ -142,6 +146,11 @@ export class ClientsComponent implements OnInit {
     this.generatedNumero = this.generateBonNumber(currentDateObj);
 
     console.log('Produits disponibles :', this.produits); // Vérifier si les produits sont bien chargés
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   min(a: number, b: number): number {
@@ -1142,7 +1151,10 @@ export class ClientsComponent implements OnInit {
       this.magasinService.getMagasinsByStructure(this.code_structure),
       this.clientService.getClientsByStructure(this.code_structure),
     ])
-      .pipe(finalize(() => (this.isLoading = false)))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.isLoading = false))
+      )
       .subscribe({
         next: ([mgs, frs]) => {
           this.magasins = mgs;
@@ -1159,7 +1171,9 @@ export class ClientsComponent implements OnInit {
 
     this.clientService
       .ajouterClient(clientData as Client)
-      .pipe(finalize(() => (this.isLoading = false)))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.isLoading = false)))
       .subscribe({
         next: () => {
           this.toastr.success('Client créé avec succès');
@@ -1177,7 +1191,10 @@ export class ClientsComponent implements OnInit {
 
     this.clientService
       .updateClient(id, updateData)
-      .pipe(finalize(() => (this.isLoading = false)))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.isLoading = false))
+      )
       .subscribe({
         next: () => {
           this.toastr.success('Client mis à jour avec succès');
@@ -1196,7 +1213,10 @@ export class ClientsComponent implements OnInit {
     this.isLoading = true;
     this.clientService
       .updateClientStatut(id, newStatus)
-      .pipe(finalize(() => (this.isLoading = false)))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.isLoading = false))
+      )
       .subscribe({
         next: () => {
           //this.isLoading = false;
@@ -1220,7 +1240,10 @@ export class ClientsComponent implements OnInit {
     if (confirm('Êtes-vous sûr de vouloir supprimer ce client ?')) {
       this.clientService
         .deleteClient(id)
-        .pipe(finalize(() => (this.isLoading = false)))
+        .pipe(
+          takeUntil(this.destroy$),
+          finalize(() => (this.isLoading = false))
+        )
         .subscribe({
           next: () => {
             this.toastr.success('Client supprimé avec succès');
@@ -1242,7 +1265,9 @@ export class ClientsComponent implements OnInit {
 
     this.clientService
       .updateClientPlafond(id, plafond)
-      .pipe(finalize(() => (this.isLoading = false)))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.isLoading = false)))
       .subscribe({
         next: () => {
           this.toastr.success('Plafond mis à jour avec succès');
@@ -1263,7 +1288,10 @@ export class ClientsComponent implements OnInit {
 
     this.clientService
       .updateClientSolde(id, nouveauSolde)
-      .pipe(finalize(() => (this.isLoading = false)))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.isLoading = false))
+      )
       .subscribe({
         next: () => {
           this.toastr.success('Solde mis à jour avec succès');
@@ -1284,7 +1312,10 @@ export class ClientsComponent implements OnInit {
 
     this.clientService
       .updateClientMontantAPayer(id, montant)
-      .pipe(finalize(() => (this.isLoading = false)))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.isLoading = false))
+      )
       .subscribe({
         next: () => {
           this.toastr.success('Montant à payer mis à jour avec succès');

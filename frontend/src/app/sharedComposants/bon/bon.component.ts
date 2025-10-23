@@ -1,10 +1,13 @@
-import { Component, EventEmitter, inject, Input, OnInit, Output } from '@angular/core';
+import { ChangeDetectorRef, Component, EventEmitter, inject, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Produits } from '../../modeles/produit.modele';
-import { Bon } from '../../modeles/bon.model';
+import { Bon, BonAvecFichier } from '../../modeles/bon.model';
 import { Panier } from '../../modeles/panier.model';
 import { PanierComponent } from '../panier/panier.component';
+import { BonBrouillonService } from '../../services/bon-brouillon.service';
+import { BonsService } from '../../services/bons.service';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-bon',
@@ -13,7 +16,7 @@ import { PanierComponent } from '../panier/panier.component';
   templateUrl: './bon.component.html',
   styleUrl: './bon.component.css'
 })
-export class BonComponent implements OnInit{
+export class BonComponent implements OnInit, OnChanges{
   
  @Input() produitsDisponibles: Produits[] = [];
   @Input() showBonForm = false;
@@ -21,11 +24,19 @@ export class BonComponent implements OnInit{
   @Input() entiteId?: number;
   @Input() entiteNom?: string;
   @Input() showFileField = true;
+   // Ajouter un Input pour forcer la réinitialisation
+  @Input() resetForm = false;
   
   // eslint-disable-next-line @angular-eslint/no-output-on-prefix
-  @Output() onEnregistrerBon = new EventEmitter<Bon>();
+  @Output() onEnregistrerBon = new EventEmitter<BonAvecFichier>();
   // eslint-disable-next-line @angular-eslint/no-output-on-prefix
   @Output() onAnnulerBon = new EventEmitter<void>();
+  // Ajouter un Output pour réinitialiser le panier
+  // eslint-disable-next-line @angular-eslint/no-output-on-prefix
+  @Output() onErreurEnregistrement = new EventEmitter<string>();
+  // eslint-disable-next-line @angular-eslint/no-output-on-prefix
+  @Output() onReinitialiserPanier = new EventEmitter<void>();
+
   
   bonForm!: FormGroup;
   filteredProduits: Produits[] = [];
@@ -36,6 +47,9 @@ export class BonComponent implements OnInit{
   typeBon = '';
   panierDisabled = false;
   totalPanier = 0; // variable pour le total du panier pour le comparer au montant du bon
+  showBonButtons = false; // Pour afficher les boutons du bon après validation du panier
+
+  maxFileSize = 10 * 1024 * 1024; // 10MB
 
   erreurs: string[] = []; // Pour stocker les messages d'erreur
   modeMontant: 'saisi' | 'panier' = 'panier'; // valeur par défaut
@@ -46,17 +60,71 @@ export class BonComponent implements OnInit{
 
   fichierSelectionne: File | null = null;
 
+  bonBrouillon: Bon | null = null;
+
   
   private fb = inject(FormBuilder);
+  private bonBrouillonService = inject(BonBrouillonService);
+  private bonService = inject(BonsService);
+  private toastr = inject(ToastrService);
+  private cdr = inject(ChangeDetectorRef);
   
   ngOnInit() {
     this.updateTime();
     this.bonForm = this.createBonForm();
 
+    // S'abonner aux brouillons existants
+    this.bonBrouillonService.bonBrouillon$.subscribe(bon => {
+      this.bonBrouillon = bon;
+      if (bon) {
+        this.chargerBonBrouillon(bon);
+      }
+    });
+
     // Écouter les changements pour valider en temps réel
     this.bonForm.valueChanges.subscribe(() => {
       this.validerMontants();
     });
+  }
+
+   private chargerBonBrouillon(bon: Bon): void {
+    this.generatedNumero = bon.numero;
+    
+    this.bonForm.patchValue({
+      numero: bon.numero,
+      type: bon.type,
+      description: bon.description,
+      remise: bon.remise || 0,
+      avance: bon.avance || 0
+    });
+
+    // Charger le type de bon pour déclencher les bons comportements
+    this.onTypeBonChange();
+  }
+
+  private sauvegarderBrouillonAuto(): void {
+    if (this.bonForm.valid && this.typeBon) {
+      const bonData = this.prepareBonData().bon;
+      
+      // Si c'est un nouveau brouillon, créer l'ID temporaire
+      /* if (!this.bonBrouillon) {
+        bonData.id = -Date.now(); // ID temporaire pour le frontend
+      } else {
+        bonData.id = this.bonBrouillon.id;
+      } */
+
+      bonData.statutBon = 'brouillon';
+      this.bonBrouillonService.setBonBrouillon(bonData);
+    }
+  }
+
+
+  // Surveiller les changements de resetForm
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['resetForm'] && changes['resetForm'].currentValue === true) {
+      console.log('ResetForm déclenché - Réinitialisation du bon');
+      this.reinitialiserFormulaire();
+    }
   }
   
   onTotalPanierChange(total: number): void {
@@ -64,7 +132,7 @@ export class BonComponent implements OnInit{
 }
   createBonForm(): FormGroup {
     return this.fb.group({
-      type: ['', Validators.required],
+      type: ['commande', Validators.required],
       description: [''],
       //montant: [[Validators.min(0)]],
       refBonOrigine: [''],
@@ -181,22 +249,84 @@ export class BonComponent implements OnInit{
     return `BON-${timestamp}-${random}`;
   }
   
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onFileSelected(event: any): void {
+ /*  onFileSelected(event: any): void {
     const file = event.target.files[0];
     if (file) {
+      
+      this.fichierSelectionne = file;
+    }
+  } */
+ // Méthode pour la sélection du fichier
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onFileSelected(event: any): void {
+    const file: File = event.target.files[0];
+    
+    if (file) {
+      // Validation de la taille
+      if (file.size > this.maxFileSize) {
+        alert(`Le fichier ${file.name} dépasse la taille maximale de 10MB`);
+        this.fichierSelectionne = null;
+        event.target.value = '';
+        return;
+      }
+
+      // Validation du type
+      if (!this.isFileTypeValid(file)) {
+        alert(`Le format ${file.type} n'est pas accepté`);
+        this.fichierSelectionne = null;
+        event.target.value = '';
+        return;
+      }
+
       this.fichierSelectionne = file;
     }
   }
 
+  private isFileTypeValid(file: File): boolean {
+    const allowedTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    return allowedTypes.includes(file.type);
+  }
+
+  removeFile(): void {
+    this.fichierSelectionne = null;
+    // Réinitialiser l'input file
+    const fileInput = document.getElementById('fichierPaiement') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  }
+
+  getFileIcon(file: File): string {
+    if (file.type.includes('pdf')) return '📄';
+    if (file.type.includes('image')) return '🖼️';
+    if (file.type.includes('word')) return '📝';
+    return '📎';
+  }
+    
   onTypeBonChange(): void {
     this.typeBon = this.bonForm.get('type')?.value;
+
     if (this.typeBon === 'commande' || this.typeBon === 'livraison') {
+      this.showFileField = true;
       this.modeMontant = 'panier';
     } 
     else if (this.typeBon === 'retour') {
+      this.showFileField = false;
       this.modeMontant = 'saisi';
     }
+    else {
+      this.showFileField = false;
+      this.modeMontant = 'panier';
+    }
+    // Force la détection de changement si besoin :
+    this.cdr.detectChanges?.();
   }
   
   updateTime(): void {
@@ -204,7 +334,10 @@ export class BonComponent implements OnInit{
       this.currentTime = new Date().toLocaleTimeString();
     }, 1000);
   }
-  
+    reinitialiserEtMasquer(): void {
+    this.reinitialiserFormulaire();
+    this.showBonButtons = false;
+  }
   submitBon(): void {
     /* if (this.bonForm.valid) {
       const bonData: Bon = this.prepareBonData();
@@ -216,17 +349,29 @@ export class BonComponent implements OnInit{
       this.onEnregistrerBon.emit(bonData);
     } */
    if (this.bonForm.valid) {
-      const bonData: Bon = this.prepareBonData();
+      //const bonData: Bon = this.prepareBonData();
 
       if (!this.panierData || this.panierData.articles.length === 0) {
         console.log('Veuillez ajouter des articles au panier avant d’enregistrer le bon');
         return;
       }
 
-      console.log('Bon à enregistrer :', bonData);
-      this.onEnregistrerBon.emit(bonData);
+      const { bon, fichier } = this.prepareBonData();
+      bon.statutBon = 'validé';
+      if (this.bonBrouillon && this.bonBrouillon.id! > 0) {
+        bon.id = this.bonBrouillon.id;
+      }
+      console.log('Bon à enregistrer :', bon);
+      console.log('Fichier Bon :', fichier);
+      this.onEnregistrerBon.emit({bon, fichier});
+       // Réinitialiser immédiatement après l'émission
+      //this.reinitialiserFormulaire();
+      this.bonBrouillonService.clearBrouillons();
     } else {
       console.log('Veuillez remplir correctement le formulaire du bon');
+      const errorMsg = 'Veuillez remplir correctement le formulaire du bon';
+      console.log(errorMsg);
+      this.onErreurEnregistrement.emit(errorMsg);
     }
   }
 
@@ -234,6 +379,7 @@ export class BonComponent implements OnInit{
   onPanierEnregistre(panier: Panier): void {
     this.panierData = panier;
     console.log("Dépuis bon : "+this.panierData );
+    this.showBonButtons =true;
   }
   
   // Méthode pour gérer l'annulation du panier
@@ -289,7 +435,7 @@ export class BonComponent implements OnInit{
   });
 } */
 
-prepareBonData(): Bon {
+prepareBonData(): { bon: Bon, fichier: File | null } {
   const formValue = this.bonForm.value;
   const remise = Number(formValue.remise) || 0;
   const avance = Number(formValue.avance) || 0;
@@ -329,15 +475,16 @@ prepareBonData(): Bon {
         });
       }); */
 
-    return new Bon({
+    return {
+      bon:new Bon({
       numero: this.generatedNumero,
       type: formValue.type,
       description: formValue.description,
-      montantTotal: base - remise,
+      montantTotal: base,
       remise,
       typeEntite:this.typeEntite,
       avance,
-      netAPayer: base - remise - avance,
+      netAPayer: base - remise,
       resteAPayer: base - remise - avance,
       dateBon: new Date(),
       statutBon: 'brouillon',
@@ -347,10 +494,12 @@ prepareBonData(): Bon {
         tva: this.panierData.tva,
         totalTTC: this.panierData.totalTTC
       } */
-    });
+    }), 
+    fichier: this.fichierSelectionne};
   }
 
-  return new Bon({
+  return {
+    bon:new Bon({
     numero: this.generatedNumero,
     type: formValue.type,
     description: formValue.description,
@@ -362,7 +511,8 @@ prepareBonData(): Bon {
     resteAPayer: base - remise - avance,
     dateBon: new Date(),
     statutBon: 'brouillon'
-  });
+  }),
+  fichier: this.fichierSelectionne}
 }
 
 // Dans BonComponent
@@ -406,9 +556,57 @@ prepareBonData(): Bon {
 } */
   
   annulerBon(): void {
-    this.bonForm.reset();
+    //this.bonForm.reset();
     //this.panier.clear();
-    this.panierData = null;
+    //this.panierData = null;
+    if (this.bonBrouillon) {
+      // Supprimer le brouillon du backend
+      this.bonService.supprimerBonComplet(this.bonBrouillon.id!)
+        .subscribe({
+          next: () => {
+            this.toastr.success('Brouillon supprimé');
+          },
+          error: (err) => {
+            console.error('Erreur suppression brouillon:', err);
+          }
+        });
+    }
+    this.reinitialiserFormulaire();
+    this.bonBrouillonService.clearBrouillons();
     this.onAnnulerBon.emit();
   }
+
+  reinitialiserFormulaire(): void {
+    // Réinitialiser le formulaire bon
+    this.bonForm.reset({
+      remise: 0,
+      avance: 0,
+      type: '',
+      description: '',
+      refBonOrigine: '',
+      motifAvoir: '',
+      montantAvoir: 0,
+      dateBonOrigine: ''
+    });
+    
+    // Réinitialiser les variables
+    this.fichierSelectionne = null;
+    this.typeBon = '';
+    this.generatedNumero = this.generateNumero();
+    this.erreurs = [];
+    this.modeMontant = 'panier';
+     this.panierData = null;
+    this.showBonButtons = false;
+    
+        
+    // Réinitialiser l'input file
+    const fileInput = document.getElementById('fichierPaiement') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+    // Émettre l'événement pour réinitialiser le panier
+    this.onReinitialiserPanier.emit();
+    this.bonBrouillon = null;
+  }
+
 }

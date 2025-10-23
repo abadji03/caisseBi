@@ -14,6 +14,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: true,
     },
+    prixUnitaire: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+    },
   });
 
   /* ArticlePanier.associate = models => {

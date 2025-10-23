@@ -127,23 +127,54 @@ class ReservationService {
    */
   async gererReservationsStock(articles, bon, magasinId, agentId, code_structure, transaction) {
     const statut = bon.statutBon;
+    const typeEntite = bon.typeEntite;
+    const typeBon = bon.type;
 
-    // 1️⃣ Réserver le stock pour commandes clients
-    if (['commandé', 'expédié'].includes(statut) && bon.typeEntite === 'client') {
-      for (const article of articles) {
-        await this.reserverStockDirect(
-          article.produitId || article.produit?.id,
-          article.quantite,
-          magasinId,
-          code_structure,
-          bon.id,
-          `réservation_${statut}`,
-          transaction
-        );
+    console.log(`Gestion réservations - ${typeBon}-${typeEntite}, Statut: ${statut}`);
+
+    // RÈGLES MÉTIER SPÉCIFIQUES
+
+    // 1. RÉSERVATIONS COMMANDES CLIENTS
+    if (typeEntite === 'client' && typeBon === 'commande') {
+        /* if (['commandé', 'expédié'].includes(statut) && bon.typeEntite === 'client') {
+          for (const article of articles) {
+            await this.reserverStockDirect(
+              article.produitId || article.produit?.id,
+              article.quantite,
+              magasinId,
+              code_structure,
+              bon.id,
+              `réservation_${statut}`,
+              transaction
+            );
+          }
+        } */
+        if (['commandé', 'expédié'].includes(statut)) {
+        await this.reserverStockClient(articles, bon, magasinId, code_structure, transaction);
       }
-    }
+      
+      if (['livré', 'validé', 'facturé', 'payé', 'annulé'].includes(statut)) {
+        await this.libererStockClient(articles, bon, magasinId, code_structure, transaction);
+      }
+     }
+    
 
-    // 2️⃣ Libérer le stock pour annulations ou retours
+     // 2. RÉSERVATIONS COMMANDES FOURNISSEURS (préparation réception)
+     if (typeEntite === 'fournisseur' && typeBon === 'commande') {
+        if (['commandé', 'expédié'].includes(statut)) {
+          await this.preparerReceptionFournisseur(articles, bon, magasinId, code_structure, transaction);
+        }
+        
+        if (['livré', 'validé', 'annulé'].includes(statut)) {
+          await this.libererPreparationFournisseur(articles, bon, magasinId, code_structure, transaction);
+        }
+      }
+
+      // 3. LIBÉRATION GÉNÉRIQUE POUR RETOURS
+      if (statut === 'retourné') {
+        await this.libererStockGenerique(articles, bon, magasinId, code_structure, transaction);
+      }
+    /* // 2 Libérer le stock pour annulations ou retours
     if (['annulé', 'retourné'].includes(statut)) {
       for (const article of articles) {
         await this.libererStockReserveDirect(
@@ -171,6 +202,91 @@ class ReservationService {
           transaction
         );
       }
+    } */
+  }
+
+  /**
+   * Réserver stock pour commande client
+   */
+  async reserverStockClient(articles, bon, magasinId, code_structure, transaction) {
+    for (const article of articles) {
+      await this.reserverStockDirect(
+        article.produitId,
+        article.quantite,
+        magasinId,
+        code_structure,
+        bon.id,
+        `réservation_commande_client`,
+        transaction
+      );
+    }
+  }
+
+  /**
+   * Libérer stock pour commande client
+   */
+  async libererStockClient(articles, bon, magasinId, code_structure, transaction) {
+    for (const article of articles) {
+      await this.libererStockReserveDirect(
+        article.produitId,
+        article.quantite,
+        magasinId,
+        code_structure,
+        bon.id,
+        `libération_${bon.statutBon}_client`,
+        transaction
+      );
+    }
+  }
+
+  /**
+   * Préparer réception fournisseur
+   */
+  async preparerReceptionFournisseur(articles, bon, magasinId, code_structure, transaction) {
+    for (const article of articles) {
+      await this.reserverStockDirect(
+        article.produitId,
+        article.quantite,
+        magasinId,
+        code_structure,
+        bon.id,
+        `préparation_réception_fournisseur`,
+        transaction
+      );
+    }
+  }
+
+  /**
+   * Libérer préparation fournisseur
+   */
+  async libererPreparationFournisseur(articles, bon, magasinId, code_structure, transaction) {
+    for (const article of articles) {
+      await this.libererStockReserveDirect(
+        article.produitId,
+        article.quantite,
+        magasinId,
+        code_structure,
+        bon.id,
+        `libération_préparation_${bon.statutBon}`,
+        transaction
+      );
+    }
+  }
+
+  /**
+   * Libération générique
+   */
+  async libererStockGenerique(articles, bon, magasinId, code_structure, transaction) {
+    for (const article of articles) {
+      await this.libererStockReserveDirect(
+        article.produitId,
+        article.quantite,
+        magasinId,
+        code_structure,
+        bon.id,
+        `retour_${bon.typeEntite}`,
+        transaction
+      );
     }
   }
 

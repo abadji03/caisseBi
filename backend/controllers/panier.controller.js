@@ -232,4 +232,39 @@ exports.resetPanier = async (req, res) => {
   }
 };
 
+exports.getPanierByBonId = async (req, res) => {
+  try {
+    const { bonId } = req.params;
+
+    const panier = await Panier.findOne({
+      where: { bonId }, 
+      include: [
+        {
+          model: db.ArticlePanier,
+          include: [
+            {
+              model: db.Produit,
+            },
+          ],
+        },
+        {
+          model: db.Bon,
+        },
+        {
+          model: db.Client,
+        },
+      ],
+    });
+
+    if (!panier) {
+      return res.status(404).json({ message: 'Aucun panier trouvé pour ce bon.' });
+    }
+
+    return res.status(200).json(panier);
+  } catch (error) {
+    console.error('Erreur récupération panier par bon ID:', error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
 

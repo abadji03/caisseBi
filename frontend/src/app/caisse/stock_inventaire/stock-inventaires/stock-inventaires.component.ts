@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Stock } from '../../../modeles/entrees-sorties.model';
 import { Produits } from '../../../modeles/produit.modele';
@@ -7,7 +7,7 @@ import { Magasin } from '../../../modeles/magasin.model';
 import { ProduitsService } from '../../../services/produits.service';
 import { StockInventaireService } from '../../../services/stock-inventaire.service';
 import { MaagasinsService } from '../../../services/maagasins.service';
-import { finalize, forkJoin } from 'rxjs';
+import { finalize, forkJoin, Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-stock-inventaires',
@@ -16,7 +16,8 @@ import { finalize, forkJoin } from 'rxjs';
   templateUrl: './stock-inventaires.component.html',
   styleUrl: './stock-inventaires.component.css',
 })
-export class StockInventairesComponent implements OnInit {
+export class StockInventairesComponent implements OnInit, OnDestroy {
+    private destroy$ = new Subject<void>();
   searchTerm = ''; // Recherche
   filteredInventaire: Produits[] = [];
   filteredQtesDisponibles: Stock[] = [];
@@ -56,6 +57,10 @@ export class StockInventairesComponent implements OnInit {
     this.loadData();
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
   loadData(): void {
       this.isLoading = true;
       forkJoin([
@@ -64,7 +69,10 @@ export class StockInventairesComponent implements OnInit {
         //this.isGeneralAdmin ? this.structureService.getAll() : of([])
         this.stockServcice.getStocksByStructure(this.code_structure),
       ])
-        .pipe(finalize(() => (this.isLoading = false)))
+        .pipe(
+          takeUntil(this.destroy$),
+          finalize(() => (this.isLoading = false))
+        )
         .subscribe({
           next: ([magasin,produit, stock]) => {
             //this.fournisseurs = four

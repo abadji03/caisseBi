@@ -122,3 +122,47 @@ exports.getPaiementsByStructure = async (req, res) => {
     res.status(500).json({ message: 'Erreur lors de la récupération des produits', error });
   }
 };
+
+// Récupérer les paiements d'une structure par fournisseur
+exports.getPaiementsByFournisseur = async (req, res) => {
+  try {
+    const { code_structure, fournisseurId } = req.params;
+
+    const paiements = await Paiement.findAll({
+      where: {
+        code_structure: code_structure,
+        fournisseurId: fournisseurId
+      },
+      order: [['createdAt', 'DESC']],
+    });
+
+    res.status(200).json(paiements);
+  } catch (error) {
+    res.status(500).json({
+      message: 'Erreur lors de la récupération des paiements du fournisseur',
+      error: error.message
+    });
+  }
+};
+
+// Récupérer les paiements d'une structure par client
+exports.getPaiementsByClient = async (req, res) => {
+  try {
+    const { code_structure, clientId } = req.params;
+
+    const paiements = await Paiement.findAll({
+      where: {
+        code_structure: code_structure,
+        clientId: clientId
+      },
+      order: [['createdAt', 'DESC']],
+    });
+
+    res.status(200).json(paiements);
+  } catch (error) {
+    res.status(500).json({
+      message: 'Erreur lors de la récupération des paiements du client',
+      error: error.message
+    });
+  }
+};

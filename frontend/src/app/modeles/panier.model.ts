@@ -6,6 +6,7 @@ export class Panier {
   id?: number;
   clientId?: number;
   bonId?: number;
+  ArticlePaniers?: ArticlePanier[] = [];
   articles: ArticlePanier[] = [];
   //articles: Produits[] = [];
   //stockList: Stock[] = [];  // Liste des stocks associés à chaque produit (pour un magasin spécifique)
@@ -14,9 +15,10 @@ export class Panier {
   totalTTC = 0;
   remise = 0;
   avance = 0;
-  //typeEntite!:'client' | 'fournisseur';
+  tauxTVA = 0;
+  typeEntite?:'client' | 'fournisseur';
   code_structure?:string;
-  statut: 'EN_COURS' | 'VALIDE' | 'ANNULE' = 'EN_COURS';
+  statut: 'en_cours' | 'validé' | 'annulé' = 'en_cours';
   dateCreation: Date = new Date();
   dateMiseAJour: Date = new Date();
   detailsVisible = false; // Permet de gérer l'affichage des détails
@@ -33,16 +35,16 @@ export class Panier {
   public calculerTotals(): void {
     this.totalHT = this.articles.reduce((sum, article) => {
       const quantite = article.quantite ?? 0;
-      const prix = article.prixVenteUnitaire ?? 0;
+      const prix = article.prixUnitaire ?? 0;
       return sum + prix * quantite;
     }, 0);
 
-    this.tva = this.totalHT * 0.18;
+    this.tva = this.totalHT * (this.tauxTVA / 100);
     this.totalTTC = this.totalHT + this.tva;
   }
 
   public annuler(): void {
-    this.statut = 'ANNULE';
+    this.statut = 'annulé';
   }
 }
 
@@ -50,7 +52,9 @@ export class ArticlePanier {
   id?: number;
   produitId?: number;
   panierId?: number;
+  Produit?: Produits;
   produit?: Produits;
+  prixUnitaire!: number; // Prix utilisé pour les calculs (prix de vente ou d'achat selon typeEntite)
   quantite!: number;
   prixVenteUnitaire!: number;
   prixAchatUnitaire!: number;

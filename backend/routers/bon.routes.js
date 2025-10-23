@@ -44,4 +44,21 @@ router.patch('/:id/fichier', upload.single('fichier'), bonController.updateFichi
 //Mettre à jour les motifs de retour
 router.patch('/:id/motifsRetour', bonController.updateMotifsRetour);
 
+// Récupérer les bons d'une structure par fournisseur
+router.get('/:code_structure/fournisseur/:fournisseurId', bonController.getBonsByFournisseur);
+
+// Récupérer les bons d'une structure par client
+router.get('/:code_structure/client/:clientId', bonController.getBonsByClient);
+
+// Upload d'un fichier pour un bon
+router.post('/upload-fichier', upload.single('fichier'), bonController.uploadFichier);
+
+// Supprimer un fichier
+router.delete('/:bonId/fichier', bonController.supprimerFichier);
+
+router.post('/brouillon', bonController.createBonComplet);
+router.get('/brouillons/:code_structure', bonController.getBonsBrouillons);
+router.post('/panier/statut', bonController.changerStatutPanier);
+router.delete('/complet/:bonId', bonController.supprimerBonComplet);
+
 module.exports = router;

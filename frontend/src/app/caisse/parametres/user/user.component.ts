@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { User } from '../../../modeles/user.model';
 import {
   FormBuilder,
@@ -13,7 +13,7 @@ import { Structure } from '../../../modeles/structure.model';
 import { AuthService } from '../../../services/auth.service';
 import { StructureService } from '../../../services/structure.service';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { finalize, forkJoin, map, Observable } from 'rxjs';
+import { finalize, forkJoin, map, Observable, Subject, takeUntil } from 'rxjs';
 import { RolePermissionsService } from '../../../services/role-permissions.service';
 import { Role } from '../../../modeles/role-permission.model';
 import { ToastrService } from 'ngx-toastr';
@@ -25,7 +25,7 @@ import { ToastrService } from 'ngx-toastr';
   templateUrl: './user.component.html',
   styleUrl: './user.component.css',
 })
-export class UserComponent implements OnInit {
+export class UserComponent implements OnInit, OnDestroy {
   users: User[] = [];
   structures: Structure[] = [];
   userForm!: FormGroup;
@@ -41,6 +41,8 @@ export class UserComponent implements OnInit {
   currentPage = 1;
   itemsPerPage = 10;
   //roleIds: number[] = [];
+
+  private destroy$ = new Subject<void>();
 
   errorMessage = '';
   private fb = inject(FormBuilder);
@@ -63,6 +65,11 @@ export class UserComponent implements OnInit {
      this.structures.forEach(str=> {
             console.log(str.nom_structure, str.id, str.code_structure)
          }); */
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   iniForm(): void {
@@ -134,7 +141,10 @@ export class UserComponent implements OnInit {
       //this.isGeneralAdmin ? this.structureService.getAll() : of([])
       this.structureService.getAll(),
     ])
-      .pipe(finalize(() => (this.isLoading = false)))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.isLoading = false))
+      )
       .subscribe({
         next: ([users, roles, structures]) => {
           this.users = users;
@@ -143,7 +153,9 @@ export class UserComponent implements OnInit {
           this.roles = this.roles.filter((s) => s.id != 1);
           this.users = this.users.filter((s) => s.structure_id != null);
           for (const user of this.users) {
-            this.roleService.getRolesByUser(user.id).subscribe((roles) => {
+            this.roleService.getRolesByUser(user.id)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe((roles) => {
               this.userRolesMap[user.id] = roles.map((role) => role.nom);
             });
           }
@@ -160,11 +172,15 @@ export class UserComponent implements OnInit {
     // Initialisation du formulaire
     if (this.isEditMode && user) {
       // Récupère les rôles de l'utilisateur
-      this.roleService.getRolesIdByUser(user.id!).subscribe({
+      this.roleService.getRolesIdByUser(user.id!)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
         next: (userRole) => {
           // Récupère les détails complets de l'utilisateur
           console.log(userRole.roleIds);
-          this.userService.getById(user.id!).subscribe({
+          this.userService.getById(user.id!)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
             next: (fullUser) => {
               // Patch le formulaire avec toutes les données
               this.userForm.patchValue({
@@ -234,11 +250,15 @@ export class UserComponent implements OnInit {
 
     if (this.isEditMode && this.selectedUser) {
       // Mise à jour de l'utilisateur
-      this.userService.update(this.selectedUser.id, userData).subscribe({
+      this.userService.update(this.selectedUser.id, userData)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
         next: (updatedUser) => {
           // Mise à jour des rôles de l'utilisateur
           console.log('Envoi des rôles pour l’utilisateur', updatedUser.id, roleIds);
-          this.roleService.updateRolesForUser(updatedUser.id, roleIds).subscribe({
+          this.roleService.updateRolesForUser(updatedUser.id, roleIds)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
             next: () => {
               this.toastr.success('Utilisateur mis à jour avec succès');
               this.loadData();
@@ -261,11 +281,15 @@ export class UserComponent implements OnInit {
       });
     } else {
       // Création d'un nouvel utilisateur
-      this.userService.create(userData).subscribe({
+      this.userService.create(userData)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
         next: (newUser) => {
           // Assignation des rôles au nouvel utilisateur
           if (roleIds.length > 0) {
-            this.roleService.assignRolesToUser(newUser.id, roleIds).subscribe({
+            this.roleService.assignRolesToUser(newUser.id, roleIds)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
               next: () => {
                 this.toastr.success('Utilisateur créé avec succès');
                 this.loadData();
@@ -299,14 +323,18 @@ export class UserComponent implements OnInit {
       this.isLoading = true;
 
       // D'abord, récupérer les permissions associées au rôle
-      this.roleService.getRolesIdByUser(userId).subscribe({
+      this.roleService.getRolesIdByUser(userId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
         next: (userRoles) => {
           const roleIds = userRoles.roleIds || [];
 
           // Supprimer d'abord les associations de permissions
           if (roleIds.length > 0) {
             //console.log('Succés');
-            this.roleService.removeRolesFromUser(userId, roleIds).subscribe({
+            this.roleService.removeRolesFromUser(userId, roleIds)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
               next: () => {
                 // Puis supprimer le rôle lui-même
                 this.deleteUserFinally(userId);

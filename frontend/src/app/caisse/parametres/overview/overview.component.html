@@ -232,9 +232,9 @@
                     <span
                       class="badge"
                       [ngClass]="{
-                        'bg-success': vente.statut === 'VALIDE',
-                        'bg-warning': vente.statut === 'EN_COURS',
-                        'bg-danger': vente.statut === 'ANNULE',
+                        'bg-success': vente.statut === 'validé',
+                        'bg-warning': vente.statut === 'en_cours',
+                        'bg-danger': vente.statut === 'annulé',
                       }"
                     >
                       {{ vente.statut }}

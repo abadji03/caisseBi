@@ -48,6 +48,10 @@ exports.getFournisseursByStructure = async (req, res) => {
 
 const db = require('../models');
 const Fournisseur = db.Fournisseur;
+const Bon = db.Bon;
+const Panier = db.Panier;
+const ArticlePanier = db.ArticlePanier;
+const Produit = db.Produit;
 
 // Créer un nouveau fournisseur
 /* exports.createFournisseur = async (req, res) => {
@@ -239,5 +243,39 @@ exports.getFournisseursPaginated = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: 'Erreur pagination', error });
+  }
+};
+
+exports.getBonsWithPaniersAndProduits = async (req, res) => {
+  try {
+    const { id, code_structure } = req.params;
+
+    const fournisseur = await Fournisseur.findOne({
+      where: { id, code_structure: code_structure },
+      include: [
+        {
+          model: Bon,
+          include: [
+            {
+              model: Panier,
+              include: [
+                {
+                  model: ArticlePanier,
+                  include: [Produit]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    });
+
+    if (!fournisseur) {
+      return res.status(404).json({ message: 'Fournisseur non trouvé' });
+    }
+
+    res.json(fournisseur);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };

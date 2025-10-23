@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { Chart as ChartJS, registerables } from 'chart.js';
 import {
   NavigationEnd,
@@ -9,7 +9,7 @@ import {
   RouterModule,
   RouterOutlet,
 } from '@angular/router';
-import { filter } from 'rxjs';
+import { filter, Subject, takeUntil } from 'rxjs';
 
 // Enregistrer les éléments nécessaires dans Chart.js
 ChartJS.register(...registerables);
@@ -21,7 +21,7 @@ ChartJS.register(...registerables);
   templateUrl: './espace-vendeurs.component.html',
   styleUrl: './espace-vendeurs.component.css',
 })
-export class EspaceVendeursComponent implements OnInit {
+export class EspaceVendeursComponent implements OnInit, OnDestroy {
   isSidebarCollapsed = false;
   activeAccordion: string | null = null;
 
@@ -36,15 +36,25 @@ export class EspaceVendeursComponent implements OnInit {
   currentSubMenu = "Vue d'ensemble";
   fullTitle = '';
   private router = inject(Router);
+  private destroy$ = new Subject<void>();
 
   ngOnInit(): void {
     this.router.events
-      .pipe(filter((event: unknown) => event instanceof NavigationEnd))
+      .pipe(
+        filter((event: unknown) => event instanceof NavigationEnd),
+        takeUntil(this.destroy$),
+
+    )
       .subscribe(() => {
         this.updateTitles();
       });
   }
 
+   ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+  
   updateTitles(): void {
     const url = this.router.url;
     //console.log(url)
