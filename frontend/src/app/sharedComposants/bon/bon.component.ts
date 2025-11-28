@@ -24,7 +24,8 @@ export class BonComponent implements OnInit, OnChanges{
   @Input() entiteId?: number;
   @Input() entiteNom?: string;
   @Input() showFileField = true;
-   // Ajouter un Input pour forcer la réinitialisation
+  
+  // Ajouter un Input pour forcer la réinitialisation
   @Input() resetForm = false;
   
   // eslint-disable-next-line @angular-eslint/no-output-on-prefix
@@ -52,9 +53,10 @@ export class BonComponent implements OnInit, OnChanges{
   maxFileSize = 10 * 1024 * 1024; // 10MB
 
   erreurs: string[] = []; // Pour stocker les messages d'erreur
-  modeMontant: 'saisi' | 'panier' = 'panier'; // valeur par défaut
+  modeMontant: 'saisi'|'mixte' | 'panier' = 'panier'; // valeur par défaut
 
   // Variables pour le panier intégré
+  resetPanierTrigger = false;
   showPanier = true;
   panierData: Panier | null = null;
 
@@ -87,12 +89,14 @@ export class BonComponent implements OnInit, OnChanges{
     });
   }
 
-   private chargerBonBrouillon(bon: Bon): void {
+// Méthode pour charger un brouillon de bon
+  private chargerBonBrouillon(bon: Bon): void {
     this.generatedNumero = bon.numero;
-    
+    console.log('Chargement du brouillon de bon :', bon.type);
+    //this.typeBon = bon.type.toLowerCase();
     this.bonForm.patchValue({
       numero: bon.numero,
-      type: bon.type,
+      type: bon.type?.toLowerCase(),
       description: bon.description,
       remise: bon.remise || 0,
       avance: bon.avance || 0
@@ -102,23 +106,6 @@ export class BonComponent implements OnInit, OnChanges{
     this.onTypeBonChange();
   }
 
-  private sauvegarderBrouillonAuto(): void {
-    if (this.bonForm.valid && this.typeBon) {
-      const bonData = this.prepareBonData().bon;
-      
-      // Si c'est un nouveau brouillon, créer l'ID temporaire
-      /* if (!this.bonBrouillon) {
-        bonData.id = -Date.now(); // ID temporaire pour le frontend
-      } else {
-        bonData.id = this.bonBrouillon.id;
-      } */
-
-      bonData.statutBon = 'brouillon';
-      this.bonBrouillonService.setBonBrouillon(bonData);
-    }
-  }
-
-
   // Surveiller les changements de resetForm
   ngOnChanges(changes: SimpleChanges) {
     if (changes['resetForm'] && changes['resetForm'].currentValue === true) {
@@ -127,18 +114,21 @@ export class BonComponent implements OnInit, OnChanges{
     }
   }
   
+  // Méthode pour gérer le changement du total du panier
   onTotalPanierChange(total: number): void {
-  this.totalPanier = total;
-}
-  createBonForm(): FormGroup {
+    this.totalPanier = total;
+  }
+
+// Méthode pour créer le formulaire du bon
+createBonForm(): FormGroup {
     return this.fb.group({
       type: ['commande', Validators.required],
       description: [''],
       //montant: [[Validators.min(0)]],
-      refBonOrigine: [''],
-      motifAvoir: [''],
+      numeroBonOrigine: [''],
+      motifsRetour: [''],
       montantAvoir: [[Validators.min(0)]],
-      dateBonOrigine: [''],
+      //dateBonOrigine: [''],
       remise: [0, [Validators.min(0)]],
       avance: [0, [Validators.min(0)]]
       //panier: this.fb.array([])
@@ -176,7 +166,19 @@ export class BonComponent implements OnInit, OnChanges{
     if (this.modeMontant === 'panier') {
       return this.totalPanier;
     }
-    return this.bonForm.get('montantAvoir')?.value || 0;
+    //return this.bonForm.get('montantAvoir')?.value || 0;
+    else if (this.modeMontant === 'saisi') {
+      return this.bonForm.get('montantAvoir')?.value || 0;
+    }
+    else if (this.modeMontant === 'mixte') {
+      // Pour les retours : priorité au panier, sinon au montant saisi
+      if (this.panierData && this.panierData.articles.length > 0) {
+        return this.totalPanier;
+      } else {
+        return this.bonForm.get('montantAvoir')?.value || 0;
+      }
+    }
+    return 0;
   }
 
   // Validation des montants
@@ -205,57 +207,33 @@ export class BonComponent implements OnInit, OnChanges{
     } */
   }
 
-  // Ajoutez cette méthode pour vérifier si le montant est valide
- /*  get isMontantValide(): boolean {
-    const montant = this.bonForm.get('montant')?.value;
-    return montant !== null && montant !== undefined && montant > 0;
-  }
-
-  // Ou pour une vérification plus spécifique
-  get montantEstSuperieurAZero(): boolean {
-    const montant = this.bonForm.get('montant')?.value;
-    return Number(montant) > 0;
-  } */
-
+  // Getter pour le montant net à payer
   get resteAPayer(): number {
     const total = this.totalBon;
     const avance = this.bonForm.get('avance')?.value || 0;
     return Math.max(0, total - avance);
   }
+
+  // Getter pour le montant total du bon après remise
   get totalBon(): number {
     const formValue = this.bonForm.value;
-    //const montant = formValue.montant || 0;
-    //const montantAvoir = formValue.montantAvoir || 0;
     const remise = formValue.remise || 0;
-    //const remise = this.bonForm.get('remise')?.value || 0;
     
     if (this.typeBon === 'retour') {
        return 0;
-      //return montantAvoir;
-      //return this.bonForm.get('montantAvoir')?.value || 0;
     }
     
-    // Si on a un panier, utiliser son total, sinon utiliser le montant du formulaire
-    //return this.panierData ? this.panierData.totalTTC : montant;
-    //const totalBase = this.panierData ? this.panierData.totalTTC : montant;
-    //return totalBase - remise;
     const base = this.montantBase;
     return Math.max(0, base - remise);
   }
   
+  // Méthode pour générer un numéro unique de bon
   generateNumero(): string {
     const timestamp = new Date().getTime();
     const random = Math.floor(Math.random() * 1000);
     return `BON-${timestamp}-${random}`;
   }
   
- /*  onFileSelected(event: any): void {
-    const file = event.target.files[0];
-    if (file) {
-      
-      this.fichierSelectionne = file;
-    }
-  } */
  // Méthode pour la sélection du fichier
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onFileSelected(event: any): void {
@@ -282,6 +260,7 @@ export class BonComponent implements OnInit, OnChanges{
     }
   }
 
+  // Méthode pour valider le type de fichier
   private isFileTypeValid(file: File): boolean {
     const allowedTypes = [
       'application/pdf',
@@ -294,6 +273,7 @@ export class BonComponent implements OnInit, OnChanges{
     return allowedTypes.includes(file.type);
   }
 
+  // Méthode pour supprimer le fichier sélectionné
   removeFile(): void {
     this.fichierSelectionne = null;
     // Réinitialiser l'input file
@@ -303,6 +283,7 @@ export class BonComponent implements OnInit, OnChanges{
     }
   }
 
+  // Obtenir l'icône du fichier en fonction de son type
   getFileIcon(file: File): string {
     if (file.type.includes('pdf')) return '📄';
     if (file.type.includes('image')) return '🖼️';
@@ -310,16 +291,27 @@ export class BonComponent implements OnInit, OnChanges{
     return '📎';
   }
     
+  // Méthode appelée lors du changement de type de bon
   onTypeBonChange(): void {
     this.typeBon = this.bonForm.get('type')?.value;
 
+     // Réinitialiser certains champs selon le type
+      if (this.typeBon === 'retour') {
+        this.bonForm.patchValue({
+          remise: 0,
+          avance: 0
+        });
+      }
     if (this.typeBon === 'commande' || this.typeBon === 'livraison') {
       this.showFileField = true;
       this.modeMontant = 'panier';
     } 
     else if (this.typeBon === 'retour') {
       this.showFileField = false;
-      this.modeMontant = 'saisi';
+      //this.modeMontant = 'saisi';
+      this.modeMontant = 'mixte'; // Nouveau mode
+      
+
     }
     else {
       this.showFileField = false;
@@ -329,6 +321,7 @@ export class BonComponent implements OnInit, OnChanges{
     this.cdr.detectChanges?.();
   }
   
+  // Met à jour l'heure chaque seconde
   updateTime(): void {
     setInterval(() => {
       this.currentTime = new Date().toLocaleTimeString();
@@ -338,19 +331,11 @@ export class BonComponent implements OnInit, OnChanges{
     this.reinitialiserFormulaire();
     this.showBonButtons = false;
   }
-  submitBon(): void {
-    /* if (this.bonForm.valid) {
-      const bonData: Bon = this.prepareBonData();
-      console.log('Bon à enregistrer :', bonData);
-      // ⚡️ Associer le panierData si présent
-      if (this.panierData) {
-        bonData.panier = this.panierData;
-      }
-      this.onEnregistrerBon.emit(bonData);
-    } */
-   if (this.bonForm.valid) {
-      //const bonData: Bon = this.prepareBonData();
 
+  // Méthode pour soumettre le bon
+  /* submitBon(): void {
+   
+   if (this.bonForm.valid) {
       if (!this.panierData || this.panierData.articles.length === 0) {
         console.log('Veuillez ajouter des articles au panier avant d’enregistrer le bon');
         return;
@@ -364,8 +349,6 @@ export class BonComponent implements OnInit, OnChanges{
       console.log('Bon à enregistrer :', bon);
       console.log('Fichier Bon :', fichier);
       this.onEnregistrerBon.emit({bon, fichier});
-       // Réinitialiser immédiatement après l'émission
-      //this.reinitialiserFormulaire();
       this.bonBrouillonService.clearBrouillons();
     } else {
       console.log('Veuillez remplir correctement le formulaire du bon');
@@ -373,8 +356,48 @@ export class BonComponent implements OnInit, OnChanges{
       console.log(errorMsg);
       this.onErreurEnregistrement.emit(errorMsg);
     }
-  }
+  } */
 
+    submitBon(): void {
+      if (this.bonForm.valid) {
+        // Pour tous les types sauf retour, on vérifie le panier
+        if (this.typeBon !== 'retour') {
+          if (!this.panierData || this.panierData.articles.length === 0) {
+            console.log('Veuillez ajouter des articles au panier avant d’enregistrer le bon');
+            this.toastr.warning('Veuillez ajouter des articles au panier', 'Panier vide');
+            return;
+          }
+        }
+
+        // Pour le type retour, vérifier qu'on a au moins un montant ou un panier
+        else if (this.typeBon === 'retour') {
+          const montantAvoir = this.bonForm.get('montantAvoir')?.value || this.montantBase || 0;
+          const hasPanier = this.panierData && this.panierData.articles.length > 0;
+          
+          if (montantAvoir <= 0 && !hasPanier) {
+            console.log('Pour un retour, veuillez saisir un montant ou ajouter des articles au panier');
+            this.toastr.warning('Pour un retour, saisissez un montant ou ajoutez des articles', 'Données manquantes');
+            return;
+          }
+        }
+
+        const { bon, fichier } = this.prepareBonData();
+        bon.statutBon = 'validé';
+        
+        if (this.bonBrouillon && this.bonBrouillon.id! > 0) {
+          bon.id = this.bonBrouillon.id;
+        }
+        
+        console.log('Bon à enregistrer :', bon);
+        console.log('Fichier Bon :', fichier);
+        this.onEnregistrerBon.emit({bon, fichier});
+        //this.bonBrouillonService.clearBrouillons();
+      } else {
+        console.log('Veuillez remplir correctement le formulaire du bon');
+        const errorMsg = 'Veuillez remplir correctement le formulaire du bon';
+        this.onErreurEnregistrement.emit(errorMsg);
+      }
+    }
    // Méthode pour gérer l'événement du panier
   onPanierEnregistre(panier: Panier): void {
     this.panierData = panier;
@@ -385,115 +408,42 @@ export class BonComponent implements OnInit, OnChanges{
   // Méthode pour gérer l'annulation du panier
   onPanierAnnule(): void {
     this.panierData = null;
+    this.onAnnulerBon.emit();
   }
 
-/* prepareBonData(): Bon {
-  const formValue = this.bonForm.value;
-  // Récupérer remise et avance du formulaire bon
-    const remise = Number(formValue.remise) || 0;
-    const avance = Number(formValue.avance) || 0;
-  // Si on a un panier, utiliser ses données
-  let base = this.montantBase;
-  if (this.modeMontant === 'panier' && this.panierData) {
-    
-    return new Bon({
-      numero: this.generatedNumero,
-      type: formValue.type,
-      description: formValue.description,
-      montantTotal: base - remise, // Total après remise du bon
-      remise, // Remise au niveau du bon
-      avance, // Avance au niveau du bon
-      netAPayer: base - remise - avance, // Net à payer
-      resteAPayer: base- remise - avance, // Reste à payer
-      dateBon: new Date(),
-      statutBon: 'brouillon',
-      panier: {
-        produits: this.panierData.articles.map(article => ({
-          ...article.produit,
-          quantite: article.quantite
-        })),
-        totalHT: this.panierData.totalHT,
-        tva: this.panierData.tva,
-        totalTTC: this.panierData.totalTTC
-      }
-    });
-  }
-  
-  // Sinon, créer un bon sans panier détaillé
-  //const montantBase = formValue.montant || 0;
-  return new Bon({
-    numero: this.generatedNumero,
-    type: formValue.type,
-    description: formValue.description,
-    montantTotal: base - remise,
-    remise,
-    avance,
-    netAPayer: base - remise - avance,
-    resteAPayer: base - remise - avance,
-    dateBon: new Date(),
-    statutBon: 'brouillon'
-  });
-} */
-
-prepareBonData(): { bon: Bon, fichier: File | null } {
+// Préparer les données du bon pour l'enregistrement
+/* prepareBonData(): { bon: Bon, fichier: File | null } {
   const formValue = this.bonForm.value;
   const remise = Number(formValue.remise) || 0;
   const avance = Number(formValue.avance) || 0;
   const base = this.montantBase;
 
-  if (this.modeMontant === 'panier' && this.panierData) {
-     /* const panierInstance = new Panier({
-      ...this.panierData,
-      typeEntite: this.typeEntite || 'fournisseur',
-      
-    }); */
-    
-    // Correction : Créez des objets Produits valides avec toutes les propriétés requises
-    /* const produits = this.panierData.articles
-      .filter(article => article.produit) // Filtre les produits undefined
-      .map(article => {
-        // Créez un nouvel objet Produits avec des valeurs par défaut
-        return new Produits({
-          id: article.produit?.id || 0,
-          categorieId: article.produit?.categorieId || 0,
-          designation: article.produit?.designation || 'Produit sans nom',
-          fournisseurId: article.produit?.fournisseurId,
-          unite: article.produit?.unite || 'unité',
-          prixAchatUnitaire: article.produit?.prixAchatUnitaire,
-          prixVenteUnitaire: article.produit?.prixVenteUnitaire || 0,
-          perissable: article.produit?.perissable || false,
-          description: article.produit?.description,
-          codeBarre: article.produit?.codeBarre,
-          image: article.produit?.image,
-          dateCreation: article.produit?.dateCreation || new Date(),
-          agentId: article.produit?.agentId,
-          dernierPrixAchat: article.produit?.dernierPrixAchat,
-          statut: article.produit?.statut ?? true,
-          // Note: quantite n'est pas une propriété normale de Produits,
-          // mais nous l'ajoutons temporairement pour le panier
-          //quantite: article.quantite
-        });
-      }); */
+  //S'assurer que le panierData est disponible
+  if (!this.panierData) {
+    console.error('Panier manquant lors de la préparation des données');
+    this.toastr.error('Le panier est vide', 'Erreur');
+    throw new Error('Panier manquant');
+  }
 
+  if (this.modeMontant === 'panier') {
+     
     return {
       bon:new Bon({
       numero: this.generatedNumero,
       type: formValue.type,
       description: formValue.description,
       montantTotal: base,
+      montantAvoir: formValue.type === 'retour' ? base:0,
+      numeroBonOrigine: formValue.type === 'retour' ? formValue.numeroBonOrigine:'',
+      motifsRetour: formValue.type === 'retour' ? formValue.motifsRetour:'',
       remise,
       typeEntite:this.typeEntite,
       avance,
       netAPayer: base - remise,
       resteAPayer: base - remise - avance,
       dateBon: new Date(),
-      statutBon: 'brouillon',
-      panier: this.panierData ?? undefined /* {
-        produits: produits,
-        totalHT: this.panierData.totalHT,
-        tva: this.panierData.tva,
-        totalTTC: this.panierData.totalTTC
-      } */
+      statutBon: 'validé',
+      panier: this.panierData ?? undefined 
     }), 
     fichier: this.fichierSelectionne};
   }
@@ -505,6 +455,9 @@ prepareBonData(): { bon: Bon, fichier: File | null } {
     description: formValue.description,
     montantTotal: base - remise,
     typeEntite:'fournisseur',
+    montantAvoir: formValue.type === 'retour' ? base:0,
+    numeroBonOrigine: formValue.type === 'retour' ? formValue.numeroBonOrigine:'',
+    motifsRetour: formValue.type === 'retour' ? formValue.motifsRetour:'',
     remise,
     avance,
     netAPayer: base - remise - avance,
@@ -513,75 +466,103 @@ prepareBonData(): { bon: Bon, fichier: File | null } {
     statutBon: 'brouillon'
   }),
   fichier: this.fichierSelectionne}
-}
+} */
 
-// Dans BonComponent
-/* get produitsPanier(): Produits[] {
-  if (!this.panierData) return [];
-  
-  return this.panierData.articles.map(article => {
+prepareBonData(): { bon: Bon, fichier: File | null } {
+  const formValue = this.bonForm.value;
+  const remise = Number(formValue.remise) || 0;
+  const avance = Number(formValue.avance) || 0;
+  const base = this.montantBase;
+
+  // Pour le type retour, on peut avoir soit un panier soit un montant direct
+  if (this.typeBon === 'retour') {
+    //const montantAvoir = base;
+    
     return {
-      ...article.produit,
-      quantite: article.quantite,
-      prixVenteUnitaire: article.prixVenteUnitaire
+      bon: new Bon({
+        numero: this.generatedNumero,
+        type: formValue.type,
+        description: formValue.description,
+        montantTotal: 0, // Pour un retour, le montant total est 0
+        montantAvoir: base,
+        numeroBonOrigine: formValue.numeroBonOrigine,
+        motifsRetour: formValue.motifsRetour,
+        remise: 0, // Pas de remise sur les retours
+        typeEntite: this.typeEntite,
+        avance: 0, // Pas d'avance sur les retours
+        netAPayer: 0, // Net à payer est 0 pour les retours
+        resteAPayer: 0, // Reste à payer est 0 pour les retours
+        dateBon: new Date(),
+        statutBon: 'validé',
+        panier: this.panierData || undefined // Inclure le panier si disponible
+      }), 
+      fichier: this.fichierSelectionne
     };
-  });
-} */
-
-// Correction de la méthode get produitsPanier()
-/* get produitsPanier(): Produits[] {
-  if (!this.panierData) return [];
-  
-  return this.panierData.articles
-    .filter(article => article.produit)
-    .map(article => {
-      return new Produits({
-        id: article.produit!.id || 0,
-        categorieId: article.produit!.categorieId || 0,
-        designation: article.produit!.designation || '',
-        fournisseurId: article.produit!.fournisseurId,
-        unite: article.produit!.unite || '',
-        prixAchatUnitaire: article.produit!.prixAchatUnitaire,
-        prixVenteUnitaire: article.produit!.prixVenteUnitaire || 0,
-        perissable: article.produit!.perissable || false,
-        description: article.produit!.description,
-        codeBarre: article.produit!.codeBarre,
-        image: article.produit!.image,
-        dateCreation: article.produit!.dateCreation || new Date(),
-        agentId: article.produit!.agentId,
-        dernierPrixAchat: article.produit!.dernierPrixAchat,
-        statut: article.produit!.statut ?? true
-      });
-    });
-} */
-  
-  annulerBon(): void {
-    //this.bonForm.reset();
-    //this.panier.clear();
-    //this.panierData = null;
-    if (this.bonBrouillon) {
-      // Supprimer le brouillon du backend
-      this.bonService.supprimerBonComplet(this.bonBrouillon.id!)
-        .subscribe({
-          next: () => {
-            this.toastr.success('Brouillon supprimé');
-          },
-          error: (err) => {
-            console.error('Erreur suppression brouillon:', err);
-          }
-        });
-    }
-    this.reinitialiserFormulaire();
-    this.bonBrouillonService.clearBrouillons();
-    this.onAnnulerBon.emit();
   }
 
+  // Pour les autres types (commande, livraison)
+  if (!this.panierData) {
+    console.error('Panier manquant lors de la préparation des données');
+    this.toastr.error('Le panier est vide', 'Erreur');
+    throw new Error('Panier manquant');
+  }
+
+  const montantApresRemise = base - remise;
+  
+  return {
+    bon: new Bon({
+      numero: this.generatedNumero,
+      type: formValue.type,
+      description: formValue.description,
+      montantTotal: base,
+      montantAvoir: 0,
+      numeroBonOrigine: '',
+      motifsRetour: '',
+      remise,
+      typeEntite: this.typeEntite,
+      avance,
+      netAPayer: montantApresRemise,
+      resteAPayer: Math.max(0, montantApresRemise - avance),
+      dateBon: new Date(),
+      statutBon: 'validé',
+      panier: this.panierData
+    }), 
+    fichier: this.fichierSelectionne
+  };
+}
+
+  // Méthode pour annuler le bon
+  annulerBon(): void {
+    const confirmAnnulation = confirm('Annuler l\'enregistrement du bon?');
+    if (confirmAnnulation) {
+      if (this.bonBrouillon) {
+        // Supprimer le brouillon du backend
+        this.bonService.supprimerBonComplet(this.bonBrouillon.id!)
+          .subscribe({
+            next: () => {
+              this.toastr.success('Brouillon supprimé');
+              this.reinitialiserFormulaire();
+              this.bonBrouillonService.clearBrouillons();
+              this.onAnnulerBon.emit();
+            },
+            error: (err) => {
+              console.error('Erreur suppression brouillon:', err);
+            }
+          });
+      }
+    }
+    else{
+      console.log('Annulation de l\'action');
+    }
+  }
+
+  // Méthode pour réinitialiser le formulaire
   reinitialiserFormulaire(): void {
     // Réinitialiser le formulaire bon
     this.bonForm.reset({
       remise: 0,
       avance: 0,
-      type: '',
+      type: 'commande',
       description: '',
       refBonOrigine: '',
       motifAvoir: '',
@@ -597,6 +578,7 @@ prepareBonData(): { bon: Bon, fichier: File | null } {
     this.modeMontant = 'panier';
      this.panierData = null;
     this.showBonButtons = false;
+    this.resetPanierTrigger = !this.resetPanierTrigger; 
     
         
     // Réinitialiser l'input file

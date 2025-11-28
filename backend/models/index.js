@@ -360,6 +360,9 @@ db.Paiement.belongsTo(db.Panier, { foreignKey: 'panierId' });
 db.Magasin.hasMany(db.Paiement, { foreignKey: 'magasinId' });
 db.Paiement.belongsTo(db.Magasin, { foreignKey: 'magasinId' });
 
+db.Users.hasMany(db.Paiement, { foreignKey: 'agentId' });
+db.Paiement.belongsTo(db.Users, { foreignKey: 'agentId' });
+
 db.Structure.hasMany(db.Paiement, { foreignKey: 'code_structure', sourceKey: 'code_structure' });
 db.Paiement.belongsTo(db.Structure, { foreignKey: 'code_structure', targetKey: 'code_structure' });
 

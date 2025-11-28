@@ -294,13 +294,10 @@ export class ClientsComponent implements OnInit, OnDestroy {
     ];
     const bonstuatut = [
       'brouillon',
-      'commandé',
-      'expédié',
       'livré',
       'validé',
       'retourné',
       'facturé',
-      'payé',
       'annulé',
     ] as const;
     // Génération des Clients
@@ -367,11 +364,11 @@ export class ClientsComponent implements OnInit, OnDestroy {
             Math.floor(Math.random() * 20000) + 2000 - Math.floor(Math.random() * 500) + 500,
           resteAPayer: Math.floor(Math.random() * 10000) + 1000,
           statutBon: bonstuatut[Math.floor(Math.random() * bonstuatut.length)],
-          type: ['Livraison', 'Commande', 'Retour', 'Avoir'][Math.floor(Math.random() * 4)] as
-            | 'Livraison'
-            | 'Commande'
-            | 'Retour'
-            | 'Avoir',
+          type: ['livraison', 'commande', 'retour', 'avoir'][Math.floor(Math.random() * 4)] as
+            | 'livraison'
+            | 'commande'
+            | 'retour'
+            | 'avoir',
           numeroFacture: `FACT${i}${j}`,
           clientId: client.id,
           //panier: panier,
@@ -1082,7 +1079,7 @@ export class ClientsComponent implements OnInit, OnDestroy {
   // Fonction pour supprimer un bon
   supprimerBon(bon: Bon): void {
     // Vérification du statut avant de supprimer
-    if (bon.statutBon === 'brouillon' || bon.statutBon === 'commandé') {
+    if (bon.statutBon === 'brouillon') {
       // Supprimer le bon
       this.deleteBon(bon.id!); // Appel à une fonction pour supprimer le bon
       alert('Bon supprimé avec succès.');

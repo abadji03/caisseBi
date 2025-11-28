@@ -12,7 +12,7 @@ router.delete('/:id', controller.delete);
 router.get('/structure/:code_structure', controller.getArticlesPanierByStructure);
 router.post('/batch', controller.createBatch);
 // Supprimer un article d’un panier donné
-router.delete('/panier/:panierId/produit/:produitId', controller.deleteArticleFromPanier);
+router.delete('/panier/:panierId/produit/:id', controller.deleteArticleFromPanier);
 
 
 

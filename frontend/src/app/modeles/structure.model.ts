@@ -13,7 +13,7 @@ export class Structure {
   adresse!: string;
 
   // Informations fiscales
-  numeroIdentificationFiscale?: string;
+  numero_identification_fiscale?: string;
   registreCommerce?: string;
   statutJuridique?: string;
 

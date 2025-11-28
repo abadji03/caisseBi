@@ -74,7 +74,7 @@
         <input
           type="text"
           class="form-control"
-          formControlName="refBonOrigine"
+          formControlName="numeroBonOrigine"
           placeholder="Bon d'Origine"
         />
       </div>
@@ -84,7 +84,7 @@
       <div class="col-md-3">
         <textarea
           class="form-control"
-          formControlName="motifAvoir"
+          formControlName="motifsRetour"
           placeholder="Motif"
         ></textarea>
       </div>
@@ -94,18 +94,22 @@
           type="number"
           class="form-control"
           formControlName="montantAvoir"
-          placeholder="Montant"
+          placeholder="Montant de l'avoir"
+          min="0"
         />
+        <small class="form-text text-muted">
+          Montant base: {{ (montantBase | number) || 0 }} F CFA
+        </small>
       </div>
 
-      <div class="col-md-3">
+      <!-- <div class="col-md-3">
         <input
           type="date"
           class="form-control"
           formControlName="dateBonOrigine"
           placeholder="Date du Bon d'Origine"
         />
-      </div>
+      </div> -->
     </div>
     <!-- Nouveaux champs Remise et Avance au niveau du bon -->
 <!--     <div class="row mb-3" *ngIf="typeBon !== ''">
@@ -250,6 +254,7 @@
       [showRemiseField]="false"
       [typeEntite]="typeEntite" 
       [showButtonsActions]="true"  
+      [resetPanier]="resetPanierTrigger" 
       [showAvanceField]="false" 
       (onEnregistrer)="onPanierEnregistre($event)"
       (onAnnuler)="onPanierAnnule()"

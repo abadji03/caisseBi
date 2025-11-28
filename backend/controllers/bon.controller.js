@@ -1,4 +1,5 @@
 // controllers/bonController.js
+const { Op } = require('sequelize');
 const db = require('../models');
 const Bon = db.Bon;
 const fs = require('fs');
@@ -134,13 +135,87 @@ exports.updateBon = async (req, res) => {
 };
 
 // Supprimer un bon
-exports.deleteBon = async (req, res) => {
+/* exports.deleteBon = async (req, res) => {
   try {
     const deleted = await Bon.destroy({ where: { id: req.params.id } });
     if (!deleted) return res.status(404).json({ message: 'Bon non trouvé' });
     return res.status(204).send();
   } catch (error) {
     console.error('Erreur suppression bon:', error);
+    return res.status(500).json({ error: error.message });
+  }
+}; */
+
+// Supprimer un bon avec cascade
+exports.deleteBon = async (req, res) => {
+  const transaction = await db.sequelize.transaction();
+  
+  try {
+    const bonId = req.params.id;
+    
+    // Trouver le bon avec son panier associé
+    const bon = await Bon.findByPk(bonId, {
+      include: [{
+        model: Panier,
+        as: 'Panier'
+      }],
+      transaction
+    });
+    
+    if (!bon) {
+      await transaction.rollback();
+      return res.status(404).json({ message: 'Bon non trouvé' });
+    }
+
+    // Si le bon a un fichier, le supprimer physiquement
+    if (bon.fichier) {
+      const nomFichier = path.basename(bon.fichier);
+      const cheminFichier = path.join('uploads', nomFichier);
+      
+      if (fs.existsSync(cheminFichier)) {
+        fs.unlinkSync(cheminFichier);
+      }
+    }
+
+    // Supprimer en cascade dans l'ordre
+    if (bon.Panier) {
+      // 1. Supprimer les articles du panier
+      await ArticlePanier.destroy({ 
+        where: { panierId: bon.Panier.id }, 
+        transaction 
+      });
+      
+      // 2. Supprimer le panier
+      await Panier.destroy({ 
+        where: { id: bon.Panier.id }, 
+        transaction 
+      });
+    }
+
+    // 3. Supprimer les éventuels paiements associés
+    await db.Paiement.destroy({ 
+      where: { bonId: bonId }, 
+      transaction 
+    });
+
+    // 4. Supprimer les historiques de statut
+    await db.HistoriqueStatut.destroy({ 
+      where: { bonId: bonId }, 
+      transaction 
+    });
+
+    // 5. Supprimer le bon
+    await Bon.destroy({ 
+      where: { id: bonId }, 
+      transaction 
+    });
+
+    await transaction.commit();
+    return res.status(200).json({ message: 'Bon, panier et éléments associés supprimés avec succès' });
+    
+  } catch (error) {
+    await transaction.rollback();
+    console.error('Erreur suppression bon avec cascade:', error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -258,53 +333,6 @@ exports.updateMotifsRetour = async (req, res) => {
   }
 };
 
-
-/* // Lister les bons d'une structure par fournisseur
-exports.getBonsByFournisseur = async (req, res) => {
-  try {
-    const { code_structure, fournisseurId } = req.params;
-
-    const bons = await Bon.findAll({
-      where: {
-        code_structure: code_structure,
-        fournisseurId: fournisseurId
-      },
-      order: [['createdAt', 'DESC']],
-    });
-
-
-    res.status(200).json(bons);
-  } catch (error) {
-    res.status(500).json({
-      message: 'Erreur lors de la récupération des bons du fournisseur',
-      error: error.message
-    });
-  }
-};
-
-// Lister les bons d'une structure par client
-exports.getBonsByClient = async (req, res) => {
-  try {
-    const { code_structure, clientId } = req.params;
-
-    const bons = await Bon.findAll({
-      where: {
-        code_structure: code_structure,
-        clientId: clientId
-      },
-      order: [['createdAt', 'DESC']],
-    });
-
-
-    res.status(200).json(bons);
-  } catch (error) {
-    res.status(500).json({
-      message: 'Erreur lors de la récupération des bons du client',
-      error: error.message
-    });
-  }
-}; */
-
 // ==========================================
 // Lister les bons d'une structure par fournisseur
 // ==========================================
@@ -315,7 +343,9 @@ exports.getBonsByFournisseur = async (req, res) => {
     const bons = await Bon.findAll({
       where: {
         code_structure: code_structure,
-        fournisseurId: fournisseurId
+        fournisseurId: fournisseurId,
+        statutBon: { [Op.ne]: 'brouillon' } //Exclut les bons dont le statut est "brouillon"
+
       },
       include: [
         {
@@ -353,7 +383,9 @@ exports.getBonsByClient = async (req, res) => {
     const bons = await Bon.findAll({
       where: {
         code_structure: code_structure,
-        clientId: clientId
+        clientId: clientId,
+        statutBon: { [Op.ne]: 'brouillon' } //Exclut les bons dont le statut est "brouillon"
+
       },
       include: [
         {
@@ -502,12 +534,19 @@ exports.createBonComplet = async (req, res) => {
       nouveauPanier = await db.Panier.findOne({ where: { bonId: nouveauBon.id }, transaction });
       if (nouveauPanier) {
         await nouveauPanier.update({
-          ...panier,
-          statut: panier.statut || 'en_cours'
+          //...panier,
+          totalHT: panier.totalHT || 0,
+          tva: panier.tva || 0,
+          totalTTC: panier.totalTTC || 0,
+          statut: panier.statut || 'validé',
         }, { transaction });
         
+
+        // 🔥 CORRECTION : Mettre à jour les articles existants au lieu de tout supprimer/recréer
+        await this.mettreAJourArticlesExistants(nouveauPanier.id, articles, code_structure, transaction);
+      }
         // Supprimer les anciens articles et créer les nouveaux
-        await db.ArticlePanier.destroy({ where: { panierId: nouveauPanier.id }, transaction });
+        /* await db.ArticlePanier.destroy({ where: { panierId: nouveauPanier.id }, transaction });
         
         articlesCrees = await db.ArticlePanier.bulkCreate(
           articles.map(article => ({ 
@@ -517,7 +556,7 @@ exports.createBonComplet = async (req, res) => {
           })),
           { transaction }
         );
-      }
+      } */
       
       // Créer historique si le statut a changé
       if (bonData.statutBon && bonData.statutBon !== nouveauBon.statutBon) {
@@ -638,6 +677,59 @@ exports.createBonComplet = async (req, res) => {
     await transaction.rollback();
     console.error('Erreur création bon complet:', error);
     res.status(500).json({ error: 'Erreur lors de la création du bon', details: error.message });
+  }
+};
+
+// Méthode pour mettre à jour les articles existants
+exports.mettreAJourArticlesExistants = async (panierId, nouveauxArticles, code_structure, transaction) => {
+  try {
+    // Récupérer les articles existants
+    const articlesExistants = await db.ArticlePanier.findAll({
+      where: { panierId },
+      transaction
+    });
+
+    const resultats = [];
+
+    // Pour chaque nouvel article
+    for (const nouvelArticle of nouveauxArticles) {
+      if (nouvelArticle.id) {
+        //ARTICLE EXISTANT : Mettre à jour
+        const articleExistant = articlesExistants.find(art => art.id === nouvelArticle.id);
+        if (articleExistant) {
+          await articleExistant.update({
+            quantite: nouvelArticle.quantite,
+            prixUnitaire: nouvelArticle.prixUnitaire,
+            prixAchatUnitaire: nouvelArticle.prixAchatUnitaire,
+            prixVenteUnitaire: nouvelArticle.prixVenteUnitaire
+            // Ne pas mettre à jour l'ID ou produitId
+          }, { transaction });
+          resultats.push(articleExistant);
+        }
+      } else {
+        //NOUVEL ARTICLE : Créer
+        const articleCree = await db.ArticlePanier.create({
+          ...nouvelArticle,
+          panierId,
+          code_structure
+        }, { transaction });
+        resultats.push(articleCree);
+      }
+    }
+
+    //SUPPRIMER les articles qui n'existent plus dans la nouvelle liste
+    const nouveauxIds = nouveauxArticles.map(art => art.id).filter(id => id);
+    const articlesASupprimer = articlesExistants.filter(art => !nouveauxIds.includes(art.id));
+    
+    for (const articleASupprimer of articlesASupprimer) {
+      await articleASupprimer.destroy({ transaction });
+    }
+
+    return resultats;
+
+  } catch (error) {
+    console.error('Erreur mise à jour articles:', error);
+    throw error;
   }
 };
 

@@ -1,123 +1,3 @@
-/* const db = require('../../models');
-const stockManager = require('./stockManager');
-
-class ReservationService {
-  // GÉRER LES RÉSERVATIONS DE STOCK
-  async gererReservationsStock(articles, bon, magasinId, agentId, code_structure, transaction) {
-    const statutsAvecReservation = ['commandé', 'expédié'];
-    //const statutsAvecLiberation = ['annulé', 'retourné'];
-    const statutsAvecRealisation = ['livré', 'validé', 'facturé', 'payé'];
-
-    console.log(`📦 Gestion réservations - Statut: ${bon.statutBon}, Type: ${bon.typeEntite}`);
-
-    // RÉSERVER LE STOCK POUR LES COMMANDES CLIENTS
-    if (statutsAvecReservation.includes(bon.statutBon) && bon.typeEntite === 'client') {
-      for (const article of articles) {
-        await this.reserverStockDirect(
-          article.produitId || article.produit?.id,
-          article.quantite,
-          magasinId,
-          code_structure,
-          bon.id,
-          `réservation_${bon.statutBon}`,
-          transaction
-        );
-      }
-    }
-
-    // LIBÉRER LE STOCK POUR LES ANNULLATIONS
-    if (bon.statutBon === 'annulé') {
-      for (const article of articles) {
-        await this.libererStockReserveDirect(
-          article.produitId || article.produit?.id,
-          article.quantite,
-          magasinId,
-          code_structure,
-          bon.id,
-          'annulation_commande',
-          transaction
-        );
-      }
-    }
-
-    // TRAITEMENT DES RETOURS
-    if (bon.statutBon === 'retourné') {
-      for (const article of articles) {
-        await this.libererStockReserveDirect(
-          article.produitId || article.produit?.id,
-          article.quantite,
-          magasinId,
-          code_structure,
-          bon.id,
-          'retour_client',
-          transaction
-        );
-      }
-    }
-
-    // MOUVEMENTS PHYSIQUES POUR LIVRAISONS TERMINÉES
-    if (statutsAvecRealisation.includes(bon.statutBon)) {
-      if (bon.typeEntite === 'client') {
-        for (const article of articles) {
-          await this.libererStockReserveDirect(
-            article.produitId || article.produit?.id,
-            article.quantite,
-            magasinId,
-            code_structure,
-            bon.id,
-            `réalisation_${bon.statutBon}`,
-            transaction
-          );
-        }
-      }
-    }
-  }
-
-  // RÉSERVER DU STOCK DIRECTEMENT
-  async reserverStockDirect(produitId, quantite, magasinId, code_structure, bonId, motif, transaction) {
-    const stock = await stockManager.trouverOuCreerStock(produitId, magasinId, code_structure, transaction);
-
-    const ancienneReserve = stock.quantiteReservee || 0;
-    const nouvelleReserve = ancienneReserve + quantite;
-    const quantiteDisponible = stock.quantiteTotale - ancienneReserve;
-    
-    if (quantite > quantiteDisponible) {
-      throw new Error(`Réservation impossible: stock insuffisant pour le produit ${produitId}`);
-    }
-
-    await stock.update({
-      quantiteReservee: nouvelleReserve,
-      dateDerniereMiseAJour: new Date(),
-      statutStock: stockManager.calculerStatutStock(stock.quantiteTotale, nouvelleReserve, stock)
-    }, { transaction });
-
-    console.log(`🔒 Stock réservé - Produit: ${produitId}, Quantité: ${quantite}`);
-  }
-
-  // LIBÉRER LE STOCK RÉSERVÉ
-  async libererStockReserveDirect(produitId, quantite, magasinId, code_structure, bonId, motif, transaction) {
-    const stock = await db.Stock.findOne({
-      where: { produitId, magasinId, code_structure },
-      transaction
-    });
-
-    if (stock && stock.quantiteReservee >= quantite) {
-      const nouvelleReserve = Math.max(0, stock.quantiteReservee - quantite);
-
-      await stock.update({
-        quantiteReservee: nouvelleReserve,
-        dateDerniereMiseAJour: new Date(),
-        statutStock: stockManager.calculerStatutStock(stock.quantiteTotale, nouvelleReserve, stock)
-      }, { transaction });
-
-      console.log(`🔄 Stock libéré - Produit: ${produitId}, Quantité: ${quantite}`);
-    }
-  }
-}
-
-module.exports = new ReservationService(); */
-
-
 const db = require('../../models');
 const stockManager = require('./stockManager');
 
@@ -149,11 +29,11 @@ class ReservationService {
             );
           }
         } */
-        if (['commandé', 'expédié'].includes(statut)) {
+        if (['validé'].includes(statut)) {
         await this.reserverStockClient(articles, bon, magasinId, code_structure, transaction);
       }
       
-      if (['livré', 'validé', 'facturé', 'payé', 'annulé'].includes(statut)) {
+      if (['livré', 'facturé','annulé'].includes(statut)) {
         await this.libererStockClient(articles, bon, magasinId, code_structure, transaction);
       }
      }
@@ -161,11 +41,11 @@ class ReservationService {
 
      // 2. RÉSERVATIONS COMMANDES FOURNISSEURS (préparation réception)
      if (typeEntite === 'fournisseur' && typeBon === 'commande') {
-        if (['commandé', 'expédié'].includes(statut)) {
+        if (['validé'].includes(statut)) {
           await this.preparerReceptionFournisseur(articles, bon, magasinId, code_structure, transaction);
         }
         
-        if (['livré', 'validé', 'annulé'].includes(statut)) {
+        if (['annulé'].includes(statut)) {
           await this.libererPreparationFournisseur(articles, bon, magasinId, code_structure, transaction);
         }
       }

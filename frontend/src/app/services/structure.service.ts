@@ -28,6 +28,10 @@ export class StructureService {
     return this.http.get<Structure>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
   }
 
+  getByCodeStructure(code_structure: string): Observable<Structure> {
+    return this.http.get<Structure>(`${this.apiUrl}/code/${code_structure}`, { headers: this.getHeaders() });
+  }
+
   create(structure: FormData): Observable<Structure> {
     return this.http.post<Structure>(this.apiUrl, structure, { headers: this.getHeaders() });
   }

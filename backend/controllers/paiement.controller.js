@@ -3,10 +3,14 @@ const db = require('../models');
 const Paiement = db.Paiement;
 const fs = require('fs');
 const path = require('path');
+const operationController = require('./operation.controller');
+const { statutManager } = require('./bonComplet');
+
 
 const BASE_URL = 'http://localhost:5000/uploads/';
 
 exports.create = async (req, res) => {
+  const transaction = await db.sequelize.transaction();
   try {
 
     const paie = req.body;
@@ -16,11 +20,21 @@ exports.create = async (req, res) => {
       fichier = BASE_URL + req.file.filename;
     }
 
-    const paiement = await Paiement.create(
+    const paiement = await Paiement.create({
       ... paie,
+      date:new Date(),
       fichier
-    );
+    });
+    // Créer l'opération associée
+    await operationController.createFromPaiement(paiement, transaction);
+
+    // Mettre à jour le fournisseur ou le client selon le type de paiement
+
+    if(paiement.typePaiement === 'fournisseur') await statutManager.mettreAJourFournisseurApresVersement(paiement, paiement.fournisseurId, transaction);
+    if(paiement.typePaiement === 'client') await statutManager.mettreAJourClientApresRegelement(paiement, paiement.clientId, transaction);
     
+    await transaction.commit();
+
     res.status(201).json(paiement);
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -1,7 +1,7 @@
 // models/operation.js
 module.exports = (sequelize, DataTypes) => {
   const Operation = sequelize.define('Operation', {
-    code_structure: { type: DataTypes.STRING, allowNull: false },
+    code_structure: { type: DataTypes.STRING(50), allowNull: false },
     type: {
       type: DataTypes.ENUM(
         'COMMANDE',
@@ -18,18 +18,23 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DECIMAL(12, 2),
       allowNull: false,
     },
-    moyenPaiement: {
-      type: DataTypes.ENUM('ESPECES', 'MOBILE_MONEY', 'CARTE_BANCAIRE', 'VIREMENT', 'CHEQUE'),
-      allowNull: false,
+    resteAPayer: {
+      type: DataTypes.DECIMAL(12, 2),
+      allowNull: true,
     },
-    numeroBon: DataTypes.STRING,
-    numeroFacture: DataTypes.STRING,
-    numeroTicket: DataTypes.STRING,
-    numeroAvoir: DataTypes.STRING,
-    numeroVersement: DataTypes.STRING,
-    numeroRetour: DataTypes.STRING,
+    moyenPaiement: {
+      type: DataTypes.STRING(20), //ENUM('ESPECES', 'MOBILE_MONEY', 'CARTE_BANCAIRE', 'VIREMENT', 'CHEQUE'),
+      allowNull: true,
+    },
+    numeroBon: DataTypes.STRING(30),
+    fichier: DataTypes.STRING,
+    numeroFacture: DataTypes.STRING(30),
+    numeroTicket: DataTypes.STRING(30),
+    numeroAvoir: DataTypes.STRING(30),
+    numeroVersement: DataTypes.STRING(30),
+    numeroRetour: DataTypes.STRING(30),
     statut: {
-      type: DataTypes.ENUM('PAYE', 'PARTIELLEMENT_PAYE', 'IMPAYE', 'ANNULE'),
+      type: DataTypes.STRING(20), //ENUM('PAYE', 'PARTIELLEMENT_PAYE', 'IMPAYE', 'ANNULE'),
       allowNull: false,
     },
     dateOperation: {

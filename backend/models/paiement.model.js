@@ -3,7 +3,7 @@ module.exports = (sequelize, DataTypes) => {
   const Paiement = sequelize.define('Paiement', {
     code_structure: { type: DataTypes.STRING, allowNull: false },
     numero: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(30),
     },
     description: DataTypes.TEXT,
     montant: {
@@ -47,7 +47,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
-    methodePaiement: DataTypes.ENUM('Espèce', 'Carte', 'Orange Money', 'Wave','Virement', 'Chèque', 'Autre'), // À lier à une table si tu en as une
+    methodePaiement: DataTypes.STRING(20),
     dateMiseAJour: DataTypes.DATE,
     typePaiement: {
       type: DataTypes.ENUM('fournisseur', 'client'),

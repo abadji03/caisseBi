@@ -1,79 +1,10 @@
-/* // controllers/panierController.js
-const db = require('../models');
-const Panier = db.Panier;
-
-exports.createPanier = async (req, res) => {
-  try {
-    const panier = await Panier.create(req.body);
-    res.status(201).json(panier);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// Lister les magasins d'une structure
-exports.getPaniersByStructure = async (req, res) => {
-  try {
-    const { code_structure } = req.params;
-    const paniers = await Panier.findAll({
-      where: { code_structure },
-      order: [['createdAt', 'DESC']],
-    });
-    res.json(paniers);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Erreur lors de la récupération des paniers' });
-  }
-};
-
-exports.getAllPaniers = async (req, res) => {
-  try {
-    const paniers = await Panier.findAll({
-      include: ['Client', 'Bon', 'Magasin', 'User'],
-    });
-    res.json(paniers);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.getPanierById = async (req, res) => {
-  try {
-    const panier = await Panier.findByPk(req.params.id);
-    if (!panier) return res.status(404).json({ message: 'Panier non trouvé' });
-    res.json(panier);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.updatePanier = async (req, res) => {
-  try {
-    const [updated] = await Panier.update(req.body, {
-      where: { id: req.params.id },
-    });
-    if (!updated) return res.status(404).json({ message: 'Panier non trouvé' });
-    const panier = await Panier.findByPk(req.params.id);
-    res.json(panier);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.deletePanier = async (req, res) => {
-  try {
-    const deleted = await Panier.destroy({ where: { id: req.params.id } });
-    if (!deleted) return res.status(404).json({ message: 'Panier non trouvé' });
-    res.status(204).send();
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
- */
 
 // controllers/panierController.js
 const db = require('../models');
 const Panier = db.Panier;
+const ArticlePanier = db.ArticlePanier;
+const fs = require('fs');
+const path = require('path');
 
 exports.createPanier = async (req, res) => {
   try {
@@ -108,7 +39,7 @@ exports.getAllPaniers = async (req, res) => {
         { model: db.Client, as: 'Client' },
         { model: db.Bon, as: 'Bon' },
         { model: db.Magasin, as: 'Magasin' },
-        { model: db.User, as: 'User' },
+        { model: db.Users, as: 'User' },
       ],
       order: [['createdAt', 'DESC']],
     });
@@ -148,13 +79,96 @@ exports.updatePanier = async (req, res) => {
 };
 
 // Supprimer un panier
-exports.deletePanier = async (req, res) => {
+/* exports.deletePanier = async (req, res) => {
   try {
     const deleted = await Panier.destroy({ where: { id: req.params.id } });
     if (!deleted) return res.status(404).json({ message: 'Panier non trouvé' });
     return res.status(204).send();
   } catch (error) {
     console.error('Erreur suppression panier:', error);
+    return res.status(500).json({ error: error.message });
+  }
+}; */
+
+// Supprimer un panier avec cascade
+exports.deletePanier = async (req, res) => {
+  const transaction = await db.sequelize.transaction();
+  
+  try {
+    const panierId = req.params.id;
+    
+    // Trouver le panier avec ses articles et le bon associé
+    const panier = await Panier.findByPk(panierId, {
+      include: [
+        {
+          model: db.ArticlePanier,
+          as: 'ArticlePaniers'
+        },
+        {
+          model: db.Bon,
+          as: 'Bon'
+        }
+      ],
+      transaction
+    });
+    
+    if (!panier) {
+      await transaction.rollback();
+      return res.status(404).json({ message: 'Panier non trouvé' });
+    }
+
+    // Supprimer en cascade dans l'ordre
+    // 1. Supprimer les articles du panier
+    await ArticlePanier.destroy({ 
+      where: { panierId: panierId }, 
+      transaction 
+    });
+
+    // 2. Supprimer les éventuels paiements associés
+    if (panier.bonId) {
+      await db.Paiement.destroy({ 
+        where: { panierId: panierId }, 
+        transaction 
+      });
+    }
+
+    // 3. Supprimer le panier
+    await Panier.destroy({ 
+      where: { id: panierId }, 
+      transaction 
+    });
+
+    // 4. Si le panier était lié à un bon, supprimer aussi le bon
+    if (panier.Bon) {
+      // Supprimer le fichier du bon s'il existe
+      if (panier.Bon.fichier) {
+        const nomFichier = path.basename(panier.Bon.fichier);
+        const cheminFichier = path.join('uploads', nomFichier);
+        
+        if (fs.existsSync(cheminFichier)) {
+          fs.unlinkSync(cheminFichier);
+        }
+      }
+
+      // Supprimer les historiques de statut du bon
+      await db.HistoriqueStatut.destroy({ 
+        where: { bonId: panier.Bon.id }, 
+        transaction 
+      });
+
+      // Supprimer le bon
+      await db.Bon.destroy({ 
+        where: { id: panier.Bon.id }, 
+        transaction 
+      });
+    }
+
+    await transaction.commit();
+    return res.status(200).json({ message: 'Panier, articles et bon associé supprimés avec succès' });
+    
+  } catch (error) {
+    await transaction.rollback();
+    console.error('Erreur suppression panier avec cascade:', error);
     return res.status(500).json({ error: error.message });
   }
 };

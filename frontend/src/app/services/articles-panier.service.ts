@@ -80,10 +80,10 @@ export class ArticlesPanierService {
     );
   }
 
-  deleteArticleFromPanier(panierId: number, produitId: number) {
-  return this.http.delete(`${this.apiUrl}/panier/${panierId}/produit/${produitId}`,{ headers: this.getHeaders() });
+  deleteArticleFromPanier(panierId: number, id: number) {
+  return this.http.delete(`${this.apiUrl}/panier/${panierId}/produit/${id}`,{ headers: this.getHeaders() });
 }
-
+ 
   /**Récupérer les paniers d’une structure */
   getByStructure(code_structure: string): Observable<ArticlePanier[]> {
     return this.http.get<ArticlePanier[]>(`${this.apiUrl}/structure/${code_structure}`, { headers: this.getHeaders() }).pipe(

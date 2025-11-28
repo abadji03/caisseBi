@@ -16,6 +16,7 @@ router.delete('/:id', structureController.deleteStructure);
 // GET: Récupération d'une et de plusieurs structures
 router.get('/', structureController.getAllStructures);
 router.get('/:id', structureController.getStructureById);
+router.get('/code/:code_structure', structureController.getStructureByCodeStructure);
 
 // PATCH: Mise à jour du statut uniquement
 router.patch('/:id/status', structureController.updateStructureStatus);

@@ -109,6 +109,7 @@ exports.deleteArticleFromPanier = async (req, res) => {
     const { panierId, id } = req.params;
 
     if (!panierId || !id) {
+      console.error('erreur: panierId ou produitId manquant', panierId, id);
       return res.status(400).json({ message: 'panierId et produitId sont requis' });
     }
 

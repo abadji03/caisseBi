@@ -175,14 +175,14 @@ export class EntreesSortiesComponent implements OnInit, OnDestroy {
 
   loadMouvementStock(): void {
     this.isLoading = true;
-    this.mouvementsStockService.getByStructure(this.code_structure)
+    this.mouvementsStockService.getAll()
     .pipe(takeUntil(this.destroy$))
     .subscribe({
       next: (data) => {
         this.isLoading = false;
         this.mouvements = data;
         this.filteredMouvements = [...this.mouvements];
-        this.updateTable('mouvement');
+        //this.updateTable('mouvement');
       },
       error: (err) => {
         this.isLoading = false;

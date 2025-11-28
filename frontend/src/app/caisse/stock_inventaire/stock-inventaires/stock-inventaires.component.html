@@ -340,7 +340,7 @@
           <tr *ngFor="let produit of getPaginatedPerissables">
             <td>{{ getNomProduitById(produit.produitId) }}</td>
             <!-- <td>{{ produit.dateExpiration | date:'short' }}</td> -->
-            <td>{{ produit.datePeremption | date: 'dd/mm/yyyy' }}</td>
+            <td>{{ produit.datePeremption | date: 'dd/MM/yyyy' }}</td>
             <td>{{ produit.quantiteTotale }}</td>
             <td><button class="btn btn-danger">Gérer</button></td>
           </tr>

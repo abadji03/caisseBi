@@ -6,6 +6,9 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false,
     },
+
+    numeroBonOrigine: DataTypes.STRING(30),
+
     typeEntite: {
       type: DataTypes.ENUM('client', 'fournisseur'),
       allowNull: false,
@@ -13,12 +16,16 @@ module.exports = (sequelize, DataTypes) => {
     },
     numeroFacture: DataTypes.STRING,
     type: {
-      type: DataTypes.ENUM('Livraison', 'Commande', 'Retour', 'Avoir'),
+      type: DataTypes.ENUM('livraison', 'commande', 'retour', 'avoir'),
       allowNull: false,
     },
     description: {
       type: DataTypes.TEXT,
       allowNull: false,
+    },
+    montantAvoir: {
+      type: DataTypes.DECIMAL(12, 2),
+      allowNull: true,
     },
     montantTotal: {
       type: DataTypes.DECIMAL(12, 2),
@@ -55,13 +62,10 @@ module.exports = (sequelize, DataTypes) => {
     statutBon: {
       type: DataTypes.ENUM(
         'brouillon',
-        'commandé',
-        'expédié',
         'livré',
         'validé',
         'retourné',
         'facturé',
-        'payé',
         'annulé'
       ),
     },

@@ -161,6 +161,25 @@ exports.getStructureById = async (req, res) => {
   }
 };
 
+exports.getStructureByCodeStructure = async (req, res) => {
+  try {
+    const structure = await Structure.findOne( {where: { code_structure: req.params.code_structure }});
+
+    if (!structure) {
+      return res.status(404).json({ message: 'Structure non trouvée' });
+    }
+
+    const structureData = structure.toJSON();
+    const baseUrl = `${req.protocol}://${req.get('host')}/uploads/`;
+    structureData.logoUrl = structureData.logo ? baseUrl + structureData.logo : null;
+
+    res.status(200).json(structureData);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Erreur lors de la récupération de la structure.' });
+  }
+};
+
 //Modification d'une structure
 exports.updateStructure = async (req, res) => {
   try {

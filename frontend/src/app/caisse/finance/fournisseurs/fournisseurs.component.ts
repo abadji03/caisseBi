@@ -12,12 +12,12 @@ import { Produits } from '../../../modeles/produit.modele';
 import { ApplicationService } from '../../../services/application.service';
 import { Operation } from '../../../modeles/operation.model';
 import { Bon, BonAvecFichier } from '../../../modeles/bon.model';
-import { Paiement } from '../../../modeles/paiement.model';
+import { Paiement, PaiementAvecFichier } from '../../../modeles/paiement.model';
 import { MaagasinsService } from '../../../services/maagasins.service';
 import { Magasin } from '../../../modeles/magasin.model';
 import { FournisseursService } from '../../../services/fournisseurs.service';
 import { ToastrService } from 'ngx-toastr';
-import { finalize, forkJoin, Subject, takeUntil } from 'rxjs';
+import { finalize, forkJoin,Subject, takeUntil } from 'rxjs';
 import { normalize } from '../../../utils/string-utils';
 import { BonComponent } from '../../../sharedComposants/bon/bon.component';
 import {  Panier } from '../../../modeles/panier.model';
@@ -33,6 +33,8 @@ import { ArticlesPanierService } from '../../../services/articles-panier.service
 import { OperationsService } from '../../../services/operations.service';
 import { NGXLogger } from 'ngx-logger';
 import { BonBrouillonService } from '../../../services/bon-brouillon.service';
+import { PdfMakerServiceService } from '../../../services/pdf-maker-service.service';
+import { StructureService } from '../../../services/structure.service';
 
 @Component({
   selector: 'app-fournisseurs',
@@ -67,6 +69,11 @@ export class FournisseursComponent implements OnInit, OnDestroy {
   agentId = 1;
   // Ajouter une variable pour contrôler la réinitialisation du panier
   resetPanierFlag = false;
+
+  generatedNumeroPaiement: string = this.generateNumero();
+
+
+  textBoutonNewBon = 'Nouveau bon';
 
     // Ajouter une référence au composant Bon
   @ViewChild(BonComponent) bonComponent!: BonComponent;
@@ -146,7 +153,6 @@ export class FournisseursComponent implements OnInit, OnDestroy {
 
   // Variables pour les composants réutilisables
   showPanierComponent = false;
-  showBonComponent = false;
   typeEntite: 'client' | 'fournisseur' = 'fournisseur';
   showPaiementComponent = false;
 
@@ -169,6 +175,8 @@ export class FournisseursComponent implements OnInit, OnDestroy {
   private panierService = inject(PaniersService);
   private operationService = inject(OperationsService);
   private paiementService = inject(PaiementsService);
+  private pdfGenerator = inject(PdfMakerServiceService);
+  private structureService = inject(StructureService);
   private MouvementsStockService = inject(MouvementsStockService);
   private artticlesPanierService = inject(ArticlesPanierService);
   
@@ -179,7 +187,20 @@ export class FournisseursComponent implements OnInit, OnDestroy {
     this.loadDataProduits();
     this.loadBonAndPaiement();
     this.initForm();
+    this.loadStructureInfo();
+
     //this.onTypeBonChange(); // Met à jour les champs au chargement
+
+    //S'abonner aux brouillons du service
+    this.bonBrouillonService.bonBrouillon$.subscribe(bon => {
+      this.bonBrouillon = bon;
+      console.log('Bon brouillon chargé dans Fournisseur:', this.bonBrouillon?.id);
+    });
+
+    this.bonBrouillonService.panierBrouillon$.subscribe(panier => {
+      this.panierBrouillon = panier;
+      console.log('Panier brouillon chargé dans Fournisseur:', this.panierBrouillon?.id);
+    });
   }
 
    ngOnDestroy(): void {
@@ -215,19 +236,24 @@ export class FournisseursComponent implements OnInit, OnDestroy {
         this.toastr.error('Aucun fournisseur sélectionné');
         return;
       }
-
-      /* if (!event.bon.panier || event.bon.panier.articles.length === 0) {
-        this.toastr.error('Aucun panier à enregistrer pour ce bon');
+      
+      //Vérifier que les brouillons sont chargés
+      if (!this.bonBrouillon || !this.panierBrouillon) {
+        console.error('Brouillons non disponibles:', {
+          bonBrouillon: this.bonBrouillon,
+          panierBrouillon: this.panierBrouillon
+        });
+        this.toastr.error('Les données du brouillon ne sont pas chargées', 'Erreur');
         return;
-      } */
-     // Associer fournisseurId et s'assurer que le statut est "validé"
-    event.bon.fournisseurId = this.selectedFournisseur.id;
-    event.bon.statutBon = 'validé'; // Changer le statut à validé
+      }
+      // Associer fournisseurId et s'assurer que le statut est "validé"
+      event.bon.fournisseurId = this.selectedFournisseur.id;
+      event.bon.statutBon = 'validé'; // Changer le statut à validé
 
-    // Si c'était un brouillon, utiliser l'ID existant
-    /* if (this.bonBrouillon) {
-      event.bon.id = this.bonBrouillon.id;
-    } */
+      // Si c'était un brouillon, utiliser l'ID existant
+      if (this.bonBrouillon) {
+        event.bon.id = this.bonBrouillon.id;
+      } 
 
       //this.toastr.success('bon et panier existent');
       //console.log(bon)
@@ -238,112 +264,22 @@ export class FournisseursComponent implements OnInit, OnDestroy {
       // Appel API
       this.enregistrerBon(event.bon, event.bon.panier!,event.fichier);
        //this.enregistrerBonAvecFichiers(event.bon, event.bon.panier, event.fichier);
-      this.showBonComponent = false;
+      this.showBonForm = false;
       // Nettoyer les brouillons après enregistrement
       this.bonBrouillonService.clearBrouillons();
   }
 
-  
-  // Méthodes pour gérer les événements des composants
+    // Méthodes pour gérer les événements des composants
   onPanierEnregistre(panier: Panier): void {
     console.log('Panier enregistré:', panier);
     // Logique pour enregistrer le panier
     this.showPanierComponent = false;
   }
 
-  /* private enregistrerBonAvecFichiers(bon: Bon, panier: Panier, fichier: File|null): void {
-    if (!this.selectedFournisseur) {
-      this.toastr.error('Aucun fournisseur sélectionné', 'Erreur');
-      return;
-    }
-
-    // Créer FormData pour l'envoi des fichiers
-    const formData : FormData = new FormData();
-
-    // Ajouter les données du bon
-    // formData.append('bon', JSON.stringify({
-    //   ...bon,
-    //   fournisseurId: this.selectedFournisseur.id
-    // }));
-    formData.append('bon', new Blob([JSON.stringify({
-      ...bon,
-      fournisseurId: this.selectedFournisseur.id
-    })], { type: 'application/json' }));
-
-    // Ajouter les données du panier
-    // formData.append('panier', JSON.stringify({
-    //   ...panier,
-    //   fournisseurId: this.selectedFournisseur.id
-    // }));
-    formData.append('panier', new Blob([JSON.stringify({
-      ...panier,
-      fournisseurId: this.selectedFournisseur.id
-    })], { type: 'application/json' }));
-
-
-    // Ajouter les articles
-    // formData.append('articles', JSON.stringify(
-    //   panier.articles.map(article => ({
-    //     produitId: article.Produit?.id,
-    //     quantite: article.quantite,
-    //     prixVenteUnitaire: article.prixVenteUnitaire,
-    //     prixAchatUnitaire: article.prixAchatUnitaire
-    //   }))
-    // ));
-    formData.append('articles', new Blob([JSON.stringify(
-    panier.articles.map(article => ({
-      produitId: article.produit?.id,
-      quantite: article.quantite,
-      prixVenteUnitaire: article.prixVenteUnitaire,
-      prixAchatUnitaire: article.prixAchatUnitaire
-    }))
-  )], { type: 'application/json' }));
-
-    // Ajouter les métadonnées
-    formData.append('code_structure', this.code_structure);
-    formData.append('magasinId', this.magasinId.toString());
-    formData.append('agentId', this.agentId.toString());
-    formData.append('fournisseurId', this.selectedFournisseur.id!.toString());
-    formData.append('typeEntite', this.typeEntite);
-
-     // Ajouter le fichier s'il existe
-    if (fichier) {
-      formData.append('fichier', fichier);
-    }
-
-    // Ajouter les informations de paiement si avance
-    if (bon.avance && bon.avance > 0) {
-      formData.append('paiement', JSON.stringify({
-        methodePaiement: 'Caisse',
-        description: `Avance pour bon ${bon.numero}`,
-        typePaiement: 'fournisseur'
-      }));
-    }
-
-    this.isLoading = true;
-
-    this.bonService.createBonComplet(formData)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (result) => {
-          this.toastr.success('Bon et fichiers enregistrés avec succès!', 'Succès');
-          console.log('Enregistrement complet:', result);
-          this.reinitialiserFormulaires();
-          this.loadOperations();
-        },
-        error: (error) => {
-          console.error('Erreur:', error);
-          this.toastr.error(error.error?.error || 'Erreur lors de l\'enregistrement', 'Erreur');
-        },
-        complete: () => {
-          this.isLoading = false;
-        }
-      });
-  }
- */
   
   onPanierAnnule(): void {
-    this.showPanierComponent = false;
+    //this.showPanierComponent = false;
+    this.reinitialiserEtMasquerFormulaires();
     
   }
   onBonAnnule(): void {
@@ -352,7 +288,12 @@ export class FournisseursComponent implements OnInit, OnDestroy {
     this.reinitialiserEtMasquerFormulaires();
 
   }
-
+// Méthode pour générer un numéro unique de paiement
+  generateNumero(): string {
+    const timestamp = new Date().getTime();
+    const random = Math.floor(Math.random() * 1000);
+    return `NP-${timestamp}-${random}`;
+  }
 // fournisseurs.component.ts
 private enregistrerBon(bon: Bon, panier: Panier, fichier:File|null): void {
   if (!this.selectedFournisseur) {
@@ -360,19 +301,39 @@ private enregistrerBon(bon: Bon, panier: Panier, fichier:File|null): void {
     return;
   }
 
+  //Vérifier que les brouillons sont bien chargés
+  if (!this.bonBrouillon?.id || !this.panierBrouillon?.id) {
+    console.error('Brouillons non chargés:', {
+      bonBrouillon: this.bonBrouillon,
+      panierBrouillon: this.panierBrouillon
+    });
+    this.toastr.error('Erreur: Les données du brouillon ne sont pas chargées', 'Erreur');
+    return;
+  }
+
   // Préparer les données pour l'API unifiée
   const bonCompletData = {
     bon: {
       ...bon,
-      fournisseurId: this.selectedFournisseur.id
+      id: this.bonBrouillon?.id,
+      fournisseurId: this.selectedFournisseur.id,
+      statutBon: 'validé'
     },
     panier: {
-      ...panier,
-      fournisseurId: this.selectedFournisseur.id
+      //...panier,
+       id: this.panierBrouillon.id, 
+      totalHT: panier.totalHT,
+      tva: panier.tva,
+      totalTTC: panier.totalTTC,
+      tauxTVA: panier.tauxTVA,
+      fournisseurId: this.selectedFournisseur.id,
+      statut: 'validé' 
     },
     articles: panier.articles.map(article => ({
+      id: article.id,
       produitId: article.produit?.id,
       quantite: article.quantite,
+      prixUnitaire: article.prixUnitaire,
       prixVenteUnitaire: article.prixVenteUnitaire,
       prixAchatUnitaire: article.prixAchatUnitaire
     })),
@@ -382,17 +343,29 @@ private enregistrerBon(bon: Bon, panier: Panier, fichier:File|null): void {
     fournisseurId: this.selectedFournisseur.id,
     typeEntite:this.typeEntite,
     paiement: bon.avance?? 0 > 0 ? {
+      numero: this.generatedNumeroPaiement,
       methodePaiement: 'Caisse',
+      compte:'Bon',
       description: `Avance pour bon ${bon.numero}`,
       typePaiement: 'fournisseur'
     } : undefined
   };
-
+  console.log('Données de MISE À JOUR envoyées:', {
+    bonId: bonCompletData.bon.id,
+    panierId: this.panierBrouillon?.id, //ID du panier existant
+    articles: bonCompletData.articles.map(a => ({ id: a.id, produitId: a.produitId }))
+  });
   this.isLoading = true;
 
   this.bonService.createBonComplet(bonCompletData).pipe(takeUntil(this.destroy$))
   .subscribe({
     next: (result) => {
+      console.log('Bon enregistré avec succès:', {
+          bonId: result.bon?.id,
+          panierId: result.panier?.id,
+          statut: result.bon?.statutBon,
+          panierStatut: result.panier?.statut
+        });
       //this.toastr.success('Bon enregistré avec succès!', 'Succès');
       //console.log('Enregistrement complet:', result);
       //this.reinitialiserFormulaires();
@@ -439,6 +412,20 @@ private uploadFichierSepare(fichier: File, bonId: number, resultBon: any): void 
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 private finaliserEnregistrement(result: any, avecFichier: boolean): void {
+  console.log('Enregistrement réussi:', {
+    bonId: result.bon?.id,
+    statut: result.bon?.statutBon,
+    panierStatut: result.panier?.statut,
+    articlesCount: result.articles?.length
+  });
+  // S'assurer que c'est le même panier
+  if (this.panierBrouillon && result.panier) {
+    if (this.panierBrouillon.id !== result.panier.id) {
+      console.warn('ATTENTION: Un nouveau panier a été créé au lieu de mettre à jour l\'existant');
+    } else {
+      console.log('Panier existant mis à jour avec succès');
+    }
+  }
   const message = avecFichier 
     ? 'Bon et fichier enregistrés avec succès!' 
     : 'Bon enregistré avec succès!';
@@ -448,25 +435,19 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
   }
   
   console.log('Enregistrement terminé:', result);
+
+  this.rafraichirDonneesImmediatement();
+
+
+  //Nettoyer les brouillons APRÈS enregistrement réussi
+  this.bonBrouillonService.clearBrouillons();
+  this.bonBrouillon = null;
+  this.panierBrouillon = null;
+  
   this.reinitialiserEtMasquerFormulaires();
-  this.loadOperations();
   //this.actualiserDonnees();
   this.isLoading = false;
 }
-// Réinitialisation des formulaires
-private reinitialiserFormulaires() {
-  this.showBonComponent = false;
-  this.showPanierComponent = false;
-  /* this.bonForm.reset();
-  this.panierData = null; */
-}
-
-// Actualisation des données
-private actualiserDonnees() {
-  this.loadData();
-  this.loadDataProduits();
-}
-
 
   // Getter pour accéder facilement aux contrôles du formulaire
   get f() {
@@ -491,6 +472,14 @@ private actualiserDonnees() {
     if (this.selectedFournisseur) {
       console.log(`${action} fournisseur:`, this.selectedFournisseur);
       if (this.actionType === 'operation') {
+        // Dans votre méthode
+        this.checkBrouillonExists((exists) => {
+          if (exists) {
+            this.textBoutonNewBon = 'Modifier le bon brouillon';
+          } else {
+            this.textBoutonNewBon = 'Nouveau bon';
+          }
+        });
         this.showBonDetails();
       } else if (this.actionType === 'modifier') {
         this.openModal(this.selectedFournisseur);
@@ -640,6 +629,8 @@ private actualiserDonnees() {
     this.showDetails = false;
     this.showBonDetailsSection = false;
     this.showPaiementDetailsSection = false;
+    if(this.showBonForm ) this.showBonForm = false;
+    if(this.showPaiementForm ) this.showPaiementForm = false;
     //this.filteredBons = [];
     //this.filteredPaiements = [];
     //this.filteredBonsBis = [];
@@ -651,7 +642,7 @@ private actualiserDonnees() {
     this.showBonForm = !this.showBonForm;
     this.showPaiementForm = false;
     // S'assurer que showBonComponent est synchronisé
-    this.showBonComponent = this.showBonForm;
+    //this.showBonComponent = this.showBonForm;
     
     if (this.showBonForm) {
       console.log('📝 Affichage du formulaire de bon');
@@ -680,12 +671,14 @@ private actualiserDonnees() {
           if (brouillonFournisseur) {
             // Charger le bon brouillon
             this.bonBrouillonService.setBonBrouillon(brouillonFournisseur);
+            this.bonBrouillon = brouillonFournisseur;
             
             // Charger le panier associé
             this.panierService.getPanierByBonId(brouillonFournisseur.id!)
               .pipe(takeUntil(this.destroy$))
               .subscribe(panier => {
                 this.bonBrouillonService.setPanierBrouillon(panier);
+                this.panierBrouillon = panier;
                 this.toastr.info('Brouillon existant chargé');
               });
           } else {
@@ -700,7 +693,25 @@ private actualiserDonnees() {
       });
   }
 
-    private creerNouveauBrouillon(): void {
+  checkBrouillonExists(callback: (exists: boolean) => void): void {
+
+  this.bonService.getBonsBrouillons(this.code_structure)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (bonsBrouillons) => {
+        const brouillonFournisseur = bonsBrouillons.find(bon => 
+          bon.fournisseurId === this.selectedFournisseur?.id
+        );
+        callback(brouillonFournisseur !== undefined);
+      },
+      error: (err) => {
+        console.error('Erreur chargement brouillons:', err);
+        callback(false); // En cas d'erreur, on considère qu'il n'y a pas de brouillon
+      }
+    });
+}
+
+  private creerNouveauBrouillon(): void {
     if (!this.selectedFournisseur) return;
 
 
@@ -729,7 +740,7 @@ private actualiserDonnees() {
       bon: {
         type: 'Commande',
         numero: this.generatedNumero,
-        description: 'Brouillon de bon',
+        description: '',
         montantTotal: 0,
         statutBon: 'brouillon',
         dateBon: new Date(),
@@ -743,8 +754,12 @@ private actualiserDonnees() {
         totalHT: 0,
         tva: 0,
         totalTTC: 0,
+        tauxTVA: 0,
         statut: 'en_cours',
-        typeEntite: this.typeEntite
+        typeEntite: this.typeEntite,
+        code_structure: this.code_structure,
+        agentId:this.agentId,
+        magasinId:this.magasinId
       },
       articles: [],
       code_structure: this.code_structure,
@@ -757,8 +772,8 @@ private actualiserDonnees() {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (result) => {
-          //this.bonBrouillon = result.bon;
-          //this.panierBrouillon = result.panier;
+          this.bonBrouillon = result.bon;
+          this.panierBrouillon = result.panier;
           this.bonBrouillonService.setBonBrouillon(result.bon);
           this.bonBrouillonService.setPanierBrouillon(result.panier);
           this.toastr.info('Nouveau bon brouillon créé');
@@ -774,8 +789,8 @@ private actualiserDonnees() {
   /* resetFormPaiement() {
     this.paiementForm.reset();
   } */
-  toggleDetails(index: number, typeInstance: unknown) {
-    if (typeInstance instanceof Fournisseur) {
+  toggleDetails(index: number, operation: Operation):void {
+    /* if (typeInstance instanceof Fournisseur) {
       this.selectedBonIndexF = this.selectedBonIndexF === index ? null : index;
     } else if (typeInstance instanceof Bon) {
       this.selectedBonIndexB = this.selectedBonIndexB === index ? null : index;
@@ -783,11 +798,50 @@ private actualiserDonnees() {
       this.selectedBonIndexP = this.selectedBonIndexP === index ? null : index;
     } else if (typeInstance instanceof Operation) {
       this.selectedBonIndexO = this.selectedBonIndexO === index ? null : index;
-    }
+    } */
+
+      // Fermer tous les autres détails
+      if (this.selectedBonIndexO === index) {
+        this.selectedBonIndexO = null;
+      } else {
+        this.selectedBonIndexO = index;
+      }
+      
+      console.log('🔍 Affichage détails opération:', {
+        index,
+        operationId: operation.id,
+        type: operation.type,
+        hasBon: !!operation.Bon,
+        hasUser: !!operation.user
+      });
   }
 
   getBonByOperation(operation: Operation): Bon | null {
-    return this.filteredBons.find((bon) => bon.id === operation.bonId) || null;
+
+    // Si l'opération a déjà les données du bon incluses
+    if (operation.Bon) {
+      return operation.Bon;
+    }
+
+    // Fallback: chercher dans la liste des bons
+    if (operation.bonId) {
+      const bon = this.allBons.find(b => b.id === operation.bonId);
+      return bon || null;
+    }
+    //return this.filteredBons.find((bon) => bon.id === operation.bonId) || null;
+    // if (!operation?.bonId) {
+    //   console.log('Operation sans bonId:', operation);
+    //   return null;
+    // }
+    
+    /* const bon = this.filteredBons.find((bon) => bon.id === operation.bonId);
+    
+    if (!bon) {
+      console.log('Bon non trouvé pour operation:', operation.bonId, 'Bons disponibles:', this.filteredBons.map(b => b.id));
+    } */
+    
+    return null;
+
   }
   getBonBypaiement(operation: Paiement): Bon | null {
     return this.filteredBons.find((bon) => bon.id === operation.bonId) || null;
@@ -795,14 +849,38 @@ private actualiserDonnees() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getFournisseurByOperation(operation: any): Fournisseur | null {
     // Vérifier si l'opération est de type Paiement
-    if (operation instanceof Paiement) {
+    /* if (operation instanceof Paiement) {
       return this.filteredFournisseurs.find((four) => four.id === operation.fournisseurId) || null;
     } else if (operation instanceof Bon) {
       return this.filteredFournisseurs.find((four) => four.id === operation.fournisseurId) || null;
     }
 
     // Autres cas
-    return this.filteredFournisseurs.find((four) => four.id === operation.fournisseurId) || null;
+    return this.filteredFournisseurs.find((four) => four.id === operation.fournisseurId) || null; */
+     if (!operation) return null;
+
+    let fournisseurId: number | undefined;
+
+    if (operation instanceof Paiement || (operation.paiementId && operation.fournisseurId)) {
+      fournisseurId = operation.fournisseurId;
+    } else if (operation instanceof Bon || (operation.bonId && operation.fournisseurId)) {
+      fournisseurId = operation.fournisseurId;
+    } else if (operation.fournisseurId) {
+      fournisseurId = operation.fournisseurId;
+    }
+
+    if (!fournisseurId) {
+      console.log('Operation sans fournisseurId:', operation);
+      return null;
+    }
+
+    const fournisseur = this.filteredFournisseurs.find((four) => four.id === fournisseurId);
+    
+    if (!fournisseur) {
+      console.log('Fournisseur non trouvé:', fournisseurId);
+    }
+    
+    return fournisseur || null;
   }
 
   // Méthode pour filtrer les produits selon la recherche
@@ -1045,25 +1123,80 @@ private actualiserDonnees() {
   }
   
   // Gérer l'événement d'enregistrement du paiement
-  onPaiementEnregistre(paiement: Paiement): void {
+  onPaiementEnregistre(event: PaiementAvecFichier): void {
     // Associer le fournisseur au paiement
     if (this.selectedFournisseur) {
-      paiement.fournisseurId = this.selectedFournisseur.id;
+      event.paiement.fournisseurId = this.selectedFournisseur.id;
     }
     
+    console.log('Paiement à enregistrer reçu dans fournisseur:', event.paiement, 'Fichier:', event.fichier);
     // Enregistrer le paiement
-    this.enregistrerPaiement(paiement);
+    this.enregistrerPaiement(event.paiement,event.fichier);
     this.showPaiementComponent = false;
   }
   
   onPaiementAnnule(): void {
     this.showPaiementComponent = false;
   }
-  
-  private enregistrerPaiement(paiement: Paiement): void {
-    // Logique d'enregistrement du paiement
-    console.log('Paiement enregistré:', paiement);
-    // this.paiementService.create(paiement).subscribe(...);
+  onReinitialiserPaiementForm(): void {
+    this.showPaiementComponent = false;
+  }
+  private enregistrerPaiement(paiement: Paiement,fichier:File|null): void {
+    if (!this.selectedFournisseur) {
+      this.toastr.error('Aucun fournisseur sélectionné', 'Erreur');
+      return;
+    }
+
+    // Étape 1 : compléter les données du paiement
+    const paiementCompletData: Paiement = {
+      ...paiement,
+      agentId: this.agentId,
+      code_structure: this.code_structure,
+      magasinId: this.magasinId,
+      fournisseurId: this.selectedFournisseur.id
+    };
+
+    console.log('Données à envoyer:', paiementCompletData);
+
+    // Étape 2 : construire le FormData
+    const formData = new FormData();
+
+    // Parcourir les clés de l’objet et les ajouter au FormData
+    Object.entries(paiementCompletData).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    // Étape 3 : ajouter le fichier s’il existe
+    if (fichier) {
+      formData.append('fichier', fichier);
+    }
+
+    this.isLoading = true;
+
+    this.paiementService.create(formData).pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (result) => {
+        console.log('Bon enregistré avec succès:', {
+            paiementID: result?.id,
+            montantPaye: result.montant,
+            methodePaiement: result.methodePaiement,
+            fournisseurId: result.fournisseurId
+          });
+        this.toastr.success('Paiement enregistré avec succès', 'Succès');
+        this.rafraichirDonneesImmediatement();
+        this.showPaiementForm = false;
+
+      },
+      error: (error) => {
+        console.error('Erreur enregistrement paiement:', error.message);
+        this.toastr.error(error.error?.error || 'Erreur lors de l\'enregistrement', 'Erreur');
+      },
+      complete: () => {
+        this.isLoading = false;
+      }
+    });
   }
   // Méthode pour retourner un bon
   retournerBon(bon: Bon) {
@@ -1127,7 +1260,7 @@ private actualiserDonnees() {
   // Fonction pour supprimer un bon
   supprimerBon(bon: Bon): void {
     // Vérification du statut avant de supprimer
-    if (bon.statutBon === 'brouillon' || bon.statutBon === 'commandé') {
+    if (bon.statutBon === 'brouillon') {
       // Supprimer le bon
       this.deleteBon(bon.id!); // Appel à une fonction pour supprimer le bon
       alert('Bon supprimé avec succès.');
@@ -1180,14 +1313,6 @@ private actualiserDonnees() {
     } else {
       alert('Aucun paiement à suivre.');
     } */
-  }
-
-  // Fonction pour imprimer le bon
-  imprimerBon(bon: Bon): void {
-    console.log(bon);
-    // Logique d'impression du bon (ici, on simule l'impression)
-    window.print(); // Pour l'impression
-    alert("Bon envoyé à l'impression.");
   }
 
   // Fonction pour mettre à jour un bon
@@ -1344,7 +1469,8 @@ private actualiserDonnees() {
   loadOperations(): void {
     if(!this.selectedFournisseur) return;
     this.isLoading = true;
-    this.operationService.getOperationsByFournisseur(this.code_structure, this.selectedFournisseur.id!)
+    
+    this.operationService.getOperationsByFournisseur(this.code_structure, this.selectedFournisseur.id!, { dateDebut: this.startDate, dateFin: this.endDate })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (ops) => {
@@ -1352,14 +1478,78 @@ private actualiserDonnees() {
           this.logger.debug('Opérations fournisseur chargées', ops);
           this.filteredOperations = [... this.operations];
           this.isLoading = false;
+          console.log('operation sans filtre',ops);
+          console.log('Opérations chargées avec relations:', ops.map(op => ({
+            id: op.id,
+            type: op.type,
+            hasBon: !!op.Bon,
+            hasUser: !!op.user,
+            userName: op.user?.['nomComplet'] || 'N/A',
+          })));
+          //FORCER la détection de changement
+          this.cdr.detectChanges();
         },
         error: (err) => {
           this.errorMessage = 'Erreur lors du chargement des opérations.';
           this.logger.error('Erreur API opérations fournisseur', err);
           this.isLoading = false;
+          //FORCER la détection de changement même en cas d'erreur
+          this.cdr.detectChanges();
         }
       });
   }
+
+  // Rafraîchissement après enregistrement
+private rafraichirDonneesImmediatement(): void {
+  if (!this.selectedFournisseur) return;
+
+  console.log('Rafraîchissement immédiat des opérations');
+
+  //Recharger les opérations
+  this.loadOperations();
+  //Rafraîchir les données du fournisseur
+  this.rafraichirDonneesFournisseur();
+}
+
+
+
+// Récupération des statistiques
+loadStats(): void {
+  const filters = {
+    code_structure: this.code_structure,
+    dateDebut: this.startDate,
+    dateFin: this.endDate
+  };
+
+  this.operationService.getOperationsStats(filters)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (stats) => {
+        console.log('📈 Statistiques:', stats);
+        // Utiliser les stats pour afficher des graphiques ou résumés
+      },
+      error: (err) => {
+        console.error('Erreur stats:', err);
+      }
+    });
+}
+
+// Récupération du solde d'un fournisseur
+getSoldeFournisseur(): void {
+  if (!this.selectedFournisseur) return;
+
+  this.operationService.getSoldeFournisseur(this.code_structure, this.selectedFournisseur.id!)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (solde) => {
+        console.log(`💰 Solde fournisseur: ${solde}`);
+        // Afficher le solde dans l'interface
+      },
+      error: (err) => {
+        console.error('Erreur solde:', err);
+      }
+    });
+}
 
   loadBonAndPaiement(): void {
       this.isLoading = true;
@@ -1388,8 +1578,10 @@ private actualiserDonnees() {
     console.log('Début réinitialisation formulaires...');
     
     // 1. Masquer les composants
-    this.showBonComponent = false;
+    this.showBonForm = false;
     this.showPanierComponent = false;
+    this.textBoutonNewBon = 'Nouveau bon';
+
     
     // 2. Réinitialiser le composant Bon via ViewChild
     if (this.bonComponent) {
@@ -1531,7 +1723,7 @@ private actualiserDonnees() {
           this.toastr.success('Panier et bon annulés avec succès');
           this.bonBrouillon = null;
           this.panierBrouillon = null;
-          this.showBonComponent = false;
+          this.showBonForm = false;
           this.showBonForm = false;
         },
         error: (err) => {
@@ -1541,4 +1733,184 @@ private actualiserDonnees() {
       });
   }
   
+  // Dans fournisseurs.component.ts
+
+/**
+ * Rafraîchit les données du fournisseur sélectionné
+ */
+private rafraichirDonneesFournisseur(): void {
+  if (!this.selectedFournisseur) return;
+
+  console.log('Rafraîchissement des données du fournisseur:', this.selectedFournisseur.id);
+
+  this.fournisseurService.getFournisseurById(this.selectedFournisseur.id!)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (fournisseurMisAJour) => {
+        // Mettre à jour le fournisseur dans la liste
+        const index = this.fournisseurs.findIndex(f => f.id === fournisseurMisAJour.id);
+        if (index !== -1) {
+          this.fournisseurs[index] = fournisseurMisAJour;
+        }
+
+        // Mettre à jour le fournisseur sélectionné
+        this.selectedFournisseur = fournisseurMisAJour;
+
+        // Mettre à jour la liste filtrée
+        this.filteredFournisseurs = [...this.fournisseurs];
+
+        console.log('Fournisseur mis à jour:', {
+          id: fournisseurMisAJour.id,
+          nom: fournisseurMisAJour.nomComplet,
+          montantAPayer: fournisseurMisAJour.montantAPayer
+        });
+
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Erreur rafraîchissement fournisseur:', err);
+      }
+    });
+}
+// Charger les informations de la structure pour le PDF
+private loadStructureInfo(): void {
+    this.structureService.getByCodeStructure(this.code_structure)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (structure) => {
+          this.pdfGenerator.setStructureInfo(structure);
+        },
+        error: (err) => {
+          console.error('Erreur chargement structure:', err);
+        }
+      });
+  }
+
+  // Dans fournisseurs.component.ts
+
+imprimerReleve(): void {
+  if (!this.selectedFournisseur) {
+    this.toastr.error('Aucun fournisseur sélectionné');
+    return;
+  }
+
+  try {
+    this.isLoading = true;
+    // Debug: vérifier les données
+    console.log('Operations à imprimer:', this.filteredOperations);
+    console.log('Nombre d\'opérations:', this.filteredOperations?.length);
+
+    // Valider et formater les opérations
+    const operationsFormatees = this.filteredOperations.map(op => {
+      if (!op) return null;
+      
+      return {
+        date: op.dateOperation,
+        type: op.type || 'NON SPECIFIE',
+        reference: op.numeroVersement || op.Bon?.numero || 'N/A',
+        montant: op.montantPaye || 0,
+        // Inclure toutes les propriétés nécessaires
+        ...op
+      };
+    }).filter(op => op != null); // Supprimer les null
+
+    const releveData = {
+      fournisseur: {
+        nomComplet: this.selectedFournisseur.nomComplet || 'N/A',
+        adresse: this.selectedFournisseur.adresse || '',
+        telephone: this.selectedFournisseur.telephone || '',
+        email: this.selectedFournisseur.email || ''
+      },
+      periode: `${this.startDate} à ${this.endDate}`,
+      operations: operationsFormatees, // Utiliser les données formatées
+      synthese: {
+        totalCommandes: this.calculerTotalCommandes(),
+        totalVersements: this.calculerTotalVersements(),
+        solde: this.selectedFournisseur.montantAPayer || 0
+      }
+    };
+
+    this.pdfGenerator.generateReleveFournisseur(releveData);
+  } 
+  catch (error) {
+    console.error('Erreur génération relevé:', error);
+    this.toastr.error('Erreur lors de la génération du relevé');
+  }
+  finally {
+    this.isLoading = false;
+  }
+  
+}
+
+imprimerBon(bon: Bon): void {
+  if (!bon) {
+    this.toastr.error('Aucun bon sélectionné');
+    return;
+  }
+
+  try {
+
+    this.isLoading = true;
+    // Debug: vérifier les données du bon
+    console.log('Bon à imprimer:', bon);
+    console.log('Articles du bon:', bon.panier?.articles);
+
+    // Valider et formater les articles
+    const articlesFormates = (bon.panier?.articles || []).map(article => {
+      if (!article) return null;
+      
+      return {
+        // Inclure toutes les propriétés nécessaires
+        ...article,
+        designation: article.Produit?.designation || article.produit?.designation || 'Produit sans nom',
+        prixUnitaire: article.prixUnitaire || article.prixAchatUnitaire || 0,
+        quantite: article.quantite || 0,
+        tva: bon.panier?.tauxTVA || 0,
+        total: (article.quantite || 0) * (article.prixUnitaire || 0),
+        
+        
+      };
+    }).filter(article => article != null); // Supprimer les null
+
+    const bonData = {
+      numero: bon.numero || 'N/A',
+      date: bon.dateBon || new Date(),
+      fournisseur: this.selectedFournisseur ? {
+        nomComplet: this.selectedFournisseur.nomComplet || 'N/A',
+        adresse: this.selectedFournisseur.adresse || '',
+        telephone: this.selectedFournisseur.telephone || '',
+        email: this.selectedFournisseur.email || ''
+      } : { nomComplet: 'N/A', adresse: '', telephone: '', email: '' },
+      articles: articlesFormates, // Utiliser les articles formatés
+      totaux: {
+        sousTotal: bon.panier?.totalHT || 0,
+        tauxTVA: bon.panier?.tauxTVA || 0,
+        montantTVA: bon.panier?.tva || 0,
+        totalTTC: bon.panier?.totalTTC || 0
+      }
+    };
+
+    this.pdfGenerator.generateBonFournisseur(bonData);
+  } 
+  catch (error) {
+    console.error('Erreur génération bon:', error);
+    this.toastr.error('Erreur lors de la génération du bon');
+  }
+  finally {
+    this.isLoading = false;
+  }
+}
+
+  // Méthodes de calcul
+  private calculerTotalCommandes(): number {
+    return this.filteredOperations
+      .filter(op => op.type === 'COMMANDE')
+      .reduce((total, op) => total + (op.Bon?.Panier?.totalTTC || 0), 0);
+  }
+
+  private calculerTotalVersements(): number {
+    return this.filteredOperations
+      .filter(op => op.type === 'VERSEMENT')
+      .reduce((total, op) => total + (op.montantPaye || 0), 0);
+  }
 }

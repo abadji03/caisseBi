@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { catchError, Observable, throwError } from 'rxjs';
+import { catchError, Observable, tap, throwError } from 'rxjs';
 import { Bon } from '../modeles/bon.model';
 import { NGXLogger } from 'ngx-logger';
 import { AuthService } from './auth.service';
@@ -110,16 +110,33 @@ updateBonAvecFichier(bonId: number, cheminFichier: string): Observable<any> {
    // Créer un bon en mode brouillon
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   creerBonBrouillon(bonData: any): Observable<any> {
+    console.log('🚀 Envoi au backend - createBonComplet:', {
+      bonId: bonData.bon?.id,
+      statut: bonData.bon?.statutBon,
+      articlesCount: bonData.articles?.length,
+      hasPanier: !!bonData.panier,
+      typeEntite: bonData.typeEntite
+    });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return this.http.post<any>(`${API_URL}/brouillon`, bonData,{ headers: this.getHeaders() })
-          .pipe(catchError(err => this.handleError(err)));
+          .pipe(
+              tap(response => {
+                console.log('Réponse du backend:', {
+                  bonId: response.bon?.id,
+                  statut: response.bon?.statutBon,
+                  panierStatut: response.panier?.statut,
+                  articlesCount: response.articles?.length
+                });
+              }),
+            catchError(err => this.handleError(err)));
   }
 
   // Mettre à jour un bon existant
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   mettreAJourBon(bonId: number, bonData: any): Observable<any> {
     return this.http.put(`${API_URL}/${bonId}`, bonData,{ headers: this.getHeaders() })
-      .pipe(catchError(err => this.handleError(err)));
+      .pipe(
+        catchError(err => this.handleError(err)));
   }
 
   // Changer le statut du panier

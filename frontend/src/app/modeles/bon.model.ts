@@ -7,10 +7,11 @@ export class Bon {
   numero!: string;
   numeroFacture?: string;
   code_structure!:string;
-  type!: 'Livraison' | 'Commande' | 'Retour' | 'Avoir';
+  type!: 'livraison' | 'commande' | 'retour' | 'avoir';
   description!: string;
   typeEntite!:'client' | 'fournisseur';
   montantTotal!: number;
+  montantAvoir?: number;
   remise?: number;
   netAPayer?: number;
   magasinId!:number;
@@ -19,17 +20,14 @@ export class Bon {
   dateBon: Date = new Date();
   statutBon?:
     | 'brouillon'
-    | 'commandé'
-    | 'expédié'
     | 'livré'
     | 'validé'
     | 'retourné'
     | 'facturé'
-    | 'payé'
     | 'annulé';
   motifsRetour?: string;
   fichier?: string; // URL ou base64
-
+  numeroBonOrigine?: string; // Pour les retours et avoirs
   // Relations
   fournisseurId?: number; // Si c'est un bon fournisseur
   clientId?: number; // Si c'est un bon client
