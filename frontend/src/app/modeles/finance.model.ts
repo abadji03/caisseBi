@@ -3,7 +3,7 @@ export class Depense {
   date: Date = new Date();
   categoryId!: number;
   montant = 0;
-  type: 'STANDARD' | 'STOCK' = 'STANDARD';
+  type: 'STANDARD' | 'STOCK'|'FRAIS'|'INVESTISSEMENT' = 'STANDARD';
   description = '';
   paymentMode!: string;
   receipt?: string; // URL du fichier justificatif
@@ -31,10 +31,11 @@ export class Recette {
 
 export class Categorie {
   id?: number;
-  name = '';
+  name!: string ;
   description?: string;
   type: 'DEPENSE' | 'RECETTE' = 'DEPENSE';
   isActive = true;
+  code_structure?: string;
 
   constructor(data?: Partial<Categorie>) {
     Object.assign(this, data);

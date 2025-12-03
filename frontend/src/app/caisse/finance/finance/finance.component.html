@@ -40,7 +40,17 @@
       </button>
     </li>
   </ul>
-
+  <!-- Message d'erreur global -->
+  <div *ngIf="errorMessage" class="alert alert-danger mt-3">
+    {{ errorMessage }}
+  </div>
+  <!-- Indicateur de chargement -->
+  <div *ngIf="isLoading" class="text-center mt-3">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+    <p class="mt-2">Chargement des données...</p>
+  </div>
   <div class="tab-content mt-3">
     <!-- Onglet Dépenses -->
     <div *ngIf="activeTab === 'depenses'">
@@ -55,93 +65,167 @@
         <!-- <h4>Ajouter une Dépense</h4> -->
         <div class="card">
           <div class="card-header d-flex justify-content-center">
-            <h4 class="card-title">Ajouter une dépense</h4>
+            <!-- <h4 class="card-title">Ajouter une dépense</h4> -->
+             <h5 class="card-title mb-0">
+                <i class="bi bi-cash-coin me-2"></i>
+                {{ selectedDepense ? 'Modifier la Dépense' : 'Nouvelle Dépense' }}
+              </h5>
           </div>
           <div class="card-body">
             <form [formGroup]="depenseForm" (ngSubmit)="ajouterDepense()">
               <div class="row">
-                <!-- Champ Catégorie -->
-                <div class="col-md-4">
-                  <label for="categoryId">Catégorie</label>
-                  <select class="form-control" id="categoryId" formControlName="categoryId">
-                    <ng-container *ngFor="let cat of categories">
-                      <option *ngIf="cat.type === 'DEPENSE'" [value]="cat.id">
-                        {{ cat.name }}
-                      </option>
-                    </ng-container>
+                <!-- Catégorie -->
+                <div class="col-md-6 mb-3">
+                  <label for="categoryId" class="form-label">
+                    Catégorie <span class="text-danger">*</span>
+                  </label>
+                  <select 
+                    class="form-control" 
+                    id="categoryId" 
+                    formControlName="categoryId"
+                    [class.is-invalid]="depenseForm.get('categoryId')?.touched && depenseForm.get('categoryId')?.invalid">
+                    <option value="">Sélectionner une catégorie</option>
+                    <option *ngFor="let cat of categories" [value]="cat.id">
+                      {{ cat.name }}
+                    </option>
                   </select>
+                  <div *ngIf="depenseForm.get('categoryId')?.touched && depenseForm.get('categoryId')?.invalid" 
+                       class="invalid-feedback">
+                    La catégorie est obligatoire
+                  </div>
                 </div>
 
-                <!-- Champ Montant -->
-                <div class="col-md-4">
-                  <label for="amount">Montant</label>
+                <!-- Date -->
+                <div class="col-md-6 mb-3">
+                  <label for="date" class="form-label">
+                    Date <span class="text-danger">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    class="form-control"
+                    id="date"
+                    formControlName="date"
+                    [class.is-invalid]="depenseForm.get('date')?.touched && depenseForm.get('date')?.invalid">
+                  <div *ngIf="depenseForm.get('date')?.touched && depenseForm.get('date')?.invalid" 
+                       class="invalid-feedback">
+                    La date est obligatoire
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <!-- Montant -->
+                <div class="col-md-6 mb-3">
+                  <label for="montant" class="form-label">
+                    Montant (F CFA) <span class="text-danger">*</span>
+                  </label>
                   <input
                     type="number"
                     class="form-control"
-                    id="amount"
-                    formControlName="amount"
-                    required
-                  />
+                    id="montant"
+                    formControlName="montant"
+                    min="1"
+                    step="100"
+                    [class.is-invalid]="depenseForm.get('montant')?.touched && depenseForm.get('montant')?.invalid">
+                  <div *ngIf="depenseForm.get('montant')?.touched && depenseForm.get('montant')?.invalid" 
+                       class="invalid-feedback">
+                    <div *ngIf="depenseForm.get('montant')?.errors?.['required']">
+                      Le montant est obligatoire
+                    </div>
+                    <div *ngIf="depenseForm.get('montant')?.errors?.['min']">
+                      Le montant doit être supérieur à 0
+                    </div>
+                  </div>
                 </div>
 
-                <!-- Champ Mode de paiement -->
-                <!-- Champ Mode de paiement -->
-                <div class="col-md-4">
-                  <label for="paymentMode">Mode de paiement</label>
+                <!-- Mode de paiement -->
+                <div class="col-md-6 mb-3">
+                  <label for="paymentMode" class="form-label">
+                    Mode de paiement <span class="text-danger">*</span>
+                  </label>
                   <select
                     class="form-control"
                     id="paymentMode"
                     formControlName="paymentMode"
-                    required
-                  >
+                    [class.is-invalid]="depenseForm.get('paymentMode')?.touched && depenseForm.get('paymentMode')?.invalid">
                     <option value="Espèce">Espèce</option>
                     <option value="Carte">Carte</option>
                     <option value="Mobile Money">Mobile Money</option>
                     <option value="Virement">Virement</option>
+                    <option value="Chèque">Chèque</option>
                   </select>
+                  <div *ngIf="depenseForm.get('paymentMode')?.touched && depenseForm.get('paymentMode')?.invalid" 
+                       class="invalid-feedback">
+                    Le mode de paiement est obligatoire
+                  </div>
                 </div>
               </div>
 
-              <div class="row mt-3">
-                <!-- Champ Type Dépense -->
-                <div class="col-md-4">
-                  <label for="type">Type de dépense</label>
+              <div class="row">
+                <!-- Type de dépense -->
+                <div class="col-md-6 mb-3">
+                  <label for="type" class="form-label">
+                    Type de dépense
+                  </label>
                   <select class="form-control" id="type" formControlName="type">
                     <option value="STANDARD">Standard</option>
                     <option value="STOCK">Approvisionnement en Stock</option>
+                    <option value="FRAIS">Frais de fonctionnement</option>
+                    <option value="INVESTISSEMENT">Investissement</option>
                   </select>
                 </div>
 
-                <!-- Champ Joindre un fichier -->
-                <div class="col-md-4">
-                  <label for="receipt">Joindre un fichier</label>
-                  <input type="file" class="form-control" id="receipt" formControlName="receipt" />
-                </div>
-
-                <!-- Champ Description -->
-                <div class="col-md-4">
-                  <label for="description">Description</label>
-                  <textarea
+                <!-- Pièce justificative -->
+                <div class="col-md-6 mb-3">
+                  <label for="receipt" class="form-label">
+                    Pièce justificative (optionnel)
+                  </label>
+                  <input
+                    type="file"
                     class="form-control"
-                    id="description"
-                    formControlName="description"
-                    rows="3"
-                  ></textarea>
+                    id="receipt"
+                    (change)="onFileSelected($event)"
+                    accept=".pdf,.jpg,.jpeg,.png">
+                  <small class="text-muted">
+                    Formats acceptés: PDF, JPG, PNG (max 5MB)
+                  </small>
+                  <div *ngIf="selectedFile" class="mt-2">
+                    <span class="badge bg-info">
+                      <i class="bi bi-file-earmark me-1"></i>
+                      {{ selectedFile.name }}
+                    </span>
+                  </div>
                 </div>
               </div>
-              <div class="d-flex justify-content-center mt-3">
+
+              <!-- Description -->
+              <div class="mb-3">
+                <label for="description" class="form-label">
+                  Description (optionnel)
+                </label>
+                <textarea
+                  class="form-control"
+                  id="description"
+                  formControlName="description"
+                  rows="3"
+                  placeholder="Détails de la dépense..."></textarea>
+              </div>
+
+              <!-- Boutons -->
+              <div class="d-flex justify-content-end gap-2">
                 <button
-                  class="btn btn-success w-25 me-4"
                   type="submit"
-                  [disabled]="depenseForm.invalid"
-                >
-                  Enregistrer
+                  class="btn btn-outiline-success"
+                  [disabled]="depenseForm.invalid || isLoading">
+                  <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+                  <i class="bi" [ngClass]="selectedDepense ? 'bi-check-circle' : 'bi-plus-circle'"></i>
+                  {{ selectedDepense ? 'Modifier' : 'Enregistrer' }}
                 </button>
                 <button
-                  class="btn btn-secondary w-25"
-                  type="reset"
-                  [disabled]="depenseForm.invalid"
-                >
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  (click)="cancelDepenseForm()"
+                  [disabled]="isLoading">
                   Annuler
                 </button>
               </div>
@@ -169,13 +253,14 @@
         </select>
       </div>
       <table class="table table-striped">
-        <thead>
+        <thead class="table-success">
           <tr>
             <th>Date</th>
             <th>Catégorie</th>
             <th>Montant</th>
             <th>Mode de Paiement</th>
             <th>Type de dépense</th>
+            <th>Pièce jointe</th>
             <!-- Nouvelle colonne pour le type de paiement -->
             <th>Actions</th>
             <!-- Nouvelle colonne pour les actions -->
@@ -183,11 +268,23 @@
         </thead>
         <tbody>
           <tr *ngFor="let dep of getPaginatedDepenses">
-            <td>{{ dep.date | date: 'dd/MM/yyyy à HH:mm' }}</td>
+            <td>{{ dep.date | date: 'dd/MM/yyyy' }}</td>
             <td>{{ getCategoryName(dep.categoryId) }}</td>
-            <td>{{ dep.amount }} F CFA</td>
+            <td>{{ dep.montant }} F CFA</td>
             <td>{{ dep.paymentMode }}</td>
             <td>{{ dep.type }}</td>
+            <td>
+              <!-- {{ dep.receipt }} -->
+                <span *ngIf="dep.receipt,else noReceipt">
+                  <a [href]="dep.receipt" target="_blank" rel="noopener noreferrer">
+                    Voir la pièce
+                  </a>
+                </span>
+                <ng-template #noReceipt>
+                  <span class="text-muted">Non assigné</span>
+                </ng-template>
+                
+            </td>
             <!-- Affichage du type de paiement -->
             <td>
               <!-- Actions, visibles uniquement si le mode de paiement est différent de 'standard' -->
@@ -198,13 +295,13 @@
               <button class="btn btn-danger btn-sm me-2" (click)="deleteDepense(dep)">
                 <i class="bi bi-trash"></i>
               </button>
-              <button
+              <!-- <button
                 *ngIf="dep.type !== 'STANDARD'"
                 class="btn btn-info btn-sm"
                 (click)="viewDepenseDetails(dep)"
               >
                 <i class="bi bi-eye"></i>
-              </button>
+              </button> -->
               <!-- </ng-container> -->
             </td>
           </tr>
@@ -235,87 +332,161 @@
       <!-- <h4>Liste des Recettes</h4> -->
       <div class="d-flex justify-content-end mb-3">
         <button class="btn btn-success" (click)="toggleRecetteForm()">
-          {{ formVisible ? 'Masquer le formulaire' : 'Nouvelle Recette' }}
+          {{ showRecetteForm ? 'Masquer le formulaire' : 'Nouvelle Recette' }}
         </button>
       </div>
 
       <!-- Formulaire d'ajout d'une recette -->
-      <div *ngIf="formVisible">
+      <div *ngIf="showRecetteForm">
         <!-- <h4>Ajouter une Recette</h4> -->
         <div class="card">
           <div class="card-header d-flex justify-content-center">
-            <h4 class="card-title">Ajouter une recette</h4>
+            <!-- <h4 class="card-title">Ajouter une recette</h4> -->
+             <h5 class="card-title mb-0">
+                <i class="bi bi-cash-coin me-2"></i>
+                {{ selectedRecette ? 'Modifier la Recette' : 'Nouvelle Recette' }}
+              </h5>
           </div>
           <div class="card-body">
-            <form [formGroup]="recetteForm" (ngSubmit)="ajouterRecette()" class="mt-3">
+            <form [formGroup]="recetteForm" (ngSubmit)="ajouterRecette()">
               <div class="row">
-                <div class="col-md-4">
-                  <label for="recetteCategoryId">Catégorie</label>
-                  <select class="form-control" id="recetteCategoryId" formControlName="categoryId">
-                    <ng-container *ngFor="let cat of categories">
-                      <option *ngIf="cat.type === 'RECETTE'" [value]="cat.id">
-                        {{ cat.name }}
-                      </option>
-                    </ng-container>
+                <!-- Catégorie -->
+                <div class="col-md-6 mb-3">
+                  <label for="recetteCategoryId" class="form-label">
+                    Catégorie <span class="text-danger">*</span>
+                  </label>
+                  <select 
+                    class="form-control" 
+                    id="recetteCategoryId" 
+                    formControlName="categoryId"
+                    [class.is-invalid]="recetteForm.get('categoryId')?.touched && recetteForm.get('categoryId')?.invalid">
+                    <option value="">Sélectionner une catégorie</option>
+                    <option *ngFor="let cat of categories" [value]="cat.id">
+                      {{ cat.name }}
+                    </option>
                   </select>
+                  <div *ngIf="recetteForm.get('categoryId')?.touched && recetteForm.get('categoryId')?.invalid" 
+                      class="invalid-feedback">
+                    La catégorie est obligatoire
+                  </div>
                 </div>
 
-                <div class="col-md-4">
-                  <label for="recetteAmount">Montant</label>
+                <!-- Date -->
+                <div class="col-md-6 mb-3">
+                  <label for="recetteDate" class="form-label">
+                    Date <span class="text-danger">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    class="form-control"
+                    id="recetteDate"
+                    formControlName="date"
+                    [class.is-invalid]="recetteForm.get('date')?.touched && recetteForm.get('date')?.invalid">
+                  <div *ngIf="recetteForm.get('date')?.touched && recetteForm.get('date')?.invalid" 
+                      class="invalid-feedback">
+                    La date est obligatoire
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <!-- Montant -->
+                <div class="col-md-6 mb-3">
+                  <label for="recetteMontant" class="form-label">
+                    Montant (F CFA) <span class="text-danger">*</span>
+                  </label>
                   <input
                     type="number"
                     class="form-control"
-                    id="recetteAmount"
-                    formControlName="amount"
-                    required
-                  />
+                    id="recetteMontant"
+                    formControlName="montant"
+                    min="1"
+                    step="100"
+                    [class.is-invalid]="recetteForm.get('montant')?.touched && recetteForm.get('montant')?.invalid">
+                  <div *ngIf="recetteForm.get('montant')?.touched && recetteForm.get('montant')?.invalid" 
+                      class="invalid-feedback">
+                    <div *ngIf="recetteForm.get('montant')?.errors?.['required']">
+                      Le montant est obligatoire
+                    </div>
+                    <div *ngIf="recetteForm.get('montant')?.errors?.['min']">
+                      Le montant doit être supérieur à 0
+                    </div>
+                  </div>
                 </div>
 
-                <div class="col-md-4">
-                  <label for="recettePaymentMode">Mode de paiement</label>
+                <!-- Mode de paiement -->
+                <div class="col-md-6 mb-3">
+                  <label for="recettePaymentMode" class="form-label">
+                    Mode de paiement <span class="text-danger">*</span>
+                  </label>
                   <select
                     class="form-control"
                     id="recettePaymentMode"
                     formControlName="paymentMode"
-                    required
-                  >
+                    [class.is-invalid]="recetteForm.get('paymentMode')?.touched && recetteForm.get('paymentMode')?.invalid">
                     <option value="Espèce">Espèce</option>
                     <option value="Carte">Carte</option>
                     <option value="Mobile Money">Mobile Money</option>
                     <option value="Virement">Virement</option>
+                    <option value="Chèque">Chèque</option>
                   </select>
+                  <div *ngIf="recetteForm.get('paymentMode')?.touched && recetteForm.get('paymentMode')?.invalid" 
+                      class="invalid-feedback">
+                    Le mode de paiement est obligatoire
+                  </div>
                 </div>
               </div>
 
-              <div class="row mt-3">
-                <div class="col-md-6">
-                  <label for="recetteReceipt">Pièce justificative</label>
-                  <input
-                    type="file"
-                    class="form-control"
-                    id="recetteReceipt"
-                    formControlName="receipt"
-                  />
-                </div>
-                <div class="col-md-6">
-                  <label for="recetteDescription">Description</label>
-                  <textarea
-                    class="form-control"
-                    id="recetteDescription"
-                    formControlName="description"
-                  ></textarea>
+              <!-- Pièce justificative -->
+              <div class="mb-3">
+                <label for="recetteReceipt" class="form-label">
+                  Pièce justificative (optionnel)
+                </label>
+                <input
+                  type="file"
+                  class="form-control"
+                  id="recetteReceipt"
+                  (change)="onRecetteFileSelected($event)"
+                  accept=".pdf,.jpg,.jpeg,.png">
+                <small class="text-muted">
+                  Formats acceptés: PDF, JPG, PNG (max 5MB)
+                </small>
+                <div *ngIf="selectedRecetteFile" class="mt-2">
+                  <span class="badge bg-info">
+                    <i class="bi bi-file-earmark me-1"></i>
+                    {{ selectedRecetteFile.name }}
+                  </span>
                 </div>
               </div>
 
-              <div class="d-flex justify-content-center mt-3">
+              <!-- Description -->
+              <div class="mb-3">
+                <label for="recetteDescription" class="form-label">
+                  Description (optionnel)
+                </label>
+                <textarea
+                  class="form-control"
+                  id="recetteDescription"
+                  formControlName="description"
+                  rows="3"
+                  placeholder="Détails de la recette..."></textarea>
+              </div>
+
+              <!-- Boutons -->
+              <div class="d-flex justify-content-end gap-2">
                 <button
-                  class="btn btn-success w-25 me-4"
                   type="submit"
-                  [disabled]="recetteForm.invalid"
-                >
-                  Enregistrer
+                  class="btn btn-outline-success"
+                  [disabled]="recetteForm.invalid || isLoading">
+                  <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+                  <i class="bi" [ngClass]="selectedRecette ? 'bi-check-circle' : 'bi-plus-circle'"></i>
+                  {{ selectedRecette ? 'Modifier' : 'Enregistrer' }}
                 </button>
-                <button class="btn btn-secondary w-25" type="button" (click)="cancelForm()">
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  (click)="cancelRecetteForm()"
+                  [disabled]="isLoading">
                   Annuler
                 </button>
               </div>
@@ -344,12 +515,14 @@
         </select>
       </div>
       <table class="table table-striped">
-        <thead>
+        <thead class="table-success">
           <tr>
             <th>Date</th>
             <th>Catégorie</th>
             <th>Montant</th>
             <th>Mode de Paiement</th>
+            <th>Description</th>
+            <th>Pièce jointe</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -358,10 +531,24 @@
             <td colspan="5" class="text-center">Aucune recette trouvée</td>
           </tr>
           <tr *ngFor="let recette of getPaginatedRecettes">
-            <td>{{ recette.date | date: 'dd/MM/yyyy à HH:mm' }}</td>
+            <td>{{ recette.date | date: 'dd/MM/yyyy' }}</td>
             <td>{{ getCategoryName(recette.categoryId) }}</td>
-            <td>{{ recette.amount }} F CFA</td>
+            <td>{{ recette.montant }} F CFA</td>
             <td>{{ recette.paymentMode }}</td>
+            <td>{{ recette.description }}</td>
+            
+            <td>
+              <!-- {{ dep.receipt }} -->
+                <span *ngIf="recette.receipt,else noReceipt">
+                  <a [href]="recette.receipt" target="_blank" rel="noopener noreferrer">
+                    Voir la pièce
+                  </a>
+                </span>
+                <ng-template #noReceipt>
+                  <span class="text-muted">Non assigné</span>
+                </ng-template>
+                
+            </td>
             <td>
               <button class="btn btn-warning btn-sm me-3" (click)="editRecette(recette)">
                 <i class="bi bi-pencil"></i>
@@ -394,131 +581,6 @@
 
     <!-- Onglet Paiements -->
     <div *ngIf="activeTab === 'paiements'">
-      <div class="d-flex justify-content-end mb-3">
-        <button class="btn btn-success" (click)="togglePaiementForm()">
-          {{ paiementFormVisible ? 'Masquer le formulaire' : 'Nouveau Paiement' }}
-        </button>
-      </div>
-
-      <!-- Formulaire d'ajout de paiement -->
-      <div *ngIf="paiementFormVisible">
-        <div class="card">
-          <div class="card-header d-flex justify-content-center">
-            <h4 class="card-title">Ajouter un paiement</h4>
-          </div>
-          <div class="card-body">
-            <form [formGroup]="paiementForm" (ngSubmit)="ajouterPaiement()" class="mt-3">
-              <!-- Sélection du type de paiement -->
-              <div class="row mb-2">
-                <div class="col-md-4">
-                  <label for="typePaiement">Type de paiement</label>
-                  <select
-                    class="form-control"
-                    id="typePaiement"
-                    formControlName="typePaiement"
-                    (change)="onTypePaiementChange()"
-                  >
-                    <option value="">Sélectionner...</option>
-                    <option value="client">Paiement Client</option>
-                    <option value="fournisseur">Paiement Fournisseur</option>
-                  </select>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col-md-4">
-                  <label for="numero">Numéro de paiement</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="numero"
-                    formControlName="numero"
-                    required
-                  />
-                </div>
-
-                <div class="col-md-4">
-                  <label for="montant">Montant du paiement</label>
-                  <input
-                    type="number"
-                    class="form-control"
-                    id="montant"
-                    formControlName="montant"
-                    required
-                    min="1"
-                  />
-                </div>
-
-                <div class="col-md-4">
-                  <label for="methodePaiement">Mode de paiement</label>
-                  <select
-                    class="form-control"
-                    id="methodePaiement"
-                    formControlName="methodePaiement"
-                    required
-                  >
-                    <option value="Espèce">Espèce</option>
-                    <option value="Carte">Carte</option>
-                    <option value="Mobile Money">Mobile Money</option>
-                    <option value="Virement">Virement</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="row mt-3">
-                <!-- Champ Client (affiché uniquement si "Paiement Client" est sélectionné) -->
-                <div class="col-md-4" *ngIf="paiementForm.value.typePaiement === 'client'">
-                  <label for="clientId">Client</label>
-                  <select class="form-control" id="clientId" formControlName="clientId">
-                    <option value="">Aucun</option>
-                    <option *ngFor="let client of clients" [value]="client.id">
-                      {{ client.nomComplet }}
-                    </option>
-                  </select>
-                </div>
-
-                <!-- Champ Fournisseur (affiché uniquement si "Paiement Fournisseur" est sélectionné) -->
-                <div class="col-md-4" *ngIf="paiementForm.value.typePaiement === 'fournisseur'">
-                  <label for="fournisseurId">Fournisseur</label>
-                  <select class="form-control" id="fournisseurId" formControlName="fournisseurId">
-                    <option value="">Aucun</option>
-                    <option *ngFor="let fournisseur of fournisseurs" [value]="fournisseur.id">
-                      {{ fournisseur.nomComplet }}
-                    </option>
-                  </select>
-                </div>
-
-                <div class="col-md-4">
-                  <label for="bonId">Bon de transaction</label>
-                  <select class="form-control" id="bonId" formControlName="bonId">
-                    <option value="">Aucun</option>
-                    <option *ngFor="let bon of bons" [value]="bon.id">{{ bon.numero }}</option>
-                  </select>
-                </div>
-
-                <div class="col-md-4">
-                  <label for="notes">Notes (optionnel)</label>
-                  <textarea class="form-control" id="notes" formControlName="notes"></textarea>
-                </div>
-              </div>
-
-              <div class="row mt-3"></div>
-
-              <div class="d-flex justify-content-center mt-3">
-                <button
-                  class="btn btn-success w-25 me-4"
-                  type="submit"
-                  [disabled]="paiementForm.invalid"
-                >
-                  Enregistrer
-                </button>
-                <button class="btn btn-secondary w-25" type="button" (click)="cancelPaiementForm()">
-                  Annuler
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
 
       <!-- Tableau des Paiements -->
       <div class="d-flex justify-content-center">
@@ -540,15 +602,15 @@
         </select>
       </div>
       <table class="table table-striped">
-        <thead>
+        <thead class="table-success">
           <tr>
             <th>Date</th>
             <th>Type Paiement</th>
-            <th>Fournisseur/Client</th>
-            <th>Bon</th>
+            <!-- <th>Fournisseur/Client</th> -->
+            <th>Description</th> 
             <th>Mode de Paiement</th>
             <th>Montant</th>
-            <th>Actions</th>
+            <!-- <th>Actions</th> -->
           </tr>
         </thead>
         <tbody>
@@ -558,18 +620,18 @@
           <tr *ngFor="let paiement of getPaginatedPaiements">
             <td>{{ paiement.date | date: 'dd/MM/yyyy à HH:mm' }}</td>
             <td>{{ paiement.typePaiement || 'N/A' }}</td>
-            <td>{{ paiement.fournisseurId || 'N/A' }}</td>
-            <td>{{ paiement.bonId || 'N/A' }}</td>
+            <!-- <td>{{ paiement.fournisseurId || 'N/A' }}</td>-->
+            <td>{{ paiement.description || 'N/A' }}</td> 
             <td>{{ paiement.methodePaiement }}</td>
             <td>{{ paiement.montant }} F CFA</td>
-            <td>
+            <!-- <td>
               <button class="btn btn-warning btn-sm me-2" (click)="editPaiement(paiement)">
                 <i class="bi bi-pencil"></i>
               </button>
               <button class="btn btn-danger btn-sm" (click)="deletePaiement(paiement)">
                 <i class="bi bi-trash"></i>
               </button>
-            </td>
+            </td> -->
           </tr>
         </tbody>
       </table>
@@ -619,7 +681,7 @@
             </select>
           </div>
           <table class="table table-bordered">
-            <thead>
+            <thead class="table-success">
               <tr>
                 <th>Nom</th>
                 <th>Type</th>
@@ -629,6 +691,16 @@
               </tr>
             </thead>
             <tbody>
+              <!-- Message si aucune catégorie -->
+                <tr *ngIf="filteredCategories.length === 0">
+                  <td colspan="5" class="text-center py-4">
+                    <i class="bi bi-inbox display-6 text-muted"></i>
+                    <p class="mt-2">Aucune catégorie trouvée</p>
+                    <button class="btn btn-outline-primary btn-sm" (click)="showFormCategorie()">
+                      <i class="bi bi-plus-circle me-2"></i>Créer une catégorie
+                    </button>
+                  </td>
+                </tr>
               <tr *ngIf="getPaginatedCategories.length === 0">
                 <td colspan="5" class="text-center">Aucune catégorie trouvée</td>
               </tr>
@@ -682,12 +754,25 @@
         </div>
 
         <div *ngIf="newCategorie" class="col-md-3 bg-light">
-          <div class="d-flex justify-content-end">
+          <div class="card">
+            <div class="card-header bg-success text-white">
+              <div class="d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                  {{ selectedCategory ? 'Modifier catégorie' : 'Nouvelle catégorie' }}
+                </h5>
+                <button class="btn btn-sm btn-light" (click)="closeFormCategorie()">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- <div class="d-flex justify-content-end">
             <button class="btn btn-danger btn-sm" (click)="closeFormCategorie()">
               <i class="bi bi-x text-white me-2"></i>
             </button>
-          </div>
-          <form [formGroup]="categoryForm" (ngSubmit)="onSubmitCategoryForm()">
+          </div> -->
+          <div class="card-body">
+            <!-- <form [formGroup]="categoryForm" (ngSubmit)="onSubmitCategoryForm()">
             <div class="mb-2">
               <label for="name" class="form-label">Nom de la catégorie</label>
               <input type="text" class="form-control" id="name" formControlName="name" />
@@ -723,7 +808,89 @@
               </button>
               <button type="reset" class="btn btn-danger w-50">Annuler</button>
             </div>
-          </form>
+          </form> -->
+
+          <form [formGroup]="categoryForm" (ngSubmit)="onSubmitCategoryForm()">
+                <!-- Nom -->
+                <div class="mb-3">
+                  <label for="name" class="form-label">
+                    Nom <span class="text-danger">*</span>
+                  </label>
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    id="name" 
+                    formControlName="name"
+                    [class.is-invalid]="categoryForm.get('name')?.touched && categoryForm.get('name')?.invalid">
+                  <div *ngIf="categoryForm.get('name')?.touched && categoryForm.get('name')?.invalid" 
+                       class="invalid-feedback">
+                    <div *ngIf="categoryForm.get('name')?.errors?.['required']">
+                      Le nom est obligatoire
+                    </div>
+                    <div *ngIf="categoryForm.get('name')?.errors?.['minlength']">
+                      Minimum 3 caractères
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Type -->
+                <div class="mb-3">
+                  <label for="type" class="form-label">
+                    Type <span class="text-danger">*</span>
+                  </label>
+                  <select 
+                    class="form-control" 
+                    id="type" 
+                    formControlName="type"
+                    [class.is-invalid]="categoryForm.get('type')?.touched && categoryForm.get('type')?.invalid">
+                    <option value="DEPENSE">Dépense</option>
+                    <option value="RECETTE">Recette</option>
+                  </select>
+                  <div *ngIf="categoryForm.get('type')?.touched && categoryForm.get('type')?.invalid" 
+                       class="invalid-feedback">
+                    Le type est obligatoire
+                  </div>
+                </div>
+
+                <!-- Description -->
+                <div class="mb-3">
+                  <label for="description" class="form-label">Description</label>
+                  <textarea 
+                    class="form-control" 
+                    id="description" 
+                    formControlName="description"
+                    rows="3"></textarea>
+                </div>
+
+                <!-- Statut -->
+                <div class="mb-3 form-check form-switch">
+                  <input 
+                    type="checkbox" 
+                    class="form-check-input" 
+                    id="isActive" 
+                    formControlName="isActive">
+                  <label class="form-check-label" for="isActive">Catégorie active</label>
+                </div>
+
+                <!-- Boutons -->
+                <div class="d-grid gap-2">
+                  <button 
+                    type="submit" 
+                    class="btn btn-outline-success"
+                    [disabled]="categoryForm.invalid || isLoading">
+                    <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+                    {{ selectedCategory ? 'Mettre à jour' : 'Enregistrer' }}
+                  </button>
+                  <button 
+                    type="button" 
+                    class="btn btn-outline-secondary" 
+                    (click)="closeFormCategorie()"
+                    [disabled]="isLoading">
+                    Annuler
+                  </button>
+                </div>
+              </form>
+          </div>
         </div>
       </div>
     </div>

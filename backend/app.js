@@ -57,6 +57,10 @@ app.use('/api/role-permissions', require('./routers/role-permission.routes'));
 app.use('/api/auth', require('./routers/auth.routes'));
 app.use('/api/bons-complet', require('./routers/bonComplet.routes')); 
 app.use('/api/historique-status', require('./routers/historiqueStatut.routes'));
+app.use('/api/categories', require('./routers/categorie.routes'));
+app.use('/api/depenses', require('./routers/depense.routes'));
+app.use('/api/recettes', require('./routers/recette.routes'));
+
 
 
 

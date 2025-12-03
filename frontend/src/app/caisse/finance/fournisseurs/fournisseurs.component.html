@@ -423,7 +423,7 @@
                                     <i class="bi bi-pencil"></i> Modifier
                                   </button> -->
 
-                                  <button class="btn btn-outline-primary btn-sm me-1" (click)="modifierBon(bon)"
+                                  <button class="btn btn-outline-primary btn-sm me-1" (click)="genererTicketPaiementBon(bon)"
                                           *ngIf="bon.statutBon === 'validé' && (bon?.avance ?? 0) > 0">
                                     <i class="bi bi-receipt"></i> Ticket de paiement
                                   </button>
@@ -567,7 +567,7 @@
                                     <ng-template #noFile>
                                         <span class="text-muted">Aucune pièce jointe</span>
                                     </ng-template>
-                                    <button class="btn btn-outline-success btn-sm mt-5">
+                                    <button class="btn btn-outline-success btn-sm mt-5" (click)="genererTicketVersement(operation)">
                                     <i class="bi bi-receipt"></i> Ticket de paiement
                                   </button>
                                 </div>
@@ -869,14 +869,14 @@
               <tr>
                 <td>{{ bon.numero }}</td>
                 <td>{{ bon.description }}</td>
-                <td>{{ bon.montantTotal }} F CFA</td>
+                <td>{{ bon.type ==='retour'? bon.montantAvoir : bon.montantTotal}} F CFA</td>
                 <td>{{ getFournisseurByOperation(bon)?.nomComplet }}</td>
                 <td>{{ bon.type }}</td>
                 <!-- <td *ngIf="bon.type === 'Commande'">{{ bon.statusCommande }}</td>
                   <td *ngIf="bon.type === 'Livraison'">{{ bon.statusLivraison }}</td>
                   <td *ngIf="bon.type === 'Retour'">{{ bon.statusRetour }}</td> -->
                 <td>
-                  <button class="btn btn-info" (click)="toggleDetails(i, bon)">
+                  <button class="btn btn-info" (click)="toggleDetailBiss(i, bon)">
                     <i class="bi bi-eye"></i>
                   </button>
                 </td>
@@ -889,7 +889,7 @@
                     <div class="d-flex justify-content-start align-items-center mb-2 me-5">
                       <span class="me-3"
                         >💰 Total des produits:
-                        <strong>{{ bon.panier?.totalHT }} F CFA</strong></span
+                        <strong>{{ bon.Panier?.totalHT }} F CFA</strong></span
                       >
                       <span class="me-3"
                         >💰 Remise: <strong>{{ bon.remise }} F CFA</strong></span
@@ -910,10 +910,10 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let produit of bon.panier.produits">
-                          <td>{{ produit.designation }}</td>
+                        <tr *ngFor="let produit of bon.Panier.ArticlePaniers">
+                          <td>{{ produit.Produit.designation || produit.produit.designation }}</td>
                           <td>{{ produit.quantite }}</td>
-                          <td>{{ produit.unite }}</td>
+                          <td>{{ produit.Produit.unite || produit.produit.unite }}</td>
                           <td>{{ produit.prixAchatUnitaire }} F CFA</td>
                         </tr>
                       </tbody>
@@ -994,7 +994,7 @@
               <th>Date</th>
               <th>Fournisseur</th>
               <th>Méthode de Paiement</th>
-              <th>Actions</th>
+              <!-- <th>Actions</th> -->
             </tr>
           </thead>
           <tbody>
@@ -1005,14 +1005,14 @@
                 <td>{{ paiement.date | date: 'dd/mm/yyy à HH:MM' }}</td>
                 <td>{{ getFournisseurByOperation(paiement)?.nomComplet || null }}</td>
                 <td>{{ paiement.methodePaiement }}</td>
-                <td>
+                <!-- <td>
                   <button class="btn btn-info" (click)="toggleDetails(i, paiement)">
                     <i class="bi bi-eye"></i>
                   </button>
-                </td>
+                </td> -->
               </tr>
               <!-- Détails du bon -->
-              <tr *ngIf="selectedBonIndexP === i">
+              <!-- <tr *ngIf="selectedBonIndexP === i">
                 <td colspan="6">
                   <div *ngIf="paiement">
                     <div class="d-flex justify-content-start align-items-center mb-2 me-5">
@@ -1037,10 +1037,10 @@
                         >💰 Net à payer:
                         <strong>{{ getBonBypaiement(paiement)?.netAPayer }} F CFA</strong></span
                       >
-                    </div>
+                    </div> -->
 
                     <!-- Tableau des produits -->
-                    <table class="table">
+                    <!-- <table class="table">
                       <thead>
                         <tr>
                           <th>Produit</th>
@@ -1058,17 +1058,9 @@
                         </tr>
                       </tbody>
                     </table>
-
-                    <!-- Informations récapitulatives -->
-                    <!-- <div class="mt-3">
-                      <p><strong>Remise :</strong> {{ getBonBypaiement(paiement).remise || 0 }} F CFA</p>
-                      <p><strong>Net à Payer :</strong> {{ getBonBypaiement(paiement).netAPayer || getBonBypaiement(paiement).montantTotal }} F CFA</p>
-                      <p><strong>Avance :</strong> {{ getBonBypaiement(paiement).montantPaye || 0 }} F CFA</p>
-                      <p><strong>Reste :</strong> {{ getBonBypaiement(paiement).resteAPayer || 0 }} F CFA</p>
-                    </div> -->
                   </div>
                 </td>
-              </tr>
+              </tr> -->
             </ng-container>
           </tbody>
         </table>
@@ -1123,31 +1115,35 @@
             </tr>
           </thead>
           <tbody>
-            <tr
-              *ngFor="let fournisseur of getPaginatedFournisseurs"
-              (click)="onRowSelect(fournisseur)"
-            >
-              <td>{{ fournisseur.nomComplet }}</td>
-              <td>{{ fournisseur.adresse }}</td>
-              <td>{{ fournisseur.telephone }}</td>
-              <!-- <td>{{ fournisseur.banque }}</td>
-                <td>{{ fournisseur.numeroCompte }}</td>
-                <td>{{ fournisseur.montantApayer }} F CFA</td> -->
-              <td>
-                <!-- <span class="badge bg-success h2" *ngIf="fournisseur.statut">Actif</span> -->
-                <span class="badge bg-danger h2" *ngIf="!fournisseur.statut">Inactif</span>
-              </td>
-              <!-- <td><button class="btn btn-link d-flex align-items-center" (click)="showBonDetails(fournisseur,'bon')"><i class="bi bi-eye"></i>Gèrer</button></td>
-                <td>
-                  <button class="btn btn-link d-flex align-items-center" (click)="showBonDetails(fournisseur,'paiement')"><i class="bi bi-eye"></i>Gérer</button>
-                </td>-->
-              <td class="d-flex justify-content-center">
-                <!-- <button class="btn btn-warning me-3" (click)="editFournisseur()"><i class="bi bi-pencil text-white"></i></button> -->
-                <button class="btn btn-warning" (click)="toggleStatut(fournisseur)">
-                  <i class="bi bi-check-circle-fill me-2"></i>Activer
-                </button>
-              </td>
-            </tr>
+              <tr *ngIf="archivededFournisseurs.length === 0">
+                  <td colspan="5" class="text-center text-muted py-4">
+                    <i class="bi bi-person display-4 d-block mb-2"></i>
+                    Aucune fournisseur archivé
+                  </td>
+              </tr>
+              <tr *ngFor="let fournisseur of archivededFournisseurs"
+              (click)="onRowSelect(fournisseur)" >
+                  <td>{{ fournisseur.nomComplet }}</td>
+                  <td>{{ fournisseur.adresse }}</td>
+                  <td>{{ fournisseur.telephone }}</td>
+                  <!-- <td>{{ fournisseur.banque }}</td>
+                    <td>{{ fournisseur.numeroCompte }}</td>
+                    <td>{{ fournisseur.montantApayer }} F CFA</td> -->
+                  <td>
+                    <!-- <span class="badge bg-success h2" *ngIf="fournisseur.statut">Actif</span> -->
+                    <span class="badge bg-danger h2" >Inactif</span>
+                  </td>
+                  <!-- <td><button class="btn btn-link d-flex align-items-center" (click)="showBonDetails(fournisseur,'bon')"><i class="bi bi-eye"></i>Gèrer</button></td>
+                    <td>
+                      <button class="btn btn-link d-flex align-items-center" (click)="showBonDetails(fournisseur,'paiement')"><i class="bi bi-eye"></i>Gérer</button>
+                    </td>-->
+                  <td class="d-flex justify-content-center">
+                    <!-- <button class="btn btn-warning me-3" (click)="editFournisseur()"><i class="bi bi-pencil text-white"></i></button> -->
+                    <button class="btn btn-warning" (click)="toggleStatut(fournisseur)">
+                      <i class="bi bi-check-circle-fill me-2"></i>Activer
+                    </button>
+                  </td>
+            </tr>            
           </tbody>
         </table>
       </div>

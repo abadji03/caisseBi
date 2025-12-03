@@ -181,6 +181,15 @@ exports.findByFournisseur = async (req, res) => {
     const { code_structure, fournisseurId } = req.params;
     const { dateDebut, dateFin, type, statut } = req.query;
 
+    console.log('Requête opérations fournisseur:', {
+      code_structure,
+      fournisseurId,
+      dateDebut,
+      dateFin,
+      type,
+      statut
+    });
+
     const where = {
       code_structure,
       fournisseurId: parseInt(fournisseurId)
@@ -190,17 +199,22 @@ exports.findByFournisseur = async (req, res) => {
     if (dateDebut || dateFin) {
       where.dateOperation = {};
       if (dateDebut) {
-        where.dateOperation[Op.gte] = new Date(dateDebut);
+        const debutDate = new Date(dateDebut);
+        where.dateOperation[Op.gte] = debutDate;
+        console.log('Date début:', dateDebut, '->', debutDate.toISOString());
       }
       if (dateFin) {
         const dateFinObj = new Date(dateFin);
         dateFinObj.setHours(23, 59, 59, 999);
         where.dateOperation[Op.lte] = dateFinObj;
+        console.log('Date fin:', dateFin, '->', dateFinObj.toISOString());
       }
     }
-
+    console.log('Conditions date:', where.dateOperation);
     if (type) where.type = type;
     if (statut) where.statut = statut;
+
+    console.log('🔍 Requête Sequelize WHERE:', JSON.stringify(where, null, 2));
 
     const operations = await Operation.findAll({
       where,
@@ -218,9 +232,10 @@ exports.findByFournisseur = async (req, res) => {
     order: [['createdAt', 'DESC']]
   });
 
+  console.log(`${operations.length} opérations trouvées`);
     res.json(operations);
   } catch (error) {
-    console.error('❌ Erreur opérations fournisseur:', error);
+    console.error(' Erreur opérations fournisseur:', error);
     res.status(500).json({ error: error.message });
   }
 };

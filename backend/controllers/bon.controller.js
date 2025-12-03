@@ -45,6 +45,18 @@ exports.getBonsByStructure = async (req, res) => {
   try {
     const bons = await Bon.findAll({
       where: { code_structure: req.params.code_structure },
+      include: [
+        {
+          model: Panier,
+          include: [
+            {
+              model: ArticlePanier,
+              include: {model:Produit} 
+            }
+          ],
+        },
+        {model: User, attributes: ['id', 'nom', 'email'] }
+      ],
       order: [['createdAt', 'DESC']],
     });
 

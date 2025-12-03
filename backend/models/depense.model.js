@@ -5,7 +5,7 @@ module.exports = (sequelize, DataTypes) => {
     code_structure: { type: DataTypes.STRING, allowNull: false },
     montant: { type: DataTypes.DECIMAL(12, 2), allowNull: false },
     type: {
-      type: DataTypes.ENUM('STANDARD', 'STOCK'),
+      type: DataTypes.ENUM('STANDARD', 'STOCK','FRAIS','INVESTISSEMENT'),
       defaultValue: 'STANDARD',
     },
     description: { type: DataTypes.TEXT },

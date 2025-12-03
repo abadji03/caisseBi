@@ -28,13 +28,12 @@ import { PaiementComponent } from '../../../sharedComposants/paiement/paiement.c
 import { BonsService } from '../../../services/bons.service';
 import { PaniersService } from '../../../services/paniers.service';
 import { PaiementsService } from '../../../services/paiements.service';
-import { MouvementsStockService } from '../../../services/mouvements-stock.service';
-import { ArticlesPanierService } from '../../../services/articles-panier.service';
 import { OperationsService } from '../../../services/operations.service';
 import { NGXLogger } from 'ngx-logger';
 import { BonBrouillonService } from '../../../services/bon-brouillon.service';
 import { PdfMakerServiceService } from '../../../services/pdf-maker-service.service';
 import { StructureService } from '../../../services/structure.service';
+import { DepencesService } from '../../../services/depences.service';
 
 @Component({
   selector: 'app-fournisseurs',
@@ -50,6 +49,7 @@ export class FournisseursComponent implements OnInit, OnDestroy {
   filteredOperations: Operation[] = []; // Opérations filtrées
   operations : Operation[] = [];
   filteredFournisseurs: Fournisseur[] = []; // Liste filtrée pour la recherche
+  archivededFournisseurs: Fournisseur[] = []; 
   searchQuery = ''; // Chaîne de recherche
   showDetails = false; // Affichage des détails
   showBonDetailsSection = false; // Affichage des détails des bons
@@ -177,8 +177,7 @@ export class FournisseursComponent implements OnInit, OnDestroy {
   private paiementService = inject(PaiementsService);
   private pdfGenerator = inject(PdfMakerServiceService);
   private structureService = inject(StructureService);
-  private MouvementsStockService = inject(MouvementsStockService);
-  private artticlesPanierService = inject(ArticlesPanierService);
+  private depensesService = inject(DepencesService);
   
 
   ngOnInit(): void {
@@ -366,6 +365,29 @@ private enregistrerBon(bon: Bon, panier: Panier, fichier:File|null): void {
           statut: result.bon?.statutBon,
           panierStatut: result.panier?.statut
         });
+        if(result.paiement || bonCompletData.bon.avance! > 0){
+          const depense = {
+          montant: result.paiement.montant!,
+          type: 'STOCK',
+          date:result.paiement.date,
+          description: `Paiement fournisseur ID: ${this.selectedFournisseur?.id} - Paiement ID: ${result.paiement.numero}`,
+          code_structure: this.code_structure,
+          magasinId: this.magasinId,
+          agentId: this.agentId,
+          categoryId:13, // ID de la catégorie "Fournisseurs" 
+          paymentMode: result.paiement.methodePaiement
+
+        }
+        const formData = new FormData();
+
+        // Remplir formData avec ton objet depense
+        Object.entries(depense).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            formData.append(key, value.toString());
+          }
+        });
+        this.createDepense(formData);
+        }
       //this.toastr.success('Bon enregistré avec succès!', 'Succès');
       //console.log('Enregistrement complet:', result);
       //this.reinitialiserFormulaires();
@@ -615,13 +637,30 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
   showBonDetails(): void {
     this.showDetails = true;
     this.showBonDetailsSection = true;
+
     if (!this.selectedFournisseur) return;
+
     const today = new Date();
+
     this.startDate = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]; // 1er jour du mois
     this.endDate = today.toISOString().split('T')[0]; // Aujourd'hui
+    
+    console.log('Dates initialisées:', {
+      start: this.startDate,
+      end: this.endDate
+    });
     this.loadOperations();
-    this.filtrerOperations();
+    //this.filtrerOperations();
 
+  }
+
+  // Méthode pour formater correctement les dates pour l'API
+  private formatDateForAPI(date?: string | Date): string {
+    if (!date) return '';
+    
+    const dateObj = new Date(date);
+    // Format: YYYY-MM-DD pour l'API
+    return dateObj.toISOString().split('T')[0];
   }
 
   // Fermer les détails (bons ou paiements)
@@ -816,6 +855,33 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
       });
   }
 
+  toggleDetailBiss(index: number, bon: Bon):void {
+    /* if (typeInstance instanceof Fournisseur) {
+      this.selectedBonIndexF = this.selectedBonIndexF === index ? null : index;
+    } else if (typeInstance instanceof Bon) {
+      this.selectedBonIndexB = this.selectedBonIndexB === index ? null : index;
+    } else if (typeInstance instanceof Paiement) {
+      this.selectedBonIndexP = this.selectedBonIndexP === index ? null : index;
+    } else if (typeInstance instanceof Operation) {
+      this.selectedBonIndexO = this.selectedBonIndexO === index ? null : index;
+    } */
+
+      // Fermer tous les autres détails
+      if (this.selectedBonIndexB === index) {
+        this.selectedBonIndexB = null;
+      } else {
+        this.selectedBonIndexB = index;
+      }
+      
+      console.log('🔍 Affichage détails opération:', {
+        index,
+        BonId: bon.id,
+        type: bon.type,
+        // hasBon: !!operation.Bon,
+        // hasUser: !!operation.user
+      });
+  }
+
   getBonByOperation(operation: Operation): Bon | null {
 
     // Si l'opération a déjà les données du bon incluses
@@ -977,7 +1043,7 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onRowsPerPageChange(event: any) {
-    this.rowsPerPage = Number(event.target.value);
+    this.rowsPerPage = this.safeNumber(event.target.value);
 
     // Réinitialiser les pages à 1 pour éviter un problème d'affichage
     this.currentPageFournisseur = 1;
@@ -1064,7 +1130,7 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
   }
 
   // 🔍 Filtrer les opérations du client selon la période
-  filtrerOperations() {
+  /* filtrerOperations() {
     if (!this.selectedFournisseur || !this.startDate || !this.endDate) {
       console.log('Aucun client sélectionné ou période invalide');
       return;
@@ -1101,6 +1167,27 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
     });
 
     console.log('📌 Opérations filtrées :', this.filteredOperations);
+  } */
+
+  // Méthode pour filtrer les opérations (frontend)
+  filtrerOperations(): void {
+    if (!this.selectedFournisseur) {
+      console.log('Aucun fournisseur sélectionné');
+      return;
+    }
+
+    console.log('Filtrage avec dates:', {
+      startDate: this.startDate,
+      endDate: this.endDate
+    });
+
+    // Si les dates sont définies, on recharge depuis l'API
+    if (this.startDate && this.endDate) {
+      this.loadOperations();
+    } else {
+      // Sinon on montre toutes les opérations
+      this.filteredOperations = [...this.operations];
+    }
   }
 
   filterProduits() {
@@ -1184,6 +1271,27 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
             methodePaiement: result.methodePaiement,
             fournisseurId: result.fournisseurId
           });
+        const depense = {
+          montant: result.montant,
+          type: 'STOCK',
+          date:result.date,
+          description: `Paiement fournisseur ID: ${result.fournisseurId} - Paiement ID: ${result.numero}`,
+          code_structure: this.code_structure,
+          magasinId: this.magasinId,
+          agentId: this.agentId,
+          categoryId:13, // ID de la catégorie "Fournisseurs" 
+          paymentMode: result.methodePaiement
+
+        }
+        const formData = new FormData();
+
+        // Remplir formData avec ton objet depense
+        Object.entries(depense).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            formData.append(key, value.toString());
+          }
+        });
+        this.createDepense(formData);
         this.toastr.success('Paiement enregistré avec succès', 'Succès');
         this.rafraichirDonneesImmediatement();
         this.showPaiementForm = false;
@@ -1198,6 +1306,28 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
       }
     });
   }
+   /**
+ * Créer une nouvelle dépense
+ */
+private createDepense(formData: FormData): void {
+  this.depensesService.createDepense(formData)
+  .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (result) => {
+        /* this.depenses.unshift(newDepense); // Ajouter au début
+        this.filteredDepenses = [...this.depenses];*/
+        //this.toastr.success('Dépense enregistrée avec succès'); 
+        console.log('Dépense créée avec succès:', result);
+      },
+      error: (err) => {
+        this.toastr.error('Erreur lors de l\'enregistrement de la dépense');
+        console.error('Erreur création dépense:', err);
+      },
+      complete: () => {
+        this.isLoading = false;
+      }
+    });
+}
   // Méthode pour retourner un bon
   retournerBon(bon: Bon) {
     const confirmation = confirm(`Voulez-vous vraiment retourner le bon Nº ${bon.numero} ?`);
@@ -1362,8 +1492,9 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
       .subscribe({
         next: ([mgs, frs]) => {
           this.magasins = mgs;
-          this.fournisseurs = frs;
+          this.fournisseurs =frs.filter(four => four.statut === true); 
           this.filteredFournisseurs = [...this.fournisseurs];
+          this.archivededFournisseurs = this.fournisseurs.filter(four => four.statut === false);
           this.updateFilteredFournisseurs();
         },
         error: (err) => console.error('Erreur chargement données', err),
@@ -1469,6 +1600,17 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
   loadOperations(): void {
     if(!this.selectedFournisseur) return;
     this.isLoading = true;
+
+    // Formater les dates pour l'API
+    const startDateFormatted = this.formatDateForAPI(this.startDate);
+    const endDateFormatted = this.formatDateForAPI(this.endDate);
+    
+    console.log('Dates envoyées à l\'API:', {
+      startDate: startDateFormatted,
+      endDate: endDateFormatted,
+      formattedStart: startDateFormatted,
+      formattedEnd: endDateFormatted
+    });
     
     this.operationService.getOperationsByFournisseur(this.code_structure, this.selectedFournisseur.id!, { dateDebut: this.startDate, dateFin: this.endDate })
       .pipe(takeUntil(this.destroy$))
@@ -1808,7 +1950,7 @@ imprimerReleve(): void {
         date: op.dateOperation,
         type: op.type || 'NON SPECIFIE',
         reference: op.numeroVersement || op.Bon?.numero || 'N/A',
-        montant: op.montantPaye || 0,
+        montant: op.montantPaye || op.Bon?.montantTotal ||0,
         // Inclure toutes les propriétés nécessaires
         ...op
       };
@@ -1827,7 +1969,8 @@ imprimerReleve(): void {
         totalCommandes: this.calculerTotalCommandes(),
         totalVersements: this.calculerTotalVersements(),
         solde: this.selectedFournisseur.montantAPayer || 0
-      }
+      },
+      solde: this.selectedFournisseur.montantAPayer || 0
     };
 
     this.pdfGenerator.generateReleveFournisseur(releveData);
@@ -1842,7 +1985,7 @@ imprimerReleve(): void {
   
 }
 
-imprimerBon(bon: Bon): void {
+/* imprimerBon(bon: Bon): void {
   if (!bon) {
     this.toastr.error('Aucun bon sélectionné');
     return;
@@ -1853,20 +1996,20 @@ imprimerBon(bon: Bon): void {
     this.isLoading = true;
     // Debug: vérifier les données du bon
     console.log('Bon à imprimer:', bon);
-    console.log('Articles du bon:', bon.panier?.articles);
+    console.log('Articles du bon:', bon.Panier?.ArticlePaniers);
 
     // Valider et formater les articles
-    const articlesFormates = (bon.panier?.articles || []).map(article => {
+    const articlesFormates = (bon.Panier?.ArticlePaniers || []).map(article => {
       if (!article) return null;
       
       return {
         // Inclure toutes les propriétés nécessaires
         ...article,
         designation: article.Produit?.designation || article.produit?.designation || 'Produit sans nom',
-        prixUnitaire: article.prixUnitaire || article.prixAchatUnitaire || 0,
-        quantite: article.quantite || 0,
-        tva: bon.panier?.tauxTVA || 0,
-        total: (article.quantite || 0) * (article.prixUnitaire || 0),
+        prixUnitaire: this.safeNumber(article.prixUnitaire )|| this.safeNumber(article.prixAchatUnitaire) || 0,
+        quantite: this.safeNumber(article.quantite) || 0,
+        //tva: bon.Panier?.tauxTVA || 0,
+        total: (this.safeNumber(article.quantite)) * (this.safeNumber(article.prixUnitaire)) ||0,
         
         
       };
@@ -1883,13 +2026,102 @@ imprimerBon(bon: Bon): void {
       } : { nomComplet: 'N/A', adresse: '', telephone: '', email: '' },
       articles: articlesFormates, // Utiliser les articles formatés
       totaux: {
-        sousTotal: bon.panier?.totalHT || 0,
-        tauxTVA: bon.panier?.tauxTVA || 0,
-        montantTVA: bon.panier?.tva || 0,
-        totalTTC: bon.panier?.totalTTC || 0
+        sousTotal: this.safeNumber(bon.Panier?.totalHT) || 0,
+        tauxTVA: this.safeNumber(bon.Panier?.tauxTVA) || 0,
+        montantTVA: this.safeNumber(bon.Panier?.tva) || 0,
+        totalTTC: this.safeNumber(bon.Panier?.totalTTC) || 0
       }
     };
+    console.log('Données formatées pour le PDF du bon:', bonData);
+    this.pdfGenerator.generateBonFournisseur(bonData);
+  } 
+  catch (error) {
+    console.error('Erreur génération bon:', error);
+    this.toastr.error('Erreur lors de la génération du bon');
+  }
+  finally {
+    this.isLoading = false;
+  }
+} */
+// Dans fournisseurs.component.ts
 
+imprimerBon(bon: Bon): void {
+  if (!bon) {
+    this.toastr.error('Aucun bon sélectionné');
+    return;
+  }
+
+  try {
+    this.isLoading = true;
+    
+    console.log('Bon à imprimer:', bon);
+    console.log('Articles du bon:', bon.Panier?.ArticlePaniers);
+
+    // Valider et formater les articles avec une meilleure gestion des nombres
+    const articlesFormates = (bon.Panier?.ArticlePaniers || []).map(article => {
+      if (!article) return null;
+      
+      // Calculer les valeurs avec sécurité
+      const prixUnitaire = this.safeNumber(article.prixUnitaire || article.prixAchatUnitaire);
+      const quantite = this.safeNumber(article.quantite);
+      const total = prixUnitaire * quantite;
+
+      console.log('Article formaté:', {
+        designation: article.Produit?.designation,
+        prixUnitaire,
+        quantite,
+        total
+      });
+
+      return {
+        ...article,
+        designation: article.Produit?.designation || article.produit?.designation || 'Produit sans nom',
+        prixUnitaire: prixUnitaire,
+        quantite: quantite,
+        total: total
+      };
+    }).filter(article => article != null);
+
+    // Préparer les totaux avec sécurité
+    const sousTotal = this.safeNumber(bon.Panier?.totalHT);
+    const tauxTVA = this.safeNumber(bon.Panier?.tauxTVA);
+    const montantTVA = this.safeNumber(bon.Panier?.tva);
+    const totalTTC = this.safeNumber(bon.Panier?.totalTTC);
+
+    console.log('Totaux calculés:', { sousTotal, tauxTVA, montantTVA, totalTTC });
+
+    const bonData = {
+      numero: bon.numero || 'N/A',
+      date: bon.dateBon || new Date(),
+      fournisseur: this.selectedFournisseur ? {
+        nomComplet: this.selectedFournisseur.nomComplet || 'N/A',
+        adresse: this.selectedFournisseur.adresse || '',
+        telephone: this.selectedFournisseur.telephone || '',
+        email: this.selectedFournisseur.email || ''
+      } : { 
+        nomComplet: 'Fournisseur non spécifié', 
+        adresse: '', 
+        telephone: '', 
+        email: '' 
+      },
+      articles: articlesFormates,
+      totaux: {
+        sousTotal: sousTotal,
+        tauxTVA: tauxTVA,
+        montantTVA: montantTVA,
+        totalTTC: totalTTC,
+        // Ajouter les totaux du bon au cas où
+        totalHT: sousTotal,
+        tva: montantTVA
+      },
+      titre: ('Bon de '+( bon.type || 'Commande')).toUpperCase(),
+      dateBon:bon.dateBon,
+      typeBon:bon.type,
+      statut:bon.statutBon,
+      commentaire:bon.description
+    };
+
+    console.log('Données formatées pour le PDF du bon:', bonData);
     this.pdfGenerator.generateBonFournisseur(bonData);
   } 
   catch (error) {
@@ -1901,16 +2133,103 @@ imprimerBon(bon: Bon): void {
   }
 }
 
+// Dans fournisseurs.component.ts
+
+// Méthode pour générer le ticket de versement
+genererTicketVersement(operation: Operation): void {
+  if (!operation || operation.type !== 'VERSEMENT') {
+    this.toastr.error('Opération de versement non valide');
+    return;
+  }
+
+  try {
+    // Calculer le solde
+    const montantVerse = this.safeNumber(operation.montantPaye);
+    const soldePrecedent = this.safeNumber(this.selectedFournisseur?.montantAPayer) + montantVerse; // Avant le versement
+    const nouveauSolde = this.safeNumber(this.selectedFournisseur?.montantAPayer); // Après le versement
+
+    const versementData = {
+      fournisseur: this.selectedFournisseur ? {
+        nomComplet: this.selectedFournisseur.nomComplet || 'N/A',
+        adresse: this.selectedFournisseur.adresse || '',
+        telephone: this.selectedFournisseur.telephone || '',
+        email: this.selectedFournisseur.email || ''
+      } : null,
+      date: operation.dateOperation,
+      numeroReference: operation.numeroVersement || `VERS-${operation.id}`,
+      moyenPaiement: operation.moyenPaiement || 'Non spécifié',
+      montantVerse: montantVerse,
+      soldePrecedent: soldePrecedent,
+      nouveauSolde: nouveauSolde,
+      description: operation.commentaire || 'Versement fournisseur',
+      agent: operation.user?.['nom'] || 'Non spécifié'
+    };
+
+    console.log('Données pour ticket versement:', versementData);
+    this.pdfGenerator.generateTicketVersement(versementData);
+
+  } catch (error) {
+    console.error('Erreur génération ticket versement:', error);
+    this.toastr.error('Erreur lors de la génération du ticket');
+  }
+}
+
+// Méthode pour le ticket de paiement d'un bon
+genererTicketPaiementBon(bon: Bon): void {
+  if (!bon) {
+    this.toastr.error('Aucun bon sélectionné');
+    return;
+  }
+
+  try {
+    const avance = this.safeNumber(bon.avance);
+    const totalBon = this.safeNumber(bon.montantTotal);
+    const resteAPayer = this.safeNumber(bon.resteAPayer);
+
+    const paiementData = {
+      fournisseur: this.selectedFournisseur ? {
+        nomComplet: this.selectedFournisseur.nomComplet || 'N/A'
+      } : null,
+      date: bon.dateBon,
+      numeroReference: bon.numero,
+      moyenPaiement: 'Caisse',
+      montantVerse: avance,
+      soldePrecedent: totalBon,
+      nouveauSolde: resteAPayer,
+      description: `Acompte sur bon ${bon.numero}`,
+      type: 'ACOMPTE'
+    };
+
+    console.log('Données pour ticket paiement bon:', paiementData);
+    this.pdfGenerator.generateTicketVersement(paiementData);
+
+  } catch (error) {
+    console.error('Erreur génération ticket paiement:', error);
+    this.toastr.error('Erreur lors de la génération du ticket de paiement');
+  }
+}
+
+// Méthode utilitaire pour sécuriser les nombres
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+private safeNumber(value: any): number {
+  if (value === null || value === undefined || value === '') {
+    return 0;
+  }
+  const num = Number(value);
+  return isNaN(num) ? 0 : num;
+}
+
+
   // Méthodes de calcul
   private calculerTotalCommandes(): number {
     return this.filteredOperations
       .filter(op => op.type === 'COMMANDE')
-      .reduce((total, op) => total + (op.Bon?.Panier?.totalTTC || 0), 0);
+      .reduce((total, op) => total + (this.safeNumber(op.Bon?.Panier?.totalTTC) || 0), 0);
   }
 
   private calculerTotalVersements(): number {
     return this.filteredOperations
       .filter(op => op.type === 'VERSEMENT')
-      .reduce((total, op) => total + (op.montantPaye || 0), 0);
+      .reduce((total, op) => total + (this.safeNumber(op.montantPaye) || 0), 0);
   }
 }

@@ -1,15 +1,58 @@
 const db = require('../models');
 const Categorie = db.Categorie;
+const { ValidationError, UniqueConstraintError } = require('sequelize');
+
 
 exports.createCategorie = async (req, res) => {
   try {
-    const { code_structure, name, description, type } = req.body;
 
-    const categorie = await Categorie.create({ code_structure, name, description, type });
+    console.log('📝 Création catégorie - Données reçues:', req.body);
+    const { code_structure, name, description, type,isActive } = req.body;
 
+    // Validation des données requises
+    if (!code_structure || !name || !type) {
+      return res.status(400).json({ 
+        message: 'Données manquantes',
+        required: ['code_structure', 'name', 'type']
+      });
+    }
+
+    // Validation du type
+    const validTypes = ['DEPENSE', 'RECETTE'];
+    if (!validTypes.includes(type)) {
+      return res.status(400).json({ 
+        message: 'Type invalide',
+        validTypes 
+      });
+    }
+
+    const categorie = await Categorie.create({ code_structure, name, description, type,isActive });
+
+    console.log('Catégorie créée:', categorie.id);
     res.status(201).json(categorie);
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la création', error });
+    // Gestion des erreurs spécifiques
+    if (error instanceof ValidationError) {
+      return res.status(400).json({ 
+        message: 'Erreur de validation', 
+        errors: error.errors.map(err => ({
+          field: err.path,
+          message: err.message
+        }))
+      });
+    }
+
+    if (error instanceof UniqueConstraintError) {
+      return res.status(400).json({ 
+        message: 'Une catégorie avec ce nom existe déjà pour cette structure' 
+      });
+    }
+
+    res.status(500).json({ 
+      message: 'Erreur lors de la création de la catégorie',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
@@ -17,8 +60,11 @@ exports.getAllByStructure = async (req, res) => {
   try {
     const { code_structure } = req.params;
     const categories = await Categorie.findAll({
-      where: { code_structure },
-      order: [['name', 'ASC']],
+      where: { 
+        code_structure,
+        isActive: true
+       },
+      order: [['createdAt', 'DESC']],
     });
 
     res.json(categories);
