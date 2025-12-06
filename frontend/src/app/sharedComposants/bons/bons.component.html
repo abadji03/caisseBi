@@ -1,0 +1,374 @@
+<div class="alert alert-warning d-flex justify-content-between align-items-center mt-3">
+  <span>📌 Bon en cours...</span>
+  <span>📅 Date: {{ currentDate }}</span>
+  <span>📅 Heure: {{ currentTime }}</span>
+  <span>📄 Numéro : <strong>{{ generatedNumero }}</strong></span>
+</div>
+
+<!-- Affichage des erreurs -->
+<div *ngIf="erreurs.length > 0" class="alert alert-danger">
+  <h5>Erreurs de validation :</h5>
+  <ul>
+    <li *ngFor="let erreur of erreurs">{{ erreur }}</li>
+  </ul>
+</div>
+
+<!-- Navigation par tabs (désactivée pour la navigation directe) -->
+<nav class="nav nav-tabs mt-3">
+  <button type="button" class="nav-link" [class.active]="activeTab === 'informations'" 
+          [class.disabled]="!accessibleTabs['informations']"
+          (click)="setActiveTab('informations')">
+    <i class="bi bi-info-circle me-2"></i>Informations
+    <span *ngIf="!accessibleTabs['informations']" class="badge bg-secondary ms-1">
+      <i class="bi bi-lock"></i>
+    </span>
+  </button>
+  <button type="button" class="nav-link" [class.active]="activeTab === 'articles'" 
+          [class.disabled]="!accessibleTabs['articles']"
+          (click)="setActiveTab('articles')">
+    <i class="bi bi-cart me-2"></i>Articles
+    <span *ngIf="panierData?.articles?.length" class="badge bg-primary ms-1">
+      {{ panierData?.articles?.length || 0 }}
+    </span>
+    <span *ngIf="!accessibleTabs['articles']" class="badge bg-secondary ms-1">
+      <i class="bi bi-lock"></i>
+    </span>
+  </button>
+  <button type="button" class="nav-link" [class.active]="activeTab === 'paiement'" 
+          [class.disabled]="!accessibleTabs['paiement']"
+          (click)="setActiveTab('paiement')">
+    <i class="bi bi-cash-coin me-2"></i>Paiement
+    <span *ngIf="!accessibleTabs['paiement']" class="badge bg-secondary ms-1">
+      <i class="bi bi-lock"></i>
+    </span>
+  </button>
+  <button type="button" class="nav-link" [class.active]="activeTab === 'logistique'" 
+          [class.disabled]="!accessibleTabs['logistique']"
+          (click)="setActiveTab('logistique')">
+    <i class="bi bi-truck me-2"></i>Logistique
+    <span *ngIf="!accessibleTabs['logistique']" class="badge bg-secondary ms-1">
+      <i class="bi bi-lock"></i>
+    </span>
+  </button>
+</nav>
+
+<form [formGroup]="bonForm" (ngSubmit)="submitBon()">
+  <!-- Onglet Informations -->
+  <div *ngIf="activeTab === 'informations'" class="tab-content p-3 border border-top-0 rounded-bottom">
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <label for="typeBon" class="form-label">Type de bon *</label>
+        <select id="typeBon" class="form-select" formControlName="type" (change)="onTypeBonChange()">
+          <option value="" disabled selected>Sélectionnez un type</option>
+          <option value="commande">Commande</option>
+          <option value="retour">Retour</option>
+          <option *ngIf="typeEntite ==='fournisseur'" value="livraison">Livraison</option>
+          <option *ngIf="typeEntite ==='client'" value="vente">Vente</option>
+          <option *ngIf="typeEntite ==='client'" value="avoir">Avoir</option>
+        </select>
+        <div *ngIf="bonForm.get('type')?.touched && bonForm.get('type')?.errors?.['required']" 
+             class="text-danger small">
+          Le type de bon est requis
+        </div>
+      </div>
+      
+      <div class="col-md-4"  *ngIf="typeBon !== 'retour'">
+        <label for="referenceExterne" class="form-label">Référence externe</label>
+        <input id="referenceExterne" type="text" class="form-control" formControlName="referenceExterne" 
+               placeholder="Référence fournisseur/client">
+      </div>
+      
+      <div class="col-md-4"  *ngIf="typeBon !== 'retour'">
+        <label for="description" class="form-label">Description</label>
+        <textarea id="description" class="form-control" formControlName="description" 
+                  placeholder="Description du bon"></textarea>
+      </div>
+    </div>
+
+    <!-- Champs spécifiques pour les retours -->
+    <div *ngIf="typeBon === 'retour'" class="row mb-3">
+      <div class="col-md-4">
+        <label for="numeroBonOrigine" class="form-label">Nº Bon d'origine *</label>
+        <input id="numeroBonOrigine" type="text" class="form-control" formControlName="numeroBonOrigine" 
+               placeholder="Numéro du bon d'origine">
+        <div *ngIf="bonForm.get('numeroBonOrigine')?.touched && bonForm.get('numeroBonOrigine')?.errors" 
+             class="text-danger small">
+          <span *ngIf="bonForm.get('numeroBonOrigine')?.errors?.['required']">Ce champ est requis pour un retour</span>
+        </div>
+      </div>
+      
+      <div class="col-md-8">
+        <label for="motifsRetour" class="form-label">Motifs du retour *</label>
+        <textarea id="motifsRetour" class="form-control" formControlName="motifsRetour" 
+                  placeholder="Détaillez les motifs du retour..." rows="2"></textarea>
+        <div *ngIf="bonForm.get('motifsRetour')?.touched && bonForm.get('motifsRetour')?.errors" 
+             class="text-danger small">
+          <span *ngIf="bonForm.get('motifsRetour')?.errors?.['required']">Les motifs du retour sont requis</span>
+          <span *ngIf="bonForm.get('motifsRetour')?.errors?.['minlength']">Minimum 10 caractères requis</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section TVA -->
+    <!-- <div *ngIf="typeBon !== 'retour'" class="row mb-3">
+      <div class="col-md-4">
+        <label for="tauxTVA" class="form-label">Taux TVA (%)</label>
+        <input id="tauxTVA" type="number" class="form-control" formControlName="tauxTVA" 
+               min="0" max="100" step="0.1">
+        <small class="form-text text-muted">Taux de TVA applicable</small>
+        <div *ngIf="bonForm.get('tauxTVA')?.touched && bonForm.get('tauxTVA')?.errors" 
+             class="text-danger small">
+          <span *ngIf="bonForm.get('tauxTVA')?.errors?.['min']">Le taux TVA doit être positif</span>
+          <span *ngIf="bonForm.get('tauxTVA')?.errors?.['max']">Le taux TVA ne peut pas dépasser 100%</span>
+        </div>
+      </div>
+    </div> -->
+
+    <!-- Fichier joint -->
+    <div *ngIf="showFileField && typeBon !== ''" class="row mb-3">
+      <div class="col-md-6">
+        <label for="fichierPaiement" class="form-label">Pièce jointe</label>
+        <input id="fichierPaiement" type="file" class="form-control" 
+               (change)="onFileSelected($event)"
+               accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+        <small class="form-text text-muted">
+          Formats acceptés: PDF, JPG, PNG, DOC (Max taille: 10MB)
+        </small>
+      </div>
+      
+      <div *ngIf="fichierSelectionne" class="col-md-6 mt-4">
+        <div class="d-flex justify-content-between align-items-center p-2 border rounded">
+          <span>
+            {{getFileIcon(fichierSelectionne)}} {{fichierSelectionne.name}} 
+            <small class="text-muted">({{(fichierSelectionne.size / 1024 / 1024).toFixed(2)}} MB)</small>
+          </span>
+          <button type="button" class="btn btn-sm btn-outline-danger" 
+                  (click)="removeFile()">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="d-flex justify-content-between mt-4">
+      <div></div>
+      <button type="button" class="btn btn-primary" (click)="nextTab()" 
+              [disabled]="!canGoToNextTab">
+        Suivant <i class="bi bi-arrow-right ms-1"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Onglet Articles -->
+  <div *ngIf="activeTab === 'articles'" class="tab-content p-3 border border-top-0 rounded-bottom">
+    <div class="alert alert-info">
+      <i class="bi bi-info-circle me-2"></i>
+      Ajoutez les produits au panier. Pour un retour, vous pouvez soit ajouter des articles, 
+      soit spécifier un montant d'avoir.
+    </div>
+
+    <!-- Mode mixte pour les retours -->
+    <div *ngIf="typeBon === 'retour'" class="row mb-3">
+      <!-- <div class="col-md-4">
+        <label for="montantAvoir" class="form-label">Montant de l'avoir (si pas d'articles)</label>
+        <input id="montantAvoir" type="number" class="form-control" formControlName="montantAvoir" 
+               placeholder="Montant de l'avoir" min="0">
+        <div *ngIf="bonForm.get('montantAvoir')?.touched && bonForm.get('montantAvoir')?.errors" 
+             class="text-danger small">
+          <span *ngIf="bonForm.get('montantAvoir')?.errors?.['min']">Le montant doit être positif</span>
+        </div>
+      </div> -->
+    </div>
+
+    <!-- Composant Panier -->
+    <app-panier
+      [produitsDisponibles]="produitsDisponibles"
+      [showPanierSection]="showPanier"
+      [titre]="'Panier du bon'"
+      [inclureTVA]="true"
+      [modeCompact]="true"
+      [showHeader]="false"
+      [showActions]="true"
+      (showBonButtons)="showBonButtons = $event"
+      [showRemiseField]="false"
+      [panierData]="panierData" 
+      [typeEntite]="typeEntite" 
+      [showButtonsActions]="true"  
+      [resetPanier]="resetPanierTrigger" 
+      [showAvanceField]="false" 
+      (onEnregistrer)="onPanierEnregistre($event)"
+      (onAnnuler)="onPanierAnnule()"
+      (totalPanierChange)="onTotalPanierChange($event)"
+    ></app-panier>
+
+    <!-- Navigation -->
+    <div class="d-flex justify-content-between mt-4">
+      <!-- <button type="button" class="btn btn-secondary" (click)="previousTab()"
+              [disabled]="!canGoToPreviousTab">
+        <i class="bi bi-arrow-left me-1"></i> Précédent
+      </button> -->
+        <button type="button" class="btn btn-secondary me-2" 
+                (click)="setActiveTab('informations')">
+          <i class="bi bi-pencil me-1"></i> Modifier section infos
+        </button>
+        <button type="button" class="btn btn-primary" (click)="nextTab()" 
+                [disabled]="!canGoToNextTab">
+          Suivant <i class="bi bi-arrow-right ms-1"></i>
+        </button>
+      </div>
+  </div>
+
+  <!-- Onglet Paiement -->
+  <div *ngIf="activeTab === 'paiement'" class="tab-content p-3 border border-top-0 rounded-bottom">
+    <div class="row mb-3">
+      <div class="col-md-12">
+        <h5>Récapitulatif financier</h5>
+      </div>
+    </div>
+
+    <!-- Totaux -->
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <label for="montantBase" class="form-label">Montant base</label>
+        <input id="montantBase" type="text" class="form-control bg-light" [value]="montantBase | number" readonly>
+      </div>
+      
+      <div *ngIf="typeBon !== 'retour'" class="col-md-4">
+        <label for="remise" class="form-label">Remise</label>
+        <input id="remise" type="number" class="form-control" formControlName="remise" 
+               placeholder="Remise" min="0" [max]="montantBase">
+        <small class="form-text text-muted">
+          Max: {{ montantBase | number }} F CFA
+        </small>
+        <div *ngIf="bonForm.get('remise')?.touched && bonForm.get('remise')?.errors" 
+             class="text-danger small">
+          <span *ngIf="bonForm.get('remise')?.errors?.['min']">La remise doit être positive</span>
+        </div>
+      </div>
+      
+      <div *ngIf="typeBon !== 'retour'" class="col-md-4">
+        <label for="montantHT" class="form-label">Montant HT</label>
+        <input id="montantHT" type="text" class="form-control bg-light" [value]="montantHT | number" readonly>
+      </div>
+    </div>
+
+    <!-- TVA -->
+    <div *ngIf="typeBon !== 'retour'" class="row mb-3">
+      <div class="col-md-4">
+        <label for="montantTVA" class="form-label">TVA ({{ tauxTVA || 0 }}%)</label>
+        <input id="montantTVA" type="text" class="form-control bg-light" [value]="montantTVA | number" readonly>
+      </div>
+      
+      <div class="col-md-4">
+        <label for="totalTTC" class="form-label">Total TTC</label>
+        <input id="totalTTC" type="text" class="form-control bg-light fw-bold" 
+               [value]="totalTTC | number" readonly>
+      </div>
+      
+      <div class="col-md-4">
+        <label for="avance" class="form-label">Avance</label>
+        <input id="avance" type="number" class="form-control" formControlName="avance" 
+               placeholder="Avance" min="0" [max]="totalTTC">
+        <small class="form-text text-muted">
+          Max: {{ totalTTC | number }} F CFA
+        </small>
+        <div *ngIf="bonForm.get('avance')?.touched && bonForm.get('avance')?.errors" 
+             class="text-danger small">
+          <span *ngIf="bonForm.get('avance')?.errors?.['min']">L'avance doit être positive</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Conditions de paiement -->
+    <div class="row mb-3" *ngIf="typeBon === 'livraison || typeBon === vente'">
+      <div class="col-md-6">
+        <label for="conditionsPaiement" class="form-label">Conditions de paiement</label>
+        <select id="conditionsPaiement" class="form-select" formControlName="conditionsPaiement">
+          <option *ngFor="let condition of conditionsPaiementOptions" [value]="condition">
+            {{ condition }}
+          </option>
+        </select>
+      </div>
+      
+      <div class="col-md-6">
+        <label for="delaiPaiement" class="form-label">Délai de paiement (jours)</label>
+        <input id="delaiPaiement" type="number" class="form-control" formControlName="delaiPaiement" 
+               min="0" placeholder="Nombre de jours">
+        <div *ngIf="bonForm.get('delaiPaiement')?.touched && bonForm.get('delaiPaiement')?.errors" 
+             class="text-danger small">
+          <span *ngIf="bonForm.get('delaiPaiement')?.errors?.['min']">Le délai doit être positif</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reste à payer -->
+    <div *ngIf="typeBon !== 'retour'" class="row mb-3">
+      <div class="col-md-6">
+        <label for="resteAPayer" class="form-label">Reste à payer</label>
+        <input id="resteAPayer" type="text" class="form-control bg-info text-white fw-bold" 
+               [value]="resteAPayer | number" readonly>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="d-flex justify-content-between mt-4">
+      <!-- <button type="button" class="btn btn-secondary" (click)="previousTab()"
+              [disabled]="!canGoToPreviousTab">
+        <i class="bi bi-arrow-left me-1"></i> Précédent
+      </button> -->
+        <button type="button" class="btn btn-secondary me-2" 
+                (click)="setActiveTab('articles')">
+          <i class="bi bi-cart me-1"></i> Modifier panier
+        </button>
+        <button type="button" class="btn btn-primary" (click)="nextTab()"
+                [disabled]="!canGoToNextTab">
+          Suivant <i class="bi bi-arrow-right ms-1"></i>
+        </button>
+      </div>
+  </div>
+
+  <!-- Onglet Logistique -->
+  <div *ngIf="activeTab === 'logistique'" class="tab-content p-3 border border-top-0 rounded-bottom">
+    <div class="row mb-3" *ngIf="typeBon === 'commande' && typeEntite === 'fournisseur'">
+      <div class="col-md-4">
+        <label for="dateLivraisonPrevue" class="form-label">Date de livraison prévue</label>
+        <input id="dateLivraisonPrevue" type="date" class="form-control" 
+               formControlName="dateLivraisonPrevue" [formGroup]="logistiqueForm">
+      </div>
+      
+      <div class="col-md-4">
+        <label for="pointLivraison" class="form-label">Point de livraison</label>
+        <input id="pointLivraison" type="text" class="form-control" 
+               formControlName="pointLivraison" [formGroup]="logistiqueForm" 
+               placeholder="Adresse de livraison">
+      </div>
+      
+      <div class="col-md-4">
+        <label for="transporteur" class="form-label">Transporteur</label>
+        <input id="transporteur" type="text" class="form-control" 
+               formControlName="transporteur" [formGroup]="logistiqueForm" 
+               placeholder="Nom du transporteur">
+      </div>
+    </div>
+
+    <!-- Boutons d'action -->
+    <div class="d-flex justify-content-between mt-4">
+      <button type="button" class="btn btn-secondary" (click)="previousTab()"
+              [disabled]="!canGoToPreviousTab">
+        <i class="bi bi-arrow-left me-1"></i> Précédent
+      </button>
+      
+      <div>
+        <button type="button" class="btn btn-outline-secondary me-2" (click)="annulerBon()">
+          <i class="bi bi-x-lg me-1"></i> Annuler
+        </button>
+        
+        <button type="submit" class="btn btn-success" 
+                [disabled]="!bonForm.valid || erreurs.length > 0">
+          <i class="bi bi-floppy2-fill me-1"></i> Enregistrer le Bon
+        </button>
+      </div>
+    </div>
+  </div>
+</form>

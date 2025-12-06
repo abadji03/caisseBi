@@ -22,150 +22,7 @@ export class OperationsService {
     });
   }
 
-  /* // Récupérer les opérations d'un fournisseur
-  getOperationsByFournisseur(code_structure: string, fournisseurId: number): Observable<Operation[]> {
-    const bons$ = this.http.get<any[]>(`${this.apiUrl}/bons/${code_structure}/fournisseur/${fournisseurId}`, 
-      { headers: this.getHeaders() }
-    ).pipe(
-      tap(bons => console.log(`📦 Bons chargés: ${bons.length}`, bons))
-    );
-    const paiements$ = this.http.get<any[]>(`${this.apiUrl}/paiements/${code_structure}/fournisseur/${fournisseurId}`, 
-      { headers: this.getHeaders() }
-    ).pipe(
-      tap(paiements => console.log(`💰 Paiements chargés: ${paiements.length}`, paiements))
-    );
-
-    return forkJoin([bons$, paiements$]).pipe(
-      map(([bons, paiements]) => {
-        const operations: Operation[] = [];
-
-        bons.forEach(bon => {
-          const op = new Operation({
-            id: bon.id,
-            bonId: bon.id,
-            fournisseurId: bon.fournisseurId,
-            type: this.normaliserTypeOperation(bon.type),
-            montantPaye: bon.avance || 0,
-            statut: bon.statutBon?.toUpperCase() || 'brouillon',
-            dateOperation: new Date(bon.createdAt),
-            numeroBon: bon.numero,
-          });
-
-          if (bon.Panier) {
-            op.Panier = {
-              ...bon.Panier,
-              articles: (bon.Panier.ArticlesPaniers || []).map(
-                (article: ArticlePanier) =>
-                  new ArticlePanier({
-                    ...article,
-                    produit: article.Produit, // Sequelize injecte Produit
-                  })
-              ),
-            };
-          }
-          if(bon.user) {
-            op.user = bon.user;
-          }
-        operations.push(op);
-        });
-
-        paiements.forEach(paiement => {
-          operations.push(new Operation({
-            id: paiement.id,
-            paiementId: paiement.id,
-            fournisseurId: paiement.fournisseurId,
-            type: 'VERSEMENT',
-            montantPaye: paiement.montant,
-            moyenPaiement: paiement.moyenPaiement,
-            statut: paiement.statut,
-            dateOperation: new Date(paiement.date),
-            numeroVersement: paiement.numero
-          }));
-        });
-
-        // Tri par date
-        return operations.sort((a, b) => new Date(b.dateOperation).getTime() - new Date(a.dateOperation).getTime());
-      }),
-      shareReplay(1)
-    );
-  }
-
-  // Récupérer les opérations d'un client
-  getOperationsByClient(code_structure: string, clientId: number): Observable<Operation[]> {
-    const bons$ = this.http.get<any[]>(`${this.apiUrl}/bons/${code_structure}/client/${clientId}`, { headers: this.getHeaders() });
-    const paiements$ = this.http.get<any[]>(`${this.apiUrl}/paiements/${code_structure}/client/${clientId}`, { headers: this.getHeaders() });
-
-    return forkJoin([bons$, paiements$]).pipe(
-      map(([bons, paiements]) => {
-        const operations: Operation[] = [];
-
-         bons.forEach(bon => {
-          const op = new Operation({
-            id: bon.id,
-            bonId: bon.id,
-            fournisseurId: bon.fournisseurId,
-            type: this.normaliserTypeOperation(bon.type),
-            montantPaye: bon.avance || 0,
-            statut: bon.statutBon?.toUpperCase() || 'IMPAYE',
-            dateOperation: new Date(bon.createdAt),
-            numeroBon: bon.numero
-          });
-
-         
-         if (bon.Panier) {
-            op.Panier = {
-              ...bon.Panier,
-              articles: (bon.Panier.ArticlesPaniers || []).map(
-                (article: ArticlePanier) =>
-                  new ArticlePanier({
-                    ...article,
-                    produit: article.Produit, // Sequelize injecte Produit
-                  })
-              ),
-            };
-          }
-
-
-        operations.push(op);
-        });
-
-
-        paiements.forEach(paiement => {
-          operations.push(new Operation({
-            id: paiement.id,
-            paiementId: paiement.id,
-            clientId: paiement.clientId,
-            type: 'REGLEMENT',
-            montantPaye: paiement.montant,
-            moyenPaiement: paiement.moyenPaiement,
-            statut: paiement.statut,
-            dateOperation: new Date(paiement.date),
-            numeroVersement: paiement.numero
-          }));
-        });
-
-        // Tri par date
-        return operations.sort((a, b) => new Date(b.dateOperation).getTime() - new Date(a.dateOperation).getTime());
-      }),
-      shareReplay(1)
-    );
-  }
-
-  //NOUVELLE MÉTHODE : Normaliser le type d'opération
-  private normaliserTypeOperation(typeBon: string): string {
-    if (!typeBon) return 'BON';
-    
-    // eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style
-    const typesNormalises: { [key: string]: string } = {
-      'commande': 'COMMANDE',
-      'livraison': 'LIVRAISON',
-      'retour': 'RETOUR',
-      'versement': 'VERSEMENT'
-    };
-    
-    return typesNormalises[typeBon.toLowerCase()] || typeBon.toUpperCase();
-  }  */
-
+  
   // ==============================
   // MÉTHODES PRINCIPALES
   // ==============================
@@ -238,8 +95,16 @@ export class OperationsService {
     clientId: number, 
     filters: Omit<OperationsFilters, 'code_structure' | 'clientId'> = {}
   ): Observable<Operation[]> {
-    let params = new HttpParams();
-
+    let params = new HttpParams()
+    .set('code_structure', code_structure)
+    .set('clientId', clientId.toString());
+    // Ajouter les filtres de date
+    if (filters.dateDebut) {
+      params = params.set('dateDebut', filters.dateDebut);
+    }
+    if (filters.dateFin) {
+      params = params.set('dateFin', filters.dateFin);
+    }
     // Ajout des paramètres de filtrage
     Object.keys(filters).forEach(key => {
       const value = filters[key as keyof typeof filters];
@@ -303,7 +168,8 @@ export class OperationsService {
       statut: bonData.statutBon?.toUpperCase() || 'BROUILLON',
       dateOperation: bonData.dateBon || new Date(),
       commentaire: `Bon ${bonData.type} - ${bonData.numero}`,
-      numeroBon: bonData.numero
+      numeroBon: bonData.numero,
+      fichier: bonData.fichier
     });
   }
 
@@ -326,7 +192,8 @@ export class OperationsService {
       dateOperation: paiementData.date || new Date(),
       commentaire: paiementData.description || `${typeOperation} - ${paiementData.numero}`,
       numeroVersement: paiementData.numero,
-      moyenPaiement: paiementData.methodePaiement
+      moyenPaiement: paiementData.methodePaiement,
+      fichier: paiementData.fichier
     });
   }
 

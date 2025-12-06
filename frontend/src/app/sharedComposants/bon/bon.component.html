@@ -23,7 +23,7 @@
           <!-- <option value="" disabled selected>Type de bon</option> -->
           <option value="commande">Commande</option>
           <option value="retour">Retour</option>
-          <option value="livraison">Livraison</option>
+          <option *ngIf="typeEntite ==='fournisseur'" value="livraison">Livraison</option>
         </select>
       </div>
       

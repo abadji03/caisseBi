@@ -32,6 +32,9 @@ export class PanierComponent implements OnInit,OnChanges, OnDestroy {
   // Ajouter un Input pour la réinitialisation externe
   @Input() resetPanier = false;
 
+  // Dans PanierComponent
+  @Input() panierData: Panier | null = null;
+
   isFormDisabled = false; // false par défaut
   ispanierValid = false; // Pour suivre la validité du panier
 
@@ -276,9 +279,40 @@ private preparePanierForDB(): Panier {
       console.log('TypeEntite changé - Réinitialisation du panier');
       this.reinitialiserPanier();
     }
-    
+    // Charger les données du panier si elles sont fournies
+    if (changes['panierData'] && this.panierData && this.panierData.articles) {
+      this.chargerPanierExistant(this.panierData);
+    }
   }
 
+  // Nouvelle méthode pour charger un panier existant
+private chargerPanierExistant(panier: Panier): void {
+  console.log('Chargement du panier existant:', panier.articles?.length);
+  
+  // Réinitialiser d'abord le panier
+  this.panierArray.clear();
+  
+  // Charger les articles
+  panier.articles?.forEach(article => {
+    this.ajouterArticleAuForm(article);
+  });
+  
+  // Charger les paramètres
+  this.panierForm.patchValue({
+    remise: panier.remise || 0,
+    avance: panier.avance || 0,
+    tauxTVA: panier.tauxTVA || this.tauxTVAList[0] || 0,
+    inclureTVA: !!panier.tva
+  });
+  
+  // Mettre à jour le statut
+  this.isFormDisabled = panier.statut === 'validé';
+  if (this.isFormDisabled) {
+    this.panierForm.disable();
+  } else {
+    this.panierForm.enable();
+  }
+}
   get panierArray(): FormArray {
     return this.panierForm.get('panier') as FormArray;
   }

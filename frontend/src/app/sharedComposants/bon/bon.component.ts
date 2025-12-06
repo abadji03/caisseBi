@@ -332,32 +332,6 @@ createBonForm(): FormGroup {
     this.showBonButtons = false;
   }
 
-  // Méthode pour soumettre le bon
-  /* submitBon(): void {
-   
-   if (this.bonForm.valid) {
-      if (!this.panierData || this.panierData.articles.length === 0) {
-        console.log('Veuillez ajouter des articles au panier avant d’enregistrer le bon');
-        return;
-      }
-
-      const { bon, fichier } = this.prepareBonData();
-      bon.statutBon = 'validé';
-      if (this.bonBrouillon && this.bonBrouillon.id! > 0) {
-        bon.id = this.bonBrouillon.id;
-      }
-      console.log('Bon à enregistrer :', bon);
-      console.log('Fichier Bon :', fichier);
-      this.onEnregistrerBon.emit({bon, fichier});
-      this.bonBrouillonService.clearBrouillons();
-    } else {
-      console.log('Veuillez remplir correctement le formulaire du bon');
-      const errorMsg = 'Veuillez remplir correctement le formulaire du bon';
-      console.log(errorMsg);
-      this.onErreurEnregistrement.emit(errorMsg);
-    }
-  } */
-
     submitBon(): void {
       if (this.bonForm.valid) {
         // Pour tous les types sauf retour, on vérifie le panier
@@ -411,62 +385,6 @@ createBonForm(): FormGroup {
     this.onAnnulerBon.emit();
   }
 
-// Préparer les données du bon pour l'enregistrement
-/* prepareBonData(): { bon: Bon, fichier: File | null } {
-  const formValue = this.bonForm.value;
-  const remise = Number(formValue.remise) || 0;
-  const avance = Number(formValue.avance) || 0;
-  const base = this.montantBase;
-
-  //S'assurer que le panierData est disponible
-  if (!this.panierData) {
-    console.error('Panier manquant lors de la préparation des données');
-    this.toastr.error('Le panier est vide', 'Erreur');
-    throw new Error('Panier manquant');
-  }
-
-  if (this.modeMontant === 'panier') {
-     
-    return {
-      bon:new Bon({
-      numero: this.generatedNumero,
-      type: formValue.type,
-      description: formValue.description,
-      montantTotal: base,
-      montantAvoir: formValue.type === 'retour' ? base:0,
-      numeroBonOrigine: formValue.type === 'retour' ? formValue.numeroBonOrigine:'',
-      motifsRetour: formValue.type === 'retour' ? formValue.motifsRetour:'',
-      remise,
-      typeEntite:this.typeEntite,
-      avance,
-      netAPayer: base - remise,
-      resteAPayer: base - remise - avance,
-      dateBon: new Date(),
-      statutBon: 'validé',
-      panier: this.panierData ?? undefined 
-    }), 
-    fichier: this.fichierSelectionne};
-  }
-
-  return {
-    bon:new Bon({
-    numero: this.generatedNumero,
-    type: formValue.type,
-    description: formValue.description,
-    montantTotal: base - remise,
-    typeEntite:'fournisseur',
-    montantAvoir: formValue.type === 'retour' ? base:0,
-    numeroBonOrigine: formValue.type === 'retour' ? formValue.numeroBonOrigine:'',
-    motifsRetour: formValue.type === 'retour' ? formValue.motifsRetour:'',
-    remise,
-    avance,
-    netAPayer: base - remise - avance,
-    resteAPayer: base - remise - avance,
-    dateBon: new Date(),
-    statutBon: 'brouillon'
-  }),
-  fichier: this.fichierSelectionne}
-} */
 
 prepareBonData(): { bon: Bon, fichier: File | null } {
   const formValue = this.bonForm.value;

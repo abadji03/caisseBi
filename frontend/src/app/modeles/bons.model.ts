@@ -1,9 +1,8 @@
-import { User } from '@sentry/angular';
-import { Operation } from './operation.model';
-import { Panier } from './panier.model';
+import { User } from "@sentry/angular";
+import { Panier } from "./panier.model";
+import { Operation } from "./operation.model";
 
 export class Bon {
-
   id?: number;
 
   // Identification
@@ -17,7 +16,6 @@ export class Bon {
   typeEntite!: 'client' | 'fournisseur';
   clientId?: number;
   fournisseurId?: number;
-  magasinId?: number;
 
   // Descriptions & documents
   description?: string;
@@ -58,17 +56,7 @@ export class Bon {
   Panier?: Panier
   operations: Operation[] = [];
 
-
   constructor(data?: Partial<Bon>) {
     Object.assign(this, data);
-    this.dateBon = data?.dateBon ? new Date(data.dateBon) : new Date();
   }
-}
-
-export interface BonAvecFichier {
-  bon: Bon;
-  fichier: File | null;
-  onSuccess?: () => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onError?: (error?: any) => void;
 }

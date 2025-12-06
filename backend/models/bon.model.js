@@ -1,84 +1,187 @@
 // models/bon.js
 module.exports = (sequelize, DataTypes) => {
   const Bon = sequelize.define('Bon', {
-    code_structure: { type: DataTypes.STRING, allowNull: false },
-    numero: {
-      type: DataTypes.STRING,
-      allowNull: false,
+    // --- Identification ---
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
     },
 
-    numeroBonOrigine: DataTypes.STRING(30),
+    code_structure: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+
+    numero: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+
+    numeroFacture: {
+      type: DataTypes.STRING
+    },
+
+    dateBon: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW
+    },
+
+    // --- Structure & Entité ---
+    type: {
+      type: DataTypes.ENUM(
+        'commande',
+        'livraison',
+        'retour',
+        'avoir',
+        'vente',
+      ),
+    },
 
     typeEntite: {
       type: DataTypes.ENUM('client', 'fournisseur'),
-      allowNull: false,
-      defaultValue: 'fournisseur'
+      allowNull: false
     },
-    numeroFacture: DataTypes.STRING,
-    type: {
-      type: DataTypes.ENUM('livraison', 'commande', 'retour', 'avoir'),
-      allowNull: false,
+
+    clientId: {
+      type: DataTypes.INTEGER,
+      allowNull: true
     },
+
+    fournisseurId: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+
+    magasinId: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+
+    // --- Description & Documents ---
     description: {
       type: DataTypes.TEXT,
-      allowNull: false,
+      allowNull: true
     },
-    montantAvoir: {
-      type: DataTypes.DECIMAL(12, 2),
-      allowNull: true,
+
+    fichier: {
+      type: DataTypes.TEXT,
+      allowNull: true
     },
-    montantTotal: {
-      type: DataTypes.DECIMAL(12, 2),
-      allowNull: false,
+
+    // --- Références croisées ---
+    numeroBonOrigine: {
+      type: DataTypes.STRING(30),
+      allowNull: true
     },
-    remise: {
-      type: DataTypes.DECIMAL(10, 2),
-      defaultValue: 0,
+
+    referenceExterne: {
+      type: DataTypes.STRING,
+      allowNull: true
     },
-    netAPayer: {
-      type: DataTypes.DECIMAL(12, 2),
-      get() {
-        const montant = this.getDataValue('montantTotal') || 0;
-        const remise = this.getDataValue('remise') || 0;
-        return montant - remise;
-      },
-    },
-    resteAPayer: {
-      type: DataTypes.DECIMAL(12, 2),
-      get() {
-        const net = this.get('netAPayer') || 0;
-        const avance = this.getDataValue('avance') || 0;
-        return net - avance;
-      },
-    },
-    avance: {
-      type: DataTypes.DECIMAL(12, 2),
-      defaultValue: 0,
-    },
-    dateBon: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-    },
+
+    // --- Statut du bon ---
     statutBon: {
       type: DataTypes.ENUM(
         'brouillon',
-        'livré',
         'validé',
+        'livré',
         'retourné',
         'facturé',
         'annulé'
       ),
+      allowNull: false,
+      defaultValue: 'brouillon'
     },
-    motifsRetour: DataTypes.TEXT,
-    fichier: DataTypes.TEXT,
-  });
 
-  /* Bon.associate = models => {
-    Bon.belongsTo(models.Fournisseur, { foreignKey: 'fournisseurId' });
-    Bon.belongsTo(models.Client, { foreignKey: 'clientId' });
-    Bon.belongsTo(models.User, { foreignKey: 'agentId', allowNull: false });
-    Bon.belongsTo(models.Magasin, { foreignKey: 'magasinId', allowNull: false });
-  }; */
+    // --- Retours & Avoirs ---
+    motifsRetour: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+
+    montantAvoir: {
+      type: DataTypes.DECIMAL(12, 2),
+      allowNull: true
+    },
+
+    // --- Montants financiers ---
+    montantTotal: {
+      type: DataTypes.DECIMAL(12, 2),
+      allowNull: false,
+      defaultValue: 0
+    },
+
+    remise: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      defaultValue: 0
+    },
+
+    avance: {
+      type: DataTypes.DECIMAL(12, 2),
+      allowNull: false,
+      defaultValue: 0
+    },
+
+    // Calcul automatique : netAPayer = montantTotal – remise
+    netAPayer: {
+      type: DataTypes.DECIMAL(12, 2),
+      get() {
+        const total = parseFloat(this.getDataValue('montantTotal')) || 0;
+        const remise = parseFloat(this.getDataValue('remise')) || 0;
+        return (total - remise).toFixed(2);
+      }
+    },
+
+    // Calcul automatique : resteAPayer = netAPayer – avance
+    resteAPayer: {
+      type: DataTypes.DECIMAL(12, 2),
+      get() {
+        const net = parseFloat(this.get('netAPayer')) || 0;
+        const avance = parseFloat(this.getDataValue('avance')) || 0;
+        return (net - avance).toFixed(2);
+      }
+    },
+
+    // --- Paiement ---
+    conditionsPaiement: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+
+    delaiPaiement: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+
+    // --- Logistique ---
+    dateLivraisonPrevue: {
+      type: DataTypes.DATE,
+      allowNull: true
+    },
+
+    dateLivraisonReelle: {
+      type: DataTypes.DATE,
+      allowNull: true
+    },
+
+    pointLivraison: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+
+    transporteur: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+
+    // --- Relations internes ---
+    agentId: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    }
+  });
 
   return Bon;
 };

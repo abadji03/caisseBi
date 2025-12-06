@@ -16,19 +16,7 @@ class ReservationService {
 
     // 1. RÉSERVATIONS COMMANDES CLIENTS
     if (typeEntite === 'client' && typeBon === 'commande') {
-        /* if (['commandé', 'expédié'].includes(statut) && bon.typeEntite === 'client') {
-          for (const article of articles) {
-            await this.reserverStockDirect(
-              article.produitId || article.produit?.id,
-              article.quantite,
-              magasinId,
-              code_structure,
-              bon.id,
-              `réservation_${statut}`,
-              transaction
-            );
-          }
-        } */
+       
         if (['validé'].includes(statut)) {
         await this.reserverStockClient(articles, bon, magasinId, code_structure, transaction);
       }
@@ -54,35 +42,6 @@ class ReservationService {
       if (statut === 'retourné') {
         await this.libererStockGenerique(articles, bon, magasinId, code_structure, transaction);
       }
-    /* // 2 Libérer le stock pour annulations ou retours
-    if (['annulé', 'retourné'].includes(statut)) {
-      for (const article of articles) {
-        await this.libererStockReserveDirect(
-          article.produitId || article.produit?.id,
-          article.quantite,
-          magasinId,
-          code_structure,
-          bon.id,
-          statut === 'annulé' ? 'annulation_commande' : 'retour_client',
-          transaction
-        );
-      }
-    }
-
-    // 3️⃣ Libérer les réservations après livraison ou paiement
-    if (['livré', 'validé', 'facturé', 'payé'].includes(statut) && bon.typeEntite === 'client') {
-      for (const article of articles) {
-        await this.libererStockReserveDirect(
-          article.produitId || article.produit?.id,
-          article.quantite,
-          magasinId,
-          code_structure,
-          bon.id,
-          `réalisation_${statut}`,
-          transaction
-        );
-      }
-    } */
   }
 
   /**

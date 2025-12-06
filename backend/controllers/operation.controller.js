@@ -25,11 +25,28 @@ exports.createFromBon = async (bon, transaction = null) => {
     };
 
     const options = transaction ? { transaction } : {};
-    const operation = await Operation.create(operationData, options);
-    console.log('✅ Opération créée depuis bon:', operation.id);
+     // Vérifier si une opération existe déjà pour ce bon
+    let operation = await Operation.findOne({
+      where: { bonId: bon.id },
+      ...options
+    });
+
+    if (operation) {
+      // Mettre à jour l'opération existante
+      await operation.update(operationData, options);
+      console.log('Opération mise à jour depuis bon:', operation.id, 'Statut:', operationData.statut);
+    } else {
+      // Créer une nouvelle opération
+      operation = await Operation.create(operationData, options);
+      console.log('Nouvelle opération créée depuis bon:', operation.id, 'Statut:', operationData.statut);
+    }
+    
     return operation;
+    /* const operation = await Operation.create(operationData, options);
+    console.log('Opération créée depuis bon:', operation.id);
+    return operation; */
   } catch (error) {
-    console.error('❌ Erreur création opération depuis bon:', error);
+    console.error('Erreur création opération depuis bon:', error);
     throw error;
   }
 };
@@ -58,15 +75,233 @@ exports.createFromPaiement = async (paiement, transaction = null) => {
     };
 
     const options = transaction ? { transaction } : {};
-    const operation = await Operation.create(operationData, options);
-    console.log('✅ Opération créée depuis paiement:', operation.id);
+    let operation;
+    
+    // Vérifier si une opération existe déjà pour ce paiement
+    if (paiement.id) {
+      operation = await Operation.findOne({
+        where: { paiementId: paiement.id },
+        ...options
+      });
+    }
+    
+    // Si pas de paiementId, vérifier par bonId et type
+    if (!operation && paiement.bonId) {
+      operation = await Operation.findOne({
+        where: { 
+          bonId: paiement.bonId,
+          type: typeOperation,
+          montantPaye: paiement.montant
+        },
+        ...options
+      });
+    }
+
+    if (operation) {
+      // Mettre à jour l'opération existante
+      await operation.update(operationData, options);
+      console.log('Opération mise à jour depuis paiement:', operation.id);
+    } else {
+      // Créer une nouvelle opération
+      operation = await Operation.create(operationData, options);
+      console.log('Nouvelle opération créée depuis paiement:', operation.id);
+    }
+    
     return operation;
+    /* const operation = await Operation.create(operationData, options);
+    console.log('Opération créée depuis paiement:', operation.id);
+    return operation; */
   } catch (error) {
     console.error('❌ Erreur création opération depuis paiement:', error);
     throw error;
   }
 };
 
+// Méthode générique pour créer ou mettre à jour une opération
+exports.createOrUpdate = async (operationData, transaction = null) => {
+  try {
+    const options = transaction ? { transaction } : {};
+    const where = {};
+    
+    // Déterminer les critères de recherche
+    if (operationData.bonId) {
+      where.bonId = operationData.bonId;
+    }
+    if (operationData.paiementId) {
+      where.paiementId = operationData.paiementId;
+    }
+    if (operationData.type) {
+      where.type = operationData.type;
+    }
+    
+    let operation;
+    
+    // Rechercher une opération existante
+    if (Object.keys(where).length > 0) {
+      operation = await Operation.findOne({
+        where,
+        ...options
+      });
+    }
+
+    if (operation) {
+      // Mettre à jour l'opération existante
+      await operation.update(operationData, options);
+      console.log('✅ Opération mise à jour:', operation.id);
+    } else {
+      // Créer une nouvelle opération
+      operation = await Operation.create(operationData, options);
+      console.log('✅ Nouvelle opération créée:', operation.id);
+    }
+    
+    return operation;
+  } catch (error) {
+    console.error('❌ Erreur création/mise à jour opération:', error);
+    throw error;
+  }
+};
+// Méthode spécifique pour mettre à jour une opération quand le statut du bon change
+exports.updateFromBon = async (bon, transaction = null) => {
+  try {
+    // Chercher l'opération associée au bon
+    const operation = await Operation.findOne({
+      where: { bonId: bon.id },
+      transaction: transaction || undefined
+    });
+
+    if (!operation) {
+      console.log(`⚠️ Aucune opération trouvée pour le bon ${bon.id}, création d'une nouvelle`);
+      return await this.createFromBon(bon, transaction);
+    }
+
+    // Mettre à jour les champs pertinents
+    const updates = {
+      statut: bon.statutBon?.toUpperCase() || operation.statut,
+      resteAPayer: bon.resteAPayer || operation.resteAPayer,
+      montantPaye: bon.avance || operation.montantPaye,
+      dateOperation: bon.dateBon || operation.dateOperation,
+      commentaire: `Bon ${bon.type} - ${bon.numero} (${bon.statutBon})`
+    };
+
+    // Si le statut change, ajouter un historique
+    if (bon.statutBon && bon.statutBon.toUpperCase() !== operation.statut) {
+      updates.commentaire = `[${new Date().toLocaleDateString()}] ${operation.statut} → ${bon.statutBon.toUpperCase()}: ${bon.description || 'Changement de statut'}`;
+    }
+
+    await operation.update(updates, { transaction: transaction || undefined });
+    console.log(`✅ Opération ${operation.id} mise à jour pour le bon ${bon.numero}, nouveau statut: ${updates.statut}`);
+    
+    return operation;
+  } catch (error) {
+    console.error('❌ Erreur mise à jour opération depuis bon:', error);
+    throw error;
+  }
+};
+// Méthode pour annuler une opération (quand un bon est annulé)
+exports.annulerOperation = async (bonId, raison = 'Bon annulé', transaction = null) => {
+  try {
+    const operation = await Operation.findOne({
+      where: { bonId },
+      transaction: transaction || undefined
+    });
+
+    if (!operation) {
+      console.log(`⚠️ Aucune opération trouvée pour annulation (bonId: ${bonId})`);
+      return null;
+    }
+
+    // Mettre à jour le statut
+    await operation.update({
+      statut: 'ANNULE',
+      commentaire: `${operation.commentaire} - [ANNULATION] ${raison}`,
+      dateAnnulation: new Date()
+    }, { transaction: transaction || undefined });
+
+    console.log(`✅ Opération ${operation.id} annulée pour le bon ${bonId}`);
+    return operation;
+  } catch (error) {
+    console.error('❌ Erreur annulation opération:', error);
+    throw error;
+  }
+};
+// Méthode pour synchroniser toutes les opérations avec leurs bons
+exports.synchroniserOperations = async (code_structure, transaction = null) => {
+  try {
+    const options = transaction ? { transaction } : {};
+    let compteur = { misesAJour: 0, nouvelles: 0, erreurs: 0 };
+
+    // Récupérer tous les bons sans opération associée
+    const bonsSansOperation = await db.Bon.findAll({
+      where: { 
+        code_structure,
+        statutBon: { [Op.ne]: 'brouillon' } // Exclure les brouillons
+      },
+      include: [{
+        model: db.Operation,
+        required: false // LEFT JOIN
+      }],
+      ...options
+    });
+
+    // Filtrer les bons qui n'ont pas d'opération
+    const bonsASynchroniser = bonsSansOperation.filter(bon => !bon.Operation);
+
+    console.log(`🔄 Synchronisation de ${bonsASynchroniser.length} bons sans opération`);
+
+    // Créer des opérations pour chaque bon
+    for (const bon of bonsASynchroniser) {
+      try {
+        await this.createFromBon(bon, transaction);
+        compteur.nouvelles++;
+      } catch (error) {
+        console.error(`❌ Erreur synchronisation bon ${bon.id}:`, error.message);
+        compteur.erreurs++;
+      }
+    }
+
+    // Mettre à jour les opérations existantes
+    const operations = await Operation.findAll({
+      where: { code_structure },
+      include: [{
+        model: db.Bon,
+        required: true
+      }],
+      ...options
+    });
+
+    for (const operation of operations) {
+      try {
+        const bon = operation.Bon;
+        if (bon) {
+          // Vérifier si l'opération est à jour
+          const besoinMiseAJour = 
+            operation.statut !== bon.statutBon?.toUpperCase() ||
+            operation.resteAPayer !== bon.resteAPayer ||
+            operation.montantPaye !== (bon.avance || 0);
+
+          if (besoinMiseAJour) {
+            await operation.update({
+              statut: bon.statutBon?.toUpperCase() || operation.statut,
+              resteAPayer: bon.resteAPayer || operation.resteAPayer,
+              montantPaye: bon.avance || operation.montantPaye,
+              commentaire: `Bon ${bon.type} - ${bon.numero} (${bon.statutBon})`
+            }, { transaction: transaction || undefined });
+            compteur.misesAJour++;
+          }
+        }
+      } catch (error) {
+        console.error(`❌ Erreur mise à jour opération ${operation.id}:`, error.message);
+        compteur.erreurs++;
+      }
+    }
+
+    console.log('✅ Synchronisation terminée:', compteur);
+    return compteur;
+  } catch (error) {
+    console.error('❌ Erreur synchronisation générale:', error);
+    throw error;
+  }
+};
 // Créer une opération (méthode générique)
 exports.create = async (req, res) => {
   const transaction = await db.sequelize.transaction();
@@ -228,7 +463,7 @@ exports.findByFournisseur = async (req, res) => {
         },
         { model: db.Paiement },
         { model: db.Users }
-  ],
+      ],
     order: [['createdAt', 'DESC']]
   });
 
@@ -275,10 +510,11 @@ exports.findByClient = async (req, res) => {
               include: [{
                 model: db.Produit,
               }]},
+          ]},
+        },
         { model: db.Paiement },
         { model: db.Users }
-        ]}
-    }],
+      ],
       order: [['dateOperation', 'DESC']]
     });
 
@@ -307,7 +543,7 @@ exports.findById = async (req, res) => {
         { model: db.Paiement },
         { model: db.Client },
         { model: db.Fournisseur },
-        { model: db.User },
+        { model: db.Users },
         { model: db.Magasin }
       ]
     });

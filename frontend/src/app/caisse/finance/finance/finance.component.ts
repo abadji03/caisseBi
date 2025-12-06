@@ -104,20 +104,8 @@ export class FinanceComponent implements OnInit,OnDestroy {
     this.initForms();
     this.loadCategories();
     this.loadDepenses();
-    this.loadRecettes(); // Remplacer la méthode statique
-    // Initialisation des données, par exemple chargement des catégories et des recettes
+    this.loadRecettes(); 
     this.loadPaiement();
-    this.loadClients();
-    this.loadFournisseurs();
-    this.loadBons();
-    this.filteredCategories = [...this.categories];
-    this.filteredDepenses = [...this.depenses];
-    this.filteredPaiements = [...this.paiements];
-    this.filteredRecettes = [...this.recettes];
-    this.updatefilteredTable('depense');
-    this.updatefilteredTable('recette');
-    this.updatefilteredTable('paiement');
-    this.updatefilteredTable('categorie');
   }
 
   ngOnDestroy(): void {
@@ -125,44 +113,9 @@ export class FinanceComponent implements OnInit,OnDestroy {
     this.destroy$.complete();
   }
 
-  // Méthode pour mettre à jour les recettes, les dépenses, les paiement et les catégories
-  updatefilteredTable(objet: string): void {
-    if (objet === 'depense') {
-      this.filteredDepenses = this.depenses.slice(
-        (this.currentPage - 1) * 10,
-        this.currentPage * 10,
-      );
-    } else if (objet === 'recette') {
-      this.filteredRecettes = this.recettes.slice(
-        (this.currentPage - 1) * 10,
-        this.currentPage * 10,
-      );
-    } else if (objet === 'paiement') {
-      this.filteredPaiements = this.paiements.slice(
-        (this.currentPage - 1) * 10,
-        this.currentPage * 10,
-      );
-    } else if (objet === 'categorie') {
-      this.filteredCategories = this.categories.slice(
-        (this.currentPage - 1) * 10,
-        this.currentPage * 10,
-      );
-    }
-  }
-
   // Gestion de la recherche
   onSearchChange(objet: string): void {
     if (objet === 'depense') {
-      /* this.filteredDepenses = this.depenses.filter(
-        (depense) =>
-          this.getCategoryName(depense.categoryId)
-            .toLowerCase()
-            .includes(this.searchTerm.toLowerCase()) ||
-          depense.type.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-          depense.montant.toString().includes(this.searchTerm) || // Filtrer par montant
-          new Date(depense.date).toLocaleDateString().includes(this.searchTerm), // Filtrer par date
-      );
-      this.currentPageDepense = 1; // Réinitialiser à la première page après recherche */
       if (!this.searchTerm) {
         this.filteredDepenses = [...this.depenses];
       } else {
@@ -207,18 +160,9 @@ export class FinanceComponent implements OnInit,OnDestroy {
         );
       }
       this.currentPageCategorie = 1;
-      /* this.filteredCategories = this.categories.filter(
-        (categorie) =>
-          categorie.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-          categorie.type.toString().includes(this.searchTerm.toLowerCase()),
-      );
-      this.currentPageCategorie = 1; */
+      
     }
   }
-
-  /* showFormCategorie() {
-    this.newCategorie = true;
-  } */
 
    /**
    * Afficher/masquer le formulaire de catégorie
@@ -237,9 +181,7 @@ export class FinanceComponent implements OnInit,OnDestroy {
       });
     }
   }
-  /* closeFormCategorie() {
-    this.newCategorie = false;
-  } */
+  
  closeFormCategorie(): void {
     this.newCategorie = false;
     this.selectedCategory = null;
@@ -417,15 +359,6 @@ export class FinanceComponent implements OnInit,OnDestroy {
     this.recetteForm.reset(); // Réinitialise le formulaire
     this.formVisible = false; // Cache le formulaire
   }
-
- /*  ajouterRecette() {
-    if (this.recetteForm.valid) {
-      const recetteData = this.recetteForm.value;
-      // Logique pour ajouter la recette (enregistrement dans la base de données ou API)
-      this.recettes.push({ ...recetteData, date: new Date() });
-      this.cancelForm(); // Cache le formulaire après ajout
-    }
-  } */
 
   /**
    * Ajouter ou modifier une recette
@@ -606,14 +539,6 @@ export class FinanceComponent implements OnInit,OnDestroy {
     });
   }
 
-  // Gestion des ajouts
-  /* ajouterDepense() {
-    if (this.depenseForm.valid) {
-      this.depenses.push(new Depense({ ...this.depenseForm.value, date: new Date() }));
-      this.depenseForm.reset();
-    }
-  } */
-
    /**
    * Créer une nouvelle dépense
    */
@@ -727,28 +652,6 @@ private resetDepenseForm(): void {
   const fileInput = document.getElementById('receipt') as HTMLInputElement;
   if (fileInput) fileInput.value = '';
 }
-  // ajouterRecette() {
-  //   if (this.recetteForm.valid) {
-  //     this.recettes.push(new Recette({ ...this.recetteForm.value, date: new Date() }));
-  //     this.recetteForm.reset();
-  //   }
-  // }
-
-  /*   ajouterPaiement() {
-    if (this.paiementForm.valid) {
-      this.paiements.push(new Paiement({ ...this.paiementForm.value, date: new Date() }));
-      this.paiementForm.reset();
-    }
-  } */
-
-  /* setActiveTab(tab: string) {
-    this.activeTab = tab;
-  } */
-
-  /* editDepense(depense: Depense) {
-    // Logic for editing the expense
-    console.log('Editing depense', depense);
-  } */
 
   /**
    * Modifier une dépense
@@ -774,11 +677,6 @@ private resetDepenseForm(): void {
     //this.toastr.info('Fonctionnalité de modification à implémenter');
   }
 
-
-  /* deleteDepense(depense: Depense) {
-    // Logic for deleting the expense
-    console.log('Deleting depense', depense);
-  } */
   /**
    * Supprimer une dépense
    */
@@ -824,22 +722,6 @@ private resetDepenseForm(): void {
     const category = this.categories.find((cat) => cat.id === categoryId);
     return category ? category.name : 'Non défini';
   }
-
-  /* onSubmitCategoryForm() {
-    if (this.selectedCategory) {
-      // Modification de la catégorie
-      const index = this.categories.findIndex((cat) => cat.id === this.selectedCategory?.id);
-      if (index !== -1) {
-        this.categories[index] = { ...this.selectedCategory, ...this.categoryForm.value };
-      }
-    } else {
-      // Création d'une nouvelle catégorie
-      const newCategory = new Categorie(this.categoryForm.value);
-      newCategory.id = this.categories.length + 1; // id simulé
-      this.categories.push(newCategory);
-    }
-    this.resetForm();
-  } */
 
   /**
    * Soumettre le formulaire de catégorie (création ou modification)
@@ -908,21 +790,12 @@ private resetDepenseForm(): void {
     this.categoryForm.reset({ type: 'DEPENSE', isActive: true });
   }
 
-  /* editCategory(category: Categorie) {
-    this.selectedCategory = category;
-    this.categoryForm.patchValue(category);
-  } */
-
     /**
    * Éditer une catégorie
    */
   editCategory(category: Categorie): void {
     this.showFormCategorie(category);
   }
-
-  /* toggleActiveStatus(category: Categorie) {
-    category.isActive = !category.isActive;
-  } */
 
    /**
    * Activer/Désactiver une catégorie
@@ -952,10 +825,6 @@ private resetDepenseForm(): void {
       });
   }
 
-  /* deleteCategory(category: Categorie) {
-    this.categories = this.categories.filter((cat) => cat.id !== category.id);
-  } */
-
    /**
    * Supprimer une catégorie
    */
@@ -982,95 +851,6 @@ private resetDepenseForm(): void {
           this.isLoading = false;
         }
       });
-  }
-
-  togglePaiementForm() {
-    this.paiementFormVisible = !this.paiementFormVisible;
-  }
-
-  // Détecter le changement du type de paiement
-  onTypePaiementChange() {
-    const typePaiement = this.paiementForm.value.typePaiement;
-
-    if (typePaiement === 'client') {
-      this.paiementForm.patchValue({ fournisseurId: null }); // Réinitialise fournisseur
-    } else if (typePaiement === 'fournisseur') {
-      this.paiementForm.patchValue({ clientId: null }); // Réinitialise client
-    }
-  }
-
-  ajouterPaiement() {
-    if (this.paiementForm.valid) {
-      const formValues = this.paiementForm.value;
-
-      const newPaiement = {
-        ...formValues,
-        date: new Date(),
-        clientNom: this.getClientNom(formValues.clientId),
-        fournisseurNom: this.getFournisseurNom(formValues.fournisseurId),
-        bonNumero: this.getBonNumero(formValues.bonId),
-      };
-
-      this.paiements.push(newPaiement);
-      this.paiementForm.reset();
-      this.paiementFormVisible = false;
-    }
-  }
-
-  editPaiement(paiement: Paiement) {
-    this.paiementForm.patchValue(paiement);
-    this.paiementFormVisible = true;
-  }
-
-  deletePaiement(paiement: Paiement) {
-    this.paiements = this.paiements.filter((p) => p !== paiement);
-  }
-
-  cancelPaiementForm() {
-    this.paiementForm.reset();
-    this.paiementFormVisible = false;
-  }
-
-  // Fonctions pour récupérer les noms des clients, fournisseurs et numéros de bons
-  getClientNom(clientId: number) {
-    const client = this.clients.find((c) => c.id === clientId);
-    return client ? client.nomComplet : 'N/A';
-  }
-
-  getFournisseurNom(fournisseurId: number) {
-    const fournisseur = this.fournisseurs.find((f) => f.id === fournisseurId);
-    return fournisseur ? fournisseur.nomComplet : 'N/A';
-  }
-
-  getBonNumero(bonId: number) {
-    const bon = this.bons.find((b) => b.id === bonId);
-    return bon ? bon.numero : 'N/A';
-  }
-
-  // Simuler le chargement des données
-  loadClients() {
-    /* this.clients = [
-      { id: 1, nom: 'Aliou Diop' },
-      { id: 2, nom: 'Mamadou Sow' },
-    ]; */
-  }
-
-  loadFournisseurs() {
-    /*  this.fournisseurs = [
-      { id: 1, nom: 'Société ABC' },
-      { id: 2, nom: 'Dakar Import' },
-    ]; */
-  }
-
-  loadBons() {
-    /*  this.bons = [
-      { id: 1, numero: 'BON-2024-001' },
-      { id: 2, numero: 'BON-2024-002' },
-    ]; */
-  }
-
-  loadPaiements() {
-    // Charger les paiements depuis un service ou localStorage
   }
 
   // Méthodes de pagination
@@ -1121,14 +901,6 @@ private resetDepenseForm(): void {
     this.currentPageRecette = 1;
 
     this.cdr.detectChanges(); // Forcer la mise à jour de la vue
-  }
-
-  nextPage() {
-    this.currentPage++;
-  }
-
-  prevPage() {
-    if (this.currentPage > 1) this.currentPage--;
   }
 
   setActiveTab(tab: string) {
