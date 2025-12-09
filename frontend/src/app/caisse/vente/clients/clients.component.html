@@ -320,8 +320,12 @@
                          <span [ngClass]="{
                             'badge bg-primary': operation.type === 'COMMANDE',
                             'badge bg-success': operation.type === 'VERSEMENT',
-                            'badge bg-warning': operation.type === 'REGLEMENT',
+                            'badge bg-success-subtle': operation.type === 'REGLEMENT',
+                            'badge bg-warning': operation.type === 'VENTE',
+                            'badge bg-danger': operation.type === 'RETOUR',
+                            'badge bg-secondary': operation.type === 'AVOIR',
                             'badge bg-info': operation.type === 'LIVRAISON'}">
+                            
                             {{ operation.type }}
                           </span>
                       </td>
@@ -384,12 +388,12 @@
                                   </button>
                                   
                                   <button class="btn btn-outline-danger btn-sm me-1" (click)="annulerBon(bon)"
-                                          *ngIf="bon.statutBon === 'validé' || bon.statutBon === 'livré' || bon.statutBon === 'retourné'">
+                                          *ngIf="bon.statutBon === 'validé' && bon.type === 'commande'">
                                     <i class="bi bi-x-circle"></i> Annuler
                                   </button>
                                   
                                   <button class="btn btn-outline-dark btn-sm me-1" (click)="retournerBon(bon)"
-                                          *ngIf="(bon.statutBon === 'validé' || bon.statutBon === 'livré') && bon.type !== 'retour'">
+                                         *ngIf="(bon.type === 'vente' && bon.statutBon === 'validé') ||(bon.type === 'commande' && bon.statutBon === 'livré')">
                                     <i class="bi bi-arrow-counterclockwise"></i> Retouner
                                   </button>
 

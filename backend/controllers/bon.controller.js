@@ -248,6 +248,22 @@ exports.updateStatutBon = async (req, res) => {
   }
 };
 
+exports.updateTypeBon = async (req, res) => {
+  try {
+    const { type } = req.body;
+    const bon = await Bon.findByPk(req.params.id);
+    if (!bon) return res.status(404).json({ message: 'Bon non trouvé' });
+
+    bon.type = type;
+    await bon.save();
+
+    return res.json(bon);
+  } catch (error) {
+    console.error('Erreur update type:', error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
 exports.updateResteAPayer = async (req, res) => {
   try {
     const { montant } = req.body; // montant payé

@@ -25,8 +25,15 @@ class ReservationService {
         await this.libererStockClient(articles, bon, magasinId, code_structure, transaction);
       }
      }
-    
 
+     // 2. VENTES CLIENTS: Pas de réservation, gestion directe via traiterVenteCredit
+    // (La vente à crédit est gérée directement dans traiterVenteCredit)
+    if (typeEntite === 'client' && typeBon === 'vente') {
+      // La vente à crédit n'utilise pas le système de réservation
+      // Le traitement se fait directement dans traiterChangementStatut
+      return;
+    }
+    
      // 2. RÉSERVATIONS COMMANDES FOURNISSEURS (préparation réception)
      if (typeEntite === 'fournisseur' && typeBon === 'commande') {
         if (['validé'].includes(statut)) {

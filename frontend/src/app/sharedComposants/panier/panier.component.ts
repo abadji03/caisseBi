@@ -56,6 +56,8 @@ export class PanierComponent implements OnInit,OnChanges, OnDestroy {
   searchInput = '';
   currentTime: string = new Date().toLocaleTimeString();
 
+  private alreadyLoadedPanierId: number | null = null;
+
   panierBrouillon: Panier | null = null;
 
   private updateSubject$ = new Subject<{article: ArticlePanier, index: number}>();
@@ -258,11 +260,15 @@ private preparePanierForDB(): Panier {
     this.filteredProduits = [];
     this.isFormDisabled = false;
     this.ispanierValid = false;
-    this.showBonButtons.emit(false);
+    this.alreadyLoadedPanierId = null; // Réinitialiser
+
+    // Réactiver tous les contrôles
+    this.enableFormControls();
     
     // Réactiver le formulaire
-    this.panierForm.enable();
-     // Émettre le changement de total
+    //this.panierForm.enable();
+    // Émettre le changement de total
+    this.showBonButtons.emit(false);
     this.totalPanierChange.emit(0);
     
     console.log('Panier réinitialisé');
@@ -281,7 +287,10 @@ private preparePanierForDB(): Panier {
     }
     // Charger les données du panier si elles sont fournies
     if (changes['panierData'] && this.panierData && this.panierData.articles) {
+      //this.chargerPanierExistant(this.panierData);
+        if (!this.isFormDisabled) {
       this.chargerPanierExistant(this.panierData);
+    }
     }
   }
 
@@ -289,6 +298,10 @@ private preparePanierForDB(): Panier {
 private chargerPanierExistant(panier: Panier): void {
   console.log('Chargement du panier existant:', panier.articles?.length);
   
+  // Éviter le rechargement du même panier
+  if (panier.id && panier.id === this.alreadyLoadedPanierId) {
+    return;
+  }
   // Réinitialiser d'abord le panier
   this.panierArray.clear();
   
@@ -307,11 +320,29 @@ private chargerPanierExistant(panier: Panier): void {
   
   // Mettre à jour le statut
   this.isFormDisabled = panier.statut === 'validé';
+
+   // Appliquer l'état d'activation/désactivation selon le statut
   if (this.isFormDisabled) {
+    this.disableFormControls();
+    this.showBonButtons.emit(true);
+  } else {
+    this.enableFormControls();
+    this.showBonButtons.emit(false);
+  }
+
+  // Stocker l'ID du panier pour référence
+  if (panier.id && !this.panierBrouillon) {
+    this.panierBrouillon = panier;
+    this.alreadyLoadedPanierId = panier.id;
+  }
+    
+    console.log('Panier chargé, isFormDisabled:', this.isFormDisabled);
+
+  /* if (this.isFormDisabled) {
     this.panierForm.disable();
   } else {
     this.panierForm.enable();
-  }
+  } */
 }
   get panierArray(): FormArray {
     return this.panierForm.get('panier') as FormArray;
@@ -666,11 +697,12 @@ private updatePanierInDB(panierId:number, updatedPanier:Panier): void {
       if (this.panierForm.valid && this.panierArray.length > 0) {
         const panierData: Panier = this.preparePanierData();
         this.ispanierValid = true; // Marque le panier comme valide
+
+        // IMPORTANT : Désactiver les contrôles mais garder les valeurs visibles
+        this.disableFormControls();
+
+      // Émettre les événements
         this.showBonButtons.emit(true); // Indique d'afficher les boutons du bon
-        // désactive après validation
-        this.isFormDisabled = true;
-        this.panierForm.disable();
-        // Sauvegarder dans le service de brouillon
         this.onEnregistrer.emit(panierData);
 
     } 
@@ -679,20 +711,84 @@ private updatePanierInDB(panierId:number, updatedPanier:Panier): void {
     }
   }
 
-  toggleEdition(): void {
+  private disableFormControls(): void {
+    // Désactiver tous les contrôles sauf les champs readonly
+    this.panierArray.controls.forEach(control => {
+      // Garder les champs produit et uniteStock activés (readonly)
+      control.get('quantite')?.disable();
+      control.get('prixUnitaire')?.disable();
+    });
+    
+    // Désactiver les autres champs du formulaire
+    this.panierForm.get('remise')?.disable();
+    this.panierForm.get('avance')?.disable();
+    this.panierForm.get('tauxTVA')?.disable();
+    this.panierForm.get('inclureTVA')?.disable();
+    this.panierForm.get('typePaiement')?.disable();
+    
+    this.isFormDisabled = true;
+  }
+
+  private enableFormControls(): void {
+  // Réactiver tous les contrôles
+  this.panierArray.controls.forEach(control => {
+    control.get('quantite')?.enable();
+    control.get('prixUnitaire')?.enable();
+  });
+  
+  // Réactiver les autres champs
+  this.panierForm.get('remise')?.enable();
+  this.panierForm.get('avance')?.enable();
+  this.panierForm.get('tauxTVA')?.enable();
+  this.panierForm.get('inclureTVA')?.enable();
+  this.panierForm.get('typePaiement')?.enable();
+  
+  this.isFormDisabled = false;
+}
+  /* toggleEdition(): void {
     this.isFormDisabled = !this.isFormDisabled;
 
     if (this.isFormDisabled) {
-      this.panierForm.disable(); // désactive tous les champs
+      //this.panierForm.disable(); // désactive tous les champs
+      // Passer en mode édition
+      this.enableFormControls();
       this.showBonButtons.emit(true);
     } else {
-      this.panierForm.enable();  // réactive tous les champs
+      //this.panierForm.enable();  // réactive tous les champs
       const panierData: Panier = this.preparePanierForDB();
       this.updatePanierInDB(this.panierBrouillon!.id!, panierData);
+      // Passer en mode validation
+      this.disableFormControls();
       this.showBonButtons.emit(false);
     }
 
+  } */
+
+  toggleEdition(): void {
+  if (this.isFormDisabled) {
+    // Passer en mode édition (activer les champs)
+    this.enableFormControls();
+    this.showBonButtons.emit(false);
+  } else {
+    // Passer en mode validation (désactiver les champs)
+    this.disableFormControls();
+    this.showBonButtons.emit(true);
+    
+    // Mettre à jour le panier en base si nécessaire
+    if (this.panierBrouillon?.id) {
+      const panierData: Panier = this.preparePanierForDB();
+      this.updatePanierInDB(this.panierBrouillon.id, panierData);
+    }
   }
+}
+
+  onEditOrSave() {
+      if (this.isFormDisabled) {
+        this.toggleEdition();  // Activer le formulaire
+      } else {
+        this.enregistrerPanier(); // Valider le panier
+      }
+    }
 
     preparePanierData(): Panier {
       const articles: ArticlePanier[] = this.panierArray.controls.map(control => {

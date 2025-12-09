@@ -32,6 +32,9 @@ router.delete('/:id', bonController.deleteBon);
 //Mettre à jour le statut du bon
 router.patch('/:id/statut', bonController.updateStatutBon);
 
+//Mettre à jour le type du bon
+router.patch('/:id/type', bonController.updateTypeBon);
+
 //Mettre à jour le reste à payer
 router.patch('/:id/resteAPayer', bonController.updateResteAPayer);
 

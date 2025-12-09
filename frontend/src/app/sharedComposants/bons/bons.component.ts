@@ -86,6 +86,7 @@ export class BonsComponent implements OnChanges,OnInit {
     'Paiement comptant'
   ];
 
+  
   // Services
   private fb = inject(FormBuilder);
   private bonBrouillonService = inject(BonBrouillonService);
@@ -149,6 +150,16 @@ export class BonsComponent implements OnChanges,OnInit {
     this.bonForm.valueChanges.subscribe(() => {
       this.validerMontants();
       this.updateTabAccessibility();
+    });
+
+    // Écouter spécifiquement les changements de type
+    this.bonForm.get('type')?.valueChanges.subscribe(nouveauType => {
+      if (this.bonBrouillon && nouveauType) {
+        // Utiliser debounceTime pour éviter trop d'appels
+        setTimeout(() => {
+          this.updateTypeBonInBD(nouveauType);
+        }, 300);
+      }
     });
   }
 
@@ -418,9 +429,41 @@ export class BonsComponent implements OnChanges,OnInit {
     return true;
   }
 
+  updateTypeBonInBD(type: 'commande' | 'livraison' | 'retour' | 'avoir' | 'vente' | 'achat'): void {
+  if (!this.bonBrouillon) return;
+  
+  console.log('Mise à jour du type de bon:', { bonId: this.bonBrouillon.id, nouveauType: type });
+  
+  this.bonService.updateTypetBon(this.bonBrouillon.id!, type)
+    .subscribe({
+      next: (updatedBon) => {
+        console.log('Type de bon mis à jour avec succès', updatedBon);
+        // Vérifier que le type est bien présent
+        if (updatedBon.type) {
+          console.log('Nouveau type:', updatedBon.type);
+          // Mettre à jour le brouillon local
+          this.bonBrouillon = { ...(this.bonBrouillon as Bon), type: updatedBon.type };
+        } else {
+          console.warn('Le type n\'est pas défini dans la réponse');
+          // Mettre quand même à jour localement
+          this.bonBrouillon = { ...(this.bonBrouillon as Bon), type };
+        }
+      },
+      error: (err) => {
+        console.error('Erreur lors de la mise à jour du type de bon', err);
+      }
+    });
+}
+
   // Méthodes existantes avec améliorations
   onTypeBonChange(): void {
-    this.typeBon = this.bonForm.get('type')?.value;
+    const nouveauType = this.bonForm.get('type')?.value;
+    this.typeBon = nouveauType;
+
+    // Mettre à jour en base de données
+    if (this.bonBrouillon) {
+      this.updateTypeBonInBD(nouveauType);
+    }
 
     // Réinitialiser les champs selon le type
     if (this.typeBon === 'retour') {
@@ -451,6 +494,8 @@ export class BonsComponent implements OnChanges,OnInit {
     // Réinitialiser l'accessibilité des tabs
     this.resetTabAccessibility();
   }
+
+  
 
   private resetTabAccessibility(): void {
     this.accessibleTabs = {
@@ -766,6 +811,9 @@ private restaurerEtatPanier(): Panier | null {
     this.panierData = panier;
     this.showBonButtons = true;
     this.updateTabAccessibility();
+    setTimeout(() => {
+    this.cdr.detectChanges();
+  });
   }
 
   onPanierAnnule(): void {

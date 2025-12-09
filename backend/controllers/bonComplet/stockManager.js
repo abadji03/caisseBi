@@ -13,7 +13,7 @@ class StockManager {
         transaction
       });
 
-      if (!stock && typeBon === 'commande' && typeEntite === 'client') {
+      if (!stock && (typeBon === 'commande' || typeBon === 'vente') && typeEntite === 'client') {
         throw new Error(`Stock indisponible pour le produit ID: ${article.produitId}`);
       }
 

@@ -1,0 +1,22 @@
+/* Dans panier.component.css */
+input[readonly] {
+  background-color: #f8f9fa !important;
+  border-color: #dee2e6 !important;
+  color: #495057 !important;
+  cursor: not-allowed;
+}
+
+input[disabled] {
+  background-color: #e9ecef !important;
+  border-color: #dee2e6 !important;
+  color: #6c757d !important;
+}
+
+input:read-only:focus {
+  box-shadow: none !important;
+  border-color: #dee2e6 !important;
+}
+
+.bg-light {
+  background-color: #f8f9fa !important;
+}

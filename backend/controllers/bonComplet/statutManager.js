@@ -34,17 +34,24 @@ class StatutManager {
       bonData.clientId = clientId;
       if (bon.type === 'retour') {
         bonData.statutBon = 'retourné';
-        bonData.montantAvoir = this.safeNumber(bonData.montantTotal);
+        bonData.montantAvoir = this.safeNumber(bonData.montantAvoir);
       }
       else if (bon.type === 'commande') {
         bonData.statutBon = bonData.statutBon || 'validé';
+      }
+      else if (bon.type === 'vente') {
+        bonData.statutBon = bonData.statutBon || 'validé'; // Vente à crédit validée par défaut
       }
     } 
     else if (typeEntite === 'fournisseur') {
       bonData.fournisseurId = fournisseurId;
       if (bon.type === 'commande') {
         bonData.statutBon = bonData.statutBon || 'brouillon';
-      } else if (bon.type === 'livraison') {
+      } 
+      else if (bon.type === 'livraison') {
+        bonData.statutBon = bonData.statutBon || 'validé';
+      }
+       else if (bon.type === 'retour') {
         bonData.statutBon = bonData.statutBon || 'validé';
       }
     }
@@ -56,8 +63,15 @@ class StatutManager {
    * Mettre à jour le client ou fournisseur selon le bon
    */
   async mettreAJourEntite(bon, typeEntite, clientId, fournisseurId, transaction) {
-    const statutsTerminaux = ['livré', 'validé', 'facturé', 'retourné'];
+    /* const statutsTerminaux = ['livré', 'validé', 'facturé', 'retourné','annulé'];
     if (!statutsTerminaux.includes(bon.statutBon)) {
+      return;
+    } */
+   // Déterminer si l'entité doit être mise à jour selon le type de bon et le statut
+    const doitMettreAJour = this.determinerSiMiseAJourNecessaire(bon, typeEntite);
+    
+    if (!doitMettreAJour) {
+      console.log(`⏭️ Pas de mise à jour ${typeEntite} nécessaire pour ${bon.type} avec statut ${bon.statutBon}`);
       return;
     }
 
@@ -67,6 +81,33 @@ class StatutManager {
     else if (typeEntite === 'fournisseur' && fournisseurId) {
       await this.mettreAJourFournisseur(bon, fournisseurId, transaction);
     }
+  }
+
+   /**
+   * Déterminer si une mise à jour d'entité est nécessaire
+   */
+  determinerSiMiseAJourNecessaire(bon, typeEntite) {
+    // Règles selon votre logique métier
+    const regles = {
+      'client': {
+        'commande': ['validé','livré', 'annulé', 'retourné'], // Commande client impacte dette
+        'vente': ['validé', 'annulé', 'retourné'], // Vente à crédit impacte dette
+        'retour': ['validé', 'annulé'] // Retour client impacte dette (avoir)
+      },
+      'fournisseur': {
+        'commande': [], // Commande fournisseur n'impacte pas la dette
+        'livraison': ['validé', 'annulé', 'retourné'], // Livraison fournisseur impacte dette
+        'retour': ['validé', 'annulé'] // Retour fournisseur impacte dette
+      }
+    };
+
+    const typesValides = regles[typeEntite];
+    if (!typesValides) return false;
+
+    const statutsValides = typesValides[bon.type];
+    if (!statutsValides) return false;
+
+    return statutsValides.includes(bon.statutBon);
   }
 
   /**
@@ -80,6 +121,9 @@ class StatutManager {
     const montant = this.safeNumber(bon.netAPayer) || this.safeNumber(bon.montantTotal) ||this.safeNumber(bon.montantAvoir);
     const soldeActuel = this.safeNumber(client.solde);
 
+    let nouveauSolde = soldeActuel;
+    let operation = '';
+
     console.log('🔢 Mise à jour client - Calculs:', {
       montant,
       soldeActuel,
@@ -89,11 +133,19 @@ class StatutManager {
       soldeDB: client.solde
     });
 
-    if (bon.type === 'retour') {
+
+    // LOGIQUE MÉTIER AMÉLIORÉE
+    if (bon.statutBon === 'annulé') {
+      // ANNULATION: Diminuer la dette (remboursement)
+      nouveauSolde = soldeActuel - montant;
+      operation = 'annulation';
+      console.log(`🔁 Annulation bon ${bon.type} - Diminution dette: ${montant}`);
+    }
+    else if (bon.type === 'retour') {
       // Retour = avoir pour le client (réduction de la dette)
-      const nouveauSolde = soldeActuel - montant;
+      //const nouveauSolde = soldeActuel - montant;
       
-      await client.update({
+      /* await client.update({
         solde: nouveauSolde,
         dateMiseAJour: new Date()
       }, { transaction });
@@ -102,8 +154,68 @@ class StatutManager {
         ancienSolde: soldeActuel,
         montantRetour: montant,
         nouveauSolde: nouveauSolde
-      });
-    } else {
+      }); */
+      if (bon.statutBon === 'validé') {
+        nouveauSolde = soldeActuel - montant;
+        operation = 'retour (avoir)';
+        console.log(`↩️ Retour client validé - Création avoir: ${montant}`);
+      } else if (bon.statutBon === 'annulé') {
+        // Annulation d'un retour = annuler l'avoir
+        nouveauSolde = soldeActuel + montant;
+        operation = 'annulation retour';
+        console.log(`🚫 Annulation retour - Suppression avoir: ${montant}`);
+      }
+    } 
+    else if (bon.type === 'vente') {
+      if (bon.statutBon === 'validé') {
+        //VENTE VALIDÉE: Augmenter la dette
+        nouveauSolde = soldeActuel + montant;
+        operation = 'vente validée';
+        console.log(`➕ ${bon.type} validé(e) - Augmentation dette: ${montant}`);
+      }
+      else if (bon.statutBon === 'retourné') {
+        //VENTE: Diminuer la dette
+        nouveauSolde = soldeActuel - montant;
+        operation = 'retour sur vente';
+        console.log(`↩️ ${bon.type} retourné - Réduction dette: ${montant}`);
+      }
+
+    }
+    else if (bon.type === 'commande') {
+      if (bon.statutBon === 'validé') {
+        // COMMANDE VALIDÉE
+        nouveauSolde = soldeActuel;
+        operation = 'commande/vente validée';
+        console.log(`➕ ${bon.type} validé(e) - pas d'impact sur la dette`);
+      }
+
+      else if (bon.statutBon === 'livré') {
+        // COMMANDEVALIDÉE: Augmenter la dette
+        nouveauSolde = soldeActuel + montant;
+        operation = 'commande/vente livré';
+        console.log(`➕ ${bon.type} livré(e) - Augmentation dette: ${montant}`);
+      }
+
+      else if (bon.statutBon === 'retourné') {
+        // RETOUR SUR COMMANDE: Diminuer la dette
+        nouveauSolde = soldeActuel - montant;
+        operation = 'retour sur vente/commande';
+        console.log(`↩️ ${bon.type} retourné - Réduction dette: ${montant}`);
+      }
+    }
+     // Appliquer la mise à jour
+    await client.update({
+      solde: nouveauSolde,
+      dateMiseAJour: new Date()
+    }, { transaction });
+
+    console.log('✅ Client mis à jour:', {
+      ancienSolde: soldeActuel,
+      nouveauSolde: nouveauSolde,
+      variation: nouveauSolde - soldeActuel,
+      operation: operation
+    });
+    /* else {
       // Commande = augmentation de la dette
       const nouveauSolde = soldeActuel + montant;
       
@@ -117,7 +229,7 @@ class StatutManager {
         montantCommande: montant,
         nouveauSolde: nouveauSolde
       });
-    }
+    } */
   }
 
   /**
@@ -141,9 +253,45 @@ class StatutManager {
       montantAPayerDB: fournisseur.montantAPayer
     });
 
-    if (bon.type === 'retour') {
+    let nouveauMontantAPayer = montantAPayerActuel;
+    let operation = '';
+
+    if (bon.type === 'livraison') {
+        if (bon.statutBon === 'validé') {
+          // LIVRAISON FOURNISSEUR VALIDÉE: Augmenter la dette
+          nouveauMontantAPayer = montantAPayerActuel + montant;
+          operation = 'livraison validée';
+          console.log(`📦 Livraison fournisseur validée - Augmentation dette: ${montant}`);
+        }
+        else if (bon.statutBon === 'annulé') {
+          // ANNULATION LIVRAISON: Diminuer la dette
+          nouveauMontantAPayer = montantAPayerActuel - montant;
+          operation = 'annulation livraison';
+          console.log(`🚫 Annulation livraison - Diminution dette: ${montant}`);
+        }
+        else if (bon.statutBon === 'retourné') {
+          // RETOUR LIVRAISON: Diminuer la dette
+          nouveauMontantAPayer = montantAPayerActuel - montant;
+          operation = 'retour livraison';
+          console.log(`↩️ Retour livraison - Diminution dette: ${montant}`);
+        }
+    }
+    else if (bon.type === 'retour') {
+      
+      if (bon.statutBon === 'validé') {
+        // RETOUR FOURNISSEUR VALIDÉ: Diminuer la dette (avoir)
+        nouveauMontantAPayer = montantAPayerActuel - montant;
+        operation = 'retour fournisseur';
+        console.log(`↪️ Retour fournisseur validé - Diminution dette: ${montant}`);
+      }
+      else if (bon.statutBon === 'annulé') {
+        // ANNULATION RETOUR FOURNISSEUR: Ré-augmenter la dette
+        nouveauMontantAPayer = montantAPayerActuel + montant;
+        operation = 'annulation retour fournisseur';
+        console.log(`🚫 Annulation retour fournisseur - Ré-augmentation dette: ${montant}`);
+      }
       // Retour fournisseur = réduction de la dette
-      const nouveauMontantAPayer = Math.max(0, montantAPayerActuel - montant);
+     /*  const nouveauMontantAPayer = Math.max(0, montantAPayerActuel - montant);
       
       await fournisseur.update({
         montantAPayer: nouveauMontantAPayer,
@@ -154,8 +302,23 @@ class StatutManager {
         ancienMontant: montantAPayerActuel,
         montantRetour: montant,
         nouveauMontant: nouveauMontantAPayer
-      });
-    } else {
+      }); */
+    } 
+    // S'assurer que le montant n'est pas négatif
+    nouveauMontantAPayer = Math.max(0, nouveauMontantAPayer);
+    
+    await fournisseur.update({
+      montantAPayer: nouveauMontantAPayer,
+      dateMiseAJour: new Date()
+    }, { transaction });
+
+    console.log('Fournisseur mis à jour:', {
+      ancienMontant: montantAPayerActuel,
+      nouveauMontant: nouveauMontantAPayer,
+      variation: nouveauMontantAPayer - montantAPayerActuel,
+      operation: operation
+    });
+    /* else {
       // Livraison/Commande fournisseur = augmentation de la dette
       const nouveauMontantAPayer = montantAPayerActuel + montant;
       
@@ -169,7 +332,7 @@ class StatutManager {
         montantAjoute: montant,
         nouveauMontant: nouveauMontantAPayer
       });
-    }
+    } */
   }
 
   /**

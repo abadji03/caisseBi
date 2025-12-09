@@ -27,7 +27,7 @@
           [class.disabled]="!accessibleTabs['articles']"
           (click)="setActiveTab('articles')">
     <i class="bi bi-cart me-2"></i>Articles
-    <span *ngIf="panierData?.articles?.length" class="badge bg-primary ms-1">
+    <span *ngIf="panierData?.articles?.length" class="badge bg-danger ms-1">
       {{ panierData?.articles?.length || 0 }}
     </span>
     <span *ngIf="!accessibleTabs['articles']" class="badge bg-secondary ms-1">
@@ -153,7 +153,7 @@
     <!-- Navigation -->
     <div class="d-flex justify-content-between mt-4">
       <div></div>
-      <button type="button" class="btn btn-primary" (click)="nextTab()" 
+      <button type="button" class="btn btn-warning" (click)="nextTab()" 
               [disabled]="!canGoToNextTab">
         Suivant <i class="bi bi-arrow-right ms-1"></i>
       </button>
@@ -212,7 +212,7 @@
                 (click)="setActiveTab('informations')">
           <i class="bi bi-pencil me-1"></i> Modifier section infos
         </button>
-        <button type="button" class="btn btn-primary" (click)="nextTab()" 
+        <button type="button" class="btn btn-warning" (click)="nextTab()" 
                 [disabled]="!canGoToNextTab">
           Suivant <i class="bi bi-arrow-right ms-1"></i>
         </button>
@@ -321,7 +321,7 @@
                 (click)="setActiveTab('articles')">
           <i class="bi bi-cart me-1"></i> Modifier panier
         </button>
-        <button type="button" class="btn btn-primary" (click)="nextTab()"
+        <button type="button" class="btn btn-warning" (click)="nextTab()"
                 [disabled]="!canGoToNextTab">
           Suivant <i class="bi bi-arrow-right ms-1"></i>
         </button>
@@ -330,7 +330,7 @@
 
   <!-- Onglet Logistique -->
   <div *ngIf="activeTab === 'logistique'" class="tab-content p-3 border border-top-0 rounded-bottom">
-    <div class="row mb-3" *ngIf="typeBon === 'commande' && typeEntite === 'fournisseur'">
+    <div class="row mb-3" *ngIf="typeBon === 'commande'">
       <div class="col-md-4">
         <label for="dateLivraisonPrevue" class="form-label">Date de livraison prévue</label>
         <input id="dateLivraisonPrevue" type="date" class="form-control" 

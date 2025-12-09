@@ -8,295 +8,6 @@ const {
   statutManager
 } = require('./bonComplet');
 
-class BonWorkflow {
-  /**
-   * Déterminer les transitions de statut autorisées
-   */
-  /* static getTransitionsAutorisees(typeEntite, typeBon, statutActuel) {
-  const transitions = {
-    'client': {
-      'commande': {
-        'brouillon': ['validé', 'annulé'],
-        'validé': ['livré', 'annulé'],
-        'livré': ['retourné', 'annulé'],
-        'retourné': [],
-        'annulé': []
-      },
-      'vente': {
-        'brouillon': ['validé', 'annulé'],
-        'validé': ['livré', 'annulé'],
-        'livré': ['retourné', 'annulé'],
-        'retourné': [],
-        'annulé': []
-      },
-      'retour': {
-        'brouillon': ['validé', 'annulé'],
-        'validé': ['retourné', 'annulé'],
-        'retourné': [],
-        'annulé': []
-      }
-    },
-    'fournisseur': {
-      'commande': {
-        'brouillon': ['validé', 'annulé'],
-        'validé': ['livré', 'annulé'],
-        'livré': ['retourné', 'annulé'],
-        'retourné': [],
-        'annulé': []
-      },
-      'livraison': {
-        'brouillon': ['validé', 'annulé'],
-        'validé': ['livré', 'annulé'],
-        'livré': ['retourné', 'annulé'],
-        'retourné': [],
-        'annulé': []
-      },
-      'retour': {
-        'brouillon': ['validé', 'annulé'],
-        'validé': ['retourné', 'annulé'],
-        'retourné': [],
-        'annulé': []
-      }
-    }
-  };
-
-  return transitions[typeEntite]?.[typeBon]?.[statutActuel] || [];
-} */
-static getTransitionsAutorisees(typeEntite, typeBon, statutActuel) {
-  const transitions = {
-    'client': {
-      'commande': {
-        'brouillon': ['validé', 'annulé'],
-        'validé': ['livré', 'retourné', 'annulé'],
-        'livré': ['retourné', 'annulé'],
-        'retourné': [],
-        'annulé': []
-      },
-      'vente': {
-        'brouillon': ['validé', 'annulé'],
-        'validé': ['livré', 'retourné', 'annulé'],
-        'livré': ['retourné', 'annulé'],
-        'retourné': [],
-        'annulé': []
-      },
-      'retour': {
-        'brouillon': ['validé', 'annulé'],
-        'validé': ['retourné', 'annulé'],
-        'retourné': [],
-        'annulé': []
-      }
-    },
-    'fournisseur': {
-      'commande': {
-        'brouillon': ['validé', 'annulé'],
-        'validé': ['livré', 'retourné', 'annulé'],
-        'livré': ['retourné', 'annulé'],
-        'retourné': [],
-        'annulé': []
-      },
-      'livraison': {
-        'brouillon': ['validé', 'annulé'],
-        'validé': ['livré', 'retourné', 'annulé'],
-        'livré': ['retourné', 'annulé'],
-        'retourné': [],
-        'annulé': []
-      },
-      'retour': {
-        'brouillon': ['validé', 'annulé'],
-        'validé': ['retourné', 'annulé'],
-        'retourné': [],
-        'annulé': []
-      }
-    }
-  };
-
-  return transitions[typeEntite]?.[typeBon]?.[statutActuel] || [];
-}
- /**
-   * Déterminer les actions par statut
-   */
-  static getActionsParStatut(typeEntite, typeBon, nouveauStatut) {
-    const actions = {
-      'validé': {
-        'client-commande': ['reserver_stock', 'creer_dette'],
-        'client-vente': ['reserver_stock', 'creer_dette'],
-        'client-retour': ['creer_avoir'],
-        'fournisseur-commande': [],
-        'fournisseur-livraison': ['entrer_stock', 'creer_dette'],
-        'fournisseur-retour': ['sortir_stock', 'creer_avoir']
-      },
-      'livré': {
-        'client-commande': ['sortir_stock', 'liberer_reservation'],
-        'client-vente': ['sortir_stock', 'liberer_reservation'],
-        'fournisseur-commande': ['entrer_stock'],
-        'fournisseur-livraison': [] // déjà fait à 'validé'
-      },
-      'retourné': {
-        'client-commande': ['entrer_stock', 'annuler_dette'],
-        'client-vente': ['entrer_stock', 'annuler_dette'],
-        'fournisseur-retour': ['entrer_stock', 'annuler_dette']
-      },
-      'annulé': {
-        'client-commande': ['liberer_reservation', 'annuler_dette'],
-        'client-vente': ['liberer_reservation', 'annuler_dette'],
-        'client-retour': ['annuler_avoir'],
-        'fournisseur-commande': [],
-        'fournisseur-livraison': ['sortir_stock', 'annuler_dette'],
-        'fournisseur-retour': ['entrer_stock', 'annuler_avoir']
-      }
-    };
-
-    return actions[nouveauStatut]?.[`${typeEntite}-${typeBon}`] || [];
-  }
-
-  /**
-   * Exécuter les actions pour un changement de statut
-   */
-  static async executerActions(bon, articles, magasinId, agentId, code_structure, transaction) {
-    const actions = this.getActionsParStatut(
-      bon.typeEntite, 
-      bon.type, 
-      bon.statutBon
-    );
-
-    const stockManager = require('./stockManager');
-    const reservationService = require('./reservationService');
-    const mouvementService = require('./mouvementService');
-    const statutManager = require('./statutManager');
-
-    for (const action of actions) {
-      switch (action) {
-        case 'reserver_stock':
-          await reservationService.reserverStockClient(articles, bon, magasinId, code_structure, transaction);
-          break;
-          
-        case 'liberer_reservation':
-          await reservationService.libererStockClient(articles, bon, magasinId, code_structure, transaction);
-          break;
-          
-        case 'entrer_stock':
-          for (const article of articles) {
-            await mouvementService.executerMouvementPhysique(
-              article,
-              await stockManager.trouverOuCreerStock(article.produitId, magasinId, code_structure, transaction),
-              magasinId,
-              'Entree',
-              bon,
-              agentId,
-              code_structure,
-              transaction
-            );
-          }
-          break;
-          
-        case 'sortir_stock':
-          for (const article of articles) {
-            await mouvementService.executerMouvementPhysique(
-              article,
-              await stockManager.trouverOuCreerStock(article.produitId, magasinId, code_structure, transaction),
-              magasinId,
-              'Sortie',
-              bon,
-              agentId,
-              code_structure,
-              transaction
-            );
-          }
-          break;
-          
-        case 'creer_dette':
-          await statutManager.mettreAJourEntite(bon, bon.typeEntite, bon.clientId, bon.fournisseurId, transaction);
-          break;
-          
-        case 'annuler_dette': {
-          const bonAnnule = { ...bon, montantTotal: -bon.montantTotal };
-          await statutManager.mettreAJourEntite(bonAnnule, bon.typeEntite, bon.clientId, bon.fournisseurId, transaction);
-          break;
-          }
-          
-        case 'creer_avoir':
-          await this.creerAvoir(bon, code_structure, magasinId, agentId, transaction);
-          break;
-          
-        case 'annuler_avoir':
-          await this.annulerAvoir(bon, transaction);
-          break;
-      }
-    }
-  }
-
-  /**
-   * Créer un avoir
-   */
-  static async creerAvoir(bon, code_structure, magasinId, agentId, transaction) {
-    const db = require('../../models');
-    
-    const avoir = await db.Bon.create({
-      code_structure,
-      numero: `AVOIR-${bon.numero}-${Date.now()}`,
-      type: 'avoir',
-      typeEntite: bon.typeEntite,
-      clientId: bon.clientId,
-      fournisseurId: bon.fournisseurId,
-      description: `Avoir pour ${bon.type} ${bon.numero}`,
-      statutBon: 'validé',
-      montantTotal: bon.montantAvoir || bon.montantTotal,
-      dateBon: new Date(),
-      magasinId,
-      agentId,
-      numeroBonOrigine: bon.numero
-    }, { transaction });
-    
-    console.log(`💰 Avoir créé: ${avoir.numero}`);
-    return avoir;
-  }
-  /**
-   * Valider la transition de statut
-   */
-  static validerTransition(ancienStatut, nouveauStatut, typeEntite, typeBon) {
-    const transitions = this.getTransitionsAutorisees(typeEntite, typeBon, ancienStatut);
-    return transitions.includes(nouveauStatut);
-  }
-}
-
-exports.traiterChangementStatut = async (bon, articles, magasinId, agentId, code_structure, transaction) => {
-  const ancienStatut = bon._previousDataValues?.statutBon || 'création';
-  const nouveauStatut = bon.statutBon;
-
-  console.log(`🔄 Changement de statut: ${ancienStatut} → ${nouveauStatut}`);
-
-  // Exécuter les actions correspondant au nouveau statut
-  await BonWorkflow.executerActions(
-    bon, 
-    articles, 
-    magasinId, 
-    agentId, 
-    code_structure, 
-    transaction
-  );
-
-  // Gestion spécifique pour la livraison
-  if (nouveauStatut === 'livré') {
-    await bon.update({ 
-      dateLivraisonReelle: new Date() 
-    }, { transaction });
-  }
-
-  // Gestion spécifique pour l'annulation
-  if (nouveauStatut === 'annulé') {
-    console.log(`❌ Bon ${bon.numero} annulé`);
-  }
-
-  // Gestion spécifique pour le retour
-  if (nouveauStatut === 'retourné') {
-    console.log(`↩️ Bon ${bon.numero} retourné`);
-    
-    // Si c'est un retour client, créer un bon de retour
-    if (bon.typeEntite === 'client' && bon.type !== 'retour') {
-      await BonWorkflow.creerBonRetour(bon, articles, magasinId, agentId, code_structure, transaction);
-    }
-  }
-};
 
 exports.createBonComplet = async (req, res) => {
   const transaction = await db.sequelize.transaction();
@@ -342,30 +53,13 @@ exports.createBonComplet = async (req, res) => {
         return res.status(404).json({ error: 'Bon introuvable' });
       }
 
-      // Vérifier la transition de statut
-      if (bon.statutBon && bon.statutBon !== nouveauBon.statutBon) {
-        const transitionValide = BonWorkflow.validerTransition(
-          nouveauBon.statutBon,
-          bon.statutBon,
-          typeEntite,
-          nouveauBon.type
-        );
-
-        if (!transitionValide) {
-          await transaction.rollback();
-          return res.status(400).json({ 
-            error: 'Transition de statut non autorisée',
-            details: `De ${nouveauBon.statutBon} à ${bon.statutBon}`
-          });
-        }
-      }
       // Préparer les données et mettre à jour le bon
       const bonData = await statutManager.preparerDonneesBon(bon, typeEntite, clientId, fournisseurId);
       // Mettre à jour le bon
       await nouveauBon.update(bonData, { transaction });
 
        // Traiter les impacts du changement de statut
-      await this.traiterChangementStatut(
+      /* await this.traiterChangementStatut(
         nouveauBon,
         articles,
         magasinId,
@@ -373,7 +67,7 @@ exports.createBonComplet = async (req, res) => {
         code_structure,
         typeEntite,
         transaction
-      );
+      ); */
 
       // Mettre à jour le panier associé
       nouveauPanier = await db.Panier.findOne({ where: { bonId: nouveauBon.id }, transaction });
@@ -422,15 +116,6 @@ exports.createBonComplet = async (req, res) => {
       // ==============================
       const bonData = await statutManager.preparerDonneesBon(bon, typeEntite, clientId, fournisseurId);
       
-      // Validation du statut initial
-      if (!BonWorkflow.getTransitionsAutorisees(typeEntite, bon.type, 'création').includes(bonData.statutBon)) {
-        await transaction.rollback();
-        return res.status(400).json({ 
-          error: 'Statut initial non autorisé',
-          details: `Statut ${bonData.statutBon} non autorisé pour ${typeEntite}/${bon.type}`
-        });
-      }
-      
       // Créer le bon
       nouveauBon = await db.Bon.create(
         { ...bonData, code_structure, magasinId, agentId, clientId, fournisseurId, typeEntite },
@@ -460,7 +145,7 @@ exports.createBonComplet = async (req, res) => {
         transaction
       );
        // Traiter les impacts du nouveau bon
-      await this.traiterNouveauBon(
+      /* await this.traiterNouveauBon(
         nouveauBon,
         articles,
         magasinId,
@@ -468,7 +153,7 @@ exports.createBonComplet = async (req, res) => {
         code_structure,
         typeEntite,
         transaction
-      );
+      ); */
     }
 
     if (nouveauBon.statutBon === 'retourné' && nouveauBon.type !== 'retour') {
@@ -498,7 +183,7 @@ exports.createBonComplet = async (req, res) => {
     // CAS 2: BONS CLIENTS
     else if (typeEntite === 'client') {
       await this.traiterBonClient(nouveauBon, articles, magasinId, agentId, code_structure, transaction);
-    }
+    } 
 
 
     // 7. Créer paiement si avance
@@ -610,11 +295,16 @@ exports.createBonComplet = async (req, res) => {
 /**
  * Traiter le changement de statut d'un bon
  */
-exports.traiterChangementStatut = async (bon, articles, magasinId, agentId, code_structure, typeEntite, transaction) => {
+/* exports.traiterChangementStatut = async (bon, articles, magasinId, agentId, code_structure, typeEntite, transaction) => {
   const ancienStatut = bon._previousDataValues?.statutBon || 'création';
   const nouveauStatut = bon.statutBon;
 
   console.log(`🔄 Changement de statut: ${ancienStatut} → ${nouveauStatut}`);
+
+  // AJOUTER: Traitement spécifique pour vente à crédit
+if (typeEntite === 'client' && bon.type === 'vente' && nouveauStatut === 'validé') {
+  await this.traiterVenteCredit(bon, articles, magasinId, agentId, code_structure, transaction);
+}
 
   // Annulation d'un bon
   if (nouveauStatut === 'annulé') {
@@ -646,11 +336,11 @@ exports.traiterChangementStatut = async (bon, articles, magasinId, agentId, code
     await this.payerBon(bon, typeEntite, transaction);
   }
 };
-
+ */
 /**
  * Traiter un nouveau bon
  */
-exports.traiterNouveauBon = async (bon, articles, magasinId, agentId, code_structure, typeEntite, transaction) => {
+/* exports.traiterNouveauBon = async (bon, articles, magasinId, agentId, code_structure, typeEntite, transaction) => {
   const statut = bon.statutBon;
   const typeBon = bon.type;
 
@@ -685,6 +375,26 @@ exports.traiterNouveauBon = async (bon, articles, magasinId, agentId, code_struc
     }
   }
 };
+ */
+
+/**
+ * Traiter une vente à crédit client
+ */
+exports.traiterVenteCredit = async (bon, articles, magasinId, agentId, code_structure, transaction) => {
+  console.log(`💳 Traitement vente à crédit ${bon.numero}`);
+  
+  // 1. Impact sur le stock immédiat (sortie)
+  await Promise.all(
+    articles.map(article =>
+      mouvementService.traiterMouvementStock(article, bon, magasinId, agentId, code_structure, transaction)
+    )
+  );
+  
+  // 2. Impact sur la dette client
+  await statutManager.mettreAJourEntite(bon, 'client', bon.clientId, null, transaction);
+  
+  console.log(`✅ Vente crédit traitée - Stock déduit et dette client augmentée`);
+};
 
 /**
  * Annuler un bon
@@ -693,21 +403,40 @@ exports.annulerBon = async (bon, articles, magasinId, agentId, code_structure, t
   console.log(`❌ Annulation du bon ${bon.numero}`);
   
   // Libérer les réservations de stock
-  await reservationService.gererReservationsStock(articles, bon, magasinId, agentId, code_structure, transaction);
-  
+  //await reservationService.gererReservationsStock(articles, bon, magasinId, agentId, code_structure, transaction);
+  // 1. Libérer les réservations si c'est une commande
+  if (bon.type === 'commande') {
+    await reservationService.gererReservationsStock(articles, bon, magasinId, agentId, code_structure, transaction);
+  }
+  // 2. Pour les ventes et livraisons validées, remettre le stock
+  if ((bon.type === 'vente' || bon.type === 'livraison') && ['validé', 'livré'].includes(bon._previousDataValues?.statutBon)) {
+    // Créer un bon d'annulation pour les mouvements inverses
+    const bonAnnulation = {
+      ...bon,
+      type: typeEntite === 'client' ? 'annulation_client' : 'annulation_fournisseur',
+      statutBon: 'annulé'
+    };
+    
+    await Promise.all(
+      articles.map(article =>
+        mouvementService.traiterMouvementStock(article, bonAnnulation, magasinId, agentId, code_structure, transaction)
+      )
+    );
+  }
   // Annuler la dette/avoir
   const annulationData = {
     ...bon,
-    montantTotal: -bon.montantTotal,
-    montantAvoir: -bon.montantAvoir,
-    netAPayer: -bon.netAPayer,
-    resteAPayer: -bon.resteAPayer
+    montantTotal: Math.abs(bon.montantTotal),
+    montantAvoir: Math.abs(bon.montantAvoir),
+    netAPayer: Math.abs(bon.netAPayer),
+    resteAPayer: Math.abs(bon.resteAPayer)
   };
   
   await statutManager.mettreAJourEntite(annulationData, typeEntite, bon.clientId, bon.fournisseurId, transaction);
   
+  console.log(`✅ Bon ${bon.numero} annulé avec succès`);
   // Annuler les mouvements de stock
-  const annulationBon = {
+  /* const annulationBon = {
     ...bon,
     type: typeEntite === 'client' ? 'annulation_client' : 'annulation_fournisseur'
   };
@@ -716,7 +445,7 @@ exports.annulerBon = async (bon, articles, magasinId, agentId, code_structure, t
     articles.map(article =>
       mouvementService.traiterMouvementStock(article, annulationBon, magasinId, agentId, code_structure, transaction)
     )
-  );
+  ); */
 };
 
 /**
@@ -833,7 +562,7 @@ exports.traiterBonFournisseur = async (bon, articles, magasinId, agentId, code_s
     case 'commande':
       // COMMANDE FOURNISSEUR: Aucun impact immédiat sur le stock
       // Seulement vérification et réservation si nécessaire
-      if (['commandé', 'expédié'].includes(statut)) {
+      if (['validé'].includes(statut)) {
         await stockManager.verifierDisponibiliteStock(articles, magasinId, code_structure, 'commande', 'fournisseur', transaction);
         
         // Réservation pour préparation réception
@@ -843,7 +572,7 @@ exports.traiterBonFournisseur = async (bon, articles, magasinId, agentId, code_s
 
     case 'livraison':
       // LIVRAISON FOURNISSEUR: Impact sur le stock uniquement après validation
-      if (['livré', 'validé', 'facturé'].includes(statut)) {
+      if (['validé', 'facturé'].includes(statut)) {
         // Vérification stock
         await stockManager.verifierDisponibiliteStock(articles, magasinId, code_structure, 'livraison', 'fournisseur', transaction);
         
@@ -864,7 +593,7 @@ exports.traiterBonFournisseur = async (bon, articles, magasinId, agentId, code_s
 
     case 'retour':
       // RETOUR FOURNISSEUR: Sortie de stock après validation
-      if (['retourné', 'validé'].includes(statut)) {
+      if (['validé'].includes(statut)) {
         // Vérification stock disponible
         await stockManager.verifierDisponibiliteStock(articles, magasinId, code_structure, 'retour', 'fournisseur', transaction);
         
@@ -896,7 +625,6 @@ exports.traiterBonClient = async (bon, articles, magasinId, agentId, code_struct
 
   switch (typeBon) {
     case 'commande':
-      case 'vente':
       // COMMANDE CLIENT: Réservation immédiate du stock
       if (['validé'].includes(statut)) {
         // Vérification stock disponible
@@ -906,7 +634,7 @@ exports.traiterBonClient = async (bon, articles, magasinId, agentId, code_struct
         await reservationService.gererReservationsStock(articles, bon, magasinId, agentId, code_structure, transaction);
         
         // Mise à jour du client (création de la dette)
-        await statutManager.mettreAJourEntite(bon, 'client', bon.clientId, null, transaction);
+        //await statutManager.mettreAJourEntite(bon, 'client', bon.clientId, null, transaction);
       }
 
       // LIVRAISON/RÉALISATION: Impact physique sur le stock
@@ -923,7 +651,7 @@ exports.traiterBonClient = async (bon, articles, magasinId, agentId, code_struct
          // Mettre à jour la date de livraison
         await bon.update({ dateLivraisonReelle: new Date() }, { transaction });
         // Mise à jour du client
-        //await statutManager.mettreAJourEntite(bon, 'client', bon.clientId, null, transaction);
+        await statutManager.mettreAJourEntite(bon, 'client', bon.clientId, null, transaction);
       }
       if (['retourné'].includes(statut)) {
         // Créer un bon de retour automatique
@@ -945,11 +673,58 @@ exports.traiterBonClient = async (bon, articles, magasinId, agentId, code_struct
         await reservationService.gererReservationsStock(articles, bon, magasinId, agentId, code_structure, transaction);
         
         // Annuler la dette
-        const bonAnnule = { ...bon, montantTotal: -bon.montantTotal };
-        await statutManager.mettreAJourEntite(bonAnnule, 'client', bon.clientId, null, transaction);
+        //const bonAnnule = { ...bon, montantTotal: Math.abs(bon.montantTotal) };
+        //await statutManager.mettreAJourEntite(bonAnnule, 'client', bon.clientId, null, transaction);
       }
       break;
 
+    case 'vente':
+      if (['validé'].includes(statut)) {
+        // Vérification stock disponible
+        await stockManager.verifierDisponibiliteStock(articles, magasinId, code_structure, 'commande', 'client', transaction);
+        
+        // Réservation du stock
+        await reservationService.gererReservationsStock(articles, bon, magasinId, agentId, code_structure, transaction);
+        
+        // Mise à jour du client (création de la dette)
+        await statutManager.mettreAJourEntite(bon, 'client', bon.clientId, null, transaction);
+
+         // Mouvements physiques (sortie de stock)
+        await Promise.all(
+          articles.map(article =>
+            mouvementService.traiterMouvementStock(article, bon, magasinId, agentId, code_structure, transaction)
+          )
+        );
+      }
+       if (['retourné'].includes(statut)) {
+        // Créer un bon de retour automatique
+        await this.creerBonRetour(bon, articles, magasinId, agentId, code_structure, transaction);
+        
+        // Entrée du stock (retour client)
+        await Promise.all(
+          articles.map(article =>
+            mouvementService.traiterMouvementStock(article, bon, magasinId, agentId, code_structure, transaction)
+          )
+        );
+        
+        // Mise à jour du client (création d'avoir)
+        await statutManager.mettreAJourEntite(bon, 'client', bon.clientId, null, transaction);
+      }
+      
+      /* if (['annulé'].includes(statut)) {
+        // Libérer les réservations
+        await reservationService.gererReservationsStock(articles, bon, magasinId, agentId, code_structure, transaction);
+         // Entrée du stock (retour client)
+        await Promise.all(
+          articles.map(article =>
+            mouvementService.traiterMouvementStock(article, bon, magasinId, agentId, code_structure, transaction)
+          )
+        );
+        // Annuler la dette
+        const bonAnnule = { ...bon, montantTotal: -bon.montantTotal };
+        await statutManager.mettreAJourEntite(bonAnnule, 'client', bon.clientId, null, transaction);
+      } */
+      break;
     case 'retour':
       // RETOUR CLIENT: Entrée en stock après validation
       /* if (['retourné', 'validé'].includes(statut)) {
@@ -975,12 +750,12 @@ exports.traiterBonClient = async (bon, articles, magasinId, agentId, code_struct
         await statutManager.mettreAJourEntite(bon, 'client', bon.clientId, null, transaction);
       }
       
-      if (['retourné'].includes(statut)) {
+      /* if (['retourné'].includes(statut)) {
         // Marquer comme retourné (logistique)
         await bon.update({ dateLivraisonReelle: new Date() }, { transaction });
-      }
+      } */
       
-      if (['annulé'].includes(statut)) {
+      /* if (['annulé'].includes(statut)) {
         // Annuler l'avoir et sortir le stock
         const bonAnnule = { ...bon, montantTotal: -bon.montantTotal };
         await statutManager.mettreAJourEntite(bonAnnule, 'client', bon.clientId, null, transaction);
@@ -991,7 +766,7 @@ exports.traiterBonClient = async (bon, articles, magasinId, agentId, code_struct
             mouvementService.traiterMouvementStock(article, bon, magasinId, agentId, code_structure, transaction)
           )
         );
-      }
+      } */
       break;
 
     default:

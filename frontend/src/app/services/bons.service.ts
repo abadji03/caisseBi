@@ -74,6 +74,11 @@ export class BonsService {
       .pipe(catchError(err => this.handleError(err)));
   }
 
+  updateTypetBon(id: number, type: string): Observable<Bon> {
+    return this.http.patch<Bon>(`${API_URL}/${id}/type`, { type }, { headers: this.getHeaders() })
+      .pipe(catchError(err => this.handleError(err)));
+  }
+
   updateResteAPayer(id: number, montant: number): Observable<Bon> {
     return this.http.patch<Bon>(`${API_URL}/${id}/resteAPayer`, { montant }, { headers: this.getHeaders() })
       .pipe(catchError(err => this.handleError(err)));

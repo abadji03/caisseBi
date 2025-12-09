@@ -8,7 +8,8 @@ class MouvementService {
   determinerTypeMouvement(bon) {
     const matrice = {
       'commande-client': 'Sortie',
-      'commande-fournisseur': 'null',
+      'vente-client': 'Sortie',
+      'commande-fournisseur': null,
       'livraison-client': 'Sortie',
       'livraison-fournisseur': 'Entree',
       'retour-client': 'Entree',
@@ -30,10 +31,26 @@ class MouvementService {
     // if (!statutsAvecMouvement.includes(bon.statutBon)) return;
 
     const typeMouvement = this.determinerTypeMouvement(bon);
+
+    // Vérifier si le statut autorise le mouvement
+    const statutsAutorises = {
+      'commande-client': ['livré','annulé'], // Seulement livré pour commande client
+      'vente-client': ['validé','annulé'], // Immédiat pour vente validée
+      'livraison-fournisseur': ['validé', 'livré', 'facturé','annulé'],
+      'retour-client': ['validé', 'retourné','annulé'],
+      'retour-fournisseur': ['validé', 'retourné','annulé']
+    };
     
     // Si pas de mouvement défini, ne rien faire
-    if (!typeMouvement) {
+    /* if (!typeMouvement) {
       console.log(`⏭️ Aucun mouvement nécessaire pour ${bon.type}-${bon.typeEntite}`);
+      return;
+    } */
+    const cle = `${bon.type}-${bon.typeEntite}`;
+    const statutsPourMouvement = statutsAutorises[cle] || [];
+    
+    if (!statutsPourMouvement.includes(bon.statutBon) || !typeMouvement) {
+      console.log(`⏭️ Aucun mouvement nécessaire pour ${cle} avec statut ${bon.statutBon}`);
       return;
     }
     const stock = await stockManager.trouverOuCreerStock(

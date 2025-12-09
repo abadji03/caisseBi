@@ -26,21 +26,7 @@
             (input)="filterProduits()"
             [ngModelOptions]="{ standalone: true }"
           />
-          <!-- <ul
-            *ngIf="filteredProduits.length > 0 && searchInput"
-            class="list-group position-absolute"
-            style="width: 230px; z-index: 1000;"
-          >
-            <li *ngFor="let prod of filteredProduits" class="list-group-item bg-info">
-              <button
-                type="button"
-                class="list-group-item-action w-100 text-start bg-transparent border-0"
-                (click)="selectProduit(prod)"
-              >
-                {{ prod.designation }}
-              </button>
-            </li>
-          </ul> -->
+          
           <div *ngIf="filteredProduits.length > 0 && searchInput" class="dropdown-menu show w-25 bg-info">
             <button
               *ngFor="let prod of filteredProduits"
@@ -140,8 +126,8 @@
           <i [class]="isFormDisabled ? 'bi bi-pencil' : 'bi bi-check'"></i>
         </button> -->
         <!-- bouton valider -->
-        <button type="button" class="btn btn-success me-3" (click)="isFormDisabled ? toggleEdition() : enregistrerPanier()">
-          <i [class]="isFormDisabled ? 'bi bi-pencil' : 'bi bi-check'"></i>
+        <button type="button" class="btn btn-success me-3" (click)="onEditOrSave()">
+          <i [class]="isFormDisabled ? 'bi bi-pencil' : 'bi bi-check'"></i>{{ isFormDisabled ? 'Modifier' : 'Valider' }}
         </button>
         <button type="button" class="btn btn-warning" (click)="annulerPanier()"> <i class="bi bi-x-lg text-danger fb-1"></i></button>
       </div>

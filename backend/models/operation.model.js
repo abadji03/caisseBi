@@ -7,6 +7,7 @@ module.exports = (sequelize, DataTypes) => {
         'COMMANDE',
         'VERSEMENT',
         'FACTURE',
+        'VENTE',
         'TICKET_CAISSE',
         'RETOUR',
         'AVOIR',

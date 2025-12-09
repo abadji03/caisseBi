@@ -390,12 +390,12 @@
                                   </button> -->
                                   
                                   <button class="btn btn-outline-danger btn-sm me-1" (click)="genererTicketPaiementBon(bon)"
-                                          *ngIf="bon.statutBon === 'validé' || bon.statutBon === 'livré' || bon.statutBon === 'retourné'">
+                                          *ngIf="bon.statutBon === 'validé' && bon.type !=='livraison'">
                                     <i class="bi bi-x-circle"></i> Annuler
                                   </button>
                                   
                                   <button class="btn btn-outline-dark btn-sm me-1" (click)="genererTicketPaiementBon(bon)"
-                                          *ngIf="(bon.statutBon === 'validé' || bon.statutBon === 'livré') && bon.type !== 'retour'">
+                                          *ngIf="bon.statutBon === 'validé' && bon.type !== 'retour'">
                                     <i class="bi bi-arrow-counterclockwise"></i> Retouner
                                   </button>
 
