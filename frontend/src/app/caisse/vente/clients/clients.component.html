@@ -393,7 +393,7 @@
                                   </button>
                                   
                                   <button class="btn btn-outline-dark btn-sm me-1" (click)="retournerBon(bon)"
-                                         *ngIf="(bon.type === 'vente' && bon.statutBon === 'validé') ||(bon.type === 'commande' && bon.statutBon === 'livré')">
+                                         *ngIf="canReturn(bon)">
                                     <i class="bi bi-arrow-counterclockwise"></i> Retouner
                                   </button>
 

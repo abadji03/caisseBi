@@ -9,18 +9,18 @@
 
 .nav-tabs .nav-link:hover {
   border-bottom-color: #dee2e6;
-  color: #0d6efd;
+  color: #021a0ee5;
 }
 
 .nav-tabs .nav-link.active {
-  color: #0d6efd;
+  color: #021a0ee5;
   background-color: transparent;
-  border-bottom-color: #0d6efd;
+  border-bottom-color: #021a0ee5;
   font-weight: 600;
 }
 
 .tab-content {
-  min-height: 400px;
+  min-height: 200px;
   background-color: #f8f9fa;
 }
 
@@ -93,7 +93,7 @@
 }
 
 .form-control.bg-info {
-  background-color: #0dcaf0 !important;
+  background-color: #020f12 !important;
   color: white !important;
 }
 

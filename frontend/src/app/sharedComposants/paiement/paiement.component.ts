@@ -39,7 +39,7 @@ export class PaiementComponent implements OnInit, OnChanges {
   fichierSelectionne: File | null = null;
   generatedNumero: string = this.generateNumero();
   private fb = inject(FormBuilder);
-   maxFileSize = 10 * 1024 * 1024; // 10MB
+  maxFileSize = 10 * 1024 * 1024; // 10MB
 
   ngOnInit() {
     // Initialisation si nécessaire
@@ -126,12 +126,6 @@ export class PaiementComponent implements OnInit, OnChanges {
     if (file.type.includes('word')) return '📝';
     return '📎';
   }
-  /* onFileSelected(event: any): void {
-    const file = event.target.files[0];
-    if (file) {
-      this.fichierSelectionne = file;
-    }
-  } */
 
   submitPaiement(): void {
     if (this.paiementForm.valid) {

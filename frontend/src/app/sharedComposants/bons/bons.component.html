@@ -45,7 +45,8 @@
   <button type="button" class="nav-link" [class.active]="activeTab === 'logistique'" 
           [class.disabled]="!accessibleTabs['logistique']"
           (click)="setActiveTab('logistique')">
-    <i class="bi bi-truck me-2"></i>Logistique
+    <!-- <i class="bi bi-truck me-2"></i> -->
+    Finalisation
     <span *ngIf="!accessibleTabs['logistique']" class="badge bg-secondary ms-1">
       <i class="bi bi-lock"></i>
     </span>
@@ -109,21 +110,6 @@
       </div>
     </div>
 
-    <!-- Section TVA -->
-    <!-- <div *ngIf="typeBon !== 'retour'" class="row mb-3">
-      <div class="col-md-4">
-        <label for="tauxTVA" class="form-label">Taux TVA (%)</label>
-        <input id="tauxTVA" type="number" class="form-control" formControlName="tauxTVA" 
-               min="0" max="100" step="0.1">
-        <small class="form-text text-muted">Taux de TVA applicable</small>
-        <div *ngIf="bonForm.get('tauxTVA')?.touched && bonForm.get('tauxTVA')?.errors" 
-             class="text-danger small">
-          <span *ngIf="bonForm.get('tauxTVA')?.errors?.['min']">Le taux TVA doit être positif</span>
-          <span *ngIf="bonForm.get('tauxTVA')?.errors?.['max']">Le taux TVA ne peut pas dépasser 100%</span>
-        </div>
-      </div>
-    </div> -->
-
     <!-- Fichier joint -->
     <div *ngIf="showFileField && typeBon !== ''" class="row mb-3">
       <div class="col-md-6">
@@ -164,8 +150,8 @@
   <div *ngIf="activeTab === 'articles'" class="tab-content p-3 border border-top-0 rounded-bottom">
     <div class="alert alert-info">
       <i class="bi bi-info-circle me-2"></i>
-      Ajoutez les produits au panier. Pour un retour, vous pouvez soit ajouter des articles, 
-      soit spécifier un montant d'avoir.
+      Ajoutez les produits au panier. Ensuite valider le panier pour passer à la prochaine étape.
+      Pour modifier un panier déjà validé, cliquez sur "Modifier".
     </div>
 
     <!-- Mode mixte pour les retours -->
@@ -330,11 +316,11 @@
 
   <!-- Onglet Logistique -->
   <div *ngIf="activeTab === 'logistique'" class="tab-content p-3 border border-top-0 rounded-bottom">
-    <div class="row mb-3" *ngIf="typeBon === 'commande'">
+    <div class="row mb-3" *ngIf="typeBon === 'commande'; else noCommande">
       <div class="col-md-4">
         <label for="dateLivraisonPrevue" class="form-label">Date de livraison prévue</label>
         <input id="dateLivraisonPrevue" type="date" class="form-control" 
-               formControlName="dateLivraisonPrevue" [formGroup]="logistiqueForm">
+               formControlName="dateLivraisonPrevue" [formGroup]="logistiqueForm" [min]="today">
       </div>
       
       <div class="col-md-4">
@@ -351,6 +337,12 @@
                placeholder="Nom du transporteur">
       </div>
     </div>
+    <ng-template #noCommande>
+      <!-- Contenu affiché quand la condition est FAUSSE -->
+      <div class="alert alert-warning mt-2">
+        Finaliser l'enregistrement du bon.
+      </div>
+    </ng-template>
 
     <!-- Boutons d'action -->
     <div class="d-flex justify-content-between mt-4">

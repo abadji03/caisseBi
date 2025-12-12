@@ -61,7 +61,7 @@ export class FournisseursComponent implements OnInit, OnDestroy {
 
   // Variables pour la génération des numéros
   generatedNumeroPaiement: string = this.generateNumero();
-  generatedNumero = 'BON-' + Math.floor(Math.random() * 1000000); // Numéro généré
+  generatedNumero = this.generateNumeroBon(); // Numéro généré
 
   // Variables pour la gestion des actions
   textBoutonNewBon = 'Nouveau bon';
@@ -280,6 +280,25 @@ export class FournisseursComponent implements OnInit, OnDestroy {
     const random = Math.floor(Math.random() * 1000);
     return `NP-${timestamp}-${random}`;
   }
+
+  generateNumeroBon(): string {
+  const now = new Date();
+
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  //const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
+
+  // identifiant aléatoire 4 chiffres
+  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+
+  return `BON-${year}${month}${day}-${hours}${minutes}${seconds}-${random}`;
+}
+
 // fournisseurs.component.ts
 private enregistrerBon(bon: Bon, panier: Panier, fichier:File|null): void {
   if (!this.selectedFournisseur) {
@@ -459,6 +478,25 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
   get f() {
     return this.fournisseurForm.controls;
   }
+
+ canReturn(bon: any): boolean {
+  if (!bon) return false;
+
+  // Normaliser le statut et le type (trim + lowercase)
+  const statut = String(bon.statutBon ?? '').trim().toLowerCase();
+  const type = String(bon.type ?? '').trim().toLowerCase();
+
+  // Convertir avance en nombre proprement (gère "0", "0,00", null, undefined)
+  const avanceRaw = bon?.avance ?? 0;
+  const avanceStr = String(avanceRaw).trim().replace(',', '.'); // remplace la virgule si besoin
+  const avanceNum = isNaN(Number(avanceStr)) ? 0 : Number(avanceStr);
+
+  // DEBUG temporaire -> ouvre la console pour voir ce qui arrive
+  console.log('canReturn:', { avanceRaw, avanceStr, avanceNum, statut, type });
+
+  // Condition : statut "validé" ET type "livraison" ET avance === 0
+  return statut === 'validé' && type === 'livraison' && avanceNum === 0;
+}
 
   onRowSelect(fournisseur: Fournisseur): void {
     this.selectedFournisseur = fournisseur;
@@ -968,6 +1006,13 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
     
     console.log('Paiement à enregistrer reçu dans fournisseur:', event.paiement, 'Fichier:', event.fichier);
     // Enregistrer le paiement
+    if(event.paiement.montant <=0 
+        || event.paiement.montant === null 
+        || event.paiement.montant === undefined 
+        || (Number(this.selectedFournisseur?.montantAPayer || 0)-(Number(event.paiement.montant)))<0){
+        this.toastr.error('Le montant a versé est supérieur à la dette ou est mal renseigné (0 ou nombre négatif) ', 'Erreur');
+        return;
+      }
     this.enregistrerPaiement(event.paiement,event.fichier);
     this.showPaiementComponent = false;
   }
@@ -1015,7 +1060,7 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
     this.paiementService.create(formData).pipe(takeUntil(this.destroy$))
     .subscribe({
       next: (result) => {
-        console.log('Bon enregistré avec succès:', {
+        console.log('Paiement enregistré avec succès:', {
             paiementID: result?.id,
             montantPaye: result.montant,
             methodePaiement: result.methodePaiement,
@@ -1921,4 +1966,6 @@ private genererFacturePDF(bon: Bon): void {
 
   this.pdfGenerator.generateFacture(factureData);
 }
+
+
 }

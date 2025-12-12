@@ -33,7 +33,7 @@ class StatutManager {
     if (typeEntite === 'client') {
       bonData.clientId = clientId;
       if (bon.type === 'retour') {
-        bonData.statutBon = 'retourné';
+        //bonData.statutBon = 'retourné';
         bonData.montantAvoir = this.safeNumber(bonData.montantAvoir);
       }
       else if (bon.type === 'commande') {
@@ -91,7 +91,7 @@ class StatutManager {
     const regles = {
       'client': {
         'commande': ['validé','livré', 'annulé', 'retourné'], // Commande client impacte dette
-        'vente': ['validé', 'annulé', 'retourné'], // Vente à crédit impacte dette
+        'vente': ['validé', 'retourné'], // Vente à crédit impacte dette
         'retour': ['validé', 'annulé'] // Retour client impacte dette (avoir)
       },
       'fournisseur': {
@@ -118,7 +118,7 @@ class StatutManager {
     if (!client) return;
 
     // Utiliser safeNumber pour toutes les valeurs
-    const montant = this.safeNumber(bon.netAPayer) || this.safeNumber(bon.montantTotal) ||this.safeNumber(bon.montantAvoir);
+    const montant = this.safeNumber(bon.resteAPayer) || this.safeNumber(bon.netAPayer) || this.safeNumber(bon.montantTotal) ||this.safeNumber(bon.montantAvoir);
     const soldeActuel = this.safeNumber(client.solde);
 
     let nouveauSolde = soldeActuel;
@@ -142,19 +142,7 @@ class StatutManager {
       console.log(`🔁 Annulation bon ${bon.type} - Diminution dette: ${montant}`);
     }
     else if (bon.type === 'retour') {
-      // Retour = avoir pour le client (réduction de la dette)
-      //const nouveauSolde = soldeActuel - montant;
       
-      /* await client.update({
-        solde: nouveauSolde,
-        dateMiseAJour: new Date()
-      }, { transaction });
-
-      console.log('✅ Client - Retour traité:', {
-        ancienSolde: soldeActuel,
-        montantRetour: montant,
-        nouveauSolde: nouveauSolde
-      }); */
       if (bon.statutBon === 'validé') {
         nouveauSolde = soldeActuel - montant;
         operation = 'retour (avoir)';
@@ -371,7 +359,11 @@ class StatutManager {
     
     // Paiement = diminution de la dette
     const nouveauSolde = soldeActuel - montant;
+    if(nouveauSolde < 0){
+      console.warn(`Attention: Le solde du client (${clientId}) devient négatif après le paiement.`);
+    }
     
+    console.log(`Le solde du client (${clientId}) après paiement sera de ${nouveauSolde}.`);
     await client.update({
       solde: nouveauSolde,
       dateMiseAJour: new Date()
@@ -382,6 +374,7 @@ class StatutManager {
       montantCommande: montant,
       nouveauSolde: nouveauSolde
     });
+    
     
   }
 
@@ -405,6 +398,11 @@ class StatutManager {
     // Paiement = diminution de la dette
     const nouveauMontantAPayer = montantAPayerActuel - montant;
     
+    if(nouveauMontantAPayer < 0){
+      console.warn(`Attention: Le montant à payer du fournisseur (${fournisseurId}) devient négatif après le versement.`);
+    }
+    
+    console.log(`Le montant à payer du fournisseur (${fournisseurId}) après versement sera de ${nouveauMontantAPayer}.`); 
     await fournisseur.update({
       montantAPayer: nouveauMontantAPayer,
       dateMiseAJour: new Date()

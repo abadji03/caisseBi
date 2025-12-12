@@ -1,5 +1,6 @@
 const db = require('../../models');
 const stockManager = require('./stockManager');
+const statutManager = require('./statutManager');
 
 class ReservationService {
   /**
@@ -141,17 +142,17 @@ class ReservationService {
    */
   async reserverStockDirect(produitId, quantite, magasinId, code_structure, bonId, motif, transaction) {
     const stock = await stockManager.trouverOuCreerStock(produitId, magasinId, code_structure, transaction);
-
-    const quantiteDisponible = stock.quantiteTotale - stock.quantiteReservee;
-    if (quantite > quantiteDisponible) {
+    const qte = statutManager.safeNumber(quantite);
+    const quantiteDisponible = statutManager.safeNumber(stock.quantiteTotale )- statutManager.safeNumber(stock.quantiteReservee);
+    if (qte > quantiteDisponible) {
       throw new Error(`Réservation impossible: stock insuffisant pour le produit ${produitId}`);
     }
 
     await stock.update(
       {
-        quantiteReservee: stock.quantiteReservee + quantite,
+        quantiteReservee: statutManager.safeNumber(stock.quantiteReservee) + qte,
         dateDerniereMiseAJour: new Date(),
-        statutStock: stockManager.calculerStatutStock(stock.quantiteTotale, stock.quantiteReservee + quantite, stock)
+        statutStock: stockManager.calculerStatutStock(statutManager.safeNumber(stock.quantiteTotale), statutManager.safeNumber(stock.quantiteReservee) + qte, stock)
       },
       { transaction }
     );
@@ -162,14 +163,17 @@ class ReservationService {
    */
   async libererStockReserveDirect(produitId, quantite, magasinId, code_structure, bonId, motif, transaction) {
     const stock = await db.Stock.findOne({ where: { produitId, magasinId, code_structure }, transaction });
-    if (!stock || stock.quantiteReservee < quantite) return;
+    
+    const qte = statutManager.safeNumber(quantite);
 
-    const nouvelleReserve = Math.max(0, stock.quantiteReservee - quantite);
+    if (!stock || statutManager.safeNumber(stock.quantiteReservee) < qte) return;
+
+    const nouvelleReserve = Math.max(0, statutManager.safeNumber(stock.quantiteReservee) - qte);
     await stock.update(
       {
         quantiteReservee: nouvelleReserve,
         dateDerniereMiseAJour: new Date(),
-        statutStock: stockManager.calculerStatutStock(stock.quantiteTotale, nouvelleReserve, stock)
+        statutStock: stockManager.calculerStatutStock(statutManager.safeNumber(stock.quantiteTotale), nouvelleReserve, stock)
       },
       { transaction }
     );

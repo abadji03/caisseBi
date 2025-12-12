@@ -109,7 +109,7 @@ export class ClientsComponent implements OnInit, OnDestroy {
   
   // Variables pour la génération des numéros
   generatedNumeroPaiement: string = this.generateNumero();
-  generatedNumero = 'BON-' + Math.floor(Math.random() * 1000000); // Numéro généré
+  generatedNumero = this.generateNumeroBon();// Numéro généré
 
   // Données
   filteredBons: Bon[] = [];
@@ -230,33 +230,6 @@ export class ClientsComponent implements OnInit, OnDestroy {
       statut: ['true'], // valeur par défaut (visible uniquement si isEditMode == true)
     });
 
-    // Initialisation du formulaire réactif pour un bon
-    this.bonForm = this.fb.group({
-      numero: ['', Validators.required],
-      date: ['', Validators.required],
-      montant: [0, Validators.required],
-      statut: ['Impayé', Validators.required],
-      type: ['', Validators.required],
-      remise: [],
-      avance: [],
-      typePaiement: ['', Validators.required],
-      panier: this.fb.array([]),
-
-      // Champs spécifiques aux avoirs
-      refBonOrigine: [''],
-      motifAvoir: [''],
-      montantAvoir: [''],
-      dateBonOrigine: [''],
-      clientAvoir: [''],
-
-      // Champs spécifiques aux livraisons
-      adresseLivraison: [''],
-      livreur: [''],
-      telephoneLivreur: [''],
-      dateLivraison: [''],
-      instructionsLivraison: [''],
-    });
-
     // Initialisation du formulaire réactif pour un paiement
     this.paiementForm = this.fb.group({
       description: ['', Validators.required],
@@ -308,174 +281,6 @@ export class ClientsComponent implements OnInit, OnDestroy {
       this.selectedClient = null;
       this.openModal();
     }
-  }
-
-  loadClients(): void {
-    // Exemple de données statiques avec instanciation des objets Client
-    const noms = [
-      'Moussa Diop',
-      'Awa Ndiaye',
-      'Fatou Sow',
-      'Ibrahima Fall',
-      'Khadija Faye',
-      'Cheikh Ba',
-      'Oumar Sy',
-      'Adama Diallo',
-      'Seynabou Kane',
-      'Mamadou Gueye',
-    ];
-    const operationTypes = [
-      'COMMANDE',
-      'VERSEMENT',
-      'LIVRAISON',
-      'TICKET_CAISSE',
-      'RETOUR',
-      'AVOIR',
-      'FACTURE',
-    ] as const;
-    const methodePaiement = [
-      'ESPECES',
-      'MOBILE_MONEY',
-      'CARTE_BANCAIRE',
-      'VIREMENT',
-      'CHEQUE',
-    ] as const;
-    const produitsDisponibles = [
-      'Lait',
-      'Sucre',
-      'Riz',
-      'Farine',
-      'Huile',
-      'Pain',
-      'Fromage',
-      'Tomates',
-      'Jus',
-      'Café',
-    ];
-    const bonstuatut = [
-      'brouillon',
-      'livré',
-      'validé',
-      'retourné',
-      'facturé',
-      'annulé',
-    ] as const;
-    // Génération des Clients
-    for (let i = 1; i <= 10; i++) {
-      const client = new Client({
-        id: i,
-        nomComplet: noms[i - 1],
-        email: `client${i}@example.com`,
-        telephone: `77654${i}210`,
-        adresse: `Adresse ${i}`,
-        dateCreation: new Date(),
-        plafond: Math.floor(Math.random() * 50000),
-        solde: Math.floor(Math.random() * 50000) - 20000, // Peut être négatif
-        statut: Math.random() < 0.5, // 80% de chance d'être actif
-        bons: [],
-        paiements: [],
-      });
-
-      // Création du panier avec 3 à 4 produits
-      const nombreProduits = Math.floor(Math.random() * 2) + 3;
-      const panier: {
-        produits: Produits[]; // 👈 Déclare le type explicitement ici !
-        totalHT: number;
-        tva: number;
-        totalTTC: number;
-      } = {
-        produits: [], // ✅ Plus d'erreur
-        totalHT: 0,
-        tva: 0,
-        totalTTC: 0,
-      };
-
-      for (let k = 0; k < nombreProduits; k++) {
-        const prixUnitaire = Math.floor(Math.random() * 1000) + 500;
-        const quantite = Math.floor(Math.random() * 5) + 1;
-
-        const produit = {
-          id: k + 1,
-          designation: produitsDisponibles[Math.floor(Math.random() * produitsDisponibles.length)],
-          quantite: quantite,
-          prixVenteUnitaire: prixUnitaire,
-          categorieId: 0,
-          fournisseur: '',
-          magasin: '',
-          unite: 'Unité',
-        };
-
-        panier.produits.push(produit);
-        panier.totalHT += prixUnitaire * quantite;
-      }
-
-      panier.tva = panier.totalHT * 0.18;
-      panier.totalTTC = panier.totalHT + panier.tva;
-
-      for (let j = 1; j <= 5; j++) {
-        const bon = new Bon({
-          id: j,
-          numero: `B${i}${j}`,
-          dateBon: new Date(),
-          description: `Bon de commande ${j} du client ${i}`,
-          montantTotal: Math.floor(Math.random() * 20000) + 2000,
-          remise: Math.floor(Math.random() * 500) + 500,
-          netAPayer:
-            Math.floor(Math.random() * 20000) + 2000 - Math.floor(Math.random() * 500) + 500,
-          resteAPayer: Math.floor(Math.random() * 10000) + 1000,
-          statutBon: bonstuatut[Math.floor(Math.random() * bonstuatut.length)],
-          type: ['livraison', 'commande', 'retour', 'avoir'][Math.floor(Math.random() * 4)] as
-            | 'livraison'
-            | 'commande'
-            | 'retour'
-            | 'avoir',
-          numeroFacture: `FACT${i}${j}`,
-          clientId: client.id,
-          //panier: panier,
-        });
-
-        const paiement = new Paiement({
-          id: j,
-          numero: `V${i}${j}`,
-          date: new Date(),
-          description: `Paiement ${j} du client ${i}`,
-          montant: Math.floor(Math.random() * 10000) + 500,
-          //methodePaiement: Math.floor(Math.random() * 10) + 10, // ['Espèce', 'Carte', 'Mobile Money', 'Virement'][Math.floor(Math.random() * 4)],
-          clientId: client.id,
-          bonId: bon.id,
-        });
-
-        const operation = new Operation({
-          id: j,
-          clientId: client.id,
-          bonId: bon.id,
-          paiementId: paiement.id,
-          type: operationTypes[Math.floor(Math.random() * operationTypes.length)],
-          montantPaye: paiement.montant,
-          statut: bon.montantTotal - paiement.montant === 0 ? 'PAYE' : 'PARTIELLEMENT_PAYE',
-          dateOperation: new Date(),
-          moyenPaiement: methodePaiement[Math.floor(Math.random() * methodePaiement.length)],
-        });
-
-        client.bons.push(bon);
-        client.paiements.push(paiement);
-        // Ajouter l'opération dans le client
-        client.operations.push(operation);
-      }
-
-      this.clients.push(client);
-    }
-
-    this.filteredClients = [...this.clients]; // Initialiser la liste filtrée
-    this.updatefilteredClients();
-
-    // Mise à jour des bons et paiements
-    this.clients.forEach((client) => {
-      this.allBons.push(...client.bons);
-      this.allPaiements.push(...client.paiements);
-    });
-    this.filteredBons = [...this.allBons];
-    this.filteredPaiements = [...this.allPaiements];
   }
 
   // Méthode pour mettre à jour les clients affichés en fonction de la page courante
@@ -1237,9 +1042,16 @@ toggleDetails(index: number,operation: Operation) {
       if (this.selectedClient) {
         event.paiement.clientId = this.selectedClient.id;
       }
-      
-      console.log('Paiement à enregistrer reçu dans fournisseur:', event.paiement, 'Fichier:', event.fichier);
+      event.paiement.typePaiement = this.typeEntite;
+      console.log('Paiement à enregistrer reçu dans Client:', event.paiement, 'Fichier:', event.fichier);
       // Enregistrer le paiement
+      if(event.paiement.montant <=0 
+        || event.paiement.montant === null 
+        || event.paiement.montant === undefined 
+        || (Number(this.selectedClient?.solde || 0)-(Number(event.paiement.montant)))<0){
+        this.toastr.error('Le montant a versé est supérieur à la dette ou est mal renseigné (0 ou nombre négatif) ', 'Erreur');
+        return;
+      }
       this.enregistrerPaiement(event.paiement,event.fichier);
       this.showPaiementComponent = false;
     }
@@ -1253,10 +1065,11 @@ toggleDetails(index: number,operation: Operation) {
 
   private enregistrerPaiement(paiement: Paiement,fichier:File|null): void {
     if (!this.selectedClient) {
-      this.toastr.error('Aucun fournisseur sélectionné', 'Erreur');
+      this.toastr.error('Aucun client sélectionné', 'Erreur');
       return;
     }
 
+    
     // Étape 1 : compléter les données du paiement
     const paiementCompletData: Paiement = {
       ...paiement,
@@ -1403,6 +1216,44 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
     const random = Math.floor(Math.random() * 1000);
     return `NP-${timestamp}-${random}`;
   }
+
+  generateNumeroBon(): string {
+  const now = new Date();
+
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  //const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
+
+  // identifiant aléatoire 4 chiffres
+  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+
+  return `BON-${year}${month}${day}-${hours}${minutes}${seconds}-${random}`;
+}
+
+canReturn(bon: any): boolean {
+  if (!bon) return false;
+
+  // Normaliser le statut et le type (trim + lowercase)
+  const statut = String(bon.statutBon ?? '').trim().toLowerCase();
+  const type = String(bon.type ?? '').trim().toLowerCase();
+
+  // Convertir avance en nombre proprement (gère "0", "0,00", null, undefined)
+  const avanceRaw = bon?.avance ?? 0;
+  const avanceStr = String(avanceRaw).trim().replace(',', '.'); // remplace la virgule si besoin
+  const avanceNum = isNaN(Number(avanceStr)) ? 0 : Number(avanceStr);
+
+  // DEBUG temporaire -> ouvre la console pour voir ce qui arrive
+  console.log('canReturn:', { avanceRaw, avanceStr, avanceNum, statut, type });
+
+  // Condition : statut "validé" ET type "livraison" ET avance === 0
+  return statut === 'validé' && type === 'livraison' && avanceNum === 0;
+}
+
 
   /* onPanierAnnule(): void {
     //this.showPanierComponent = false;

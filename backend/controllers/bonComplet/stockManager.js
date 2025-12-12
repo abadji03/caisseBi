@@ -1,6 +1,5 @@
-
-
 const db = require('../../models');
+const statutManager = require('./statutManager');
 
 class StockManager {
   /**
@@ -18,8 +17,8 @@ class StockManager {
       }
 
       if (stock) {
-        const disponible = stock.quantiteTotale - stock.quantiteReservee;
-        if (typeBon === 'commande' && typeEntite === 'client' && disponible < article.quantite) {
+        const disponible = statutManager.safeNumber(stock.quantiteTotale) - statutManager.safeNumber(stock.quantiteReservee);
+        if (typeBon === 'commande' && typeEntite === 'client' && disponible < statutManager.safeNumber(article.quantite)) {
           throw new Error(`Stock insuffisant pour le produit ${article.produitId}. Disponible: ${disponible}`);
         }
       }
@@ -54,13 +53,13 @@ class StockManager {
    * Calculer le statut du stock selon quantités et seuils
    */
   calculerStatutStock(quantiteTotale, quantiteReservee, stock) {
-    const disponible = quantiteTotale - quantiteReservee;
+    const disponible = statutManager.safeNumber(quantiteTotale) - statutManager.safeNumber(quantiteReservee);
 
-    if (quantiteTotale === 0) return 'Rupture';
+    if (statutManager.safeNumber(quantiteTotale ) === 0) return 'Rupture';
     if (disponible === 0) return 'Réservé';
-    if (disponible <= stock.seuilAlerte) return 'Critique';
-    if (disponible <= stock.seuilReapprovisionnement) return 'À réapprovisionner';
-    if (disponible > (stock.seuilReapprovisionnement + stock.stockSecurite) * 2) return 'Surstock';
+    if (disponible <= statutManager.safeNumber(stock.seuilAlerte)) return 'Critique';
+    if (disponible <= statutManager.safeNumber(stock.seuilReapprovisionnement)) return 'À réapprovisionner';
+    if (disponible > (statutManager.safeNumber(stock.seuilReapprovisionnement) + statutManager.safeNumber(stock.stockSecurite)) * 2) return 'Surstock';
 
     return 'En stock';
   }
@@ -76,9 +75,9 @@ class StockManager {
       if (stock) {
         resultats.push({
           produitId: article.produitId || article.produit?.id,
-          quantiteTotale: stock.quantiteTotale,
-          quantiteReservee: stock.quantiteReservee,
-          quantiteDisponible: stock.quantiteTotale - stock.quantiteReservee,
+          quantiteTotale: statutManager.safeNumber(stock.quantiteTotale),
+          quantiteReservee: statutManager.safeNumber(stock.quantiteReservee),
+          quantiteDisponible: statutManager.safeNumber(stock.quantiteTotale) - statutManager.safeNumber(stock.quantiteReservee),
           statutStock: stock.statutStock
         });
       }

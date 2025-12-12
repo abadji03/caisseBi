@@ -6,6 +6,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.ENUM(
         'COMMANDE',
         'VERSEMENT',
+        'REGLEMENT',
         'FACTURE',
         'VENTE',
         'TICKET_CAISSE',

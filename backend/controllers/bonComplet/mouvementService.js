@@ -1,5 +1,6 @@
 const db = require('../../models');
 const stockManager = require('./stockManager');
+const statutManager = require('./statutManager');
 
 class MouvementService {
   /**
@@ -30,13 +31,23 @@ class MouvementService {
     // const statutsAvecMouvement = ['livré', 'validé', 'facturé', 'payé', 'retourné'];
     // if (!statutsAvecMouvement.includes(bon.statutBon)) return;
 
-    const typeMouvement = this.determinerTypeMouvement(bon);
+    let typeMouvement = this.determinerTypeMouvement(bon);
+
+    // 🔄 Si le bon est retourné → forcer mouvement d'entrée
+    if (bon.statutBon === 'retourné') {
+      if (typeMouvement === 'Sortie' && bon.typeEntite === 'client') {
+        typeMouvement = 'Entree';
+      }
+      else if (typeMouvement === 'Entree' && bon.typeEntite === 'fournisseur') {
+        typeMouvement = 'Sortie';
+      }
+    }
 
     // Vérifier si le statut autorise le mouvement
     const statutsAutorises = {
-      'commande-client': ['livré','annulé'], // Seulement livré pour commande client
-      'vente-client': ['validé','annulé'], // Immédiat pour vente validée
-      'livraison-fournisseur': ['validé', 'livré', 'facturé','annulé'],
+      'commande-client': ['livré','annulé','retourné'], // Seulement livré pour commande client
+      'vente-client': ['validé','annulé','retourné'], // Immédiat pour vente validée
+      'livraison-fournisseur': ['validé', 'livré', 'facturé','annulé','retourné'],
       'retour-client': ['validé', 'retourné','annulé'],
       'retour-fournisseur': ['validé', 'retourné','annulé']
     };
@@ -70,20 +81,20 @@ class MouvementService {
    */
   async executerMouvementPhysique(article, stock, magasinId,typeMouvement, bon, agentId, code_structure, transaction) {
     
-    const ancienneQuantite = Number(stock.quantiteTotale);
+    const ancienneQuantite = statutManager.safeNumber(stock.quantiteTotale);
     let nouvelleQuantite = ancienneQuantite;
 
     console.log(`Mouvement ${typeMouvement} - Produit: ${article.produitId}, Quantité: ${article.quantite}`);
 
     if (typeMouvement === 'Entree') {
-      nouvelleQuantite += article.quantite;
+      nouvelleQuantite += statutManager.safeNumber(article.quantite);
     } 
     else {
-      const stockDisponible = ancienneQuantite - Number(stock.quantiteReservee);
-      if (stockDisponible < article.quantite) {
+      const stockDisponible = ancienneQuantite - statutManager.safeNumber(stock.quantiteReservee);
+      if (stockDisponible < statutManager.safeNumber(article.quantite)) {
         throw new Error(`Stock insuffisant pour le produit ${article.produitId}. Disponible: ${stockDisponible}`);
       }
-      nouvelleQuantite -= Number(article.quantite);
+      nouvelleQuantite -= statutManager.safeNumber(article.quantite);
     }
 
     const updatedStoct = await stock.update(
