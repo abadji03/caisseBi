@@ -38,6 +38,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(50),
       //unique: true,
     },
+    tauxTVA: {
+      type: DataTypes.DECIMAL(12, 2),
+      defaultValue: 0,
+    },
     image: DataTypes.TEXT,
     dateCreation: {
       type: DataTypes.DATE,

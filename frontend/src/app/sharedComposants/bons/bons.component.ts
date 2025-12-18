@@ -24,6 +24,10 @@ export class BonsComponent implements OnChanges,OnInit {
   @Input() entiteNom?: string;
   @Input() showFileField = true;
   @Input() resetForm = false;
+
+  // Nouveaux flags pour le panier
+  @Input() tvaParArticle = true; // Default: TVA par article
+  @Input() remiseParArticle = false; // Default: remise globale
   
   // eslint-disable-next-line @angular-eslint/no-output-on-prefix
   @Output() onEnregistrerBon = new EventEmitter<BonAvecFichier>();
@@ -46,6 +50,9 @@ export class BonsComponent implements OnChanges,OnInit {
     logistique: false
   };
 
+  // Variables pour les modes TVA/Remise dans le bon
+  bonTvaParArticle = true;
+  bonRemiseParArticle = false;
   // Formulaires
   bonForm!: FormGroup;
   informationsForm!: FormGroup;
@@ -100,11 +107,23 @@ export class BonsComponent implements OnChanges,OnInit {
     this.updateTime();
     this.initForms();
     this.setupSubscriptions();
+    // Initialiser les modes selon les inputs
+    this.bonTvaParArticle = this.tvaParArticle;
+    this.bonRemiseParArticle = this.remiseParArticle;
   }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['resetForm'] && changes['resetForm'].currentValue === true) {
       this.reinitialiserFormulaire();
+    }
+
+    // Mettre à jour les modes si les inputs changent
+    if (changes['tvaParArticle']) {
+      this.bonTvaParArticle = this.tvaParArticle;
+    }
+    
+    if (changes['remiseParArticle']) {
+      this.bonRemiseParArticle = this.remiseParArticle;
     }
   }
 
@@ -120,7 +139,7 @@ export class BonsComponent implements OnChanges,OnInit {
       montantAvoir: [0, [Validators.min(0)]],
 
       // Montants
-      remise: [0, [Validators.min(0)]],
+      //remise: [0, [Validators.min(0)]],
       avance: [0, [Validators.min(0)]],
 
       // Conditions de paiement
@@ -128,7 +147,7 @@ export class BonsComponent implements OnChanges,OnInit {
       delaiPaiement: [30, [Validators.min(0)]],
 
       // TVA
-      tauxTVA: [18, [Validators.min(0), Validators.max(100)]]
+      //tauxTVA: [18, [Validators.min(0), Validators.max(100)]],
     });
 
     // Formulaire de logistique
@@ -176,7 +195,7 @@ export class BonsComponent implements OnChanges,OnInit {
       numeroBonOrigine: bon.numeroBonOrigine,
       motifsRetour: bon.motifsRetour,
       montantAvoir: bon.montantAvoir || 0,
-      remise: bon.remise || 0,
+      //remise: bon.remise || 0,
       avance: bon.avance || 0,
       conditionsPaiement: bon.conditionsPaiement || '30 jours fin de mois',
       delaiPaiement: bon.delaiPaiement || 30,
@@ -470,15 +489,16 @@ export class BonsComponent implements OnChanges,OnInit {
     // Réinitialiser les champs selon le type
     if (this.typeBon === 'retour') {
       this.bonForm.patchValue({
-        remise: 0,
+        //remise: 0,
         avance: 0,
-        tauxTVA: 0
+        //tauxTVA: 0
       });
       this.modeMontant = 'mixte';
       this.showFileField = false;
       // Ajouter des validateurs pour les retours
       this.bonForm.get('numeroBonOrigine')?.setValidators([Validators.required]);
       this.bonForm.get('motifsRetour')?.setValidators([Validators.required, Validators.minLength(10)]);
+    
     } 
     else {
       this.modeMontant = 'panier';
@@ -486,6 +506,7 @@ export class BonsComponent implements OnChanges,OnInit {
       // Retirer les validateurs pour les retours
       this.bonForm.get('numeroBonOrigine')?.clearValidators();
       this.bonForm.get('motifsRetour')?.clearValidators();
+
     }
 
     // Ajuster les champs requis selon le type
@@ -497,7 +518,32 @@ export class BonsComponent implements OnChanges,OnInit {
     this.resetTabAccessibility();
   }
 
-  
+    // Méthodes pour gérer les changements de mode
+  onTVAModeChange(mode: 'article' | 'global'): void {
+    const tvaParArticle = mode === 'article';
+    this.bonForm.patchValue({ tvaParArticle });
+    this.bonTvaParArticle = tvaParArticle;
+    
+    // Si on passe en mode global et que TVA est incluse, activer le champ taux TVA global
+    if (!tvaParArticle && this.bonForm.get('inclureTVA')?.value) {
+      this.bonForm.get('tauxTVAGlobal')?.enable();
+    } else if (tvaParArticle) {
+      this.bonForm.get('tauxTVAGlobal')?.disable();
+    }
+  }
+
+  onRemiseModeChange(mode: 'article' | 'global'): void {
+    const remiseParArticle = mode === 'article';
+    this.bonForm.patchValue({ remiseParArticle });
+    this.bonRemiseParArticle = remiseParArticle;
+    
+    // Si on passe en mode global, activer le champ remise globale
+    if (!remiseParArticle) {
+      this.bonForm.get('remiseGlobale')?.enable();
+    } else {
+      this.bonForm.get('remiseGlobale')?.disable();
+    }
+  }
 
   private resetTabAccessibility(): void {
     this.accessibleTabs = {
@@ -549,43 +595,84 @@ export class BonsComponent implements OnChanges,OnInit {
   }
 
   get montantHT(): number {
-    const remise = this.bonForm.get('remise')?.value || 0;
+    /* const remise = this.bonForm.get('remise')?.value || 0;
      if (this.typeBon === 'retour') {
       return 0;
     }
     const base = this.montantBase;
-    return Math.max(0, base - remise);
+    return Math.max(0, base - remise); */
+     // Pour les retours, pas de calcul HT
+    if (this.typeBon === 'retour') {
+      return 0;
+    }
+    
+    // Si le panier existe, utiliser son total HT
+    //if (this.panierData?.totalHT !== undefined) {
+    return this.panierData?.totalHT || 0;
+    //}
+    
+    
   }
 
   get montantTVA(): number {
     // Utiliser la TVA du panier si disponible
-  if (this.panierData?.tva !== undefined) {
+  /* if (this.panierData?.tva !== undefined) {
     return this.panierData.tva;
   }
     //const taux = this.bonForm.get('tauxTVA')?.value || 0;
     // Fallback si pas de panier
     const taux = this.panierData?.tauxTVA || this.bonForm.get('tauxTVA')?.value || 0;
-    return this.montantHT * (taux / 100);
+    return this.montantHT * (taux / 100); */
+    // Pour les retours, pas de TVA
+    if (this.typeBon === 'retour') {
+      return 0;
+    }
+    
+    // Utiliser la TVA du panier si disponible
+    return this.panierData?.tva || 0;
+    
+
   }
 
   get totalTTC(): number {
     
-    if (this.typeBon === 'retour') {
+    /* if (this.typeBon === 'retour') {
       return 0;
     }
     // Utiliser le total TTC du panier si disponible
     if (this.panierData?.totalTTC !== undefined) {
       return this.panierData.totalTTC;
     }
-    return this.montantHT + this.montantTVA;
+    return this.montantHT + this.montantTVA; */
+     // Pour les retours, pas de total TTC
+    if (this.typeBon === 'retour') {
+      return 0;
+    }
+    
+    // Utiliser le total TTC du panier si disponible
+      return this.panierData?.totalTTC || 0;
+    
   }
 
   // Ajouter un getter pour le taux TVA du panier
   get tauxTVA(): number {
-    return this.panierData?.tauxTVA || 0;
+    //return this.panierData?.tauxTVA || this.bonForm.get('tauxTVA')?.value || 0;
+     // Retourner 0 si pas de TVA, sinon le taux global du panier s'il existe
+    if (this.panierData?.tvaParArticle === false && this.panierData?.tauxTVA) {
+      return this.panierData.tauxTVA;
+    }
+    return 0; // Quand TVA par article, pas de taux unique
   }
   get resteAPayer(): number {
-    const total = this.montantHT; //this.totalBon;
+    /* const total = this.montantHT; //this.totalBon;
+    const avance = this.bonForm.get('avance')?.value || 0;
+    return Math.max(0, total - avance); */
+    // Pour les retours, pas de reste à payer
+    if (this.typeBon === 'retour') {
+      return 0;
+    }
+    
+    const total = this.totalTTC;
     const avance = this.bonForm.get('avance')?.value || 0;
     return Math.max(0, total - avance);
   }
@@ -597,14 +684,34 @@ export class BonsComponent implements OnChanges,OnInit {
     return this.totalTTC;
   } */
 
+    get montantRemise(): number {
+      // Pour les retours, pas de remise
+      if (this.typeBon === 'retour') {
+        return 0;
+      }
+      
+      // Calculer la remise totale à partir des articles du panier
+      if (this.panierData?.articles) {
+        return this.panierData.articles.reduce((total, article) => {
+          return total + (article.montantRemise || 0);
+        }, 0);
+      }
+      
+      return 0;
+    }
+
   // Validation améliorée
   validerMontants(): void {
     this.erreurs = [];
-    const montant = this.montantBase;
-    const remise = this.bonForm.get('remise')?.value || 0;
+     const totalTTC = this.totalTTC;
     const avance = this.bonForm.get('avance')?.value || 0;
 
-    // Validation de la remise
+     // Validation de l'avance uniquement
+    if (avance > totalTTC) {
+      this.erreurs.push(`L'avance (${avance} F CFA) ne peut pas dépasser le total TTC (${totalTTC} F CFA)`);
+    }
+
+    /* // Validation de la remise
     if (remise > montant) {
       this.erreurs.push(`La remise (${remise} F CFA) ne peut pas dépasser le montant du bon (${montant} F CFA)`);
     }
@@ -619,7 +726,7 @@ export class BonsComponent implements OnChanges,OnInit {
     const tauxTVA = this.tauxTVA;
     if (tauxTVA < 0 || tauxTVA > 100) {
       this.erreurs.push(`Le taux TVA doit être compris entre 0 et 100%`);
-    }
+    } */
   }
 
   // Dans BonComponent
@@ -691,7 +798,7 @@ private restaurerEtatPanier(): Panier | null {
       ...baseData,
       montantTotal: this.montantBase,
       montantAvoir: 0,
-      remise: formValue.remise || 0,
+      remise: this.montantRemise || 0,
       avance: formValue.avance || 0,
       netAPayer: this.totalTTC,
       resteAPayer: this.resteAPayer,
@@ -812,6 +919,8 @@ private restaurerEtatPanier(): Panier | null {
   onPanierEnregistre(panier: Panier): void {
     this.panierData = panier;
     this.showBonButtons = true;
+    // Mettre à jour le total panier
+    this.totalPanier = panier.totalHT || 0;
     this.updateTabAccessibility();
     setTimeout(() => {
     this.cdr.detectChanges();
@@ -870,7 +979,6 @@ private restaurerEtatPanier(): Panier | null {
       numeroBonOrigine: '',
       motifsRetour: '',
       montantAvoir: 0,
-      remise: 0,
       avance: 0,
       conditionsPaiement: '30 jours fin de mois',
       delaiPaiement: 30,

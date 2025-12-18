@@ -135,9 +135,12 @@ export class Produits {
   public agentId?: number; // Personne qui a ajouté le produit
   public dernierPrixAchat?: number; // Dernier prix d'achat connu
   public statut?: boolean; // Dernier prix d'achat connu
+  public tauxTVA = 0; // TVA par produit
+
 
   constructor(data?: Partial<Produits>) {
     Object.assign(this, data);
+    this.tauxTVA = this.tauxTVA || 0; // Valeur par défaut
     this.marge = (this.prixVenteUnitaire || 0) - (this.prixAchatUnitaire || 0);
     this.dateCreation = this.dateCreation ?? new Date();
   }

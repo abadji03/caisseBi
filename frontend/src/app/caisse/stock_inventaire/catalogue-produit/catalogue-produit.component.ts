@@ -78,6 +78,8 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
   // Liste des produits paginés
   checkedProducts = [];
 
+  taxe = 0;
+
   productsToRemove: Produits[] = [];
   isCheckedCase = false;
   showStockSection = false;
@@ -415,11 +417,13 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
 
         // Ouvrir la modal pour l'action entrée ou sortie
         this.openModal(this.actionType, this.selectedProduits);
-      } else if (this.actionType === 'statut') {
+      } 
+      else if (this.actionType === 'statut') {
         console.log(this.actionType);
         this.selectedProduits.statut = !this.selectedProduits.statut;
         this.toggleProduitStatus(this.selectedProduits, this.selectedProduits.statut);
-      } else {
+      } 
+      else {
         //console.log(`${action} Produit:`, this.selectedProduits);
         /* if(this.actionType === "code-barre"){
               this.generateBarcode();
@@ -453,6 +457,8 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
         return 'codeBarreModal';
       case 'image':
         return 'imageModal';
+      case 'taxe':
+        return 'numberModal';
       default:
         return '';
     }
@@ -465,6 +471,7 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
       } else {
         this.produitForm.reset();
       } */
+     this.taxe = produit ? produit.tauxTVA || 0 : 0;
     // Mettre à jour le texte du bouton avant d'ouvrir la modal
     console.log('Texte du bouton:', this.getButtonLabel()); // Vérifiez ici si la valeur est correcte
     if (produit) {
@@ -925,6 +932,14 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
     modal.show();
   }
 
+  openTaxeModal() {
+
+    // Ouvrir le modal avec Bootstrap
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const modal = new (window as any).bootstrap.Modal(document.getElementById('numberModal'));
+    modal.show();
+  }
+
   // Méthodes pour les actions
   editCategorie(categorie: CategorieProduits) {
     // Pré-remplir le formulaire avec les données de la catégorie
@@ -1003,6 +1018,40 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
             err.error?.message || 'Erreur lors de la mise à jour du statut du produit';
           this.toastr.error(this.errorMessage, err);
           //console.error(err);
+        },
+      });
+  }
+
+  creerOuMettreAJourTaux() {
+    if (!this.selectedProduits || !this.selectedProduits.id) return;
+
+    const tauxTva = this.taxe;
+
+    console.log('Taux TVA saisi :', tauxTva);
+
+    if (tauxTva < 0) {
+      this.toastr.error('Veuillez saisir un taux valide.');
+      return;
+    }
+    this.isLoading = true;
+    this.produitsServices
+      .updateTauxTVAProduit(this.selectedProduits.id, tauxTva)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.isLoading = false))
+      )
+      .subscribe({
+        next: () => {
+          console.log('Taux TVA mis à jour avec succès');
+          this.toastr.success('Taux créé/mis à jour avec succès !');
+          // Recharger les données ou mettre à jour localement si besoin
+          this.closeModal(this.actionType);
+          this.loadData();
+          this.isRowSelected = false;
+        },
+        error: (err) => {
+          console.error('Erreur lors de la création/mise à jour du taux TVA :', err); 
+          this.toastr.error(err.error.message || 'Erreur lors de la création/mise à jour');
         },
       });
   }
@@ -1317,5 +1366,15 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
   getQteById(id: number): number | 0 {
     const stock = this.stock.find((p) => p.produitId === id);
     return stock ? stock.quantiteTotale : 0; // On retourne `null` si la catégorie n'est pas trouvée
+  }
+
+  onTaxeChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.taxe = parseFloat(input.value);
+    console.log('Taxe modifiée :', this.taxe);
+  }
+  validerNombre() {
+  console.log('Nombre récupéré :', this.taxe);
+  this.creerOuMettreAJourTaux();
   }
 }

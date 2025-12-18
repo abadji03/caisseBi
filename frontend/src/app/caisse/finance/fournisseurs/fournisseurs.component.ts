@@ -479,6 +479,7 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
     return this.fournisseurForm.controls;
   }
 
+ // eslint-disable-next-line @typescript-eslint/no-explicit-any
  canReturn(bon: any): boolean {
   if (!bon) return false;
 

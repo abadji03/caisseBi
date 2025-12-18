@@ -156,6 +156,25 @@ exports.updateStatusProduit = async (req, res) => {
   }
 };
 
+exports.updateTauxTVAProduit = async (req, res) => {
+  try {
+    const produit = await Produit.findByPk(req.params.id);
+    if (!produit) return res.status(404).json({ message: 'Produit non trouvé' });
+
+    const { tauxTVA } = req.body;
+    if (tauxTVA < 0) {
+      return res.status(400).json({ message: 'Le taux de TVA doit être un nombre positif.' });
+    }
+
+    await produit.update({ tauxTVA });
+
+    res.json({ message: 'Statut du produit mis à jour', produit });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: 'Erreur lors de la mise à jour du statut', error: error.message });
+  }
+};
 //Récupérer tous les produits
 exports.getAllProduits = async (req, res) => {
   try {

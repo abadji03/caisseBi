@@ -204,7 +204,7 @@ exports.createBonComplet = async (req, res) => {
     }  
 
     // Créer ou mettre à jour l'opération pour le paiement si applicable
-    /* console.log('Création/mise à jour de l\'opération associée au paiement...');  
+    console.log('Création/mise à jour de l\'opération associée au paiement...');  
     if (paiementCree) {
       const operationPaiement = await operationController.createFromPaiement(paiementCree, transaction);
       console.log('💳 Opération de paiement:', {
@@ -212,7 +212,7 @@ exports.createBonComplet = async (req, res) => {
         type: operationPaiement.type,
         montant: operationPaiement.montantPaye
       });
-    }  */
+    }  
 
     // Vérifier et corriger les incohérences
     console.log('Vérification et synchronisation des opérations pour la structure:', code_structure);                                   

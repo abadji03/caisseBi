@@ -646,7 +646,7 @@ private generateTotals(totaux: any): any {
   }
 
 
-  private validateArticlesData(articles: ArticlePanier[]): ArticlePanier[] {
+  /* private validateArticlesData(articles: ArticlePanier[]): ArticlePanier[] {
   if (!articles || !Array.isArray(articles)) {
     return [];
   }
@@ -663,7 +663,44 @@ private generateTotals(totaux: any): any {
       total: this.safeNumber(article.prixUnitaire * article.quantite ) || 0,
       
     }));
+} */
+
+private validateArticlesData(articles: any[]): ArticlePanier[] {
+  if (!articles || !Array.isArray(articles)) {
+    return [];
+  }
+
+  return articles
+    .filter(article => article != null)
+    .map(articleData => {
+      // Créer une instance de ArticlePanier à partir des données
+      const articlePanier = new ArticlePanier({
+        id: articleData.id,
+        produitId: articleData.produitId,
+        panierId: articleData.panierId,
+        produit: articleData.produit || articleData.Produit,
+        prixUnitaire: this.safeNumber(articleData.prixUnitaire) || 0,
+        quantite: this.safeNumber(articleData.quantite) || 0,
+        prixVenteUnitaire: articleData.prixVenteUnitaire || 0,
+        prixAchatUnitaire: articleData.prixAchatUnitaire || 0,
+        stock: articleData.stock,
+        remise: articleData.remise || 0,
+        tauxTVA: articleData.tauxTVA || 0,
+        montantTVA: articleData.montantTVA,
+        montantRemise: articleData.montantRemise,
+        totalHT: articleData.totalHT,
+        totalTTC: articleData.totalTTC
+      });
+
+      // Calculer les totaux si nécessaire
+      if (!articleData.totalHT || !articleData.totalTTC) {
+        articlePanier.calculerTotauxArticle();
+      }
+
+      return articlePanier;
+    });
 }
+
 
 private validateOperationsData(operations: Operation[]): Operation[] {
   if (!operations || !Array.isArray(operations)) {

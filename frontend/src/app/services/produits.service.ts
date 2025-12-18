@@ -131,6 +131,16 @@ export class ProduitsService {
       { headers: this.getHeaders() },
     );
   }
+
+  //Mettre à jour le taux d’un produit
+  updateTauxTVAProduit(id: number, tauxTVA: number): Observable<Produits> {
+    console.log('Statut envoyé :', tauxTVA);
+    return this.http.patch<Produits>(
+      `${this.apiUrl}/produits/${id}/tauxTVA`,
+      { tauxTVA },
+      { headers: this.getHeaders() },
+    );
+  }
   updateStatutCategorie(id: number, statut: boolean) {
     return this.http.patch(
       `${this.apiUrl}/categories-produits/${id}/statut`,

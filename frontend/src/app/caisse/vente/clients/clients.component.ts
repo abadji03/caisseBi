@@ -1235,24 +1235,34 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
   return `BON-${year}${month}${day}-${hours}${minutes}${seconds}-${random}`;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 canReturn(bon: any): boolean {
   if (!bon) return false;
 
-  // Normaliser le statut et le type (trim + lowercase)
+  // Normaliser le statut et le type (trim + minuscule)
   const statut = String(bon.statutBon ?? '').trim().toLowerCase();
   const type = String(bon.type ?? '').trim().toLowerCase();
 
-  // Convertir avance en nombre proprement (gère "0", "0,00", null, undefined)
+  // Convertir l'avance en nombre proprement
   const avanceRaw = bon?.avance ?? 0;
-  const avanceStr = String(avanceRaw).trim().replace(',', '.'); // remplace la virgule si besoin
+  const avanceStr = String(avanceRaw).trim().replace(',', '.');
   const avanceNum = isNaN(Number(avanceStr)) ? 0 : Number(avanceStr);
 
-  // DEBUG temporaire -> ouvre la console pour voir ce qui arrive
-  console.log('canReturn:', { avanceRaw, avanceStr, avanceNum, statut, type });
+  // ------------- LOGIQUE METIER -------------
+  // Cas 1 : Vente validée → bouton visible seulement si avance == 0
+  if (type === 'vente' && statut === 'validé') {
+    return avanceNum === 0;
+  }
 
-  // Condition : statut "validé" ET type "livraison" ET avance === 0
-  return statut === 'validé' && type === 'livraison' && avanceNum === 0;
+  // Cas 2 : Commande livrée → bouton visible seulement si avance == 0
+  if (type === 'commande' && statut === 'livré') {
+    return avanceNum === 0;
+  }
+
+  // Autres cas → bouton caché par défaut
+  return false;
 }
+
 
 
   /* onPanierAnnule(): void {

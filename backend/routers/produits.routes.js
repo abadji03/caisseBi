@@ -10,6 +10,7 @@ router.get('/structure/:code_structure', produitCtrl.getProduitsByStructure);
 router.get('/:id', produitCtrl.getProduitById);
 router.get('/', produitCtrl.getAllProduits);
 router.patch('/:id/statut', produitCtrl.updateStatusProduit);
+router.patch('/:id/tauxTVA', produitCtrl.updateTauxTVAProduit);
 router.patch('/:id/image', upload.single('image'), produitCtrl.updateImageProduit);
 router.put('/:id/code-barre', produitCtrl.updateCodeBarreProduit);
 

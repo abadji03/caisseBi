@@ -94,7 +94,7 @@ export class CaisseComponent implements OnInit {
   /** Charger des données fictives */
   loadFakeData() {
     this.clients = [
-      {
+      /* {
         id: 1,
         nomComplet: 'Aliou Ndiaye',
         email: 'aliou@mail.com',
@@ -144,7 +144,7 @@ export class CaisseComponent implements OnInit {
         prixTotalVente: 800,
         description: 'Couscous sucré',
         codeBarre: '7891011',
-      },
+      }, */
     ];
 
     // Transactions journalières

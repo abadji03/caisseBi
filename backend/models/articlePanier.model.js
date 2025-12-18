@@ -18,13 +18,38 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: true,
     },
+     // 🔹 Remise
+    remise: {
+      type: DataTypes.DECIMAL(10, 2),
+      defaultValue: 0,
+    },
+
+    // 🔹 TVA
+    tauxTVA: {
+      type: DataTypes.DECIMAL(5, 2),
+      defaultValue: 0,
+    },
+
+    // 🔹 Montants calculés (historisation)
+    montantRemise: {
+      type: DataTypes.DECIMAL(10, 2),
+      defaultValue: 0,
+    },
+    totalHT: {
+      type: DataTypes.DECIMAL(10, 2),
+      defaultValue: 0,
+    },
+    montantTVA: {
+      type: DataTypes.DECIMAL(10, 2),
+      defaultValue: 0,
+    },
+    totalTTC: {
+      type: DataTypes.DECIMAL(10, 2),
+      defaultValue: 0,
+    },
+
   });
 
-  /* ArticlePanier.associate = models => {
-    ArticlePanier.belongsTo(models.Panier, { foreignKey: 'panierId', onDelete: 'CASCADE' });
-    ArticlePanier.belongsTo(models.Produit, { foreignKey: 'produitId', onDelete: 'CASCADE' });
-    ArticlePanier.belongsTo(models.Stock, { foreignKey: 'stockId', onDelete: 'SET NULL' });
-  }; */
 
   return ArticlePanier;
 };
