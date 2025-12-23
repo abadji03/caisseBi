@@ -19,7 +19,7 @@ export class Panier {
   tauxTVA = 0;
   typeEntite?:'client' | 'fournisseur';
   code_structure?:string;
-  statut: 'en_cours' | 'validé' | 'annulé' = 'en_cours';
+  statut: 'en_cours' | 'validé' | 'annulé'|'retourné' = 'en_cours';
   dateCreation: Date = new Date();
   dateMiseAJour: Date = new Date();
   detailsVisible = false; // Permet de gérer l'affichage des détails
@@ -30,58 +30,239 @@ export class Panier {
   tvaParArticle = true; // Par défaut, TVA par article
 
   constructor(data?: Partial<Panier>) {
-    Object.assign(this, data);
-    this.calculerTotals();
+    if (data) {
+      Object.assign(this, data);
+      // Recalculer les totaux après construction
+      this.convertirArticlesEnInstances(data);
+
+      this.calculerTotals();
+    }
+  }
+ // eslint-disable-next-line @typescript-eslint/no-explicit-any
+ private convertirArticlesEnInstances(data: any): void {
+    // Convertir ArticlePaniers (majuscule)
+    if (data.ArticlePaniers && Array.isArray(data.ArticlePaniers)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      this.ArticlePaniers = data.ArticlePaniers.map((item: any) => {
+        if (item instanceof ArticlePanier) {
+          return item;
+        } else {
+          return new ArticlePanier(item);
+        }
+      });
+    }
+    
+    // Convertir articles (minuscule)
+    if (data.articles && Array.isArray(data.articles)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      this.articles = data.articles.map((item: any) => {
+        if (item instanceof ArticlePanier) {
+          return item;
+        } else {
+          return new ArticlePanier(item);
+        }
+      });
+    }
+    
+    // Si les deux tableaux existent, on privilégie ArticlePaniers
+    if (this.ArticlePaniers && this.ArticlePaniers.length > 0) {
+      this.articles = [...this.ArticlePaniers];
+    } else if (this.articles && this.articles.length > 0) {
+      this.ArticlePaniers = [...this.articles];
+    }
   }
 
-  // Nouvelle méthode pour calculer les totaux
-  /* public calculerTotals(): void {
-    this.totalHT = this.articles.reduce((sum, article) => {
-      const quantite = article.quantite ?? 0;
-      const prix = article.prixUnitaire ?? 0;
-      return sum + prix * quantite;
-    }, 0);
+ /** UNIQUE méthode de calcul du panier */
+  calculerTotals(): void {
 
-    this.tva = this.totalHT * (this.tauxTVA / 100);
-    this.totalTTC = this.totalHT + this.tva;
-  } */
-
-  public calculerTotals(): void {
-    // Réinitialiser les totaux
+    // Reset
     this.totalHT = 0;
+    this.remise = 0;
     this.tva = 0;
     this.totalTTC = 0;
 
-    // Calculer les totaux par article d'abord
-    this.articles.forEach(article => {
-      article.calculerTotauxArticle();
-      this.totalHT += article.totalHT || 0;
-      this.tva += article.montantTVA || 0;
-      this.totalTTC += article.totalTTC || 0;
-    });
+    // 1. Calcul des articles
+    for (const article of this.articles) {
+      article.calculerTotaux(
+        this.tvaParArticle,
+        this.remiseParArticle,
+        this.tauxTVA, 
+        this.remiseGlobale
+      );
 
-    // Appliquer la remise globale si elle existe
-    if (this.remiseGlobale > 0 && !this.remiseParArticle) {
-      const remiseMontant = this.totalHT * (this.remiseGlobale / 100);
-      this.totalTTC -= remiseMontant;
+      this.totalHT += (article.totalHT ?? 0);
+      this.tva += article.montantTVA ?? 0;
+      this.remise += article.montantRemise ?? 0;
     }
 
-    // Appliquer la TVA globale si nécessaire
-    if (this.tvaParArticle === false && this.tauxTVA > 0) {
+    // 2. Remise globale (SI PAS par article)
+    if (!this.remiseParArticle && this.remiseGlobale > 0) {
+      const remiseGlobaleMontant = this.totalHT * (this.remiseGlobale / 100);
+
+      this.remise += remiseGlobaleMontant;
+      this.totalHT -= remiseGlobaleMontant;
+    }
+
+    // 3. TVA globale (SI PAS par article)
+    if (!this.tvaParArticle && this.tauxTVA > 0) {
       this.tva = this.totalHT * (this.tauxTVA / 100);
-      this.totalTTC = this.totalHT + this.tva;
-      
-      // Réappliquer la remise globale après TVA si nécessaire
-      if (this.remiseGlobale > 0 && !this.remiseParArticle) {
-        const remiseMontant = this.totalHT * (this.remiseGlobale / 100);
-        this.totalTTC -= remiseMontant;
-      }
     }
+
+    // 4. Total TTC
+    this.totalTTC = this.totalHT + this.tva;
+
+    // 5. Reste à payer
+    /* this.resteAPayer = Math.max(
+      this.totalTTC - this.avance,
+      0
+    ); */
+  }
+   ajouterArticle(article: ArticlePanier): void {
+    this.articles.unshift(new ArticlePanier(article));
+    this.calculerTotals();
+  }
+
+  incrementerQuantiteArticle(index: number): void {
+    if (index >= 0 && index < this.articles.length) {
+      this.articles[index].quantite++;
+      this.articles[index].calculerTotaux(this.tvaParArticle, this.remiseParArticle, this.tauxTVA, this.remiseGlobale);
+      this.calculerTotals();
+    }
+  }
+
+  supprimerArticle(index: number): ArticlePanier | null {
+    if (index >= 0 && index < this.articles.length) {
+      const articleSupprime = this.articles.splice(index, 1)[0];
+      this.calculerTotals();
+      return articleSupprime;
+    }
+    return null;
+  }
+
+  mettreAJourArticle(index: number, article: Partial<ArticlePanier>): void {
+    if (index >= 0 && index < this.articles.length) {
+      Object.assign(this.articles[index], article);
+      this.articles[index].calculerTotaux(this.tvaParArticle, this.remiseParArticle, this.tauxTVA, this.remiseGlobale);
+      this.calculerTotals();
+    }
+  }
+
+  trouverArticleIndex(produitId: number): number {
+    return this.articles.findIndex(article => article.produitId === produitId);
   }
 
   public annuler(): void {
     this.statut = 'annulé';
   }
+
+  get resteAPayer(): number {
+    return Math.max(this.totalTTC - this.avance, 0);
+  }
+
+  get isValid(): boolean {
+    return this.articles.length > 0 && 
+           this.articles.every(article => article.quantite > 0 && article.prixUnitaire >= 0);
+  }
+
+  // Nouvelle méthode pour obtenir tous les articles (fusion de articles et ArticlePaniers)
+get tousLesArticles(): ArticlePanier[] {
+  console.log('🔍 get tousLesArticles appelé:', {
+    hasArticlePaniers: !!this.ArticlePaniers,
+    articlePaniersType: typeof this.ArticlePaniers,
+    articlePaniersLength: this.ArticlePaniers?.length,
+    hasArticles: !!this.articles,
+    articlesLength: this.articles?.length
+  });
+
+  // 1. Vérifier ArticlePaniers (avec la majuscule)
+  if (this.ArticlePaniers && Array.isArray(this.ArticlePaniers)) {
+    console.log('📦 ArticlePaniers trouvé:', this.ArticlePaniers.length, 'articles');
+    
+    // Convertir en instances d'ArticlePanier si nécessaire
+    const articles = this.ArticlePaniers.map(item => {
+      if (item instanceof ArticlePanier) {
+        return item;
+      } else {
+        // Si c'est un objet brut, le convertir en ArticlePanier
+        return new ArticlePanier(item);
+      }
+    });
+    
+    if (articles.length > 0) {
+      console.log('✅ Retourne ArticlePaniers convertis');
+      return articles;
+    }
+  }
+
+  // 2. Vérifier articles (minuscule)
+  if (this.articles && Array.isArray(this.articles)) {
+    console.log('📦 articles trouvé:', this.articles.length, 'articles');
+    
+    // Convertir en instances d'ArticlePanier si nécessaire
+    const articles = this.articles.map(item => {
+      if (item instanceof ArticlePanier) {
+        return item;
+      } else {
+        return new ArticlePanier(item);
+      }
+    });
+    
+    if (articles.length > 0) {
+      console.log('✅ Retourne articles convertis');
+      return articles;
+    }
+  }
+
+  // 3. Vérifier si ArticlePaniers est undefined mais qu'il y a une propriété avec un nom différent
+  // Par exemple, si l'API renvoie "articlePaniers" avec une minuscule
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const anyThis = this as any;
+  const possibleKeys = ['articlePaniers', 'article_paniers', 'items', 'lignes'];
+  
+  for (const key of possibleKeys) {
+    if (anyThis[key] && Array.isArray(anyThis[key])) {
+      console.log(`🔍 Propriété "${key}" trouvée:`, anyThis[key].length, 'articles');
+      
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const articles = anyThis[key].map((item: any) => new ArticlePanier(item));
+      if (articles.length > 0) {
+        console.log(`✅ Retourne articles de ${key}`);
+        return articles;
+      }
+    }
+  }
+
+  console.log('⚠️ Aucun article trouvé, retourne tableau vide');
+  return [];
+}
+
+  clone(): Panier {
+  return new Panier({
+    id: this.id,
+    clientId: this.clientId,
+    bonId: this.bonId,
+    ArticlePaniers: this.ArticlePaniers ? this.ArticlePaniers.map(a => a.clone()) : [],
+    articles: this.articles.map(a => a.clone()),
+    totalHT: this.totalHT,
+    tva: this.tva,
+    totalTTC: this.totalTTC,
+    remiseGlobale: this.remiseGlobale,
+    remise: this.remise,
+    avance: this.avance,
+    tauxTVA: this.tauxTVA,
+    typeEntite: this.typeEntite,
+    code_structure: this.code_structure,
+    statut: this.statut,
+    dateCreation: this.dateCreation,
+    dateMiseAJour: this.dateMiseAJour,
+    detailsVisible: this.detailsVisible,
+    magasinId: this.magasinId,
+    agentId: this.agentId,
+    paiements: this.paiements,
+    remiseParArticle: this.remiseParArticle,
+    tvaParArticle: this.tvaParArticle
+  }); 
+}
 }
 
 export class ArticlePanier {
@@ -90,14 +271,19 @@ export class ArticlePanier {
   panierId?: number;
   Produit?: Produits;
   produit?: Produits;
+  
   prixUnitaire!: number; // Prix utilisé pour les calculs (prix de vente ou d'achat selon typeEntite)
   quantite!: number;
   prixVenteUnitaire!: number;
   prixAchatUnitaire!: number;
+
   code_structure?:string;
+
   stock?: Stock;
+
   remise?: number = 0; // Remise par article
   tauxTVA?: number = 0; // TVA spécifique à l'article
+
   montantTVA?: number = 0; // TVA calculée pour cet article
   montantRemise?: number = 0; // Remise calculée pour cet article
   totalHT?: number = 0; // Total HT pour cet article
@@ -105,7 +291,67 @@ export class ArticlePanier {
 
   constructor(data?: Partial<ArticlePanier>) {
     Object.assign(this, data);
-    this.calculerTotauxArticle();
+    //this.calculerTotauxArticle();
+  }
+  /** Calcul STRICTEMENT local à l’article */
+  calculerTotaux(appliquerTVA: boolean, appliquerRemise: boolean, tauxTVAGlobal?: number, remiseGlobale?: number): void {
+    
+    console.log('🧮 ArticlePanier.calculerTotaux() - Début', {
+      appliquerTVA,
+      appliquerRemise,
+      tauxTVAGlobal,
+      remiseGlobale,
+      prixUnitaire: this.prixUnitaire,
+      quantite: this.quantite,
+      tauxTVA: this.tauxTVA,
+      remise: this.remise
+    });
+    // 1. HT brut
+    const htBrut = this.prixUnitaire * this.quantite;
+    console.log('📊 HT brut:', htBrut, '=', this.prixUnitaire, '*', this.quantite);
+
+    // 2. Calcul de la remise
+    if (appliquerRemise && this.remise && this.remise > 0) {
+      // Remise par article
+      this.montantRemise = htBrut * (this.remise / 100);
+    } 
+    else if (!appliquerRemise && remiseGlobale && remiseGlobale > 0) {
+      // Part de la remise globale pour cet article (proportionnelle)
+      const proportion = htBrut > 0 ? htBrut / htBrut : 0;
+      this.montantRemise = htBrut * (remiseGlobale / 100) * proportion;
+    } 
+    else {
+      this.montantRemise = 0;
+    }
+
+    const htNet = htBrut - (this.montantRemise || 0);
+
+    // 3. Calcul de la TVA
+    if (appliquerTVA && this.tauxTVA && this.tauxTVA > 0) {
+      // TVA par article
+      this.montantTVA = htNet * (this.tauxTVA / 100);
+    } 
+    else if (!appliquerTVA && tauxTVAGlobal && tauxTVAGlobal > 0) {
+      // TVA globale appliquée à la part HT de cet article
+      this.montantTVA = htNet * (tauxTVAGlobal / 100);
+    } else {
+      this.montantTVA = 0;
+    }
+
+    // 4. Totaux
+    this.totalHT = htNet;
+    this.totalTTC = htNet + (this.montantTVA || 0);
+  }
+
+  get isValid(): boolean {
+    return this.produitId != null && 
+           this.quantite > 0 && 
+           this.prixUnitaire >= 0;
+  }
+
+  // Méthode pour cloner un article
+  clone(): ArticlePanier {
+    return new ArticlePanier({...this});
   }
   public calculerTotauxArticle(): void {
     // Calcul du total HT

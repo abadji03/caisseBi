@@ -28,8 +28,8 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: 0,
     },
     statut: {
-      type: DataTypes.ENUM('en_cours', 'validé', 'annulé'),
-      defaultValue: 'EN_COURS',
+      type: DataTypes.ENUM('en_cours', 'validé', 'annulé','retourné'),
+      defaultValue: 'en_cours',
     },
     dateCreation: {
       type: DataTypes.DATE,

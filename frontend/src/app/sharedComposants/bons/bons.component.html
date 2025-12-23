@@ -4,6 +4,10 @@
   <span>📅 Heure: {{ currentTime }}</span>
   <span>📄 Numéro : <strong>{{ generatedNumero }}</strong></span>
 </div>
+<!-- Ajoutez ce bouton quelque part dans votre template -->
+<button type="button" class="btn btn-info btn-sm mt-2" (click)="debugCurrentState()">
+  <i class="bi bi-bug"></i> Debug State
+</button>
 
 <!-- Affichage des erreurs -->
 <div *ngIf="erreurs.length > 0" class="alert alert-danger">
@@ -172,7 +176,6 @@
       [produitsDisponibles]="produitsDisponibles"
       [showPanierSection]="showPanier"
       [titre]="'Panier du bon'"
-      [inclureTVA]="true"
       [modeCompact]="true"
       [showRemiseField]="true"
       [showHeader]="false"
@@ -186,6 +189,7 @@
       [resetPanier]="resetPanierTrigger" 
       [showAvanceField]="false" 
       (onEnregistrer)="onPanierEnregistre($event)"
+      (onPanierStatutChange)="onPanierEnregistre($event)" 
       (onAnnuler)="onPanierAnnule()"
       (totalPanierChange)="onTotalPanierChange($event)"
     ></app-panier>
@@ -367,7 +371,7 @@
         </button>
         
         <button type="submit" class="btn btn-success" 
-                [disabled]="!bonForm.valid || erreurs.length > 0">
+                [disabled]="!bonForm.valid || erreurs.length > 0 || !panierValide">
           <i class="bi bi-floppy2-fill me-1"></i> Enregistrer le Bon
         </button>
       </div>

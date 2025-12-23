@@ -19,7 +19,6 @@ import { FournisseursService } from '../../../services/fournisseurs.service';
 import { ToastrService } from 'ngx-toastr';
 import { finalize, forkJoin,Subject, takeUntil } from 'rxjs';
 import { normalize } from '../../../utils/string-utils';
-import { BonComponent } from '../../../sharedComposants/bon/bon.component';
 import {  Panier } from '../../../modeles/panier.model';
 import { ProduitsService } from '../../../services/produits.service';
 import { StockInventaireService } from '../../../services/stock-inventaire.service';
@@ -39,7 +38,7 @@ import { BonsComponent } from '../../../sharedComposants/bons/bons.component';
 @Component({
   selector: 'app-fournisseurs',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, BonComponent, PaiementComponent, BonsComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, PaiementComponent, BonsComponent],
   templateUrl: './fournisseurs.component.html',
   styleUrl: './fournisseurs.component.css',
 })

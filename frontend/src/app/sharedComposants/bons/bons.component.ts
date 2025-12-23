@@ -80,6 +80,8 @@ export class BonsComponent implements OnChanges,OnInit {
   showPanier = true;
   panierData: Panier | null = null;
 
+  panierValide = false; // Indique si le panier est validé
+
   today: string = new Date().toISOString().split('T')[0];
 
   // Brouillons
@@ -152,10 +154,10 @@ export class BonsComponent implements OnChanges,OnInit {
 
     // Formulaire de logistique
     this.logistiqueForm = this.fb.group({
-      dateLivraisonPrevue: [''],
-      pointLivraison: [''],
-      transporteur: ['']
-    });
+    dateLivraisonPrevue: [''],
+    pointLivraison: [''],
+    transporteur: ['']
+  });
   }
 
   private setupSubscriptions(): void {
@@ -227,7 +229,7 @@ export class BonsComponent implements OnChanges,OnInit {
     
     // Tab Paiement accessible si les articles sont valides
     // Tab Paiement accessible si les articles sont valides
-    this.accessibleTabs['paiement'] = this.isArticlesTabValid();
+    this.accessibleTabs['paiement'] = this.isArticlesTabValid() && this.panierValide;;
     
     // Tab Logistique accessible si le paiement est valide
     // Tab Logistique accessible si le paiement est valide
@@ -254,12 +256,12 @@ export class BonsComponent implements OnChanges,OnInit {
   private isArticlesTabValid(): boolean {
     if (this.typeBon === 'retour') {
       // Pour un retour, soit des articles, soit un montant
-      const hasArticles = this.panierData && this.panierData.articles.length > 0;
+      const hasArticles = this.panierData && (this.panierData.articles.length ?? 0)> 0;
       const montantAvoir = this.bonForm.get('montantAvoir')?.value || 0;
       return hasArticles || montantAvoir > 0;
     } else {
       // Pour les autres types, des articles sont requis
-      return this.panierData !== null && this.panierData.articles.length > 0;
+      return this.panierValide && this.panierData !== null && (this.panierData.articles.length ?? 0)> 0;
     }
   }
 
@@ -278,12 +280,7 @@ export class BonsComponent implements OnChanges,OnInit {
 
   // Gestion des tabs
   setActiveTab(tab: 'informations' | 'articles' | 'paiement' | 'logistique'): void {
-    /* this.activeTab = tab;
     
-    // Si on passe à l'onglet articles, on montre le panier
-    if (tab === 'articles') {
-      this.showPanier = true;
-    } */
    if (this.activeTab === 'articles' && this.panierData) {
       this.sauvegarderEtatPanier();
     }
@@ -325,7 +322,7 @@ export class BonsComponent implements OnChanges,OnInit {
       case 'informations':
         return this.validateInformationsTab();
       case 'articles':
-        return this.validateArticlesTab();
+        return this.validateArticlesTab() && this.panierValide;
       case 'paiement':
         return this.validatePaiementTab();
       default:
@@ -344,6 +341,8 @@ export class BonsComponent implements OnChanges,OnInit {
 
   // Navigation entre tabs
   nextTab(): void {
+     // Afficher l'état avant de changer de tab
+  this.debugCurrentState();
     // eslint-disable-next-line @typescript-eslint/array-type
     const tabs: Array<'informations' | 'articles' | 'paiement' | 'logistique'> = 
       ['informations', 'articles', 'paiement', 'logistique'];
@@ -415,7 +414,7 @@ export class BonsComponent implements OnChanges,OnInit {
 
   private validateArticlesTab(): boolean {
     if (this.typeBon === 'retour') {
-      const hasArticles = this.panierData && this.panierData.articles.length > 0;
+      const hasArticles = this.panierData && (this.panierData.articles.length ?? 0) > 0;
       const montantAvoir = this.bonForm.get('montantAvoir')?.value || 0;
       
       if (!hasArticles && montantAvoir <= 0) {
@@ -425,7 +424,13 @@ export class BonsComponent implements OnChanges,OnInit {
       
       return true;
     } else {
-      if (!this.panierData || this.panierData.articles.length === 0) {
+
+      // Vérifier que le panier existe et est validé
+      if (!this.panierValide) {
+        //this.toastr.warning('Veuillez d\'abord valider le panier', 'Panier non validé');
+        return false;
+      }
+      if (!this.panierData || (this.panierData.articles.length ?? 0) === 0) {
         //this.toastr.error('Veuillez ajouter au moins un article au panier', 'Erreur de validation');
         return false;
       }
@@ -608,12 +613,69 @@ export class BonsComponent implements OnChanges,OnInit {
     
     // Si le panier existe, utiliser son total HT
     //if (this.panierData?.totalHT !== undefined) {
-    return this.panierData?.totalHT || 0;
+    //return this.panierData?.totalHT || 0;
+    const montantHT = this.panierData?.totalHT || 0;
+  
+    /* this.debugLog('get montantHT', {
+      panierData: this.panierData,
+      totalHT: montantHT,
+      typeBon: this.typeBon
+    }); */
+    
+    return montantHT;
     //}
     
     
   }
 
+  get montantRemise(): number {
+  // Pour les retours, pas de remise
+  /* if (this.typeBon === 'retour') {
+    this.debugLog('get montantRemise - Retour', { montantRemise: 0 });
+    return 0;
+  }
+  
+  // Retourner la remise totale du panier
+  if (this.panierData?.remise !== undefined) {
+    return this.panierData.remise;
+  }
+  
+  // Fallback : calculer à partir des articles
+  if (this.panierData?.articles) {
+    return this.panierData.articles.reduce((total, article) => {
+      return total + (article.montantRemise || 0);
+    }, 0);
+  }
+  
+  return 0; */
+  let montantRemise = 0;
+  
+  if (this.typeBon === 'retour') {
+    this.debugLog('get montantRemise - Retour', { montantRemise: 0 });
+    return 0;
+  }
+  
+  // Vérifier d'abord la remise du panier
+  if (this.panierData?.remise !== undefined) {
+    montantRemise = this.panierData.remise;
+    this.debugLog('get montantRemise - Depuis panierData.remise', {
+      montantRemise: montantRemise,
+      panierDataRemise: this.panierData.remise
+    });
+  } else if (this.panierData?.articles) {
+    // Calculer à partir des articles
+    montantRemise = this.panierData.articles.reduce((total, article) => {
+      return total + (article.montantRemise || 0);
+    }, 0);
+    
+    /* this.debugLog('get montantRemise - Calcul depuis articles', {
+      montantRemise: montantRemise,
+      articlesCount: this.panierData.articles.length
+    }); */
+  }
+  
+  return montantRemise;
+}
   get montantTVA(): number {
     // Utiliser la TVA du panier si disponible
   /* if (this.panierData?.tva !== undefined) {
@@ -629,7 +691,16 @@ export class BonsComponent implements OnChanges,OnInit {
     }
     
     // Utiliser la TVA du panier si disponible
-    return this.panierData?.tva || 0;
+    //return this.panierData?.tva || 0;
+     const montantTVA = this.panierData?.tva || 0;
+  
+   /*  this.debugLog('get montantTVA', {
+      panierData: this.panierData,
+      tva: montantTVA,
+      typeBon: this.typeBon
+    }); */
+    
+    return montantTVA;
     
 
   }
@@ -650,7 +721,16 @@ export class BonsComponent implements OnChanges,OnInit {
     }
     
     // Utiliser le total TTC du panier si disponible
-      return this.panierData?.totalTTC || 0;
+      //return this.panierData?.totalTTC || 0;
+       const totalTTC = this.panierData?.totalTTC || 0;
+  
+      /* this.debugLog('get totalTTC', {
+        panierData: this.panierData,
+        totalTTC: totalTTC,
+        typeBon: this.typeBon
+      }); */
+      
+      return totalTTC;
     
   }
 
@@ -658,23 +738,52 @@ export class BonsComponent implements OnChanges,OnInit {
   get tauxTVA(): number {
     //return this.panierData?.tauxTVA || this.bonForm.get('tauxTVA')?.value || 0;
      // Retourner 0 si pas de TVA, sinon le taux global du panier s'il existe
-    if (this.panierData?.tvaParArticle === false && this.panierData?.tauxTVA) {
+    /* if (this.panierData?.tvaParArticle === false && this.panierData?.tauxTVA) {
       return this.panierData.tauxTVA;
     }
-    return 0; // Quand TVA par article, pas de taux unique
+    return 0; */ // Quand TVA par article, pas de taux unique
+    let tauxTVA = 0;
+  
+    if (this.panierData?.tvaParArticle === false && this.panierData?.tauxTVA !== undefined) {
+      tauxTVA = this.panierData.tauxTVA;
+      this.debugLog('get tauxTVA - Mode global', {
+        tauxTVA: tauxTVA,
+        tvaParArticle: false
+      });
+    } else {
+      this.debugLog('get tauxTVA - Mode par article ou non défini', {
+        tauxTVA: 0,
+        tvaParArticle: this.panierData?.tvaParArticle
+      });
+    }
+    
+    return tauxTVA;
   }
   get resteAPayer(): number {
     /* const total = this.montantHT; //this.totalBon;
     const avance = this.bonForm.get('avance')?.value || 0;
     return Math.max(0, total - avance); */
     // Pour les retours, pas de reste à payer
-    if (this.typeBon === 'retour') {
+    /* if (this.typeBon === 'retour') {
       return 0;
     }
     
     const total = this.totalTTC;
     const avance = this.bonForm.get('avance')?.value || 0;
-    return Math.max(0, total - avance);
+    return Math.max(0, total - avance); */
+
+     const total = this.totalTTC;
+    const avance = this.bonForm.get('avance')?.value || 0;
+    const resteAPayer = Math.max(0, total - avance);
+    
+   /*  this.debugLog('get resteAPayer', {
+      totalTTC: total,
+      avance: avance,
+      resteAPayer: resteAPayer,
+      typeBon: this.typeBon
+    }); */
+    
+    return resteAPayer;
   }
 
   /* get totalBon(): number {
@@ -684,7 +793,7 @@ export class BonsComponent implements OnChanges,OnInit {
     return this.totalTTC;
   } */
 
-    get montantRemise(): number {
+    /* get montantRemise(): number {
       // Pour les retours, pas de remise
       if (this.typeBon === 'retour') {
         return 0;
@@ -698,7 +807,7 @@ export class BonsComponent implements OnChanges,OnInit {
       }
       
       return 0;
-    }
+    } */
 
   // Validation améliorée
   validerMontants(): void {
@@ -915,17 +1024,123 @@ private restaurerEtatPanier(): Panier | null {
     return '📎';
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private debugLog(message: string, data?: any): void {
+    const timestamp = new Date().toLocaleTimeString();
+    console.log(`[${timestamp}] PANIER: ${message}`, data || '');
+  }
+  // Ajoutez cette méthode pour afficher l'état actuel
+debugCurrentState(): void {
+  console.group('=== ÉTAT ACTUEL DU BON ===');
+  console.log('Panier Data:', this.panierData);
+  console.log('Total Panier (affiché):', this.totalPanier);
+  console.log('Type Bon:', this.typeBon);
+  console.log('--- Getters calculés ---');
+  console.log('montantHT:', this.montantHT);
+  console.log('montantTVA:', this.montantTVA);
+  console.log('montantRemise:', this.montantRemise);
+  console.log('totalTTC:', this.totalTTC);
+  console.log('tauxTVA:', this.tauxTVA);
+  console.log('resteAPayer:', this.resteAPayer);
+  console.log('--- Form Values ---');
+  console.log('avance:', this.bonForm.get('avance')?.value);
+  console.log('--- Panier Details ---');
+  if (this.panierData?.articles) {
+    console.log('Articles dans panier:');
+    this.panierData.articles.forEach((article, index) => {
+      console.log(`  Article ${index + 1}:`, {
+        produit: article.produit?.designation,
+        quantite: article.quantite,
+        prixUnitaire: article.prixUnitaire,
+        totalHT: article.totalHT,
+        montantTVA: article.montantTVA,
+        montantRemise: article.montantRemise,
+        totalTTC: article.totalTTC
+      });
+    });
+  }
+  console.groupEnd();
+}
+
   // Gestion du panier
-  onPanierEnregistre(panier: Panier): void {
+  /* onPanierEnregistre(panier: Panier): void {
+
+  this.debugLog('Panier reçu dans bon', {
+    panier: panier,
+    totalHT: panier.totalHT,
+    tva: panier.tva,
+    totalTTC: panier.totalTTC,
+    remise: panier.remise,
+    tauxTVA: panier.tauxTVA,
+    tvaParArticle: panier.tvaParArticle,
+    remiseParArticle: panier.remiseParArticle,
+    articles: panier.articles?.map(a => ({
+      produit: a.produit?.designation,
+      totalHT: a.totalHT,
+      montantTVA: a.montantTVA,
+      montantRemise: a.montantRemise
+    }))
+  });
     this.panierData = panier;
-    this.showBonButtons = true;
+    // Mettre à jour le statut du panier local
+    if (panier.statut === 'validé') {
+      this.panierValide = true; // Nouvelle variable d'état
+      this.showBonButtons = true; // Afficher les boutons du bon si nécessaire
+    } else if (panier.statut === 'en_cours') {
+      this.panierValide = false;
+      this.showBonButtons = false; // Cacher les boutons du bon
+    }
+    //this.showBonButtons = true;
     // Mettre à jour le total panier
     this.totalPanier = panier.totalHT || 0;
     this.updateTabAccessibility();
     setTimeout(() => {
     this.cdr.detectChanges();
   });
+  } */
+
+  onPanierEnregistre(panier: Panier): void {
+  console.log('📦 Panier reçu, statut:', panier.statut);
+  
+  // Appeler la méthode appropriée selon le statut
+  if (panier.statut === 'validé') {
+    this.onPanierValide(panier);
+  } else if (panier.statut === 'en_cours') {
+    this.onPanierModifie(panier);
   }
+  
+  this.panierData = panier;
+  this.totalPanier = panier.totalHT || 0;
+}
+
+  private onPanierValide(panier: Panier): void {
+  console.log('✅ Panier validé',panier.statut);
+  this.panierValide = true;
+  this.showBonButtons = true;
+  this.updateTabAccessibility();
+}
+
+  // Ajoutez cette méthode pour gérer la modification du panier
+onPanierModifie(panier: Panier): void {
+  console.log('⚠️ Panier modifié, statut:', panier.statut);
+  
+  this.panierData = panier;
+  
+  // Si le panier passe de "validé" à "en_cours", désactiver le bouton suivant
+  if (panier.statut === 'en_cours') {
+    this.panierValide = false;
+    this.showBonButtons = false;
+    
+    // Désactiver l'onglet Paiement si on est dessus
+    if (this.activeTab === 'paiement') {
+      this.activeTab = 'articles';
+    }
+  }
+  
+  // Forcer la mise à jour
+  this.updateTabAccessibility();
+  this.cdr.detectChanges();
+}
 
   onPanierAnnule(): void {
     this.panierData = null;
