@@ -212,7 +212,7 @@
                 formControlName="prixUnitaire" 
                 min="0"
                 step="0.01"
-                [class.disabled]="isFormDisabled "
+                readonly
               />
               <small class="text-muted d-block">
                 {{ typeEntite === 'fournisseur' ? 'Achat' : 'Vente' }}
@@ -248,7 +248,7 @@
                   min="0" 
                   max="100" 
                   step="0.01"
-                  [class.disabled]="isFormDisabled "
+                  readonly
                 />
                 <span class="input-group-text">%</span>
               </div>

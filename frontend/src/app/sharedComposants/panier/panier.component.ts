@@ -293,9 +293,12 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
     console.error('Panier est null ou undefined');
     return;
   }
+// Utiliser tousLesArticles pour récupérer tous les articles
+  const tousLesArticles = panier.tousLesArticles || [];
 
 this.panier = new Panier({
     ...panier,
+    articles:tousLesArticles,
     tvaParArticle: panier.tvaParArticle !== undefined ? panier.tvaParArticle : true,
     remiseParArticle: panier.remiseParArticle !== undefined ? panier.remiseParArticle : false
   });
@@ -631,14 +634,14 @@ this.panier = new Panier({
     this.panier.tvaParArticle = tvaParArticle;
     this.showTVAFields = tvaParArticle;
     this.mettreAJourEtatChampsTVA();
-    this.recalculerTousLesArticles();
+    //this.recalculerTousLesArticles();
   }
 
   private onRemiseModeChange(remiseParArticle: boolean): void {
     this.panier.remiseParArticle = remiseParArticle;
     this.showRemiseFields = remiseParArticle;
     this.mettreAJourEtatChampsRemise();
-    this.recalculerTousLesArticles();
+    //this.recalculerTousLesArticles();
   }
 
   onTVARadioChange(value: 'article' | 'global'): void {
@@ -677,7 +680,7 @@ this.panier = new Panier({
 
   // === MÉTHODES DE CALCUL ===
 
-  private recalculerTousLesArticles(): void {
+  /* private recalculerTousLesArticles(): void {
     this.panierArray.controls.forEach((control, index) => {
       const donneesArticle = control.value;
       this.panier.mettreAJourArticle(index, donneesArticle);
@@ -685,23 +688,10 @@ this.panier = new Panier({
     
     this.cdr.detectChanges();
     this.totalPanierChange.emit(this.panier.totalTTC);
-  }
+  } */
 
   // === ÉVÉNEMENTS UI ===
 
-  /* enregistrerPanier(): void {
-    if (this.panier.isValid) {
-      this.ispanierValid = true;
-      this.isFormDisabled = true;
-      this.desactiverControlesFormulaire();
-      this.showBonButtons.emit(true);
-      this.onEnregistrer.emit(this.panier);
-
-      if (this.panierBrouillon?.id) {
-        this.mettreAJourPanierEnBase();
-      }
-    }
-  } */
  enregistrerPanier(): void {
   if (this.panier.isValid) {
 
@@ -837,12 +827,6 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé'|'annul�
       : produit.prixVenteUnitaire || 0;
   }
 
-  private getTauxTVADefault(produitId: number): number {
-    if (!produitId) return 0;
-    
-    const produit = this.produitsDisponibles.find(p => p.id === produitId);
-    return produit?.tauxTVA || 0;
-  }
 
   canActivateTvaGlobalMode(): boolean {
     return this.panierArray.controls.some(articleGroup => {

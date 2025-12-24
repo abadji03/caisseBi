@@ -279,7 +279,7 @@ export class BonsComponent implements OnChanges,OnInit {
   }
 
   // Gestion des tabs
-  setActiveTab(tab: 'informations' | 'articles' | 'paiement' | 'logistique'): void {
+  /* setActiveTab(tab: 'informations' | 'articles' | 'paiement' | 'logistique'): void {
     
    if (this.activeTab === 'articles' && this.panierData) {
       this.sauvegarderEtatPanier();
@@ -304,7 +304,40 @@ export class BonsComponent implements OnChanges,OnInit {
       // Afficher un message d'erreur si l'utilisateur essaie d'accéder à un tab non accessible
       this.toastr.warning(`Veuillez d'abord valider l'étape actuelle avant de passer à ${tab}`, 'Étape non terminée');
     }
+  } */
+
+    // Dans la méthode setActiveTab()
+setActiveTab(tab: 'informations' | 'articles' | 'paiement' | 'logistique'): void {
+  // Sauvegarder le panier actuel avant de quitter l'onglet articles
+  if (this.activeTab === 'articles' && this.panierData) {
+    this.sauvegarderEtatPanier();
   }
+  
+  // Ne permettre le changement que si le tab est accessible
+  if (this.accessibleTabs[tab]) {
+    this.activeTab = tab;
+    
+    // Restaurer le panier si on revient à l'onglet articles
+    if (tab === 'articles' && this.panierData) {
+      // On s'assure que le panier est correctement restauré
+      this.showPanier = true;
+      this.cdr.detectChanges();
+      
+      // Forcer une mise à jour du composant panier
+      setTimeout(() => {
+        // Ré-émettre les données du panier pour le composant enfant
+        this.panierData = new Panier({ ...this.panierData });;
+        this.cdr.detectChanges();
+      }, 0);
+    }
+    
+    if (tab === 'articles') {
+      this.showPanier = true;
+    }
+  } else {
+    this.toastr.warning(`Veuillez d'abord valider l'étape actuelle avant de passer à ${tab}`, 'Étape non terminée');
+  }
+}
 
   // Getter pour déterminer si on peut passer à l'onglet suivant
   get canGoToNextTab(): boolean {
@@ -1099,7 +1132,7 @@ debugCurrentState(): void {
   });
   } */
 
-  onPanierEnregistre(panier: Panier): void {
+  /* onPanierEnregistre(panier: Panier): void {
   console.log('📦 Panier reçu, statut:', panier.statut);
   
   // Appeler la méthode appropriée selon le statut
@@ -1118,8 +1151,36 @@ debugCurrentState(): void {
   this.panierValide = true;
   this.showBonButtons = true;
   this.updateTabAccessibility();
+} */
+
+onPanierEnregistre(panier: Panier): void {
+  console.log('📦 Panier reçu dans bon', panier.statut);
+  
+  // Toujours mettre à jour panierData
+  this.panierData = panier;
+  this.totalPanier = panier.totalHT || 0;
+  
+  // Mettre à jour l'état de validation
+  if (panier.statut === 'validé') {
+    this.onPanierValide(panier);
+  } else if (panier.statut === 'en_cours') {
+    this.onPanierModifie(panier);
+  }
+  
+  // Forcer une sauvegarde immédiate dans le localStorage
+  this.sauvegarderEtatPanier();
 }
 
+// Modifiez onPanierValide()
+private onPanierValide(panier: Panier): void {
+  console.log('✅ Panier validé', panier.statut);
+  this.panierValide = true;
+  this.showBonButtons = true;
+  this.updateTabAccessibility();
+  
+  // Sauvegarder aussi quand validé
+  this.sauvegarderEtatPanier();
+}
   // Ajoutez cette méthode pour gérer la modification du panier
 onPanierModifie(panier: Panier): void {
   console.log('⚠️ Panier modifié, statut:', panier.statut);
