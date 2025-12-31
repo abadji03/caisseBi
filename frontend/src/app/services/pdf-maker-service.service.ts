@@ -505,7 +505,10 @@ private generateDetailedArticlesTable(articles: ArticlePanier[]): any {
       { text: 'Article', style: 'tableHeader' },
       { text: 'Prix U.', style: 'tableHeader' },
       { text: 'Qte', style: 'tableHeader' },
-      { text: 'Total', style: 'tableHeader' }
+      { text: 'remise', style: 'tableHeader' },
+      { text: 'TVA', style: 'tableHeader' },
+      { text: 'Total HT', style: 'tableHeader' },
+      { text: 'Total TTC', style: 'tableHeader' }
     ]
   ];
 
@@ -514,14 +517,20 @@ private generateDetailedArticlesTable(articles: ArticlePanier[]): any {
     if (article) {
       // Sécuriser les calculs
       const prixUnitaire = this.safeNumber(article.prixUnitaire);
-      const quantite = this.safeNumber(article.quantite);
-      const total = prixUnitaire * quantite;
+      const quantite = article.quantite;
+      const remise = article.montantRemise;
+      const tva = article.montantTVA;
+      const totalHT = article.totalHT;
+      const totalTTC = article.totalTTC;
 
       tableBody.push([
         article?.produit?.designation || article?.Produit?.designation || 'N/A',
         { text: `${prixUnitaire} F CFA`, alignment: 'right' },
         { text: `${quantite}`, alignment: 'center' },
-        { text: `${total} F CFA`, alignment: 'right' }
+        { text: `${remise} F CFA`, alignment: 'right' },
+        { text: `${tva} F CFA`, alignment: 'right' },
+        { text: `${totalHT} F CFA`, alignment: 'right' },
+        { text: `${totalTTC} F CFA`, alignment: 'right' }
       ]);
     }
   });

@@ -9,6 +9,7 @@ const ArticlePanier = db.ArticlePanier;
 const Produit = db.Produit;
 const User = db.Users;
 
+
 const BASE_URL = 'http://localhost:5000/uploads/'; //url de l'emplacement des fichier à stocker
 
 const {
@@ -75,7 +76,93 @@ exports.getBonsByStructure = async (req, res) => {
     res.status(500).json({ message: 'Erreur lors de la récupération des bons', error:error.message });
   }
 };
+// Lister uniquement les bons clients d'une structure
+exports.getBonsClientsByStructure = async (req, res) => {
+  try {
+    const bons = await Bon.findAll({
+      where: { 
+        code_structure: req.params.code_structure,
+        typeEntite: 'client'
+      },
+      include: [
+        {
+          model: Panier,
+          include: [
+            {
+              model: ArticlePanier,
+              include: {model: Produit} 
+            }
+          ],
+        },
+        {model: User, attributes: ['id', 'nom', 'email'] }
+      ],
+      order: [['createdAt', 'DESC']],
+    });
 
+    const baseUrl = `${req.protocol}://${req.get('host')}/uploads/`;
+
+    const bonsWithFichierUrl = bons.map((bon) => {
+      const bn = bon.toJSON();
+      bn.fichierUrl = bn.fichier ? baseUrl + bn.fichier : null;
+      // Ajouter le client directement dans l'objet pour faciliter l'accès
+      bn.client = bn.Client;
+      delete bn.Client;
+      return bn;
+    });
+
+    res.status(200).json(bonsWithFichierUrl);
+
+  } catch (error) {
+    res.status(500).json({ 
+      message: 'Erreur lors de la récupération des bons clients', 
+      error: error.message 
+    });
+  }
+};
+
+// Lister uniquement les bons fournisseurs d'une structure
+exports.getBonsFournisseursByStructure = async (req, res) => {
+  try {
+    const bons = await Bon.findAll({
+      where: { 
+        code_structure: req.params.code_structure,
+        typeEntite: 'fournisseur'
+      },
+      include: [
+        {
+          model: Panier,
+          include: [
+            {
+              model: ArticlePanier,
+              include: {model: Produit} 
+            }
+          ],
+        },
+        {model: User, attributes: ['id', 'nom', 'email'] }
+      ],
+      order: [['createdAt', 'DESC']],
+    });
+
+    const baseUrl = `${req.protocol}://${req.get('host')}/uploads/`;
+
+    const bonsWithFichierUrl = bons.map((bon) => {
+      const bn = bon.toJSON();
+      bn.fichierUrl = bn.fichier ? baseUrl + bn.fichier : null;
+      // Ajouter le fournisseur directement dans l'objet pour faciliter l'accès
+      bn.fournisseur = bn.Fournisseur;
+      delete bn.Fournisseur;
+      return bn;
+    });
+
+    res.status(200).json(bonsWithFichierUrl);
+
+  } catch (error) {
+    res.status(500).json({ 
+      message: 'Erreur lors de la récupération des bons fournisseurs', 
+      error: error.message 
+    });
+  }
+};
 // Lister tous les bons avec associations
 exports.getAllBons = async (req, res) => {
   try {

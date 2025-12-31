@@ -253,6 +253,8 @@ export class FournisseursComponent implements OnInit, OnDestroy {
         event.bon.id = this.bonBrouillon.id;
       } 
 
+      console.log('Bon reçu dans fournisseur',event.bon );
+      console.log('panier reçu dans fournisseur',event.bon.panier);
       // Appel API
       this.enregistrerBon(event.bon, event.bon.panier!,event.fichier);
        //this.enregistrerBonAvecFichiers(event.bon, event.bon.panier, event.fichier);
@@ -335,11 +337,18 @@ private enregistrerBon(bon: Bon, panier: Panier, fichier:File|null): void {
     },
     articles: panier.articles.map(article => ({
       id: article.id,
-      produitId: article.produit?.id,
+      produitId: article.produit?.id || article.produitId,
       quantite: article.quantite,
       prixUnitaire: article.prixUnitaire,
       prixVenteUnitaire: article.prixVenteUnitaire,
-      prixAchatUnitaire: article.prixAchatUnitaire
+      prixAchatUnitaire: article.prixAchatUnitaire,
+      code_structure: this.code_structure,
+      remise: article.remise,
+      tauxTVA: article.tauxTVA,
+      montantTVA: article.montantTVA,
+      montantRemise: article.montantRemise,
+      totalHT: article.totalHT,
+      totalTTC: article.totalTTC
     })),
     code_structure: this.code_structure,
     magasinId: this.magasinId,
@@ -1307,7 +1316,7 @@ private rafraichirDonneesImmediatement(): void {
   loadBonAndPaiement(): void {
       this.isLoading = true;
       forkJoin([
-        this.bonService.getBonsByStructure(this.code_structure),
+        this.bonService.getBonsFournisseursByStructure(this.code_structure),
         this.paiementService.getByStructure(this.code_structure),
       ])
         .pipe(
@@ -1817,7 +1826,14 @@ imprimerBon(bon: Bon): void {
       quantite: article.quantite,
       prixUnitaire: article.prixUnitaire,
       prixAchatUnitaire: article.prixAchatUnitaire,
-      prixVenteUnitaire: article.prixVenteUnitaire
+      prixVenteUnitaire: article.prixVenteUnitaire,
+      code_structure: this.code_structure,
+      remise: article.remise,
+      tauxTVA: article.tauxTVA,
+      montantTVA: article.montantTVA,
+      montantRemise: article.montantRemise,
+      totalHT: article.totalHT,
+      totalTTC: article.totalTTC
     })) || [];
 
     // Si pas de panier dans le bon, essayer de le récupérer

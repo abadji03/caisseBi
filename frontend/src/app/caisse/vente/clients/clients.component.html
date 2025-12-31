@@ -433,6 +433,10 @@
                                           <small>TVA:</small><br>
                                           <strong>{{ operation.Bon?.Panier?.tva | number }} F CFA</strong>
                                         </div>
+                                        <div class="col-12 mt-2">
+                                          <small>Remise:</small><br>
+                                          <strong>{{ operation.Bon?.Panier?.remise | number }} F CFA</strong>
+                                        </div>
                                         <div class="col-6 mt-2">
                                           <small>Total TTC:</small><br>
                                           <strong>{{ operation.Bon?.Panier?.totalTTC | number }} F CFA</strong>
@@ -471,7 +475,10 @@
                                     <!-- <th>Référence</th> -->
                                     <th>Quantité</th>
                                     <th>Prix Unitaire</th>
-                                    <th>Sous-total</th>
+                                    <th>remise</th>
+                                    <th>tva</th>
+                                    <th>Total HT</th>
+                                    <th>Total TTC</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -485,8 +492,13 @@
                                       <small class="text-muted">{{ article.Produit?.unite }}</small>
                                     </td>
                                     <td>{{ article.prixUnitaire | number }} F CFA</td>
+                                    <td>{{article.remise}}% <small>({{ article.montantRemise | number }} F CFA)</small></td>
+                                    <td>{{article.tauxTVA}}% <small>({{ article.montantTVA | number }} F CFA</small>) </td>
                                     <td>
-                                      <strong>{{ (article.quantite * article.prixUnitaire) | number }} F CFA</strong>
+                                      <strong>{{ (article.totalHT) | number }} F CFA</strong>
+                                    </td>
+                                    <td>
+                                      <strong>{{ (article.totalTTC) | number }} F CFA</strong>
                                     </td>
                                   </tr>
                                   <tr *ngIf="!operation.Bon?.Panier?.ArticlePaniers?.length">

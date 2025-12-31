@@ -28,11 +28,20 @@ export class BonBrouillonService {
   }
 
   getPanierBrouillon(): Panier | null {
-    return this.panierBrouillonSubject.value;
+    //return this.panierBrouillonSubject.value;
+    // Retourne toujours une COPIE pour éviter les mutations accidentelles
+    const panier = this.panierBrouillonSubject.value;
+    return panier ? panier.clone() : null;
   }
 
   clearBrouillons(): void {
     this.bonBrouillonSubject.next(null);
     this.panierBrouillonSubject.next(null);
+  }
+
+  // Nouvelle méthode pour mettre à jour le panier de façon centralisée
+  updatePanier(panier: Panier): void {
+    // Toujours cloner le panier pour éviter les références partagées
+    this.panierBrouillonSubject.next(panier.clone());
   }
 }

@@ -5,7 +5,7 @@ class StatutManager {
   /**
    * Convertir une valeur en nombre de manière sécurisée
    */
-  safeNumber(value) {
+  /* safeNumber(value) {
     if (value === null || value === undefined || value === '') return 0;
     
     // Si c'est déjà un nombre
@@ -22,7 +22,38 @@ class StatutManager {
     // Pour les autres types, essayer de convertir
     const num = Number(value);
     return isNaN(num) ? 0 : num;
+  } */
+ safeNumber(value) {
+  if (value === null || value === undefined || value === '') return 0;
+  
+  // Si c'est déjà un nombre
+  if (typeof value === 'number') return value;
+  
+  // Si c'est une string, la convertir en nombre
+  if (typeof value === 'string') {
+    // Remplacer les virgules par des points pour les nombres français
+    const cleaned = value.replace(/[^\d.,-]/g, '').replace(',', '.');
+    
+    // Gérer les formats avec séparateurs de milliers
+    // Si après nettoyage on a des points comme séparateurs de milliers
+    const parts = cleaned.split('.');
+    if (parts.length > 2) {
+      // C'est un format avec séparateurs de milliers (ex: 1.200.000,50)
+      const integerPart = parts.slice(0, -1).join('');
+      const decimalPart = parts[parts.length - 1];
+      value = `${integerPart}.${decimalPart}`;
+    } else {
+      value = cleaned;
+    }
+    
+    const num = parseFloat(value);
+    return isNaN(num) ? 0 : num;
   }
+  
+  // Pour les autres types, essayer de convertir
+  const num = Number(value);
+  return isNaN(num) ? 0 : num;
+}
 
   /**
    * Préparer les données d'un bon avant création
@@ -118,7 +149,7 @@ class StatutManager {
     if (!client) return;
 
     // Utiliser safeNumber pour toutes les valeurs
-    const montant = this.safeNumber(bon.resteAPayer) || this.safeNumber(bon.netAPayer) || this.safeNumber(bon.montantTotal) ||this.safeNumber(bon.montantAvoir);
+    const montant = this.safeNumber(bon.netAPayer) || this.safeNumber(bon.montantTotal) ||this.safeNumber(bon.montantAvoir);
     const soldeActuel = this.safeNumber(client.solde);
 
     let nouveauSolde = soldeActuel;
@@ -203,21 +234,6 @@ class StatutManager {
       variation: nouveauSolde - soldeActuel,
       operation: operation
     });
-    /* else {
-      // Commande = augmentation de la dette
-      const nouveauSolde = soldeActuel + montant;
-      
-      await client.update({
-        solde: nouveauSolde,
-        dateMiseAJour: new Date()
-      }, { transaction });
-
-      console.log('✅ Client - Commande traitée:', {
-        ancienSolde: soldeActuel,
-        montantCommande: montant,
-        nouveauSolde: nouveauSolde
-      });
-    } */
   }
 
   /**
@@ -228,7 +244,7 @@ class StatutManager {
     if (!fournisseur) return;
 
     // Utiliser safeNumber pour toutes les valeurs
-    const montant = this.safeNumber(bon.resteAPayer) || this.safeNumber(bon.netAPayer) || this.safeNumber(bon.montantTotal) || this.safeNumber(bon.montantAvoir);
+    const montant = this.safeNumber(bon.netAPayer) || this.safeNumber(bon.montantTotal) || this.safeNumber(bon.montantAvoir);
     const montantAPayerActuel = this.safeNumber(fournisseur.montantAPayer);
 
     console.log('🔢 Mise à jour fournisseur - Calculs:', {
@@ -278,19 +294,6 @@ class StatutManager {
         operation = 'annulation retour fournisseur';
         console.log(`🚫 Annulation retour fournisseur - Ré-augmentation dette: ${montant}`);
       }
-      // Retour fournisseur = réduction de la dette
-     /*  const nouveauMontantAPayer = Math.max(0, montantAPayerActuel - montant);
-      
-      await fournisseur.update({
-        montantAPayer: nouveauMontantAPayer,
-        dateMiseAJour: new Date()
-      }, { transaction });
-
-      console.log('Fournisseur - Retour traité:', {
-        ancienMontant: montantAPayerActuel,
-        montantRetour: montant,
-        nouveauMontant: nouveauMontantAPayer
-      }); */
     } 
     // S'assurer que le montant n'est pas négatif
     nouveauMontantAPayer = Math.max(0, nouveauMontantAPayer);
@@ -306,21 +309,6 @@ class StatutManager {
       variation: nouveauMontantAPayer - montantAPayerActuel,
       operation: operation
     });
-    /* else {
-      // Livraison/Commande fournisseur = augmentation de la dette
-      const nouveauMontantAPayer = montantAPayerActuel + montant;
-      
-      await fournisseur.update({
-        montantAPayer: nouveauMontantAPayer,
-        dateMiseAJour: new Date()
-      }, { transaction });
-
-      console.log('Fournisseur - Livraison/Commande traitée:', {
-        ancienMontant: montantAPayerActuel,
-        montantAjoute: montant,
-        nouveauMontant: nouveauMontantAPayer
-      });
-    } */
   }
 
   /**

@@ -39,15 +39,13 @@ export class BonsComponent implements OnChanges,OnInit {
   @Output() onReinitialiserPanier = new EventEmitter<void>();
 
   // Variables pour les tabs
-  activeTab: 'informations' | 'articles' | 'paiement' | 'logistique' = 'informations';
+  activeTab: 'informations' | 'articles' = 'informations';
 
   // Variables pour suivre les tabs accessibles
   // eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style
   accessibleTabs: { [key: string]: boolean } = {
     informations: true,
     articles: false,
-    paiement: false,
-    logistique: false
   };
 
   // Variables pour les modes TVA/Remise dans le bon
@@ -56,7 +54,7 @@ export class BonsComponent implements OnChanges,OnInit {
   // Formulaires
   bonForm!: FormGroup;
   informationsForm!: FormGroup;
-  logistiqueForm!: FormGroup;
+  //logistiqueForm!: FormGroup;
 
   // Variables générales
   currentDate: string = new Date().toLocaleDateString();
@@ -147,17 +145,12 @@ export class BonsComponent implements OnChanges,OnInit {
       // Conditions de paiement
       conditionsPaiement: ['30 jours fin de mois'],
       delaiPaiement: [30, [Validators.min(0)]],
-
+      dateLivraisonPrevue: [''],
+      pointLivraison: [''],
+      transporteur: ['']
       // TVA
       //tauxTVA: [18, [Validators.min(0), Validators.max(100)]],
     });
-
-    // Formulaire de logistique
-    this.logistiqueForm = this.fb.group({
-    dateLivraisonPrevue: [''],
-    pointLivraison: [''],
-    transporteur: ['']
-  });
   }
 
   private setupSubscriptions(): void {
@@ -205,7 +198,7 @@ export class BonsComponent implements OnChanges,OnInit {
 
     // Charger la logistique si disponible
     if (bon.dateLivraisonPrevue || bon.pointLivraison || bon.transporteur) {
-      this.logistiqueForm.patchValue({
+      this.bonForm.patchValue({
         dateLivraisonPrevue: bon.dateLivraisonPrevue ? 
           new Date(bon.dateLivraisonPrevue).toISOString().split('T')[0] : '',
         pointLivraison: bon.pointLivraison || '',
@@ -227,13 +220,6 @@ export class BonsComponent implements OnChanges,OnInit {
     // Tab Articles accessible si les infos sont valides
     this.accessibleTabs['articles'] = this.isInformationsTabValid();
     
-    // Tab Paiement accessible si les articles sont valides
-    // Tab Paiement accessible si les articles sont valides
-    this.accessibleTabs['paiement'] = this.isArticlesTabValid() && this.panierValide;;
-    
-    // Tab Logistique accessible si le paiement est valide
-    // Tab Logistique accessible si le paiement est valide
-    this.accessibleTabs['logistique'] = this.isPaiementTabValid();
   }
 
    // Validation de l'onglet Informations
@@ -252,67 +238,8 @@ export class BonsComponent implements OnChanges,OnInit {
     return true;
   }
 
-  // Validation de l'onglet Articles
-  private isArticlesTabValid(): boolean {
-    if (this.typeBon === 'retour') {
-      // Pour un retour, soit des articles, soit un montant
-      const hasArticles = this.panierData && (this.panierData.articles.length ?? 0)> 0;
-      const montantAvoir = this.bonForm.get('montantAvoir')?.value || 0;
-      return hasArticles || montantAvoir > 0;
-    } else {
-      // Pour les autres types, des articles sont requis
-      return this.panierValide && this.panierData !== null && (this.panierData.articles.length ?? 0)> 0;
-    }
-  }
-
-  // Validation de l'onglet Paiement
-  private isPaiementTabValid(): boolean {
-    if (this.typeBon === 'retour') {
-      return true; // Pas de validation spécifique pour les retours
-    }
-    
-    const avance = this.bonForm.get('avance')?.value || 0;
-    const totalTTC = this.totalTTC;
-    
-    // L'avance ne doit pas dépasser le total
-    return avance <= totalTTC;
-  }
-
-  // Gestion des tabs
-  /* setActiveTab(tab: 'informations' | 'articles' | 'paiement' | 'logistique'): void {
-    
-   if (this.activeTab === 'articles' && this.panierData) {
-      this.sauvegarderEtatPanier();
-    }
-   // Ne permettre le changement que si le tab est accessible
-    if (this.accessibleTabs[tab]) {
-      // Restaurer l'état du panier si on revient à l'onglet articles
-      if (tab === 'articles' && !this.panierData) {
-        const panierRestore = this.restaurerEtatPanier();
-        if (panierRestore) {
-          this.panierData = panierRestore;
-        }
-      }
-      this.activeTab = tab;
-      
-      if (tab === 'articles') {
-        this.showPanier = true;
-      }
-      
-      this.cdr.detectChanges();
-    } else {
-      // Afficher un message d'erreur si l'utilisateur essaie d'accéder à un tab non accessible
-      this.toastr.warning(`Veuillez d'abord valider l'étape actuelle avant de passer à ${tab}`, 'Étape non terminée');
-    }
-  } */
-
-    // Dans la méthode setActiveTab()
-setActiveTab(tab: 'informations' | 'articles' | 'paiement' | 'logistique'): void {
-  // Sauvegarder le panier actuel avant de quitter l'onglet articles
-  if (this.activeTab === 'articles' && this.panierData) {
-    this.sauvegarderEtatPanier();
-  }
-  
+// Gestion des tabs
+setActiveTab(tab: 'informations' | 'articles'): void {
   // Ne permettre le changement que si le tab est accessible
   if (this.accessibleTabs[tab]) {
     this.activeTab = tab;
@@ -341,23 +268,12 @@ setActiveTab(tab: 'informations' | 'articles' | 'paiement' | 'logistique'): void
 
   // Getter pour déterminer si on peut passer à l'onglet suivant
   get canGoToNextTab(): boolean {
-    /* switch (this.activeTab) {
-      case 'informations':
-        return this.bonForm.get('type')?.valid || false;
-      case 'articles':
-        return !! this.panierData?.articles?.length;
-      case 'paiement':
-        return this.bonForm.get('avance')?.valid || false;
-      default:
-        return true;
-    } */
+    
     switch (this.activeTab) {
       case 'informations':
         return this.validateInformationsTab();
       case 'articles':
         return this.validateArticlesTab() && this.panierValide;
-      case 'paiement':
-        return this.validatePaiementTab();
       default:
         return true;
     }
@@ -365,8 +281,8 @@ setActiveTab(tab: 'informations' | 'articles' | 'paiement' | 'logistique'): void
   // Getter pour déterminer si on peut revenir à l'onglet précédent
   get canGoToPreviousTab(): boolean {
     // eslint-disable-next-line @typescript-eslint/array-type
-    const tabs: Array<'informations' | 'articles' | 'paiement' | 'logistique'> = 
-      ['informations', 'articles', 'paiement', 'logistique'];
+    const tabs: Array<'informations' | 'articles'> = 
+      ['informations', 'articles'];
     
     const currentIndex = tabs.indexOf(this.activeTab);
     return currentIndex > 0;
@@ -377,8 +293,8 @@ setActiveTab(tab: 'informations' | 'articles' | 'paiement' | 'logistique'): void
      // Afficher l'état avant de changer de tab
   this.debugCurrentState();
     // eslint-disable-next-line @typescript-eslint/array-type
-    const tabs: Array<'informations' | 'articles' | 'paiement' | 'logistique'> = 
-      ['informations', 'articles', 'paiement', 'logistique'];
+    const tabs: Array<'informations' | 'articles'> = 
+      ['informations', 'articles'];
     
     const currentIndex = tabs.indexOf(this.activeTab);
     if (currentIndex < tabs.length - 1) {
@@ -394,8 +310,8 @@ setActiveTab(tab: 'informations' | 'articles' | 'paiement' | 'logistique'): void
 
   previousTab(): void {
     // eslint-disable-next-line @typescript-eslint/array-type
-    const tabs: Array<'informations' | 'articles' | 'paiement' | 'logistique'> = 
-      ['informations', 'articles', 'paiement', 'logistique'];
+    const tabs: Array<'informations' | 'articles'> = 
+      ['informations', 'articles'];
     
     const currentIndex = tabs.indexOf(this.activeTab);
     if (currentIndex > 0) {
@@ -412,8 +328,6 @@ setActiveTab(tab: 'informations' | 'articles' | 'paiement' | 'logistique'): void
         return this.validateInformationsTab();
       case 'articles':
         return this.validateArticlesTab();
-      case 'paiement':
-        return this.validatePaiementTab();
       default:
         return true;
     }
@@ -595,33 +509,12 @@ setActiveTab(tab: 'informations' | 'articles' | 'paiement' | 'logistique'): void
       this.activeTab = 'informations';
     }
   }
-  private adjustValidatorsForType(): void {
-    const montantAvoirControl = this.bonForm.get('montantAvoir');
-    const numeroBonOrigineControl = this.bonForm.get('numeroBonOrigine');
-    const motifsRetourControl = this.bonForm.get('motifsRetour');
-
-    if (this.typeBon === 'retour') {
-      montantAvoirControl?.setValidators([Validators.required, Validators.min(0)]);
-      numeroBonOrigineControl?.setValidators([Validators.required]);
-      motifsRetourControl?.setValidators([Validators.required, Validators.minLength(10)]);
-    } else {
-      montantAvoirControl?.clearValidators();
-      numeroBonOrigineControl?.clearValidators();
-      motifsRetourControl?.clearValidators();
-    }
-
-    montantAvoirControl?.updateValueAndValidity();
-    numeroBonOrigineControl?.updateValueAndValidity();
-    motifsRetourControl?.updateValueAndValidity();
-  }
 
   // Calcul des totaux amélioré
   get montantBase(): number {
     if (this.modeMontant === 'panier') {
       return this.totalPanier;
-    } /* else if (this.modeMontant === 'saisi') {
-      return this.bonForm.get('montant')?.value || 0;
-    } */ 
+    }  
    else if (this.modeMontant === 'mixte') {
       if (this.panierData && this.panierData.articles.length > 0) {
         return this.totalPanier;
@@ -633,60 +526,25 @@ setActiveTab(tab: 'informations' | 'articles' | 'paiement' | 'logistique'): void
   }
 
   get montantHT(): number {
-    /* const remise = this.bonForm.get('remise')?.value || 0;
-     if (this.typeBon === 'retour') {
-      return 0;
-    }
-    const base = this.montantBase;
-    return Math.max(0, base - remise); */
-     // Pour les retours, pas de calcul HT
-    if (this.typeBon === 'retour') {
-      return 0;
-    }
-    
-    // Si le panier existe, utiliser son total HT
-    //if (this.panierData?.totalHT !== undefined) {
-    //return this.panierData?.totalHT || 0;
-    const montantHT = this.panierData?.totalHT || 0;
   
-    /* this.debugLog('get montantHT', {
-      panierData: this.panierData,
-      totalHT: montantHT,
-      typeBon: this.typeBon
-    }); */
+    // Pour les retours, pas de calcul HT
+    // if (this.typeBon === 'retour') {
+    //   return 0;
+    // }
+    
+    const montantHT = this.panierData?.totalHT || 0;
     
     return montantHT;
-    //}
-    
-    
   }
 
   get montantRemise(): number {
-  // Pour les retours, pas de remise
+  
+  let montantRemise = 0;
+  
   /* if (this.typeBon === 'retour') {
     this.debugLog('get montantRemise - Retour', { montantRemise: 0 });
     return 0;
-  }
-  
-  // Retourner la remise totale du panier
-  if (this.panierData?.remise !== undefined) {
-    return this.panierData.remise;
-  }
-  
-  // Fallback : calculer à partir des articles
-  if (this.panierData?.articles) {
-    return this.panierData.articles.reduce((total, article) => {
-      return total + (article.montantRemise || 0);
-    }, 0);
-  }
-  
-  return 0; */
-  let montantRemise = 0;
-  
-  if (this.typeBon === 'retour') {
-    this.debugLog('get montantRemise - Retour', { montantRemise: 0 });
-    return 0;
-  }
+  } */
   
   // Vérifier d'abord la remise du panier
   if (this.panierData?.remise !== undefined) {
@@ -700,81 +558,38 @@ setActiveTab(tab: 'informations' | 'articles' | 'paiement' | 'logistique'): void
     montantRemise = this.panierData.articles.reduce((total, article) => {
       return total + (article.montantRemise || 0);
     }, 0);
-    
-    /* this.debugLog('get montantRemise - Calcul depuis articles', {
-      montantRemise: montantRemise,
-      articlesCount: this.panierData.articles.length
-    }); */
   }
   
   return montantRemise;
 }
   get montantTVA(): number {
     // Utiliser la TVA du panier si disponible
-  /* if (this.panierData?.tva !== undefined) {
-    return this.panierData.tva;
-  }
-    //const taux = this.bonForm.get('tauxTVA')?.value || 0;
-    // Fallback si pas de panier
-    const taux = this.panierData?.tauxTVA || this.bonForm.get('tauxTVA')?.value || 0;
-    return this.montantHT * (taux / 100); */
     // Pour les retours, pas de TVA
     if (this.typeBon === 'retour') {
       return 0;
     }
-    
     // Utiliser la TVA du panier si disponible
     //return this.panierData?.tva || 0;
      const montantTVA = this.panierData?.tva || 0;
-  
-   /*  this.debugLog('get montantTVA', {
-      panierData: this.panierData,
-      tva: montantTVA,
-      typeBon: this.typeBon
-    }); */
-    
+
     return montantTVA;
-    
 
   }
 
   get totalTTC(): number {
-    
+     // Pour les retours, pas de total TTC
     /* if (this.typeBon === 'retour') {
       return 0;
-    }
-    // Utiliser le total TTC du panier si disponible
-    if (this.panierData?.totalTTC !== undefined) {
-      return this.panierData.totalTTC;
-    }
-    return this.montantHT + this.montantTVA; */
-     // Pour les retours, pas de total TTC
-    if (this.typeBon === 'retour') {
-      return 0;
-    }
-    
+    } */
     // Utiliser le total TTC du panier si disponible
       //return this.panierData?.totalTTC || 0;
        const totalTTC = this.panierData?.totalTTC || 0;
-  
-      /* this.debugLog('get totalTTC', {
-        panierData: this.panierData,
-        totalTTC: totalTTC,
-        typeBon: this.typeBon
-      }); */
-      
       return totalTTC;
-    
   }
 
   // Ajouter un getter pour le taux TVA du panier
   get tauxTVA(): number {
-    //return this.panierData?.tauxTVA || this.bonForm.get('tauxTVA')?.value || 0;
-     // Retourner 0 si pas de TVA, sinon le taux global du panier s'il existe
-    /* if (this.panierData?.tvaParArticle === false && this.panierData?.tauxTVA) {
-      return this.panierData.tauxTVA;
-    }
-    return 0; */ // Quand TVA par article, pas de taux unique
+
     let tauxTVA = 0;
   
     if (this.panierData?.tvaParArticle === false && this.panierData?.tauxTVA !== undefined) {
@@ -793,54 +608,13 @@ setActiveTab(tab: 'informations' | 'articles' | 'paiement' | 'logistique'): void
     return tauxTVA;
   }
   get resteAPayer(): number {
-    /* const total = this.montantHT; //this.totalBon;
-    const avance = this.bonForm.get('avance')?.value || 0;
-    return Math.max(0, total - avance); */
-    // Pour les retours, pas de reste à payer
-    /* if (this.typeBon === 'retour') {
-      return 0;
-    }
-    
-    const total = this.totalTTC;
-    const avance = this.bonForm.get('avance')?.value || 0;
-    return Math.max(0, total - avance); */
 
      const total = this.totalTTC;
     const avance = this.bonForm.get('avance')?.value || 0;
     const resteAPayer = Math.max(0, total - avance);
     
-   /*  this.debugLog('get resteAPayer', {
-      totalTTC: total,
-      avance: avance,
-      resteAPayer: resteAPayer,
-      typeBon: this.typeBon
-    }); */
-    
     return resteAPayer;
   }
-
-  /* get totalBon(): number {
-    if (this.typeBon === 'retour') {
-      return 0;
-    }
-    return this.totalTTC;
-  } */
-
-    /* get montantRemise(): number {
-      // Pour les retours, pas de remise
-      if (this.typeBon === 'retour') {
-        return 0;
-      }
-      
-      // Calculer la remise totale à partir des articles du panier
-      if (this.panierData?.articles) {
-        return this.panierData.articles.reduce((total, article) => {
-          return total + (article.montantRemise || 0);
-        }, 0);
-      }
-      
-      return 0;
-    } */
 
   // Validation améliorée
   validerMontants(): void {
@@ -852,49 +626,11 @@ setActiveTab(tab: 'informations' | 'articles' | 'paiement' | 'logistique'): void
     if (avance > totalTTC) {
       this.erreurs.push(`L'avance (${avance} F CFA) ne peut pas dépasser le total TTC (${totalTTC} F CFA)`);
     }
-
-    /* // Validation de la remise
-    if (remise > montant) {
-      this.erreurs.push(`La remise (${remise} F CFA) ne peut pas dépasser le montant du bon (${montant} F CFA)`);
-    }
-
-    // Validation de l'avance
-    const montantApresRemise = montant - remise;
-    if (avance > montantApresRemise) {
-      this.erreurs.push(`L'avance (${avance} F CFA) ne peut pas dépasser le montant après remise (${montantApresRemise} F CFA)`);
-    }
-
-    // Validation du taux TVA
-    const tauxTVA = this.tauxTVA;
-    if (tauxTVA < 0 || tauxTVA > 100) {
-      this.erreurs.push(`Le taux TVA doit être compris entre 0 et 100%`);
-    } */
   }
-
-  // Dans BonComponent
-private sauvegarderEtatPanier(): void {
-  // Cette méthode est appelée avant de quitter l'onglet articles
-  if (this.panierData) {
-    // Sauvegarder l'état dans le localStorage ou dans une variable
-    localStorage.setItem('panier_temp', JSON.stringify(this.panierData));
-  }
-}
-
-private restaurerEtatPanier(): Panier | null {
-  const panierSauvegarde = localStorage.getItem('panier_temp');
-  if (panierSauvegarde) {
-    try {
-      return JSON.parse(panierSauvegarde) as Panier;
-    } catch (e) {
-      console.error('Erreur lors de la restauration du panier:', e);
-    }
-  }
-  return null;
-}
   // Préparation des données améliorée
   prepareBonData(): { bon: Bon, fichier: File | null } {
     const formValue = this.bonForm.value;
-    const logistiqueValue = this.logistiqueForm.value;
+    //const logistiqueValue = this.logistiqueForm.value;
 
     
     const baseData = {
@@ -917,7 +653,7 @@ private restaurerEtatPanier(): Panier | null {
         ...baseData,
         numeroBonOrigine: formValue.numeroBonOrigine,
         motifsRetour: formValue.motifsRetour,
-        montantAvoir: this.montantBase,
+        montantAvoir: this.totalTTC,
         montantTotal: 0,
         remise: 0,
         avance: 0,
@@ -926,11 +662,11 @@ private restaurerEtatPanier(): Panier | null {
       });
 
       // Ajouter les informations de logistique si fournies
-      if (logistiqueValue.dateLivraisonPrevue) {
-        bonRetour.dateLivraisonPrevue = new Date(logistiqueValue.dateLivraisonPrevue);
+      if (formValue.dateLivraisonPrevue) {
+        bonRetour.dateLivraisonPrevue = new Date(formValue.dateLivraisonPrevue);
       }
-      bonRetour.pointLivraison = logistiqueValue.pointLivraison;
-      bonRetour.transporteur = logistiqueValue.transporteur;
+      bonRetour.pointLivraison = formValue.pointLivraison;
+      bonRetour.transporteur = formValue.transporteur;
 
       return { bon: bonRetour, fichier: this.fichierSelectionne };
     }
@@ -947,11 +683,11 @@ private restaurerEtatPanier(): Panier | null {
     });
 
     // Ajouter les informations de logistique
-    if (logistiqueValue.dateLivraisonPrevue) {
-      bonStandard.dateLivraisonPrevue = new Date(logistiqueValue.dateLivraisonPrevue);
+    if (formValue.dateLivraisonPrevue) {
+      bonStandard.dateLivraisonPrevue = new Date(formValue.dateLivraisonPrevue);
     }
-    bonStandard.pointLivraison = logistiqueValue.pointLivraison;
-    bonStandard.transporteur = logistiqueValue.transporteur;
+    bonStandard.pointLivraison = formValue.pointLivraison;
+    bonStandard.transporteur = formValue.transporteur;
 
     // Associer l'entité (client ou fournisseur)
     if (this.typeEntite === 'client' && this.entiteId) {
@@ -966,28 +702,12 @@ private restaurerEtatPanier(): Panier | null {
   // Soumission du bon
   submitBon(): void {
     // Valider tous les formulaires
-    if (!this.bonForm.valid || !this.logistiqueForm.valid) {
+    if (!this.bonForm.valid) {
       this.bonForm.markAllAsTouched();
-      this.logistiqueForm.markAllAsTouched();
+      this.bonForm.markAllAsTouched();
       this.toastr.warning('Veuillez corriger les erreurs dans le formulaire');
       return;
     }
-
-    /* // Validation spécifique selon le type
-    if (this.typeBon !== 'retour') {
-      if (!this.panierData || this.panierData.articles.length === 0) {
-        this.toastr.warning('Veuillez ajouter des articles au panier');
-        return;
-      }
-    } else {
-      const montantAvoir = this.bonForm.get('montantAvoir')?.value || 0;
-      const hasPanier = this.panierData && this.panierData.articles.length > 0;
-      
-      if (montantAvoir <= 0 && !hasPanier) {
-        this.toastr.warning('Pour un retour, saisissez un montant ou ajoutez des articles');
-        return;
-      }
-    } */
 
     // Valider chaque étape
     if (!this.validateInformationsTab() || 
@@ -1095,64 +815,7 @@ debugCurrentState(): void {
   console.groupEnd();
 }
 
-  // Gestion du panier
-  /* onPanierEnregistre(panier: Panier): void {
-
-  this.debugLog('Panier reçu dans bon', {
-    panier: panier,
-    totalHT: panier.totalHT,
-    tva: panier.tva,
-    totalTTC: panier.totalTTC,
-    remise: panier.remise,
-    tauxTVA: panier.tauxTVA,
-    tvaParArticle: panier.tvaParArticle,
-    remiseParArticle: panier.remiseParArticle,
-    articles: panier.articles?.map(a => ({
-      produit: a.produit?.designation,
-      totalHT: a.totalHT,
-      montantTVA: a.montantTVA,
-      montantRemise: a.montantRemise
-    }))
-  });
-    this.panierData = panier;
-    // Mettre à jour le statut du panier local
-    if (panier.statut === 'validé') {
-      this.panierValide = true; // Nouvelle variable d'état
-      this.showBonButtons = true; // Afficher les boutons du bon si nécessaire
-    } else if (panier.statut === 'en_cours') {
-      this.panierValide = false;
-      this.showBonButtons = false; // Cacher les boutons du bon
-    }
-    //this.showBonButtons = true;
-    // Mettre à jour le total panier
-    this.totalPanier = panier.totalHT || 0;
-    this.updateTabAccessibility();
-    setTimeout(() => {
-    this.cdr.detectChanges();
-  });
-  } */
-
-  /* onPanierEnregistre(panier: Panier): void {
-  console.log('📦 Panier reçu, statut:', panier.statut);
-  
-  // Appeler la méthode appropriée selon le statut
-  if (panier.statut === 'validé') {
-    this.onPanierValide(panier);
-  } else if (panier.statut === 'en_cours') {
-    this.onPanierModifie(panier);
-  }
-  
-  this.panierData = panier;
-  this.totalPanier = panier.totalHT || 0;
-}
-
-  private onPanierValide(panier: Panier): void {
-  console.log('✅ Panier validé',panier.statut);
-  this.panierValide = true;
-  this.showBonButtons = true;
-  this.updateTabAccessibility();
-} */
-
+// Gestion du panier
 onPanierEnregistre(panier: Panier): void {
   console.log('📦 Panier reçu dans bon', panier.statut);
   
@@ -1166,9 +829,6 @@ onPanierEnregistre(panier: Panier): void {
   } else if (panier.statut === 'en_cours') {
     this.onPanierModifie(panier);
   }
-  
-  // Forcer une sauvegarde immédiate dans le localStorage
-  this.sauvegarderEtatPanier();
 }
 
 // Modifiez onPanierValide()
@@ -1177,9 +837,6 @@ private onPanierValide(panier: Panier): void {
   this.panierValide = true;
   this.showBonButtons = true;
   this.updateTabAccessibility();
-  
-  // Sauvegarder aussi quand validé
-  this.sauvegarderEtatPanier();
 }
   // Ajoutez cette méthode pour gérer la modification du panier
 onPanierModifie(panier: Panier): void {
@@ -1191,11 +848,7 @@ onPanierModifie(panier: Panier): void {
   if (panier.statut === 'en_cours') {
     this.panierValide = false;
     this.showBonButtons = false;
-    
-    // Désactiver l'onglet Paiement si on est dessus
-    if (this.activeTab === 'paiement') {
-      this.activeTab = 'articles';
-    }
+   
   }
   
   // Forcer la mise à jour
@@ -1214,12 +867,6 @@ onPanierModifie(panier: Panier): void {
   }
 
   // Méthodes utilitaires
- /*  generateNumero(): string {
-    const timestamp = new Date().getTime();
-    const random = Math.floor(Math.random() * 1000);
-    return `BON-${timestamp}-${random}`;
-  } */
-
   generateNumero(): string {
   const now = new Date();
 
@@ -1258,10 +905,7 @@ onPanierModifie(panier: Panier): void {
       avance: 0,
       conditionsPaiement: '30 jours fin de mois',
       delaiPaiement: 30,
-      tauxTVA: 18
-    });
-
-    this.logistiqueForm.reset({
+      tauxTVA: 18,
       dateLivraisonPrevue: '',
       pointLivraison: '',
       transporteur: ''

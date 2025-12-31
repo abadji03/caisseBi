@@ -6,7 +6,7 @@ import { ArticlePanier, Panier } from '../../modeles/panier.model';
 import { BonBrouillonService } from '../../services/bon-brouillon.service';
 import { PaniersService } from '../../services/paniers.service';
 import { ArticlesPanierService } from '../../services/articles-panier.service';
-import { debounceTime, Subject, takeUntil } from 'rxjs';
+import { debounceTime, distinctUntilChanged, Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-panier',
@@ -20,7 +20,6 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
   @Input() produitsDisponibles: Produits[] = [];
   @Input() showPanierSection = false;
   @Input() titre = '🛒 Panier';
-  @Input() tauxTVAList: number[] = [5, 10, 15, 18, 20];
   @Input() modeCompact = false;
   @Input() showHeader = true;
   @Input() showActions = true;
@@ -29,9 +28,9 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
   @Input() showAvanceField = true;
   @Input() typeEntite: 'client' | 'fournisseur' = 'client';
   @Input() resetPanier = false;
-  @Input() panierData: Panier | null = null;
   @Input() tvaParArticle = true;
   @Input() remiseParArticle = true;
+  @Input() showTypePaiement = false;
 
   // Outputs
   // eslint-disable-next-line @angular-eslint/no-output-on-prefix
@@ -63,9 +62,7 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
 
   // Gestion des abonnements et état
   private destroy$ = new Subject<void>();
-  private alreadyLoadedPanierId: number | null = null;
   panierBrouillon: Panier | null = null;
-  private panierCharge = false;
   private updateSubject$ = new Subject<{article: ArticlePanier, index: number}>();
   _uid = Math.random().toString(36).substr(2, 9);
 
@@ -123,7 +120,7 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
       tvaParArticle: this.tvaParArticle,
       remiseParArticle: this.remiseParArticle,
       typeEntite: this.typeEntite,
-      tauxTVA: this.tauxTVAList[0] || 0,
+      tauxTVA:0,
       remiseGlobale: 0,
       avance: 0,
       statut: 'en_cours'
@@ -135,7 +132,7 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
       remiseGlobale: [0, [Validators.min(0), Validators.max(100)]],
       avance: [0, [Validators.min(0)]],
       typePaiement: ['caisse', Validators.required],
-      tauxTVAGlobal: [this.tauxTVAList[0] || 0],
+      tauxTVAGlobal: [0],
       tvaParArticle: [this.tvaParArticle],
       remiseParArticle: [this.remiseParArticle],
       panier: this.fb.array([])
@@ -167,6 +164,29 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
         this.synchroniserFormulaireVersModele();
       });
 
+      // 🔹 TVA globale
+      this.panierForm.get('tauxTVAGlobal')?.valueChanges
+        .pipe(
+          debounceTime(300),
+          distinctUntilChanged(),
+          takeUntil(this.destroy$)
+        )
+        .subscribe(() => {
+          this.synchroniserFormulaireVersModele();
+          this.recalculerPanierComplet();
+        });
+
+      // 🔹 Remise globale
+      this.panierForm.get('remiseGlobale')?.valueChanges
+        .pipe(
+          debounceTime(300),
+          distinctUntilChanged(),
+          takeUntil(this.destroy$)
+        )
+        .subscribe(() => {
+          this.synchroniserFormulaireVersModele();
+          this.recalculerPanierComplet();
+        });
     // Écouter les changements des articles
     /* this.panierArray.valueChanges
       .pipe(debounceTime(100), takeUntil(this.destroy$))
@@ -207,9 +227,9 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
       this.reinitialiserPanier();
     }
 
-    if (changes['panierData']?.currentValue && !this.isFormDisabled) {
+    /* if (changes['panierData']?.currentValue && !this.isFormDisabled) {
       if(this.panierData) this.chargerPanierExistant(this.panierData);
-    }
+    } */
 
     if (changes['tvaParArticle']) {
       this.tvaRadioValue = this.tvaParArticle ? 'article' : 'global';
@@ -253,7 +273,7 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
       remiseGlobale: 0,
       avance: 0,
       typePaiement: 'caisse',
-      tauxTVAGlobal: this.tauxTVAList[0] || 0,
+      tauxTVAGlobal:0,
       tvaParArticle: this.tvaParArticle,
       remiseParArticle: this.remiseParArticle
     });
@@ -263,8 +283,6 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
     this.filteredProduits = [];
     this.isFormDisabled = false;
     this.ispanierValid = false;
-    this.alreadyLoadedPanierId = null;
-    this.panierCharge = false;
 
     this.showBonButtons.emit(false);
     this.totalPanierChange.emit(0);
@@ -294,7 +312,20 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
     return;
   }
 // Utiliser tousLesArticles pour récupérer tous les articles
-  const tousLesArticles = panier.tousLesArticles || [];
+const tousLesArticles = panier.tousLesArticles || [];
+
+// Filtrer les articles sans produitId
+  const articlesValides = tousLesArticles.filter(article => {
+    const hasProduitId = !!(article.produitId || article.Produit?.id);
+    if (!hasProduitId) {
+      console.warn('Article invalide filtré:', article);
+    }
+    return hasProduitId;
+  });
+  
+  if (articlesValides.length !== tousLesArticles.length) {
+    console.warn(`${tousLesArticles.length - articlesValides.length} article(s) sans produitId filtrés`);
+  }
 
 this.panier = new Panier({
     ...panier,
@@ -338,7 +369,7 @@ this.panier = new Panier({
   this.panierForm.patchValue({
     remiseGlobale: panier.remiseGlobale || 0,
     avance: panier.avance || 0,
-    tauxTVAGlobal: panier.tauxTVA || this.tauxTVAList[0] || 0,
+    tauxTVAGlobal: panier.tauxTVA || 0,
     tvaParArticle: panier.tvaParArticle !== undefined ? panier.tvaParArticle : true,
     remiseParArticle: panier.remiseParArticle !== undefined ? panier.remiseParArticle : false
   });
@@ -364,6 +395,11 @@ this.panier = new Panier({
   });  */
   // 8. Forcer la détection de changement
   this.cdr.detectChanges();
+
+   // Vérifier l'état après chargement
+  setTimeout(() => {
+    this.verifierEtCorrigerEtatFormulaire();
+  }, 300);
 
   console.log('🎉 Panier chargé avec succès:', {
     panierModel: {
@@ -453,8 +489,14 @@ this.panier = new Panier({
       tauxTVA: produit.tauxTVA || 0,
       remise: 0
     });
-
+    article.calculerTotaux(
+    this.panier.tvaParArticle,
+    this.panier.remiseParArticle,
+    this.panier.tauxTVA,
+    this.panier.remiseGlobale
+  );
     this.panier.ajouterArticle(article);
+    this.panier.calculerTotals();
     this.synchroniserModeleVersFormulaire();
 
     if (this.panierBrouillon?.id) {
@@ -464,42 +506,41 @@ this.panier = new Panier({
 
   // === SYNCHRONISATION MODÈLE/FORMULAIRE ===
 
-  /* private synchroniserFormulaireVersModele(): void {
-    // Mettre à jour les propriétés du panier depuis le formulaire
-    this.panier.remiseGlobale = this.panierForm.value.remiseGlobale || 0;
-    this.panier.tauxTVA = this.panierForm.value.tauxTVAGlobal || 0;
-    this.panier.remiseParArticle = this.panierForm.value.remiseParArticle;
-    this.panier.tvaParArticle = this.panierForm.value.tvaParArticle;
-    this.panier.avance = this.panierForm.value.avance || 0;
-
-    // Recalculer les totaux
-    this.panier.calculerTotals();
-    
-    // Émettre les changements
-    this.totalPanierChange.emit(this.panier.totalTTC);
-  } */
-
   private synchroniserFormulaireVersModele(): void {
-    const raw = this.panierForm.getRawValue(); // ✅ IMPORTANT
+  // Récupération sécurisée des valeurs du formulaire
+  const raw = this.panierForm.getRawValue();
 
-    this.panier.remiseGlobale =
-      raw.remiseGlobale !== null && raw.remiseGlobale !== undefined
-        ? raw.remiseGlobale
-        : this.panier.remiseGlobale;
+  // 🔒 NORMALISATION DES VALEURS NUMÉRIQUES
+  const remiseGlobale = Number(raw.remiseGlobale);
+  const tauxTVAGlobal = Number(raw.tauxTVAGlobal);
+  const avance = Number(raw.avance);
 
-    this.panier.tauxTVA =
-      raw.tauxTVAGlobal !== null && raw.tauxTVAGlobal !== undefined
-        ? raw.tauxTVAGlobal
-        : this.panier.tauxTVA;
+  // 🔹 Remise globale
+  // '' | null | undefined | NaN  ==> 0
+  this.panier.remiseGlobale = !isNaN(remiseGlobale) && remiseGlobale >= 0
+    ? remiseGlobale
+    : 0;
 
-    this.panier.remiseParArticle = raw.remiseParArticle;
-    this.panier.tvaParArticle = raw.tvaParArticle;
-    this.panier.avance = raw.avance ?? this.panier.avance;
+  // 🔹 TVA globale
+  this.panier.tauxTVA = !isNaN(tauxTVAGlobal) && tauxTVAGlobal >= 0
+    ? tauxTVAGlobal
+    : 0;
 
-    this.panier.calculerTotals();
-    this.totalPanierChange.emit(this.panier.totalTTC);
-  }
+  // 🔹 Modes de calcul
+  this.panier.remiseParArticle = !!raw.remiseParArticle;
+  this.panier.tvaParArticle = !!raw.tvaParArticle;
 
+  // 🔹 Avance
+  this.panier.avance = !isNaN(avance) && avance >= 0
+    ? avance
+    : 0;
+
+  // 🔄 Recalcul COMPLET du panier
+  this.panier.calculerTotals();
+
+  // 📢 Émission du total TTC
+  this.totalPanierChange.emit(this.panier.totalTTC);
+}
 
   private synchroniserModeleVersFormulaire(): void {
     // Synchroniser les articles du modèle vers le formulaire
@@ -515,6 +556,10 @@ this.panier = new Panier({
 
   private ajouterArticleAuFormulaire(article: ArticlePanier): void {
 
+    if (!article.produitId) {
+      console.error('❌ Article sans produitId détecté:', article);
+      throw new Error(`Article invalide: produitId manquant pour ${article.produit?.designation || 'article inconnu'}`);
+    }
     // S'assurer que l'article a ses totaux calculés
     if (!article.totalHT || !article.totalTTC) {
       article.calculerTotaux(
@@ -615,33 +660,20 @@ this.panier = new Panier({
       });
   });
 }
-
-  private onArticleChange(articleGroup: FormGroup): void {
-    const index = this.panierArray.controls.indexOf(articleGroup);
-    if (index !== -1) {
-      const donneesArticle = articleGroup.value;
-      this.panier.mettreAJourArticle(index, donneesArticle);
-      
-      if (donneesArticle.id && this.panierBrouillon?.id) {
-        this.updateSubject$.next({ article: donneesArticle, index });
-      }
-    }
-  }
-
   // === GESTION DES MODES TVA/REMISE ===
 
   private onTVAModeChange(tvaParArticle: boolean): void {
     this.panier.tvaParArticle = tvaParArticle;
     this.showTVAFields = tvaParArticle;
     this.mettreAJourEtatChampsTVA();
-    //this.recalculerTousLesArticles();
+    this.recalculerPanierComplet();
   }
 
   private onRemiseModeChange(remiseParArticle: boolean): void {
     this.panier.remiseParArticle = remiseParArticle;
     this.showRemiseFields = remiseParArticle;
     this.mettreAJourEtatChampsRemise();
-    //this.recalculerTousLesArticles();
+    this.recalculerPanierComplet();
   }
 
   onTVARadioChange(value: 'article' | 'global'): void {
@@ -680,15 +712,20 @@ this.panier = new Panier({
 
   // === MÉTHODES DE CALCUL ===
 
-  /* private recalculerTousLesArticles(): void {
-    this.panierArray.controls.forEach((control, index) => {
-      const donneesArticle = control.value;
-      this.panier.mettreAJourArticle(index, donneesArticle);
-    });
-    
-    this.cdr.detectChanges();
-    this.totalPanierChange.emit(this.panier.totalTTC);
-  } */
+  private recalculerPanierComplet(): void {
+  this.panier.articles.forEach(article => {
+    article.calculerTotaux(
+      this.panier.tvaParArticle,
+      this.panier.remiseParArticle,
+      this.panier.tauxTVA,
+      this.panier.remiseGlobale
+    );
+  });
+
+  this.panier.calculerTotals();
+  this.synchroniserModeleVersFormulaire();
+  this.totalPanierChange.emit(this.panier.totalTTC);
+}
 
   // === ÉVÉNEMENTS UI ===
 
@@ -726,7 +763,7 @@ this.panier = new Panier({
   }
 }
 
-private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé'|'annulé'|'retourné'): void {
+/* private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé'|'annulé'|'retourné'): void {
   if (!this.panierBrouillon?.id) return;
 
   console.log(`🔄 Mise à jour statut panier: ${statut}`);
@@ -753,6 +790,67 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé'|'annul�
         // En cas d'erreur, revenir à l'état précédent
         if (statut === 'validé') {
           // Si échec de validation, revenir en mode édition
+          this.passerEnModeModification();
+        }
+      }
+    });
+} */
+
+private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annulé' | 'retourné'): void {
+  if (!this.panierBrouillon?.id) return;
+
+  console.log(`🔄 Mise à jour statut panier en BD: ${statut}`);
+  
+  // 1. Préparer le panier avec TOUS les totaux
+  const panierAMettreAJour = this.preparePanierForDB(statut);
+  
+  console.log('📤 Panier envoyé à l\'API:', {
+    id: panierAMettreAJour.id,
+    statut: panierAMettreAJour.statut,
+    totalHT: panierAMettreAJour.totalHT,
+    totalTTC: panierAMettreAJour.totalTTC,
+    articles: panierAMettreAJour.articles.map(a => ({
+      id: a.id,
+      produit: a.produit?.designation,
+      quantite: a.quantite,
+      prixUnitaire: a.prixUnitaire,
+      totalHT: a.totalHT,
+      montantRemise: a.montantRemise,
+      montantTVA: a.montantTVA,
+      totalTTC: a.totalTTC
+    }))
+  });
+  
+  this.panierService.updatePanier(this.panierBrouillon.id, panierAMettreAJour)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (panierMisAJour) => {
+        console.log(`✅ Statut panier mis à jour en BD: ${panierMisAJour.statut}`);
+        console.log('📥 Panier reçu de l\'API:', {
+          totalHT: panierMisAJour.totalHT,
+          totalTTC: panierMisAJour.totalTTC,
+          articles: panierMisAJour.tousLesArticles?.map(a => ({
+            id: a.id,
+            produit: a.produit?.designation,
+            totalHT: a.totalHT,
+            montantRemise: a.montantRemise,
+            montantTVA: a.montantTVA,
+            totalTTC: a.totalTTC
+          }))
+        });
+        
+        // Mettre à jour le panier brouillon local
+        this.panierBrouillon = panierMisAJour;
+        
+        // Synchroniser le statut dans le modèle local
+        this.panier.statut = panierMisAJour.statut;
+      },
+      error: (err) => {
+        console.error('❌ Erreur mise à jour statut panier:', err);
+        console.error('Détails erreur:', err.error);
+        
+        // En cas d'erreur, revenir à l'état précédent
+        if (statut === 'validé') {
           this.passerEnModeModification();
         }
       }
@@ -827,13 +925,73 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé'|'annul�
       : produit.prixVenteUnitaire || 0;
   }
 
-
-  canActivateTvaGlobalMode(): boolean {
-    return this.panierArray.controls.some(articleGroup => {
-      const tauxTVA = articleGroup.get('tauxTVA')?.value;
-      return tauxTVA && tauxTVA > 0;
-    });
+ canActivateTvaGlobalMode(): boolean {
+  console.log('🔍 Vérification activation mode TVA global');
+  
+  // 1. Si le formulaire est désactivé, on ne peut rien changer
+  if (this.isFormDisabled) {
+    console.log('❌ Mode global impossible: formulaire désactivé');
+    return true; // Désactive le bouton radio
   }
+  
+  // 2. Si déjà en mode global, on peut rester en global
+  if (this.tvaRadioValue === 'global') {
+    console.log('✅ Mode global déjà activé');
+    return false; // Bouton NON désactivé
+  }
+  
+  // 3. Si pas d'articles, on peut choisir n'importe quel mode
+  if (this.panierArray.length === 0) {
+    console.log('✅ Mode global activable: panier vide');
+    return false; // Bouton NON désactivé
+  }
+  
+  // 4. Vérifier si des articles ont des TVA personnalisées (> 0)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const articlesAvecTvaPersonnalisee :any = [];
+  
+  this.panierArray.controls.forEach((articleGroup, index) => {
+    const tauxTVA = articleGroup.get('tauxTVA')?.value;
+    const produit = articleGroup.get('produit')?.value;
+    
+    // Important: convertir en nombre et vérifier
+    const tauxNumerique = parseFloat(tauxTVA) || 0;
+    
+    if (tauxNumerique > 0) {
+      articlesAvecTvaPersonnalisee.push({
+        index,
+        produit,
+        tauxTVA: tauxNumerique
+      });
+    }
+  });
+  
+  console.log('📊 Articles avec TVA personnalisée:', articlesAvecTvaPersonnalisee);
+  
+  // 5. Si AUCUN article n'a de TVA personnalisée, on peut passer en global
+  if (articlesAvecTvaPersonnalisee.length === 0) {
+    console.log('✅ Mode global activable: aucun article avec TVA personnalisée');
+    return false; // Bouton NON désactivé
+  }
+  
+  // 6. Articles avec TVA personnalisée existent, vérifier si c'est le même taux
+  if (articlesAvecTvaPersonnalisee.length > 0) {
+    const premierTaux = articlesAvecTvaPersonnalisee[0].tauxTVA;
+    const tousMemeTaux = articlesAvecTvaPersonnalisee.every(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (article:any) => article.tauxTVA === premierTaux
+    );
+    
+    if (tousMemeTaux) {
+      console.log(`✅ Mode global activable: tous les articles ont la même TVA (${premierTaux}%)`);
+      return false; // Bouton NON désactivé
+    }
+  }
+  
+  // 7. Articles avec TVA différentes > 0, on ne peut PAS passer en global
+  console.log('❌ Mode global impossible: articles avec TVA différentes');
+  return true; // Désactive le bouton radio
+}
 
   // === GESTION DE L'ÉTAT DU FORMULAIRE ===
 
@@ -890,13 +1048,29 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé'|'annul�
     const articleASauvegarder = new ArticlePanier({
       ...article,
       panierId: this.panierBrouillon.id,
-      code_structure: this.panierBrouillon.code_structure
+      code_structure: this.panierBrouillon.code_structure,
+      // Recalculer les totaux avant envoi
+      montantRemise: article.montantRemise || 0,
+      montantTVA: article.montantTVA || 0,
+      totalHT: article.totalHT || 0,
+      totalTTC: article.totalTTC || 0
+    });
+
+    console.log('📤 Ajout article en BD:', {
+      produit: articleASauvegarder.produit?.designation,
+      totalHT: articleASauvegarder.totalHT,
+      totalTTC: articleASauvegarder.totalTTC
     });
 
     this.articlesPanierService.create(articleASauvegarder)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (articleSauvegarde) => {
+          console.log('✅ Article ajouté en BD:', {
+            id: articleSauvegarde.id,
+            totalHT: articleSauvegarde.totalHT,
+            totalTTC: articleSauvegarde.totalTTC
+          });
           const index = this.panier.trouverArticleIndex(article.produitId!);
           if (index !== -1) {
             this.panier.articles[index].id = articleSauvegarde.id;
@@ -926,7 +1100,7 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé'|'annul�
     id: article.id,
     panierId: this.panierBrouillon.id,
     code_structure: this.panierBrouillon.code_structure,
-    produitId: article.produitId,
+    produitId: article.produitId || article.Produit?.id,
     
     // CHAMPS FINANCIERS - SÉPARÉS CLAREMENT
     remise: article.remise || 0,
@@ -987,36 +1161,123 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé'|'annul�
     if (!this.panierBrouillon?.id) return;
     // Utiliser le statut actuel du panier
    this.mettreAJourPanierEnBaseAvecStatut(this.panier.statut);
-    /* this.panierService.updatePanier(this.panierBrouillon.id, this.panier)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: () => console.log('Panier mis à jour en base'),
-        error: (err) => console.error('Erreur mise à jour panier:', err)
-      }); */
   }
 
   // === MÉTHODES PRÉSENTES DANS L'ANCIEN CODE MAIS MANQUANTES ===
 
- private preparePanierForDB(): Panier {
+  private preparePanierForDB(statut: 'en_cours' | 'validé' | 'annulé' | 'retourné'): Panier {
+  console.log('💾 Préparation du panier pour la base de données, statut:', statut);
   
-  // Créer une copie profonde du panier
-  const panierClone = this.panier.clone();
+  // 1. Recréer le panier avec tous les champs
+  const panierPourBD = new Panier({
+    id: this.panier.id,
+    clientId: this.panier.clientId,
+    bonId: this.panier.bonId,
+    // Copier explicitement tous les champs
+    totalHT: this.panier.totalHT,
+    tva: this.panier.tva,
+    totalTTC: this.panier.totalTTC,
+    remiseGlobale: this.panier.remiseGlobale,
+    remise: this.panier.remise,
+    avance: this.panier.avance,
+    tauxTVA: this.panier.tauxTVA,
+    typeEntite: this.panier.typeEntite,
+    code_structure: this.panier.code_structure,
+    statut: statut, // <-- Utiliser le statut passé en paramètre
+    dateCreation: this.panier.dateCreation,
+    dateMiseAJour: new Date(),
+    magasinId: this.panier.magasinId,
+    agentId: this.panier.agentId,
+    remiseParArticle: this.panier.remiseParArticle,
+    tvaParArticle: this.panier.tvaParArticle
+  });
   
-  // S'assurer que tous les champs sont à jour
-  panierClone.remiseGlobale = this.panierForm.get('remiseGlobale')?.value || 0;
-  panierClone.avance = this.panierForm.get('avance')?.value || 0;
-  panierClone.tauxTVA = this.panierForm.get('tauxTVAGlobal')?.value || 0;
-  panierClone.remiseParArticle = this.panierForm.get('remiseParArticle')?.value;
-  panierClone.tvaParArticle = this.panierForm.get('tvaParArticle')?.value;
+  // 2. Recréer les articles avec TOUS les totaux
+  panierPourBD.articles = this.panier.articles.map(article => {
+    // Créer une copie complète de l'article
+    const articlePourBD = new ArticlePanier({
+      id: article.id,
+      produitId: article.produitId || article.Produit?.id,
+      panierId: this.panierBrouillon?.id,
+      produit: article.produit,
+      Produit: article.Produit,
+      prixUnitaire: article.prixUnitaire,
+      quantite: article.quantite,
+      prixVenteUnitaire: article.prixVenteUnitaire,
+      prixAchatUnitaire: article.prixAchatUnitaire,
+      code_structure: article.code_structure,
+      stock: article.stock,
+      remise: article.remise,
+      tauxTVA: article.tauxTVA,
+      // CHAMPS CALCULÉS - IMPORTANT !
+      montantTVA: article.montantTVA,
+      montantRemise: article.montantRemise,
+      totalHT: article.totalHT,
+      totalTTC: article.totalTTC
+    });
+    
+    console.log('📦 Article préparé pour BD:', {
+      produit: articlePourBD.produit?.designation,
+      quantite: articlePourBD.quantite,
+      prixUnitaire: articlePourBD.prixUnitaire,
+      totalHT: articlePourBD.totalHT,
+      montantRemise: articlePourBD.montantRemise,
+      montantTVA: articlePourBD.montantTVA,
+      totalTTC: articlePourBD.totalTTC
+    });
+    
+    return articlePourBD;
+  });
   
-  // Recalculer les totaux
-  panierClone.calculerTotals();
+  // 3. Recalculer une dernière fois pour être sûr
+  panierPourBD.calculerTotals();
   
-  return panierClone;
+  console.log('✅ Panier préparé pour BD:', {
+    statut: panierPourBD.statut,
+    totalHT: panierPourBD.totalHT,
+    totalTTC: panierPourBD.totalTTC,
+    tva: panierPourBD.tva,
+    remise: panierPourBD.remise,
+    articlesCount: panierPourBD.articles.length,
+    articlesTotaux: panierPourBD.articles.map(a => ({
+      produit: a.produit?.designation,
+      totalHT: a.totalHT,
+      totalTTC: a.totalTTC
+    }))
+  });
+  
+  return panierPourBD;
 }
 
-preparePanierData(): Panier {
-  return this.preparePanierForDB();
-}
+  private verifierEtCorrigerEtatFormulaire(): void {
+    // Délai pour s'assurer que tout est chargé
+    setTimeout(() => {
+      console.log('🔍 Vérification état formulaire:', {
+        isFormDisabled: this.isFormDisabled,
+        panierStatut: this.panier?.statut,
+        panierBrouillonStatut: this.panierBrouillon?.statut,
+        panierArrayLength: this.panierArray?.length
+      });
+      
+      // Si le formulaire est désactivé mais devrait être activé
+      if (this.isFormDisabled && 
+          this.panier?.statut === 'en_cours' && 
+          this.panierArray?.length > 0) {
+        console.log('⚠️ Correction automatique : formulaire devrait être activé');
+        this.isFormDisabled = false;
+        this.activerControlesFormulaire();
+        this.cdr.detectChanges();
+      }
+      
+      // Si le formulaire est activé mais devrait être désactivé
+      if (!this.isFormDisabled && 
+          this.panier?.statut === 'validé') {
+        console.log('⚠️ Correction automatique : formulaire devrait être désactivé');
+        this.isFormDisabled = true;
+        this.desactiverControlesFormulaire();
+        this.cdr.detectChanges();
+      }
+    }, 200);
+  }
 
 }

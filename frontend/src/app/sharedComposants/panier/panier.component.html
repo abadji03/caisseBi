@@ -35,7 +35,8 @@
                 <input class="form-check-input" type="radio" 
                        [checked]="tvaRadioValue === 'global'"
                        (change)="onTVARadioChange('global')"
-                       [class.disabled]="isFormDisabled || canActivateTvaGlobalMode() "
+                       [disabled]="isFormDisabled || canActivateTvaGlobalMode()"
+                       [attr.disabled]="(isFormDisabled || canActivateTvaGlobalMode()) ? 'disabled' : null"
                        [id]="'tvaModeGlobal' + _uid">
                 <label class="form-check-label" [for]="'tvaModeGlobal' + _uid">
                   TVA globale
@@ -139,7 +140,7 @@
             step="0.01"
           />
         </div>
-        <div class="col-md-4">
+        <div class="col-md-4" *ngIf="showTypePaiement">
           <select class="form-select" formControlName="typePaiement">
             <option value="caisse">Caisse</option>
             <option value="mobile money">Mobile Money</option>
@@ -340,7 +341,7 @@
       <div class="d-flex justify-content-center mt-3" *ngIf="showButtonsActions">
         <button 
           type="button" 
-          class="btn btn-success me-3" 
+          class="btn btn-success me-3 w-25" 
           (click)="onEditOrSave()"
           [disabled]="panierArray.length === 0"
         >
@@ -350,7 +351,7 @@
         
         <button 
           type="button" 
-          class="btn btn-warning" 
+          class="btn btn-warning w-25" 
           (click)="annulerPanier()"
         >
           <i class="bi bi-x-circle me-1"></i>

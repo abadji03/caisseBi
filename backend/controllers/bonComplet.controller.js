@@ -142,11 +142,11 @@ exports.createBonComplet = async (req, res) => {
 
     // CAS 1: BONS FOURNISSEURS
     if (typeEntite === 'fournisseur') {
-      await this.traiterBonFournisseur(nouveauBon, articles, magasinId, agentId, code_structure, transaction);
+      await this.traiterBonFournisseur(nouveauBon, articles, magasinId, agentId, code_structure,panier, transaction);
     }
     // CAS 2: BONS CLIENTS
     else if (typeEntite === 'client') {
-      await this.traiterBonClient(nouveauBon, articles, magasinId, agentId, code_structure, transaction);
+      await this.traiterBonClient(nouveauBon, articles, magasinId, agentId, code_structure,panier, transaction);
     } 
 
     // ==============================
@@ -174,21 +174,15 @@ exports.createBonComplet = async (req, res) => {
         date: new Date() 
       }, 
       { transaction });
-    //console.log('Paiement créé pour l\'avance:', paiementCree);
-          // Mettre à jour l'entité pour l'avance
-      /* if (typeEntite === 'client') {
-        await statutManager.mettreAJourClientApresRegelement(
-          { montant: nouveauBon.avance },
-          clientId,
-          transaction
-        );
-      } else if (typeEntite === 'fournisseur') {
-        await statutManager.mettreAJourFournisseurApresVersement(
-          { montant: nouveauBon.avance },
-          fournisseurId,
-          transaction
-        );
-      } */
+    
+      // CAS 1: BONS FOURNISSEURS
+    if (typeEntite === 'fournisseur') {
+      await statutManager.mettreAJourFournisseurApresVersement(paiementCree,fournisseurId, transaction);
+    }
+    // CAS 2: BONS CLIENTS
+    else if (typeEntite === 'client') {
+      await statutManager.mettreAJourClientApresRegelement(paiementCree,clientId, transaction);
+    } 
     }
 
     // Créer ou mettre à jour l'opération associée
@@ -294,7 +288,7 @@ exports.createBonComplet = async (req, res) => {
 /**
  * Traitement spécifique pour les bons fournisseurs
  */
-exports.traiterBonFournisseur = async (bon, articles, magasinId, agentId, code_structure, transaction) => {
+exports.traiterBonFournisseur = async (bon, articles, magasinId, agentId, code_structure, panier,transaction) => {
   const statut = bon.statutBon;
   const typeBon = bon.type;
 
@@ -337,7 +331,7 @@ exports.traiterBonFournisseur = async (bon, articles, magasinId, agentId, code_s
       }
       if (['retourné'].includes(statut)) {
         // Créer un bon de retour automatique
-        await this.creerBonRetour(bon, articles, magasinId, agentId, code_structure, transaction);
+        await this.creerBonRetour(bon, articles, magasinId, agentId, code_structure,panier, transaction);
         
         // Entrée du stock (retour fournisseur)
         await Promise.all(
@@ -377,7 +371,7 @@ exports.traiterBonFournisseur = async (bon, articles, magasinId, agentId, code_s
 /**
  * Traitement spécifique pour les bons clients
  */
-exports.traiterBonClient = async (bon, articles, magasinId, agentId, code_structure, transaction) => {
+exports.traiterBonClient = async (bon, articles, magasinId, agentId, code_structure,panier, transaction) => {
   const statut = bon.statutBon;
   const typeBon = bon.type;
 
@@ -415,7 +409,7 @@ exports.traiterBonClient = async (bon, articles, magasinId, agentId, code_struct
       }
       if (['retourné'].includes(statut)) {
         // Créer un bon de retour automatique
-        await this.creerBonRetour(bon, articles, magasinId, agentId, code_structure, transaction);
+        await this.creerBonRetour(bon, articles, magasinId, agentId, code_structure,panier, transaction);
         
         // Entrée du stock (retour client)
         await Promise.all(
@@ -458,7 +452,7 @@ exports.traiterBonClient = async (bon, articles, magasinId, agentId, code_struct
       }
        if (['retourné'].includes(statut)) {
         // Créer un bon de retour automatique
-        await this.creerBonRetour(bon, articles, magasinId, agentId, code_structure, transaction);
+        await this.creerBonRetour(bon, articles, magasinId, agentId, code_structure,panier, transaction);
         
         // Entrée du stock (retour client)
         await Promise.all(
@@ -559,7 +553,7 @@ exports.mettreAJourBonOrigineRetour = async (bonRetour, agentId, code_structure,
 /**
  * Créer un bon de retour automatique
  */
-exports.creerBonRetour = async (bonOrigine, articles, magasinId, agentId, code_structure, transaction) => {
+exports.creerBonRetour = async (bonOrigine, articles, magasinId, agentId, code_structure, panier, transaction) => {
 
   // Vérifier si un retour existe déjà pour ce bon
   const retourExistant = await db.Bon.findOne({
@@ -600,12 +594,15 @@ exports.creerBonRetour = async (bonOrigine, articles, magasinId, agentId, code_s
     code_structure,
     magasinId,
     agentId,
-    clientId: bonOrigine.clientId,
-    fournisseurId: bonOrigine.fournisseurId,
-    typeEntite: bonOrigine.typeEntite,
+    remise:panier.remise || bonOrigine.remise,
+    clientId: panier.clientId,
+    tva:panier.tva,
+    tauxTVA:panier.tauxTVA,
+    fournisseurId: panier.fournisseurId,
+    typeEntite: panier.typeEntite,
     statut: 'validé',
-    totalHT: bonOrigine.montantTotal,
-    totalTTC: bonOrigine.montantTotal
+    totalHT: panier.totalHT,
+    totalTTC: panier.totalTTC
   }, { transaction });
 
   // Créer les articles du retour
@@ -617,7 +614,13 @@ exports.creerBonRetour = async (bonOrigine, articles, magasinId, agentId, code_s
       prixUnitaire: article.prixUnitaire,
       prixAchatUnitaire: article.prixAchatUnitaire,
       prixVenteUnitaire: article.prixVenteUnitaire,
-      code_structure
+      code_structure,
+      remise: article.remise || 0,
+      tauxTVA: article.tauxTVA || 0,
+      montantTVA: article.montantTVA || 0,  
+      montantRemise: article.montantRemise || 0,
+      totalHT: article.totalHT || 0,
+      totalTTC: article.totalTTC || 0
     })),
     { transaction }
   );

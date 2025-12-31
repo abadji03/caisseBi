@@ -127,21 +127,21 @@ module.exports = (sequelize, DataTypes) => {
     // Calcul automatique : netAPayer = montantTotal – remise
     netAPayer: {
       type: DataTypes.DECIMAL(12, 2),
-      get() {
+      /* get() {
         const total = parseFloat(this.getDataValue('montantTotal')) || 0;
         const remise = parseFloat(this.getDataValue('remise')) || 0;
         return (total - remise).toFixed(2);
-      }
+      } */
     },
 
     // Calcul automatique : resteAPayer = netAPayer – avance
     resteAPayer: {
       type: DataTypes.DECIMAL(12, 2),
-      get() {
+      /* get() {
         const net = parseFloat(this.get('netAPayer')) || 0;
         const avance = parseFloat(this.getDataValue('avance')) || 0;
         return (net - avance).toFixed(2);
-      }
+      } */
     },
 
     // --- Paiement ---

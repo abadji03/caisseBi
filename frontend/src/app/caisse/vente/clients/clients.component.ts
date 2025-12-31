@@ -1556,7 +1556,14 @@ private enregistrerBon(bon: Bon, panier: Panier, fichier:File|null): void {
       quantite: article.quantite,
       prixUnitaire: article.prixUnitaire,
       prixVenteUnitaire: article.prixVenteUnitaire,
-      prixAchatUnitaire: article.prixAchatUnitaire
+      prixAchatUnitaire: article.prixAchatUnitaire,
+      code_structure: this.code_structure,
+      remise: article.remise,
+      tauxTVA: article.tauxTVA,
+      montantTVA: article.montantTVA,
+      montantRemise: article.montantRemise,
+      totalHT: article.totalHT,
+      totalTTC: article.totalTTC
     })),
     code_structure: this.code_structure,
     magasinId: this.magasinId,
@@ -1912,7 +1919,7 @@ private safeNumber(value: any): number {
    loadBonAndPaiement(): void {
       this.isLoading = true;
       forkJoin([
-        this.bonService.getBonsByStructure(this.code_structure),
+        this.bonService.getBonsClientByStructure(this.code_structure),
         this.paiementService.getByStructure(this.code_structure),
       ])
         .pipe(
@@ -2094,7 +2101,14 @@ private loadStructureInfo(): void {
       quantite: article.quantite,
       prixUnitaire: article.prixUnitaire,
       prixAchatUnitaire: article.prixAchatUnitaire,
-      prixVenteUnitaire: article.prixVenteUnitaire
+      prixVenteUnitaire: article.prixVenteUnitaire,
+      code_structure: this.code_structure,
+      remise: article.remise,
+      tauxTVA: article.tauxTVA,
+      montantTVA: article.montantTVA,
+      montantRemise: article.montantRemise,
+      totalHT: article.totalHT,
+      totalTTC: article.totalTTC
     })) || [];
 
     // Si pas de panier dans le bon, essayer de le récupérer

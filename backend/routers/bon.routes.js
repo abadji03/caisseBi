@@ -20,6 +20,12 @@ router.get('/', bonController.getAllBons);
 //Récupérer les bons d’une structure
 router.get('/structure/:code_structure', bonController.getBonsByStructure);
 
+//Récupérer les bons d’une structure pour les clients
+router.get('/structure/:code_structure/clients', bonController.getBonsClientsByStructure);
+
+//Récupérer les bons d’une structure pour les fournisseur
+router.get('/structure/:code_structure/fournisseurs', bonController.getBonsFournisseursByStructure);
+
 //Récupérer un bon par ID
 router.get('/:id', bonController.getBonById);
 

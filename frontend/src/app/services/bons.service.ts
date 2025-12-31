@@ -47,6 +47,15 @@ export class BonsService {
       .pipe(catchError(err => this.handleError(err)));
   }
 
+  getBonsClientByStructure(code_structure: string): Observable<Bon[]> {
+    return this.http.get<Bon[]>(`${API_URL}/structure/${code_structure}/clients`, { headers: this.getHeaders() })
+      .pipe(catchError(err => this.handleError(err)));
+  }
+  getBonsFournisseursByStructure(code_structure: string): Observable<Bon[]> {
+    return this.http.get<Bon[]>(`${API_URL}/structure/${code_structure}/fournisseurs`, { headers: this.getHeaders() })
+      .pipe(catchError(err => this.handleError(err)));
+  }
+
   getAllBons(): Observable<Bon[]> {
     return this.http.get<Bon[]>(`${API_URL}`, { headers: this.getHeaders() })
       .pipe(catchError(err => this.handleError(err)));

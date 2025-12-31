@@ -350,9 +350,32 @@ export class ArticlePanier {
   }
 
   // Méthode pour cloner un article
-  clone(): ArticlePanier {
+  /* clone(): ArticlePanier {
     return new ArticlePanier({...this});
+  } */
+ // Améliorer le clonage d'article
+  clone(): ArticlePanier {
+    return new ArticlePanier({
+      id: this.id,
+      produitId: this.produitId || this.Produit?.id,
+      panierId: this.panierId,
+      Produit: this.Produit ? {...this.Produit} : undefined,
+      produit: this.produit ? {...this.produit} : undefined,
+      prixUnitaire: this.prixUnitaire,
+      quantite: this.quantite,
+      prixVenteUnitaire: this.prixVenteUnitaire,
+      prixAchatUnitaire: this.prixAchatUnitaire,
+      code_structure: this.code_structure,
+      stock: this.stock || undefined,
+      remise: this.remise,
+      tauxTVA: this.tauxTVA,
+      montantTVA: this.montantTVA,
+      montantRemise: this.montantRemise,
+      totalHT: this.totalHT,
+      totalTTC: this.totalTTC
+    });
   }
+
   public calculerTotauxArticle(): void {
     // Calcul du total HT
     this.totalHT = (this.prixUnitaire || 0) * (this.quantite || 0);
