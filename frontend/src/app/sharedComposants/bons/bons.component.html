@@ -272,6 +272,22 @@
               <span *ngIf="bonForm.get('avance')?.errors?.['min']">L'avance doit être positive</span>
             </div>
           </div>
+
+          <div *ngIf="typeBon !=='commande'" class="col-md-4">
+            <label for="conditionsPaiement" class="form-label">Mode de paiement</label>
+            <select
+              formControlName="methodePaiement"
+              class="form-control"
+              [class.is-invalid]="bonForm.get('methodePaiement')?.invalid && bonForm.get('methodePaiement')?.touched"
+            >
+              <option *ngFor="let mode of modesPaiement" [value]="mode.libelle">
+                {{ mode.libelle }}
+              </option>
+            </select>
+            <!-- <div *ngIf="bonForm.get('methodePaiement')?.invalid && bonForm.get('methodePaiement')?.touched" class="invalid-feedback">
+              La méthode de paiement est obligatoire
+            </div> -->
+          </div>
           
           <!-- Reste à payer (calculé) -->
           <div class="col-md-4">

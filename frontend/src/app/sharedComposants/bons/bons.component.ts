@@ -8,6 +8,7 @@ import { PanierComponent } from '../panier/panier.component';
 import { BonBrouillonService } from '../../services/bon-brouillon.service';
 import { BonsService } from '../../services/bons.service';
 import { ToastrService } from 'ngx-toastr';
+import { ModePaiement } from '../../modeles/paiement.model';
 @Component({
   selector: 'app-bons',
   standalone: true,
@@ -19,7 +20,7 @@ export class BonsComponent implements OnChanges,OnInit {
 
   @Input() produitsDisponibles: Produits[] = [];
   @Input() showBonForm = false;
-  @Input() typeEntite: 'client' | 'fournisseur' = 'fournisseur';
+  @Input() typeEntite: 'client' | 'fournisseur'|'autre' = 'fournisseur';
   @Input() entiteId?: number;
   @Input() entiteNom?: string;
   @Input() showFileField = true;
@@ -48,6 +49,16 @@ export class BonsComponent implements OnChanges,OnInit {
     articles: false,
   };
 
+  modesPaiement: ModePaiement[] = [
+        new ModePaiement({ libelle: 'Espèce' }),
+        new ModePaiement({ libelle: 'Carte' }),
+        new ModePaiement({ libelle: 'Virement' }),
+         new ModePaiement({ libelle: 'Wave' }),
+        new ModePaiement({ libelle: 'Orange Money' }),
+        new ModePaiement({ libelle: 'Chèque' }),
+        new ModePaiement({ libelle: 'Autre' }),
+        
+      ];
   // Variables pour les modes TVA/Remise dans le bon
   bonTvaParArticle = true;
   bonRemiseParArticle = false;
@@ -142,6 +153,8 @@ export class BonsComponent implements OnChanges,OnInit {
       //remise: [0, [Validators.min(0)]],
       avance: [0, [Validators.min(0)]],
 
+      methodePaiement: [this.modesPaiement[0], Validators.required],
+
       // Conditions de paiement
       conditionsPaiement: ['30 jours fin de mois'],
       delaiPaiement: [30, [Validators.min(0)]],
@@ -192,6 +205,7 @@ export class BonsComponent implements OnChanges,OnInit {
       montantAvoir: bon.montantAvoir || 0,
       //remise: bon.remise || 0,
       avance: bon.avance || 0,
+      methodePaiement: bon.methodePaiement || '',
       conditionsPaiement: bon.conditionsPaiement || '30 jours fin de mois',
       delaiPaiement: bon.delaiPaiement || 30,
     });
@@ -678,6 +692,7 @@ setActiveTab(tab: 'informations' | 'articles'): void {
       montantAvoir: 0,
       remise: this.montantRemise || 0,
       avance: formValue.avance || 0,
+      methodePaiement: formValue.methodePaiement,
       netAPayer: this.totalTTC,
       resteAPayer: this.resteAPayer,
     });
@@ -903,6 +918,7 @@ onPanierModifie(panier: Panier): void {
       motifsRetour: '',
       montantAvoir: 0,
       avance: 0,
+      methodePaiement: '',
       conditionsPaiement: '30 jours fin de mois',
       delaiPaiement: 30,
       tauxTVA: 18,

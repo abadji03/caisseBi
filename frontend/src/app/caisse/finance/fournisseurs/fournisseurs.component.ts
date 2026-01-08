@@ -66,7 +66,7 @@ export class FournisseursComponent implements OnInit, OnDestroy {
   textBoutonNewBon = 'Nouveau bon';
   actionType = 'ajouter';
   typeBon = '';
-  typeEntite: 'client' | 'fournisseur' = 'fournisseur';
+  typeEntite: 'client' | 'fournisseur'|'autre' = 'fournisseur';
   actionEnCours: string | null = null;
 
   // Variables de totaux
@@ -141,7 +141,6 @@ export class FournisseursComponent implements OnInit, OnDestroy {
   operations : Operation[] = [];
   produitsAjoutes: Produits[] = []; // Liste des produits ajoutés au bon
   filteredProducts: Produits[] = []; // Liste des produits filtrés pour autocomplétion
-  filteredProduits: Produits[] = [];
   magasins: Magasin[] = [];
   fournisseurs: Fournisseur[] = []; // Liste des fournisseurs
   filteredFournisseurs: Fournisseur[] = []; // Liste filtrée pour la recherche
@@ -355,13 +354,12 @@ private enregistrerBon(bon: Bon, panier: Panier, fichier:File|null): void {
     agentId: this.agentId,
     fournisseurId: this.selectedFournisseur.id,
     typeEntite:this.typeEntite,
-    paiement: bon.avance?? 0 > 0 ? {
+    paiement: bon.avance?? 0 > 0 ? new Paiement ({
       numero: this.generatedNumeroPaiement,
-      methodePaiement: 'Caisse',
-      compte:'Bon',
+      methodePaiement: bon.methodePaiement || 'Espèce',
       description: `Avance pour bon ${bon.numero}`,
       typePaiement: 'fournisseur'
-    } : undefined
+    }) : undefined
   };
   console.log('Données de MISE À JOUR envoyées:', {
     bonId: bonCompletData.bon.id,
@@ -1039,14 +1037,20 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
     }
 
     // Étape 1 : compléter les données du paiement
-    const paiementCompletData: Paiement = {
+    /* const paiementCompletData: Paiement = {
       ...paiement,
       agentId: this.agentId,
       code_structure: this.code_structure,
       magasinId: this.magasinId,
       fournisseurId: this.selectedFournisseur.id
-    };
-
+    }; */
+    const paiementCompletData = new Paiement({
+      ...paiement,
+      agentId: this.agentId,
+      code_structure: this.code_structure,
+      magasinId: this.magasinId,
+      fournisseurId: this.selectedFournisseur.id
+    });
     console.log('Données à envoyer:', paiementCompletData);
 
     // Étape 2 : construire le FormData

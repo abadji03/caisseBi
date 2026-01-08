@@ -14,10 +14,12 @@ export class Panier {
   tva = 0;
   totalTTC = 0;
   remiseGlobale = 0; // Renommer pour clarifier
+  methodePaiement?: 'Espèce' | 'Carte' | 'Orange Money'| 'Wave' | 'Chèque' | 'Virement' | 'Autre';
   remise = 0;
   avance = 0;
   tauxTVA = 0;
-  typeEntite?:'client' | 'fournisseur';
+  typeEntite?:'client' | 'fournisseur'|'autre';
+  typePanier?:'produit' | 'service '|'mixte'= 'produit';
   code_structure?:string;
   statut: 'en_cours' | 'validé' | 'annulé'|'retourné' = 'en_cours';
   dateCreation: Date = new Date();
@@ -248,7 +250,9 @@ get tousLesArticles(): ArticlePanier[] {
     totalTTC: this.totalTTC,
     remiseGlobale: this.remiseGlobale,
     remise: this.remise,
+    typePanier: this.typePanier,
     avance: this.avance,
+    methodePaiement: this.methodePaiement,
     tauxTVA: this.tauxTVA,
     typeEntite: this.typeEntite,
     code_structure: this.code_structure,

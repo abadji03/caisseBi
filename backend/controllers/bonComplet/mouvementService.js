@@ -76,6 +76,35 @@ class MouvementService {
     await this.executerMouvementPhysique(article, stock,magasinId, typeMouvement, bon, agentId, code_structure, transaction);
   }
 
+  async traiterMouvementStockBis(article,panier, magasinId, agentId, code_structure, transaction) {
+    // const statutsAvecMouvement = ['livré', 'validé', 'facturé', 'payé', 'retourné'];
+    // if (!statutsAvecMouvement.includes(bon.statutBon)) return;
+
+    let typeMouvement;
+
+    if (panier.statut === 'retourné' || panier.statut === 'annulé') {
+        typeMouvement = 'Entree';
+      }
+      else if (panier.statut === 'validé') {
+        typeMouvement = 'Sortie';
+      }
+      else{
+        console.log(`Aucun mouvement nécessaire pour panier avec statut ${panier.statut}`);
+        return;
+      }
+    
+    const stock = await stockManager.trouverOuCreerStock(
+      article.produitId || article.produit?.id,
+      magasinId,
+      code_structure,
+      transaction
+    );
+
+    console.log(`➡️ Préparation mouvement ${typeMouvement} pour le produit ID: ${article.produitId} et pour stock ${stock}`);
+    //const typeMouvement = this.determinerTypeMouvement(bon);
+    await this.executerMouvementPhysiqueBis(article, stock,magasinId, typeMouvement, panier, agentId, code_structure, transaction);
+  }
+
   /**
    * Exécuter le mouvement physique
    */
@@ -129,6 +158,57 @@ class MouvementService {
     );
     console.log(`Mouvement ${typeMouvement} exécuté - Stock: ${ancienneQuantite} → ${nouvelleQuantite}`);
   }
+
+  async executerMouvementPhysiqueBis(article, stock, magasinId,typeMouvement, panier, agentId, code_structure, transaction) {
+    
+    const ancienneQuantite = statutManager.safeNumber(stock.quantiteTotale);
+    let nouvelleQuantite = ancienneQuantite;
+
+    console.log(`Mouvement ${typeMouvement} - Produit: ${article.produitId}, Quantité: ${article.quantite}`);
+
+    if (typeMouvement === 'Entree') {
+      nouvelleQuantite += statutManager.safeNumber(article.quantite);
+    } 
+    else {
+      const stockDisponible = ancienneQuantite - statutManager.safeNumber(stock.quantiteReservee);
+      if (stockDisponible < statutManager.safeNumber(article.quantite)) {
+        throw new Error(`Stock insuffisant pour le produit ${article.produitId}. Disponible: ${stockDisponible}`);
+      }
+      nouvelleQuantite -= statutManager.safeNumber(article.quantite);
+    }
+
+    const updatedStoct = await stock.update(
+      {
+        quantiteTotale: nouvelleQuantite,
+        dateDerniereMiseAJour: new Date(),
+        statutStock: stockManager.calculerStatutStock(nouvelleQuantite, stock.quantiteReservee, stock),
+        dernierPrixAchat: article.prixAchatUnitaire || stock.dernierPrixAchat,
+        prixVenteUnitaire: article.prixVenteUnitaire || stock.prixVenteUnitaire
+      },
+      { transaction }
+    );
+    console.log(`Stock mis à jour pour le produit ID: ${article.produitId} - Ancienne quantité: ${ancienneQuantite}, Nouvelle quantité: ${updatedStoct.quantiteTotale}`);
+    // Créer le mouvement de stock
+    await db.MouvementStock.create(
+      {
+        ref: `MVT-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+        produitId: article.produitId || article.produit?.id,
+        magasinId,
+        stockId: stock.id,
+        typeMouvement,
+        quantite: article.quantite,
+        prixUnitaire: typeMouvement === 'Entree' ? article.prixAchatUnitaire : article.prixVenteUnitaire,
+        acteurId: agentId,
+        description: `Vente caisse  Numéro panier: ${panier.numero} - Numéro Article: ${article.id} - Type Mouvemeent:${typeMouvement}`,
+        motif: `${panier.typeEntite} -${panier.statut}`,
+        dateMouvement: new Date(),
+        code_structure,
+      },
+      { transaction }
+    );
+    console.log(`Mouvement ${typeMouvement} exécuté - Stock: ${ancienneQuantite} → ${nouvelleQuantite}`);
+  }
+
 
   /**
    * Générer description lisible pour le mouvement

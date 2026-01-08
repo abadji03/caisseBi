@@ -1,4 +1,19 @@
 // paiement.model.ts
+
+// paiement.mapping.ts
+export const METHODE_VERS_COMPTE: Record<
+  Paiement['methodePaiement'],
+  Paiement['compte']
+> = {
+  'Espèce': 'Caisse',
+  'Carte': 'Banque',
+  'Orange Money': 'Mobile Money',
+  'Wave': 'Mobile Money',
+  'Chèque': 'Banque',
+  'Virement': 'Banque',
+  'Autre': 'Caisse',
+};
+
 export class Paiement {
   id?: number;
   numero?: string;
@@ -19,7 +34,7 @@ export class Paiement {
   dateMiseAJour?: Date;
   panierId?: number;
   agentId?:number;
-  typePaiement: 'fournisseur' | 'client' = 'client';
+  typePaiement: 'fournisseur' | 'client' | 'autre' = 'client';
   magasinId?: number;
   fichier?: string;
   fichierFile?: File; // Pour gérer le fichier uploadé
@@ -27,13 +42,21 @@ export class Paiement {
   constructor(data?: Partial<Paiement>) {
     if (data) {
       Object.assign(this, data);
+       // ⚠️ Sécurité : recalcul automatique
+      if (this.methodePaiement) {
+        this.compte = METHODE_VERS_COMPTE[this.methodePaiement];
+      }
     }
+  }
+  setMethodePaiement(methode: Paiement['methodePaiement']) {
+    this.methodePaiement = methode;
+    this.compte = METHODE_VERS_COMPTE[methode];
   }
 }
 
 export class ModePaiement {
   id?: number;
-  libelle!: 'Espèce' | 'Carte' | 'Mobile Money' | 'Virement' | 'Chèque';
+  libelle: 'Espèce' | 'Carte' | 'Orange Money'| 'Wave' | 'Chèque' | 'Virement' | 'Autre' = 'Espèce';
 
   constructor(data?: Partial<ModePaiement>) {
     if (data) {

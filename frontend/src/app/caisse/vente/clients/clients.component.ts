@@ -51,7 +51,7 @@ export class ClientsComponent implements OnInit, OnDestroy {
   textBoutonNewBon = 'Nouveau bon';
   actionType = 'ajouter';
   typeBon = '';
-  typeEntite: 'client' | 'fournisseur' = 'client';
+  typeEntite: 'client' | 'fournisseur'|'autre' = 'client';
   actionEnCours: string | null = null;
 
   agentId = 1;
@@ -1071,13 +1071,13 @@ toggleDetails(index: number,operation: Operation) {
 
     
     // Étape 1 : compléter les données du paiement
-    const paiementCompletData: Paiement = {
+    const paiementCompletData = new Paiement ({
       ...paiement,
       agentId: this.agentId,
       code_structure: this.code_structure,
       magasinId: this.magasinId,
       clientId: this.selectedClient.id
-    };
+    });
 
     console.log('Données à envoyer:', paiementCompletData);
 
@@ -1570,13 +1570,12 @@ private enregistrerBon(bon: Bon, panier: Panier, fichier:File|null): void {
     agentId: this.agentId,
     clientId: this.selectedClient.id,
     typeEntite:this.typeEntite,
-    paiement: bon.avance?? 0 > 0 ? {
+    paiement: bon.avance?? 0 > 0 ? new Paiement ({
       numero: this.generatedNumeroPaiement,
-      methodePaiement: 'Caisse',
-      compte:'Bon',
+      methodePaiement: bon.methodePaiement,
       description: `Avance pour bon ${bon.numero}`,
       typePaiement: 'client'
-    } : undefined
+    }) : undefined
   };
   console.log('Données de MISE À JOUR envoyées:', {
     bonId: bonCompletData.bon.id,

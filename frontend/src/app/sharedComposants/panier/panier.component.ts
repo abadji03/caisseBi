@@ -7,6 +7,7 @@ import { BonBrouillonService } from '../../services/bon-brouillon.service';
 import { PaniersService } from '../../services/paniers.service';
 import { ArticlesPanierService } from '../../services/articles-panier.service';
 import { debounceTime, distinctUntilChanged, Subject, takeUntil } from 'rxjs';
+import { ModePaiement } from '../../modeles/paiement.model';
 
 @Component({
   selector: 'app-panier',
@@ -26,7 +27,7 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
   @Input() showButtonsActions = true;
   @Input() showRemiseField = true;
   @Input() showAvanceField = true;
-  @Input() typeEntite: 'client' | 'fournisseur' = 'client';
+  @Input() typeEntite: 'client' | 'fournisseur'|'autre' = 'client';
   @Input() resetPanier = false;
   @Input() tvaParArticle = true;
   @Input() remiseParArticle = true;
@@ -54,6 +55,17 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
   showRemiseFields = false;
   tvaRadioValue: 'article' | 'global' = 'article';
   remiseRadioValue: 'article' | 'global' = 'global';
+  
+
+  modesPaiement: ModePaiement[] = [
+      new ModePaiement({ libelle: 'Espèce' }),
+      new ModePaiement({ libelle: 'Carte' }),
+      new ModePaiement({ libelle: 'Virement' }),
+       new ModePaiement({ libelle: 'Wave' }),
+      new ModePaiement({ libelle: 'Orange Money' }),
+      new ModePaiement({ libelle: 'Chèque' }),
+      new ModePaiement({ libelle: 'Autre' }),
+    ];
 
   // Propriétés UI
   filteredProduits: Produits[] = [];
@@ -131,7 +143,7 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
     this.panierForm = this.fb.group({
       remiseGlobale: [0, [Validators.min(0), Validators.max(100)]],
       avance: [0, [Validators.min(0)]],
-      typePaiement: ['caisse', Validators.required],
+      methodePaiement: [this.modesPaiement[0], Validators.required],
       tauxTVAGlobal: [0],
       tvaParArticle: [this.tvaParArticle],
       remiseParArticle: [this.remiseParArticle],
@@ -272,7 +284,7 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
     this.panierForm.reset({
       remiseGlobale: 0,
       avance: 0,
-      typePaiement: 'caisse',
+      methodePaiement: '',
       tauxTVAGlobal:0,
       tvaParArticle: this.tvaParArticle,
       remiseParArticle: this.remiseParArticle
@@ -417,6 +429,7 @@ this.panier = new Panier({
     formArrayLength: this.panierArray.length
   });
 }
+
 
   // === GESTION DES ARTICLES ===
 
@@ -749,10 +762,10 @@ this.panier = new Panier({
     this.showBonButtons.emit(true);
     this.onEnregistrer.emit(this.panier);
 
-    if (this.panierBrouillon?.id) {
+    /* if (this.panierBrouillon?.id) {
       //this.mettreAJourPanierEnBase();
       this.mettreAJourPanierEnBaseAvecStatut('validé');
-    }
+    } */
      console.log('✅ Panier validé', {
       statut: this.panier.statut,
       totalTTC: this.panier.totalTTC
@@ -762,39 +775,6 @@ this.panier = new Panier({
     console.error('❌ Panier invalide, impossible de valider');
   }
 }
-
-/* private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé'|'annulé'|'retourné'): void {
-  if (!this.panierBrouillon?.id) return;
-
-  console.log(`🔄 Mise à jour statut panier: ${statut}`);
-  
-  // Créer une copie du panier avec le nouveau statut
-  const panierAMettreAJour = this.panier.clone();
-  panierAMettreAJour.statut = statut;
-  
-  this.panierService.updatePanier(this.panierBrouillon.id, panierAMettreAJour)
-    .pipe(takeUntil(this.destroy$))
-    .subscribe({
-      next: (panierMisAJour) => {
-        console.log(`✅ Statut panier mis à jour: ${panierMisAJour.statut}`);
-        
-        // Mettre à jour le panier brouillon local
-        this.panierBrouillon = panierMisAJour;
-        
-        // Synchroniser le statut dans le modèle local
-        this.panier.statut = panierMisAJour.statut;
-      },
-      error: (err) => {
-        console.error('❌ Erreur mise à jour statut panier:', err);
-        
-        // En cas d'erreur, revenir à l'état précédent
-        if (statut === 'validé') {
-          // Si échec de validation, revenir en mode édition
-          this.passerEnModeModification();
-        }
-      }
-    });
-} */
 
 private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annulé' | 'retourné'): void {
   if (!this.panierBrouillon?.id) return;
@@ -907,9 +887,9 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annu
   this.showBonButtons.emit(false);
   
   // 4. Mettre à jour le panier en base si c'est un brouillon
-  if (this.panierBrouillon?.id) {
+  /* if (this.panierBrouillon?.id) {
     this.mettreAJourPanierEnBaseAvecStatut('en_cours');
-  }
+  } */
   
   console.log('✅ Mode modification activé', {
     statut: this.panier.statut,
@@ -1012,7 +992,7 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annu
     this.panierForm.get('remiseGlobale')?.disable();
     this.panierForm.get('avance')?.disable();
     this.panierForm.get('tauxTVAGlobal')?.disable();
-    this.panierForm.get('typePaiement')?.disable();
+    this.panierForm.get('methodePaiement')?.disable();
     this.panierForm.get('tvaParArticle')?.disable();
     this.panierForm.get('remiseParArticle')?.disable();
   }
@@ -1026,7 +1006,7 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annu
     this.panierForm.get('remiseGlobale')?.enable();
     this.panierForm.get('avance')?.enable();
     this.panierForm.get('tauxTVAGlobal')?.enable();
-    this.panierForm.get('typePaiement')?.enable();
+    this.panierForm.get('methodePaiement')?.enable();
     this.panierForm.get('tvaParArticle')?.enable();
     this.panierForm.get('remiseParArticle')?.enable();
     
@@ -1180,7 +1160,9 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annu
     remiseGlobale: this.panier.remiseGlobale,
     remise: this.panier.remise,
     avance: this.panier.avance,
+    methodePaiement: this.panier.methodePaiement,
     tauxTVA: this.panier.tauxTVA,
+    typePanier: this.panier.typePanier,
     typeEntite: this.panier.typeEntite,
     code_structure: this.panier.code_structure,
     statut: statut, // <-- Utiliser le statut passé en paramètre

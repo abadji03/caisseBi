@@ -2787,7 +2787,7 @@ export const vendeurs: User[] = [
 export const modesPaiement: ModePaiement[] = [
   new ModePaiement({ id: 1, libelle: 'Espèce' }),
   new ModePaiement({ id: 2, libelle: 'Carte' }),
-  new ModePaiement({ id: 3, libelle: 'Mobile Money' }),
+  new ModePaiement({ id: 3, libelle: 'Orange Money' }),
   new ModePaiement({ id: 4, libelle: 'Virement' }),
 ];
 

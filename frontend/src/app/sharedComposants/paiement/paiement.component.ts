@@ -14,17 +14,20 @@ export class PaiementComponent implements OnInit, OnChanges {
 
   @Input() showPaiementForm  = false;
   @Input() titre = 'Formulaire d\'ajout d\'un paiement';
-  @Input() typeEntite: 'client' | 'fournisseur' = 'fournisseur';
+  @Input() typeEntite: 'client' | 'fournisseur'|'autre' = 'fournisseur';
   @Input() entiteId?: number;
   @Input() entiteNom?: string;
   // Ajouter un Input pour forcer la réinitialisation
   @Input() resetFormPaiement = false;
   @Input() showFichierField= true;
   @Input() modesPaiement: ModePaiement[] = [
+    new ModePaiement({ libelle: 'Espèce' }),
     new ModePaiement({ libelle: 'Carte' }),
     new ModePaiement({ libelle: 'Virement' }),
-    new ModePaiement({ libelle: 'Mobile Money' }),
-    new ModePaiement({ libelle: 'Espèce' })
+     new ModePaiement({ libelle: 'Wave' }),
+    new ModePaiement({ libelle: 'Orange Money' }),
+    new ModePaiement({ libelle: 'Chèque' }),
+    new ModePaiement({ libelle: 'Autre' }),
   ];
 
   
@@ -154,9 +157,12 @@ export class PaiementComponent implements OnInit, OnChanges {
     if (this.typeEntite === 'client') {
       paiement.clientId = this.entiteId;
       paiement.typePaiement = 'client';
-    } else {
+    } 
+    else if (this.typeEntite === 'fournisseur') {
       paiement.fournisseurId = this.entiteId;
       paiement.typePaiement = 'fournisseur';
+    } else {
+      paiement.typePaiement = 'autre';
     }
 
     return {paiement:paiement,fichier:this.fichierSelectionne};

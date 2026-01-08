@@ -6,8 +6,13 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DECIMAL(12, 2),
       defaultValue: 0,
     },
+    typePanier: {
+      type: DataTypes.ENUM('produit', 'service', 'mixe'),
+      allowNull: false,
+      defaultValue: 'produit',
+    },
     typeEntite: {
-      type: DataTypes.ENUM('client', 'fournisseur'),
+      type: DataTypes.ENUM('client', 'fournisseur','autre'),
       allowNull: false,
       defaultValue: 'fournisseur'
     },

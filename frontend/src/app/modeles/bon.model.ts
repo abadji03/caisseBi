@@ -14,10 +14,12 @@ export class Bon {
   // Structure & entité
   code_structure!: string;
   type!: 'commande' | 'livraison' | 'retour' | 'avoir' | 'vente' | 'achat';
-  typeEntite!: 'client' | 'fournisseur';
+  typeEntite!: 'client' | 'fournisseur'|'autre';
   clientId?: number;
   fournisseurId?: number;
   magasinId?: number;
+
+  methodePaiement?: 'Espèce' | 'Carte' | 'Orange Money'| 'Wave' | 'Chèque' | 'Virement' | 'Autre';
 
   // Descriptions & documents
   description?: string;

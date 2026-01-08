@@ -20,8 +20,18 @@ exports.createPanier = async (req, res) => {
 exports.getPaniersByStructure = async (req, res) => {
   try {
     const { code_structure } = req.params;
+    const { magasinId } = req.query; // Ajout du paramètre magasinId depuis les query params
+    
+    // Construire la condition where
+    const whereCondition = { code_structure };
+    
+    // Ajouter la condition magasinId si elle est fournie
+    if (magasinId) {
+      whereCondition.magasinId = magasinId;
+    }
+    
     const paniers = await Panier.findAll({
-      where: { code_structure },
+      where: whereCondition,
       order: [['createdAt', 'DESC']],
     });
     return res.json(paniers);
@@ -77,18 +87,6 @@ exports.updatePanier = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
-
-// Supprimer un panier
-/* exports.deletePanier = async (req, res) => {
-  try {
-    const deleted = await Panier.destroy({ where: { id: req.params.id } });
-    if (!deleted) return res.status(404).json({ message: 'Panier non trouvé' });
-    return res.status(204).send();
-  } catch (error) {
-    console.error('Erreur suppression panier:', error);
-    return res.status(500).json({ error: error.message });
-  }
-}; */
 
 // Supprimer un panier avec cascade
 exports.deletePanier = async (req, res) => {
@@ -281,4 +279,262 @@ exports.getPanierByBonId = async (req, res) => {
   }
 };
 
+// Récupérer les paniers pour une journée spécifique (par date)
+exports.getPaniersParDate = async (req, res) => {
+  try {
+    const { date } = req.params; // Format: YYYY-MM-DD
+    const { code_structure, magasinId } = req.query;
+    
+    // Vérifier le format de la date
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({ 
+        message: 'Format de date invalide. Utilisez YYYY-MM-DD' 
+      });
+    }
+    
+    // Calculer début et fin de la journée spécifiée
+    const dateSpecifique = new Date(date);
+    const debutJournee = new Date(dateSpecifique.setHours(0, 0, 0, 0));
+    const finJournee = new Date(dateSpecifique.setHours(23, 59, 59, 999));
+    
+    // Construire la condition where
+    const whereCondition = {
+      dateCreation: {
+        [db.Sequelize.Op.between]: [debutJournee, finJournee]
+      }
+    };
+    
+    // Ajouter les filtres optionnels
+    if (code_structure) {
+      whereCondition.code_structure = code_structure;
+    }
+    
+    if (magasinId) {
+      whereCondition.magasinId = magasinId;
+    }
+    
+    const paniers = await Panier.findAll({
+      where: whereCondition,
+      include: [
+        { 
+          model: db.Client, 
+          as: 'Client' 
+        },
+        { 
+          model: db.Bon, 
+          as: 'Bon' 
+        },
+        { 
+          model: db.Magasin, 
+          as: 'Magasin' 
+        },
+        { 
+          model: db.Users, 
+          as: 'User' 
+        },
+        {
+          model: db.ArticlePanier,
+          as: 'ArticlePaniers',
+          include: [{
+            model: db.Produit,
+            as: 'Produit'
+          }]
+        }
+      ],
+      order: [['dateCreation', 'DESC']],
+    });
+    
+    // Calcul des statistiques
+    const stats = {
+      totalVentes: paniers.length,
+      totalHT: paniers.reduce((sum, panier) => sum + parseFloat(panier.totalHT || 0), 0),
+      totalTTC: paniers.reduce((sum, panier) => sum + parseFloat(panier.totalTTC || 0), 0),
+      parStatut: {
+        validé: paniers.filter(p => p.statut === 'validé').length,
+        annulé: paniers.filter(p => p.statut === 'annulé').length,
+        retourné: paniers.filter(p => p.statut === 'retourné').length,
+        en_cours: paniers.filter(p => p.statut === 'en_cours').length,
+      }
+    };
+    
+    return res.json({
+      date: date,
+      paniers: paniers,
+      statistiques: stats
+    });
+  } catch (error) {
+    console.error('Erreur récupération paniers par date:', error);
+    return res.status(500).json({ 
+      error: error.message 
+    });
+  }
+};
+
+// Lister les paniers d'une structure avec filtre par magasin
+exports.getPaniersByStructureBis = async (req, res) => {
+  try {
+    const { code_structure } = req.params;
+    const { magasinId, dateDebut, dateFin, statut } = req.query;
+    
+    // Construire la condition where
+    const whereCondition = { code_structure };
+    
+    // Filtre par magasin
+    if (magasinId) {
+      whereCondition.magasinId = magasinId;
+    }
+    
+    // Filtre par statut
+    if (statut) {
+      whereCondition.statut = statut;
+    }
+    
+    // Filtre par date
+    if (dateDebut || dateFin) {
+      whereCondition.dateCreation = {};
+      
+      if (dateDebut) {
+        const debut = new Date(dateDebut);
+        debut.setHours(0, 0, 0, 0);
+        whereCondition.dateCreation[db.Sequelize.Op.gte] = debut;
+      }
+      
+      if (dateFin) {
+        const fin = new Date(dateFin);
+        fin.setHours(23, 59, 59, 999);
+        whereCondition.dateCreation[db.Sequelize.Op.lte] = fin;
+      }
+    }
+    
+    const paniers = await Panier.findAll({
+      where: whereCondition,
+      include: [
+        { 
+          model: db.Client, 
+          as: 'Client' 
+        },
+        { 
+          model: db.Bon, 
+          as: 'Bon' 
+        },
+        { 
+          model: db.Magasin, 
+          as: 'Magasin' 
+        },
+        { 
+          model: db.Users, 
+          as: 'User' 
+        }
+      ],
+      order: [['dateCreation', 'DESC']],
+    });
+    
+    return res.json(paniers);
+  } catch (error) {
+    console.error('Erreur récupération paniers par structure:', error);
+    return res.status(500).json({ 
+      message: 'Erreur lors de la récupération des paniers' 
+    });
+  }
+};
+
+
+exports.getPaniersBrouillons = async (req, res) => {
+  try {
+    const { code_structure,magasinId } = req.params;
+    const paniers = await db.Panier.findAll({
+      where: { 
+        code_structure, 
+        magasinId,
+        statut: 'en_cours',
+        typeEntite: 'autre'
+      },
+      include: [db.Panier]
+    });
+    res.json(paniers);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Récupérer uniquement les paniers d'aujourd'hui
+exports.getPaniersAujourdhui = async (req, res) => {
+  try {
+    const { code_structure, magasinId,bonId } = req.query;
+    const { Op } = db.Sequelize;
+    
+    // Date d'aujourd'hui
+    const aujourdhui = new Date();
+    const debutJournee = new Date(aujourdhui.setHours(0, 0, 0, 0));
+    const finJournee = new Date(aujourdhui.setHours(23, 59, 59, 999));
+    
+    // Construire la condition where
+    const whereCondition = {
+      statut: { [Op.ne]: 'en_cours' },
+      dateCreation: {
+        [db.Sequelize.Op.between]: [debutJournee, finJournee]
+      },
+      [Op.or]: [
+        { typeEntite: 'autre' },
+        { typeEntite: { [Op.notIn]: ['client', 'fournisseur'] } },
+        
+      ]
+    };
+    
+    // Filtres optionnels
+    if (code_structure) {
+      whereCondition.code_structure = code_structure;
+    }
+    
+    if (magasinId) {
+      whereCondition.magasinId = magasinId;
+    }
+    // Filtrer par bonId si spécifié
+    if (bonId === 'null' || bonId === '') {
+      // Ventes directes (sans bon)
+      whereCondition.bonId = null;
+    } 
+    
+    const paniers = await Panier.findAll({
+      where: whereCondition,
+      include: [
+        { 
+          model: db.Client, 
+        },
+        { 
+          model: db.Magasin, 
+        },
+        { 
+          model: db.Users, 
+        },
+        {
+          model: db.ArticlePanier,
+          include: [{
+            model: db.Produit,
+          }]
+        }
+      ],
+      order: [['dateCreation', 'DESC']],
+    });
+    
+    // ============================
+    // Calcul du total global
+    // ============================
+    const totalGlobal = await Panier.sum('totalTTC', {
+      where: whereCondition
+    });
+
+    return res.json({
+      totalGlobal: totalGlobal || 0,
+      nombrePaniers: paniers.length,
+      paniers
+    });
+    //return res.json(paniers);
+  } catch (error) {
+    console.error('Erreur récupération paniers du jour:', error);
+    return res.status(500).json({ 
+      error: error.message 
+    });
+  }
+};
 

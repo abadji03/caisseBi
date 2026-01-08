@@ -5,24 +5,7 @@ class StatutManager {
   /**
    * Convertir une valeur en nombre de manière sécurisée
    */
-  /* safeNumber(value) {
-    if (value === null || value === undefined || value === '') return 0;
-    
-    // Si c'est déjà un nombre
-    if (typeof value === 'number') return value;
-    
-    // Si c'est une string, la convertir en nombre
-    if (typeof value === 'string') {
-      // Nettoyer la string (enlever espaces, caractères non numériques sauf . et -)
-      const cleaned = value.replace(/[^\d.-]/g, '');
-      const num = parseFloat(cleaned);
-      return isNaN(num) ? 0 : num;
-    }
-    
-    // Pour les autres types, essayer de convertir
-    const num = Number(value);
-    return isNaN(num) ? 0 : num;
-  } */
+  
  safeNumber(value) {
   if (value === null || value === undefined || value === '') return 0;
   

@@ -47,10 +47,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
-    methodePaiement: DataTypes.STRING(20),
+    methodePaiement: DataTypes.ENUM('Espèce', 'Carte', 'Orange Money', 'Wave', 'Chèque', 'Virement', 'Autre'),
     dateMiseAJour: DataTypes.DATE,
     typePaiement: {
-      type: DataTypes.ENUM('fournisseur', 'client'),
+      type: DataTypes.ENUM('fournisseur', 'client', 'autre'),
       defaultValue: 'client',
     },
     fichier: DataTypes.TEXT,
