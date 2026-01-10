@@ -6,6 +6,7 @@ const upload = require('../middlewares/uploadMiddleware');
 
 router.post('/',upload.single('receipt'), ctrl.createRecette);
 router.get('/structure/:code_structure', ctrl.getByStructure);
+router.get('/paiement/:paiementId', ctrl.findByPaiementId);
 router.delete('/:id', ctrl.deleteRecette);
 router.put('/:id',upload.single('receipt'), ctrl.updateRecette);
 

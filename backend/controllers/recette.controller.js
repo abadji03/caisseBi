@@ -79,6 +79,20 @@ exports.deleteRecette = async (req, res) => {
   }
 };
 
+exports.findByPaiementId = async(req, res) => {
+  try {
+    const { paiementId } = req.params;
+
+    const recette = await Recette.findOne({
+      where: { paiementId },
+    });
+
+    res.json(recette);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la récupération de la recette par paiementId', error });
+  }
+};
+
 exports.updateRecette = async (req, res) => {
   try {
     const { id } = req.params;

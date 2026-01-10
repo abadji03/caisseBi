@@ -38,6 +38,7 @@ export class Paiement {
   magasinId?: number;
   fichier?: string;
   fichierFile?: File; // Pour gérer le fichier uploadé
+  statutPaiement?: 'validé' | 'annulé' = 'validé';
 
   constructor(data?: Partial<Paiement>) {
     if (data) {

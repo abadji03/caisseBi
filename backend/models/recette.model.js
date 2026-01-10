@@ -6,6 +6,8 @@ module.exports = (sequelize, DataTypes) => {
     description: { type: DataTypes.TEXT },
     paymentMode: { type: DataTypes.STRING(36), allowNull: false },
     receipt: { type: DataTypes.STRING },
+    statutRecette: { type: DataTypes.ENUM('validé', 'annulé'), defaultValue: 'validé' },
+    paiementId: { type: DataTypes.DECIMAL(12, 2) },
     code_structure: { type: DataTypes.STRING(50), allowNull: false },
   });
 

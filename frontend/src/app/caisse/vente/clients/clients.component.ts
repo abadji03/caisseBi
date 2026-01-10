@@ -1110,6 +1110,8 @@ toggleDetails(index: number,operation: Operation) {
         const recette = {
           montant: result.montant,
           date:result.date,
+          paiementId: result.id,
+          statutRecette: 'valide',
           description: `Paiement client ID: ${result.clientId} - Paiement ID: ${result.numero}`,
           code_structure: this.code_structure,
           magasinId: this.magasinId,
@@ -1597,6 +1599,8 @@ private enregistrerBon(bon: Bon, panier: Panier, fichier:File|null): void {
           const recette = {
           montant: result.paiement.montant!,
           date:result.paiement.date,
+          paiementId: result.paiement.id!,
+          statutRecette: 'valide',
           description: `Paiement client ID: ${this.selectedClient?.id} - Paiement ID: ${result.paiement.numero}`,
           code_structure: this.code_structure,
           magasinId: this.magasinId,

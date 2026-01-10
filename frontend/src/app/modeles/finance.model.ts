@@ -2,6 +2,8 @@ export class Depense {
   id?: number;
   date: Date = new Date();
   categoryId!: number;
+  statutDepense?: 'validé' | 'annulé' = 'validé';
+  paiementId?: number;
   montant = 0;
   type: 'STANDARD' | 'STOCK'|'FRAIS'|'INVESTISSEMENT' = 'STANDARD';
   description = '';
@@ -17,6 +19,8 @@ export class Depense {
 export class Recette {
   id?: number;
   date: Date = new Date();
+  statutRecette?:'validé' | 'annulé' = 'validé';
+  paiementId?: number;
   categoryId!: number;
   montant = 0;
   description = '';

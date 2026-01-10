@@ -7,7 +7,6 @@ import { BonBrouillonService } from '../../services/bon-brouillon.service';
 import { PaniersService } from '../../services/paniers.service';
 import { ArticlesPanierService } from '../../services/articles-panier.service';
 import { debounceTime, distinctUntilChanged, Subject, takeUntil } from 'rxjs';
-import { ModePaiement } from '../../modeles/paiement.model';
 
 @Component({
   selector: 'app-panier',
@@ -57,7 +56,7 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
   remiseRadioValue: 'article' | 'global' = 'global';
   
 
-  modesPaiement: ModePaiement[] = [
+/*   modesPaiement: ModePaiement[] = [
       new ModePaiement({ libelle: 'Espèce' }),
       new ModePaiement({ libelle: 'Carte' }),
       new ModePaiement({ libelle: 'Virement' }),
@@ -66,7 +65,7 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
       new ModePaiement({ libelle: 'Chèque' }),
       new ModePaiement({ libelle: 'Autre' }),
     ];
-
+ */
   // Propriétés UI
   filteredProduits: Produits[] = [];
   searchInput = '';
@@ -143,7 +142,7 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
     this.panierForm = this.fb.group({
       remiseGlobale: [0, [Validators.min(0), Validators.max(100)]],
       avance: [0, [Validators.min(0)]],
-      methodePaiement: [this.modesPaiement[0], Validators.required],
+      //methodePaiement: [this.modesPaiement[0], Validators.required],
       tauxTVAGlobal: [0],
       tvaParArticle: [this.tvaParArticle],
       remiseParArticle: [this.remiseParArticle],
@@ -284,7 +283,7 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
     this.panierForm.reset({
       remiseGlobale: 0,
       avance: 0,
-      methodePaiement: '',
+      //methodePaiement: '',
       tauxTVAGlobal:0,
       tvaParArticle: this.tvaParArticle,
       remiseParArticle: this.remiseParArticle
@@ -992,7 +991,7 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annu
     this.panierForm.get('remiseGlobale')?.disable();
     this.panierForm.get('avance')?.disable();
     this.panierForm.get('tauxTVAGlobal')?.disable();
-    this.panierForm.get('methodePaiement')?.disable();
+    //this.panierForm.get('methodePaiement')?.disable();
     this.panierForm.get('tvaParArticle')?.disable();
     this.panierForm.get('remiseParArticle')?.disable();
   }
@@ -1006,7 +1005,7 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annu
     this.panierForm.get('remiseGlobale')?.enable();
     this.panierForm.get('avance')?.enable();
     this.panierForm.get('tauxTVAGlobal')?.enable();
-    this.panierForm.get('methodePaiement')?.enable();
+    //this.panierForm.get('methodePaiement')?.enable();
     this.panierForm.get('tvaParArticle')?.enable();
     this.panierForm.get('remiseParArticle')?.enable();
     
@@ -1160,7 +1159,7 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annu
     remiseGlobale: this.panier.remiseGlobale,
     remise: this.panier.remise,
     avance: this.panier.avance,
-    methodePaiement: this.panier.methodePaiement,
+    //methodePaiement: this.panier.methodePaiement,
     tauxTVA: this.panier.tauxTVA,
     typePanier: this.panier.typePanier,
     typeEntite: this.panier.typeEntite,

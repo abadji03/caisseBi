@@ -499,13 +499,15 @@ exports.getPaniersAujourdhui = async (req, res) => {
       where: whereCondition,
       include: [
         { 
-          model: db.Client, 
-        },
-        { 
           model: db.Magasin, 
+          attributes: ['id', 'nom']
         },
         { 
           model: db.Users, 
+          attributes: ['id', 'nom']
+        },
+        { 
+          model: db.Paiement, 
         },
         {
           model: db.ArticlePanier,
@@ -520,8 +522,14 @@ exports.getPaniersAujourdhui = async (req, res) => {
     // ============================
     // Calcul du total global
     // ============================
+    const whereTotalGlobal = {
+      ...whereCondition,
+      statut: {
+        [Op.notIn]: ['annulé', 'retourné', 'en_cours']
+      }
+    };
     const totalGlobal = await Panier.sum('totalTTC', {
-      where: whereCondition
+      where: whereTotalGlobal
     });
 
     return res.json({

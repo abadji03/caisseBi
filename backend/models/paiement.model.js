@@ -53,6 +53,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.ENUM('fournisseur', 'client', 'autre'),
       defaultValue: 'client',
     },
+    statutPaiement: {
+      type: DataTypes.ENUM('validé', 'annulé'),
+      defaultValue: 'validé',
+    },
     fichier: DataTypes.TEXT,
   });
 

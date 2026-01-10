@@ -171,7 +171,25 @@
     </div>
     
     <div class="card-footer" *ngIf="showBonButtons">
-      <div class="d-flex justify-content-center gap-3">
+      <div class="d-flex justify-content-between gap-3">
+        <div class="col-md-4 mb-3">
+          <select
+                  id="modePaiement"
+                  class="form-select"
+                  [(ngModel)]="modePaiementSelectionneProduit"
+                >
+                  <option [ngValue]="null" disabled>
+                    -- Sélectionner un mode de paiement --
+                  </option>
+
+                  <option
+                    *ngFor="let mode of modesPaiement"
+                    [ngValue]="mode"
+                  >
+                    {{ mode.libelle }}
+                  </option>
+                </select>
+        </div>
         <button class="btn btn-success" (click)="enregistrerVente()">
           <i class="bi bi-save"></i> Enregistrer la vente
         </button>
@@ -255,45 +273,120 @@
       </table>
     </div>
 
-    <!-- Détails d'une transaction (expandable) -->
-    <div *ngIf="selectedTransaction" class="card-footer">
-      <div class="row">
-        <div class="col-md-6">
-          <h6>Détails de la transaction #{{ selectedTransaction.id }}</h6>
-          <p><strong>Date :</strong> {{ selectedTransaction.dateCreation | date: 'dd/MM/yyyy HH:mm' }}</p>
-          <p><strong>Statut :</strong> {{ selectedTransaction.statut }}</p>
-          <p><strong>Magasin :</strong> {{ selectedTransaction.magasinId }}</p>
-          <p><strong>Agent :</strong> {{ selectedTransaction.agentId }}</p>
+    <!-- Modal détails transaction -->
+    <div
+      class="modal fade"
+      id="transactionDetailsModal"
+      tabindex="-1"
+      aria-labelledby="transactionDetailsModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+
+          <!-- Header -->
+          <div class="modal-header">
+            <h5 class="modal-title" id="transactionDetailsModalLabel">
+              Détails de la transaction
+              <span *ngIf="selectedTransaction">
+                Numéro {{ selectedTransaction.id }}
+              </span>
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+
+          <!-- Body -->
+          <div class="modal-body" *ngIf="selectedTransaction">
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <p><strong>Date :</strong>
+                  {{ selectedTransaction.dateCreation | date:'dd/MM/yyyy HH:mm' }}
+                </p>
+                <p><strong>Statut :</strong> {{ selectedTransaction.statut }}</p>
+                <p><strong>Magasin :</strong> {{ selectedTransaction.magasinId }}</p>
+                <p><strong>Agent :</strong> {{ selectedTransaction.agentId }}</p>
+              </div>
+
+              <div class="col-md-6">
+                <p><strong>Total HT :</strong>
+                  {{ selectedTransaction.totalHT }} F CFA
+                </p>
+                <p><strong>TVA :</strong>
+                  {{ selectedTransaction.tva }} F CFA
+                </p>
+                <p><strong>Total TTC :</strong>
+                  {{ selectedTransaction.totalTTC }} F CFA
+                </p>
+                <p *ngIf="selectedTransaction.remise">
+                  <strong>Remise :</strong>
+                  {{ selectedTransaction.remise }} F CFA
+                </p>
+              </div>
+            </div>
+
+            <!-- Articles -->
+            <div *ngIf="selectedTransaction.ArticlePaniers?.length">
+              <h6>Articles</h6>
+
+              <table class="table table-sm table-bordered">
+                <thead class="table-light">
+                  <tr>
+                    <th>Produit</th>
+                    <th>Quantité</th>
+                    <th>Prix unitaire</th>
+                    <th>Remise</th>
+                    <th>TVA</th>
+                    <th>Total HT</th>
+                    <th>Total TTC</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let article of selectedTransaction.ArticlePaniers">
+                    <td>
+                      {{ article.produit?.designation
+                        || article.Produit?.designation
+                        || 'Produit inconnu' }}
+                    </td>
+                    <td>
+                      {{ article.quantite }}
+                      <small class="text-muted"> 
+                        {{ article.produit?.unite
+                          || article.Produit?.unite
+                          || 'unité inconnu' }}
+                          </small>
+                    </td>
+                    <td>{{ article.prixVenteUnitaire }}<small class="text-muted"> F CFA</small></td>
+                    <td>{{ article.montantRemise }}<small class="text-muted"> F CFA</small></td>
+                    <td>{{ article.montantTVA }}<small class="text-muted"> F CFA</small></td>
+                    <td>{{ article.totalHT }}<small class="text-muted"> F CFA</small></td>
+                    <td>
+                      {{ article.totalTTC }}<small class="text-muted"> F CFA</small> 
+                    </td>
+                    <td>
+                      <button class="btn btn-sm btn-danger" 
+                              (click)="retournerArticle(article)">
+                        <i class="bi bi-arrow-counterclockwise"></i> Retourner
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+
+          <!-- Footer -->
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Fermer
+            </button>
+          </div>
+
         </div>
-        <div class="col-md-6">
-          <p><strong>Total HT :</strong> {{ selectedTransaction.totalHT }} F CFA</p>
-          <p><strong>TVA :</strong> {{ selectedTransaction.tva }} F CFA</p>
-          <p><strong>Total TTC :</strong> {{ selectedTransaction.totalTTC }} F CFA</p>
-          <p *ngIf="selectedTransaction.remise"><strong>Remise :</strong> {{ selectedTransaction.remise }} F CFA</p>
-        </div>
-      </div>
-      
-      <div class="mt-3" *ngIf="selectedTransaction.articles && selectedTransaction.articles.length > 0">
-        <h6>Articles</h6>
-        <table class="table table-sm">
-          <thead>
-            <tr>
-              <th>Produit</th>
-              <th>Quantité</th>
-              <th>Prix unitaire</th>
-              <th>Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let article of selectedTransaction.articles">
-              <td>{{ article.produit?.designation || 'Produit inconnu' }}</td>
-              <td>{{ article.quantite }}</td>
-              <td>{{ article.prixVenteUnitaire }} F CFA</td>
-              <td>{{ article.quantite * article.prixVenteUnitaire }} F CFA</td>
-            </tr>
-          </tbody>
-        </table>
       </div>
     </div>
+
   </div>
 </div>

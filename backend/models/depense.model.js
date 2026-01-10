@@ -4,6 +4,8 @@ module.exports = (sequelize, DataTypes) => {
     date: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
     code_structure: { type: DataTypes.STRING, allowNull: false },
     montant: { type: DataTypes.DECIMAL(12, 2), allowNull: false },
+    paiementId: { type: DataTypes.DECIMAL(12, 2) },
+    statutDepense: { type: DataTypes.ENUM('validé', 'annulé'), defaultValue: 'validé' },
     type: {
       type: DataTypes.ENUM('STANDARD', 'STOCK','FRAIS','INVESTISSEMENT'),
       defaultValue: 'STANDARD',

@@ -126,20 +126,47 @@ class PanierCompletController {
       // ==============================
       // GESTION DES PAIEMENTS
       // ==============================
-     if (paiement && nouveauPanier.totalTTC > 0) {
-        paiementCree = await db.Paiement.create({
-                ...paiement, 
-                montant: nouveauPanier.totalTTC, 
-                clientId, 
-                panierId: nouveauPanier.id, 
-                code_structure, 
-                magasinId, 
-                typePaiement: typeEntite,
-                agentId,
-                date: new Date() 
-              }, 
-              { transaction });
-      } 
+      if (paiement && nouveauPanier.totalTTC > 0) {
+
+        // 1️⃣ Chercher un paiement existant pour ce panier
+        const paiementExistant = await db.Paiement.findOne({
+          where: {
+            panierId: nouveauPanier.id,
+            code_structure,
+          },
+          transaction
+        });
+
+        if (paiementExistant) {
+          // 2️⃣ Mise à jour du paiement existant
+          await paiementExistant.update({
+            ...paiement,
+            montant: nouveauPanier.totalTTC,
+            clientId: clientId || paiementExistant.clientId,
+            magasinId,
+            agentId,
+            typePaiement: typeEntite,
+            date: new Date()
+          }, { transaction });
+
+          paiementCree = paiementExistant;
+
+        } else {
+          // 3️⃣ Création d’un nouveau paiement
+          paiementCree = await db.Paiement.create({
+            ...paiement,
+            montant: nouveauPanier.totalTTC,
+            clientId: clientId || null,
+            panierId: nouveauPanier.id,
+            code_structure,
+            magasinId,
+            agentId,
+            typePaiement: typeEntite,
+            date: new Date()
+          }, { transaction });
+        }
+      }
+
 
       // ==============================
       // CRÉATION DES OPÉRATIONS COMPTABLES

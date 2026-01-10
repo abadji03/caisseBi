@@ -140,18 +140,15 @@
             step="0.01"
           />
         </div>
-        <div class="col-md-4" *ngIf="showTypePaiement">
+        <!-- <div class="col-md-4" *ngIf="showTypePaiement">
           <select class="form-select" formControlName="typePaiement">
-           <!--  <option value="caisse">Caisse</option>
-            <option value="mobile money">Mobile Money</option>
-            <option value="banque">Banque</option>
-            <option value="bon">Bon</option> -->
+           
             <option value="" disabled selected>Mode de paiement</option>
             <option *ngFor="let mode of modesPaiement" [value]="mode.libelle">
                 {{ mode.libelle }}
             </option>
           </select>
-        </div>
+        </div> -->
       </div>
 
       <!-- Tableau du panier -->

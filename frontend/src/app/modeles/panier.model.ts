@@ -14,7 +14,7 @@ export class Panier {
   tva = 0;
   totalTTC = 0;
   remiseGlobale = 0; // Renommer pour clarifier
-  methodePaiement?: 'Espèce' | 'Carte' | 'Orange Money'| 'Wave' | 'Chèque' | 'Virement' | 'Autre';
+  //methodePaiement?: 'Espèce' | 'Carte' | 'Orange Money'| 'Wave' | 'Chèque' | 'Virement' | 'Autre';
   remise = 0;
   avance = 0;
   tauxTVA = 0;
@@ -27,6 +27,7 @@ export class Panier {
   detailsVisible = false; // Permet de gérer l'affichage des détails
   magasinId?: number;
   agentId?: number;
+  Paiements?:Paiement[];
   paiements?: Paiement[];
   remiseParArticle = false; // Indicateur pour savoir si on applique la remise par article
   tvaParArticle = true; // Par défaut, TVA par article
@@ -252,7 +253,7 @@ get tousLesArticles(): ArticlePanier[] {
     remise: this.remise,
     typePanier: this.typePanier,
     avance: this.avance,
-    methodePaiement: this.methodePaiement,
+    //methodePaiement: this.methodePaiement,
     tauxTVA: this.tauxTVA,
     typeEntite: this.typeEntite,
     code_structure: this.code_structure,

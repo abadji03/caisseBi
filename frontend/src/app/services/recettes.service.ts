@@ -56,6 +56,15 @@ export class RecettesService {
       .pipe(catchError(this.handleError));
   }
 
+   /**Récupération par paiementId */
+  getByPaiementId(paiementId: number): Observable<Recette> {
+    return this.http
+      .get<Recette>(`${this.apiUrl}/paiement/${paiementId}`, {
+        headers: this.getHeaders(),
+      })
+      .pipe(catchError(this.handleError));
+  }
+
   /** 📌 4. Suppression */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   deleteRecette(id: number): Observable<any> {

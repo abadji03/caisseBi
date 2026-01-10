@@ -147,6 +147,7 @@ export class PaiementComponent implements OnInit, OnChanges {
       date: new Date(formValue.date),
       methodePaiement: formValue.methodePaiement,
       numero: this.generatedNumero,
+      statutPaiement:'validé',
       //typeEntite:this.typeEntite,
       //remise: formValue.remise,
       //avance: formValue.avance,
