@@ -83,6 +83,8 @@ export class Panier {
     this.remise = 0;
     this.tva = 0;
     this.totalTTC = 0;
+    const htTotalAvantRemise = this.articles.reduce((sum, art) => sum + (art.prixUnitaire * art.quantite), 0);
+
 
     // 1. Calcul des articles
     for (const article of this.articles) {
@@ -90,7 +92,8 @@ export class Panier {
         this.tvaParArticle,
         this.remiseParArticle,
         this.tauxTVA, 
-        this.remiseGlobale
+        this.remiseGlobale,
+        htTotalAvantRemise
       );
 
       this.totalHT += (article.totalHT ?? 0);
@@ -99,12 +102,15 @@ export class Panier {
     }
 
     // 2. Remise globale (SI PAS par article)
-    if (!this.remiseParArticle && this.remiseGlobale > 0) {
-      const remiseGlobaleMontant = this.totalHT * (this.remiseGlobale / 100);
+    /*if (!this.remiseParArticle && this.remiseGlobale && this.remiseGlobale > 0) {
+       const remiseGlobaleMontant = this.totalHT * (this.remiseGlobale / 100);
 
       this.remise += remiseGlobaleMontant;
-      this.totalHT -= remiseGlobaleMontant;
-    }
+      this.totalHT -= remiseGlobaleMontant; 
+      const montantRemiseGlobale = this.totalHT * (this.remiseGlobale / 100);
+      this.remise += montantRemiseGlobale;
+      this.totalHT -= montantRemiseGlobale;
+    }*/
 
     // 3. TVA globale (SI PAS par article)
     if (!this.tvaParArticle && this.tauxTVA > 0) {
@@ -114,12 +120,39 @@ export class Panier {
     // 4. Total TTC
     this.totalTTC = this.totalHT + this.tva;
 
+    // Validation des calculs
+    this.validerCalculs(htTotalAvantRemise);
+
     // 5. Reste à payer
     /* this.resteAPayer = Math.max(
       this.totalTTC - this.avance,
       0
     ); */
   }
+  /** Méthode de validation des calculs */
+  private validerCalculs(htTotalAvantRemise: number): void {
+    if (!this.remiseParArticle && this.remiseGlobale && this.remiseGlobale > 0) {
+      const remiseGlobaleTheorique = htTotalAvantRemise * (this.remiseGlobale / 100);
+      const remiseTotaleCalculee = this.articles.reduce((sum, art) => sum + (art.montantRemise || 0), 0);
+      const difference = Math.abs(remiseGlobaleTheorique - remiseTotaleCalculee);
+
+      console.log('✅ VALIDATION OPTION 1:', {
+        htTotalAvantRemise,
+        remiseGlobale: this.remiseGlobale,
+        remiseGlobaleTheorique,
+        remiseTotaleCalculee,
+        difference,
+        estCorrect: difference < 0.01,
+        totalHT: this.totalHT,
+        totalHTVerif: htTotalAvantRemise - remiseTotaleCalculee
+      });
+
+      if (difference > 0.01) {
+        console.warn('⚠️ ATTENTION: Écart important dans les calculs de remise!');
+      }
+    }
+  }
+
    ajouterArticle(article: ArticlePanier): void {
     this.articles.unshift(new ArticlePanier(article));
     this.calculerTotals();
@@ -299,7 +332,13 @@ export class ArticlePanier {
     //this.calculerTotauxArticle();
   }
   /** Calcul STRICTEMENT local à l’article */
-  calculerTotaux(appliquerTVA: boolean, appliquerRemise: boolean, tauxTVAGlobal?: number, remiseGlobale?: number): void {
+  calculerTotaux(
+    appliquerTVA: boolean, 
+    appliquerRemise: boolean, 
+    tauxTVAGlobal?: number, 
+    remiseGlobale?: number,
+    totalHTPanier?: number
+  ): void {
     
     console.log('🧮 ArticlePanier.calculerTotaux() - Début', {
       appliquerTVA,
@@ -320,11 +359,13 @@ export class ArticlePanier {
       // Remise par article
       this.montantRemise = htBrut * (this.remise / 100);
     } 
-    else if (!appliquerRemise && remiseGlobale && remiseGlobale > 0) {
+     else if (!appliquerRemise && remiseGlobale && remiseGlobale > 0 && totalHTPanier && totalHTPanier > 0) {
       // Part de la remise globale pour cet article (proportionnelle)
-      const proportion = htBrut > 0 ? htBrut / htBrut : 0;
-      this.montantRemise = htBrut * (remiseGlobale / 100) * proportion;
-    } 
+      const proportion = htBrut / totalHTPanier  ;
+      const montantRemiseGlobaleTotal = totalHTPanier * (remiseGlobale / 100);
+      this.montantRemise = montantRemiseGlobaleTotal * proportion;
+      //this.montantRemise = totalHTPanier  * (remiseGlobale / 100) * proportion;
+    }  
     else {
       this.montantRemise = 0;
     }
@@ -339,7 +380,8 @@ export class ArticlePanier {
     else if (!appliquerTVA && tauxTVAGlobal && tauxTVAGlobal > 0) {
       // TVA globale appliquée à la part HT de cet article
       this.montantTVA = htNet * (tauxTVAGlobal / 100);
-    } else {
+    } 
+    else {
       this.montantTVA = 0;
     }
 

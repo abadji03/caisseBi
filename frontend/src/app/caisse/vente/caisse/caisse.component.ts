@@ -260,6 +260,7 @@ export class CaisseComponent implements OnInit, OnDestroy {
             const recette = {
                   montant: result.paiement.montant!,
                   date:result.paiement.date,
+                  paiementId: result.paiement.id,
                   description: `Paiement vente panier: ${this.panierData?.id} - Paiement ID: ${result.paiement.numero}`,
                   code_structure: this.code_structure,
                   magasinId: this.magasinId,
@@ -306,6 +307,11 @@ export class CaisseComponent implements OnInit, OnDestroy {
       this.toastr.warning('Le panier est vide. Veuillez ajouter des produits avant d\'enregistrer la vente');
       return;
     }
+
+     if(this.modePaiementSelectionneProduit === null){
+      this.toastr.warning('Veuillez sélectionner un mode de paiement');
+      return;
+    }
     console.log('Enregistrement de la vente avec le panier:', this.panierData);
     // Enregistrer le panier
     this.onEnregistrerPanier(this.panierData);
@@ -325,6 +331,7 @@ export class CaisseComponent implements OnInit, OnDestroy {
     this.showVenteSection = false;
     this.showPanierSection = false;
     this.selectedClient = null;
+    this.showBonButtons = false ;
     this.panierData = null;
     this.totalServices = 0;
     this.clientForm.reset();
@@ -399,11 +406,6 @@ togglePanier() {
       this.toastr.error('Erreur: Les données du brouillon ne sont pas chargées', 'Erreur');
       return;
     }
-
-    if(this.modePaiementSelectionneProduit === null){
-      this.toastr.warning('Veuillez sélectionner un mode de paiement');
-      return;
-    }
   
     // Préparer les données pour l'API unifiée
     const panierCompletData = {
@@ -416,6 +418,7 @@ togglePanier() {
         totalTTC: panierAEnregistrer.totalTTC,
         remise: panierAEnregistrer.remise,
         tauxTVA: panierAEnregistrer.tauxTVA,
+        remiseGlobale: panierAEnregistrer.remiseGlobale,
         typeEntite: this.typeEntite,
         typePanier:'produit',
         clientId: this.panierData.clientId || null,
@@ -461,8 +464,10 @@ togglePanier() {
             panierStatut: result.panier?.statut
           });
           if(result.paiement && result.paiement.id){
+            console.log('Paiement associé au panier enregistré:', result.paiement.id);
             const recette = {
                   montant: result.paiement.montant!,
+                  paiementId: result.paiement.id,
                   date:result.paiement.date,
                   description: `Paiement vente panier ID: ${this.panierData?.id} - Paiement ID: ${result.paiement.numero}`,
                   code_structure: this.code_structure,
@@ -472,15 +477,19 @@ togglePanier() {
                   paymentMode: result.paiement.methodePaiement
 
                 }
-          const formData = new FormData();
+               console.log('Création de la recette avec les données:', recette);
 
-          // Remplir formData avec ton objet depense
-          Object.entries(recette).forEach(([key, value]) => {
-            if (value !== undefined && value !== null) {
-              formData.append(key, value.toString());
-            }
-          });
-          this.createRecette(formData);
+            const formData = new FormData();
+
+            // Remplir formData avec ton objet depense
+            Object.entries(recette).forEach(([key, value]) => {
+              if (value !== undefined && value !== null) {
+                formData.append(key, value.toString());
+                console.log(`Ajout au FormData: ${key} = ${value}`);
+              }
+            });
+            //console.log('FormData pour la recette:', formData);
+            this.createRecette(formData);
           }
         this.toastr.success('Vente enregistrée avec succès', 'Succès');
         this.loadTransactions()
@@ -640,49 +649,171 @@ private createRecette(formData: FormData): void {
     this.toastr.info('Impression du ticket en cours...');
   }
 
-  retournerArticle(article: ArticlePanier) {
-    if(!this.selectedTransaction || !this.selectedTransaction.id){
-      this.toastr.error('Impossible de retourner un article sans transaction sélectionnée');
-      return;
-    }
-    if (confirm('Voulez-vous vraiment retourner cet article ?')) {
 
-       // 1. Créer une copie des articles actuels sans l'article à retourner
-    const articlesRestants = this.selectedTransaction.ArticlePaniers?.filter(a => a.id !== article.id);
-    
-    // 2. Créer un nouveau panier avec TOUTES les propriétés du panier actuel
-    this.selectedTransaction = new Panier({
-      ...this.selectedTransaction,
-      articles: articlesRestants, // Important: passer les articles filtrés
-      // S'assurer que ArticlePaniers est aussi mis à jour
-      ArticlePaniers: articlesRestants,
-      // Préserver les paramètres de calcul
-      tauxTVA: this.selectedTransaction.tauxTVA,
-      remiseGlobale: this.selectedTransaction.remiseGlobale,
-      remiseParArticle: this.selectedTransaction.remiseParArticle,
-      tvaParArticle: this.selectedTransaction.tvaParArticle,
-      // Préserver les autres propriétés
-      avance: this.selectedTransaction.avance,
-      totalHT: this.selectedTransaction.totalHT,
-      tva: this.selectedTransaction.tva,
-      totalTTC: this.selectedTransaction.totalTTC,
-      remise: this.selectedTransaction.remise,
-      statut: this.selectedTransaction.statut,
-      clientId: this.selectedTransaction.clientId,
-      magasinId: this.selectedTransaction.magasinId,
-      agentId: this.selectedTransaction.agentId
-    });
-    
-    // 3. Recalculer les totaux du panier
-    this.selectedTransaction.calculerTotals();
-    
-     // 🔑 1. Travailler UNIQUEMENT sur articles
-       console.log('Article retourné:', article.id, 'de la transaction:', this.selectedTransaction.id);
-      this.toastr.success('Article retourné avec succès');
-      // Recalculer les totaux si nécessaire
-      //this.loadTransactions();
-    }
+retournerArticle(article: ArticlePanier) {
+  if (!this.selectedTransaction || !this.selectedTransaction.id) {
+    this.toastr.error('Impossible de retourner un article sans transaction sélectionnée');
+    return;
   }
+
+  if (confirm('Voulez-vous vraiment retourner cet article ?')) {
+
+    // 1️⃣ Filtrer les articles
+    const nouveauxArticles = (this.selectedTransaction.ArticlePaniers || [])
+      .filter(a => a.id !== article.id)
+      .map(a => new ArticlePanier(a));
+    
+
+    // 2️⃣ DÉDUIRE les paramètres dynamiquement (puisqu'ils ne sont pas sauvegardés)
+    // Remise par article = vrai si AU MOINS un article a une remise > 0
+    const remiseParArticle = nouveauxArticles.some(a => (a.remise ?? 0) > 0);
+    
+    // TVA par article = vrai si AU MOINS un article a un tauxTVA > 0
+    const tvaParArticle = nouveauxArticles.some(a => (a.tauxTVA ?? 0) > 0);
+    
+    // Remise globale : conserver la valeur originale, mais...
+    // Si on a des remises par article, la remise globale ne devrait pas s'appliquer
+    // Logique métier : soit remise par article, soit remise globale
+    let remiseGlobale = this.selectedTransaction.remiseGlobale ?? 0;
+    
+    // Convertir en number si c'est une string
+    if (typeof remiseGlobale === 'string') {
+      remiseGlobale = parseFloat(remiseGlobale);
+    }
+    
+    // Si on a des remises par article, désactiver la remise globale
+    if (remiseParArticle && remiseGlobale > 0) {
+      console.warn('⚠️ Remise par article détectée, remise globale désactivée');
+      remiseGlobale = 0;
+    }
+    
+    // Taux TVA global : utiliser l'original, mais si TVA par article, le désactiver
+    let tauxTVA = this.selectedTransaction.tauxTVA ?? 0;
+    if (typeof tauxTVA === 'string') {
+      tauxTVA = parseFloat(tauxTVA);
+    }
+    
+    if (tvaParArticle && tauxTVA > 0) {
+      console.warn('⚠️ TVA par article détectée, taux TVA global désactivé');
+      tauxTVA = 0;
+    }
+
+
+    // 4️⃣ Créer la nouvelle instance de panier
+    const panier = new Panier({
+      ...this.selectedTransaction,
+      ArticlePaniers: nouveauxArticles,
+      articles: nouveauxArticles,
+      remiseParArticle,
+      tvaParArticle,
+      remiseGlobale,
+      tauxTVA,
+      dateMiseAJour: new Date() // Mettre à jour la date
+    });
+
+    // 5️⃣ Recalculer totaux
+    panier.calculerTotals();
+
+
+    // 7️⃣ Remplacer l'ancien panier
+    this.selectedTransaction = panier;
+    const paiementPanierRetourner: Paiement | undefined = this.selectedTransaction?.Paiements?.[0];
+
+      const panierCompletData = {
+   
+        panier: {
+          //...panier,
+          id: this.selectedTransaction.id, 
+          totalHT: panier.totalHT,        
+          tva: panier.tva,
+          totalTTC: panier.totalTTC,
+          remiseGlobale:panier.remiseGlobale,
+          remise: panier.remise,
+          tauxTVA: panier.tauxTVA,
+          typeEntite: this.selectedTransaction.typeEntite,
+          typePanier:this.selectedTransaction.typePanier,
+          clientId: this.selectedTransaction.clientId || null,
+          statut: this.selectedTransaction.statut 
+        },
+        articles: panier.articles||panier.ArticlePaniers,
+        code_structure: this.code_structure,
+        magasinId: this.magasinId,
+        agentId: this.agentId,
+        clientId: this.selectedTransaction.clientId || null,
+        typeEntite:this.typeEntite,
+        paiement: new Paiement ({
+          ... paiementPanierRetourner,
+          statutPaiement:paiementPanierRetourner?.statutPaiement,
+          typePaiement: 'autre',
+        })
+      };
+      console.log('Données panier avec article retourné :', {
+        DonnéesPanier: panierCompletData
+      });
+     this.isLoading = true;
+    
+      this.panierService.createPanierComplet(panierCompletData).pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (result) => {
+          console.log('Panier mis à jour avec succès:', {
+              panierId: result.panier?.id,
+              panierStatut: result.panier?.statut,
+              paiements: result.paiement
+            });
+            if(result.paiement && result.paiement.id){
+              this.recetteService.getByPaiementId(result.paiement.id)
+              .pipe(takeUntil(this.destroy$))
+              .subscribe({
+                next: (recetteExistante) => {
+                  console.log('Recette existante pour le paiement retourné:', recetteExistante);
+                  if(recetteExistante && recetteExistante.id){
+                    const recette = {
+                      ...recetteExistante,
+                      montant:recetteExistante.montant,
+                      statutRecette: recetteExistante.statutRecette
+                    }
+                    const formData = new FormData();
+
+                    // Remplir formData avec ton objet depense
+                    Object.entries(recette).forEach(([key, value]) => {
+                      if (value !== undefined && value !== null) {
+                        formData.append(key, value.toString());
+                      }
+                    });
+                    console.log('Mise à jour de la recette avec les données:', formData);
+                    // Mettre à jour la recette
+                    this.recetteService.updateRecette(recetteExistante.id,formData)
+                    .pipe(takeUntil(this.destroy$))
+                    .subscribe({
+                      next: () => {
+                        this.toastr.success('Article retourné avec succès');
+                        this.loadTransactions();
+                        console.log('Recette associée mise à jour avec succès:', recetteExistante.id);
+                      },
+                      error: (err) => {
+                        console.error('Erreur mise à jour recette associée:', err);
+                      }
+                    });
+                  }
+                },
+                error: (err) => {
+                  console.error('Erreur récupération recette par paiementId:', err);
+                }
+              });
+            }
+        },
+        error: (error) => {
+          console.error('Erreur:', error);
+          this.toastr.error(error.error?.error || 'Erreur lors de la suppression de l\'article du panier', 'Erreur');
+        },
+        complete: () => {
+          this.isLoading = false;
+        }
+      });
+  }
+}
+
+ 
   getClientName(clientId: number): string {
     const client = this.clients.find(c => c.id === clientId);
     return client ? client.nomComplet : 'Inconnu';
@@ -811,7 +942,8 @@ private creerNouveauBrouillon(): void {
       //this.onPanierValide(panier);
       this.panierValide = true;
       this.showBonButtons = true;
-    } else if (panier.statut === 'en_cours') {
+    } 
+    else if (panier.statut === 'en_cours') {
       //this.onPanierModifie(panier);
       this.panierValide = false;
       this.showBonButtons = false;

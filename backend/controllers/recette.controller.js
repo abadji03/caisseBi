@@ -17,6 +17,8 @@ exports.createRecette = async (req, res) => {
       paymentMode,
       magasinId,
       agentId,
+      paiementId,
+      statutRecette,
       code_structure,
       date,
     } = req.body;
@@ -29,6 +31,8 @@ exports.createRecette = async (req, res) => {
       montant,
       description,
       paymentMode,
+      paiementId,
+      statutRecette,
       receipt,
       magasinId,
       agentId,

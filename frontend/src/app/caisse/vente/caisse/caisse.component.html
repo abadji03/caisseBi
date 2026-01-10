@@ -172,7 +172,7 @@
     
     <div class="card-footer" *ngIf="showBonButtons">
       <div class="d-flex justify-content-between gap-3">
-        <div class="col-md-4 mb-3">
+        <div class="col-md-4">
           <select
                   id="modePaiement"
                   class="form-select"
@@ -339,7 +339,7 @@
                     <th>TVA</th>
                     <th>Total HT</th>
                     <th>Total TTC</th>
-                    <th>Action</th>
+                    <th *ngIf="selectedTransaction.statut ==='validé'" >Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -364,7 +364,7 @@
                     <td>
                       {{ article.totalTTC }}<small class="text-muted"> F CFA</small> 
                     </td>
-                    <td>
+                    <td *ngIf="selectedTransaction.statut ==='validé'" >
                       <button class="btn btn-sm btn-danger" 
                               (click)="retournerArticle(article)">
                         <i class="bi bi-arrow-counterclockwise"></i> Retourner

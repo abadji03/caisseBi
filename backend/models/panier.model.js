@@ -24,6 +24,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DECIMAL(12, 2),
       defaultValue: 0,
     },
+    remiseGlobale: {
+      type: DataTypes.DECIMAL(12, 2),
+      defaultValue: 0,
+    },
     remise: {
       type: DataTypes.DECIMAL(12, 2),
       defaultValue: 0,
