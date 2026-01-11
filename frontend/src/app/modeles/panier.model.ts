@@ -1,6 +1,8 @@
 import { Stock } from './entrees-sorties.model';
+import { Magasin } from './magasin.model';
 import { Paiement } from './paiement.model';
 import { Produits } from './produit.modele';
+import { User } from './user.model';
 
 export class Panier {
   id?: number;
@@ -17,6 +19,8 @@ export class Panier {
   //methodePaiement?: 'Espèce' | 'Carte' | 'Orange Money'| 'Wave' | 'Chèque' | 'Virement' | 'Autre';
   remise = 0;
   avance = 0;
+  user?:User;
+  Magasin?:Magasin;
   tauxTVA = 0;
   typeEntite?:'client' | 'fournisseur'|'autre';
   typePanier?:'produit' | 'service '|'mixte'= 'produit';

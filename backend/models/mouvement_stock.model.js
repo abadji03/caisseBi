@@ -21,6 +21,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
+    uniteStock: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     stockId: {
       type: DataTypes.INTEGER,
       allowNull: false,

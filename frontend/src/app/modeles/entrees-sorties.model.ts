@@ -79,13 +79,15 @@ export class Stock {
 }
 
 export class MouvementsStock {
-  public id!: number;
+  public id?: number;
   public ref!: string;
   public produitId!: number;
   public magasinId!: number;
   public stockId!: number; // Ajout du lien avec le stock
   public typeMouvement!: 'Entree' | 'Sortie';
   public quantite!: number;
+  public uniteStock!: string;
+  public code_structure!: string;
   public prixUnitaire!: number;
   public acteurId!: number;
   public description?: string;

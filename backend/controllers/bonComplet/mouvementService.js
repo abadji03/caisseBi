@@ -141,9 +141,10 @@ class MouvementService {
     await db.MouvementStock.create(
       {
         ref: `MVT-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
-        produitId: article.produitId || article.produit?.id,
+        produitId: article.produitId || article.Produit?.id || article.produit?.id,
         magasinId,
         stockId: stock.id,
+        uniteStock:  article.produit?.unite || article.Produit?.unite,
         typeMouvement,
         quantite: article.quantite,
         prixUnitaire: typeMouvement === 'Entree' ? article.prixAchatUnitaire : article.prixVenteUnitaire,

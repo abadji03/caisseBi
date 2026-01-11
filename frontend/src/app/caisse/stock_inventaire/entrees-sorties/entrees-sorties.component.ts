@@ -396,7 +396,7 @@ export class EntreesSortiesComponent implements OnInit, OnDestroy {
           : -Number(mouvement.quantite);
       // D'abord, récupérer les permissions associées au rôle
       this.mouvementsStockService
-        .delete(mouvement.id)
+        .delete(mouvement.id!)
         .pipe(finalize(() => (this.isLoading = false)))
         .subscribe({
           next: () => {
@@ -482,7 +482,7 @@ export class EntreesSortiesComponent implements OnInit, OnDestroy {
       acteurId:
         this.isEditing && this.currentMouvement ? this.currentMouvement.acteurId : this.agentId,
       ref:
-        this.isEditing && this.currentMouvement ? this.currentMouvement.ref : `MVT-${Date.now()}`,
+        this.isEditing && this.currentMouvement ? this.currentMouvement.ref : `MVT-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
       stockId:
         this.isEditing && this.currentMouvement
           ? this.currentMouvement.stockId
@@ -492,7 +492,7 @@ export class EntreesSortiesComponent implements OnInit, OnDestroy {
       //dateMouvement:  new Date().toISOString()
     };
     if (this.isEditing && this.currentMouvement) {
-      this.mouvementsStockService.update(this.currentMouvement.id, payload)
+      this.mouvementsStockService.update(this.currentMouvement.id!, payload)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {

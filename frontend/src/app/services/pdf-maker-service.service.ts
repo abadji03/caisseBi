@@ -41,7 +41,7 @@ private imageConverter = inject(ImageConverterService)
     this.structureInfo = structure;
   }
 
-  private async getHeader(): Promise<any> {
+  /* private async getHeader(): Promise<any> {
     if (!this.structureInfo) {
       return {};
     }
@@ -87,7 +87,145 @@ private imageConverter = inject(ImageConverterService)
       ],
       margin: [0, 0, 0, 20]
     };
+  } */
+
+  private async getHeader(isCompact= false): Promise<any> {
+  // Si pas de structure info, retourner un header minimal
+  if (!this.structureInfo) {
+    return {
+      text: 'ENTREPRISE NON CONFIGURÉE',
+      style: 'header',
+      alignment: 'center',
+      margin: [0, 0, 0, 10]
+    };
   }
+
+  let logoData = '';
+  
+  // Convertir le logo en base64 si disponible
+  if (this.structureInfo.logo && this.imageConverter.isValidImageUrl(this.structureInfo.logo)) {
+    try {
+      logoData = await this.imageConverter.imageUrlToBase64(this.structureInfo.logo);
+    } catch (error) {
+      console.warn('Erreur chargement logo, utilisation du logo par défaut', error);
+      logoData = this.defaultLogo;
+    }
+  } else {
+    logoData = this.defaultLogo;
+  }
+
+  // Header compact pour tickets (A7/A6)
+  if (isCompact) {
+    return {
+      columns: [
+        // Logo seulement si disponible
+        ...(logoData ? [{
+          image: logoData,
+          width: 30,
+          height: 30,
+          margin: [0, 0, 5, 0]
+        }] : []),
+        {
+          width: '*',
+          stack: [
+            { 
+              text: this.structureInfo.nom_structure || 'Entreprise', 
+              style: 'compactHeader',
+              alignment: 'center'
+            },
+            ...(this.structureInfo.telephone ? [
+              { 
+                text: `Tél: ${this.structureInfo.telephone}`, 
+                style: 'compactSubheader',
+                alignment: 'center'
+              }
+            ] : []),
+            ...(this.structureInfo.adresse ? [
+              { 
+                text: this.structureInfo.adresse, 
+                style: 'compactSubheader',
+                alignment: 'center',
+                fontSize: 6
+              }
+            ] : [])
+          ],
+          alignment: 'center'
+        }
+      ],
+      margin: [0, 0, 0, 10]
+    };
+  }
+
+  // Header complet pour factures (A4)
+  return {
+    columns: [
+      {
+        width: 'auto',
+        stack: [
+          ...(logoData ? [{
+            image: logoData,
+            width: 60,
+            height: 60,
+            margin: [0, 0, 10, 0]
+          }] : [])
+        ]
+      },
+      {
+        width: '*',
+        stack: [
+          { 
+            text: this.structureInfo.nom_structure || 'Nom de la structure', 
+            style: 'header',
+            alignment: 'left'
+          },
+          ...(this.structureInfo.devise ? [
+            { 
+              text: this.structureInfo.devise, 
+              style: 'slogan',
+              alignment: 'left'
+            }
+          ] : []),
+          ...(this.structureInfo.adresse ? [
+            { 
+              text: this.structureInfo.adresse, 
+              style: 'subheader',
+              alignment: 'left'
+            }
+          ] : []),
+          ...(this.structureInfo.telephone ? [
+            { 
+              text: `Tél: ${this.structureInfo.telephone}`, 
+              style: 'subheader',
+              alignment: 'left'
+            }
+          ] : []),
+          ...(this.structureInfo.email ? [
+            { 
+              text: `Email: ${this.structureInfo.email}`, 
+              style: 'subheader',
+              alignment: 'left'
+            }
+          ] : []),
+          ...(this.structureInfo.registreCommerce ? [
+            { 
+              text: `RC: ${this.structureInfo.registreCommerce}`, 
+              style: 'subheader',
+              alignment: 'left'
+            }
+          ] : []),
+          ...(this.structureInfo.numero_identification_fiscale ? [
+            { 
+              text: `NINEA: ${this.structureInfo.numero_identification_fiscale}`, 
+              style: 'subheader',
+              alignment: 'left'
+            }
+          ] : [])
+        ]
+      }
+    ],
+    margin: [0, 0, 0, 20]
+  };
+}
 
   private getFooter(): any {
     return (currentPage: number, pageCount: number) => {
@@ -109,7 +247,7 @@ private imageConverter = inject(ImageConverterService)
     };
   }
 
-  private getStyles(): any {
+  /* private getStyles(): any {
     return {
       header: {
         fontSize: 16,
@@ -144,7 +282,65 @@ private imageConverter = inject(ImageConverterService)
         fillColor: '#f0f0f0'
       }
     };
-  }
+  } */
+
+  private getStyles(): any {
+  return {
+    header: {
+      fontSize: 16,
+      bold: true,
+      margin: [0, 0, 0, 5]
+    },
+    compactHeader: {
+      fontSize: 10,
+      bold: true,
+      margin: [0, 0, 0, 2]
+    },
+    subheader: {
+      fontSize: 9,
+      margin: [0, 0, 0, 2],
+      color: '#555555'
+    },
+    compactSubheader: {
+      fontSize: 7,
+      margin: [0, 0, 0, 1],
+      color: '#666666'
+    },
+    slogan: {
+      fontSize: 10,
+      italic: true,
+      color: '#888888',
+      margin: [0, 0, 0, 5]
+    },
+    title: {
+      fontSize: 14,
+      bold: true,
+      margin: [0, 10, 0, 10],
+      alignment: 'center'
+    },
+    tableHeader: {
+      bold: true,
+      fontSize: 9,
+      fillColor: '#f5f5f5'
+    },
+    normal: {
+      fontSize: 9
+    },
+    bold: {
+      bold: true,
+      fontSize: 9
+    },
+    total: {
+      bold: true,
+      fontSize: 10,
+      fillColor: '#f0f0f0'
+    },
+    footerText: {
+      fontSize: 8,
+      color: '#777777'
+    }
+  };
+}
 
   // Générer un ticket de vente
   generateTicket(venteData: any): void {
@@ -505,7 +701,7 @@ private generateDetailedArticlesTable(articles: ArticlePanier[]): any {
       { text: 'Article', style: 'tableHeader' },
       { text: 'Prix U.', style: 'tableHeader' },
       { text: 'Qte', style: 'tableHeader' },
-      { text: 'remise', style: 'tableHeader' },
+      { text: 'Remise', style: 'tableHeader' },
       { text: 'TVA', style: 'tableHeader' },
       { text: 'Total HT', style: 'tableHeader' },
       { text: 'Total TTC', style: 'tableHeader' }
@@ -516,7 +712,7 @@ private generateDetailedArticlesTable(articles: ArticlePanier[]): any {
   articles.forEach(article => {
     if (article) {
       // Sécuriser les calculs
-      const prixUnitaire = this.safeNumber(article.prixUnitaire);
+      /* const prixUnitaire = this.safeNumber(article.prixUnitaire);
       const quantite = article.quantite;
       const remise = article.montantRemise;
       const tva = article.montantTVA;
@@ -531,6 +727,15 @@ private generateDetailedArticlesTable(articles: ArticlePanier[]): any {
         { text: `${tva} F CFA`, alignment: 'right' },
         { text: `${totalHT} F CFA`, alignment: 'right' },
         { text: `${totalTTC} F CFA`, alignment: 'right' }
+      ]); */
+      tableBody.push([
+        article?.produit?.designation || article?.Produit?.designation || 'N/A',
+        { text: `${this.safeNumber(article.prixUnitaire)} F CFA`, alignment: 'right' },
+        { text: `${article.quantite}`, alignment: 'center' },
+        { text: `${this.safeNumber(article.montantRemise)} F CFA`, alignment: 'right' },
+        { text: `${this.safeNumber(article.montantTVA)} F CFA`, alignment: 'right' },
+        { text: `${this.safeNumber(article.totalHT)} F CFA`, alignment: 'right' },
+        { text: `${this.safeNumber(article.totalTTC)} F CFA`, alignment: 'right' }
       ]);
     }
   });
@@ -538,14 +743,14 @@ private generateDetailedArticlesTable(articles: ArticlePanier[]): any {
   // Si aucun article valide, ajouter une ligne vide
   if (tableBody.length === 1) {
     tableBody.push([
-      { text: 'Aucun article', colSpan: 4, alignment: 'center' },
-      '', '', ''
+      { text: 'Aucun article', colSpan: 7, alignment: 'center' },
+      '', '', '', '', '', ''
     ]);
   }
 
   return {
     table: {
-      widths: ['*', 'auto', 'auto', 'auto'],
+      widths: ['*', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto'],
       body: tableBody
     },
     layout: 'lightHorizontalLines'
@@ -653,26 +858,6 @@ private generateTotals(totaux: any): any {
       layout: 'noBorders'
     };
   }
-
-
-  /* private validateArticlesData(articles: ArticlePanier[]): ArticlePanier[] {
-  if (!articles || !Array.isArray(articles)) {
-    return [];
-  }
-
-  return articles
-    .filter(article => article != null) // Supprimer les null/undefined
-    .map(article => ({
-      // Assurez-vous que toutes les propriétés nécessaires sont présentes
-      ...article,
-      designation: article.produit?.designation ||article.Produit?.designation || 'Produit sans nom',
-      prixUnitaire: this.safeNumber(article.prixUnitaire) || 0,
-      quantite: this.safeNumber(article.quantite) || 0,
-      //tva: this.safeNumber(panier?.tva) || 0,
-      total: this.safeNumber(article.prixUnitaire * article.quantite ) || 0,
-      
-    }));
-} */
 
 private validateArticlesData(articles: any[]): ArticlePanier[] {
   if (!articles || !Array.isArray(articles)) {
@@ -926,6 +1111,389 @@ private generateTicketVersementFallback(versementData: any): void {
     }
   };
 
+  pdfMake.createPdf(docDefinition).open();
+}
+
+//...........................Méthodes pour la vente dans le composant Caisse......................
+// Dans PdfMakerServiceService, ajoutez ces méthodes :
+
+/**
+ * Génère un ticket de caisse automatique (sans infos client)
+ */
+async generateTicketCaisse(panier: any, agent?: any): Promise<void> {
+  try {
+    const header = await this.getHeader(true);
+    const currentDate = new Date();
+    
+    const docDefinition: TDocumentDefinitions = {
+      pageSize: 'A6',
+      pageMargins: [15, 15, 15, 15],
+      content: [
+        header,
+        { text: 'TICKET DE CAISSE', style: 'title', alignment: 'center' },
+        
+        // Informations de base
+        {
+          columns: [
+            { text: 'Date:', style: 'bold', width: 'auto' },
+            { text: currentDate.toLocaleDateString(), style: 'normal', width: '*' }
+          ]
+        },
+        {
+          columns: [
+            { text: 'Heure:', style: 'bold', width: 'auto' },
+            { text: currentDate.toLocaleTimeString(), style: 'normal', width: '*' }
+          ]
+        },
+        {
+          columns: [
+            { text: 'Ticket Nº:', style: 'bold', width: 'auto' },
+            { text: panier.id || 'N/A', style: 'normal', width: '*' }
+          ]
+        },
+        ...(agent ? [{
+          columns: [
+            { text: 'Caissier:', style: 'bold', width: 'auto' },
+            { text: agent.nom || 'N/A', style: 'normal', width: '*' }
+          ]
+        }] : []),
+        
+        // Ligne séparatrice
+        //{ canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 1 }], margin: [0, 5, 0, 5] },
+        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 250, y2: 0, lineWidth: 1 }], margin: [0, 5, 0, 5] },
+        // Articles
+        { text: 'Articles:', style: 'bold', margin: [0, 5, 0, 2] },
+        this.generateDetailedTicketTable(panier.articles || panier.ArticlePaniers || []),
+        
+        // Totaux
+        { text: 'Récapitulatif:', style: 'bold', margin: [0, 5, 0, 2] },
+        {
+          table: {
+            widths: ['*', 'auto'],
+            body: [
+              /* ...(panier.remise > 0 ? [
+                [
+                  { text: 'Remise:', style: 'normal' },
+                  { text: `-${this.safeNumber(panier.remise)} F CFA`,style: 'normal', alignment: 'right' }
+                ]
+              ] : []), */
+              [
+                { text: 'Sous-total:', style: 'normal' },
+                { text: `${this.safeNumber(panier.totalHT)} F CFA`,style: 'normal', alignment: 'right' }
+              ],
+              /* ...(panier.tva > 0 ? [
+                [
+                  { text: `TVA:`, style: 'normal' },
+                  { text: `${this.safeNumber(panier.tva)} F CFA`,style: 'normal', alignment: 'right' }
+                ]
+              ] : []), */
+              [
+                { text: 'Total TTC:', style: 'bold' },
+                { text: `${this.safeNumber(panier.totalTTC)} F CFA`, alignment: 'right', style: 'bold' }
+              ]
+            ]
+          },
+          layout: 'noBorders'
+        },
+        
+        // Mode de paiement
+        ...(panier.Paiements?.length > 0 ? [{
+          columns: [
+            { text: 'Mode de Paiement:', style: 'bold', width: 'auto' },
+            { text: panier.Paiements[0]?.methodePaiement || 'Espèce', style: 'normal', width: '*' }
+          ],
+          margin: [0, 5, 0, 0]
+        }] : []),
+        
+        // Message de fin
+        { text: 'Merci de votre visite !', style: 'normal', alignment: 'center', margin: [0, 10, 0, 0] },
+        { text: this.structureInfo?.telephone || '', style: 'subheader', alignment: 'center', fontSize: 8 }
+      ],
+      styles: {
+        ...this.getStyles(),
+        title: {
+          fontSize: 12,
+          bold: true,
+          margin: [0, 0, 0, 5],
+          alignment: 'center'
+        }
+      }
+    };
+
+    // Ouvrir dans un nouvel onglet pour impression
+    pdfMake.createPdf(docDefinition).open();
+    
+  } catch (error) {
+    console.error('Erreur génération ticket caisse:', error);
+    this.generateTicketCaisseFallback(panier);
+  }
+}
+
+/**
+ * Génère un ticket de vente avec informations client
+ */
+async generateTicketVente(panier: any, client: any, agent?: any): Promise<void> {
+  try {
+    const header = await this.getHeader(true);
+    const currentDate = new Date();
+    
+    const docDefinition: TDocumentDefinitions = {
+      pageSize: 'A6',
+      pageMargins: [15, 15, 15, 15],
+      content: [
+        header,
+        { text: 'TICKET DE VENTE', style: 'title', alignment: 'center' },
+        
+        // Informations client
+        { text: 'CLIENT', style: 'subheader', margin: [0, 5, 0, 2] },
+        {
+          stack: [
+            { text: client.nomComplet || 'Client non enregistré', style: 'bold' },
+            ...(client.telephone ? [{ text: `Tél: ${client.telephone}`, style: 'normal' }] : []),
+            ...(client.adresse ? [{ text: `Adr: ${client.adresse}`, style: 'normal' }] : [])
+          ],
+          margin: [0, 0, 0, 5]
+        },
+        
+        // Informations transaction
+        {
+          columns: [
+            {
+              width: '50%',
+              stack: [
+                { text: 'Date:', style: 'bold' },
+                { text: currentDate.toLocaleDateString(), style: 'normal' }
+              ]
+            },
+            {
+              width: '50%',
+              stack: [
+                { text: 'Heure:', style: 'bold' },
+                { text: currentDate.toLocaleTimeString(), style: 'normal' }
+              ]
+            }
+          ]
+        },
+        {
+          columns: [
+            { text: 'Ticket Nº:', style: 'bold', width: 'auto' },
+            { text: panier.id || 'N/A', style: 'normal', width: '*' }
+          ]
+        },
+        
+        // Ligne séparatrice
+        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 250, y2: 0, lineWidth: 1 }], margin: [0, 5, 0, 5] },
+        
+        // Articles détaillés
+        { text: 'DÉTAIL DE LA VENTE', style: 'bold', margin: [0, 5, 0, 2] },
+        this.generateDetailedTicketTable(panier.articles || panier.ArticlePaniers || []),
+        
+        // Récapitulatif
+        { text: 'RÉCAPITULATIF', style: 'bold', margin: [0, 5, 0, 2] },
+        {
+          table: {
+            widths: ['*', 'auto'],
+            body: [
+              /* ...(panier.remise > 0 ? [
+                [
+                  { text: 'Remise:', style: 'normal' },
+                  { text: `-${this.safeNumber(panier.remise)} F CFA`,style: 'normal', alignment: 'right' }
+                ]
+              ] : []), */
+              [
+                { text: 'Total HT:', style: 'normal' },
+                { text: `${this.safeNumber(panier.totalHT)} F CFA`,style: 'normal', alignment: 'right' }
+              ],
+              /* ...(panier.tva > 0 ? [
+                [
+                  { text: 'TVA:', style: 'normal' },
+                  { text: `${this.safeNumber(panier.tva)} F CFA`, style: 'normal', alignment: 'right' }
+                ]
+              ] : []), */
+              [
+                { text: 'Total TTC:', style: 'total' },
+                { text: `${this.safeNumber(panier.totalTTC)} F CFA`, alignment: 'right', style: 'total' }
+              ],
+              ...(panier.Paiements?.length > 0 ? [
+                [
+                  { text: 'Mode paiement:', style: 'bold' },
+                  { text: panier.Paiements[0]?.methodePaiement || 'Espèce', alignment: 'right', style: 'bold' }
+                ]
+              ] : [])
+            ]
+          },
+          layout: 'noBorders',
+          margin: [0, 0, 0, 10]
+        },
+        
+        // Agent et signature
+        {
+          columns: [
+            { text: `Caissier: ${agent?.nom || 'N/A'}`, style: 'normal', width: '*' },
+            {
+              stack: [
+                { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 80, y2: 0, lineWidth: 1 }] },
+                { text: 'Signature', style: 'subheader', alignment: 'center', fontSize: 7 }
+              ],
+              width: 'auto'
+            }
+          ]
+        },
+        
+        // Message
+        { text: 'Merci pour votre confiance !', style: 'normal', alignment: 'center', margin: [0, 10, 0, 0] },
+        { text: 'Service après-vente disponible', style: 'subheader', alignment: 'center', fontSize: 7 }
+      ],
+      styles: {
+        ...this.getStyles(),
+        title: {
+          fontSize: 14,
+          bold: true,
+          margin: [0, 0, 0, 5],
+          alignment: 'center'
+        },
+        subheader: {
+          fontSize: 9,
+          bold: true,
+          margin: [0, 0, 0, 2]
+        }
+      }
+    };
+
+    pdfMake.createPdf(docDefinition).open();
+    
+  } catch (error) {
+    console.error('Erreur génération ticket vente:', error);
+    this.generateTicketVenteFallback(panier, client);
+  }
+}
+
+/**
+ * Tableau simplifié pour ticket
+ */
+private generateTicketArticlesTable(articles: any[]): any {
+  const validatedArticles = this.validateArticlesData(articles);
+  
+  const tableBody: TableCell[][] = [];
+  
+  validatedArticles.forEach(article => {
+    tableBody.push([
+      { text: article.produit?.designation || article.Produit?.designation || 'Article', fontSize: 8 },
+      { text: `Qte: ${article.quantite} | P.U: ${this.safeNumber(article.prixUnitaire)} | Remise: ${this.safeNumber(article.montantRemise)} | TVA: ${this.safeNumber(article.montantTVA)} `, fontSize: 8, alignment: 'right' }
+    ]);
+    
+    // Afficher le sous-total pour chaque article
+    tableBody.push([
+      { text: '', fontSize: 8 },
+      { text: `${this.safeNumber(article.totalTTC)} F CFA`, fontSize: 8, alignment: 'right', bold: true }
+    ]);
+  });
+  
+  if (tableBody.length === 0) {
+    tableBody.push([
+      { text: 'Aucun article', colSpan: 2, alignment: 'center', fontSize: 8 }
+    ]);
+  }
+  
+  return {
+    table: {
+      widths: ['*', 'auto'],
+      body: tableBody
+    },
+    layout: {
+      hLineWidth: () => 0,
+      vLineWidth: () => 0,
+      paddingLeft: () => 0,
+      paddingRight: () => 0,
+      paddingTop: () => 1,
+      paddingBottom: () => 1
+    }
+  };
+}
+
+/**
+ * Tableau détaillé pour ticket avec client
+ */
+private generateDetailedTicketTable(articles: any[]): any {
+  const validatedArticles = this.validateArticlesData(articles);
+  
+  const tableBody: TableCell[][] = [
+    [
+      { text: 'Désignation', style: 'tableHeader', fontSize: 7 },
+      { text: 'Qte', style: 'tableHeader', fontSize: 7 },
+      { text: 'P.U.', style: 'tableHeader', fontSize: 7 },
+      { text: 'Remise', style: 'tableHeader', fontSize: 7 },
+      { text: 'TVA', style: 'tableHeader', fontSize: 7 },
+      { text: 'Total', style: 'tableHeader', fontSize: 7 }
+    ]
+  ];
+  
+  validatedArticles.forEach(article => {
+    tableBody.push([
+      { text: (article.produit?.designation || article.Produit?.designation || 'Article').substring(0, 20), fontSize: 7 },
+      { text: `${article.quantite}`, fontSize: 7, alignment: 'center' },
+      { text: `${this.safeNumber(article.prixUnitaire)}`, fontSize: 7, alignment: 'right' },
+      { text: `${this.safeNumber(article.montantRemise)}`, fontSize: 7, alignment: 'right' },
+      { text: `${this.safeNumber(article.montantTVA)}`, fontSize: 7, alignment: 'right' },
+      { text: `${this.safeNumber(article.totalTTC)}`, fontSize: 7, alignment: 'right' }
+    ]);
+  });
+  
+  return {
+    table: {
+      widths: ['*', 'auto', 'auto', 'auto', 'auto', 'auto'],
+      body: tableBody
+    },
+    layout: 'lightHorizontalLines'
+  };
+}
+
+/**
+ * Méthodes de secours
+ */
+private generateTicketCaisseFallback(panier: any): void {
+  const docDefinition: TDocumentDefinitions = {
+    pageSize: 'A7',
+    pageMargins: [5, 5, 5, 5],
+    content: [
+      { text: 'TICKET DE CAISSE', style: 'title', alignment: 'center' },
+      { text: `Nº: ${panier.id || 'N/A'}`, alignment: 'center' },
+      { text: `Date: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, fontSize: 8 },
+      { text: '---', alignment: 'center', fontSize: 8 },
+      ...((panier.articles || panier.ArticlePaniers || []).map((article: any) => ({
+        text: `${article.quantite} x ${article.produit?.designation || 'Article'} = ${article.totalTTC || 0} F CFA`,
+        fontSize: 8
+      }))),
+      { text: '---', alignment: 'center', fontSize: 8 },
+      { text: `TOTAL: ${panier.totalTTC || 0} F CFA`, style: 'bold', alignment: 'center' },
+      { text: 'Merci !', alignment: 'center', fontSize: 8 }
+    ],
+    styles: {
+      title: { fontSize: 10, bold: true, margin: [0, 0, 0, 5] },
+      bold: { bold: true, fontSize: 9 }
+    }
+  };
+  
+  pdfMake.createPdf(docDefinition).open();
+}
+
+private generateTicketVenteFallback(panier: any, client: any): void {
+  const docDefinition: TDocumentDefinitions = {
+    pageSize: 'A6',
+    pageMargins: [10, 10, 10, 10],
+    content: [
+      { text: 'TICKET DE VENTE', style: 'title', alignment: 'center' },
+      { text: `Client: ${client.nomComplet || 'Non enregistré'}`, fontSize: 9 },
+      { text: `Date: ${new Date().toLocaleString()}`, fontSize: 8 },
+      { text: '---', alignment: 'center', fontSize: 8 },
+      { text: `Total: ${panier.totalTTC || 0} F CFA`, style: 'bold', alignment: 'center' },
+      { text: 'Merci pour votre confiance !', alignment: 'center', fontSize: 8 }
+    ],
+    styles: {
+      title: { fontSize: 12, bold: true, margin: [0, 0, 0, 5] }
+    }
+  };
+  
   pdfMake.createPdf(docDefinition).open();
 }
 }

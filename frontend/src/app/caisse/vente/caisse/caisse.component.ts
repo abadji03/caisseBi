@@ -20,9 +20,12 @@ import { PaniersService } from '../../../services/paniers.service';
 import { finalize, forkJoin, Subject, takeUntil } from 'rxjs';
 import { PanierComponent } from '../../../sharedComposants/panier/panier.component';
 import { StockInventaireService } from '../../../services/stock-inventaire.service';
-import { Stock } from '../../../modeles/entrees-sorties.model';
+import { MouvementsStock, Stock } from '../../../modeles/entrees-sorties.model';
 import { RecettesService } from '../../../services/recettes.service';
 import { ModePaiement, Paiement } from '../../../modeles/paiement.model';
+import { MouvementsStockService } from '../../../services/mouvements-stock.service';
+import { ClientsService } from '../../../services/clients.service';
+import { StructureService } from '../../../services/structure.service';
 
 @Component({
   selector: 'app-caisse',
@@ -125,12 +128,16 @@ export class CaisseComponent implements OnInit, OnDestroy {
     private stockService = inject(StockInventaireService);
     private pdfGenerator = inject(PdfMakerServiceService);
     private recetteService = inject(RecettesService);
+    private mouvementsStockService = inject(MouvementsStockService);
+    private clientsService = inject(ClientsService);
+    private structureService = inject(StructureService)
 
   ngOnInit() {
     this.iniForms();
     this.loadDataProduits();
     this.loadTransactions();
     //this.loadFakeData();
+    this.loadStructureInfo();
     // Date et heure actuelles
     const currentDateObj = new Date();
     this.currentDate = currentDateObj.toLocaleDateString();
@@ -497,6 +504,7 @@ togglePanier() {
         this.bonBrouillonService.clearBrouillons();
         this.panierData = null;
         this.resetVente();
+        this.imprimerTicket(result.panier!);
       },
       error: (error) => {
         console.error('Erreur:', error);
@@ -564,7 +572,7 @@ private createRecette(formData: FormData): void {
           remise: panierRetourner.remise,
           tauxTVA: panierRetourner.tauxTVA,
           typeEntite: panierRetourner.typeEntite,
-          typePanier:panierRetourner,
+          typePanier:panierRetourner.typePanier,
           clientId: panierRetourner.clientId || null,
           statut: 'retourné' 
         },
@@ -642,14 +650,7 @@ private createRecette(formData: FormData): void {
     } 
   }
 
-   /** IMPRIMER TICKET */
-  imprimerTicket(panier: Panier) {
-    console.log('Impression du ticket pour le panier:', panier.id); 
-    //this.pdfGenerator.generateTicket(panier, this.selectedClient);
-    this.toastr.info('Impression du ticket en cours...');
-  }
-
-
+  /** RETOURNER UN ARTICLE DANS LA TRANSACTION */
 retournerArticle(article: ArticlePanier) {
   if (!this.selectedTransaction || !this.selectedTransaction.id) {
     this.toastr.error('Impossible de retourner un article sans transaction sélectionnée');
@@ -786,9 +787,12 @@ retournerArticle(article: ArticlePanier) {
                     .pipe(takeUntil(this.destroy$))
                     .subscribe({
                       next: () => {
+                        this.updateStockApresSuppressionArticle(article);
                         this.toastr.success('Article retourné avec succès');
                         this.loadTransactions();
+                        this.imprimerTicket(result.panier!);
                         console.log('Recette associée mise à jour avec succès:', recetteExistante.id);
+                         
                       },
                       error: (err) => {
                         console.error('Erreur mise à jour recette associée:', err);
@@ -813,6 +817,72 @@ retournerArticle(article: ArticlePanier) {
   }
 }
 
+updateStockApresSuppressionArticle(article: ArticlePanier): void {
+    if (!article.produitId) {
+      console.error('Impossible de mettre à jour le stock sans produitId');
+      return;
+    }
+    this.stockService.getStockByProduitId(article.produitId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (stock) => {
+          if (stock) {
+            console.log(`Stock actuel pour le produit ${article.produitId}:`, stock);
+            const nouvelleQuantite = Number(stock.quantiteTotale )+ Number(article.quantite);
+            console.log(`Nouvelle quantité après retour de l'article: ${nouvelleQuantite}`);
+            const updatedStock = new Stock({
+              ...stock, 
+              quantiteTotale: nouvelleQuantite,
+               
+            });
+            console.log('Mise à jour du stock avec les données:', updatedStock);
+            this.stockService.updateStock(stock.id, updatedStock)
+              .pipe(takeUntil(this.destroy$))
+              .subscribe({
+                next: (stockMisajour) => {
+                  console.log('Stock mis à jour avec succès:', stockMisajour);
+                  console.log(`Stock mis à jour pour le produit ${article.produitId}: nouvelle quantité = ${nouvelleQuantite}`);
+                  const mvtStock : MouvementsStock = {
+                    produitId: article.produitId!,
+                    stockId: stock.id,
+                    ref:`MVT-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+                    prixUnitaire:article.prixUnitaire,
+                    quantite: article.quantite,
+                    uniteStock:article.produit?.unite || article.Produit?.unite || 'unités',
+                    typeMouvement: 'Entree',
+                    description: `Retour d'article du panier ID: ${this.selectedTransaction?.id}`,
+                    code_structure: this.code_structure,
+                    magasinId: this.magasinId,
+                    acteurId: this.agentId,
+                    prixTotal: article.prixUnitaire * article.quantite,
+                    dateMouvement: new Date()
+                  };
+                  this.mouvementsStockService.create(mvtStock)
+                    .pipe(takeUntil(this.destroy$))
+                    .subscribe({
+                      next: () => {
+                        console.log('Mouvement de stock enregistré pour le retour d\'article');
+                      },
+                      error: (err) => {
+                        console.error('Erreur enregistrement mouvement de stock:', err);
+                      }
+                    });         
+                },
+                error: (err) => {
+                  console.error('Erreur mise à jour stock:', err);
+                }
+              });
+          } else {
+            console.warn(`Aucun stock trouvé pour le produitId ${article.produitId}`);
+          }
+        },
+        error: (err) => {
+          console.error('Erreur récupération stock:', err);
+        }
+      });
+  }
+
+  /** OBTENIR LE NOM DU CLIENT */   
  
   getClientName(clientId: number): string {
     const client = this.clients.find(c => c.id === clientId);
@@ -911,23 +981,25 @@ private creerNouveauBrouillon(): void {
         forkJoin([
           this.produitsServices.getAllProduits(this.code_structure),
           this.stockService.getStocksByStructure(this.code_structure),
+          this.clientsService.getClientsByStructure(this.code_structure)  
         ])
           .pipe(
             takeUntil(this.destroy$),
             finalize(() => (this.isLoading = false))
           )
           .subscribe({
-            next: ([produit, stock]) => {
+            next: ([produit, stock, clients]) => {
               //this.fournisseurs = four
               this.produits = produit;
               this.stocks = stock;
+              this.clients = clients;
               this.filteredProducts = this.produits;
               console.log('Produits chargés', this.produits);
               console.log('Produits chargés', this.filteredProducts);
             },
             error: (err) => console.error('Erreur chargement données', err),
           });
-      }
+    }
 
   // Gestion du panier
   onPanierStatutChange(panier: Panier): void {
@@ -966,4 +1038,90 @@ onTotalPanierChange(total: number): void {
     const random = Math.floor(Math.random() * 1000);
     return `NP-${timestamp}-${random}`;
   }
+
+  //=============================================================
+  // Méthodes pour la génération de PDF (tickets, factures, etc.)
+  //=============================================================
+  // Dans CaisseComponent, modifiez ces méthodes :
+
+/** IMPRIMER TICKET AUTOMATIQUE (sans client) */
+imprimerTicket(panier: Panier) {
+  console.log('Impression du ticket automatique pour le panier:', panier.id);
+  
+  // Appeler le service PDF pour générer le ticket de caisse
+  this.pdfGenerator.generateTicketCaisse(panier, {
+    nom: panier.user?.nom // Vous pouvez récupérer le nom réel de l'agent
+  });
+  
+  this.toastr.info('Impression du ticket en cours...');
+}
+
+// Charger les informations de la structure pour le PDF
+private loadStructureInfo(): void {
+    this.structureService.getByCodeStructure(this.code_structure)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (structure) => {
+          this.pdfGenerator.setStructureInfo(structure);
+        },
+        error: (err) => {
+          console.error('Erreur chargement structure:', err);
+        }
+      });
+}
+
+/** GÉNÉRER TICKET AVEC CLIENT (quand on clique sur le bouton Ticket) */
+genererTicketAvecClient(transaction: Panier) {
+  // Ouvrir le modal pour récupérer les infos du client
+  //this.selectedTransaction = transaction;
+  
+  // Vérifier si un client est déjà associé
+  if (transaction.clientId) {
+    // Récupérer les infos du client
+    const client = this.clients.find(c => c.id === transaction.clientId);
+    if (client) {
+      this.genererTicketPourClient(transaction, client);
+      return;
+    }
+  }
+  
+  // Sinon ouvrir le modal pour saisir les infos
+  this.ouvrirModalClient(transaction);
+}
+
+/** GÉNÉRER LE TICKET APRÈS SAISIE DU CLIENT */
+validerClientPourTicket() {
+  if (this.clientForm.valid) {
+    const clientData = this.clientForm.value;
+    
+    if (this.selectedTransaction) {
+      // Générer le ticket avec les infos du client
+      this.genererTicketPourClient(this.selectedTransaction, clientData);
+      
+      // Fermer le modal
+      const modalElement = document.getElementById('clientModal');
+      if (modalElement) {
+        const modal = (window as any).bootstrap.Modal.getInstance(modalElement);
+        if (modal) modal.hide();
+      }
+      
+      this.clientForm.reset();
+      this.selectedTransaction = null;
+    }
+  } else {
+    this.toastr.warning('Veuillez remplir au moins le nom du client pour le ticket');
+  }
+}
+
+/** MÉTHODE PRIVÉE POUR GÉNÉRER LE TICKET */
+private genererTicketPourClient(panier: Panier, client: any): void {
+  console.log('Génération du ticket avec client:', client);
+  
+  // Appeler le service PDF pour générer le ticket de vente
+  this.pdfGenerator.generateTicketVente(panier, client, {
+    nom: panier.user?.nom // Vous pouvez récupérer le nom réel de l'agent
+  });
+  
+  this.toastr.success('Ticket généré avec les informations du client');
+}
 }

@@ -584,25 +584,6 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
     });
   }
 
-  /* loadProduits(): void {
-    //onst code_structure = this.authService.getUserStructure();
-    this.isLoading = true; 
-    this.produitsServices.getAllProduits(this.code_structure).subscribe({
-      next: (data) => {
-        this.isLoading = false;
-        this.prods = data;
-        this.filteredProducts = [...this.prods];
-        // Mettre à jour les options de famille avec les catégories réelles
-        //this.familles = data.map(c => c.nom_categorie);
-      },
-      error: (err) => {
-        this.isLoading = false;
-        //this.toastr.error('Erreur lors du chargement des catégories');
-        console.error(err);
-      }
-    });
-  } */
-
   loadData(): void {
     this.isLoading = true;
     forkJoin([
@@ -625,69 +606,6 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
         error: (err) => console.error('Erreur chargement données', err),
       });
   }
-
-  // Fermer la modal en manipulant le DOM
-  /* closeModal(act: string): void {
-      const modalIdentifiant = this.getModalId(act);
-      console.log('Identifiant généré pour la modal:', modalIdentifiant);
-
-      const modalElement = document.getElementById(modalIdentifiant);
-      console.log('Recherche de la modal dans le DOM:', modalElement);
-
-      if (modalElement) {
-        console.log('Modal trouvée, fermeture en cours');
-        const ariaHiddenValue = modalElement.getAttribute('aria-hidden');
-        if (ariaHiddenValue) {
-          console.log('L\'attribut aria-hidden est utilisé avec la valeur:', ariaHiddenValue);
-          // Enlever l'attribut aria-hidden
-          modalElement.removeAttribute('aria-hidden');
-
-          // Ajouter l'attribut inert si nécessaire
-          modalElement.setAttribute('inert', '');
-        } else {
-          console.log('L\'attribut aria-hidden n\'est pas utilisé sur cet élément');
-        }
-
-        // Cacher la modal via la classe et le style
-        modalElement.classList.remove('show');
-        //modalElement.style.display = 'none';
-
-        // Fermer la modal avec Bootstrap
-        //const modal = new (window as any).bootstrap.Modal(modalElement);
-        //modal.hide(); 
-
-        // Rediriger le focus vers un élément (par exemple un bouton)
-        //  const focusElement = document.getElementById('confirmArchiveModal')?.querySelector('button') as HTMLElement;
-        // if (focusElement) {
-        //   focusElement.focus();
-        // } 
-
-      } else {
-        console.error('Modal non trouvée pour l\'action:', act);
-      }
-    }
- */
-
-  /* closeModal(act: string): void {
-  const modalIdentifiant = this.getModalId(act);
-  const modalElement = document.getElementById(modalIdentifiant);
-
-  if (modalElement) {
-    // Utilisation correcte de Bootstrap Modal pour le fermer
-    const bootstrapModal = (window as any).bootstrap.Modal.getInstance(modalElement);
-
-    if (bootstrapModal) {
-      bootstrapModal.hide(); //Fermeture propre
-    } 
-    else {
-      // Si l'instance n'existe pas encore (peu probable), on la crée et la ferme
-      const modal = new (window as any).bootstrap.Modal(modalElement);
-      modal.hide();
-    }
-  } else {
-    console.error('Modal non trouvée pour l\'action:', act);
-  }
-} */
 
   closeModal(act: string): void {
     const modalIdentifiant = this.getModalId(act);
@@ -823,26 +741,6 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
       console.log('Image sélectionnée', this.selectedImage);
     }
   }
-  /* generateBarcode() {
-      if (this.selectedProduits) {
-        const barcodeValue = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15); // Génère une chaîne aléatoire
-        // Sélectionner l'élément HTML où le code-barres sera affiché
-        const barcodeElement = document.getElementById('barcode') as HTMLCanvasElement;  // Assurez-vous que l'élément est bien un canvas
-        // Vérifier si l'élément existe
-        if (barcodeElement) {
-          // Générer le code-barres avec JsBarcode
-          JsBarcode(barcodeElement, barcodeValue, {
-            format: "CODE128",  // Format de code-barres, tu peux changer en fonction de tes besoins
-            width: 2,           // Largeur du code-barres
-            height: 100,        // Hauteur du code-barres
-            displayValue: true, // Afficher la valeur sous le code-barres
-            fontSize: 18        // Taille de la police du texte affiché sous le code-barres
-          });
-        }
-
-        
-      }
-    } */
 
   generateBarcode(): void {
     // Génère 12 chiffres aléatoires
@@ -1139,72 +1037,6 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
       },
     });
   }
-
-  /* onSubmitWithStock() {
-  if (this.produitForm.invalid || this.stockForm.invalid) {
-    return;
-  }
-
-  const produitData = this.produitForm.value;
-  const stockData = this.stockForm.value;
-
-   const formData = new FormData();
-
-  // On parcourt le form pour ajouter tous les champs
-  Object.entries(this.produitForm.value).forEach(([key, value]) => {
-    formData.append(key, String(value));
-  });
-  // Ajouter les données supplémentaires non présentes dans le formulaire
-  formData.append('code_structure', this.code_structure);
-  formData.append('agentId', String(this.agentId));
-
-  // Ajout du fichier image si présent
-  if (this.selectedImageFile) {
-    formData.append('image', this.selectedImageFile);
-  }
-
-  //  const completepPoduitData = {
-  //       ...produitData,
-  //       code_structure: this.code_structure,
-  //       agentId:this.agentId
-  //     }; 
-
-  // Créer d'abord le produit
-  this.produitsServices.createProduit(formData).subscribe({
-    next: (newProduit) => {
-      // Puis créer le stock avec l'ID du nouveau produit
-      console.log('Produit ajouté avec succés')
-      const completeStockData = {
-        ...stockData,
-        code_structure: this.code_structure,
-        produitId: newProduit.id,
-        dernierPrixAchat: produitData.prixAchatUnitaire,
-        prixVenteUnitaire: produitData.prixVenteUnitaire
-      };
-
-      this.stockService.createStock(completeStockData).subscribe({
-        next: () => {
-          console.log('Stock ajouté avec succés')
-          this.toastr.success('Produit ajouté créé avec succès');
-          this.resetForms();
-          // this.closeModal();
-          // this.loadProduits();
-        },
-        error: (err) => {
-          //this.errorMessage = "Erreur lors de la création du stock";
-          this.errorMessage = err.error?.message || 'Erreur lors de l\'enregistreme du produit';
-          this.toastr.error(this.errorMessage);
-        }
-      });
-    },
-    error: (err) => {
-      console.log(err);
-      this.errorMessage = "Erreur lors de la création du produit";
-       console.log(this.errorMessage);
-    }
-  });
-}
- */
 
   onSubmitWithStock() {
     if (this.produitForm.invalid || (this.stockForm && this.stockForm.invalid)) {
