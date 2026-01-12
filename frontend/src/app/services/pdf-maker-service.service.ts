@@ -41,54 +41,6 @@ private imageConverter = inject(ImageConverterService)
     this.structureInfo = structure;
   }
 
-  /* private async getHeader(): Promise<any> {
-    if (!this.structureInfo) {
-      return {};
-    }
-
-     let logoData = '';
-    
-    // Convertir le logo en base64 si disponible
-    if (this.structureInfo.logo && this.imageConverter.isValidImageUrl(this.structureInfo.logo)) {
-      try {
-        logoData = await this.imageConverter.imageUrlToBase64(this.structureInfo.logo);
-      } catch (error) {
-        console.warn('Erreur chargement logo, utilisation du logo par défaut',error);
-        logoData = this.defaultLogo;
-      }
-    } else {
-      logoData = this.defaultLogo;
-    }
-    return {
-      columns: [
-        {
-          width: 'auto',
-          stack: [
-            // Logo (si disponible)
-            this.structureInfo.logo ? {
-              image: logoData,
-              width: 60,
-              height: 60,
-              margin: [0, 0, 10, 0]
-            } : { text: '', width: 60 },
-          ]
-        },
-        {
-          width: '*',
-          stack: [
-            { text: this.structureInfo.nom_structure || 'Nom de la structure', style: 'header' },
-            { text: this.structureInfo.adresse || '', style: 'subheader' },
-            { text: `Tél: ${this.structureInfo.telephone || ''}`, style: 'subheader' },
-            { text: `Email: ${this.structureInfo.email || ''}`, style: 'subheader' },
-            { text: `RC: ${this.structureInfo.registreCommerce || ''}`, style: 'subheader' },
-            { text: `NINEA: ${this.structureInfo.numero_identification_fiscale || ''}`, style: 'subheader' }
-          ]
-        }
-      ],
-      margin: [0, 0, 0, 20]
-    };
-  } */
-
   private async getHeader(isCompact= false): Promise<any> {
   // Si pas de structure info, retourner un header minimal
   if (!this.structureInfo) {
@@ -178,13 +130,13 @@ private imageConverter = inject(ImageConverterService)
             style: 'header',
             alignment: 'left'
           },
-          ...(this.structureInfo.devise ? [
+          /* ...(this.structureInfo.devise ? [
             { 
               text: this.structureInfo.devise, 
               style: 'slogan',
               alignment: 'left'
             }
-          ] : []),
+          ] : []), */
           ...(this.structureInfo.adresse ? [
             { 
               text: this.structureInfo.adresse, 
@@ -246,43 +198,6 @@ private imageConverter = inject(ImageConverterService)
       };
     };
   }
-
-  /* private getStyles(): any {
-    return {
-      header: {
-        fontSize: 16,
-        bold: true,
-        margin: [0, 0, 0, 5]
-      },
-      subheader: {
-        fontSize: 10,
-        margin: [0, 0, 0, 2]
-      },
-      title: {
-        fontSize: 14,
-        bold: true,
-        margin: [0, 10, 0, 10],
-        alignment: 'center'
-      },
-      tableHeader: {
-        bold: true,
-        fontSize: 10,
-        fillColor: '#f5f5f5'
-      },
-      normal: {
-        fontSize: 10
-      },
-      bold: {
-        bold: true,
-        fontSize: 10
-      },
-      total: {
-        bold: true,
-        fontSize: 11,
-        fillColor: '#f0f0f0'
-      }
-    };
-  } */
 
   private getStyles(): any {
   return {
@@ -348,7 +263,7 @@ private imageConverter = inject(ImageConverterService)
       pageSize: 'A7',
       pageMargins: [10, 10, 10, 10],
       content: [
-        this.getHeader(),
+        this.getHeader(true),
         { text: 'TICKET DE VENTE', style: 'title' },
         {
           columns: [
@@ -377,7 +292,7 @@ private imageConverter = inject(ImageConverterService)
   async generateFacture(factureData: any): Promise<void> {
     // Valider les données avant génération
   const validatedArticles = this.validateArticlesData(factureData.articles);
-  const header = await this.getHeader();
+  const header = await this.getHeader(false);
 
     const docDefinition : TDocumentDefinitions = {
       pageSize: 'A4',
@@ -428,7 +343,7 @@ async generateBonFournisseur(bonData: any): Promise<void> {
     
     // Valider et sécuriser les données
     const validatedArticles = this.validateArticlesData(bonData.articles || []);
-    const header = await this.getHeader();
+    const header = await this.getHeader(false);
     const fournisseurData = this.validateFournisseurData(bonData.fournisseur);
 
     console.log('Données validées pour le bon fournisseur:', {
@@ -604,7 +519,7 @@ private validateFournisseurData(fournisseur: Fournisseur): any {
   async generateReleveFournisseur(releveData: any): Promise<void> {
     // Valider les données avant génération
     const validatedOperations = this.validateOperationsData(releveData.operations);
-    const header = await this.getHeader();
+    const header = await this.getHeader(false);
 
     const docDefinition : TDocumentDefinitions = {
       pageSize: 'A4',
@@ -711,31 +626,16 @@ private generateDetailedArticlesTable(articles: ArticlePanier[]): any {
   // Ajouter les articles avec validation
   articles.forEach(article => {
     if (article) {
-      // Sécuriser les calculs
-      /* const prixUnitaire = this.safeNumber(article.prixUnitaire);
-      const quantite = article.quantite;
-      const remise = article.montantRemise;
-      const tva = article.montantTVA;
-      const totalHT = article.totalHT;
-      const totalTTC = article.totalTTC;
-
+      
       tableBody.push([
-        article?.produit?.designation || article?.Produit?.designation || 'N/A',
-        { text: `${prixUnitaire} F CFA`, alignment: 'right' },
-        { text: `${quantite}`, alignment: 'center' },
-        { text: `${remise} F CFA`, alignment: 'right' },
-        { text: `${tva} F CFA`, alignment: 'right' },
-        { text: `${totalHT} F CFA`, alignment: 'right' },
-        { text: `${totalTTC} F CFA`, alignment: 'right' }
-      ]); */
-      tableBody.push([
-        article?.produit?.designation || article?.Produit?.designation || 'N/A',
-        { text: `${this.safeNumber(article.prixUnitaire)} F CFA`, alignment: 'right' },
-        { text: `${article.quantite}`, alignment: 'center' },
-        { text: `${this.safeNumber(article.montantRemise)} F CFA`, alignment: 'right' },
-        { text: `${this.safeNumber(article.montantTVA)} F CFA`, alignment: 'right' },
-        { text: `${this.safeNumber(article.totalHT)} F CFA`, alignment: 'right' },
-        { text: `${this.safeNumber(article.totalTTC)} F CFA`, alignment: 'right' }
+        //article?.produit?.designation || article?.Produit?.designation || 'N/A',
+        { text: `${article?.produit?.designation || article?.Produit?.designation} `, style:'normal', alignment: 'left' },
+        { text: `${this.safeNumber(article.prixUnitaire)} F CFA`, style:'normal', alignment: 'right' },
+        { text: `${article.quantite}`,style:'normal', alignment: 'center' },
+        { text: `${this.safeNumber(article.montantRemise)} F CFA`,style:'normal', alignment: 'right' },
+        { text: `${this.safeNumber(article.montantTVA)} F CFA`,style:'normal', alignment: 'right' },
+        { text: `${this.safeNumber(article.totalHT)} F CFA`,style:'normal', alignment: 'right' },
+        { text: `${this.safeNumber(article.totalTTC)} F CFA`,style:'normal', alignment: 'right' }
       ]);
     }
   });
@@ -765,8 +665,9 @@ private generateOperationsTable(operations: Operation[]): any {
 
   const tableBody: TableCell[][] = [
     [
-      { text: 'Date', style: 'tableHeader' },
+      { text: 'Date et Heure', style: 'tableHeader' },
       { text: 'Type', style: 'tableHeader' },
+      { text: 'Description', style: 'tableHeader' },
       { text: 'Référence', style: 'tableHeader' },
       { text: 'Montant', style: 'tableHeader' }
     ]
@@ -776,10 +677,22 @@ private generateOperationsTable(operations: Operation[]): any {
   operations.forEach(op => {
     if (op) { // Vérifier que l'opération n'est pas null/undefined
       tableBody.push([
-        op.dateOperation ? new Date(op.dateOperation).toLocaleDateString() : 'N/A',
-        op.type || 'N/A',
-        op.numeroVersement || op?.Bon?.numero || 'N/A',
-        { text: `${this.safeNumber(op.montantPaye) || this.safeNumber(op.Bon?.montantTotal )||this.safeNumber(op.Bon?.Panier?.totalTTC ) || 0} F CFA`, alignment: 'right' }
+        { 
+          text: `${op.dateOperation ? 
+            new Date(op.dateOperation).toLocaleString('fr-FR', { 
+              day: '2-digit',
+              month: '2-digit', 
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            }).replace(',', ' à') : 'N/A'}`, 
+          style:'normal', 
+          alignment: 'left' 
+        },        
+        { text: `${op.type || 'N/A'}`, style:'normal', alignment: 'center' },
+        { text: `${op.commentaire || 'N/A'}`, style:'normal', alignment: 'center' },
+        { text: `${op.numeroVersement || op?.Bon?.numero || 'N/A'}`, style:'normal', alignment: 'left' },
+        { text: `${this.safeNumber(op.montantPaye) || this.safeNumber(op.Bon?.montantTotal )||this.safeNumber(op.Bon?.Panier?.totalTTC ) || 0} F CFA`, style:'normal', alignment: 'center' }
       ]);
     }
   });
@@ -787,14 +700,14 @@ private generateOperationsTable(operations: Operation[]): any {
   // Si aucune opération valide, ajouter une ligne vide
   if (tableBody.length === 1) {
     tableBody.push([
-      { text: 'Aucune opération', colSpan: 4, alignment: 'center' },
+      { text: 'Aucune opération', colSpan: 5, alignment: 'center' },
       '', '', ''
     ]);
   }
 
   return {
     table: {
-      widths: ['*', 'auto', 'auto', 'auto'],
+      widths: ['*', 'auto', 'auto', 'auto','auto'],
       body: tableBody
     },
     layout: 'lightHorizontalLines'
@@ -822,7 +735,7 @@ private generateTotals(totaux: any): any {
           { text: `${safeTotaux.sousTotal} F CFA`, alignment: 'right', style: 'bold' }
         ],
         [
-          { text: `TVA (${safeTotaux.tauxTVA}%):`, style: 'bold' },
+          { text: `TVA :`, style: 'bold' },
           { text: `${safeTotaux.montantTVA} F CFA`, alignment: 'right', style: 'bold' }
         ],
         [
@@ -843,6 +756,14 @@ private generateTotals(totaux: any): any {
           [
             { text: 'Total des commandes:', style: 'bold' },
             { text: `${synthese.totalCommandes} F CFA`, alignment: 'right', style: 'bold' }
+          ],
+          [
+            { text: 'Total des livraisons:', style: 'bold' },
+            { text: `${synthese.totalLivraison} F CFA`, alignment: 'right', style: 'bold' }
+          ],
+          [
+            { text: 'Total des retours:', style: 'bold' },
+            { text: `${synthese.totalRetours} F CFA`, alignment: 'right', style: 'bold' }
           ],
           [
             { text: 'Total des versements:', style: 'bold' },
@@ -925,7 +846,7 @@ async generateTicketVersement(versementData: any): Promise<void> {
   try {
     console.log('Génération ticket versement:', versementData);
     
-    const header = await this.getHeader();
+    const header = await this.getHeader(false);
     
     const docDefinition: TDocumentDefinitions = {
       pageSize: 'A5',
@@ -960,19 +881,19 @@ async generateTicketVersement(versementData: any): Promise<void> {
             body: [
               [
                 { text: 'Date du versement:', style: 'bold' },
-                { text: new Date(versementData.date || new Date()).toLocaleDateString(), alignment: 'right' }
+                { text: new Date(versementData.date || new Date()).toLocaleDateString(),style:'normal', alignment: 'right' }
               ],
               [
                 { text: 'Heure:', style: 'bold' },
-                { text: new Date(versementData.date || new Date()).toLocaleTimeString(), alignment: 'right' }
+                { text: new Date(versementData.date || new Date()).toLocaleTimeString(),style:'normal', alignment: 'right' }
               ],
               [
                 { text: 'Nº de référence:', style: 'bold' },
-                { text: versementData.numeroReference || 'N/A', alignment: 'right' }
+                { text: versementData.numeroReference || 'N/A',style:'normal', alignment: 'right' }
               ],
               [
                 { text: 'Moyen de paiement:', style: 'bold' },
-                { text: versementData.moyenPaiement || 'Non spécifié', alignment: 'right' }
+                { text: versementData.moyenPaiement || 'Non spécifié',style:'normal', alignment: 'right' }
               ]
             ]
           },
@@ -992,7 +913,7 @@ async generateTicketVersement(versementData: any): Promise<void> {
               ],
               [
                 { text: 'Solde précédent:', style: 'normal' },
-                { text: `${this.safeNumber(versementData.soldePrecedent)} F CFA`, alignment: 'right' }
+                { text: `${this.safeNumber(versementData.soldePrecedent)} F CFA`,style:'normal', alignment: 'right' }
               ],
               [
                 { text: 'Nouveau solde:', style: 'bold', fontSize: 11, fillColor: '#f0f0f0' },
@@ -1019,7 +940,7 @@ async generateTicketVersement(versementData: any): Promise<void> {
           text: [
             { text: 'Description: ', style: 'bold' },
             versementData.description || ''
-          ],
+          ], style:'normal',
           margin: [0, 0, 0, 10] as [number, number, number, number]
         }] : []),
         
@@ -1028,7 +949,7 @@ async generateTicketVersement(versementData: any): Promise<void> {
           text: [
             { text: 'Agent: ', style: 'bold' },
             versementData.agent || ''
-          ],
+          ], style: 'normal',
           margin: [0, 0, 0, 10] as [number, number, number, number]
         }] : []),
         
@@ -1115,7 +1036,6 @@ private generateTicketVersementFallback(versementData: any): void {
 }
 
 //...........................Méthodes pour la vente dans le composant Caisse......................
-// Dans PdfMakerServiceService, ajoutez ces méthodes :
 
 /**
  * Génère un ticket de caisse automatique (sans infos client)
@@ -1369,49 +1289,6 @@ async generateTicketVente(panier: any, client: any, agent?: any): Promise<void> 
 }
 
 /**
- * Tableau simplifié pour ticket
- */
-private generateTicketArticlesTable(articles: any[]): any {
-  const validatedArticles = this.validateArticlesData(articles);
-  
-  const tableBody: TableCell[][] = [];
-  
-  validatedArticles.forEach(article => {
-    tableBody.push([
-      { text: article.produit?.designation || article.Produit?.designation || 'Article', fontSize: 8 },
-      { text: `Qte: ${article.quantite} | P.U: ${this.safeNumber(article.prixUnitaire)} | Remise: ${this.safeNumber(article.montantRemise)} | TVA: ${this.safeNumber(article.montantTVA)} `, fontSize: 8, alignment: 'right' }
-    ]);
-    
-    // Afficher le sous-total pour chaque article
-    tableBody.push([
-      { text: '', fontSize: 8 },
-      { text: `${this.safeNumber(article.totalTTC)} F CFA`, fontSize: 8, alignment: 'right', bold: true }
-    ]);
-  });
-  
-  if (tableBody.length === 0) {
-    tableBody.push([
-      { text: 'Aucun article', colSpan: 2, alignment: 'center', fontSize: 8 }
-    ]);
-  }
-  
-  return {
-    table: {
-      widths: ['*', 'auto'],
-      body: tableBody
-    },
-    layout: {
-      hLineWidth: () => 0,
-      vLineWidth: () => 0,
-      paddingLeft: () => 0,
-      paddingRight: () => 0,
-      paddingTop: () => 1,
-      paddingBottom: () => 1
-    }
-  };
-}
-
-/**
  * Tableau détaillé pour ticket avec client
  */
 private generateDetailedTicketTable(articles: any[]): any {
@@ -1494,6 +1371,591 @@ private generateTicketVenteFallback(panier: any, client: any): void {
     }
   };
   
+  pdfMake.createPdf(docDefinition).open();
+}
+
+//...........................Méthodes pour la vente dans le composant Client......................
+/**
+ * Génère un relevé client détaillé
+ */
+async generateReleveClient(releveData: any): Promise<void> {
+  try {
+    console.log('Génération relevé client avec données:', releveData);
+    
+    const header = await this.getHeader(false);
+    const currentDate = new Date();
+    
+    const docDefinition: TDocumentDefinitions = {
+      pageSize: 'A4',
+      pageMargins: [40, 60, 40, 60],
+      header: header,
+      footer: this.getFooter(),
+      content: [
+        { text: 'RELEVÉ CLIENT', style: 'title' },
+        
+        // Informations client
+        {
+          columns: [
+            {
+              width: '50%',
+              stack: [
+                { text: 'CLIENT', style: 'bold', margin: [0, 10, 0, 5] },
+                { text: releveData.client.nomComplet || 'N/A', style: 'normal' },
+                { text: releveData.client.adresse || '', style: 'normal' },
+                { text: releveData.client.telephone || '', style: 'normal' },
+                { text: releveData.client.email || '', style: 'normal' },
+                { text: `Plafond: ${releveData.client.plafond || 0} F CFA`, style: 'normal' }
+              ]
+            },
+            {
+              width: '50%',
+              stack: [
+                { text: 'RELEVÉ', style: 'bold', margin: [0, 10, 0, 5] },
+                { text: `Période: ${releveData.periode}`, style: 'normal' },
+                { text: `Date d'édition: ${currentDate.toLocaleDateString()}`, style: 'normal' },
+                { text: `Heure: ${currentDate.toLocaleTimeString()}`, style: 'normal' },
+                { text: `Solde: ${releveData.solde || 0} F CFA`, style: 'bold' }
+              ]
+            }
+          ]
+        },
+        
+        { text: 'OPÉRATIONS', style: 'bold', margin: [0, 20, 0, 10] },
+        this.generateOperationsTableClient(releveData.operations),
+        this.generateSyntheseClient(releveData.synthese),
+        
+        // Conditions et mentions
+        { 
+          text: 'Ce relevé fait foi des transactions effectuées.', 
+          style: 'normal', 
+          margin: [0, 20, 0, 0] 
+        },
+        { 
+          text: 'En cas de divergence, prière de contacter le service client.', 
+          style: 'normal', 
+          margin: [0, 5, 0, 0] 
+        }
+      ],
+      styles: this.getStyles()
+    };
+
+    const fileName = `releve-client-${releveData.client.nomComplet?.replace(/\s+/g, '-') || 'client'}-${releveData.periode.replace(/\//g, '-')}.pdf`;
+    pdfMake.createPdf(docDefinition).download(fileName);
+    
+  } catch (error) {
+    console.error('Erreur génération relevé client:', error);
+    //this.toastr.error('Erreur lors de la génération du relevé');
+  }
+}
+
+/**
+ * Tableau d'opérations adapté pour les clients
+ */
+private generateOperationsTableClient(operations: any[]): any {
+  if (!operations || !Array.isArray(operations)) {
+    operations = [];
+  }
+
+  const tableBody: TableCell[][] = [
+    [
+      { text: 'Date', style: 'tableHeader' },
+      { text: 'Type', style: 'tableHeader' },
+      { text: 'Référence', style: 'tableHeader' },
+      { text: 'Description', style: 'tableHeader' },
+      { text: 'Montant', style: 'tableHeader' },
+      /* { text: 'Crédit', style: 'tableHeader' } */
+    ]
+  ];
+
+  // Ajouter les opérations avec validation
+  operations.forEach(op => {
+    if (op) {
+      const dateStr = op.dateOperation ? 
+                      new Date(op.dateOperation).toLocaleString('fr-FR', { 
+                        day: '2-digit',
+                        month: '2-digit', 
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      }).replace(',', ' à') : 'N/A';
+      const type = op.type || 'N/A';
+      const reference = op.numeroVersement || op?.Bon?.numero || op.id || 'N/A';
+      const description = op.commentaire || op?.Bon?.description || 'Opération';
+      const montant = op.montantPaye || 0;
+      
+      // Déterminer débit/crédit selon le type d'opération
+      /* const montant = this.safeNumber(op.montantPaye) || this.safeNumber(op?.Bon?.Panier?.totalTTC) || 0;
+      let debit = '';
+      let credit = '';
+      
+      if (type === 'COMMANDE' || type === 'VENTE') {
+        debit = `${montant} F CFA`;
+      } else if (type === 'VERSEMENT' || type === 'REGLEMENT') {
+        credit = `${montant} F CFA`;
+      } */
+
+      tableBody.push([
+        { text: dateStr, style: 'normal', alignment: 'left' },
+        { text: type, style: 'normal', alignment: 'left' },
+        { text: reference, style: 'normal', alignment: 'left' },
+        { text: description, style: 'normal', alignment: 'center' },
+        { text: montant,style:'normal', alignment: 'right' }
+      ]);
+    }
+  });
+
+  // Si aucune opération valide, ajouter une ligne vide
+  if (tableBody.length === 1) {
+    tableBody.push([
+      { text: 'Aucune opération', colSpan: 5, alignment: 'center' },
+      '', '', '', ''
+    ]);
+  }
+
+  return {
+    table: {
+      widths: ['*', 'auto', 'auto', '*', 'auto'],
+      body: tableBody
+    },
+    layout: 'lightHorizontalLines'
+  };
+}
+
+/**
+ * Synthèse financière pour client
+ */
+private generateSyntheseClient(synthese: any): any {
+  return {
+    table: {
+      widths: ['*', 'auto'],
+      body: [
+        [
+          { text: 'Total des achats:', style: 'bold' },
+          { text: `${synthese.totalAchats || 0} F CFA`, alignment: 'right', style: 'bold' }
+        ],
+        [
+          { text: 'Total des versements:', style: 'bold' },
+          { text: `${synthese.totalVersements || 0} F CFA`, alignment: 'right', style: 'bold' }
+        ],
+        // [
+        //   { text: 'Solde initial:', style: 'normal' },
+        //   { text: `${synthese.soldeInitial || 0} F CFA`, alignment: 'right' }
+        // ],
+        [
+          { text: 'Solde:', style: 'total' },
+          { text: `${synthese.nouveauSolde || 0} F CFA`, alignment: 'right', style: 'total' }
+        ]
+      ]
+    },
+    margin: [0, 20, 0, 0],
+    layout: 'noBorders'
+  };
+}
+
+/**
+ * Génère une facture client détaillée
+ */
+async generateFactureClient(factureData: any): Promise<void> {
+  try {
+    console.log('Génération facture client avec données:', factureData);
+    
+    const header = await this.getHeader(false);
+    //const currentDate = new Date();
+    
+    const docDefinition: TDocumentDefinitions = {
+      pageSize: 'A4',
+      pageMargins: [40, 60, 40, 60],
+      header: header,
+      footer: this.getFooter(),
+      content: [
+        { text: 'FACTURE', style: 'title' },
+        
+        // Informations client
+        {
+          columns: [
+            {
+              width: '50%',
+              stack: [
+                { text: 'CLIENT', style: 'bold', margin: [0, 10, 0, 5] },
+                { text: factureData.client.nomComplet || 'N/A', style: 'normal' },
+                { text: factureData.client.adresse || '', style: 'normal' },
+                { text: factureData.client.telephone || '', style: 'normal' },
+                { text: factureData.client.email || '', style: 'normal' }
+              ]
+            },
+            {
+              width: '50%',
+              stack: [
+                { text: 'FACTURE', style: 'bold', margin: [0, 10, 0, 5] },
+                { text: `Nº: ${factureData.numero}`, style: 'normal' },
+                { text: `Date: ${new Date(factureData.date).toLocaleDateString()}`, style: 'normal' },
+                { text: `Date échéance: ${new Date(factureData.dateEcheance).toLocaleDateString()}`, style: 'normal' },
+                { text: `Réf bon: ${factureData.refBon || 'N/A'}`, style: 'normal' }
+              ]
+            }
+          ]
+        },
+        
+        { text: 'DÉTAIL DES ARTICLES', style: 'bold', margin: [0, 20, 0, 10] },
+        this.generateDetailedArticlesTable(factureData.articles),
+        this.generateTotals(factureData.totaux),
+        
+        // Conditions de paiement
+        {
+          stack: [
+            { text: 'Conditions de paiement:', style: 'bold', margin: [0, 10, 0, 5] },
+            { text: factureData.conditionsPaiement || 'Paiement à réception de la facture', style: 'normal',alignment:'right' }
+          ]
+        },
+        
+        // Mentions légales
+        {
+          stack: [
+            { text: 'Mentions légales:', style: 'bold', margin: [0, 20, 0, 5] },
+            { text: 'Cette facture est établie conformément aux dispositions légales en vigueur.', style: 'normal', fontSize: 9 },
+            { text: 'Toute contestation doit être notifiée par écrit dans les 8 jours suivant réception.', style: 'normal', fontSize: 9 }
+          ]
+        },
+        
+        // Signature
+        {
+          columns: [
+            { text: '', width: '*' },
+            {
+              stack: [
+                { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 150, y2: 0, lineWidth: 1 }] },
+                { text: 'Signature et cachet', style: 'subheader', alignment: 'center', margin: [0, 5, 0, 0] }
+              ],
+              width: 'auto',
+              margin: [0, 40, 0, 0]
+            }
+          ]
+        }
+      ],
+      styles: this.getStyles()
+    };
+
+    const fileName = `facture-${factureData.numero}-${factureData.client.nomComplet?.replace(/\s+/g, '-') || 'client'}.pdf`;
+    pdfMake.createPdf(docDefinition).download(fileName);
+    
+  } catch (error) {
+    console.error('Erreur génération facture client:', error);
+    //this.toastr.error('Erreur lors de la génération de la facture');
+  }
+}
+
+/**
+ * Génère un bon de commande client
+ */
+async generateBonClient(bonData: any): Promise<void> {
+  try {
+    console.log('Génération bon client avec données:', bonData);
+    
+    const header = await this.getHeader(false);
+
+    const typeBon = (bonData.typeBon || 'commande').toLowerCase();
+    const dateBon = new Date(bonData.dateBon || new Date());
+
+    const livraisonInfo = this.getDynamicLivraisonInfo(typeBon, dateBon);
+    const conditionsLivraison = this.getDynamicConditions(typeBon);
+    
+    const docDefinition: TDocumentDefinitions = {
+      pageSize: 'A4',
+      pageMargins: [40, 60, 40, 60],
+      header: header,
+      footer: this.getFooter(),
+      content: [
+        { text: bonData.titre || 'BON DE COMMANDE', style: 'title' },
+        
+        // Informations client
+        {
+          columns: [
+            {
+              width: '50%',
+              stack: [
+                { text: 'CLIENT', style: 'bold', margin: [0, 10, 0, 5] },
+                { text: bonData.client.nomComplet || 'N/A', style: 'normal' },
+                { text: bonData.client.adresse || '', style: 'normal' },
+                { text: bonData.client.telephone || '', style: 'normal' },
+                { text: bonData.client.email || '', style: 'normal' }
+              ]
+            },
+            {
+              width: '50%',
+              stack: [
+                { text: bonData.titre, style: 'bold', margin: [0, 10, 0, 5] },
+                { text: `Nº: ${bonData.numero || 'N/A'}`, style: 'normal' },
+                { text: `Date: ${new Date(bonData.date || new Date()).toLocaleDateString()}`, style: 'normal' },
+                { text: `Date livraison prévue: ${new Date(bonData.dateLivraisonPrevue || new Date()).toLocaleDateString()}`, style: 'normal' },
+                { text: livraisonInfo, style: 'normal' },
+                ...(bonData.statut ? [
+                  { text: `Statut: ${bonData.statut}`, style: 'normal' }
+                ] : [])
+              ]
+            }
+          ]
+        },
+        
+        { text: 'DÉTAIL DES ARTICLES', style: 'bold', margin: [0, 20, 0, 10] },
+        this.generateDetailedArticlesTable(bonData.articles),
+        this.generateTotals(bonData.totaux),
+        ...(conditionsLivraison
+          ? [{ text: conditionsLivraison, style: 'normal', margin: [0, 20, 0, 0] }]
+          : []
+        ),
+        ...(bonData.commentaire
+          ? [{ text: `Commentaire: ${bonData.commentaire}`, style: 'normal', margin: [0, 20, 0, 0] }]
+          : []
+        ),
+        
+        // Conditions et informations
+        /* {
+          stack: [
+            { text: 'Conditions de livraison:', style: 'bold', margin: [0, 10, 0, 5] },
+            { text: bonData.conditionsLivraison || 'Livraison à l\'adresse indiquée', style: 'normal' }
+          ]
+        },
+        
+        {
+          stack: [
+            { text: 'Instructions spéciales:', style: 'bold', margin: [0, 10, 0, 5] },
+            { text: bonData.instructions || 'Aucune instruction particulière', style: 'normal' }
+          ]
+        }, */
+        
+        // Signature
+        {
+          columns: [
+            {
+              width: '50%',
+              stack: [
+                { text: 'Pour le client:', style: 'bold', margin: [0, 20, 0, 5] },
+                { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 150, y2: 0, lineWidth: 1 }] },
+                { text: 'Signature', style: 'subheader', alignment: 'left' }
+              ]
+            },
+            {
+              width: '50%',
+              stack: [
+                { text: 'Pour ' + (this.structureInfo?.nom_structure || 'l\'entreprise') + ':', style: 'bold', margin: [0, 20, 0, 5] },
+                { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 150, y2: 0, lineWidth: 1 }] },
+                { text: 'Signature et cachet', style: 'subheader', alignment: 'left' }
+              ]
+            }
+          ]
+        }
+      ],
+      styles: this.getStyles()
+    };
+
+    const fileName = `bon-${bonData.typeBon || 'commande'}-${bonData.numero || 'sans-numero'}.pdf`;
+    pdfMake.createPdf(docDefinition).download(fileName);
+    
+  } catch (error) {
+    console.error('Erreur génération bon client:', error);
+    //this.toastr.error('Erreur lors de la génération du bon');
+  }
+}
+
+/**
+ * Génère un ticket de versement/règlement client
+ */
+async generateTicketVersementClient(versementData: any): Promise<void> {
+  try {
+    console.log('Génération ticket versement client:', versementData);
+    
+    const header = await this.getHeader(true);
+    const currentDate = new Date();
+    
+    const docDefinition: TDocumentDefinitions = {
+      pageSize: 'A5',
+      pageMargins: [15, 20, 15, 20],
+      header: header,
+      content: [
+        { 
+          text: 'QUITTANCE DE PAIEMENT', 
+          style: 'title', 
+          alignment: 'center' 
+        },
+        
+        // Informations du client
+        { 
+          text: [
+            { text: 'Client: ', style: 'bold' },
+            versementData.client?.nomComplet || 'Non spécifié'
+          ],
+          margin: [0, 10, 0, 0]
+        },
+        
+        // Ligne séparatrice
+        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1 }], margin: [0, 10, 0, 10] },
+        
+        // Détails du paiement
+        {
+          table: {
+            widths: ['*', '*'],
+            body: [
+              [
+                { text: 'Date du règlement:', style: 'bold' },
+                { text: new Date(versementData.date || new Date()).toLocaleDateString(), style: 'normal', alignment: 'right' }
+              ],
+              [
+                { text: 'Heure:', style: 'bold' },
+                { text: currentDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), style: 'normal', alignment: 'right' }
+              ],
+              [
+                { text: 'Nº de quittance:', style: 'bold' },
+                { text: versementData.numeroReference || `QUITT-${Date.now()}`,style: 'normal', alignment: 'right' }
+              ],
+              [
+                { text: 'Moyen de paiement:', style: 'bold' },
+                { text: versementData.moyenPaiement || 'Non spécifié',style: 'normal', alignment: 'right' }
+              ]
+              // [
+              //   { text: 'Type:', style: 'bold' },
+              //   { text: versementData.type || 'Règlement',style: 'normal', alignment: 'right' }
+              // ]
+            ]
+          },
+          layout: 'noBorders',
+          margin: [0, 0, 0, 15]
+        },
+        
+        // Montants
+        {
+          table: {
+            widths: ['*', '*'],
+            body: [
+              [
+                { text: 'Montant réglé:', style: 'bold', fontSize: 14 },
+                { text: `${this.safeNumber(versementData.montantVerse)} F CFA`, 
+                  alignment: 'right', style: 'bold', fontSize: 14, color: '#28a745' }
+              ],
+              [
+                { text: 'Solde précédent:', style: 'normal' },
+                { text: `${this.safeNumber(versementData.soldePrecedent)} F CFA`,style: 'normal', alignment: 'right' }
+              ],
+              [
+                { text: 'Nouveau solde:', style: 'bold', fontSize: 12, fillColor: '#f0f0f0' },
+                { text: `${this.safeNumber(versementData.nouveauSolde)} F CFA`, 
+                  alignment: 'right', style: 'bold', fontSize: 12, fillColor: '#f0f0f0' }
+              ]
+            ]
+          },
+          layout: {
+            hLineWidth: function(i, node) {
+              return (i === 0 || i === node.table.body.length) ? 0 : 1;
+            },
+            vLineWidth: () => 0,
+            paddingLeft: () => 5,
+            paddingRight: () => 5,
+            paddingTop: () => 3,
+            paddingBottom: () => 3
+          },
+          margin: [0, 0, 0, 15]
+        },
+        
+        // Description
+        ...(versementData.description ? [{
+          text: [
+            { text: 'Description: ', style: 'bold' },
+            versementData.description || '',
+          ], style:'normal',
+          margin: [0, 0, 0, 10] as [number, number, number, number]
+        }] : []),
+        
+        // Agent
+        ...(versementData.agent ? [{
+          text: [
+            { text: 'Encaissé par: ', style: 'bold' },
+            versementData.agent || ''
+          ],style:'normal',
+          margin: [0, 0, 0, 10] as [number, number, number, number]
+        }] : []),
+        
+        // Message de remerciement
+        { 
+          text: 'Nous vous remercions de votre confiance', 
+          style: 'normal', 
+          alignment: 'center',
+          margin: [0, 15, 0, 0]
+        },
+        
+        // Signature
+        {
+          columns: [
+            { text: '', width: '*' },
+            {
+              stack: [
+                { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 100, y2: 0, lineWidth: 1 }] },
+                { text: 'Signature', style: 'subheader', alignment: 'center', margin: [0, 2, 0, 0] }
+              ],
+              width: 'auto'
+            }
+          ],
+          margin: [0, 20, 0, 0]
+        },
+        
+        // Pied de page
+        { 
+          text: 'Cette quittance fait foi de règlement. À conserver précieusement.', 
+          style: 'subheader', 
+          alignment: 'center',
+          margin: [0, 20, 0, 0],
+          fontSize: 8
+        }
+      ],
+      styles: {
+        ...this.getStyles(),
+        title: {
+          fontSize: 16,
+          bold: true,
+          margin: [0, 0, 0, 10],
+          alignment: 'center'
+        }
+      }
+    };
+
+    pdfMake.createPdf(docDefinition).open();
+    
+  } catch (error) {
+    console.error('Erreur génération ticket versement client:', error);
+    this.generateTicketVersementClientFallback(versementData);
+  }
+}
+
+/**
+ * Méthode de secours pour ticket versement client
+ */
+private generateTicketVersementClientFallback(versementData: any): void {
+  const docDefinition: TDocumentDefinitions = {
+    pageSize: 'A6',
+    pageMargins: [10, 15, 10, 15],
+    content: [
+      { text: 'QUITTANCE CLIENT', style: 'title', alignment: 'center' },
+      { text: `Client: ${versementData.client?.nomComplet || 'Non spécifié'}`, fontSize: 10 },
+      { text: `Date: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, fontSize: 9 },
+      { text: `Référence: ${versementData.numeroReference || 'N/A'}`, fontSize: 9 },
+      { text: '---', alignment: 'center', fontSize: 8 },
+      { text: `Montant réglé: ${this.safeNumber(versementData.montantVerse)} F CFA`, style: 'bold', fontSize: 12, alignment: 'center' },
+      { text: `Nouveau solde: ${this.safeNumber(versementData.nouveauSolde)} F CFA`, style: 'bold', fontSize: 10 },
+      { text: '---', alignment: 'center', fontSize: 8 },
+      { text: 'Merci pour votre règlement', alignment: 'center', fontSize: 9, margin: [0, 10, 0, 0] },
+      { text: this.structureInfo?.nom_structure || 'L\'entreprise', alignment: 'center', fontSize: 8 }
+    ],
+    styles: {
+      title: {
+        fontSize: 14,
+        bold: true,
+        margin: [0, 0, 0, 10]
+      },
+      bold: {
+        bold: true,
+        fontSize: 11
+      }
+    }
+  };
+
   pdfMake.createPdf(docDefinition).open();
 }
 }

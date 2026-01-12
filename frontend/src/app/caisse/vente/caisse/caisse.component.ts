@@ -504,7 +504,7 @@ togglePanier() {
         this.bonBrouillonService.clearBrouillons();
         this.panierData = null;
         this.resetVente();
-        this.imprimerTicket(result.panier!);
+        //this.imprimerTicket(result.panier!);
       },
       error: (error) => {
         console.error('Erreur:', error);
@@ -790,7 +790,7 @@ retournerArticle(article: ArticlePanier) {
                         this.updateStockApresSuppressionArticle(article);
                         this.toastr.success('Article retourné avec succès');
                         this.loadTransactions();
-                        this.imprimerTicket(result.panier!);
+                        //this.imprimerTicket(result.panier!);
                         console.log('Recette associée mise à jour avec succès:', recetteExistante.id);
                          
                       },

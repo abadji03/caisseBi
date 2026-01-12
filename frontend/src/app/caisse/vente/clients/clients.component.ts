@@ -31,7 +31,7 @@ import { OperationsService } from '../../../services/operations.service';
 import { PaiementsService } from '../../../services/paiements.service';
 import { PdfMakerServiceService } from '../../../services/pdf-maker-service.service';
 import { StructureService } from '../../../services/structure.service';
-import { Panier } from '../../../modeles/panier.model';
+import { ArticlePanier, Panier } from '../../../modeles/panier.model';
 import { Stock } from '../../../modeles/entrees-sorties.model';
 import { RecettesService } from '../../../services/recettes.service';
 import { BonsComponent } from '../../../sharedComposants/bons/bons.component';
@@ -1677,247 +1677,6 @@ private uploadFichierSepare(fichier: File, bonId: number, resultBon: any): void 
       });
   }
 
-  imprimerReleve(): void {
-  if (!this.selectedClient) {
-    this.toastr.error('Aucun fournisseur sélectionné');
-    return;
-  }
-
-  /* try {
-    this.isLoading = true;
-    // Debug: vérifier les données
-    console.log('Operations à imprimer:', this.filteredOperations);
-    console.log('Nombre d\'opérations:', this.filteredOperations?.length);
-
-    // Valider et formater les opérations
-    const operationsFormatees = this.filteredOperations.map(op => {
-      if (!op) return null;
-      
-      return {
-        date: op.dateOperation,
-        type: op.type || 'NON SPECIFIE',
-        reference: op.numeroVersement || op.Bon?.numero || 'N/A',
-        montant: op.montantPaye || op.Bon?.montantTotal ||0,
-        // Inclure toutes les propriétés nécessaires
-        ...op
-      };
-    }).filter(op => op != null); // Supprimer les null
-
-    const releveData = {
-      fournisseur: {
-        nomComplet: this.selectedFournisseur.nomComplet || 'N/A',
-        adresse: this.selectedFournisseur.adresse || '',
-        telephone: this.selectedFournisseur.telephone || '',
-        email: this.selectedFournisseur.email || ''
-      },
-      periode: `${this.startDate} à ${this.endDate}`,
-      operations: operationsFormatees, // Utiliser les données formatées
-      synthese: {
-        totalCommandes: this.calculerTotalCommandes(),
-        totalVersements: this.calculerTotalVersements(),
-        solde: this.selectedFournisseur.montantAPayer || 0
-      },
-      solde: this.selectedFournisseur.montantAPayer || 0
-    };
-
-    this.pdfGenerator.generateReleveFournisseur(releveData);
-  } 
-  catch (error) {
-    console.error('Erreur génération relevé:', error);
-    this.toastr.error('Erreur lors de la génération du relevé');
-  }
-  finally {
-    this.isLoading = false;
-  }
-   */
-}
-  imprimerBon(bon: Bon): void {
-  if (!bon) {
-    this.toastr.error('Aucun bon sélectionné');
-    return;
-  }
-
-  /* try {
-    this.isLoading = true;
-    
-    console.log('Bon à imprimer:', bon);
-    console.log('Articles du bon:', bon.Panier?.ArticlePaniers);
-
-    // Valider et formater les articles avec une meilleure gestion des nombres
-    const articlesFormates = (bon.Panier?.ArticlePaniers || []).map(article => {
-      if (!article) return null;
-      
-      // Calculer les valeurs avec sécurité
-      const prixUnitaire = this.safeNumber(article.prixUnitaire || article.prixAchatUnitaire);
-      const quantite = this.safeNumber(article.quantite);
-      const total = prixUnitaire * quantite;
-
-      console.log('Article formaté:', {
-        designation: article.Produit?.designation,
-        prixUnitaire,
-        quantite,
-        total
-      });
-
-      return {
-        ...article,
-        designation: article.Produit?.designation || article.produit?.designation || 'Produit sans nom',
-        prixUnitaire: prixUnitaire,
-        quantite: quantite,
-        total: total
-      };
-    }).filter(article => article != null);
-
-    // Préparer les totaux avec sécurité
-    const sousTotal = this.safeNumber(bon.Panier?.totalHT);
-    const tauxTVA = this.safeNumber(bon.Panier?.tauxTVA);
-    const montantTVA = this.safeNumber(bon.Panier?.tva);
-    const totalTTC = this.safeNumber(bon.Panier?.totalTTC);
-
-    console.log('Totaux calculés:', { sousTotal, tauxTVA, montantTVA, totalTTC });
-
-    const bonData = {
-      numero: bon.numero || 'N/A',
-      date: bon.dateBon || new Date(),
-      fournisseur: this.selectedFournisseur ? {
-        nomComplet: this.selectedFournisseur.nomComplet || 'N/A',
-        adresse: this.selectedFournisseur.adresse || '',
-        telephone: this.selectedFournisseur.telephone || '',
-        email: this.selectedFournisseur.email || ''
-      } : { 
-        nomComplet: 'Fournisseur non spécifié', 
-        adresse: '', 
-        telephone: '', 
-        email: '' 
-      },
-      articles: articlesFormates,
-      totaux: {
-        sousTotal: sousTotal,
-        tauxTVA: tauxTVA,
-        montantTVA: montantTVA,
-        totalTTC: totalTTC,
-        // Ajouter les totaux du bon au cas où
-        totalHT: sousTotal,
-        tva: montantTVA
-      },
-      titre: ('Bon de '+( bon.type || 'Commande')).toUpperCase(),
-      dateBon:bon.dateBon,
-      typeBon:bon.type,
-      statut:bon.statutBon,
-      commentaire:bon.description
-    };
-
-    console.log('Données formatées pour le PDF du bon:', bonData);
-    this.pdfGenerator.generateBonFournisseur(bonData);
-  } 
-  catch (error) {
-    console.error('Erreur génération bon:', error);
-    this.toastr.error('Erreur lors de la génération du bon');
-  }
-  finally {
-    this.isLoading = false;
-  } */
-}
-
-// Dans fournisseurs.component.ts
-
-// Méthode pour générer le ticket de versement
-genererTicketVersement(operation: Operation): void {
-  if (!operation || operation.type !== 'VERSEMENT') {
-    this.toastr.error('Opération de versement non valide');
-    return;
-  }
-
-  /* try {
-    // Calculer le solde
-    const montantVerse = this.safeNumber(operation.montantPaye);
-    const soldePrecedent = this.safeNumber(this.selectedFournisseur?.montantAPayer) + montantVerse; // Avant le versement
-    const nouveauSolde = this.safeNumber(this.selectedFournisseur?.montantAPayer); // Après le versement
-
-    const versementData = {
-      fournisseur: this.selectedFournisseur ? {
-        nomComplet: this.selectedFournisseur.nomComplet || 'N/A',
-        adresse: this.selectedFournisseur.adresse || '',
-        telephone: this.selectedFournisseur.telephone || '',
-        email: this.selectedFournisseur.email || ''
-      } : null,
-      date: operation.dateOperation,
-      numeroReference: operation.numeroVersement || `VERS-${operation.id}`,
-      moyenPaiement: operation.moyenPaiement || 'Non spécifié',
-      montantVerse: montantVerse,
-      soldePrecedent: soldePrecedent,
-      nouveauSolde: nouveauSolde,
-      description: operation.commentaire || 'Versement fournisseur',
-      agent: operation.user?.['nom'] || 'Non spécifié'
-    };
-
-    console.log('Données pour ticket versement:', versementData);
-    this.pdfGenerator.generateTicketVersement(versementData);
-
-  } catch (error) {
-    console.error('Erreur génération ticket versement:', error);
-    this.toastr.error('Erreur lors de la génération du ticket');
-  } */
-}
-
-// Méthode pour le ticket de paiement d'un bon
-genererTicketPaiementBon(bon: Bon): void {
-  if (!bon) {
-    this.toastr.error('Aucun bon sélectionné');
-    return;
-  }
-
-  /* try {
-    const avance = this.safeNumber(bon.avance);
-    const totalBon = this.safeNumber(bon.montantTotal);
-    const resteAPayer = this.safeNumber(bon.resteAPayer);
-
-    const paiementData = {
-      fournisseur: this.selectedFournisseur ? {
-        nomComplet: this.selectedFournisseur.nomComplet || 'N/A'
-      } : null,
-      date: bon.dateBon,
-      numeroReference: bon.numero,
-      moyenPaiement: 'Caisse',
-      montantVerse: avance,
-      soldePrecedent: totalBon,
-      nouveauSolde: resteAPayer,
-      description: `Acompte sur bon ${bon.numero}`,
-      type: 'ACOMPTE'
-    };
-
-    console.log('Données pour ticket paiement bon:', paiementData);
-    this.pdfGenerator.generateTicketVersement(paiementData);
-
-  } catch (error) {
-    console.error('Erreur génération ticket paiement:', error);
-    this.toastr.error('Erreur lors de la génération du ticket de paiement');
-  } */
-}
-
-// Méthode utilitaire pour sécuriser les nombres
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-private safeNumber(value: any): number {
-  if (value === null || value === undefined || value === '') {
-    return 0;
-  }
-  const num = Number(value);
-  return isNaN(num) ? 0 : num;
-}
-
-
-  // Méthodes de calcul
-  private calculerTotalCommandes(): number {
-    return this.filteredOperations
-      .filter(op => op.type === 'COMMANDE')
-      .reduce((total, op) => total + (this.safeNumber(op.Bon?.Panier?.totalTTC) || 0), 0);
-  }
-
-  private calculerTotalVersements(): number {
-    return this.filteredOperations
-      .filter(op => op.type === 'VERSEMENT')
-      .reduce((total, op) => total + (this.safeNumber(op.montantPaye) || 0), 0);
-  }
 
    loadBonAndPaiement(): void {
       this.isLoading = true;
@@ -2233,31 +1992,322 @@ facturerBon(bon: Bon): void {
     });
 }
 
-// Méthode pour générer une facture PDF (exemple)
-private genererFacturePDF(bon: Bon): void {
-  const factureData = {
-    numero: bon.numeroFacture,
-    date: new Date(),
-    client: this.selectedClient ? {
-      nomComplet: this.selectedClient.nomComplet,
-      adresse: this.selectedClient.adresse,
-      telephone: this.selectedClient.telephone
-    } : null,
-    articles: bon.Panier?.ArticlePaniers?.map(article => ({
-      designation: article.Produit?.designation,
-      quantite: article.quantite,
-      prixUnitaire: article.prixUnitaire,
-      total: article.quantite * article.prixUnitaire
-    })) || [],
-    totaux: {
-      sousTotal: bon.Panier?.totalHT || 0,
-      tva: bon.Panier?.tva || 0,
-      totalTTC: bon.Panier?.totalTTC || 0,
-      remise: bon.remise || 0,
-      netAPayer: bon.netAPayer || 0
-    }
-  };
+//.....................Méthhodes pour générer des fichiers pdf(ticket, Relevé, etc.)
 
-  this.pdfGenerator.generateFacture(factureData);
+imprimerReleve(): void {
+  if (!this.selectedClient) {
+    this.toastr.error('Aucun client sélectionné');
+    return;
+  }
+
+  try {
+    this.isLoading = true;
+    
+    // Préparer les données du relevé
+    const operationsFormatees = this.filteredOperations.map(op => {
+      if (!op) return null;
+      
+      return {
+        ...op,
+        dateOperation: op.dateOperation,
+        type: op.type || 'NON SPECIFIE',
+        numeroVersement: op.numeroVersement,
+        montantPaye: this.safeNumber(op.montantPaye),
+        commentaire: op.commentaire,
+        Bon: op.Bon
+      };
+    }).filter(op => op != null);
+
+    const releveData = {
+      client: {
+        nomComplet: this.selectedClient.nomComplet || 'N/A',
+        adresse: this.selectedClient.adresse || '',
+        telephone: this.selectedClient.telephone || '',
+        email: this.selectedClient.email || '',
+        plafond: this.safeNumber(this.selectedClient.plafond)
+      },
+      periode: `${this.startDate || 'Début'} au ${this.endDate || 'Aujourd\'hui'}`,
+      operations: operationsFormatees,
+      synthese: {
+        totalAchats: this.calculerTotalAchats(),
+        totalVersements: this.calculerTotalVersements(),
+        //soldeInitial: this.safeNumber(this.selectedClient.solde),
+        nouveauSolde: this.safeNumber(this.selectedClient.solde)
+      },
+      solde: this.safeNumber(this.selectedClient.solde)
+    };
+
+    console.log('Données pour relevé client:', releveData);
+    this.pdfGenerator.generateReleveClient(releveData);
+    
+  } catch (error) {
+    console.error('Erreur génération relevé client:', error);
+    this.toastr.error('Erreur lors de la génération du relevé');
+  } finally {
+    this.isLoading = false;
+  }
+}
+
+imprimerBon(bon: Bon): void {
+  if (!bon) {
+    this.toastr.error('Aucun bon sélectionné');
+    return;
+  }
+
+  try {
+    this.isLoading = true;
+    
+    console.log('Bon à imprimer:', bon);
+    
+    // Valider et formater les articles
+    const articlesFormates = (bon.Panier?.ArticlePaniers || []).map(article => {
+      if (!article) return null;
+      
+      return new ArticlePanier({
+        ...article,
+        produit: article.produit || article.Produit,
+        prixUnitaire: this.safeNumber(article.prixUnitaire || article.prixVenteUnitaire),
+        quantite: this.safeNumber(article.quantite),
+        montantRemise: this.safeNumber(article.montantRemise),
+        montantTVA: this.safeNumber(article.montantTVA),
+        totalHT: this.safeNumber(article.totalHT),
+        totalTTC: this.safeNumber(article.totalTTC)
+      });
+    }).filter(article => article != null);
+
+    // Préparer les totaux
+    const totaux = {
+      sousTotal: this.safeNumber(bon.Panier?.totalHT),
+      tauxTVA: this.safeNumber(bon.Panier?.tauxTVA),
+      montantTVA: this.safeNumber(bon.Panier?.tva),
+      totalTTC: this.safeNumber(bon.Panier?.totalTTC),
+      remise: this.safeNumber(bon.remise),
+      avance: this.safeNumber(bon.avance),
+      netAPayer: this.safeNumber(bon.resteAPayer)
+    };
+
+    // Déterminer le type de document
+    let titre = 'BON';
+    let typeDocument = 'bon';
+    
+    if (bon.type === 'commande') {
+      titre = 'BON DE COMMANDE';
+      typeDocument = 'commande';
+    } else if (bon.type === 'vente') {
+      titre = 'BON DE VENTE';
+      typeDocument = 'vente';
+    } else if (bon.type === 'avoir') {
+      titre = 'AVOIR';
+      typeDocument = 'avoir';
+    }
+
+    const bonData = {
+      titre: titre,
+      typeBon: typeDocument,
+      numero: bon.numero || 'N/A',
+      date: bon.dateBon || new Date(),
+      dateLivraisonPrevue: bon.dateLivraisonPrevue,
+      client: this.selectedClient ? {
+        nomComplet: this.selectedClient.nomComplet || 'N/A',
+        adresse: this.selectedClient.adresse || '',
+        telephone: this.selectedClient.telephone || '',
+        email: this.selectedClient.email || ''
+      } : { 
+        nomComplet: 'Client non spécifié', 
+        adresse: '', 
+        telephone: '', 
+        email: '' 
+      },
+      articles: articlesFormates,
+      totaux: totaux,
+      statut: bon.statutBon,
+      commentaire: bon.description
+    };
+
+    console.log('Données formatées pour le PDF du bon:', bonData);
+    this.pdfGenerator.generateBonClient(bonData);
+  } 
+  catch (error) {
+    console.error('Erreur génération bon client:', error);
+    this.toastr.error('Erreur lors de la génération du bon');
+  }
+  finally {
+    this.isLoading = false;
+  }
+}
+
+// Méthode pour générer le ticket de versement
+genererTicketVersement(operation: Operation): void {
+  if (!operation || (operation.type !== 'VERSEMENT' && operation.type !== 'REGLEMENT')) {
+    this.toastr.error('Opération de versement/règlement non valide');
+    return;
+  }
+
+  try {
+    this.isLoading = true;
+    
+    // Calculer les soldes
+    const montantVerse = this.safeNumber(operation.montantPaye);
+    const soldePrecedent = this.safeNumber(this.selectedClient?.solde) + montantVerse;
+    const nouveauSolde = this.safeNumber(this.selectedClient?.solde);
+
+    const versementData = {
+      client: this.selectedClient ? {
+        nomComplet: this.selectedClient.nomComplet || 'N/A',
+        adresse: this.selectedClient.adresse || '',
+        telephone: this.selectedClient.telephone || '',
+        email: this.selectedClient.email || ''
+      } : null,
+      date: operation.dateOperation,
+      numeroReference: operation.numeroVersement || `VERS-${operation.id}`,
+      moyenPaiement: operation.moyenPaiement || 'Espèce',
+      montantVerse: montantVerse,
+      soldePrecedent: soldePrecedent,
+      nouveauSolde: nouveauSolde,
+      description: operation.commentaire || 'Règlement client',
+      type: operation.type === 'VERSEMENT' ? 'Versement' : 'Règlement',
+      agent: operation.user?.['nom'] || 'Non spécifié'
+    };
+
+    console.log('Données pour ticket versement client:', versementData);
+    this.pdfGenerator.generateTicketVersementClient(versementData);
+
+  } catch (error) {
+    console.error('Erreur génération ticket versement client:', error);
+    this.toastr.error('Erreur lors de la génération du ticket');
+  } finally {
+    this.isLoading = false;
+  }
+}
+
+// Méthode pour générer un ticket de paiement d'un bon (acompte)
+genererTicketPaiementBon(bon: Bon): void {
+  if (!bon) {
+    this.toastr.error('Aucun bon sélectionné');
+    return;
+  }
+
+  try {
+    this.isLoading = true;
+    
+    const avance = this.safeNumber(bon.avance);
+    const totalBon = this.safeNumber(bon.montantTotal);
+    const resteAPayer = this.safeNumber(bon.resteAPayer);
+    const soldePrecedent = totalBon;
+
+    const paiementData = {
+      client: this.selectedClient ? {
+        nomComplet: this.selectedClient.nomComplet || 'N/A'
+      } : null,
+      date: bon.dateBon || new Date(),
+      numeroReference: bon.numero,
+      moyenPaiement: bon.methodePaiement || 'Caisse',
+      montantVerse: avance,
+      soldePrecedent: soldePrecedent,
+      nouveauSolde: resteAPayer,
+      description: `Acompte sur bon ${bon.numero}`,
+      type: 'ACOMPTE',
+      agent: 'Système'
+    };
+
+    console.log('Données pour ticket paiement bon:', paiementData);
+    this.pdfGenerator.generateTicketVersementClient(paiementData);
+
+  } catch (error) {
+    console.error('Erreur génération ticket paiement:', error);
+    this.toastr.error('Erreur lors de la génération du ticket de paiement');
+  } finally {
+    this.isLoading = false;
+  }
+}
+
+// Méthode pour générer une facture à partir d'un bon
+genererFacturePDF(bon: Bon): void {
+  if (!bon) {
+    this.toastr.error('Aucun bon sélectionné');
+    return;
+  }
+
+  try {
+    this.isLoading = true;
+    
+    // Générer un numéro de facture si non existant
+    const numeroFacture = bon.numeroFacture || `FACT-${bon.numero}-${Date.now()}`;
+    
+    // Préparer les articles
+    const articlesFormates = (bon.Panier?.ArticlePaniers || []).map(article => {
+      if (!article) return null;
+      
+      return new ArticlePanier({
+        ...article,
+        produit: article.produit || article.Produit,
+        prixUnitaire: this.safeNumber(article.prixUnitaire || article.prixVenteUnitaire),
+        quantite: this.safeNumber(article.quantite),
+        montantRemise: this.safeNumber(article.montantRemise),
+        montantTVA: this.safeNumber(article.montantTVA),
+        totalHT: this.safeNumber(article.totalHT),
+        totalTTC: this.safeNumber(article.totalTTC)
+      });
+    }).filter(article => article != null);
+
+    // Calculer la date d'échéance (30 jours après la date du bon)
+    const dateBon = new Date(bon.dateBon || new Date());
+    const dateEcheance = new Date(dateBon);
+    dateEcheance.setDate(dateEcheance.getDate() + 30);
+
+    const factureData = {
+      numero: numeroFacture,
+      date: dateBon,
+      dateEcheance: dateEcheance,
+      refBon: bon.numero,
+      client: this.selectedClient ? {
+        nomComplet: this.selectedClient.nomComplet || 'N/A',
+        adresse: this.selectedClient.adresse || '',
+        telephone: this.selectedClient.telephone || '',
+        email: this.selectedClient.email || ''
+      } : null,
+      articles: articlesFormates,
+      totaux: {
+        sousTotal: this.safeNumber(bon.Panier?.totalHT),
+        tauxTVA: this.safeNumber(bon.Panier?.tauxTVA),
+        montantTVA: this.safeNumber(bon.Panier?.tva),
+        totalTTC: this.safeNumber(bon.Panier?.totalTTC),
+        remise: this.safeNumber(bon.remise)
+      },
+      conditionsPaiement: bon.conditionsPaiement || 'Paiement sous 30 jours'
+    };
+
+    console.log('Données pour facture client:', factureData);
+    this.pdfGenerator.generateFactureClient(factureData);
+
+  } catch (error) {
+    console.error('Erreur génération facture:', error);
+    this.toastr.error('Erreur lors de la génération de la facture');
+  } finally {
+    this.isLoading = false;
+  }
+}
+
+// Méthode utilitaire pour sécuriser les nombres
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+private safeNumber(value: any): number {
+  if (value === null || value === undefined || value === '') {
+    return 0;
+  }
+  const num = Number(value);
+  return isNaN(num) ? 0 : num;
+}
+
+// Méthodes de calcul pour le relevé
+private calculerTotalAchats(): number {
+  return this.filteredOperations
+    .filter(op => op.type === 'COMMANDE' || op.type === 'VENTE')
+    .reduce((total, op) => total + (this.safeNumber(op.Bon?.Panier?.totalTTC) || 0), 0);
+}
+
+private calculerTotalVersements(): number {
+  return this.filteredOperations
+    .filter(op => op.type === 'VERSEMENT' || op.type === 'REGLEMENT')
+    .reduce((total, op) => total + (this.safeNumber(op.montantPaye) || 0), 0);
 }
 }

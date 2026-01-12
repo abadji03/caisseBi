@@ -1502,6 +1502,8 @@ imprimerReleve(): void {
       synthese: {
         totalCommandes: this.calculerTotalCommandes(),
         totalVersements: this.calculerTotalVersements(),
+        totalRetours : this.calculerTotalRetours(),
+        totalLivraison : this.calculerTotalLivraison(),
         solde: this.selectedFournisseur.montantAPayer || 0
       },
       solde: this.selectedFournisseur.montantAPayer || 0
@@ -1701,6 +1703,17 @@ imprimerBon(bon: Bon): void {
         .reduce((total, op) => total + (this.safeNumber(op.Bon?.Panier?.totalTTC) || 0), 0);
     }
 
+    private calculerTotalRetours(): number {
+      return this.filteredOperations
+        .filter(op => op.type === 'RETOUR')
+        .reduce((total, op) => total + (this.safeNumber(op.Bon?.Panier?.totalTTC) || 0), 0);
+    }
+
+    private calculerTotalLivraison(): number {
+      return this.filteredOperations
+        .filter(op => op.type === 'LIVRAISON')
+        .reduce((total, op) => total + (this.safeNumber(op.Bon?.Panier?.totalTTC) || 0), 0);
+    }
     private calculerTotalVersements(): number {
       return this.filteredOperations
         .filter(op => op.type === 'VERSEMENT')
