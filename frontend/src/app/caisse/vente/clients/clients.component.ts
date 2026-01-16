@@ -54,7 +54,7 @@ export class ClientsComponent implements OnInit, OnDestroy {
   typeEntite: 'client' | 'fournisseur'|'autre' = 'client';
   actionEnCours: string | null = null;
 
-  agentId = 1;
+  agentId = 18;
 
    // Variables de brouillon
   bonBrouillon: Bon | null = null;
@@ -197,14 +197,15 @@ export class ClientsComponent implements OnInit, OnDestroy {
     //S'abonner aux brouillons du service
     this.bonBrouillonService.bonBrouillon$.subscribe(bon => {
       this.bonBrouillon = bon;
-      console.log('Bon brouillon chargé dans Fournisseur:', this.bonBrouillon?.id);
+      console.log('Bon brouillon chargé dans client:', this.bonBrouillon?.id);
     });
 
     this.bonBrouillonService.panierBrouillon$.subscribe(panier => {
       this.panierBrouillon = panier;
-      console.log('Panier brouillon chargé dans Fournisseur:', this.panierBrouillon?.id);
+      console.log('Panier brouillon chargé dans client:', this.panierBrouillon?.id);
     });
   }
+  
 
   ngOnDestroy(): void {
     this.destroy$.next();
@@ -1039,6 +1040,11 @@ toggleDetails(index: number,operation: Operation) {
   // Gérer l'événement d'enregistrement du paiement
     onPaiementEnregistre(event: PaiementAvecFichier): void {
       // Associer le fournisseur au paiement
+      if(!this.selectedClient){
+        this.toastr.error('Aucun client sélectionné', 'Erreur');
+        return;   
+      }
+
       if (this.selectedClient) {
         event.paiement.clientId = this.selectedClient.id;
       }
@@ -1048,8 +1054,12 @@ toggleDetails(index: number,operation: Operation) {
       if(event.paiement.montant <=0 
         || event.paiement.montant === null 
         || event.paiement.montant === undefined 
-        || (Number(this.selectedClient?.solde || 0)-(Number(event.paiement.montant)))<0){
-        this.toastr.error('Le montant a versé est supérieur à la dette ou est mal renseigné (0 ou nombre négatif) ', 'Erreur');
+        || Number(this.selectedClient?.solde) <0){
+        this.toastr.error('Pas de dette à payer ou le montant est mal renseigné (0 ou nombre négatif) ', 'Erreur');
+        return;
+      }
+      if((this.selectedClient.solde - event.paiement.montant) < 0){
+        this.toastr.error('Le montant du paiement dépasse la dette du client', 'Erreur');
         return;
       }
       this.enregistrerPaiement(event.paiement,event.fichier);
@@ -1265,53 +1275,6 @@ canReturn(bon: any): boolean {
   return false;
 }
 
-
-
-  /* onPanierAnnule(): void {
-    //this.showPanierComponent = false;
-    this.reinitialiserEtMasquerFormulaires();
-    
-  }
-
-   // Méthode pour confirmer l'action
-  confirmerAction(): void {
-    if (this.actionEnCours === 'annuler_panier' && this.panierBrouillon) {
-      this.annulerPanierDefinitif();
-    }
-    this.showConfirmationModal = false;
-    this.actionEnCours = null;
-  }
-
-  // Annuler l'action
-  annulerAction(): void {
-    this.showConfirmationModal = false;
-    this.actionEnCours = null;
-  }
-
-  private annulerPanierDefinitif(): void {
-    if (!this.panierBrouillon || !this.bonBrouillon) return;
-
-    this.bonService.changerStatutPanier(this.panierBrouillon.id!, 'annulé', true)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: () => {
-          this.toastr.success('Panier et bon annulés avec succès');
-          this.bonBrouillon = null;
-          this.panierBrouillon = null;
-          this.showBonForm = false;
-          this.showBonForm = false;
-        },
-        error: (err) => {
-          console.error('Erreur annulation:', err);
-          this.toastr.error('Erreur lors de l\'annulation');
-        }
-      });
-  } */
- // Nouvelle méthode pour gérer l'annulation du panier
- /*  onPanierAnnuleAvecConfirmation(): void {
-    this.actionEnCours = 'annuler_panier';
-    this.showConfirmationModal = true;
-  } */
   onBonAnnule(): void {
     //this.showBonComponent = false;
     console.log('Annulation du bon - Réinitialisation');
@@ -1500,6 +1463,11 @@ private rafraichirDonneesClient(): void {
           this.toastr.error('Les données du brouillon ne sont pas chargées', 'Erreur');
           return;
         }
+        /* if(event.bon.avance && this.selectedClient.solde! - event.bon.avance <0){
+          this.toastr.error('Le montant de l\'avance dépasse la dette du client', 'Erreur');
+          return;
+        } */
+
         // Associer fournisseurId et s'assurer que le statut est "validé"
         event.bon.clientId = this.selectedClient.id;
         event.bon.statutBon = 'validé'; // Changer le statut à validé
@@ -1510,7 +1478,13 @@ private rafraichirDonneesClient(): void {
         } 
   
         // Appel API
-        this.enregistrerBon(event.bon, event.bon.panier!,event.fichier);
+        if (event.bon.type === 'avoir') {
+            this.enregistrerAvoir(event.bon);
+        } 
+        else {
+            this.enregistrerBon(event.bon, event.bon.panier!, event.fichier);
+          }
+
          //this.enregistrerBonAvecFichiers(event.bon, event.bon.panier, event.fichier);
         this.showBonForm = false;
         // Nettoyer les brouillons après enregistrement
@@ -1660,6 +1634,79 @@ private uploadFichierSepare(fichier: File, bonId: number, resultBon: any): void 
     });
   }
 
+  private enregistrerAvoir(bon: Bon): void {
+  if (!this.selectedClient) {
+    this.toastr.error('Aucun client sélectionné', 'Erreur');
+    return;
+  }
+
+  //Vérifier que les brouillons sont bien chargés
+  if (!this.bonBrouillon?.id || !this.panierBrouillon?.id) {
+    console.error('Brouillons non chargés:', {
+      bonBrouillon: this.bonBrouillon,
+      panierBrouillon: this.panierBrouillon
+    });
+    this.toastr.error('Erreur: Les données du brouillon ne sont pas chargées', 'Erreur');
+    return;
+  }
+
+  // Préparer les données pour l'API unifiée
+  const bonCompletData = {
+    bon: {
+      ...bon,
+      id: this.bonBrouillon?.id,
+      clienId: this.selectedClient.id,
+      statutBon: 'validé'
+    },
+    panier: {
+      ...this.panierBrouillon,
+      id: this.panierBrouillon.id, 
+      clientId: this.selectedClient.id,
+      statut: 'validé'
+    },
+    articles: [],
+    code_structure: this.code_structure,
+    magasinId: this.magasinId,
+    agentId: this.agentId,
+    clientId: this.selectedClient.id,
+    typeEntite:this.typeEntite,
+    paiement: undefined
+  };
+  console.log('Données de MISE À JOUR envoyées:', {
+    bonId: bonCompletData.bon.id,
+    panierId: this.panierBrouillon?.id, //ID du panier existant
+  });
+  this.isLoading = true;
+
+  this.bonService.createBonComplet(bonCompletData).pipe(takeUntil(this.destroy$))
+  .subscribe({
+    next: (result) => {
+      console.log('Bon enregistré avec succès:', {
+          bonId: result.bon?.id,
+          panierId:result.panier.id
+        });
+        console.log('Id panier à supprimer', result.panier.id)
+        this.panierService.deleteOnlyPanier(result.panier.id).pipe(takeUntil(this.destroy$)).subscribe({
+          next: () => {
+            console.log('Panier brouillon supprimé avec succès après création d\'avoir');
+            this.finaliserEnregistrement(result, false);
+          },
+          error: (err) => {
+            console.error('Erreur suppression panier brouillon après création d\'avoir:', err);
+          }
+        });
+        
+
+    },
+    error: (error) => {
+      console.error('Erreur:', error);
+      this.toastr.error(error.error?.error || 'Erreur lors de l\'enregistrement', 'Erreur');
+    },
+    complete: () => {
+      this.isLoading = false;
+    }
+  });
+}
   toggleDetailBiss(index: number, bon: Bon):void {
       // Fermer tous les autres détails
       if (this.selectedBonIndexB === index) {

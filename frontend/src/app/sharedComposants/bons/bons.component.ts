@@ -71,7 +71,7 @@ export class BonsComponent implements OnChanges,OnInit {
   currentDate: string = new Date().toLocaleDateString();
   currentTime: string = new Date().toLocaleTimeString();
   generatedNumero: string = this.generateNumero();
-  typeBon = '';
+  //typeBon = '';
   panierDisabled = false;
   totalPanier = 0;
   showBonButtons = false;
@@ -147,23 +147,27 @@ export class BonsComponent implements OnChanges,OnInit {
       referenceExterne: [''],
       numeroBonOrigine: [''],
       motifsRetour: [''],
-      montantAvoir: [0, [Validators.min(0)]],
+      montantAvoir: [0],
 
       // Montants
       //remise: [0, [Validators.min(0)]],
-      avance: [0, [Validators.min(0)]],
+      avance: [0],
 
-      methodePaiement: [this.modesPaiement[0], Validators.required],
+      methodePaiement: [''],
 
       // Conditions de paiement
       conditionsPaiement: ['30 jours fin de mois'],
-      delaiPaiement: [30, [Validators.min(0)]],
+      delaiPaiement: [30],
       dateLivraisonPrevue: [''],
       pointLivraison: [''],
       transporteur: ['']
       // TVA
       //tauxTVA: [18, [Validators.min(0), Validators.max(100)]],
     });
+  }
+
+  get typeBon(): 'commande' | 'retour' | 'avoir' | 'livraison' | 'vente' | 'achat' {
+    return this.bonForm?.get('type')?.value ?? '';
   }
 
   private setupSubscriptions(): void {
@@ -180,15 +184,9 @@ export class BonsComponent implements OnChanges,OnInit {
       this.validerMontants();
       this.updateTabAccessibility();
     });
-
     // Écouter spécifiquement les changements de type
-    this.bonForm.get('type')?.valueChanges.subscribe(nouveauType => {
-      if (this.bonBrouillon && nouveauType) {
-        // Utiliser debounceTime pour éviter trop d'appels
-        setTimeout(() => {
-          this.updateTypeBonInBD(nouveauType);
-        }, 300);
-      }
+    this.bonForm.get('type')?.valueChanges.subscribe(() => {
+        this.onTypeBonChange();
     });
   }
 
@@ -205,7 +203,7 @@ export class BonsComponent implements OnChanges,OnInit {
       montantAvoir: bon.montantAvoir || 0,
       //remise: bon.remise || 0,
       avance: bon.avance || 0,
-      methodePaiement: bon.methodePaiement || '',
+      methodePaiement: bon.methodePaiement || this.modesPaiement[0].libelle || '',
       conditionsPaiement: bon.conditionsPaiement || '30 jours fin de mois',
       delaiPaiement: bon.delaiPaiement || 30,
     });
@@ -257,7 +255,7 @@ setActiveTab(tab: 'informations' | 'articles'): void {
   // Ne permettre le changement que si le tab est accessible
   if (this.accessibleTabs[tab]) {
     this.activeTab = tab;
-    
+
     // Restaurer le panier si on revient à l'onglet articles
     if (tab === 'articles' && this.panierData) {
       // On s'assure que le panier est correctement restauré
@@ -374,12 +372,23 @@ setActiveTab(tab: 'informations' | 'articles'): void {
   }
 
   private validateArticlesTab(): boolean {
-    if (this.typeBon === 'retour') {
+    if (this.typeBon === 'retour' || this.typeBon === 'avoir') {
       const hasArticles = this.panierData && (this.panierData.articles.length ?? 0) > 0;
       const montantAvoir = this.bonForm.get('montantAvoir')?.value || 0;
       
-      if (!hasArticles && montantAvoir <= 0) {
+      /* if (!hasArticles && montantAvoir <= 0) {
         //this.toastr.error('Pour un retour, veuillez ajouter des articles ou spécifier un montant d\'avoir', 'Erreur de validation');
+        return false;
+      } */
+      // Pour les retours : soit des articles, soit un montant d'avoir
+      if (this.typeBon === 'retour' && !hasArticles && montantAvoir <= 0) {
+        this.toastr.error('Pour un retour, veuillez ajouter des articles ou spécifier un montant d\'avoir', 'Erreur de validation');
+        return false;
+      }
+      
+      // Pour les avoirs : obligatoirement un montant d'avoir
+      if (this.typeBon === 'avoir' && montantAvoir <= 0) {
+        this.toastr.error('Veuillez spécifier un montant d\'avoir', 'Erreur de validation');
         return false;
       }
       
@@ -444,27 +453,34 @@ setActiveTab(tab: 'informations' | 'articles'): void {
 
   // Méthodes existantes avec améliorations
   onTypeBonChange(): void {
-    const nouveauType = this.bonForm.get('type')?.value;
-    this.typeBon = nouveauType;
-
+    
+     const type = this.typeBon;
     // Mettre à jour en base de données
-    if (this.bonBrouillon) {
-      this.updateTypeBonInBD(nouveauType);
+    if (this.bonBrouillon && type) {
+      this.updateTypeBonInBD(type);
     }
 
     // Réinitialiser les champs selon le type
-    if (this.typeBon === 'retour') {
+    if (this.typeBon === 'retour' || this.typeBon === 'avoir') {
       this.bonForm.patchValue({
-        //remise: 0,
         avance: 0,
-        //tauxTVA: 0
       });
       this.modeMontant = 'mixte';
       this.showFileField = false;
       // Ajouter des validateurs pour les retours
-      this.bonForm.get('numeroBonOrigine')?.setValidators([Validators.required]);
-      this.bonForm.get('motifsRetour')?.setValidators([Validators.required, Validators.minLength(10)]);
-    
+      if (this.typeBon === 'retour') {
+        // Validation spécifique pour les retours
+        this.bonForm.get('numeroBonOrigine')?.setValidators([Validators.required]);
+        this.bonForm.get('motifsRetour')?.setValidators([Validators.required, Validators.minLength(10)]);
+      } else {
+        // Pour les avoirs, pas besoin de numéro bon origine
+        this.bonForm.get('numeroBonOrigine')?.clearValidators();
+        this.bonForm.get('motifsRetour')?.clearValidators();
+        
+        // Ajouter un validateur pour montantAvoir
+        this.bonForm.get('montantAvoir')?.clearValidators();
+        this.bonForm.get('montantAvoir')?.setValidators([Validators.min(0)]);
+      }
     } 
     else {
       this.modeMontant = 'panier';
@@ -472,16 +488,18 @@ setActiveTab(tab: 'informations' | 'articles'): void {
       // Retirer les validateurs pour les retours
       this.bonForm.get('numeroBonOrigine')?.clearValidators();
       this.bonForm.get('motifsRetour')?.clearValidators();
+      this.bonForm.get('montantAvoir')?.clearValidators();
 
     }
 
     // Ajuster les champs requis selon le type
-    //this.adjustValidatorsForType();
     this.bonForm.get('numeroBonOrigine')?.updateValueAndValidity();
     this.bonForm.get('motifsRetour')?.updateValueAndValidity();
+    this.bonForm.get('montantAvoir')?.updateValueAndValidity();
     
     // Réinitialiser l'accessibilité des tabs
     this.resetTabAccessibility();
+
   }
 
     // Méthodes pour gérer les changements de mode
@@ -515,21 +533,22 @@ setActiveTab(tab: 'informations' | 'articles'): void {
     this.accessibleTabs = {
       informations: true,
       articles: false,
-      paiement: false,
-      logistique: false
     };
     
-    if (this.activeTab !== 'informations') {
+    /* if (this.activeTab !== 'informations') {
       this.activeTab = 'informations';
-    }
+    } */
   }
 
   // Calcul des totaux amélioré
   get montantBase(): number {
+    if (this.typeBon === 'avoir') {
+      return this.bonForm.get('montantAvoir')?.value ?? 0;
+    }
     if (this.modeMontant === 'panier') {
       return this.totalPanier;
     }  
-   else if (this.modeMontant === 'mixte') {
+    else if (this.modeMontant === 'mixte') {
       if (this.panierData && this.panierData.articles.length > 0) {
         return this.totalPanier;
       } else {
@@ -662,12 +681,12 @@ setActiveTab(tab: 'informations' | 'articles'): void {
     };
 
     // Pour les retours
-    if (this.typeBon === 'retour') {
+    if (this.typeBon === 'retour'|| this.typeBon === 'avoir') {
       const bonRetour = new Bon({
         ...baseData,
         numeroBonOrigine: formValue.numeroBonOrigine,
         motifsRetour: formValue.motifsRetour,
-        montantAvoir: this.totalTTC,
+        montantAvoir: this.montantBase,
         montantTotal: 0,
         remise: 0,
         avance: 0,
@@ -929,10 +948,11 @@ onPanierModifie(panier: Panier): void {
 
     // Réinitialiser les variables
     this.fichierSelectionne = null;
-    this.typeBon = '';
+    //this.typeBon = 'commande';
     this.generatedNumero = this.generateNumero();
     this.erreurs = [];
     this.modeMontant = 'panier';
+    this.panierValide = false; 
     this.panierData = null;
     this.showBonButtons = false;
     this.activeTab = 'informations';

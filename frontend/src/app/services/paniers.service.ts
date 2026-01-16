@@ -69,6 +69,10 @@ export class PaniersService {
       .pipe(catchError(err => this.handleError(err)));
   }
 
+  deleteOnlyPanier(id: number): Observable<Panier> {
+    return this.http.delete<Panier>(`${API_URL}/onlyPanier/${id}`, { headers: this.getHeaders() })
+      .pipe(catchError(err => this.handleError(err)));
+  }
   // === Méthodes spécifiques ===
 
   updateStatutPanier(id: number, statut: string): Observable<Panier> {

@@ -56,7 +56,7 @@ export class FournisseursComponent implements OnInit, OnDestroy {
   // Informations sur la structure et autres entités
   code_structure = 'MASTRUCTURET-NZNC';
   magasinId = 1;
-  agentId = 1;
+  agentId = 18;
 
   // Variables pour la génération des numéros
   generatedNumeroPaiement: string = this.generateNumero();
@@ -243,6 +243,11 @@ export class FournisseursComponent implements OnInit, OnDestroy {
         this.toastr.error('Les données du brouillon ne sont pas chargées', 'Erreur');
         return;
       }
+
+      /* if( event.bon.avance && this.selectedFournisseur.montantAPayer! - event.bon.avance <0){
+        this.toastr.error('Le montant de l\'avance dépasse le montant à payer au fournisseur', 'Erreur');   
+        return;
+      } */
       // Associer fournisseurId et s'assurer que le statut est "validé"
       event.bon.fournisseurId = this.selectedFournisseur.id;
       event.bon.statutBon = 'validé'; // Changer le statut à validé
@@ -1009,6 +1014,10 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
   // Gérer l'événement d'enregistrement du paiement
   onPaiementEnregistre(event: PaiementAvecFichier): void {
     // Associer le fournisseur au paiement
+    if(!this.selectedFournisseur){
+      this.toastr.error('Aucun fournisseur sélectionné', 'Erreur');
+      return;
+    }
     if (this.selectedFournisseur) {
       event.paiement.fournisseurId = this.selectedFournisseur.id;
     }
@@ -1018,8 +1027,12 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
     if(event.paiement.montant <=0 
         || event.paiement.montant === null 
         || event.paiement.montant === undefined 
-        || (Number(this.selectedFournisseur?.montantAPayer || 0)-(Number(event.paiement.montant)))<0){
-        this.toastr.error('Le montant a versé est supérieur à la dette ou est mal renseigné (0 ou nombre négatif) ', 'Erreur');
+        || Number(this.selectedFournisseur?.montantAPayer) <0){
+        this.toastr.error('Pas de dette au fournisseur ou le montant est mal renseigné (0 ou nombre négatif) ', 'Erreur');
+        return;
+    }
+    if(Number(this.selectedFournisseur?.montantAPayer) - Number(event.paiement.montant) < 0){
+        this.toastr.error('Le montant du paiement dépasse la dette du fournisseur', 'Erreur');
         return;
       }
     this.enregistrerPaiement(event.paiement,event.fichier);

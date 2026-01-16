@@ -96,7 +96,7 @@ export class CaisseComponent implements OnInit, OnDestroy {
 
   code_structure = 'MASTRUCTURET-NZNC';
   magasinId = 1;
-  agentId = 1;
+  agentId = 18;
 
   panierData: Panier | null = null;
   

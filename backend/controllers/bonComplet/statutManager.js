@@ -46,7 +46,7 @@ class StatutManager {
 
     if (typeEntite === 'client') {
       bonData.clientId = clientId;
-      if (bon.type === 'retour') {
+      if (bon.type === 'retour' || bon.type === 'avoir') {
         //bonData.statutBon = 'retourné';
         bonData.montantAvoir = this.safeNumber(bonData.montantAvoir);
       }
@@ -65,7 +65,7 @@ class StatutManager {
       else if (bon.type === 'livraison') {
         bonData.statutBon = bonData.statutBon || 'validé';
       }
-       else if (bon.type === 'retour') {
+       else if (bon.type === 'retour' || bon.type === 'avoir') {
         bonData.statutBon = bonData.statutBon || 'validé';
       }
     }
@@ -106,12 +106,14 @@ class StatutManager {
       'client': {
         'commande': ['validé','livré', 'annulé', 'retourné'], // Commande client impacte dette
         'vente': ['validé', 'retourné'], // Vente à crédit impacte dette
-        'retour': ['validé', 'annulé'] // Retour client impacte dette (avoir)
+        'retour': ['validé', 'annulé'], // Retour client impacte dette (avoir)
+        'avoir': ['validé', 'annulé'] // Avoir client impacte dette (avoir)
       },
       'fournisseur': {
         'commande': [], // Commande fournisseur n'impacte pas la dette
         'livraison': ['validé', 'annulé', 'retourné'], // Livraison fournisseur impacte dette
-        'retour': ['validé', 'annulé'] // Retour fournisseur impacte dette
+        'retour': ['validé', 'annulé'], // Retour fournisseur impacte dette
+        'avoir': ['validé', 'annulé'] // Avoir fournisseur impacte dette (avoir)
       }
     };
 
@@ -155,7 +157,7 @@ class StatutManager {
       operation = 'annulation';
       console.log(`🔁 Annulation bon ${bon.type} - Diminution dette: ${montant}`);
     }
-    else if (bon.type === 'retour') {
+    else if (bon.type === 'retour' || bon.type === 'avoir') {
       
       if (bon.statutBon === 'validé') {
         nouveauSolde = soldeActuel - montant;
@@ -263,7 +265,7 @@ class StatutManager {
           console.log(`↩️ Retour livraison - Diminution dette: ${montant}`);
         }
     }
-    else if (bon.type === 'retour') {
+    else if (bon.type === 'retour' || bon.type === 'avoir') {
       
       if (bon.statutBon === 'validé') {
         // RETOUR FOURNISSEUR VALIDÉ: Diminuer la dette (avoir)

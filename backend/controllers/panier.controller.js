@@ -88,6 +88,18 @@ exports.updatePanier = async (req, res) => {
   }
 };
 
+exports.deleteOnlyPanier = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deleted = await Panier.destroy({ where: { id } });
+    if (!deleted) return res.status(404).json({ message: 'Panier non trouvée' });
+
+    res.json({ message: 'Panier supprimée' });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la suppression', error });
+  }
+};
 // Supprimer un panier avec cascade
 exports.deletePanier = async (req, res) => {
   const transaction = await db.sequelize.transaction();

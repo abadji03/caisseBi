@@ -10,7 +10,7 @@ import { Depense } from '../modeles/finance.model';
 })
 export class DepencesService {
 
-    private apiUrl = 'http://localhost:5000/api/depenses';
+  private apiUrl = 'http://localhost:5000/api/depenses';
 
   private http = inject(HttpClient);
   private authService = inject(AuthService);

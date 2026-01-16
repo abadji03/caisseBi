@@ -10,6 +10,7 @@ router.get('/', panierController.getAllPaniers);
 router.get('/:id', panierController.getPanierById);
 router.put('/:id', panierController.updatePanier);
 router.delete('/:id', panierController.deletePanier);
+router.delete('/onlyPanier/:id', panierController.deleteOnlyPanier);
 router.get('/bon/:bonId', panierController.getPanierByBonId);
 
 router.get('/structure/:code_structure/magasin/:magasinId', panierController.getPaniersByStructure);

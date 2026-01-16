@@ -266,26 +266,6 @@ exports.createBonComplet = async (req, res) => {
 };
 
 /**
- * Traiter une vente à crédit client
- */
-/* exports.traiterVenteCredit = async (bon, articles, magasinId, agentId, code_structure, transaction) => {
-  console.log(`💳 Traitement vente à crédit ${bon.numero}`);
-  
-  // 1. Impact sur le stock immédiat (sortie)
-  await Promise.all(
-    articles.map(article =>
-      mouvementService.traiterMouvementStock(article, bon, magasinId, agentId, code_structure, transaction)
-    )
-  );
-  
-  // 2. Impact sur la dette client
-  await statutManager.mettreAJourEntite(bon, 'client', bon.clientId, null, transaction);
-  
-  console.log(`✅ Vente crédit traitée - Stock déduit et dette client augmentée`);
-}; */
-
-
-/**
  * Traitement spécifique pour les bons fournisseurs
  */
 exports.traiterBonFournisseur = async (bon, articles, magasinId, agentId, code_structure, panier,transaction) => {
@@ -358,6 +338,14 @@ exports.traiterBonFournisseur = async (bon, articles, magasinId, agentId, code_s
           )
         );
 
+        // Ajustement du fournisseur
+        await statutManager.mettreAJourEntite(bon, 'fournisseur', null, bon.fournisseurId, transaction);
+      }
+      break;
+
+       case 'avoir':
+      // AVOIR FOURNISSEUR: Sortie de stock après validation
+      if (['validé'].includes(statut)) {
         // Ajustement du fournisseur
         await statutManager.mettreAJourEntite(bon, 'fournisseur', null, bon.fournisseurId, transaction);
       }
@@ -481,7 +469,15 @@ exports.traiterBonClient = async (bon, articles, magasinId, agentId, code_struct
       }
       
       break;
+      case 'avoir':
+      // RETOUR CLIENT: Entrée en stock après validation
 
+      if (['validé'].includes(statut)) {
+        // Pour un avoir validé, on met à jour le client et on crée l'avoir
+        await statutManager.mettreAJourEntite(bon, 'client', bon.clientId, null, transaction);
+      }
+      
+      break;
     default:
       console.log(`Type de bon client non géré: ${typeBon}`);
   }
