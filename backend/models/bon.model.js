@@ -87,6 +87,7 @@ module.exports = (sequelize, DataTypes) => {
         'validé',
         'livré',
         'retourné',
+        'retourné partiellement',
         'facturé',
         'annulé'
       ),

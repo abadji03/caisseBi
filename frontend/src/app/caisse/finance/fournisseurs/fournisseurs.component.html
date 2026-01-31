@@ -292,6 +292,7 @@
               [entiteNom]="selectedFournisseur?.nomComplet"
               (onEnregistrerBon)="onBonEnregistre($event)"
               (showFileField)=true
+              [generatedNumero]="generatedNumero"
               [resetForm]="!showBonForm" 
               (onAnnulerBon)="onBonAnnule()"
               (onReinitialiserPanier)="resetPanierFlag = true"
@@ -375,7 +376,8 @@
                                     'bg-primary': bon.statutBon === 'livré',
                                     'bg-warning': bon.statutBon === 'retourné',
                                     'bg-danger': bon.statutBon === 'annulé',
-                                    'bg-info': bon.statutBon === 'facturé'
+                                    'bg-info': bon.statutBon === 'facturé',
+                                    'bg-dark': bon.statutBon === 'retourné partiellement'
                                   }">
                                     {{ bon.statutBon }}
                                   </span>

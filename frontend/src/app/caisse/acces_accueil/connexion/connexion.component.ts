@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../services/auth.service';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-connexion',
@@ -10,44 +11,35 @@ import { AuthService } from '../../../services/auth.service';
   styleUrl: './connexion.component.css',
 })
 export class ConnexionComponent {
+    
+  isLoading = false;
   loginObj = {
     email: '',
     password: '',
   };
   errorMessage = '';
-  //private router = inject(Router);
   private authService = inject(AuthService);
-  //private roleService = inject(RolePermissionsService);
-
-  /* onLogin() {
-    this.authService.login(this.loginObj.email, this.loginObj.password).subscribe({
-      next: (res) => {
-        const role = res.user.role;
-        if (role === 'admin_general') {
-          this.router.navigate(['/admin/dashboard']);
-        } else if (role === 'admin_structure') {
-          this.router.navigate(['/admin-structure/dashboard']);
-        } else {
-          this.router.navigate(['/espace-vendeurs/overview']);
-        }
-      },
-      error: (err) => {
-        this.errorMessage = err.error.message || 'Erreur lors de la connexion';
-        console.log('Erreur lors de la connexion',err.error.message)
-      }
-    });
-  } */
+  private toastr = inject(ToastrService);
+  
+  
 
   onLogin(): void {
-    if (!this.loginObj.email || !this.loginObj.password) return;
+    if (!this.loginObj.email || !this.loginObj.password) {
+      this.toastr.error('Tous les champs sont requis');
+      return;
+    } 
 
     this.authService.login(this.loginObj.email, this.loginObj.password).subscribe({
       next: () => {
         // Redirection déjà gérée dans le service
+        this.isLoading = false;
       },
       error: (err) => {
-        console.error('Erreur de connexion :', err);
-        alert('Email ou mot de passe incorrect');
+        this.isLoading = false;
+        console.error('Erreur de connexion :', err.error?.message);
+        this.errorMessage = err.error?.message || 'Email ou mot de passe incorrec'
+        this.toastr.error(this.errorMessage);
+        //alert('Email ou mot de passe incorrect');
       },
     });
   }

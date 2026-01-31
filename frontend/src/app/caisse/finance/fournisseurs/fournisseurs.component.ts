@@ -1,6 +1,7 @@
 import { ChangeDetectorRef, Component, inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Fournisseur } from '../../../modeles/fournisseur.model';
 import { CommonModule } from '@angular/common';
+import { v4 as uuidv4 } from 'uuid';
 import {
   FormBuilder,
   FormGroup,
@@ -53,14 +54,16 @@ export class FournisseursComponent implements OnInit, OnDestroy {
   currentTime = '';
   currentDate = ' ';
 
+  private static sequence = 0;
+
   // Informations sur la structure et autres entités
   code_structure = 'MASTRUCTURET-NZNC';
   magasinId = 1;
   agentId = 18;
 
   // Variables pour la génération des numéros
-  generatedNumeroPaiement: string = this.generateNumero();
-  generatedNumero = this.generateNumeroBon(); // Numéro généré
+  generatedNumeroPaiement!: string ;
+  generatedNumero !:string ; // Numéro généré
 
   // Variables pour la gestion des actions
   textBoutonNewBon = 'Nouveau bon';
@@ -281,29 +284,13 @@ export class FournisseursComponent implements OnInit, OnDestroy {
   }
 // Méthode pour générer un numéro unique de paiement
   generateNumero(): string {
-    const timestamp = new Date().getTime();
-    const random = Math.floor(Math.random() * 1000);
-    return `NP-${timestamp}-${random}`;
+    
+    return `NP-${uuidv4()}`;
   }
 
   generateNumeroBon(): string {
-  const now = new Date();
-
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  const seconds = String(now.getSeconds()).padStart(2, '0');
-  //const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
-
-  // identifiant aléatoire 4 chiffres
-  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-
-  return `BON-${year}${month}${day}-${hours}${minutes}${seconds}-${random}`;
+  return `BON-${uuidv4()}`;
 }
-
 // fournisseurs.component.ts
 private enregistrerBon(bon: Bon, panier: Panier, fichier:File|null): void {
   if (!this.selectedFournisseur) {
@@ -682,6 +669,7 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
 
   // Fonction pour afficher ou masquer le formulaire
   toggleBonForm(): void {
+    this.generatedNumero = this.generateNumeroBon();
     this.showBonForm = !this.showBonForm;
     this.showPaiementForm = false;
     // S'assurer que showBonComponent est synchronisé
@@ -1006,6 +994,7 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
 
   // Méthode pour afficher le formulaire de paiement
   togglePaiementForm(): void {
+    this.generatedNumeroPaiement = this.generateNumero();
     this.showBonForm = false;
     this.showPaiementForm = !this.showPaiementForm;
 
@@ -1875,6 +1864,16 @@ imprimerBon(bon: Bon): void {
       this.chargerPanierPourBon(bonMiseAJour.id);
     }
 
+    let statutPanier;
+    if(bonMiseAJour.statutBon ==='annulé' || bonMiseAJour.statutBon ==='retourné') {
+      statutPanier ='annulé';
+    }
+    else if(bonMiseAJour.statutBon ==='livré' || bonMiseAJour.statutBon ==='facturé'){
+      statutPanier = 'validé'
+    }
+    else{
+      statutPanier = panier?.statut
+    }
     // Construire l'objet pour createBonComplet
     return {
       bon: {
@@ -1901,7 +1900,7 @@ imprimerBon(bon: Bon): void {
         tva: panier.tva,
         totalTTC: panier.totalTTC,
         tauxTVA: panier.tauxTVA,
-        statut: 'validé'
+        statut: statutPanier
       } : null,
       articles: articles,
       code_structure: this.code_structure,

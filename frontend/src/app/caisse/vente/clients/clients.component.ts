@@ -1,6 +1,7 @@
 import { ChangeDetectorRef, Component, inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Client } from '../../../modeles/clients.model';
 import { CommonModule } from '@angular/common';
+import { v4 as uuidv4 } from 'uuid';
 import {
   FormArray,
   FormBuilder,
@@ -108,8 +109,8 @@ export class ClientsComponent implements OnInit, OnDestroy {
   showConfirmationModal = false;
   
   // Variables pour la génération des numéros
-  generatedNumeroPaiement: string = this.generateNumero();
-  generatedNumero = this.generateNumeroBon();// Numéro généré
+  generatedNumeroPaiement!: string ;
+  generatedNumero!: string;// Numéro généré
 
   // Données
   filteredBons: Bon[] = [];
@@ -406,6 +407,7 @@ export class ClientsComponent implements OnInit, OnDestroy {
 
   // Fonction pour afficher ou masquer le formulaire de paiement
   togglePaiementForm(): void {
+    this.generatedNumeroPaiement = this.generateNumero();
     this.showPaiementForm = !this.showPaiementForm;
   }
 
@@ -914,6 +916,7 @@ toggleDetails(index: number,operation: Operation) {
   /*.......................... Pour les nouvelles modifications.............................. */
    // Fonction pour afficher ou masquer le formulaire
   toggleBonForm(): void {
+    this.generatedNumero =this.generateNumeroBon();
     this.showBonForm = !this.showBonForm;
     this.showPaiementForm = false;
     // S'assurer que showBonComponent est synchronisé
@@ -1224,27 +1227,12 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
 }
 // Méthode pour générer un numéro unique de paiement
   generateNumero(): string {
-    const timestamp = new Date().getTime();
-    const random = Math.floor(Math.random() * 1000);
-    return `NP-${timestamp}-${random}`;
+    
+    return `NP-${uuidv4()}`;
   }
 
   generateNumeroBon(): string {
-  const now = new Date();
-
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  const seconds = String(now.getSeconds()).padStart(2, '0');
-  //const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
-
-  // identifiant aléatoire 4 chiffres
-  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-
-  return `BON-${year}${month}${day}-${hours}${minutes}${seconds}-${random}`;
+  return `BON-${uuidv4()}`;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1925,6 +1913,18 @@ private loadStructureInfo(): void {
       this.chargerPanierPourBon(bonMiseAJour.id);
     }
 
+    let statutPanier;
+    if(bonMiseAJour.statutBon ==='annulé' || bonMiseAJour.statutBon ==='retourné') {
+      statutPanier ='annulé';
+    }
+    else if(bonMiseAJour.statutBon ==='livré' || bonMiseAJour.statutBon ==='facturé'){
+      statutPanier = 'validé'
+    }
+    else{
+      statutPanier = panier?.statut
+    }
+
+  
     // Construire l'objet pour createBonComplet
     return {
       bon: {
@@ -1951,7 +1951,7 @@ private loadStructureInfo(): void {
         tva: panier.tva,
         totalTTC: panier.totalTTC,
         tauxTVA: panier.tauxTVA,
-        statut: 'validé'
+        statut: statutPanier
       } : null,
       articles: articles,
       code_structure: this.code_structure,

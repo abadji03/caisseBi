@@ -61,6 +61,7 @@ app.use('/api/categories', require('./routers/categorie.routes'));
 app.use('/api/depenses', require('./routers/depense.routes'));
 app.use('/api/recettes', require('./routers/recette.routes'));
 app.use('/api/kpi-caisse', require('./routers/kpiCaisse.routes'));
+app.use('/api/rapport-financier', require('./routers/rapportFinancier.routes'));
 
 
 

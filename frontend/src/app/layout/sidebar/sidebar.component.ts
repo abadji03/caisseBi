@@ -1,8 +1,10 @@
-import { Component, EventEmitter, inject, Input, Output } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
-import { TitreService } from '../../services/titre.service';
-import { SidebarItem } from '../../modeles/sidebar-item.model';
+import { Component, EventEmitter, inject, Input, OnInit, Output } from '@angular/core';
+import { RouterLink } from '@angular/router';
+//import { TitreService } from '../../services/titre.service';
 import { CommonModule } from '@angular/common';
+import { NavigationItem } from '../../modeles/user.model';
+import { AuthService } from '../../services/auth.service';
+import { NGXLogger } from 'ngx-logger';
 
 @Component({
   selector: 'app-sidebar',
@@ -11,14 +13,16 @@ import { CommonModule } from '@angular/common';
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.css'
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit{
 
   @Output() toggleSidebar = new EventEmitter<void>();
   isSidebarCollapsed = false;
-   @Input() isCollapsed = false;
+  @Input() isCollapsed = false;
   openSubtitre: string | null = null;
+  sidebarItems: NavigationItem[] = [];
 
-  sidebarItems: SidebarItem[] = [
+
+  /* sidebarItems: SidebarItem[] = [
     {
       label: 'Accueil',
       icon: 'bi bi-house-door',
@@ -91,10 +95,30 @@ export class SidebarComponent {
         { label: 'Paramètres', route: '/caisse-bi/parametres', titre: 'Compte & Paramètres', sousTitre: 'Gestion des paramètres' }
       ]
     }
-  ];
+  ]; */
 
-private router = inject(Router);
-private titreService = inject(TitreService);
+//private router = inject(Router);
+//private titreService = inject(TitreService);
+private authService = inject(AuthService);
+private logger = inject(NGXLogger);
+
+ ngOnInit(): void {
+    this.loadNavigationItems();
+    
+    // Recharger les items si l'utilisateur change
+    this.authService.currentUser.subscribe((user) => {
+      if (user && user.id) { // Vérifier que l'utilisateur est bien connecté
+        this.loadNavigationItems();
+      }
+    });
+  }
+  private loadNavigationItems(): void {
+    this.sidebarItems = this.authService.getNavigationItems();
+    // Si aucun item n'est disponible, afficher un message
+    if (this.sidebarItems.length === 0) {
+      this.logger.warn('Aucun élément de navigation disponible pour cet utilisateur');
+    }
+  }
 
 toggleCollapse(): void {
     this.isSidebarCollapsed = !this.isSidebarCollapsed;
@@ -109,8 +133,17 @@ isSubtitreOpen(titre: string): boolean {
     return this.openSubtitre === titre;
   }
 
-onSelect(item: SidebarItem): void {
+/* onSelect(item: SidebarItem): void {
     this.titreService.setTitre(item.titre, item.sousTitre || '');
     this.router.navigate([item.route]);
-  }
+} */
+canShowItem(item: NavigationItem): boolean {
+    if (item.requiredRole && !this.authService.hasRole(item.requiredRole)) {
+      return false;
+    }
+    if (item.requiredPermission && !this.authService.hasPermission(item.requiredPermission)) {
+      return false;
+    }
+    return true;
+}
 }

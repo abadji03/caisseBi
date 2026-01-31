@@ -9,6 +9,7 @@ import { BonBrouillonService } from '../../services/bon-brouillon.service';
 import { BonsService } from '../../services/bons.service';
 import { ToastrService } from 'ngx-toastr';
 import { ModePaiement } from '../../modeles/paiement.model';
+import { v4 as uuidv4 } from 'uuid';
 @Component({
   selector: 'app-bons',
   standalone: true,
@@ -25,6 +26,7 @@ export class BonsComponent implements OnChanges,OnInit {
   @Input() entiteNom?: string;
   @Input() showFileField = true;
   @Input() resetForm = false;
+  @Input() generatedNumero!: string 
 
   // Nouveaux flags pour le panier
   @Input() tvaParArticle = true; // Default: TVA par article
@@ -70,7 +72,6 @@ export class BonsComponent implements OnChanges,OnInit {
   // Variables générales
   currentDate: string = new Date().toLocaleDateString();
   currentTime: string = new Date().toLocaleTimeString();
-  generatedNumero: string = this.generateNumero();
   //typeBon = '';
   panierDisabled = false;
   totalPanier = 0;
@@ -667,7 +668,7 @@ setActiveTab(tab: 'informations' | 'articles'): void {
 
     
     const baseData = {
-      numero: this.generatedNumero,
+      numero: this.generateNumero(),
       type: formValue.type,
       description: formValue.description,
       referenceExterne: formValue.referenceExterne,
@@ -686,7 +687,7 @@ setActiveTab(tab: 'informations' | 'articles'): void {
         ...baseData,
         numeroBonOrigine: formValue.numeroBonOrigine,
         motifsRetour: formValue.motifsRetour,
-        montantAvoir: this.montantBase,
+        montantAvoir: this.totalTTC || this.montantBase,
         montantTotal: 0,
         remise: 0,
         avance: 0,
@@ -901,23 +902,8 @@ onPanierModifie(panier: Panier): void {
   }
 
   // Méthodes utilitaires
-  generateNumero(): string {
-  const now = new Date();
-
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  
-
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  const seconds = String(now.getSeconds()).padStart(2, '0');
-  //const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
-
-  // identifiant aléatoire 4 chiffres
-  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-
-  return `BON-${year}${month}${day}-${hours}${minutes}${seconds}-${random}`;
+ generateNumero(): string {
+  return `BON-${uuidv4()}`;
 }
 
 
@@ -949,7 +935,7 @@ onPanierModifie(panier: Panier): void {
     // Réinitialiser les variables
     this.fichierSelectionne = null;
     //this.typeBon = 'commande';
-    this.generatedNumero = this.generateNumero();
+    //this.generatedNumero = this.generateNumero();
     this.erreurs = [];
     this.modeMontant = 'panier';
     this.panierValide = false; 

@@ -16,5 +16,8 @@ export class TitreService {
   setTitre(titre: string, sousTitre: string): void {
     this.titreSubject.next({ titre, sousTitre });
   }
+  getCurrentTitre() {
+    return this.titreSubject.value;
+  }
   //constructor() { }
 }

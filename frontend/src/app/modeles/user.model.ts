@@ -1,3 +1,5 @@
+import { Magasin } from "./magasin.model";
+
 export class User {
   // Champs obligatoires
   id!: number;
@@ -6,9 +8,9 @@ export class User {
   email!: string;
   password!: string;
   status!: boolean; // Actif ou inactif
-  role!: string; // Ex : "ADMIN", "CAISSIER", "GERANT"
+  //role!: string; // Ex : "ADMIN", "CAISSIER", "GERANT"
   roles?: Role[]; // Pour stocker les rôles complets
-  permissions?: Permission[]; // Pour stocker les permissions complètes
+  //permissions?: Permission[]; // Pour stocker les permissions complètes
   // Champs optionnels
   adresse?: string;
   poste?: string; // Ex : "Caissier", "Gérant", "Employé"
@@ -21,6 +23,10 @@ export class User {
   historiqueConnexions?: { date: Date; ip: string }[];
   historiqueActions?: { date: Date; action: string }[];
   structure_id?: number | null;
+  code_structure?: string | null;
+  isGeneralAdmin?: boolean; // Nouveau flag
+  magasin?:Magasin; // Magasin associé à l'utilisateur
+
 
   constructor(data?: Partial<User>) {
     Object.assign(this, data);
@@ -53,6 +59,9 @@ export interface Role {
 export interface Permission {
   id: number;
   nom: string;
+  niveau: number;
+  type: string;
+  valeur?: string;
 }
 
 // models/parametre-configuration.model.ts
@@ -65,4 +74,15 @@ export interface ParametreConfiguration {
     motDePasse: boolean;
     authentification2FA: boolean;
   };
+}
+
+export interface NavigationItem {
+  label: string;
+  icon?: string;
+  route: string;
+  titre: string;
+  sousTitre: string;
+  requiredRole?: string;
+  requiredPermission?: string;
+  children?: NavigationItem[];
 }

@@ -15,96 +15,33 @@
     <form [formGroup]="panierForm">
       <!-- Contrôles TVA et Remise -->
       <div *ngIf="panierArray.length > 0" class="row mt-3 mb-3">
-        <div class="col-md-6">
+        <!-- <div class="col-md-6">
           <div class="card">
             <div class="card-header">
               <h6>Configuration TVA</h6>
             </div>
             <div class="card-body">
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" 
-                       [checked]="tvaRadioValue === 'article'"
-                       (change)="onTVARadioChange('article')"
-                       [class.disabled]="isFormDisabled"
-                       [id]="'tvaModeArticle' + _uid">
-                <label class="form-check-label" [for]="'tvaModeArticle' + _uid">
-                  TVA par article
-                </label>
-              </div>
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" 
-                       [checked]="tvaRadioValue === 'global'"
-                       (change)="onTVARadioChange('global')"
-                       [disabled]="isFormDisabled || canActivateTvaGlobalMode()"
-                       [attr.disabled]="(isFormDisabled || canActivateTvaGlobalMode()) ? 'disabled' : null"
-                       [id]="'tvaModeGlobal' + _uid">
-                <label class="form-check-label" [for]="'tvaModeGlobal' + _uid">
-                  TVA globale
-                </label>
-              </div>
               
-              <div *ngIf="tvaRadioValue === 'global'" class="mt-2">
-                <label for="tauxTVAGlobal" class="form-label">Taux TVA Global (%)</label>
-                <div class="input-group">
-                  <input type="number" class="form-control" 
-                         formControlName="tauxTVAGlobal" 
-                         min="0" max="100" step="0.01">
-                  <span class="input-group-text">%</span>
-                </div>
-                <small class="form-text text-muted">
-                  Sera appliqué au total HT après remise
-                </small>
-              </div>
             </div>
           </div>
-        </div>
+        </div> -->
 
-        <div class="col-md-6">
+        <!-- <div class="col-md-6">
           <div class="card">
             <div class="card-header">
               <h6>Configuration Remise</h6>
             </div>
             <div class="card-body">
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" 
-                       [checked]="remiseRadioValue === 'article'"
-                       (change)="onRemiseRadioChange('article')"
-                       [class.disabled]="isFormDisabled "
-                       [id]="'remiseModeArticle' + _uid">
-                <label class="form-check-label" [for]="'remiseModeArticle' + _uid">
-                  Remise par article
-                </label>
-              </div>
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" 
-                       [checked]="remiseRadioValue === 'global'"
-                       (change)="onRemiseRadioChange('global')"
-                       [class.disabled]="isFormDisabled "
-                       [id]="'remiseModeGlobal' + _uid">
-                <label class="form-check-label" [for]="'remiseModeGlobal' + _uid">
-                  Remise globale
-                </label>
-              </div>
               
-              <div *ngIf="remiseRadioValue === 'global'" class="mt-2">
-                <label for="remiseGlobale" class="form-label">Remise Globale (%)</label>
-                <div class="input-group">
-                  <input type="number" class="form-control" 
-                         formControlName="remiseGlobale" 
-                         min="0" max="100" step="0.01">
-                  <span class="input-group-text">%</span>
-                </div>
-                <small class="form-text text-muted">
-                  Sera appliqué au total HT avant TVA
-                </small>
-              </div>
+              
+              
             </div>
           </div>
-        </div>
+        </div> -->
       </div>
 
       <div *ngIf="showActions" class="row mt-2">
-        <div class="col-md-4 searchChamp">
+        <div class="col-md-3 searchChamp">
           <input
             type="text"
             class="form-control"
@@ -115,7 +52,7 @@
             [class.disabled]="isFormDisabled "
           />
           
-          <div *ngIf="filteredProduits.length > 0 && searchInput" class="dropdown-menu show w-100">
+          <div *ngIf="filteredProduits.length > 0 && searchInput" class="dropdown-menu bg-info show w-25">
             <button
               *ngFor="let prod of filteredProduits"
               type="button"
@@ -130,8 +67,73 @@
             </button>
           </div>
         </div>
-
-        <div class="col-md-4" *ngIf="showAvanceField">
+        <div class="form-check form-check-inline col-md-1">
+                <input class="form-check-input" type="radio" 
+                       [checked]="remiseRadioValue === 'article'"
+                       (change)="onRemiseRadioChange('article')"
+                       [class.disabled]="isFormDisabled "
+                       [id]="'remiseModeArticle' + _uid">
+                <label class="form-check-label" [for]="'remiseModeArticle' + _uid">
+                  R.A<small>(%)</small>
+                </label>
+              </div>
+              <div class="form-check form-check-inline col-md-1">
+                <input class="form-check-input" type="radio" 
+                       [checked]="remiseRadioValue === 'global'"
+                       (change)="onRemiseRadioChange('global')"
+                       [class.disabled]="isFormDisabled "
+                       [id]="'remiseModeGlobal' + _uid">
+                <label class="form-check-label" [for]="'remiseModeGlobal' + _uid">
+                  R.G<small>(%)</small>
+                </label>
+              </div>
+              <div *ngIf="remiseRadioValue === 'global'" class="col-md-2">
+                <!-- <label for="remiseGlobale" class="form-label">Remise Globale (%)</label> -->
+                <!-- <div class="input-group"> -->
+                  <input type="number" class="form-control" 
+                         formControlName="remiseGlobale" 
+                         min="0" max="100" step="0.01">
+                  <!-- <span class="input-group-text">%</span> -->
+                <!-- </div> -->
+                <!-- <small class="form-text text-muted">
+                  Sera appliqué au total HT avant TVA
+                </small> -->
+              </div>
+              <div class="form-check form-check-inline col-md-1">
+                <input class="form-check-input" type="radio" 
+                       [checked]="tvaRadioValue === 'article'"
+                       (change)="onTVARadioChange('article')"
+                       [class.disabled]="isFormDisabled"
+                       [id]="'tvaModeArticle' + _uid">
+                <label class="form-check-label" [for]="'tvaModeArticle' + _uid">
+                  TVA/A<small>(%)</small>
+                </label>
+              </div>
+              <div class="form-check form-check-inline col-md-1">
+                <input class="form-check-input" type="radio" 
+                       [checked]="tvaRadioValue === 'global'"
+                       (change)="onTVARadioChange('global')"
+                       [disabled]="isFormDisabled || canActivateTvaGlobalMode()"
+                       [attr.disabled]="(isFormDisabled || canActivateTvaGlobalMode()) ? 'disabled' : null"
+                       [id]="'tvaModeGlobal' + _uid">
+                <label class="form-check-label" [for]="'tvaModeGlobal' + _uid">
+                  TVA/G<small>(%)</small>
+                </label>
+              </div>
+              
+              <div *ngIf="tvaRadioValue === 'global'" class="col-md-2">
+                <!-- <label for="tauxTVAGlobal" class="form-label">Taux TVA Global (%)</label> -->
+                <!-- <div class="input-group"> -->
+                  <input type="number" class="form-control" 
+                         formControlName="tauxTVAGlobal" 
+                         min="0" max="100" step="0.01">
+                  <!-- <span class="input-group-text">%</span> -->
+                <!-- </div> -->
+                <!-- <small class="form-text text-muted">
+                  Sera appliqué au total HT après remise
+                </small> -->
+              </div>
+        <!-- <div class="col-md-4" *ngIf="showAvanceField">
           <input
             type="number"
             class="form-control"
@@ -139,7 +141,7 @@
             placeholder="Avance (F CFA)"
             step="0.01"
           />
-        </div>
+        </div> -->
         <!-- <div class="col-md-4" *ngIf="showTypePaiement">
           <select class="form-select" formControlName="typePaiement">
            

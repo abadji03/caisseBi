@@ -288,6 +288,7 @@
                 (onEnregistrerBon)="onBonEnregistre($event)"
                 (showFileField)=true
                 [resetForm]="!showBonForm" 
+                [generatedNumero]="generatedNumero"
                 (onAnnulerBon)="onBonAnnule()"
                 (onReinitialiserPanier)="resetPanierFlag = true"
 
@@ -372,13 +373,14 @@
                                     'bg-success': bon.statutBon === 'validé',
                                     'bg-primary': bon.statutBon === 'livré',
                                     'bg-warning': bon.statutBon === 'retourné',
+                                    'bg-dark': bon.statutBon === 'retourné partiellement',
                                     'bg-danger': bon.statutBon === 'annulé',
                                     'bg-info': bon.statutBon === 'facturé'
                                   }">
                                     {{ bon.statutBon }}
                                   </span>
                                 </h4>
-                                
+                                <small *ngIf="bon.type ==='avoir' || bon.type ==='retour' || bon.statutBon ==='retourné partiellement'" >  {{bon.type ==='avoir' ? 'Montant avoir':'Montant retour'}} : {{ bon.montantAvoir }} F CFA</small>
                                 <!-- Actions du bon -->
                                 <div class="btn-group">
 
@@ -421,7 +423,7 @@
                               <!-- Totaux du bon -->
                               <div class="row mt-3">
                                 <div class="col-md-6">
-                                  <div class="card">
+                                  <div *ngIf="operation.Bon?.type !=='avoir'" class="card">
                                     <div class="card-body">
                                       <h6 class="card-title">Récapitulatif financier</h6>
                                       <div class="row">
@@ -466,8 +468,8 @@
                             </div>
 
                             <!-- Tableau des produits -->
-                            <h5>Produits associés</h5>
-                            <div class="table-responsive">
+                            <h5 *ngIf="operation.Bon?.type !=='avoir'">Produits associés</h5>
+                            <div *ngIf="operation.Bon?.type !=='avoir'" class="table-responsive">
                               <table class="table table-sm table-hover">
                                 <thead>
                                   <tr>

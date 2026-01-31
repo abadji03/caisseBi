@@ -99,6 +99,74 @@ class FonctionsUtilitaires{
         return { where, debut, fin };
     }
 
+    // Fonction pour calculer la période précédente d'une plage personnalisée
+    static getPeriodePrecedentePersonnalisee(dateDebut, dateFin) {
+        const startDate = new Date(dateDebut);
+        const endDate = new Date(dateFin);
+        
+        // Calculer la durée de la période en jours
+        const dureePeriode = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+        
+        // Calculer la date de début de la période précédente
+        const startDatePrecedent = new Date(startDate);
+        startDatePrecedent.setDate(startDate.getDate() - dureePeriode);
+        
+        // Calculer la date de fin de la période précédente
+        const endDatePrecedent = new Date(startDate);
+        endDatePrecedent.setDate(startDate.getDate() - 1);
+        
+        return {
+            debut: startDatePrecedent,
+            fin: endDatePrecedent
+        };
+    }
+
+    // Fonction utilitaire pour les statistiques financières
+    static buildWhereFinance({
+        periode,
+        dateReference,
+        fromDate,
+        toDate,
+        code_structure,
+        magasinId,
+        agentId,
+        type // 'DEPENSE' ou 'RECETTE'
+    }) {
+        const { Op } = db.Sequelize;
+        
+        let dateCondition;
+        
+        if (periode) {
+            const { debut, fin } = this.getPeriodeDates(periode, dateReference);
+            dateCondition = { [Op.between]: [debut, fin] };
+        } else if (fromDate && toDate) {
+            dateCondition = { [Op.between]: [fromDate, toDate] };
+        } else {
+            const { debutJournee, finJournee } = this.getPeriodeJournee();
+            dateCondition = { [Op.between]: [debutJournee, finJournee] };
+        }
+
+        const where = {
+            code_structure,
+            date: dateCondition
+        };
+
+        if (type === 'DEPENSE') {
+            where.statutDepense = 'validé';
+        } else if (type === 'RECETTE') {
+            where.statutRecette = 'validé';
+        }
+
+        if (magasinId) {
+            where.magasinId = magasinId;
+        }
+
+        if (agentId) {
+            where.agentId = agentId;
+        }
+
+        return where;
+    }
 
 }
 

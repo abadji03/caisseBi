@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, inject, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Chart, registerables } from 'chart.js';
 import { Subscription, finalize, forkJoin } from 'rxjs';
-import { EncaissementsResponse, StatsRemises, StatsAvoirs, CaisseTheorique, ComparatifCA, CAParJourResponse, KPICaissePeriode, KPIParamsJournalier, KPIParams, PaiementMode } from '../../../modeles/kpiCaisse.model';
+import { EncaissementsResponse, StatsRemises, StatsAvoirs, CaisseTheorique, ComparatifCA, CAParJourResponse, KPICaissePeriode, KPIParamsJournalier, KPIParams, PaiementMode, ToutesStatistiquesSpeciales, ComptePaiement, CADailyMerged } from '../../../modeles/kpiCaisse.model';
 import { Structure } from '../../../modeles/structure.model';
 import { KpiCaisseService } from '../../../services/kpi-caisse.service';
 import { Magasin } from '../../../modeles/magasin.model';
@@ -28,7 +28,7 @@ interface PeriodeOption {
   templateUrl: './ventes.component.html',
   styleUrl: './ventes.component.css',
 })
-export class VentesComponent implements OnInit, OnDestroy {
+export class VentesComponent implements OnInit, OnDestroy,OnChanges {
    
   kpiData: KPICaissePeriode | null = null;
   paiementsData: EncaissementsResponse | null = null;
@@ -37,13 +37,28 @@ export class VentesComponent implements OnInit, OnDestroy {
   caisseTheoriqueData: CaisseTheorique | null = null;
   comparatifData: ComparatifCA | null = null;
   caParJourData: CAParJourResponse | null = null;
+
+  // propriétés pour les statistiques spéciales
+  statsSpeciales: ToutesStatistiquesSpeciales | null = null;
+  statsSpecialesFormatees: any = null;
+  pourcentagesStatsSpeciales: any = null;
+  chargementStatsSpeciales = false;
+  // Pour afficher/cacher la section
+  afficherStatsSpeciales = false;
+
+  affichageCommandesStats = false;
+  donneesCommandes: any = null; // Utilisez votre interface CommandeStats
+  chargementCommandesStats = false;
+  @ViewChild('chartCommandes') chartCommandesRef!: ElementRef<HTMLCanvasElement>;
+  private chartCommandes: Chart | null = null;
+  
   
   // Structure courante (fixe)
   currentStructure: Structure | null = null;
   structureCode= ''; 
 
   // Informations utilisateur connecté
-  currentUser: any = null;
+  currentUser: User|null = null;
   userMagasinId = 1; // number | null = null;
   isAdmin = false;
   
@@ -55,6 +70,8 @@ export class VentesComponent implements OnInit, OnDestroy {
   dateReference: string = new Date().toISOString().split('T')[0];
   errorMessage: string | null = null;
   
+  showRepartitionComptes = false; // masqué par défaut
+
   // Filtres 
   magasins: Magasin [] = [];
   agents:User [] = [];
@@ -106,7 +123,17 @@ export class VentesComponent implements OnInit, OnDestroy {
     if (this.chartCADaily) {
       this.chartCADaily.destroy();
     }
+
+    // Détruire le chart des commandes
+    if (this.chartCommandes) {
+      this.chartCommandes.destroy();
+    }
   }
+
+  ngOnChanges() {
+  this.showRepartitionComptes =
+    (this.paiementsData?.parCompte?.length || 0) > 1;
+}
 
   /**
    * Charger l'utilisateur connecté et la structure
@@ -237,6 +264,8 @@ export class VentesComponent implements OnInit, OnDestroy {
           this.initialiserChartPaiements();
           this.chargerComparatifCA();
           this.chargerCAParJour();
+          this.chargerStatistiquesSpeciales();
+          this.chargerStatistiquesCommandes();
         }, 100);
       },
       error: (error) => {
@@ -258,8 +287,14 @@ export class VentesComponent implements OnInit, OnDestroy {
  * Calculer le pourcentage d'un paiement
  */
 calculerPart(paiement: PaiementMode): string {
-  if (!this.paiementsData?.paiements?.length) return '0';
-  const total = this.paiementsData.paiements.reduce((sum, p) => sum +Number( p.total), 0);
+  if (!this.paiementsData?.parMethode?.length) return '0';
+  const total = this.paiementsData.parMethode.reduce((sum, p) => sum +Number( p.total), 0);
+  return total > 0 ? ((paiement.total / total) * 100).toFixed(1) : '0';
+}
+
+calculerPartCompte(paiement: ComptePaiement): string {
+  if (!this.paiementsData?.parCompte?.length) return '0';
+  const total = this.paiementsData.parCompte.reduce((sum, p) => sum +Number( p.total), 0);
   return total > 0 ? ((paiement.total / total) * 100).toFixed(1) : '0';
 }
 
@@ -267,8 +302,13 @@ calculerPart(paiement: PaiementMode): string {
  * Calculer le total des paiements
  */
 calculerTotalPaiements(): number {
-  if (!this.paiementsData?.paiements?.length) return 0;
-  return this.paiementsData.paiements.reduce((sum, p) => sum + Number(p.total), 0);
+  if (!this.paiementsData?.parMethode?.length) return 0;
+  return this.paiementsData.parMethode.reduce((sum, p) => sum + Number(p.total), 0);
+}
+
+calculerTotalPaiementsCompte(): number {
+  if (!this.paiementsData?.parCompte?.length) return 0;
+  return this.paiementsData.parCompte.reduce((sum, p) => sum + Number(p.total), 0);
 }
 
   /**
@@ -304,10 +344,13 @@ calculerTotalPaiements(): number {
         this.comparatifData = comparatif as ComparatifCA;
         this.loading = false;
         
+        console.log ('ComparatifData dans données période',this.comparatifData)
         // Initialiser les graphiques
         setTimeout(() => {
           this.initialiserChartPaiements();
           this.chargerCAParJour();
+          this.chargerStatistiquesSpeciales();
+          this.chargerStatistiquesCommandes();
         }, 100);
       },
       error: (error) => {
@@ -385,6 +428,7 @@ calculerTotalPaiements(): number {
     const subscription = this.kpiService.getComparatifCA(params).subscribe({
       next: (data) => {
         this.comparatifData = data;
+        console.log('Comparatif data',this.comparatifData)
       },
       error: (error) => {
         console.error('Erreur lors du chargement du comparatif:', error);
@@ -417,7 +461,9 @@ calculerTotalPaiements(): number {
     next: (data) => {
       this.caParJourData = data;
       setTimeout(() => {
-        this.initialiserChartCADaily();
+        //this.initialiserChartCADailyVendu();
+        //this.initialiserChartCADailyEncaisse();
+        this.initialiserChartCAEvolutif();
       }, 100);
     },
     error: (error) => {
@@ -431,7 +477,7 @@ calculerTotalPaiements(): number {
    * Initialiser le graphique des paiements par mode
    */
   private initialiserChartPaiements(): void {
-  if (!this.paiementsData?.paiements || this.paiementsData.paiements.length === 0) {
+  if (!this.paiementsData?.parMethode || this.paiementsData.parMethode.length === 0) {
     return;
   }
   
@@ -443,7 +489,7 @@ calculerTotalPaiements(): number {
     this.chartPaiements.destroy();
   }
   
-  const paiements = this.paiementsData.paiements;
+  const paiements = this.paiementsData.parMethode;
   const labels = paiements.map(p => p.methodePaiement);
   const data = paiements.map(p => p.total);
   const backgroundColors = this.generateColors(paiements.length);
@@ -482,39 +528,73 @@ calculerTotalPaiements(): number {
     }
   });
 }
-  
-  /**
-   * Initialiser le graphique du CA par jour
-   */
-  private initialiserChartCADaily(): void {
-  if (!this.caParJourData?.data || this.caParJourData.data.length === 0) {
-    return;
-  }
-  
+
+
+private mergeCADailyData(): CADailyMerged[] {
+  const vendu = this.caParJourData?.caVenduParJour || [];
+  const encaisse = this.caParJourData?.caEncaisseParJour || [];
+
+  const map = new Map<string, CADailyMerged>();
+
+  vendu.forEach(v => {
+    map.set(v.date, {
+      date: v.date,
+      totalVendu: v.total || 0,
+      totalEncaisse: 0,
+      nombrePaniers: v.nombrePaniers || 0,
+      nombrePaiements: 0
+    });
+  });
+
+  encaisse.forEach(e => {
+    if (!map.has(e.date)) {
+      map.set(e.date, {
+        date: e.date,
+        totalVendu: 0,
+        totalEncaisse: e.total || 0,
+        nombrePaniers: 0,
+        nombrePaiements: e.nombrePaiements || 0
+      });
+    } else {
+      const existing = map.get(e.date)!;
+      existing.totalEncaisse = e.total || 0;
+      existing.nombrePaiements = e.nombrePaiements || 0;
+    }
+  });
+
+  return Array.from(map.values()).sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+}
+
+/**
+ * Initialiser le graphique CA Vendu vs CA Encaissé
+ */
+private initialiserChartCAEvolutif(): void {
+  if (!this.caParJourData) return;
+
+  const mergedData = this.mergeCADailyData();
+  if (mergedData.length === 0) return;
+
   const ctx = this.chartCADailyRef?.nativeElement?.getContext('2d');
   if (!ctx) return;
-  
-  // Détruire le chart existant
+
   if (this.chartCADaily) {
     this.chartCADaily.destroy();
   }
-  
-  const data = this.caParJourData.data;
-  const labels = data.map(d => new Date(d.date).toLocaleDateString('fr-FR', { 
-    day: '2-digit', 
-    month: 'short' 
-  }));
-  const caValues = data.map(d => d.total);
-  const nombrePaniers = data.map(d => d.nombrePaniers);
-  
+
+  const labels = mergedData.map(d =>
+    new Date(d.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
+  );
+
   this.chartCADaily = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: labels,
+      labels,
       datasets: [
         {
-          label: 'Chiffre d\'affaires (F CFA)',
-          data: caValues,
+          label: 'CA vendu (F CFA)',
+          data: mergedData.map(d => d.totalVendu),
           borderColor: 'rgb(59, 130, 246)',
           backgroundColor: 'rgba(59, 130, 246, 0.1)',
           borderWidth: 2,
@@ -522,11 +602,27 @@ calculerTotalPaiements(): number {
           yAxisID: 'y'
         },
         {
-          label: 'Nombre de paniers',
-          data: nombrePaniers,
-          borderColor: 'rgb(16, 185, 129)',
-          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          label: 'CA encaissé (F CFA)',
+          data: mergedData.map(d => d.totalEncaisse),
+          borderColor: 'rgb(234, 179, 8)',
+          backgroundColor: 'rgba(234, 179, 8, 0.1)',
           borderWidth: 2,
+          tension: 0.3,
+          yAxisID: 'y'
+        },
+        {
+          label: 'Paniers',
+          data: mergedData.map(d => d.nombrePaniers),
+          borderColor: 'rgb(16, 185, 129)',
+          borderDash: [5, 5],
+          tension: 0.3,
+          yAxisID: 'y1'
+        },
+        {
+          label: 'Paiements',
+          data: mergedData.map(d => d.nombrePaiements),
+          borderColor: 'rgb(168, 85, 247)',
+          borderDash: [5, 5],
           tension: 0.3,
           yAxisID: 'y1'
         }
@@ -536,61 +632,43 @@ calculerTotalPaiements(): number {
       responsive: true,
       interaction: {
         mode: 'index',
-        intersect: false,
+        intersect: false
       },
       scales: {
-        x: {
-          grid: {
-            display: false
-          }
-        },
         y: {
-          type: 'linear',
-          display: true,
           position: 'left',
           title: {
             display: true,
-            text: 'CA (F CFA)'
-          },
-          border: {
-            display: false
-          },
-          grid: {
-            drawOnChartArea: false,
+            text: 'Montant (F CFA)'
           }
         },
         y1: {
-          type: 'linear',
-          display: true,
           position: 'right',
+          grid: {
+            drawOnChartArea: false
+          },
           title: {
             display: true,
-            text: 'Nombre de paniers'
-          },
-          border: {
-            display: false
-          },
-          grid: {
-            drawOnChartArea: false,
+            text: 'Volumes'
           }
         }
       },
       plugins: {
         legend: {
-          position: 'top',
+          position: 'top'
         },
         title: {
           display: true,
-          text: `Évolution du CA par jour (${this.caParJourData.periode})`
+          text: `Évolution du chiffre d’affaires (${this.caParJourData.periode})`
         },
         tooltip: {
           callbacks: {
-            label: (context) => {
-              if (context.datasetIndex === 0) {
-                return `CA: ${this.formatMontant(context.raw as number)}`;
-              } else {
-                return `Paniers: ${context.raw}`;
+            label: (ctx) => {
+              const value = ctx.raw as number;
+              if (ctx.dataset.label?.includes('CA')) {
+                return `${ctx.dataset.label}: ${this.formatMontant(value)}`;
               }
+              return `${ctx.dataset.label}: ${value}`;
             }
           }
         }
@@ -598,7 +676,7 @@ calculerTotalPaiements(): number {
     }
   });
 }
-  
+
   /**
    * Gérer le changement de période
    */
@@ -663,7 +741,13 @@ calculerTotalPaiements(): number {
     this.caisseTheoriqueData = null;
     this.comparatifData = null;
     this.caParJourData = null;
-    
+    // Réinitialiser aussi les statistiques spéciales
+    this.statsSpeciales = null;
+    this.statsSpecialesFormatees = null;
+    this.pourcentagesStatsSpeciales = null;
+    this.afficherStatsSpeciales = false;
+
+    this.resetDonneesCommandes();
     // Détruire les charts
     if (this.chartPaiements) {
       this.chartPaiements.destroy();
@@ -683,22 +767,23 @@ calculerTotalPaiements(): number {
   }
   
   /**
-   * Obtenir la classe CSS pour la variation
-   */
-  getVariationClass(variation: number): string {
-    if (variation > 0) return 'text-green-600';
-    if (variation < 0) return 'text-red-600';
-    return 'text-gray-600';
-  }
-  
-  /**
-   * Obtenir l'icône pour la variation
-   */
-  getVariationIcon(variation: number): string {
-    if (variation > 0) return '▲';
-    if (variation < 0) return '▼';
-    return '●';
-  }
+ * Classe Bootstrap pour la variation
+ */
+getVariationClass(variation: number): string {
+  if (variation > 0) return 'text-success';
+  if (variation < 0) return 'text-danger';
+  return 'text-secondary';
+}
+
+/**
+ * Icône Bootstrap pour la variation
+ */
+getVariationIcon(variation: number): string {
+  if (variation > 0) return 'bi-arrow-up';
+  if (variation < 0) return 'bi-arrow-down';
+  return 'bi-dash';
+}
+
   
   /**
    * Générer des couleurs pour les graphiques
@@ -733,5 +818,243 @@ calculerTotalPaiements(): number {
     return !!this.structureSelectionnee || !!this.magasinSelectionne || !!this.agentSelectionne;
   }
 
+  /**
+ * Charger toutes les statistiques spéciales
+ */
+private chargerStatistiquesSpeciales(): void {
+  const params: KPIParams = {
+    periode: this.periodeSelectionnee,
+    dateReference: this.dateReference,
+    code_structure: this.code_structure,
+    magasinId: this.getMagasinIdForApi(),
+    agentId: this.agentSelectionne?.id ? Number(this.agentSelectionne.id) : undefined
+  };
+
+  this.chargementStatsSpeciales = true;
+  this.statsSpeciales = null;
   
+  this.kpiService.getToutesStatistiquesSpeciales(params).subscribe({
+    next: (data) => {
+      this.statsSpeciales = data;
+      this.statsSpecialesFormatees = this.kpiService.formatStatistiquesSpeciales(data);
+      this.pourcentagesStatsSpeciales = this.kpiService.calculerPourcentagesStatistiquesSpeciales(data);
+      this.chargementStatsSpeciales = false;
+      this.afficherStatsSpeciales = true; // Afficher la section
+    },
+    error: (error) => {
+      console.error('Erreur chargement statistiques spéciales:', error);
+      this.chargementStatsSpeciales = false;
+      this.afficherStatsSpeciales = false; // Cacher la section en cas d'erreur
+    }
+  });
+}
+
+/**
+ * Obtenir l'icône pour un type de statistique spéciale
+ */
+getIconeStatistique(type: string): string {
+  return this.kpiService.getIconeStatistiqueSpecial(type);
+}
+
+/**
+ * Obtenir la couleur pour un type de statistique spéciale
+ */
+getCouleurStatistique(type: string): string {
+  return this.kpiService.getCouleurStatistiqueSpecial(type);
+}
+
+/**
+ * Toggle l'affichage des statistiques spéciales
+ */
+toggleStatsSpeciales(): void {
+  this.afficherStatsSpeciales = !this.afficherStatsSpeciales;
+  if (this.afficherStatsSpeciales && !this.statsSpeciales) {
+    this.chargerStatistiquesSpeciales();
+  }
+}
+
+//........................Méthodes pour les statistiques des commandes.....................
+/**
+ * Charger les statistiques des commandes
+ */
+private chargerStatistiquesCommandes(): void {
+  const params: KPIParams = {
+    periode: this.periodeSelectionnee,
+    dateReference: this.periodeSelectionnee !== 'jour' ? this.dateReference : undefined,
+    code_structure: this.code_structure,
+    magasinId: this.getMagasinIdForApi(),
+    agentId: this.agentSelectionne?.id ? Number(this.agentSelectionne.id) : undefined
+  };
+
+  // Valider les paramètres
+  if (!params.code_structure) {
+    console.warn('Code structure requis pour charger les statistiques des commandes');
+    return;
+  }
+
+  this.chargementCommandesStats = true;
+  this.donneesCommandes = null;
+
+  // Appel au service des commandes (à injecter)
+  // this.commandeService.getStatistiquesCommandes(params).subscribe({
+  this.kpiService.getStatistiquesCommandes(params).subscribe({
+    next: (data) => {
+      this.donneesCommandes = data;
+      this.chargementCommandesStats = false;
+      this.affichageCommandesStats = true;
+      
+      // Initialiser le graphique des commandes si la section est visible
+      //if (this.affichageCommandesStats) {
+      setTimeout(() => {
+        this.initialiserChartCommandes();
+      }, 100);
+      //}
+    },
+    error: (error) => {
+      console.error('Erreur chargement statistiques commandes:', error);
+      this.chargementCommandesStats = false;
+      this.donneesCommandes = null;
+      
+      // Détruire le graphique existant
+      if (this.chartCommandes) {
+        this.chartCommandes.destroy();
+        this.chartCommandes = null;
+      }
+    }
+  });
+}
+
+/**
+ * Basculer l'affichage des statistiques des commandes
+ */
+toggleStatistiquesCommandes(): void {
+  this.affichageCommandesStats = !this.affichageCommandesStats;
+  
+  // Charger les données si on affiche pour la première fois
+  if (this.affichageCommandesStats && !this.donneesCommandes) {
+    this.chargerStatistiquesCommandes();
+  }
+  
+  // Initialiser ou détruire le graphique
+  if (this.affichageCommandesStats && this.donneesCommandes) {
+    setTimeout(() => {
+      this.initialiserChartCommandes();
+    }, 100);
+  } else if (!this.affichageCommandesStats && this.chartCommandes) {
+    this.chartCommandes.destroy();
+    this.chartCommandes = null;
+  }
+}
+
+/**
+ * Initialiser le graphique des commandes
+ */
+private initialiserChartCommandes(): void {
+  if (!this.donneesCommandes) {
+    return;
+  }
+
+  const ctx = this.chartCommandesRef?.nativeElement?.getContext('2d');
+  if (!ctx) return;
+
+  // Détruire le chart existant
+  if (this.chartCommandes) {
+    this.chartCommandes.destroy();
+  }
+
+  // Préparer les données pour le graphique
+  const labels = ['Validées', 'Livrées', 'Annulées', 'Retournées'];
+  const data = [
+    this.donneesCommandes.commandesValidees?.nombre || 0,
+    this.donneesCommandes.commandesLivrees?.nombre || 0,
+    this.donneesCommandes.commandesAnnulees?.nombre || 0,
+    this.donneesCommandes.commandesRetournees?.nombreTotal || 0
+  ];
+
+  const backgroundColors = [
+    'rgba(13, 110, 253, 0.8)',    // Bleu pour validées
+    'rgba(25, 135, 84, 0.8)',     // Vert pour livrées
+    'rgba(220, 53, 69, 0.8)',     // Rouge pour annulées
+    'rgba(255, 193, 7, 0.8)'      // Jaune pour retournées
+  ];
+
+  this.chartCommandes = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: backgroundColors,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.5)'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            padding: 20,
+            usePointStyle: true
+          }
+        },
+        title: {
+          display: true,
+          text: 'Répartition des commandes',
+          font: {
+            size: 14
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) => {
+              const label = context.label || '';
+              const value = context.raw as number;
+              const total = data.reduce((a, b) => a + b, 0);
+              const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
+              return `${label}: ${value} (${percentage}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+/**
+ * Formater les données des commandes pour l'affichage
+ */
+get donneesCommandesFormatees(): any {
+  if (!this.donneesCommandes) return null;
+
+  return {
+    resume: {
+      totalCommandesValidees: this.donneesCommandes.commandesValidees?.nombre || 0,
+      totalMontantValidees: this.formatMontant(this.donneesCommandes.commandesValidees?.montantTotal || 0),
+      totalCommandesLivrees: this.donneesCommandes.commandesLivrees?.nombre || 0,
+      totalMontantLivrees: this.formatMontant(this.donneesCommandes.commandesLivrees?.montantTotal || 0),
+      totalCommandesAnnulees: this.donneesCommandes.commandesAnnulees?.nombre || 0,
+      totalMontantAnnulees: this.formatMontant(this.donneesCommandes.commandesAnnulees?.montantTotal || 0),
+      totalCommandesRetournees: this.donneesCommandes.commandesRetournees?.nombreTotal || 0,
+      totalMontantRetournees: this.formatMontant(this.donneesCommandes.commandesRetournees?.montantTotal || 0),
+      tauxConversion: this.donneesCommandes.tauxConversion?.toFixed(1) + '%' || '0%',
+      tauxAnnulation: this.donneesCommandes.tauxAnnulation?.toFixed(1) + '%' || '0%'
+    },
+    detailsRetours: this.donneesCommandes.commandesRetournees?.details || []
+  };
+}
+
+/**
+ * Réinitialiser les données des commandes
+ */
+private resetDonneesCommandes(): void {
+  this.donneesCommandes = null;
+  this.affichageCommandesStats = false;
+  if (this.chartCommandes) {
+    this.chartCommandes.destroy();
+    this.chartCommandes = null;
+  }
+}
 }

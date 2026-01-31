@@ -29,4 +29,14 @@ router.get('/stats/caisse/ca-par-jour', kpiCaisseCTR.getCAParJour);
 // Statistiques par magasin
 router.get('/stats/caisse/structure-par-magasin', kpiCaisseCTR.getStatsStructureParMagasin);
 
+// Statistiques pour les ventes à crédits et ceux annulé
+router.get('/stats/caisse/ventes-credit', kpiCaisseCTR.getVentesCredit);
+router.get('/stats/caisse/avances', kpiCaisseCTR.getAvances);
+router.get('/stats/caisse/ventes-credit-annulees', kpiCaisseCTR.getVentesCreditAnnulees);
+router.get('/stats/caisse/ventes-caisse-annulees', kpiCaisseCTR.getVentesCaisseAnnulees);
+router.get('/stats/caisse/toutes-statistiques-speciales', kpiCaisseCTR.getToutesStatistiquesSpeciales);
+
+//Statistiques pour les commandes clients
+router.get('/stats/caisse/toutes-statistiques-commandes', kpiCaisseCTR.getStatistiquesCommandes);
+
 module.exports = router;

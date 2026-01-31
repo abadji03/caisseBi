@@ -2,6 +2,7 @@ import { Component, EventEmitter, inject, Input, OnChanges, OnInit, Output, Simp
 import { ModePaiement, Paiement, PaiementAvecFichier } from '../../modeles/paiement.model';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { v4 as uuidv4 } from 'uuid';
 
 @Component({
   selector: 'app-paiement',
@@ -40,7 +41,7 @@ export class PaiementComponent implements OnInit, OnChanges {
   
   paiementForm!: FormGroup;
   fichierSelectionne: File | null = null;
-  generatedNumero: string = this.generateNumero();
+  //generatedNumero: string = this.generateNumero();
   private fb = inject(FormBuilder);
   maxFileSize = 10 * 1024 * 1024; // 10MB
 
@@ -70,9 +71,8 @@ export class PaiementComponent implements OnInit, OnChanges {
 
   // Méthode pour générer un numéro unique de bon
   generateNumero(): string {
-    const timestamp = new Date().getTime();
-    const random = Math.floor(Math.random() * 1000);
-    return `NP-${timestamp}-${random}`;
+
+    return `NP-${uuidv4()}`;
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onFileSelected(event: any): void {
@@ -146,7 +146,7 @@ export class PaiementComponent implements OnInit, OnChanges {
       montant: formValue.montant,
       date: new Date(formValue.date),
       methodePaiement: formValue.methodePaiement,
-      numero: this.generatedNumero,
+      numero: this.generateNumero(),
       statutPaiement:'validé',
       //typeEntite:this.typeEntite,
       //remise: formValue.remise,

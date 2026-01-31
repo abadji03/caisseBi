@@ -26,7 +26,7 @@ export class Bon {
   referenceExterne?: string;
 
   // Statut du bon
-  statutBon!: 'brouillon' | 'validé' | 'livré' | 'retourné' | 'facturé' | 'annulé';
+  statutBon!: 'brouillon' | 'validé' | 'livré' | 'retourné' | 'facturé' | 'annulé'|'retourné partiellement';
 
   // Retours & Avoirs
   motifsRetour?: string;

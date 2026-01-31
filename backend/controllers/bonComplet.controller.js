@@ -100,9 +100,23 @@ exports.createBonComplet = async (req, res) => {
 
     } 
     else {
+      const bonExistantAvecNumero = await db.Bon.findOne({
+          where: {
+            numero: bon.numero,
+            type: bon.type,
+            typeEntite: bon.typeEntite
+          },
+          transaction
+        });
+      
+        if(bonExistantAvecNumero){
+          const newNumero = bonExistantAvecNumero.numero + Math.floor(Math.random() * (1000 - 2 + 1)) + 2;
+          bon.numero = newNumero;
+        }
       // ==============================
       // Création d’un nouveau bon
       // ==============================
+
       const bonData = await statutManager.preparerDonneesBon(bon, typeEntite, clientId, fournisseurId);
       
       // Créer le bon
@@ -505,16 +519,15 @@ exports.mettreAJourBonOrigineRetour = async (bonRetour, agentId, code_structure,
   // Mettre à jour le statut du bon d'origine
   const ancienStatut = bonOrigine.statutBon;
   await bonOrigine.update({
-    statutBon: 'retourné',
-    dateRetour: new Date(),
-    bonRetourId: bonRetour.id // Optionnel: référencer le bon de retour
+    statutBon: 'retourné partiellement',
+    montantAvoir:bonRetour.montantAvoir,
   }, { transaction });
   
   // Historique
   await statutManager.creerHistoriqueStatut(
     bonOrigine.id,
     ancienStatut,
-    'retourné',
+    'retourné partiellement',
     agentId,
     `Bon retourné via ${bonRetour.numero}`,
     code_structure,
@@ -551,6 +564,7 @@ exports.mettreAJourBonOrigineRetour = async (bonRetour, agentId, code_structure,
  */
 exports.creerBonRetour = async (bonOrigine, articles, magasinId, agentId, code_structure, panier, transaction) => {
 
+  console.log('Début création bon de retour à partir du bon ',bonOrigine.id)
   // Vérifier si un retour existe déjà pour ce bon
   const retourExistant = await db.Bon.findOne({
     where: {
@@ -576,8 +590,8 @@ exports.creerBonRetour = async (bonOrigine, articles, magasinId, agentId, code_s
     fournisseurId: bonOrigine.fournisseurId,
     description: `Retour pour ${bonOrigine.type} ${bonOrigine.numero}`,
     statutBon: 'validé',
-    montantTotal: bonOrigine.montantTotal,
-    montantAvoir: bonOrigine.montantTotal, // Montant de l'avoir
+    montantTotal:  bonOrigine.netAPayer|| bonOrigine.montantTotal,
+    montantAvoir:  bonOrigine.netAPayer || bonOrigine.montantTotal, // Montant de l'avoir
     numeroBonOrigine: bonOrigine.numero,
     dateBon: new Date(),
     magasinId,

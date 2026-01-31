@@ -57,16 +57,22 @@ exports.connexion = async (req, res) => {
 exports.getMe = async (req, res) => {
   try {
      const user = await db.Users.findByPk(req.user.id, {
-      include: [{
-        model: db.role,
-        through: { attributes: [] }, // ignore les colonnes de la table user_role
-        include: [
-            {
-              model: db.permission,
-              through: { attributes: [] } // ignore les colonnes de role_permissions
-            }
-          ]
-      }]
+      include: [
+        {
+          model: db.role,
+          through: { attributes: [] }, // ignore les colonnes de la table user_role
+          include: [
+              {
+                model: db.permission,
+                through: { attributes: [] } // ignore les colonnes de role_permissions
+              }
+            ]
+        },
+        {
+          model:db.Magasin,
+          attributes: ['id', 'nom']
+        }
+      ]
     });
     res.json({
       id: user.id,
@@ -82,11 +88,14 @@ exports.getMe = async (req, res) => {
         nom: role.nom,
         permissions: (role.permissions || []).map(p =>({
            id: p.id,
-           nom: p.nom
+           nom: p.nom,
+           type: p.type
       })),
       })),
       structure_id: user.structure_id,
       code_structure: user.code_structure,
+      isGeneralAdmin: !user.structure_id // Ajouter ce flag
+
     });
   } catch (err) {
     res.status(500).json({ message: err.message });

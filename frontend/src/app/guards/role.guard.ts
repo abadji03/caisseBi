@@ -13,10 +13,32 @@ export const roleGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  const expectedRoles = route.data['roles'] as string[];
+  // Vérifier si l'utilisateur est authentifié
+  if (!authService.isAuthenticated()) {
+    return router.createUrlTree(['/login']);
+  }
 
-  const isAuthorized =
-    authService.isAuthenticated() && expectedRoles.some((role) => authService.hasRole(role));
+  const expectedRoles = route.data['roles'] as string[];
+  const requiredPermissions = route.data['permissions'] as string[];
+ 
+ let isAuthorized = false;
+
+ // Vérification par rôle
+  if (expectedRoles && expectedRoles.length > 0) {
+    isAuthorized = expectedRoles.some(role => authService.hasRole(role));
+  }
+
+  // Vérification par permission (plus granulaire)
+  if (requiredPermissions && requiredPermissions.length > 0) {
+    isAuthorized = requiredPermissions.every(permission => 
+      authService.hasPermission(permission)
+    );
+  }
+
+  // Si aucun critère n'est spécifié, l'accès est autorisé
+  if (!expectedRoles && !requiredPermissions) {
+    return true;
+  }
 
   if (isAuthorized) {
     return true;

@@ -22,10 +22,10 @@ export class UserService {
 
   // Récupère tous les utilisateurs (filtrés par structure si nécessaire)
   getAll(): Observable<User[]> {
-    const structureId = this.authService.getUserStructureId();
-    const url = this.authService.isGeneralAdmin()
+    //const structureId = this.authService.getUserStructureId();
+    const url = ''/* this.authService.isGeneralAdmin()
       ? this.apiUrl
-      : `${this.apiUrl}?structure_id=${structureId}`;
+      : `${this.apiUrl}?structure_id=${structureId}`; */
 
     return this.http.get<User[]>(url, { headers: this.getHeaders() });
   }
@@ -82,9 +82,9 @@ export class UserService {
     if (criteria.role) query += `role=${criteria.role}`;
 
     // Si ce n'est pas l'admin général, on filtre par structure
-    if (!this.authService.isGeneralAdmin()) {
+    /* if (!this.authService.isGeneralAdmin()) {
       query += `&structure_id=${this.authService.getUserStructureId()}`;
-    }
+    } */
 
     return this.http.get<User[]>(`${this.apiUrl}/search?${query}`, { headers: this.getHeaders() });
   }

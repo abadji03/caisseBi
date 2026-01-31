@@ -14,21 +14,21 @@
     </div>
     <button class="btn dropdown-toggle" id="idMenu" data-bs-toggle="dropdown">
       <img src="./assets/CMP.png" class="avatar img-fluid rounded me-1" alt="Logo application" width="30" height="30" />
-      <span class="text-dark">User</span>
+      <span class="text-dark">{{ userName }}</span>
     </button>
     <ul class="dropdown-menu">
-      <li>
+      <!-- <li>
         <button class="dropdown-item" routerLink="/user-login">
           <i class="bi bi-person"></i> Profil
         </button>
-      </li>
-      <li>
+      </li> -->
+      <!-- <li>
         <button class="dropdown-item" routerLink="/user-account">
           <i class="bi bi-gear"></i> Paramètres
         </button>
-      </li>
+      </li> -->
       <li><hr class="dropdown-divider" /></li>
-      <li><button class="dropdown-item">Déconnexion</button></li>
+      <li><button class="dropdown-item" (click)="onLogout()">Déconnexion</button></li>
     </ul>
   </div>
 </header>

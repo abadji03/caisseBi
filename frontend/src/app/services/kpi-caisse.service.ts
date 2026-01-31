@@ -4,7 +4,7 @@ import { inject, Injectable } from '@angular/core';
 import { AuthService } from './auth.service';
 import { NGXLogger } from 'ngx-logger';
 import { throwError } from 'rxjs/internal/observable/throwError';
-import { CaisseTheorique, CAParJourResponse, ComparatifCA, ComparatifMagasin, EncaissementsResponse,KPICaissePeriode, KPIParams, KPIParamsJournalier, StatsAvoirs, StatsRemises, StatsStructureParMagasinResponse } from '../modeles/kpiCaisse.model';
+import { CaisseTheorique, CAParJourResponse, CommandeStats, ComparatifCA, ComparatifMagasin, EncaissementsResponse,KPICaissePeriode, KPIParams, KPIParamsJournalier, StatsAvances, StatsAvoirs, StatsRemises, StatsStructureParMagasinResponse, StatsVentesCaisseAnnulees, StatsVentesCredit, StatsVentesCreditAnnulees, ToutesStatistiquesSpeciales } from '../modeles/kpiCaisse.model';
 import { catchError, Observable } from 'rxjs';
 
 @Injectable({
@@ -453,4 +453,254 @@ export class KpiCaisseService {
     
     return errors;
   }
+
+  /** ================================
+   *  API STATISTIQUES SPÉCIALES COMBINÉES
+   ================================== */
+
+  /**
+   * Récupère toutes les statistiques spéciales en un seul appel
+   * - Avoirs émis
+   * - Ventes à crédit
+   * - Avances
+   * - Ventes à crédit annulées/retournées
+   * - Ventes en caisse annulées/retournées
+   */
+  getToutesStatistiquesSpeciales(params: KPIParams): Observable<ToutesStatistiquesSpeciales> {
+    // Validation des paramètres requis
+    if (!params.code_structure) {
+      return throwError(() => new Error('Le paramètre "code_structure" est requis'));
+    }
+
+    // Si aucune période n'est spécifiée, on prend "jour" par défaut
+    if (!params.periode) {
+      params = { ...params, periode: 'jour' };
+    }
+
+    const url = `${this.apiUrl}/stats/caisse/toutes-statistiques-speciales`;
+    const httpParams = this.buildParams(params);
+
+    return this.http.get<ToutesStatistiquesSpeciales>(url, {
+      headers: this.getHeaders(),
+      params: httpParams
+    }).pipe(
+      catchError(error => this.handleError<ToutesStatistiquesSpeciales>('getToutesStatistiquesSpeciales', error))
+    );
+  }
+
+  /** ================================
+   *  API STATISTIQUES SPÉCIALES INDIVIDUELLES
+   ================================== */
+
+  /**
+   * Récupère uniquement les statistiques des avoirs
+   */
+  getStatistiquesAvoirs(params: KPIParams): Observable<StatsAvoirs> {
+    if (!params.code_structure) {
+      return throwError(() => new Error('Le paramètre "code_structure" est requis'));
+    }
+
+    const url = `${this.apiUrl}/stats/caisse/avoirs`;
+    const httpParams = this.buildParams(params);
+
+    return this.http.get<StatsAvoirs>(url, {
+      headers: this.getHeaders(),
+      params: httpParams
+    }).pipe(
+      catchError(error => this.handleError<StatsAvoirs>('getStatistiquesAvoirs', error))
+    );
+  }
+
+  /**
+   * Récupère uniquement les statistiques des ventes à crédit
+   */
+  getStatistiquesVentesCredit(params: KPIParams): Observable<StatsVentesCredit> {
+    if (!params.code_structure) {
+      return throwError(() => new Error('Le paramètre "code_structure" est requis'));
+    }
+
+    const url = `${this.apiUrl}/stats/caisse/ventes-credit`;
+    const httpParams = this.buildParams(params);
+
+    return this.http.get<StatsVentesCredit>(url, {
+      headers: this.getHeaders(),
+      params: httpParams
+    }).pipe(
+      catchError(error => this.handleError<StatsVentesCredit>('getStatistiquesVentesCredit', error))
+    );
+  }
+
+  /**
+   * Récupère uniquement les statistiques des avances
+   */
+  getStatistiquesAvances(params: KPIParams): Observable<StatsAvances> {
+    if (!params.code_structure) {
+      return throwError(() => new Error('Le paramètre "code_structure" est requis'));
+    }
+
+    const url = `${this.apiUrl}/stats/caisse/avances`;
+    const httpParams = this.buildParams(params);
+
+    return this.http.get<StatsAvances>(url, {
+      headers: this.getHeaders(),
+      params: httpParams
+    }).pipe(
+      catchError(error => this.handleError<StatsAvances>('getStatistiquesAvances', error))
+    );
+  }
+
+  /**
+   * Récupère uniquement les statistiques des ventes à crédit annulées
+   */
+  getStatistiquesVentesCreditAnnulees(params: KPIParams): Observable<StatsVentesCreditAnnulees> {
+    if (!params.code_structure) {
+      return throwError(() => new Error('Le paramètre "code_structure" est requis'));
+    }
+
+    const url = `${this.apiUrl}/stats/caisse/ventes-credit-annulees`;
+    const httpParams = this.buildParams(params);
+
+    return this.http.get<StatsVentesCreditAnnulees>(url, {
+      headers: this.getHeaders(),
+      params: httpParams
+    }).pipe(
+      catchError(error => this.handleError<StatsVentesCreditAnnulees>('getStatistiquesVentesCreditAnnulees', error))
+    );
+  }
+
+  /**
+   * Récupère uniquement les statistiques des ventes en caisse annulées
+   */
+  getStatistiquesVentesCaisseAnnulees(params: KPIParams): Observable<StatsVentesCaisseAnnulees> {
+    if (!params.code_structure) {
+      return throwError(() => new Error('Le paramètre "code_structure" est requis'));
+    }
+
+    const url = `${this.apiUrl}/stats/caisse/ventes-caisse-annulees`;
+    const httpParams = this.buildParams(params);
+
+    return this.http.get<StatsVentesCaisseAnnulees>(url, {
+      headers: this.getHeaders(),
+      params: httpParams
+    }).pipe(
+      catchError(error => this.handleError<StatsVentesCaisseAnnulees>('getStatistiquesVentesCaisseAnnulees', error))
+    );
+  }
+
+  /** ================================
+   *  MÉTHODES UTILITAIRES SPÉCIFIQUES
+   ================================== */
+
+  /**
+   * Formatte les données pour l'affichage des statistiques spéciales
+   */
+  formatStatistiquesSpeciales(stats: ToutesStatistiquesSpeciales): any {
+    return {
+      // Résumé formaté
+      resume: {
+        totalAvoirs: this.formatMontant(stats.resume.totalAvoirs),
+        totalVentesCredit: this.formatMontant(stats.resume.totalVentesCredit),
+        totalAvances: this.formatMontant(stats.resume.totalAvances),
+        totalRetours: this.formatMontant(stats.resume.totalRetours),
+        totalAnnulations: this.formatMontant(stats.resume.totalAnnulations),
+      },
+      // Détails formatés
+      avoirs: {
+        montantAvoir: this.formatMontant(stats.avoirs.montantAvoir),
+        nombreAvoirs: stats.avoirs.nombreAvoirs
+      },
+      ventesCredit: {
+        montantCredit: this.formatMontant(stats.ventesCredit.montantCredit),
+        nombrePaniersCredit: stats.ventesCredit.nombrePaniersCredit,
+        nombreBonsCredit: stats.ventesCredit.nombreBonsCredit
+      },
+      avances: {
+        totalAvances: this.formatMontant(stats.avances.totalAvances),
+        nombreAvances: stats.avances.nombreAvances,
+        nombrePaniersAvecAvance: stats.avances.nombrePaniersAvecAvance,
+        moyenneAvance: this.formatMontant(stats.avances.moyenneAvance)
+      },
+      ventesCreditAnnulees: {
+        totalMontantRetour: this.formatMontant(stats.ventesCreditAnnulees.totalMontantRetour),
+        nombreRetours: stats.ventesCreditAnnulees.nombreRetours,
+        nombreRetoursTotaux: stats.ventesCreditAnnulees.nombreRetoursTotaux,
+        nombreRetoursPartiels: stats.ventesCreditAnnulees.nombreRetoursPartiels
+      },
+      ventesCaisseAnnulees: {
+        totalMontant: this.formatMontant(stats.ventesCaisseAnnulees.totalMontant),
+        totalPaniers: stats.ventesCaisseAnnulees.totalPaniers,
+        totalPaiementsAnnules: this.formatMontant(stats.ventesCaisseAnnulees.totalPaiementsAnnules)
+      }
+    };
+  }
+
+  /**
+   * Calcule les pourcentages pour les statistiques spéciales
+   */
+  calculerPourcentagesStatistiquesSpeciales(stats: ToutesStatistiquesSpeciales): any {
+    const totalGeneral = 
+      stats.resume.totalAvoirs + 
+      stats.resume.totalVentesCredit + 
+      stats.resume.totalAvances + 
+      stats.resume.totalRetours + 
+      stats.resume.totalAnnulations;
+
+    return {
+      pourcentageAvoirs: totalGeneral > 0 ? (stats.resume.totalAvoirs / totalGeneral) * 100 : 0,
+      pourcentageVentesCredit: totalGeneral > 0 ? (stats.resume.totalVentesCredit / totalGeneral) * 100 : 0,
+      pourcentageAvances: totalGeneral > 0 ? (stats.resume.totalAvances / totalGeneral) * 100 : 0,
+      pourcentageRetours: totalGeneral > 0 ? (stats.resume.totalRetours / totalGeneral) * 100 : 0,
+      pourcentageAnnulations: totalGeneral > 0 ? (stats.resume.totalAnnulations / totalGeneral) * 100 : 0,
+    };
+  }
+
+  /**
+   * Obtient l'icône appropriée pour chaque type de statistique spéciale
+   */
+  getIconeStatistiqueSpecial(type: string): string {
+    // eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style
+    const icones: { [key: string]: string } = {
+      'avoirs': 'bi-ticket-perforated',
+      'ventesCredit': 'bi-credit-card',
+      'avances': 'bi-cash-coin',
+      'retours': 'bi-arrow-return-left',
+      'annulations': 'bi-x-circle'
+    };
+    return icones[type] || 'bi-info-circle';
+  }
+
+  /**
+   * Obtient la couleur appropriée pour chaque type de statistique spéciale
+   */
+  getCouleurStatistiqueSpecial(type: string): string {
+    // eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style
+    const couleurs: { [key: string]: string } = {
+      'avoirs': 'primary',
+      'ventesCredit': 'success',
+      'avances': 'warning',
+      'retours': 'info',
+      'annulations': 'danger'
+    };
+    return couleurs[type] || 'secondary';
+  }
+
+   /**
+   * Récupère les statistiques complètes des commandes clients
+   */
+  getStatistiquesCommandes(params: KPIParams): Observable<CommandeStats> {
+    if (!params.code_structure) {
+      return throwError(() => new Error('Le paramètre "code_structure" est requis'));
+    }
+
+    const url = `${this.apiUrl}/stats/caisse/toutes-statistiques-commandes`;
+    const httpParams = this.buildParams(params);
+
+    return this.http.get<CommandeStats>(url, {
+      headers: this.getHeaders(),
+      params: httpParams
+    }).pipe(
+      catchError(error => this.handleError<CommandeStats>('getStatistiquesCommandes', error))
+    );
+  }
+
 }

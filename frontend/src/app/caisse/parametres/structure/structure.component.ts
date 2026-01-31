@@ -101,7 +101,7 @@ export class StructureComponent implements OnInit, OnDestroy {
 
   checkUserRole(): void {
     // À adapter selon votre système d'authentification
-    this.isGeneralAdmin = this.authService.isGeneralAdmin();
+    //this.isGeneralAdmin = this.authService.is();
 
     if (!this.isGeneralAdmin) {
       // Si c'est un admin de structure, charger les données de sa structure

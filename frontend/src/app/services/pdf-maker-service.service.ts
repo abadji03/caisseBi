@@ -11,7 +11,17 @@ import { Operation } from '../modeles/operation.model';
 import { Fournisseur } from '../modeles/fournisseur.model';
 
 
+
 pdfMake.vfs = (pdfFonts as any).vfs;
+(pdfMake as any).fonts = {
+   Roboto: {
+      normal: 'Roboto-Regular.ttf',
+      bold: 'Roboto-Medium.ttf',
+      italics: 'Roboto-Italic.ttf',
+      bolditalics: 'Roboto-MediumItalic.ttf'
+    }
+  };
+
 
 @Injectable({
   providedIn: 'root'
@@ -1957,5 +1967,1525 @@ private generateTicketVersementClientFallback(versementData: any): void {
   };
 
   pdfMake.createPdf(docDefinition).open();
+}
+
+//.....................................Génération rapport financier.........................
+/**
+ * Génère un rapport financier complet
+ */
+async generateRapportFinancier(rapportData: any): Promise<void> {
+  try {
+    console.log('Génération rapport financier avec données:', rapportData);
+    
+    const header = await this.getHeader(true);
+    const currentDate = new Date();
+
+    // Obtenir les couleurs dynamiquement
+    const colors = this.getRapportColors();
+    const styles = this.getRapportStyles(colors);
+
+    const docDefinition: TDocumentDefinitions = {
+      pageSize: 'A4',
+      pageMargins: [30, 80, 30, 60],
+      header: this.getRapportHeader(header, rapportData, colors),
+      footer: this.getRapportFooter(),
+      content: [
+        // Page de couverture
+        this.getCouverturePage(rapportData, currentDate, colors),
+        
+        // Table des matières (optionnel)
+        // this.getTableDesMatieres(),
+
+        // 1. Synthèse des indicateurs
+        this.getSectionIndicateurs(rapportData, colors),
+        
+        // 2. Flux de trésorerie
+        this.getSectionFluxTresorerie(rapportData, colors),
+        
+        // 3. Répartition des dépenses
+        this.getSectionRepartitionDepenses(rapportData, colors),
+        
+        // 4. Répartition des recettes
+        this.getSectionRepartitionRecettes(rapportData, colors),
+        
+        // 5. Modes de paiement
+        this.getSectionModesPaiement(rapportData, colors),
+        
+        // 6. Données comparatives
+        this.getSectionDonneesComparatives(rapportData, colors),
+        
+        // 7. Détails des transactions
+        this.getSectionDetailsTransactions(rapportData, colors),
+        
+        // Page de conclusion
+        this.getConclusionPage(rapportData, currentDate, colors)
+      ],
+      styles: styles,
+      defaultStyle: {
+        font: 'Roboto',
+        fontSize: 10,
+        lineHeight: 1.3
+      },
+      pageBreakBefore: (currentNode, followingNodesOnPage, _nodesOnNextPage, _previousNodesOnPage) => {
+        // Logique pour éviter les coupures inappropriées
+        if (currentNode.headlineLevel === 1 && followingNodesOnPage.length === 0) {
+          return true;
+        }
+        return false;
+      }
+    };
+
+    const fileName = this.generateFileName(rapportData, currentDate);
+    pdfMake.createPdf(docDefinition).download(fileName);
+    
+  } catch (error) {
+    console.error('Erreur génération rapport financier:', error);
+    throw new Error('Impossible de générer le rapport PDF');
+  }
+}
+
+/**
+ * Obtenir les couleurs pour le rapport
+ */
+private getRapportColors(): any {
+  return {
+    primary: '#2c3e50',       // Bleu foncé pour titres
+    secondary: '#3498db',     // Bleu clair pour sous-titres
+    success: '#27ae60',       // Vert pour positif
+    danger: '#e74c3c',        // Rouge pour négatif
+    warning: '#f39c12',       // Orange pour avertissements
+    info: '#17a2b8',          // Bleu info
+    light: '#ecf0f1',         // Gris clair pour fond
+    dark: '#2c3e50',          // Gris foncé
+    white: '#ffffff'
+  };
+}
+
+/**
+ * Obtenir les styles pour le rapport
+ */
+private getRapportStyles(colors: any): any {
+  return {
+    header: {
+      fontSize: 24,
+      bold: true,
+      color: colors.primary,
+      margin: [0, 0, 0, 10]
+    },
+    subheader: {
+      fontSize: 18,
+      bold: true,
+      color: colors.secondary,
+      margin: [0, 10, 0, 5]
+    },
+    sectionTitle: {
+      fontSize: 16,
+      bold: true,
+      color: colors.primary,
+      margin: [0, 20, 0, 10],
+      background: colors.light,
+      padding: [10, 5]
+    },
+    subsectionTitle: {
+      fontSize: 14,
+      bold: true,
+      color: colors.dark,
+      margin: [0, 15, 0, 8]
+    },
+    normal: {
+      fontSize: 10,
+      margin: [0, 2, 0, 2]
+    },
+    bold: {
+      fontSize: 10,
+      bold: true
+    },
+    small: {
+      fontSize: 9,
+      color: '#666666'
+    },
+    tableHeader: {
+      bold: true,
+      fontSize: 9,
+      color: colors.white,
+      fillColor: colors.primary
+    },
+    tableRowEven: {
+      fillColor: '#f8f9fa'
+    },
+    tableRowOdd: {
+      fillColor: colors.white
+    },
+    positive: {
+      color: colors.success,
+      bold: true
+    },
+    negative: {
+      color: colors.danger,
+      bold: true
+    },
+    neutral: {
+      color: colors.dark
+    },
+    totalRow: {
+      bold: true,
+      fontSize: 10,
+      fillColor: colors.light
+    },
+    footerText: {
+      fontSize: 8,
+      color: '#777777',
+      alignment: 'center'
+    }
+  };
+}
+
+/**
+ * En-tête du rapport
+ */
+
+private getRapportHeader(header: any, rapportData: any, _colors: any): any {
+  return (currentPage: number, pageCount: number) => {
+    return {
+      stack: [
+        // =========================
+        // 1️⃣ Header structure (logo + infos)
+        // =========================
+        {
+          ...header,
+          margin: [30, 20, 30, 10]
+        },
+
+        // Ligne de séparation
+        {
+          canvas: [
+            {
+              type: 'line',
+              x1: 0,
+              y1: 0,
+              x2: 515,
+              y2: 0,
+              lineWidth: 1
+            }
+          ],
+          margin: [30, 5, 30, 10]
+        },
+
+        // =========================
+        // 2️⃣ Header du rapport
+        // =========================
+        {
+          columns: [
+            {
+              width: '70%',
+              stack: [
+                {
+                  text: 'RAPPORT FINANCIER',
+                  style: 'header'
+                },
+                {
+                  text: rapportData.periode || 'Période non spécifiée',
+                  style: 'subheader',
+                  fontSize: 13
+                }
+              ]
+            },
+            {
+              width: '30%',
+              stack: [
+                {
+                  text: `Page ${currentPage} sur ${pageCount}`,
+                  style: 'small',
+                  alignment: 'right'
+                },
+                {
+                  text: new Date().toLocaleDateString('fr-FR'),
+                  style: 'small',
+                  alignment: 'right'
+                }
+              ]
+            }
+          ],
+          margin: [30, 0, 30, 0]
+        }
+      ]
+    };
+  };
+}
+
+/**
+ * Pied de page du rapport
+ */
+private getRapportFooter(): any {
+  return (currentPage: number, pageCount: number) => {
+    return {
+      columns: [
+        {
+          text: this.structureInfo?.nom_structure || 'Structure',
+          style: 'footerText',
+          width: '33%'
+        },
+        {
+          text: `Page ${currentPage} sur ${pageCount}`,
+          style: 'footerText',
+          alignment: 'center',
+          width: '34%'
+        },
+        {
+          text: `Généré le ${new Date().toLocaleDateString('fr-FR')}`,
+          style: 'footerText',
+          alignment: 'right',
+          width: '33%'
+        }
+      ],
+      margin: [30, 10, 30, 20]
+    };
+  };
+}
+
+/**
+ * Page de couverture
+ */
+private getCouverturePage(rapportData: any, currentDate: Date, colors: any): any {
+  return {
+    stack: [
+      {
+        text: 'RAPPORT FINANCIER',
+        style: 'header',
+        fontSize: 28,
+        bold: true,
+        alignment: 'center',
+        margin: [0, 100, 0, 20]
+      },
+      {
+        text: rapportData.periode || 'Période analysée',
+        style: 'subheader',
+        fontSize: 20,
+        alignment: 'center',
+        margin: [0, 0, 0, 40]
+      },
+      {
+        text: this.structureInfo?.nom_structure || 'Structure',
+        style: 'normal',
+        fontSize: 16,
+        alignment: 'center',
+        margin: [0, 0, 0, 10]
+      },
+      {
+        text: `Date de génération: ${currentDate.toLocaleDateString('fr-FR', { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })}`,
+        style: 'small',
+        alignment: 'center',
+        margin: [0, 0, 0, 50]
+      },
+      // Ligne décorative
+      {
+        canvas: [{ 
+          type: 'line', 
+          x1: 100, 
+          y1: 0, 
+          x2: 400, 
+          y2: 0, 
+          lineWidth: 2,
+          lineColor: colors.primary 
+        }],
+        margin: [0, 30, 0, 30]
+      },
+      {
+        text: 'DOCUMENT CONFIDENTIEL',
+        style: 'bold',
+        fontSize: 12,
+        color: colors.danger,
+        alignment: 'center',
+        margin: [0, 0, 0, 100]
+      }
+    ],
+    pageBreak: 'after'
+    
+  };
+}
+
+/**
+ * Section indicateurs clés
+ */
+private getSectionIndicateurs(rapportData: any, colors: any): any {
+  const indicateurs = rapportData.indicateursFinanciers;
+  if (!indicateurs) return { text: 'Aucune donnée disponible', style: 'normal' };
+
+  return {
+    stack: [
+      { text: '1. SYNTHÈSE DES INDICATEURS CLÉS', style: 'sectionTitle' },
+      
+      // Cartes d'indicateurs
+      {
+        columns: [
+          // Chiffre d'affaires
+          {
+            width: '33%',
+            stack: [
+              {
+                text: 'CHIFFRE D\'AFFAIRES',
+                style: 'subsectionTitle',
+                alignment: 'center'
+              },
+              {
+                text: `${this.formatCurrency(indicateurs.chiffreAffaires)}`,
+                style: 'header',
+                fontSize: 18,
+                color: colors.primary,
+                alignment: 'center',
+                margin: [0, 5, 0, 2]
+              },
+              {
+                text: `${indicateurs.nbVentes || 0} transactions`,
+                style: 'small',
+                alignment: 'center'
+              },
+              this.getEvolutionBadge(indicateurs.evolutionCA, colors)
+            ],
+            margin: [0, 0, 10, 0]
+          },
+          
+          // Dépenses totales
+          {
+            width: '33%',
+            stack: [
+              {
+                text: 'DÉPENSES TOTALES',
+                style: 'subsectionTitle',
+                alignment: 'center'
+              },
+              {
+                text: `${this.formatCurrency(indicateurs.totalDepenses)}`,
+                style: 'header',
+                fontSize: 18,
+                color: colors.danger,
+                alignment: 'center',
+                margin: [0, 5, 0, 2]
+              },
+              {
+                text: `${indicateurs.nbDepenses || 0} transactions`,
+                style: 'small',
+                alignment: 'center'
+              }
+            ],
+            margin: [0, 0, 10, 0]
+          },
+          
+          // Bénéfice net
+          {
+            width: '33%',
+            stack: [
+              {
+                text: 'BÉNÉFICE NET',
+                style: 'subsectionTitle',
+                alignment: 'center'
+              },
+              {
+                text: `${this.formatCurrency(indicateurs.beneficeNet)}`,
+                style: 'header',
+                fontSize: 18,
+                color: indicateurs.beneficeNet >= 0 ? colors.success : colors.danger,
+                alignment: 'center',
+                margin: [0, 5, 0, 2]
+              },
+              {
+                text: `Marge: ${((indicateurs.beneficeNet / (indicateurs.chiffreAffaires + indicateurs.autresRecettes)) * 100).toFixed(1)}%`,
+                style: 'small',
+                alignment: 'center'
+              }
+            ]
+          }
+        ],
+        margin: [0, 0, 0, 20]
+      },
+      
+      // Tableau récapitulatif
+      {
+        table: {
+          widths: ['*', '*', '*', '*'],
+          body: [
+            [
+              { text: 'Indicateur', style: 'tableHeader' },
+              { text: 'Montant', style: 'tableHeader', alignment: 'right' },
+              { text: 'Transactions', style: 'tableHeader', alignment: 'center' },
+              { text: 'Évolution', style: 'tableHeader', alignment: 'center' }
+            ],
+            [
+              'Chiffre d\'affaires',
+              { text: this.formatCurrency(indicateurs.chiffreAffaires), alignment: 'right' },
+              { text: indicateurs.nbVentes || 0, alignment: 'center' },
+              this.getEvolutionCell(indicateurs.evolutionCA, colors)
+            ],
+            [
+              'Autres recettes',
+              { text: this.formatCurrency(indicateurs.autresRecettes), alignment: 'right' },
+              { text: indicateurs.nbAutresRecettes || 0, alignment: 'center' },
+              ''
+            ],
+            [
+              'Dépenses totales',
+              { text: this.formatCurrency(indicateurs.totalDepenses), alignment: 'right' },
+              { text: indicateurs.nbDepenses || 0, alignment: 'center' },
+              ''
+            ],
+            [
+              'Solde trésorerie',
+              { 
+                text: this.formatCurrency(indicateurs.soldeTresorerie), 
+                alignment: 'right',
+                style: indicateurs.soldeTresorerie >= 0 ? 'positive' : 'negative'
+              },
+              '',
+              ''
+            ]
+          ]
+        },
+        layout: {
+          hLineWidth: (i: number, node: any) => (i === 0 || i === node.table.body.length) ? 1 : 0.5,
+          vLineWidth: () => 0.5,
+          hLineColor: (i:number) => i === 0 ? colors.primary : '#dddddd',
+          vLineColor: () => '#dddddd',
+          paddingLeft: () => 5,
+          paddingRight: () => 5,
+          paddingTop: () => 3,
+          paddingBottom: () => 3
+        },
+        margin: [0, 0, 0, 20]
+      }
+    ],
+    //pageBreak: 'after'
+  };
+}
+
+/**
+ * Section flux de trésorerie
+ */
+private getSectionFluxTresorerie(rapportData: any, colors: any): any {
+  const flux = rapportData.indicateursFinanciers?.fluxTresorerie;
+  if (!flux) return { text: 'Aucune donnée disponible', style: 'normal' };
+
+  return {
+    stack: [
+      { text: '2. FLUX DE TRÉSORERIE', style: 'sectionTitle' },
+      
+      // Diagramme visuel (simulé avec des barres)
+      {
+        columns: [
+          // Solde initial
+          {
+            width: '25%',
+            stack: [
+              {
+                text: 'SOLDE INITIAL',
+                style: 'subsectionTitle',
+                alignment: 'center'
+              },
+              {
+                text: this.formatCurrency(flux.soldeInitial),
+                style: 'normal',
+                fontSize: 12,
+                alignment: 'center',
+                margin: [0, 5, 0, 2]
+              },
+              this.getSoldeIndicator(flux.soldeInitial, colors)
+            ]
+          },
+          
+          // Entrées
+          {
+            width: '25%',
+            stack: [
+              {
+                text: 'ENTRÉES',
+                style: 'subsectionTitle',
+                alignment: 'center',
+                color: colors.success
+              },
+              {
+                text: `+ ${this.formatCurrency(flux.recettesPeriod)}`,
+                style: 'positive',
+                fontSize: 12,
+                alignment: 'center',
+                margin: [0, 5, 0, 2]
+              }
+            ]
+          },
+          
+          // Sorties
+          {
+            width: '25%',
+            stack: [
+              {
+                text: 'SORTIES',
+                style: 'subsectionTitle',
+                alignment: 'center',
+                color: colors.danger
+              },
+              {
+                text: `- ${this.formatCurrency(flux.depensesPeriod)}`,
+                style: 'negative',
+                fontSize: 12,
+                alignment: 'center',
+                margin: [0, 5, 0, 2]
+              }
+            ]
+          },
+          
+          // Solde final
+          {
+            width: '25%',
+            stack: [
+              {
+                text: 'SOLDE FINAL',
+                style: 'subsectionTitle',
+                alignment: 'center'
+              },
+              {
+                text: this.formatCurrency(flux.soldeFinal),
+                style: flux.soldeFinal >= 0 ? 'positive' : 'negative',
+                fontSize: 12,
+                alignment: 'center',
+                margin: [0, 5, 0, 2]
+              },
+              this.getSoldeIndicator(flux.soldeFinal, colors)
+            ]
+          }
+        ],
+        margin: [0, 0, 0, 20]
+      },
+      
+      // Tableau détaillé
+      {
+        table: {
+          widths: ['40%', '30%', '30%'],
+          body: [
+            [
+              { text: 'Description', style: 'tableHeader' },
+              { text: 'Montant', style: 'tableHeader', alignment: 'right' },
+              { text: 'Variation', style: 'tableHeader', alignment: 'right' }
+            ],
+            [
+              'Solde initial',
+              { text: this.formatCurrency(flux.soldeInitial), alignment: 'right' },
+              ''
+            ],
+            [
+              'Recettes de la période',
+              { text: `+ ${this.formatCurrency(flux.recettesPeriod)}`, alignment: 'right', style: 'positive' },
+              ''
+            ],
+            [
+              'Dépenses de la période',
+              { text: `- ${this.formatCurrency(flux.depensesPeriod)}`, alignment: 'right', style: 'negative' },
+              ''
+            ],
+            [
+              { text: 'Solde final', style: 'totalRow' },
+              { 
+                text: this.formatCurrency(flux.soldeFinal), 
+                alignment: 'right', 
+                style: flux.soldeFinal >= 0 ? 'positive' : 'negative'
+              },
+              { 
+                text: this.formatCurrency(flux.soldeFinal - flux.soldeInitial), 
+                alignment: 'right',
+                style: (flux.soldeFinal - flux.soldeInitial) >= 0 ? 'positive' : 'negative'
+              }
+            ]
+          ]
+        },
+        layout: {
+          hLineWidth: (i: number, node: any) => (i === 0 || i === node.table.body.length) ? 1 : 0.5,
+          vLineWidth: () => 0.5,
+          hLineColor: (i: number, node: any) => i === 0 || i === node.table.body.length ? colors.primary : '#dddddd',
+          vLineColor: () => '#dddddd'
+        }
+      }
+    ],
+    //pageBreak: 'after'
+  };
+}
+
+/**
+ * Section répartition des dépenses
+ */
+private getSectionRepartitionDepenses(rapportData: any, colors: any): any {
+  const repartition = rapportData.repartitionDepenses;
+  if (!repartition || !repartition.repartition?.length) {
+    return { text: '3. RÉPARTITION DES DÉPENSES\n\nAucune donnée disponible', style: 'sectionTitle' };
+  }
+
+  const tableBody: any[] = [
+    [
+      { text: 'Catégorie', style: 'tableHeader' },
+      { text: 'Montant', style: 'tableHeader', alignment: 'right' },
+      { text: 'Pourcentage', style: 'tableHeader', alignment: 'right' },
+      { text: 'Transactions', style: 'tableHeader', alignment: 'center' }
+    ]
+  ];
+
+  // Ajouter les catégories
+  repartition.repartition.forEach((cat: any, _index: number) => {
+    tableBody.push([
+      cat.categorieName || 'Non classé',
+      { text: this.formatCurrency(cat.montantTotal), alignment: 'right' },
+      { text: `${cat.pourcentage.toFixed(1)}%`, alignment: 'right' },
+      { text: cat.occurrences || 0, alignment: 'center' }
+    ]);
+  });
+
+  // Ligne total
+  tableBody.push([
+    { text: 'TOTAL DÉPENSES', style: 'totalRow' },
+    { text: this.formatCurrency(repartition.totalDepenses), alignment: 'right', style: 'totalRow' },
+    { text: '100%', alignment: 'right', style: 'totalRow' },
+    { text: repartition.repartition.reduce((sum: number, cat: any) => sum + (cat.occurrences || 0), 0), 
+      alignment: 'center', style: 'totalRow' }
+  ]);
+
+  return {
+    stack: [
+      { text: '3. RÉPARTITION DES DÉPENSES', style: 'sectionTitle' },
+      
+      // Graphique en barres (simulé)
+      //this.createBarChart(repartition.repartition, 'montantTotal', colors),
+      
+      // Tableau détaillé
+      {
+        table: {
+          widths: ['45%', '20%', '20%', '15%'],
+          body: tableBody
+        },
+        layout: {
+          hLineWidth: (i: number, node: any) => (i === 0 || i === node.table.body.length - 1) ? 1 : 0.5,
+          vLineWidth: () => 0.5,
+          hLineColor: (i: number,node: any) => i === 0 || i === node.table.body.length - 1 ? colors.primary : '#dddddd',
+          vLineColor: () => '#dddddd',
+          fillColor: (rowIndex: number) => {
+            if (rowIndex === 0 || rowIndex === tableBody.length - 1) return colors.light;
+            return rowIndex % 2 === 0 ? '#f8f9fa' : colors.white;
+          }
+        },
+        margin: [0, 20, 0, 20]
+      },
+      
+      // Analyse
+      {
+        text: 'Analyse :',
+        style: 'subsectionTitle',
+        margin: [0, 10, 0, 5]
+      },
+      {
+        text: this.getAnalyseDepenses(repartition),
+        style: 'normal'
+      }
+    ],
+    //pageBreak: 'after'
+  };
+}
+
+/**
+ * Section répartition des recettes
+ */
+private getSectionRepartitionRecettes(rapportData: any, colors: any): any {
+  const repartition = rapportData.repartitionRecettes;
+  if (!repartition || !repartition.repartition?.length) {
+    return { text: '4. SOURCES DE REVENUS\n\nAucune donnée disponible', style: 'sectionTitle' };
+  }
+
+  const tableBody: any[] = [
+    [
+      { text: 'Source de revenus', style: 'tableHeader' },
+      { text: 'Montant', style: 'tableHeader', alignment: 'right' },
+      { text: 'Pourcentage', style: 'tableHeader', alignment: 'right' },
+      { text: 'Transactions', style: 'tableHeader', alignment: 'center' }
+    ]
+  ];
+
+  // Ajouter les catégories
+  repartition.repartition.forEach((cat: any, _index: number) => {
+    tableBody.push([
+      cat.categorieName || 'Non classé',
+      { text: this.formatCurrency(cat.montantTotal), alignment: 'right' },
+      { text: `${cat.pourcentage.toFixed(1)}%`, alignment: 'right' },
+      { text: cat.occurrences || 0, alignment: 'center' }
+    ]);
+  });
+
+  // Ligne total
+  tableBody.push([
+    { text: 'TOTAL RECETTES', style: 'totalRow' },
+    { text: this.formatCurrency(repartition.totalRecettes), alignment: 'right', style: 'totalRow' },
+    { text: '100%', alignment: 'right', style: 'totalRow' },
+    { text: repartition.repartition.reduce((sum: number, cat: any) => sum + (cat.occurrences || 0), 0), 
+      alignment: 'center', style: 'totalRow' }
+  ]);
+
+  return {
+    stack: [
+      { text: '4. SOURCES DE REVENUS', style: 'sectionTitle' },
+      
+      // Graphique en camembert (simulé)
+      //this.createPieChart(repartition.repartition, colors),
+      
+      // Tableau détaillé
+      {
+        table: {
+          widths: ['45%', '20%', '20%', '15%'],
+          body: tableBody
+        },
+        layout: {
+          hLineWidth: (i: number, node: any) => (i === 0 || i === node.table.body.length - 1) ? 1 : 0.5,
+          vLineWidth: () => 0.5,
+          hLineColor: (i: number,node: any) => i === 0 || i === node.table.body.length - 1 ? colors.primary : '#dddddd',
+          vLineColor: () => '#dddddd'
+        },
+        margin: [0, 20, 0, 20]
+      },
+      
+      // Analyse
+      {
+        text: 'Analyse :',
+        style: 'subsectionTitle',
+        margin: [0, 10, 0, 5]
+      },
+      {
+        text: this.getAnalyseRecettes(repartition),
+        style: 'normal'
+      }
+    ],
+    //pageBreak: 'after'
+  };
+}
+
+
+/**
+ * Section modes de paiement
+ */
+private getSectionModesPaiement(rapportData: any, colors: any): any {
+  const modesPaiement = rapportData.modesPaiementStats;
+  if (!modesPaiement || !modesPaiement.modesPaiement?.length) {
+    return { text: '5. MODES DE PAIEMENT\n\nAucune donnée disponible', style: 'sectionTitle' };
+  }
+
+  const tableBody: any[] = [
+    [
+      { text: 'Mode de paiement', style: 'tableHeader' },
+      { text: 'Montant total', style: 'tableHeader', alignment: 'right' },
+      { text: 'Transactions', style: 'tableHeader', alignment: 'center' },
+      { text: 'Part de marché', style: 'tableHeader', alignment: 'right' }
+    ]
+  ];
+
+  // Ajouter les modes de paiement
+  modesPaiement.modesPaiement.forEach((mode: any) => {
+    tableBody.push([
+      this.getIconForPaymentMode(mode.mode) + ' ' + mode.mode,
+      { text: this.formatCurrency(mode.montantTotal), alignment: 'right' },
+      { text: mode.occurrences || 0, alignment: 'center' },
+      { text: `${mode.pourcentage.toFixed(1)}%`, alignment: 'right' }
+    ]);
+  });
+
+  return {
+    stack: [
+      { text: '5. MODES DE PAIEMENT', style: 'sectionTitle' },
+      
+      // Statistiques résumées
+      {
+        columns: [
+          {
+            width: '50%',
+            stack: [
+              { text: 'Total transactions:', style: 'bold' },
+              { text: `${modesPaiement.totalTransactions || 0}`, style: 'normal', fontSize: 12 }
+            ]
+          },
+          {
+            width: '50%',
+            stack: [
+              { text: 'Mode le plus utilisé:', style: 'bold' },
+              { 
+                text: this.getMostUsedPaymentMode(modesPaiement.modesPaiement), 
+                style: 'normal',
+                fontSize: 12 
+              }
+            ]
+          }
+        ],
+        margin: [0, 0, 0, 20]
+      },
+      
+      // Tableau détaillé
+      {
+        table: {
+          widths: ['40%', '20%', '20%', '20%'],
+          body: tableBody
+        },
+        layout: {
+          hLineWidth: (i: number, node: any) => (i === 0 || i === node.table.body.length) ? 1 : 0.5,
+          vLineWidth: () => 0.5,
+          hLineColor: (i: number) => i === 0 ? colors.primary : '#dddddd',
+          vLineColor: () => '#dddddd'
+        }
+      }
+    ],
+    //pageBreak: 'after'
+  };
+}
+
+/**
+ * Section données comparatives
+ */
+private getSectionDonneesComparatives(rapportData: any, colors: any): any {
+  const comparatives = rapportData.donneesComparatives;
+  if (!comparatives || !comparatives.donneesPeriodes?.length) {
+    return { text: '6. ANALYSE COMPARATIVE\n\nAucune donnée disponible', style: 'sectionTitle' };
+  }
+
+  const tableBody: any[] = [
+    [
+      { text: 'Période', style: 'tableHeader' },
+      { text: 'Chiffre d\'affaires', style: 'tableHeader', alignment: 'right' },
+      { text: 'Dépenses', style: 'tableHeader', alignment: 'right' },
+      { text: 'Bénéfice', style: 'tableHeader', alignment: 'right' },
+      { text: 'Marge', style: 'tableHeader', alignment: 'center' }
+    ]
+  ];
+
+  // Ajouter les périodes
+  comparatives.donneesPeriodes.forEach((periode: any) => {
+    const marge = ((periode.beneficeNet / (periode.chiffreAffaires + periode.autresRecettes)) * 100) || 0;
+    
+    tableBody.push([
+      periode.libelle || 'Période',
+      { text: this.formatCurrency(periode.chiffreAffaires), alignment: 'right' },
+      { text: this.formatCurrency(periode.totalDepenses), alignment: 'right' },
+      { 
+        text: this.formatCurrency(periode.beneficeNet), 
+        alignment: 'right',
+        style: periode.beneficeNet >= 0 ? 'positive' : 'negative'
+      },
+      { 
+        text: `${marge.toFixed(1)}%`, 
+        alignment: 'center',
+        style: marge >= 0 ? 'positive' : 'negative'
+      }
+    ]);
+  });
+
+  return {
+    stack: [
+      { text: '6. ANALYSE COMPARATIVE', style: 'sectionTitle' },
+      { 
+        text: `Comparaison sur ${comparatives.nombrePeriodes || 0} périodes`, 
+        style: 'normal',
+        margin: [0, 0, 0, 10]
+      },
+      
+      // Tableau comparatif
+      {
+        table: {
+          widths: ['30%', '18%', '18%', '18%', '16%'],
+          body: tableBody
+        },
+        layout: {
+          hLineWidth: (i: number, node: any) => (i === 0 || i === node.table.body.length) ? 1 : 0.5,
+          vLineWidth: () => 0.5,
+          hLineColor: (i: number) => i === 0 ? colors.primary : '#dddddd',
+          vLineColor: () => '#dddddd',
+          fillColor: (rowIndex: number) => {
+            if (rowIndex === 0) return colors.primary;
+            return rowIndex % 2 === 0 ? '#f8f9fa' : colors.white;
+          }
+        },
+        margin: [0, 0, 0, 20]
+      },
+      
+      // Tendances
+      this.getAnalyseTendances(comparatives, colors)
+    ],
+    //pageBreak: 'after'
+  };
+}
+
+/**
+ * Section détails des transactions
+ */
+private getSectionDetailsTransactions(rapportData: any, colors: any): any {
+
+  const depenses = rapportData.depensesDetaillees?.depenses || [];
+  const recettes = rapportData.recettesDetaillees?.recettes || [];
+
+  if (depenses.length === 0 && recettes.length === 0) {
+    return { text: '7. DÉTAILS DES TRANSACTIONS\n\nAucune transaction disponible', style: 'sectionTitle' };
+  }
+
+  const sections = [];
+
+  // Dépenses
+  if (depenses.length > 0) {
+    sections.push(
+      { text: '7.1. DÉTAILS DES DÉPENSES', style: 'subsectionTitle' },
+      this.createTransactionsTable(depenses, colors, 'DÉPENSE'),
+      { text: '\n' }
+    );
+  }
+
+  // Recettes
+  if (recettes.length > 0) {
+    sections.push(
+      { text: '7.2. DÉTAILS DES RECETTES', style: 'subsectionTitle' },
+      this.createTransactionsTable(recettes, colors, 'RECETTE')
+    );
+  }
+
+  return {
+    stack: [
+      { text: '7. DÉTAILS DES TRANSACTIONS', style: 'sectionTitle' },
+      ...sections
+    ]
+  };
+}
+
+/**
+ * Page de conclusion
+ */
+private getConclusionPage(rapportData: any, currentDate: Date, _colors: any): any {
+  const indicateurs = rapportData.indicateursFinanciers;
+  
+  return {
+    stack: [
+      { text: 'CONCLUSION ET RECOMMANDATIONS', style: 'sectionTitle', pageBreak: 'before' },
+      
+      // Résumé exécutif
+      {
+        text: 'Résumé exécutif :',
+        style: 'subsectionTitle',
+        margin: [0, 10, 0, 5]
+      },
+      {
+        text: this.getResumeExecutif(indicateurs),
+        style: 'normal',
+        margin: [0, 0, 0, 15]
+      },
+      
+      // Points forts
+      {
+        text: 'Points forts :',
+        style: 'subsectionTitle',
+        margin: [0, 10, 0, 5]
+      },
+      this.getPointsForts(indicateurs),
+      
+      // Points d'amélioration
+      {
+        text: 'Points d\'amélioration :',
+        style: 'subsectionTitle',
+        margin: [0, 10, 0, 5]
+      },
+      this.getPointsAmelioration(indicateurs),
+      
+      // Recommandations
+      {
+        text: 'Recommandations :',
+        style: 'subsectionTitle',
+        margin: [0, 10, 0, 5]
+      },
+      this.getRecommandations(indicateurs),
+      
+      // Signature
+      {
+        columns: [
+          { width: '50%', text: '' },
+          {
+            width: '50%',
+            stack: [
+              { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 150, y2: 0, lineWidth: 1 }] },
+              { text: 'Signature', style: 'normal', alignment: 'center', margin: [0, 5, 0, 0] },
+              { text: 'Directeur Financier', style: 'small', alignment: 'center' }
+            ]
+          }
+        ],
+        margin: [0, 40, 0, 0]
+      },
+      
+      // Mentions finales
+      {
+        text: [
+          { text: 'Document généré le ', style: 'small' },
+          { text: currentDate.toLocaleDateString('fr-FR'), style: 'small', bold: true },
+          { text: ' par le système de gestion financière.', style: 'small' }
+        ],
+        style: 'footerText',
+        margin: [0, 20, 0, 0]
+      }
+    ]
+  };
+}
+
+/**
+ * Méthodes utilitaires
+ */
+/* private formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'XOF',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(amount || 0).replace('XOF', 'F CFA');
+} */
+formatCurrency(value: number | string): string {
+  if (value === null || value === undefined) return '0';
+
+  // 1️⃣ Convertir en string brute
+  let str = typeof value === 'number'
+    ? value.toString()
+    : value.toString();
+
+  // 2️⃣ Supprimer TOUS les espaces Unicode (insécables, fines, etc.)
+  str = str.replace(/[\u00A0\u202F\u2007]/g, ' ');
+
+  // 3️⃣ Nettoyer tout sauf chiffres, point et virgule
+  str = str.replace(/[^0-9.,-]/g, '');
+
+  // 4️⃣ Si number → format manuel
+  const num = Number(str.replace(',', '.'));
+  if (!isNaN(num)) {
+    str = num
+      .toFixed(2)
+      .replace('.', ',')
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  }
+
+  return str;
+}
+
+
+private getEvolutionBadge(evolution: any, colors: any): any {
+  if (!evolution) return '';
+  
+  const icon = evolution.tendance === 'hausse' ? '+' : 
+               evolution.tendance === 'baisse' ? '-' : '=';
+  const color = evolution.tendance === 'hausse' ? colors.success : 
+                evolution.tendance === 'baisse' ? colors.danger : colors.dark;
+  
+  return {
+    text: `${icon} ${evolution.pourcentage || 0}%`,
+    style: 'normal',
+    color: color,
+    alignment: 'center',
+    fontSize: 9
+  };
+}
+
+private getEvolutionCell(evolution: any, colors: any): any {
+  if (!evolution) return '';
+  
+  const icon = evolution.tendance === 'hausse' ? '+' : 
+               evolution.tendance === 'baisse' ? '-' : '=';
+  const color = evolution.tendance === 'hausse' ? colors.success : 
+                evolution.tendance === 'baisse' ? colors.danger : colors.dark;
+  
+  return {
+    text: `${icon} ${evolution.pourcentage || 0}%`,
+    alignment: 'center',
+    color: color
+  };
+}
+
+private getSoldeIndicator(solde: number, colors: any): any {
+  const color = solde >= 0 ? colors.success : colors.danger;
+  const symbol = solde >= 0 ? '+' : '-'; // Utilisez des symboles Unicode
+  const text = solde >= 0 ? 'POSITIF' : 'NÉGATIF';
+  
+  return {
+    text: `${symbol} ${text}`,
+    style: 'small',
+    color: color,
+    alignment: 'center',
+    bold: true
+  };
+}
+
+/* private createBarChart(data: any[], field: string, colors: any): any {
+  // SIMPLIFIEZ : utilisez un tableau au lieu de canvas
+  const bars = data.map(item => {
+    const value = item[field] || 0;
+    
+    return {
+      columns: [
+        {
+          width: '70%',
+          stack: [
+            {
+              text: item.categorieName || 'Catégorie',
+              style: 'small'
+            },
+            // REMPLACEZ le canvas par une barre textuelle
+            {
+              text: '▮'.repeat(Math.min(20, Math.round((value / 100000) * 20))), // Barre Unicode
+              color: colors.secondary,
+              fontSize: 12
+            }
+          ]
+        },
+        {
+          width: '30%',
+          text: this.formatCurrency(value),
+          alignment: 'right',
+          style: 'small'
+        }
+      ],
+      margin: [0, 0, 0, 5]
+    };
+  });
+
+  return {
+    stack: bars,
+    margin: [0, 0, 0, 15]
+  };
+}
+
+private createPieChart(data: any[], _colors: any): any {
+  // SIMPLIFIEZ : utilisez des symboles Unicode
+  const pieSymbols = ['●', '◆', '■', '▲', '★', '✓', '✱', '❖'];
+  
+  const legend = data.map((item, index) => {
+    const percentage = item.pourcentage || 0;
+    const symbol = pieSymbols[index % pieSymbols.length];
+    const color = this.getChartColor(index);
+    
+    return {
+      columns: [
+        {
+          width: '10%',
+          text: symbol,
+          color: color,
+          fontSize: 12
+        },
+        {
+          width: '60%',
+          text: item.categorieName || 'Catégorie',
+          style: 'small'
+        },
+        {
+          width: '30%',
+          text: `${percentage.toFixed(1)}%`,
+          alignment: 'right',
+          style: 'small'
+        }
+      ],
+      margin: [0, 0, 0, 3]
+    };
+  });
+
+  return {
+    stack: legend,
+    margin: [0, 0, 0, 15]
+  };
+}
+ */
+/**
+ * Crée une visualisation de barres avec du texte
+ */
+
+
+/**
+ * Obtient une couleur pour les graphiques
+ */
+private getChartColor(index: number): string {
+  const colors = [
+    '#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6',
+    '#1abc9c', '#d35400', '#34495e', '#7f8c8d', '#c0392b'
+  ];
+  return colors[index % colors.length];
+}
+
+/* private getAnalyseDepenses(repartition: any): string {
+  const topCategory = repartition.repartition.reduce((prev: any, current: any) => 
+    (prev.montantTotal > current.montantTotal) ? prev : current
+  );
+  
+  return `La catégorie "${topCategory.categorieName}" représente la plus grande part des dépenses avec ${topCategory.pourcentage.toFixed(1)}% du total. Il serait pertinent d'analyser cette catégorie pour identifier des opportunités d'optimisation.`;
+}
+
+private getAnalyseRecettes(repartition: any): string {
+  const topCategory = repartition.repartition.reduce((prev: any, current: any) => 
+    (prev.montantTotal > current.montantTotal) ? prev : current
+  );
+  
+  return `La source de revenus "${topCategory.categorieName}" génère ${topCategory.pourcentage.toFixed(1)}% du chiffre d'affaires. Cette concentration représente à la fois une force et un risque qu'il convient de diversifier.`;
+} */
+private getAnalyseDepenses(repartition: any): string {
+  // CORRECTION : Comparer les valeurs numériques, pas les objets
+  const topCategory = repartition.repartition.reduce((prev: any, current: any) => 
+    (this.safeNumber(prev.montantTotal) || 0) > (this.safeNumber(current.montantTotal) || 0) ? prev : current
+  );
+  
+  if (!topCategory) return 'Aucune catégorie de dépenses disponible.';
+  
+  return `La catégorie "${topCategory.categorieName || 'Non classé'}" représente la plus grande part des dépenses avec ${topCategory.pourcentage?.toFixed(1) || 0}% du total. Il serait pertinent d'analyser cette catégorie pour identifier des opportunités d'optimisation.`;
+}
+
+private getAnalyseRecettes(repartition: any): string {
+  // CORRECTION : Comparer les valeurs numériques, pas les objets
+  const topCategory = repartition.repartition.reduce((prev: any, current: any) => 
+    (this.safeNumber(prev.montantTotal) || 0) > (this.safeNumber(current.montantTotal )|| 0) ? prev : current
+  );
+  
+  if (!topCategory) return 'Aucune source de revenus disponible.';
+  
+  return `La source de revenus "${topCategory.categorieName || 'Non classé'}" génère ${topCategory.pourcentage?.toFixed(1) || 0}% du chiffre d'affaires. Cette concentration représente à la fois une force et un risque qu'il convient de diversifier.`;
+}
+
+/* private getIconForPaymentMode(mode: string): string {
+  const icons: Record<string, string> = {
+    'Espèce': '💵',
+    'Carte': '💳',
+    'Virement': '🏦',
+    'Chèque': '📄',
+    'Wave': '📱',
+    'Orange Money': '📱',
+    'Mobile Money': '📱'
+  };
+  return icons[mode] || '💰';
+} */
+private getIconForPaymentMode(mode: string): string {
+  const labels: Record<string, string> = {
+    'Espèce': '[CASH]',
+    'Carte': '[CARD]',
+    'Chèque': '[CHECK]',
+    'Virement': '[BANK]',
+    'Wave': '[MOBILE]',
+    'Orange Money': '[MOBILE]',
+    'Mobile Money': '[MOBILE]'
+  };
+  return labels[mode] || '[PAY]';
+}
+
+private getMostUsedPaymentMode(modes: any[]): string {
+  if (!modes.length) return 'Non disponible';
+  
+  const mostUsed = modes.reduce((prev, current) => 
+    (prev.occurrences > current.occurrences) ? prev : current
+  );
+  
+  return `${mostUsed.mode} (${mostUsed.pourcentage.toFixed(1)}%)`;
+}
+
+private createTransactionsTable(transactions: any[], colors: any, type: string): any {
+  const isDepense = type === 'DÉPENSE';
+  
+  const tableBody: any[] = [
+    [
+      { text: 'Date', style: 'tableHeader', width: '15%' },
+      { text: 'Description', style: 'tableHeader', width: '35%' },
+      { text: 'Catégorie', style: 'tableHeader', width: '20%' },
+      { text: 'Mode paiement', style: 'tableHeader', width: '15%' },
+      { text: 'Montant', style: 'tableHeader', width: '15%', alignment: 'right' }
+    ]
+  ];
+
+  // Limiter à 50 transactions pour éviter un PDF trop long
+  const limitedTransactions = transactions.slice(0, 50);
+  
+  limitedTransactions.forEach((transaction, _index) => {
+    tableBody.push([
+      { 
+        text: transaction.date ? 
+          new Date(transaction.date).toLocaleDateString('fr-FR') : 'N/A', 
+        style: 'small' 
+      },
+      { text: transaction.description || '-', style: 'small' },
+      { text: transaction.categorie?.name || 'Non classé', style: 'small' },
+      { text: transaction.paymentMode || 'N/A', style: 'small' },
+      { 
+        text: this.formatCurrency(transaction.montant || 0), 
+        style: 'small',
+        alignment: 'right',
+        color: isDepense ? colors.danger : colors.success
+      }
+    ]);
+  });
+
+  // Total
+  const total = limitedTransactions.reduce((sum, t) => sum + (this.safeNumber(t.montant) || 0), 0);
+  tableBody.push([
+    { text: `TOTAL ${type}`, colSpan: 4, style: 'totalRow' },
+    '', '', '',
+    { 
+      text: this.formatCurrency(total), 
+      style: 'totalRow',
+      alignment: 'right',
+      color: isDepense ? colors.danger : colors.success
+    }
+  ]);
+
+  return {
+    table: {
+      widths: ['15%', '35%', '20%', '15%', '15%'],
+      body: tableBody
+    },
+    layout: {
+      hLineWidth: (i: number, node: any) => (i === 0 || i === node.table.body.length - 1) ? 1 : 0.5,
+      vLineWidth: () => 0.5,
+      hLineColor: (i: number, node: any) => i === 0 || i === node.table.body.length - 1 ? colors.primary : '#dddddd',
+      vLineColor: () => '#dddddd'
+    },
+    margin: [0, 5, 0, 15]
+  };
+}
+private calculateEvolution(current: number, previous: number): number {
+  const curr = this.safeNumber(current);
+  const prev = this.safeNumber(previous);
+
+  // Cas 1 : tout est à 0
+  if (curr === 0 && prev === 0) {
+    return 0;
+  }
+
+  // Cas 2 : valeur précédente = 0
+  if (prev === 0) {
+    return curr > 0 ? 100 : -100;
+  }
+
+  // Cas normal
+  return ((curr - prev) / Math.abs(prev)) * 100;
+}
+
+private getAnalyseTendances(comparatives: any, _colors: any): any {
+  if (!comparatives.donneesPeriodes || comparatives.donneesPeriodes.length < 2) {
+    return { text: 'Données insuffisantes pour l\'analyse des tendances.', style: 'normal' };
+  }
+
+  const periodes = comparatives.donneesPeriodes;
+  const dernierePeriode = periodes[periodes.length - 1];
+  const periodePrecedente = periodes[periodes.length - 2];
+
+  const evolutionCA = this.calculateEvolution(
+      dernierePeriode.chiffreAffaires,
+      periodePrecedente.chiffreAffaires
+  );
+
+  const evolutionBenefice = this.calculateEvolution(
+      dernierePeriode.beneficeNet,
+      periodePrecedente.beneficeNet
+  );
+
+  console.log('Evolution CA',evolutionCA);
+  console.log('Evolution bénéfice CA',evolutionBenefice);
+  return {
+    stack: [
+      { text: 'Analyse des tendances :', style: 'subsectionTitle', margin: [0, 10, 0, 5] },
+      {
+        ul: [
+          `Le chiffre d'affaires a ${evolutionCA >= 0 ? 'augmenté' : 'diminué'} de ${Math.abs(evolutionCA).toFixed(1)}% par rapport à la période précédente.`,
+          `Le bénéfice net a ${evolutionBenefice >= 0 ? 'augmenté' : 'diminué'} de ${Math.abs(evolutionBenefice).toFixed(1)}%.`,
+          evolutionCA > 0 && evolutionBenefice > 0 ? 
+            'La performance est positive sur les deux indicateurs clés.' :
+            'Une attention particulière est requise sur les indicateurs en baisse.'
+        ],
+        style: 'normal'
+      }
+    ]
+  };
+}
+
+private getResumeExecutif(indicateurs: any): string {
+  if (!indicateurs) return 'Aucune donnée disponible.';
+  
+  const ca = indicateurs.chiffreAffaires || 0;
+  const benefice = indicateurs.beneficeNet || 0;
+  const marge = ca > 0 ? (benefice / ca) * 100 : 0;
+  
+  return `La période analysée présente un chiffre d'affaires de ${this.formatCurrency(ca)} avec un bénéfice net de ${this.formatCurrency(benefice)}, soit une marge nette de ${marge.toFixed(1)}%. ${benefice >= 0 ? 'La performance est satisfaisante.' : 'Des améliorations sont nécessaires pour retrouver l\'équilibre.'}`;
+}
+
+private getPointsForts(indicateurs: any): any {
+  if (!indicateurs) return { text: 'Aucune donnée disponible.', style: 'normal' };
+  
+  const points = [];
+  
+  if (indicateurs.beneficeNet > 0) {
+    points.push('Bénéfice net positif');
+  }
+  
+  if (indicateurs.evolutionCA?.tendance === 'hausse') {
+    points.push('Croissance du chiffre d\'affaires');
+  }
+  
+  if (indicateurs.soldeTresorerie > 0) {
+    points.push('Trésorerie positive');
+  }
+  
+  return {
+    ul: points.length > 0 ? points : ['Aucun point fort identifié'],
+    style: 'normal'
+  };
+}
+
+private getPointsAmelioration(indicateurs: any): any {
+  if (!indicateurs) return { text: 'Aucune donnée disponible.', style: 'normal' };
+  
+  const points = [];
+  
+  if (indicateurs.beneficeNet < 0) {
+    points.push('Bénéfice net négatif nécessitant une action corrective');
+  }
+  
+  if (indicateurs.evolutionCA?.tendance === 'baisse') {
+    points.push('Déclin du chiffre d\'affaires à investiguer');
+  }
+  
+  if (indicateurs.totalDepenses > indicateurs.chiffreAffaires * 0.7) {
+    points.push('Ratio dépenses/CA élevé nécessitant une optimisation');
+  }
+  
+  return {
+    ul: points.length > 0 ? points : ['Aucun point d\'amélioration critique identifié'],
+    style: 'normal'
+  };
+}
+
+private getRecommandations(indicateurs: any): any {
+  if (!indicateurs) return { text: 'Aucune recommandation disponible.', style: 'normal' };
+  
+  const recommandations = [];
+  
+  if (indicateurs.beneficeNet < 0) {
+    recommandations.push('Réduire les coûts fixes et variables');
+    recommandations.push('Revoir la stratégie tarifaire');
+  }
+  
+  if (indicateurs.evolutionCA?.tendance === 'baisse') {
+    recommandations.push('Développer de nouvelles sources de revenus');
+    recommandations.push('Renforcer les actions marketing');
+  }
+  
+  if (indicateurs.totalDepenses > indicateurs.chiffreAffaires * 0.7) {
+    recommandations.push('Auditer les dépenses par catégorie');
+    recommandations.push('Négocier de meilleurs termes avec les fournisseurs');
+  }
+  
+  return {
+    ul: recommandations.length > 0 ? recommandations : ['Maintenir la stratégie actuelle'],
+    style: 'normal'
+  };
+}
+
+private generateFileName(rapportData: any, currentDate: Date): string {
+  const periode = rapportData.periode || 'rapport';
+  const dateStr = currentDate.toISOString().slice(0, 10).replace(/-/g, '');
+  const structure = this.structureInfo?.nom_structure?.replace(/\s+/g, '-') || 'structure';
+  
+  return `rapport-financier-${structure}-${periode}-${dateStr}.pdf`.toLowerCase();
 }
 }

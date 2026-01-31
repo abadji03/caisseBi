@@ -24,10 +24,19 @@ import { MagazinComponent } from './caisse/parametres/magazin/magazin.component'
 import { GerantComponent } from './caisse/parametres/gerant/gerant.component';
 import { CatalogueProduitComponent } from './caisse/stock_inventaire/catalogue-produit/catalogue-produit.component';
 import { FinanceComponent } from './caisse/finance/finance/finance.component';
-import { RapportsComponent } from './caisse/rapports/rapports/rapports.component';
 import { RapportsVentesComponent } from './caisse/rapports/rapports-ventes/rapports-ventes.component';
 import { RapportsStocksComponent } from './caisse/rapports/rapports-stocks/rapports-stocks.component';
 import { DashboardComponent } from './caisse/acces_accueil/dashboard/dashboard.component';
+import { NotFoundComponent } from './caisse/notFoundPages/not-found/not-found.component';
+import { roleGuard } from './guards/role.guard';
+import { UnauthorizedComponent } from './caisse/notFoundPages/unauthorized/unauthorized.component';
+import { authGuard } from './guards/auth.guard';
+import { ConnexionComponent } from './caisse/acces_accueil/connexion/connexion.component';
+import { PERMISSIONS } from './constantes/permissions.constants';
+//import { StructureComponent } from './caisse/parametres/structure/structure.component';
+import { generalAdminGuard } from './guards/general-admin.guard';
+import { structureGuard } from './guards/structure.guard';
+import { ParametresUsersAdminComponent } from './caisse/parametres/parametres-users-admin/parametres-users-admin.component';
 //import { FournisseurComponent } from './caisse/finance/fournisseur/fournisseur.component';
 /* import { LandingComponent } from './e-commerce/landing/landing.component';
 import { UserLoginComponent } from './e-commerce/user-login/user-login.component';
@@ -37,173 +46,196 @@ import { ProduitsComponent } from './e-commerce/produits/produits.component'; */
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: 'connexion',
+    redirectTo: 'login',
     pathMatch: 'full',
   },
-  /* {
-        path:'login',
-        component:ConnexionComponent
-    }, */
-
   {
-    //path: 'espace-vendeurs',
-    //component: EspaceVendeursComponent,
+    path: 'login',
+    component: ConnexionComponent,
+  },
+  {
+    path: 'unauthorized',
+    component: UnauthorizedComponent,
+  },
+  {
     path: 'caisse-bi',
     component: DashboardComponent,
+    canActivate: [authGuard],
     children: [
       {
-        path: '', // Redirection par défaut
+        path: 'admin-general',
+        canActivate: [generalAdminGuard], // Nouveau guard spécifique
+        children: [
+          {
+            path: 'structure',
+            component: ParametresUsersAdminComponent, // Créez ce composant
+            data: { title: 'Gestion des structures' }
+          },
+          /* {
+            path: 'parametres',
+            component: ParametresComponent, // Créez ce composant
+            data: { title: 'Gestion des utilisateurs' }
+          } */
+        ]
+      },
+      {
+        path: '',
         redirectTo: 'overview',
         pathMatch: 'full',
-      },
-      /* {
-                path:'user-account',
-                component:UserAccountComponent
-            }, */
-      {
-        path: 'fournisseurs',
-        component: FournisseursComponent,
-      },
-      /* {
-        path: 'fournisseur',
-        component: FournisseurComponent,
-      }, */
-      {
-        path: 'catalogue-produits',
-        component: CatalogueProduitComponent,
-      },
-      {
-        path: 'clients',
-        component: ClientsComponent,
-      },
-
-      {
-        path: 'rapport-financier',
-        component: RapportsFinanciersComponent,
-      },
-      {
-        path: 'rapport-vente',
-        component: RapportsVentesComponent,
-      },
-      {
-        path: 'rapport-stk',
-        component: RapportsStocksComponent,
-      },
-      {
-        path: 'rapports',
-        component: RapportsComponent,
-      },
-      {
-        path: 'ventes',
-        component: VentesComponent,
-      },
-      {
-        path: 'parametres',
-        component: ParametresComponent,
-      },
-      {
-        path: 'entrees-sorties',
-        component: EntreesSortiesComponent,
-      },
-      {
-        path: 'magasins',
-        component: MagazinComponent,
-      },
-      {
-        path: 'gerant',
-        component: GerantComponent,
-      },
-      {
-        path: 'caisse',
-        component: CaisseComponent,
-      },
-      /* {
-                path:'produits',
-                component: ProduitsComponent
-            }, */
-      /* {
-                path:'enregistrement-produit',
-                component: EnregistrementProduitsComponent
-            }, */
-      {
-        path: 'stock',
-        component: StockInventairesComponent,
-      },
-      {
-        path: 'finance',
-        component: FinanceComponent,
       },
       {
         path: 'overview',
         component: OverviewComponent,
+        canActivate: [roleGuard, structureGuard],
+        data: { 
+          roles: ['Administrateur Général', 'Administrateur', 'Gérant', 'Caissier', 'Employé'],
+          requireStructure: true 
+        }
       },
-      /*  {
-                path:'connexion',
-                component:ConnexionComponent
-            }, */
+      {
+        path: 'ventes',
+        component: VentesComponent,
+        canActivate: [roleGuard,structureGuard],
+        data: { 
+          roles: ['Administrateur Général', 'Administrateur', 'Gérant', 'Caissier'],
+          requireStructure: true,
+          permissions: [PERMISSIONS.VIEW_SALES, PERMISSIONS.EDIT_SALES,PERMISSIONS.MANAGE_SALES]
+        }
+      },
+      {
+        path: 'caisse',
+        component: CaisseComponent,
+        canActivate: [roleGuard,structureGuard],
+        data: { 
+          roles: ['Administrateur Général', 'Administrateur', 'Gérant', 'Caissier'],
+          requireStructure: true,
+          permissions: [PERMISSIONS.ACCESS_CASHIER]
+        }
+      },
+      {
+        path: 'clients',
+        component: ClientsComponent,
+        canActivate: [roleGuard,structureGuard],
+        data: { 
+          roles: ['Administrateur Général', 'Administrateur', 'Gérant'],
+          requireStructure: true,
+          permissions: [PERMISSIONS.VIEW_CLIENTS, PERMISSIONS.MANAGE_CLIENTS]
+        }
+      },
+      {
+        path: 'entrees-sorties',
+        component: EntreesSortiesComponent,
+        canActivate: [roleGuard, structureGuard],
+        data: { 
+          roles: ['Administrateur Général', 'Administrateur', 'Gérant'],
+          requireStructure: true,
+          permissions: [PERMISSIONS.MANAGE_STOCK]
+        }
+      },
+      {
+        path: 'stock',
+        component: StockInventairesComponent,
+        canActivate: [roleGuard, structureGuard],
+        data: { 
+          roles: ['Administrateur Général', 'Administrateur', 'Gérant'],
+          requireStructure: true,
+          permissions: [PERMISSIONS.VIEW_STOCK]
+        }
+      },
+      {
+        path: 'catalogue-produits',
+        component: CatalogueProduitComponent,
+        canActivate: [roleGuard, structureGuard],
+        data: { 
+          roles: ['Administrateur Général', 'Administrateur', 'Gérant'],
+          requireStructure: true,
+          permissions: [PERMISSIONS.MANAGE_PRODUCTS]
+        }
+      },
+      {
+        path: 'finance',
+        component: FinanceComponent,
+        canActivate: [roleGuard, structureGuard],
+        data: { 
+          roles: ['Administrateur Général', 'Administrateur'],
+          requireStructure: true,
+          permissions: [PERMISSIONS.MANAGE_FINANCE]
+        }
+      },
+      {
+        path: 'fournisseurs',
+        component: FournisseursComponent,
+        canActivate: [roleGuard, structureGuard],
+        data: { 
+          roles: ['Administrateur Général', 'Administrateur', 'Gérant'],
+          requireStructure: true,
+          permissions: [PERMISSIONS.MANAGE_SUPPLIERS]
+        }
+      },
+      {
+        path: 'rapport-financier',
+        component: RapportsFinanciersComponent,
+        canActivate: [roleGuard, structureGuard],
+        data: { 
+          roles: ['Administrateur Général', 'Administrateur', 'Gérant'],
+          requireStructure: true,
+          permissions: [PERMISSIONS.VIEW_REPORTS]
+        }
+      },
+      {
+        path: 'rapport-vente',
+        component: RapportsVentesComponent,
+        canActivate: [roleGuard, structureGuard],
+        data: { 
+          roles: ['Administrateur Général', 'Administrateur', 'Gérant'],
+          requireStructure: true,
+          permissions: [PERMISSIONS.VIEW_REPORTS]
+        }
+      },
+      {
+        path: 'rapport-stk',
+        component: RapportsStocksComponent,
+        canActivate: [roleGuard, structureGuard],
+        data: { 
+          roles: ['Administrateur Général', 'Administrateur', 'Gérant'],
+          requireStructure: true,
+          permissions: [PERMISSIONS.VIEW_REPORTS]
+        }
+      },
+      {
+        path: 'magasins',
+        component: MagazinComponent,
+        canActivate: [roleGuard, structureGuard],
+        data: { 
+          roles: ['Administrateur Général', 'Administrateur'],
+          requireStructure: true,
+          permissions: [PERMISSIONS.MANAGE_STORES]
+        }
+      },
+      {
+        path: 'gerant',
+        component: GerantComponent,
+        canActivate: [roleGuard, structureGuard],
+        data: { 
+          roles: ['Administrateur Général', 'Administrateur'],
+          requireStructure: true,
+          permissions: [PERMISSIONS.MANAGE_USERS]
+        }
+      },
+      {
+        path: 'parametres',
+        component: ParametresComponent,
+        canActivate: [roleGuard],
+        data: { 
+          roles: ['Administrateur Général', 'Administrateur'],
+          permissions: [PERMISSIONS.MANAGE_SETTINGS]
+        }
+      },
     ],
   },
-
-  /* {
-        path:'connexion',
-        component:EnregistrementActeurComponent
-    }, */
-
-  /*  {
-        path:'Allproducts',
-        component:LandingComponent,
-        children: [
-            {
-                path:'Allproducts',
-                component:WebProduitsComponent
-            },
-            {
-                path:'produits/:id',
-                component:CategorieProduitsComponent
-            },
-            {
-                path:'panier-client',
-                component:PanierClientComponent
-            },
-            {
-                path:'compte-client',
-                component:ClientOrderComponent
-            },
-            {
-                path:'user-login',
-                component:UserLoginComponent
-            },
-            {
-                path:'checkout-page',
-                component:CheckoutComponent
-            },
-            {
-                path:'client-order',
-                component:ClientOrderComponent
-            },
-            {
-                path:'details-produit/:id',
-                component:DetailsProduitComponent
-            },
-            {
-                path:'user-account',
-                component:UserAccountComponent
-            },
-        ]
-    }, */
-
-  /* {
-        path:'',
-        component:LayoutComponent,
-        children: [
-            {
-                path:'vente',
-                component: VenteComponent
-            },
-            {
-                path:'category',
-                component: CategoriesComponent
-            }
-        ]
-    } */
-];
+  {
+    path: '**',
+    component: NotFoundComponent,
+  },
+  
+  ];

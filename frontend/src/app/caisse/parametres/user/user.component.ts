@@ -54,7 +54,7 @@ export class UserComponent implements OnInit, OnDestroy {
   private modalService = inject(NgbModal);
 
   ngOnInit(): void {
-    this.isGeneralAdmin = this.authService.isGeneralAdmin();
+    //this.isGeneralAdmin = this.authService.isGeneralAdmin();
     this.loadData();
     this.iniForm();
     /* this.loadUsers();
@@ -220,14 +220,14 @@ export class UserComponent implements OnInit, OnDestroy {
       });
     } else {
       // Mode création - initialisation du formulaire
-      const defaultStructureId = this.authService.isGeneralAdmin()
+      /* const defaultStructureId = this.authService.isGeneralAdmin()
         ? null
         : this.authService.getUserStructureId();
       this.userForm.reset({
         status: true,
         role: [],
         structure_id: defaultStructureId,
-      });
+      }); */
     }
 
     this.modalService.open(content, { size: 'lg' });

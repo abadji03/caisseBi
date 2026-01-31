@@ -1,4 +1,5 @@
 const db = require('../models');
+const { safeNumber } = require('./bonComplet/statutManager');
 const FonctionsUtilitaires  = require('./utils/fonctionsUtilitaires');
 const Panier = db.Panier;
 
@@ -6,23 +7,6 @@ const Panier = db.Panier;
 const STATUTS_EXCLUS = ['annulé', 'retourné', 'en_cours'];
 const STATUTS_EXCLUS_SANS_EN_COURS = ['annulé', 'retourné'];
 
-/* // Fonction de validation des paramètres
-const validateParams = (params, requirePeriod = false) => {
-  const errors = [];
-  
-  // code_structure est toujours requis
-  if (!params.code_structure) {
-    errors.push('Le paramètre "code_structure" est requis');
-  }
-  
-  // période est requis pour certaines fonctions
-  if (requirePeriod && !params.periode) {
-    errors.push('Le paramètre "periode" est requis');
-  }
-  
-  return errors;
-};
- */
 // Fonction utilitaire pour construire la condition where
 const buildWhereCondition = (filters, includeDateRange = true, isPaiement = false) => {
   const { Op } = db.Sequelize;
@@ -79,19 +63,178 @@ const buildWhereCondition = (filters, includeDateRange = true, isPaiement = fals
   return where;
 };
 
-// Fonction pour obtenir les données CA de base
-const getCABaseData = async (where) => {
-  const [totalCA, nombrePaniers] = await Promise.all([
-    Panier.sum('totalTTC', { where }),
-    Panier.count({ where })
-  ]);
+
+const getCAVenduBaseData = async ({
+  code_structure,
+  debut,
+  fin,
+  magasinId,
+  agentId
+}) => {
+
+  const { Op } = db.Sequelize;
+
+  /* =========================
+     1️⃣ VENTES CAISSE
+  ========================== */
+  const paniersCaisse = await Panier.findAll({
+    attributes: ['id', 'totalTTC'],
+    where: {
+      code_structure,
+      dateCreation: { [Op.between]: [debut, fin] },
+      statut: { [Op.notIn]: ['annulé', 'retourné', 'en_cours'] },
+      bonId: null,
+      ...(magasinId && { magasinId }),
+      ...(agentId && { agentId })
+    }
+  });
+
+  /* =========================
+     2️⃣ BONS NORMAUX (vente validée / commande livrée)
+  ========================== */
+  const paniersBonNormaux = await Panier.findAll({
+    attributes: ['id', 'totalTTC'],
+    include: [
+      {
+        model: db.Bon,
+        required: true,
+        attributes: [],
+        where: {
+          code_structure,
+          typeEntite: 'client',
+          dateBon: { [Op.between]: [debut, fin] },
+          [Op.or]: [
+            { type: 'vente', statutBon: 'validé' },
+            { type: 'commande', statutBon: 'livré' }
+          ],
+          ...(magasinId && { magasinId }),
+          ...(agentId && { agentId })
+        }
+      }
+    ],
+    where: {
+      code_structure,
+      statut: { [Op.notIn]: ['annulé', 'retourné', 'en_cours'] }
+    }
+  });
+
+  /* =========================
+     3️⃣ BONS RETOURNÉS PARTIELLEMENT
+  ========================== */
+  const bonsRetourPartiel = await db.Bon.findAll({
+    attributes: ['id', 'netAPayer', 'montantAvoir'],
+    where: {
+      code_structure,
+      typeEntite: 'client',
+      statutBon: 'retourné partiellement',
+      dateBon: { [Op.between]: [debut, fin] },
+      ...(magasinId && { magasinId }),
+      ...(agentId && { agentId })
+    }
+  });
+
+  /* =========================
+     4️⃣ CALCUL DES MONTANTS
+  ========================== */
+
+  const totalCaisse = paniersCaisse.reduce(
+    (sum, p) => sum + (safeNumber(p.totalTTC) || 0),
+    0
+  );
+
+  const totalBonNormaux = paniersBonNormaux.reduce(
+    (sum, p) => sum + (safeNumber(p.totalTTC) || 0),
+    0
+  );
+
+  const totalRetourPartiel = bonsRetourPartiel.reduce(
+    (sum, b) =>
+      sum + (
+        (safeNumber(b.netAPayer) || 0) -
+        (safeNumber(b.montantAvoir) || 0)
+      ),
+    0
+  );
+
+  const totalVendu = totalCaisse + totalBonNormaux + totalRetourPartiel;
+
+  const nombrePaniers =
+    paniersCaisse.length +
+    paniersBonNormaux.length +
+    bonsRetourPartiel.length;
 
   return {
-    totalCA: totalCA || 0,
-    nombrePaniers: nombrePaniers || 0,
-    ticketMoyen: nombrePaniers > 0 ? (totalCA / nombrePaniers) : 0
+    totalVendu,
+    nombrePaniers,
+    ticketMoyenVente:
+      nombrePaniers > 0 ? totalVendu / nombrePaniers : 0
   };
 };
+
+
+const getCAEncaisseBaseData = async ({
+  code_structure,
+  debut,
+  fin,
+  magasinId,
+  agentId
+}) => {
+
+  const { fn, col, Op } = db.Sequelize;
+
+  const result = await db.Paiement.findOne({
+    attributes: [
+      [fn('SUM', col('Paiement.montant')), 'totalEncaisse'],
+      [fn('COUNT', col('Paiement.id')), 'nombrePaiements']
+    ],
+    /* include: [
+      {
+        model: Panier,
+        required: false,
+        attributes: [],
+        where:{
+          code_structure,
+          typeEntite: { [Op.ne]: 'fournisseur' },
+              ...(magasinId && { magasinId }),
+              ...(agentId && { agentId })
+        },
+        include: [
+          {
+            model: db.Bon,
+            required: false,
+            attributes: [],
+            where: {
+              code_structure,
+              typeEntite: { [Op.ne]: 'fournisseur' },
+              ...(magasinId && { magasinId }),
+              ...(agentId && { agentId })
+            }
+          }
+        ]
+      }
+    ], */
+    where: {
+      code_structure,
+      statutPaiement: 'validé',
+      typePaiement: { [Op.ne]: 'fournisseur' },
+      date: { [Op.between]: [debut, fin] },
+      ...(magasinId && { magasinId }),
+      ...(agentId && { agentId })
+    },
+    raw: true
+  });
+
+  const totalEncaisse = Number(result?.totalEncaisse || 0);
+  const nombrePaiements = Number(result?.nombrePaiements || 0);
+
+  return {
+    totalEncaisse,
+    nombrePaiements,
+    ticketMoyenEncaisse:
+      nombrePaiements > 0 ? totalEncaisse / nombrePaiements : 0
+  };
+};
+
 
 //..................................... API pour KPI journaliers................................
 // KPI caisse dans la journée
@@ -106,21 +249,31 @@ exports.getKpiCaisseJour = async (req, res) => {
     }
     const { debutJournee, finJournee } = FonctionsUtilitaires .getPeriodeJournee();
 
-    const whereCondition = buildWhereCondition({
+    const params = {
       code_structure,
+      debut:debutJournee,
+      fin:finJournee,
       magasinId,
-      agentId,
-      fromDate: debutJournee,
-      toDate: finJournee
-    });
+      agentId
+    };
 
-    const data = await getCABaseData(whereCondition);
+    //const data = await getCABaseData(whereCondition);
 
+    const [caVendu, caEncaisse] = await Promise.all([
+      getCAVenduBaseData(params),
+      getCAEncaisseBaseData(params)
+    ]);
     //return res.json(data);
     return res.json({
       niveau: magasinId ? 'magasin' : 'structure',
       periode: 'jour',
-      ...data
+      debutJournee,
+      finJournee,
+
+      caVendu,
+      caEncaisse,
+
+      ecartCA: caVendu.totalVendu - caEncaisse.totalEncaisse
     });
 
   } catch (error) {
@@ -129,60 +282,99 @@ exports.getKpiCaisseJour = async (req, res) => {
   }
 };
 
-// Encaissements par mode de paiement
+// Encaissements par mode + par compte
 exports.getEncaissementsParMode = async (req, res) => {
   try {
     const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
-    const { fn, col } = db.Sequelize;
+    const { fn, col, Op } = db.Sequelize;
 
-    // Validation : code_structure toujours requis
     if (!code_structure) {
-      return res.status(400).json({ 
-        error: 'Le paramètre "code_structure" est requis' 
+      return res.status(400).json({
+        error: 'Le paramètre "code_structure" est requis'
       });
     }
-     // Déterminer les dates selon la période ou le jour courant
+
+    // Détermination période
     let dateCondition;
     let periodeLabel;
-    
+
     if (periode) {
       const { debut, fin } = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
-      dateCondition = { [db.Sequelize.Op.between]: [debut, fin] };
+      dateCondition = { [Op.between]: [debut, fin] };
       periodeLabel = periode;
-    } 
-    else {
+    } else {
       const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
-      dateCondition = { [db.Sequelize.Op.between]: [debutJournee, finJournee] };
+      dateCondition = { [Op.between]: [debutJournee, finJournee] };
       periodeLabel = 'jour';
     }
-    
-    // Condition where pour les Paniers
+
+    // Condition panier
     const wherePanier = {
       code_structure,
-      statut: { [db.Sequelize.Op.notIn]: STATUTS_EXCLUS },
+      typeEntite: { [Op.ne]: 'fournisseur' },
+      statut: { [Op.notIn]: STATUTS_EXCLUS },
       dateCreation: dateCondition,
       ...(magasinId && { magasinId }),
-      ...(agentId && { agentId: agentId })
+      ...(agentId && { agentId })
     };
-    
-    const paiements = await db.Paiement.findAll({
+
+    /* ============================
+       1️⃣ Encaissements par MÉTHODE
+       ============================ */
+    const paiementsParMethode = await db.Paiement.findAll({
       attributes: [
         'methodePaiement',
-        [fn('SUM', col('montant')), 'total']
+        [fn('SUM', col('Paiement.montant')), 'total']
       ],
+      where:{
+        code_structure,
+        date:dateCondition,
+        statutPaiement:'validé',
+        ...(magasinId && { magasinId }),
+      ...(agentId && { agentId })
+      },
       include: [{
         model: Panier,
-        where: wherePanier,
-        attributes: []
+        attributes: [],
+        required: false,
+        where: wherePanier
       }],
-      group: ['methodePaiement']
+      group: ['methodePaiement'],
+      raw: true
+    });
+
+    /* ============================
+       2️⃣ Encaissements par COMPTE
+       ============================ */
+    const paiementsParCompte = await db.Paiement.findAll({
+      attributes: [
+        'compte',
+        [fn('SUM', col('Paiement.montant')), 'total']
+      ],
+      where:{
+        code_structure,
+        date:dateCondition,
+        statutPaiement:'validé',
+        ...(magasinId && { magasinId }),
+      ...(agentId && { agentId })
+      },
+      include: [{
+        model: Panier,
+        attributes: [],
+        required: false,
+        where: wherePanier
+      }],
+      group: ['compte'],
+      raw: true
     });
 
     const niveau = magasinId ? 'magasin' : 'structure';
+
     return res.json({
       niveau,
       periode: periodeLabel,
-      paiements
+      parMethode: paiementsParMethode,
+      parCompte: paiementsParCompte
     });
 
   } catch (error) {
@@ -191,11 +383,12 @@ exports.getEncaissementsParMode = async (req, res) => {
   }
 };
 
+
 // Remises accordées
 exports.getStatsRemises = async (req, res) => {
   try {
     const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
-
+    const { Op } = db.Sequelize;
     // Validation : code_structure toujours requis
     if (!code_structure) {
       return res.status(400).json({ 
@@ -213,35 +406,14 @@ exports.getStatsRemises = async (req, res) => {
       const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
       dateCondition = { [db.Sequelize.Op.between]: [debutJournee, finJournee] };
     }
-
-    /* let whereCondition;
-    if (periode) {
-      whereCondition = buildWhereCondition({
-        periode,
-        dateReference,
-        code_structure,
-        magasinId,
-        agentId,
-        statutsExclus: STATUTS_EXCLUS_SANS_EN_COURS,
-        remise: { [db.Sequelize.Op.gt]: 0 }
-      });
-    } else {
-      const { debutJournee, finJournee } = FonctionsUtilitaires .getPeriodeJournee();
-      whereCondition = buildWhereCondition({
-        code_structure,
-        magasinId,
-        agentId,
-        fromDate: debutJournee,
-        toDate: finJournee,
-        statutsExclus: STATUTS_EXCLUS_SANS_EN_COURS,
-        remise: { [db.Sequelize.Op.gt]: 0 }
-      });
-    } */
-
     const whereCondition = {
       code_structure,
       statut: { [db.Sequelize.Op.notIn]: STATUTS_EXCLUS_SANS_EN_COURS },
-      remise: { [db.Sequelize.Op.gt]: 0 },
+      [Op.or]: [
+        { remise: { [Op.gt]: 0 } },
+        { remiseGlobale: { [Op.gt]: 0 } }
+      ],
+      typeEntite: { [Op.ne]: 'fournisseur' },
       dateCreation: dateCondition,
       ...(magasinId && { magasinId }),
       ...(agentId && { agentId: agentId })
@@ -251,7 +423,8 @@ exports.getStatsRemises = async (req, res) => {
         [db.Sequelize.fn('SUM', db.Sequelize.col('remise')), 'totalRemise'],
         [db.Sequelize.fn('COUNT', db.Sequelize.col('id')), 'nombrePaniers']
       ],
-      where: whereCondition
+      where: whereCondition,
+      raw:true
     });
 
     return res.json(stats[0] || { totalRemise: 0, nombrePaniers: 0 });
@@ -262,12 +435,13 @@ exports.getStatsRemises = async (req, res) => {
   }
 };
 
-// Avoirs émis
+// Avoirs émis (bons de type avoir)
 exports.getAvoirs = async (req, res) => {
   try {
     const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
+    const { Op, fn, col } = db.Sequelize;
 
-     // Validation : code_structure toujours requis
+    // Validation : code_structure toujours requis
     if (!code_structure) {
       return res.status(400).json({ 
         error: 'Le paramètre "code_structure" est requis' 
@@ -279,103 +453,43 @@ exports.getAvoirs = async (req, res) => {
     
     if (periode) {
       const { debut, fin } = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
-      dateCondition = { [db.Sequelize.Op.between]: [debut, fin] };
+      dateCondition = { [Op.between]: [debut, fin] };
     } else {
       const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
-      dateCondition = { [db.Sequelize.Op.between]: [debutJournee, finJournee] };
+      dateCondition = { [Op.between]: [debutJournee, finJournee] };
     }
 
-    /* let whereCondition;
-    if (periode) {
-      whereCondition = buildWhereCondition({
-        periode,
-        dateReference,
-        code_structure,
-        magasinId,
-        agentId,
-        //type: 'avoir',
-        statutsExclus: [] // Pas d'exclusion de statut pour les avoirs
-      });
-    } else {
-      const { debutJournee, finJournee } = FonctionsUtilitaires .getPeriodeJournee();
-      whereCondition = buildWhereCondition({
-        code_structure,
-        magasinId,
-        agentId,
-        fromDate: debutJournee,
-        toDate: finJournee,
-        //type: 'avoir',
-        statutsExclus: []
-      });
-    } */
-
-    const whereCondition = {
+    // Condition pour les bons de type avoir
+    const whereBon = {
       code_structure,
-      // type: 'avoir', // Si vous avez une colonne type
-      dateCreation: dateCondition,
+      type: 'avoir',
+      typeEntite: 'client',
+      dateBon: dateCondition,
       ...(magasinId && { magasinId }),
       ...(agentId && { agentId: agentId })
     };
 
-    const result = await Panier.findAll({
+    const result = await db.Bon.findAll({
       attributes: [
-        [db.Sequelize.fn('SUM', db.Sequelize.col('totalTTC')), 'montantAvoir'],
-        [db.Sequelize.fn('COUNT', db.Sequelize.col('id')), 'nombreAvoirs']
+        [fn('SUM', col('montantAvoir')), 'montantAvoir'],
+        [fn('COUNT', col('id')), 'nombreAvoirs']
       ],
-      where: whereCondition
+      where: whereBon,
+      raw:true
     });
 
-    return res.json(result[0] || { montantAvoir: 0, nombreAvoirs: 0 });
+    return res.json({
+      niveau: magasinId ? 'magasin' : 'structure',
+      periode: periode || 'jour',
+      ...(result[0] || { montantAvoir: 0, nombreAvoirs: 0 })
+    });
 
   } catch (error) {
     console.error('Erreur getAvoirs:', error);
     res.status(500).json({ error: error.message });
   }
 };
-
 // Caisse théorique
-/* exports.getCaisseTheorique = async (req, res) => {
-  try {
-    const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
-
-    let whereCondition;
-    if (periode) {
-      whereCondition = buildWhereCondition({
-        periode,
-        dateReference,
-        code_structure,
-        magasinId,
-        statutsExclus: STATUTS_EXCLUS,
-        agentId
-      },false,true);
-    } else {
-      const { debutJournee, finJournee } = FonctionsUtilitaires .getPeriodeJournee();
-      whereCondition = buildWhereCondition({
-        code_structure,
-        magasinId,
-        agentId,
-        fromDate: debutJournee,
-        toDate: finJournee
-      });
-    }
-
-    const totalEspeces = await db.Paiement.sum('montant', {
-      where: {
-        methodePaiement: 'Espèce',
-        ...whereCondition
-      }
-    });
-
-    return res.json({
-      caisseTheorique: totalEspeces || 0
-    });
-
-  } catch (error) {
-    console.error('Erreur getCaisseTheorique:', error);
-    res.status(500).json({ error: error.message });
-  }
-};
- */
 exports.getCaisseTheorique = async (req, res) => {
   try {
     const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
@@ -409,6 +523,7 @@ exports.getCaisseTheorique = async (req, res) => {
     // -------------------------
     const wherePanier = {
       code_structure,
+      typeEntite: { [Op.ne]: 'fournisseur' },
       statut: { [Op.notIn]: STATUTS_EXCLUS },
       dateCreation: dateCondition,
       ...(magasinId && { magasinId }),
@@ -420,6 +535,7 @@ exports.getCaisseTheorique = async (req, res) => {
     // -------------------------
     const wherePaiement = {
       methodePaiement: 'Espèce',
+      typePaiement: { [Op.ne]: 'fournisseur' },
       statutPaiement: { [Op.notIn]: STATUTS_EXCLUS }
     };
 
@@ -447,42 +563,40 @@ exports.getCaisseTheorique = async (req, res) => {
 };
 
 //..................................... API pour KPI par période................................
-// KPI caisse par période
 exports.getStatsCaissePeriode = async (req, res) => {
   try {
     const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
 
-   /*  if (!periode) {
-      return res.status(400).json({ error: 'Le paramètre "periode" est requis' });
-    } */
-    // Validation
-
-    const errors = [];
-    if (!periode) errors.push('Le paramètre "periode" est requis');
-    if (!code_structure) errors.push('Le paramètre "code_structure" est requis');
-    
-    if (errors.length > 0) {
-      return res.status(400).json({ error: errors.join(', ') });
+    if (!periode || !code_structure) {
+      return res.status(400).json({
+        error: 'Les paramètres "periode" et "code_structure" sont requis'
+      });
     }
 
-    const { debut, fin } = FonctionsUtilitaires .getPeriodeDates(periode, dateReference);
-    //const whereCondition = buildWhereCondition({ periode, dateReference, code_structure, magasinId, agentId });
+    const { debut, fin } =
+      FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
 
-    const whereCondition = {
+    const params = {
       code_structure,
-      statut: { [db.Sequelize.Op.notIn]: STATUTS_EXCLUS },
-      dateCreation: { [db.Sequelize.Op.between]: [debut, fin] },
-      ...(magasinId && { magasinId }),
-      ...(agentId && { agentId: agentId })
+      debut,
+      fin,
+      magasinId,
+      agentId
     };
-    const data = await getCABaseData(whereCondition);
+
+    const [caVendu, caEncaisse] = await Promise.all([
+      getCAVenduBaseData(params),
+      getCAEncaisseBaseData(params)
+    ]);
 
     return res.json({
       niveau: magasinId ? 'magasin' : 'structure',
       periode,
       debut,
       fin,
-      ...data
+      caVendu,
+      caEncaisse,
+      ecartCA: caVendu.totalVendu - caEncaisse.totalEncaisse
     });
 
   } catch (error) {
@@ -491,46 +605,106 @@ exports.getStatsCaissePeriode = async (req, res) => {
   }
 };
 
-// Comparatif CA période actuelle vs période précédente
+//Méthode de calcul des variations
+const calculVariation = (actuel, precedent) => {
+  if (precedent > 0) {
+    return ((actuel - precedent) / precedent) * 100;
+  }
+  return actuel > 0 ? 100 : 0;
+};
+
 exports.getStatsComparatives = async (req, res) => {
   try {
     const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
 
+    // ========================
     // Validation
-    const errors = [];
-    if (!periode) errors.push('Le paramètre "periode" est requis');
-    if (!code_structure) errors.push('Le paramètre "code_structure" est requis');
-    
-    if (errors.length > 0) {
-      return res.status(400).json({ error: errors.join(', ') });
+    // ========================
+    if (!periode || !code_structure) {
+      return res.status(400).json({
+        error: 'Les paramètres "periode" et "code_structure" sont requis'
+      });
     }
 
-    const periodeActuelle = FonctionsUtilitaires .getPeriodeDates(periode, dateReference);
-    const periodePrecedente = FonctionsUtilitaires .getPeriodePrecedente(periode, dateReference);
+    // ========================
+    // Définition des périodes
+    // ========================
+    const periodeActuelle =
+      FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
 
-    const buildWhere = (dates) => ({
-      code_structure,
-      statut: { [db.Sequelize.Op.notIn]: STATUTS_EXCLUS },
-      dateCreation: { [db.Sequelize.Op.between]: [dates.debut, dates.fin] },
-      ...(magasinId && { magasinId }),
-      ...(agentId && { agentId: agentId })
-    });
+    const periodePrecedente =
+      FonctionsUtilitaires.getPeriodePrecedente(periode, dateReference);
 
-    const [actuel, precedent] = await Promise.all([
-      Panier.sum('totalTTC', { where: buildWhere(periodeActuelle) }),
-      Panier.sum('totalTTC', { where: buildWhere(periodePrecedente) })
+    // ========================
+    // Récupération des données
+    // ========================
+    const [
+      caVenduActuel,
+      caVenduPrecedent,
+      caEncaisseActuel,
+      caEncaissePrecedent
+    ] = await Promise.all([
+      getCAVenduBaseData({
+        code_structure,
+        magasinId,
+        agentId,
+        debut: periodeActuelle.debut,
+        fin: periodeActuelle.fin
+      }),
+      getCAVenduBaseData({
+        code_structure,
+        magasinId,
+        agentId,
+        debut: periodePrecedente.debut,
+        fin: periodePrecedente.fin
+      }),
+      getCAEncaisseBaseData({
+        code_structure,
+        magasinId,
+        agentId,
+        debut: periodeActuelle.debut,
+        fin: periodeActuelle.fin
+      }),
+      getCAEncaisseBaseData({
+        code_structure,
+        magasinId,
+        agentId,
+        debut: periodePrecedente.debut,
+        fin: periodePrecedente.fin
+      })
     ]);
 
-    const variation = precedent
-      ? ((actuel - precedent) / precedent) * 100
-      : (actuel ? 100 : 0);
+    // ========================
+    // Variations
+    // ========================
+    const variationVendu = calculVariation(
+      caVenduActuel.totalVendu,
+      caVenduPrecedent.totalVendu
+    );
 
-    res.json({
+    const variationEncaisse = calculVariation(
+      caEncaisseActuel.totalEncaisse,
+      caEncaissePrecedent.totalEncaisse
+    );
+
+    // ========================
+    // Réponse
+    // ========================
+    return res.json({
       niveau: magasinId ? 'magasin' : 'structure',
       periode,
-      actuel: actuel || 0,
-      precedent: precedent || 0,
-      variationPourcent: Number(variation.toFixed(2))
+
+      vaCAVendu: {
+        actuel: caVenduActuel.totalVendu,
+        precedent: caVenduPrecedent.totalVendu,
+        variationPourcent: Number(variationVendu.toFixed(2))
+      },
+
+      vaCAEncaisse: {
+        actuel: caEncaisseActuel.totalEncaisse,
+        precedent: caEncaissePrecedent.totalEncaisse,
+        variationPourcent: Number(variationEncaisse.toFixed(2))
+      }
     });
 
   } catch (error) {
@@ -539,57 +713,82 @@ exports.getStatsComparatives = async (req, res) => {
   }
 };
 
-// CA par jour
+
+// CA par jour (VENDU + ENCAISSÉ)
 exports.getCAParJour = async (req, res) => {
   try {
     const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
-    const { fn, col } = db.Sequelize;
+    const { fn, col, Op } = db.Sequelize;
 
-    // Validation : code_structure toujours requis
     if (!code_structure) {
-      return res.status(400).json({ 
-        error: 'Le paramètre "code_structure" est requis' 
+      return res.status(400).json({
+        error: 'Le paramètre "code_structure" est requis'
       });
     }
 
-    // Par défaut, on prend le mois en cours si aucune période n'est spécifiée
+    // Période par défaut : mois
     const periodToUse = periode || 'mois';
-    const { debut, fin } = FonctionsUtilitaires .getPeriodeDates(periodToUse, dateReference);
+    const { debut, fin } = FonctionsUtilitaires.getPeriodeDates(periodToUse, dateReference);
 
-    /* const whereCondition = buildWhereCondition({
-      fromDate: debut,
-      toDate: fin,
-      code_structure,
-      magasinId,
-      agentId,
-      statutsExclus: STATUTS_EXCLUS_SANS_EN_COURS
-    }); */
-
-    const whereCondition = {
-      code_structure,
-      statut: { [db.Sequelize.Op.notIn]: STATUTS_EXCLUS_SANS_EN_COURS },
-      dateCreation: { [db.Sequelize.Op.between]: [debut, fin] },
-      ...(magasinId && { magasinId }),
-      ...(agentId && { agentId: agentId })
-    };
-
-    const data = await Panier.findAll({
+    /* ============================
+       1️⃣ CA VENDU PAR JOUR
+       ============================ */
+    const caVenduParJour = await db.Panier.findAll({
       attributes: [
-        [fn('DATE', col('dateCreation')), 'date'],
-        [fn('SUM', col('totalTTC')), 'total'],
-        [fn('COUNT', col('id')), 'nombrePaniers']
+        [fn('DATE', col('Bon.dateBon')), 'date'],
+        [fn('SUM', col('Panier.totalTTC')), 'total'],
+        [fn('COUNT', col('Panier.id')), 'nombrePaniers']
       ],
-      where: whereCondition,
-      group: [fn('DATE', col('dateCreation'))],
-      order: [[fn('DATE', col('dateCreation')), 'ASC']]
+      include: [{
+        model: db.Bon,
+        required: true,
+        attributes: [],
+        where: {
+          code_structure,
+          typeEntite: { [Op.ne]: 'fournisseur' },
+          [Op.or]: [
+            { type: 'vente', statutBon: 'validé' },
+            { type: 'commande', statutBon: 'livré' }
+          ],
+          dateBon: { [Op.between]: [debut, fin] },
+          ...(magasinId && { magasinId }),
+          ...(agentId && { agentId })
+        }
+      }],
+      group: [fn('DATE', col('Bon.dateBon'))],
+      order: [[fn('DATE', col('Bon.dateBon')), 'ASC']],
+      raw: true
     });
 
-    res.json({
+    /* ============================
+       2️⃣ CA ENCAISSÉ PAR JOUR
+       ============================ */
+    const caEncaisseParJour = await db.Paiement.findAll({
+      attributes: [
+        [fn('DATE', col('Paiement.date')), 'date'],
+        [fn('SUM', col('Paiement.montant')), 'total'],
+        [fn('COUNT', col('Paiement.id')), 'nombrePaiements']
+      ],
+      where: {
+        code_structure,
+        typePaiement: { [Op.ne]: 'fournisseur' },
+        statutPaiement: 'validé',
+        date: { [Op.between]: [debut, fin] },
+        ...(magasinId && { magasinId }),
+        ...(agentId && { agentId })
+      },
+      group: [fn('DATE', col('Paiement.date'))],
+      order: [[fn('DATE', col('Paiement.date')), 'ASC']],
+      raw: true
+    });
+
+    return res.json({
       niveau: magasinId ? 'magasin' : 'structure',
       periode: periodToUse,
       debut,
       fin,
-      data
+      caVenduParJour,
+      caEncaisseParJour
     });
 
   } catch (error) {
@@ -613,16 +812,32 @@ exports.getKpiCaisse = async (req, res) => {
     }
 
     const { debut, fin } = FonctionsUtilitaires .getPeriodeDates(periode, dateReference);
-    const whereCondition = buildWhereCondition({ periode, dateReference, code_structure, magasinId, agentId });
-
-    const data = await getCABaseData(whereCondition);
-
-    return res.json({
-      niveau: magasinId ? 'magasin' : 'structure',
-      periode,
+    
+    const params = {
+      code_structure,
       debut,
       fin,
-      ...data
+      magasinId,
+      agentId
+    };
+
+    //const data = await getCABaseData(whereCondition);
+
+    const [caVendu, caEncaisse] = await Promise.all([
+      getCAVenduBaseData(params),
+      getCAEncaisseBaseData(params)
+    ]);
+    //return res.json(data);
+    return res.json({
+      niveau: magasinId ? 'magasin' : 'structure',
+      periode: 'jour',
+      debut,
+      fin,
+
+      caVendu,
+      caEncaisse,
+
+      ecartCA: caVendu.totalVendu - caEncaisse.totalEncaisse
     });
 
   } catch (error) {
@@ -673,7 +888,7 @@ exports.compareMagasinVsStructure = async (req, res) => {
 exports.getStatsStructureParMagasin = async (req, res) => {
   try {
     const { periode, dateReference, code_structure } = req.query;
-    const { fn, col } = db.Sequelize;
+    const { Op, fn, col } = db.Sequelize;
 
     if (!code_structure) {
       return res.status(400).json({ error: 'Le paramètre "code_structure" est requis' });
@@ -685,26 +900,6 @@ exports.getStatsStructureParMagasin = async (req, res) => {
 
     const { debut, fin } = FonctionsUtilitaires .getPeriodeDates(periode, dateReference);
 
-    /* const stats = await Panier.findAll({
-      attributes: [
-        'magasinId',
-        [fn('SUM', col('Panier.totalTTC')), 'totalCA'],
-        [fn('COUNT', col('Panier.id')), 'nombrePaniers'],
-        [fn('AVG', col('Panier.totalTTC')), 'ticketMoyen']
-      ],
-      where: buildWhereCondition({
-        fromDate: debut,
-        toDate: fin,
-        code_structure
-      }),
-      group: ['magasinId'],
-      include: [{
-        model: db.Magasin,
-        attributes: ['id', 'nom']
-      }],
-      order: [[fn('SUM', col('totalTTC')), 'DESC']]
-    }); */
-
     const stats = await Panier.findAll({
       attributes: [
         'magasinId',
@@ -714,6 +909,7 @@ exports.getStatsStructureParMagasin = async (req, res) => {
       ],
       where: {
         code_structure,
+        typeEntite: { [Op.ne]: 'fournisseur' },
         statut: { [db.Sequelize.Op.notIn]: STATUTS_EXCLUS },
         dateCreation: { [db.Sequelize.Op.between]: [debut, fin] }
       },
@@ -737,5 +933,855 @@ exports.getStatsStructureParMagasin = async (req, res) => {
   } catch (error) {
     console.error('Erreur getStatsStructureParMagasin:', error);
     res.status(500).json({ error: error.message });
+  }
+};
+
+//..................................... API pour les ventes à crédit................................
+
+// Ventes à crédit (bons de type vente avec typeEntite client)
+exports.getVentesCredit = async (req, res) => {
+  try {
+    const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
+    const { Op,fn,col } = db.Sequelize;
+
+    if (!code_structure) {
+      return res.status(400).json({ 
+        error: 'Le paramètre "code_structure" est requis' 
+      });
+    }
+
+    // Déterminer les dates
+    let dateCondition;
+    if (periode) {
+      const { debut, fin } = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
+      dateCondition = { [Op.between]: [debut, fin] };
+    } else {
+      const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
+      dateCondition = { [Op.between]: [debutJournee, finJournee] };
+    }
+
+    // Condition pour les bons de vente à crédit
+    const whereBon = {
+      code_structure,
+      type: 'vente',
+      typeEntite: 'client',
+      dateBon: dateCondition,
+      ...(magasinId && { magasinId }),
+      ...(agentId && { agentId: agentId })
+    };
+
+    // Récupérer les IDs des bons de vente à crédit
+    const bonsCredit = await db.Bon.findAll({
+      attributes: ['id', 'numero'],
+      where: whereBon
+    });
+
+    const bonIds = bonsCredit.map(bon => bon.id);
+    //const bonNumeros = bonsCredit.map(bon => bon.numero);
+
+    let totalMontant = 0;
+    let nombrePaniers = 0;
+
+    if (bonIds.length > 0) {
+      // Récupérer les paniers associés à ces bons
+      const paniersCredit = await Panier.findAll({
+        attributes: [
+          [fn('SUM', col('totalTTC')), 'totalMontant'],
+          [fn('COUNT', col('id')), 'nombrePaniers']
+        ],
+        where: {
+          bonId: { [Op.in]: bonIds },
+          statut: { [Op.notIn]: ['annulé', 'retourné', 'en_cours'] }
+        },
+        raw:true
+      });
+
+      const result = paniersCredit[0] || {};
+      totalMontant = parseFloat(result.totalMontant) || 0;
+      nombrePaniers = parseInt(result.nombrePaniers) || 0;
+    }
+
+    return res.json({
+      niveau: magasinId ? 'magasin' : 'structure',
+      periode: periode || 'jour',
+      montantCredit: totalMontant,
+      nombrePaniersCredit: nombrePaniers,
+      nombreBonsCredit: bonIds.length
+    });
+
+  } catch (error) {
+    console.error('Erreur getVentesCredit:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Avances (bons avec colonne avance non nulle)
+exports.getAvances = async (req, res) => {
+  try {
+    const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
+    const { Op, fn, col } = db.Sequelize;
+
+    if (!code_structure) {
+      return res.status(400).json({ 
+        error: 'Le paramètre "code_structure" est requis' 
+      });
+    }
+
+    // Déterminer les dates
+    let dateCondition;
+    if (periode) {
+      const { debut, fin } = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
+      dateCondition = { [Op.between]: [debut, fin] };
+    } else {
+      const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
+      dateCondition = { [Op.between]: [debutJournee, finJournee] };
+    }
+
+    // Condition pour les bons avec avance
+    const whereBon = {
+      code_structure,
+      type:'vente',
+      typeEntite:'client',
+      dateBon: dateCondition,
+      avance: { [Op.ne]: null },
+      [Op.or]: [
+        { avance: { [Op.ne]: 0 } },
+        { avance: { [Op.gt]: 0 } }
+      ],
+      ...(magasinId && { magasinId }),
+      ...(agentId && { agentId: agentId })
+    };
+
+    const result = await db.Bon.findAll({
+      attributes: [
+        [fn('SUM', col('avance')), 'totalAvances'],
+        [fn('COUNT', col('id')), 'nombreAvances'],
+        [fn('AVG', col('avance')), 'moyenneAvance']
+      ],
+      where: whereBon,
+      raw:true
+    });
+
+    const data = result[0] || {};
+    
+    // Récupérer les paniers associés à ces avances
+    const bonIds = await db.Bon.findAll({
+      attributes: ['id'],
+      where: whereBon
+    }).then(bons => bons.map(b => b.id));
+
+    let nombrePaniers = 0;
+    if (bonIds.length > 0) {
+      const paniersCount = await Panier.count({
+        where: {
+          bonId: { [Op.in]: bonIds },
+          statut: { [Op.notIn]: ['annulé', 'retourné', 'en_cours'] }
+        }
+      });
+      nombrePaniers = paniersCount;
+    }
+
+    return res.json({
+      niveau: magasinId ? 'magasin' : 'structure',
+      periode: periode || 'jour',
+      totalAvances: parseFloat(data.totalAvances) || 0,
+      nombreAvances: parseInt(data.nombreAvances) || 0,
+      nombrePaniersAvecAvance: nombrePaniers,
+      moyenneAvance: parseFloat(data.moyenneAvance) || 0
+    });
+
+  } catch (error) {
+    console.error('Erreur getAvances:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Ventes à crédit annulées ou retournées (bons de retour)
+/* exports.getVentesCreditAnnulees = async (req, res) => {
+  try {
+    const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
+    const { Op } = db.Sequelize;
+
+    if (!code_structure) {
+      return res.status(400).json({ 
+        error: 'Le paramètre "code_structure" est requis' 
+      });
+    }
+
+    // Déterminer les dates
+    let dateCondition;
+    if (periode) {
+      const { debut, fin } = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
+      dateCondition = { [Op.between]: [debut, fin] };
+    } else {
+      const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
+      dateCondition = { [Op.between]: [debutJournee, finJournee] };
+    }
+
+    // Trouver les bons de retour
+    const whereBonRetour = {
+      code_structure,
+      type: 'retour',
+      typeEntite: 'client',
+      dateBon: dateCondition,
+      ...(magasinId && { magasinId }),
+      ...(agentId && { agentId: agentId })
+    };
+
+    // Récupérer les bons de retour et leurs numéros d'origine
+    const bonsRetour = await db.Bon.findAll({
+      attributes: ['id', 'numero','montantTotal', 'numeroBonOrigine', 'montantAvoir'],
+      where: whereBonRetour
+    });
+
+    let totalMontantRetour = 0;
+    let nombreRetours = 0;
+    let nombreRetoursTotaux = 0;
+    let nombreRetoursPartiels = 0;
+    const retoursDetails = [];
+
+    if (bonsRetour.length > 0) {
+      // Pour chaque bon de retour, vérifier le bon d'origine
+      for (const bonRetour of bonsRetour) {
+        if (bonRetour.numeroBonOrigine) {
+          // Trouver le bon d'origine
+          const bonOrigine = await db.Bon.findOne({
+            where: {
+              numero: bonRetour.numeroBonOrigine,
+              type: 'vente',
+              typeEntite: 'client'
+            }
+          });
+
+          if (bonOrigine) {
+            // Vérifier si c'est un retour total ou partiel
+            const montantOrigine = parseFloat(bonOrigine.montantAvoir) ||parseFloat(bonOrigine.montantTotal)|| 0;
+            const montantRetour = parseFloat(bonRetour.montantAvoir) ||parseFloat(bonRetour.montantTotal) || 0;
+            
+            const estRetourTotal = Math.abs(montantOrigine - montantRetour) < 0.01; // Tolérance pour les arrondis
+            
+            retoursDetails.push({
+              numeroRetour: bonRetour.numero,
+              numeroOrigine: bonRetour.numeroBonOrigine,
+              montantOrigine,
+              montantRetour,
+              type: estRetourTotal ? 'total' : 'partiel'
+            });
+
+            totalMontantRetour += montantRetour;
+            nombreRetours++;
+            
+            if (estRetourTotal) {
+              nombreRetoursTotaux++;
+            } else {
+              nombreRetoursPartiels++;
+            }
+          }
+        }
+      }
+    }
+
+    return res.json({
+      niveau: magasinId ? 'magasin' : 'structure',
+      periode: periode || 'jour',
+      totalMontantRetour,
+      nombreRetours,
+      nombreRetoursTotaux,
+      nombreRetoursPartiels,
+      details: retoursDetails
+    });
+
+  } catch (error) {
+    console.error('Erreur getVentesCreditAnnulees:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+ */
+exports.getVentesCreditAnnulees = async (req, res) => {
+  try {
+    const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
+    const { Op } = db.Sequelize;
+
+    if (!code_structure) {
+      return res.status(400).json({
+        error: 'Le paramètre "code_structure" est requis'
+      });
+    }
+
+    /* =========================
+       1️⃣ PÉRIODE
+    ========================== */
+    let dateCondition;
+    if (periode) {
+      const { debut, fin } = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
+      dateCondition = { [Op.between]: [debut, fin] };
+    } else {
+      const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
+      dateCondition = { [Op.between]: [debutJournee, finJournee] };
+    }
+
+    /* =========================
+       2️⃣ BONS DE VENTE RETOURNÉS
+    ========================== */
+    const bons = await db.Bon.findAll({
+      attributes: [
+        'id',
+        'numero',
+        'statutBon',
+        'netAPayer',
+        'montantAvoir'
+      ],
+      where: {
+        code_structure,
+        typeEntite: 'client',
+        type: 'vente',
+        statutBon: { [Op.in]: ['retourné', 'retourné partiellement'] },
+        dateBon: dateCondition,
+        ...(magasinId && { magasinId }),
+        ...(agentId && { agentId })
+      }
+    });
+
+    /* =========================
+       3️⃣ AGRÉGATION
+    ========================== */
+    let totalMontantRetour = 0;
+    let nombreRetoursTotaux = 0;
+    let nombreRetoursPartiels = 0;
+
+    const details = bons.map(bon => {
+      const estPartiel = bon.statutBon === 'retourné partiellement';
+
+      const montant = estPartiel
+        ? safeNumber(bon.montantAvoir)
+        : safeNumber(bon.netAPayer);
+
+      totalMontantRetour += montant;
+
+      estPartiel ? nombreRetoursPartiels++ : nombreRetoursTotaux++;
+
+      return {
+        numeroBon: bon.numero,
+        type: estPartiel ? 'partiel' : 'total',
+        montant
+      };
+    });
+
+    return res.json({
+      niveau: magasinId ? 'magasin' : 'structure',
+      periode: periode || 'jour',
+      totalMontantRetour,
+      nombreRetours: bons.length,
+      nombreRetoursTotaux,
+      nombreRetoursPartiels,
+      details
+    });
+
+  } catch (error) {
+    console.error('Erreur getVentesCreditAnnulees:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Ventes en caisse annulées ou retournées
+exports.getVentesCaisseAnnulees = async (req, res) => {
+  try {
+    const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
+    const { Op,fn, col } = db.Sequelize;
+
+    if (!code_structure) {
+      return res.status(400).json({ 
+        error: 'Le paramètre "code_structure" est requis' 
+      });
+    }
+
+    // Déterminer les dates
+    let dateCondition;
+    if (periode) {
+      const { debut, fin } = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
+      dateCondition = { [Op.between]: [debut, fin] };
+    } else {
+      const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
+      dateCondition = { [Op.between]: [debutJournee, finJournee] };
+    }
+
+    // Condition pour les paniers annulés ou retournés
+    const wherePanier = {
+      code_structure,
+      dateCreation: dateCondition,
+      typeEntite:'autre',
+      statut: { [Op.in]: ['annulé', 'retourné'] },
+      ...(magasinId && { magasinId }),
+      ...(agentId && { agentId: agentId })
+    };
+
+    // 1. Récupérer les statistiques des paniers annulés/retournés
+    const statsPaniers = await Panier.findAll({
+      attributes: [
+        'statut',
+        [fn('SUM', col('Panier.totalTTC')), 'totalMontant'],
+        [fn('COUNT', col('Panier.id')), 'nombrePaniers']
+      ],
+      where: wherePanier,
+      group: ['statut']
+    });
+
+    // 2. Récupérer les paiements annulés associés à ces paniers
+    const paniersIds = await Panier.findAll({
+      attributes: ['id'],
+      where: wherePanier
+    }).then(paniers => paniers.map(p => p.id));
+
+    let totalPaiementsAnnules = 0;
+    let nombrePaiementsAnnules = 0;
+
+    if (paniersIds.length > 0) {
+      const paiementsAnnules = await db.Paiement.findAll({
+        attributes: [
+          [fn('SUM', col('montant')), 'totalPaiementsAnnules'],
+          [fn('COUNT', col('id')), 'nombrePaiementsAnnules']
+        ],
+        where: {
+          panierId: { [Op.in]: paniersIds },
+          statutPaiement: 'annulé',
+          typePaiement: 'autre'
+        },
+        raw:true
+      });
+
+      const resultPaiements = paiementsAnnules[0] || {};
+      totalPaiementsAnnules = parseFloat(resultPaiements.totalPaiementsAnnules) || 0;
+      nombrePaiementsAnnules = parseInt(resultPaiements.nombrePaiementsAnnules) || 0;
+    }
+
+    // 3. Regrouper les résultats
+    const result = {
+      niveau: magasinId ? 'magasin' : 'structure',
+      periode: periode || 'jour',
+      totalPaniersAnnules: 0,
+      totalMontantAnnule: 0,
+      totalPaniersRetournes: 0,
+      totalMontantRetourne: 0,
+      totalPaiementsAnnules,
+      nombrePaiementsAnnules,
+      details: {}
+    };
+
+    // Remplir les détails par statut
+    statsPaniers.forEach(stat => {
+      const statut = stat.dataValues.statut;
+      const montant = parseFloat(stat.dataValues.totalMontant) || 0;
+      const nombre = parseInt(stat.dataValues.nombrePaniers) || 0;
+      
+      result.details[statut] = { montant, nombre };
+      
+      if (statut === 'annulé') {
+        result.totalPaniersAnnules = nombre;
+        result.totalMontantAnnule = montant;
+      } else if (statut === 'retourné') {
+        result.totalPaniersRetournes = nombre;
+        result.totalMontantRetourne = montant;
+      }
+    });
+
+    // 4. Calculer les totaux généraux
+    result.totalPaniers = result.totalPaniersAnnules + result.totalPaniersRetournes;
+    result.totalMontant = result.totalMontantAnnule + result.totalMontantRetourne;
+
+    return res.json(result);
+
+  } catch (error) {
+    console.error('Erreur getVentesCaisseAnnulees:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// API combinée pour toutes les statistiques spéciales
+exports.getToutesStatistiquesSpeciales = async (req, res) => {
+  try {
+    const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
+
+    if (!code_structure) {
+      return res.status(400).json({ 
+        error: 'Le paramètre "code_structure" est requis' 
+      });
+    }
+
+    // Exécuter toutes les requêtes en parallèle
+    const [
+      avoirs,
+      ventesCredit,
+      avances,
+      ventesCreditAnnulees,
+      ventesCaisseAnnulees
+    ] = await Promise.all([
+      // Appeler la fonction getAvoirs (mais nous devons reconstruire la logique ici)
+      (async () => {
+        const { Op,fn, col } = db.Sequelize;
+        let dateCondition;
+        if (periode) {
+          const { debut, fin } = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
+          dateCondition = { [Op.between]: [debut, fin] };
+        } else {
+          const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
+          dateCondition = { [Op.between]: [debutJournee, finJournee] };
+        }
+
+        const whereBon = {
+          code_structure,
+          type: 'avoir',
+          typeEntite: 'client',
+          dateBon: dateCondition,
+          ...(magasinId && { magasinId }),
+          ...(agentId && { agentId: agentId })
+        };
+
+        const result = await db.Bon.findAll({
+          attributes: [
+            [fn('SUM', col('montantAvoir')), 'montantAvoir'],
+            [fn('COUNT', col('id')), 'nombreAvoirs']
+          ],
+          where: whereBon
+        });
+
+        return result[0] || { montantAvoir: 0, nombreAvoirs: 0 };
+      })(),
+      
+      // Appeler la fonction getVentesCredit
+      exports.getVentesCredit({ query: { periode, dateReference, code_structure, magasinId, agentId } }, { json: (data) => data }),
+      
+      // Appeler la fonction getAvances
+      exports.getAvances({ query: { periode, dateReference, code_structure, magasinId, agentId } }, { json: (data) => data }),
+      
+      // Appeler la fonction getVentesCreditAnnulees
+      exports.getVentesCreditAnnulees({ query: { periode, dateReference, code_structure, magasinId, agentId } }, { json: (data) => data }),
+      
+      // Appeler la fonction getVentesCaisseAnnulees
+      exports.getVentesCaisseAnnulees({ query: { periode, dateReference, code_structure, magasinId, agentId } }, { json: (data) => data })
+    ]);
+
+    return res.json({
+      niveau: magasinId ? 'magasin' : 'structure',
+      periode: periode || 'jour',
+      avoirs,
+      ventesCredit,
+      avances,
+      ventesCreditAnnulees,
+      ventesCaisseAnnulees,
+      resume: {
+        totalAvoirs: avoirs.montantAvoir || 0,
+        totalVentesCredit: ventesCredit.montantCredit || 0,
+        totalAvances: avances.totalAvances || 0,
+        totalRetours: ventesCreditAnnulees.totalMontantRetour || 0,
+        totalAnnulations: ventesCaisseAnnulees.totalMontant || 0
+      }
+    });
+
+  } catch (error) {
+    console.error('Erreur getToutesStatistiquesSpeciales:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+//..................................... API pour KPI journaliers................................
+//Statistiques des commandes clients
+exports.getStatistiquesCommandes = async (req, res) => {
+  try {
+    const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
+    const { Op, fn, col } = db.Sequelize;
+
+    if (!code_structure) {
+      return res.status(400).json({ 
+        error: 'Le paramètre "code_structure" est requis' 
+      });
+    }
+
+    // Déterminer les dates
+    let dateCondition;
+    if (periode) {
+      const { debut, fin } = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
+      dateCondition = { [Op.between]: [debut, fin] };
+    } else {
+      const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
+      dateCondition = { [Op.between]: [debutJournee, finJournee] };
+    }
+
+    // Condition de base pour les commandes
+    const whereBase = {
+      code_structure,
+      type: 'commande',
+      typeEntite:'client',
+      dateBon: dateCondition,
+      ...(magasinId && { magasinId }),
+      ...(agentId && { agentId: agentId })
+    };
+
+    // 1. Commandes validées
+    const whereCommandesValidees = {
+      ...whereBase,
+      statutBon: 'validé'
+    };
+
+    const commandesValidees = await db.Bon.findAll({
+      attributes: ['id', 'numero', 'netAPayer'],
+      where: whereCommandesValidees
+    });
+
+    // Calcul des statistiques pour les commandes validées
+    const statsCommandesValidees = {
+      nombre: commandesValidees.length,
+      montantTotal: commandesValidees.reduce((sum, cmd) => sum + (parseFloat(cmd.netAPayer) || 0), 0)
+    };
+
+    // Récupérer les paniers des commandes validées
+    const bonIdsValidees = commandesValidees.map(cmd => cmd.id);
+    let nombrePaniersValidees = 0;
+    let montantPaniersValidees = 0;
+
+    if (bonIdsValidees.length > 0) {
+      const paniersValidees = await Panier.findAll({
+        attributes: [
+          [fn('SUM', col('totalTTC')), 'totalMontant'],
+          [fn('COUNT', col('id')), 'nombrePaniers']
+        ],
+        where: {
+          bonId: { [Op.in]: bonIdsValidees },
+          statut: 'validé'
+        },
+        raw: true
+      });
+
+      const result = paniersValidees[0] || {};
+      montantPaniersValidees = parseFloat(result.totalMontant) || 0;
+      nombrePaniersValidees = parseInt(result.nombrePaniers) || 0;
+    }
+
+    // 2. Commandes livrées
+    const whereCommandesLivrees = {
+      ...whereBase,
+      statutBon: 'livré'
+    };
+
+    const commandesLivrees = await db.Bon.findAll({
+      attributes: ['id', 'numero', 'netAPayer'],
+      where: whereCommandesLivrees
+    });
+
+    // Calcul des statistiques pour les commandes livrées
+    const statsCommandesLivrees = {
+      nombre: commandesLivrees.length,
+      montantTotal: commandesLivrees.reduce((sum, cmd) => sum + (parseFloat(cmd.netAPayer) || 0), 0)
+    };
+
+    // 3. Commandes annulées
+    const whereCommandesAnnulees = {
+      ...whereBase,
+      statutBon: 'annulé'
+    };
+
+    const commandesAnnulees = await db.Bon.findAll({
+      attributes: ['id', 'numero', 'netAPayer'],
+      where: whereCommandesAnnulees
+    });
+
+    // Calcul des statistiques pour les commandes annulées
+    const statsCommandesAnnulees = {
+      nombre: commandesAnnulees.length,
+      montantTotal: commandesAnnulees.reduce((sum, cmd) => sum + (parseFloat(cmd.netAPayer) || 0), 0)
+    };
+
+    // 4. Commandes retournées (avec gestion des retours partiels)
+    // D'abord, les commandes avec statut retourné
+    /* const whereCommandesRetournees = {
+      ...whereBase,
+      statutBon: 'retourné'
+    };
+
+    const commandesRetournees = await db.Bon.findAll({
+      attributes: ['id', 'numero', 'montantTotal'],
+      where: whereCommandesRetournees
+    });
+
+    let montantRetoursCommandes = commandesRetournees.reduce((sum, cmd) => sum + (parseFloat(cmd.montantTotal) || 0), 0);
+    let nombreRetoursCommandes = commandesRetournees.length;
+
+    // Ensuite, traiter les bons de retour client (retours partiels)
+    const whereBonsRetour = {
+      code_structure,
+      type: 'retour',
+      typeEntite: 'client',
+      dateBon: dateCondition,
+      ...(magasinId && { magasinId }),
+      ...(agentId && { agentId: agentId })
+    };
+
+    const bonsRetourClient = await db.Bon.findAll({
+      attributes: ['id', 'numero', 'montantTotal', 'numeroBonOrigine', 'montantAvoir'],
+      where: whereBonsRetour
+    });
+
+    let montantRetoursPartiels = 0;
+    let nombreRetoursPartiels = 0;
+    let montantRetoursTotaux = montantRetoursCommandes;
+    let nombreRetoursTotaux = nombreRetoursCommandes;
+
+    // Traitement des retours partiels
+    const retoursPartielsDetails = [];
+    
+    for (const bonRetour of bonsRetourClient) {
+      if (bonRetour.numeroBonOrigine) {
+        // Vérifier si la commande d'origine existe
+        const bonOrigine = await db.Bon.findOne({
+          where: {
+            numero: bonRetour.numeroBonOrigine,
+            type: 'commande'
+          }
+        });
+
+        if (bonOrigine) {
+          const montantOrigine = parseFloat(bonOrigine.montantTotal) || 0;
+          const montantRetour = parseFloat(bonRetour.montantAvoir) || parseFloat(bonRetour.montantTotal) || 0;
+          
+          // Si le montant du retour est inférieur au montant d'origine, c'est un retour partiel
+          if (montantRetour > 0 && montantRetour < montantOrigine) {
+            montantRetoursPartiels += montantRetour;
+            nombreRetoursPartiels++;
+            
+            retoursPartielsDetails.push({
+              numeroRetour: bonRetour.numero,
+              numeroOrigine: bonRetour.numeroBonOrigine,
+              montantOrigine,
+              montantRetour,
+              type: 'partiel'
+            });
+          }
+        }
+      }
+    }
+
+    // Total des retours (complets + partiels)
+    const statsRetours = {
+      montantTotal: montantRetoursTotaux + montantRetoursPartiels,
+      nombreTotal: nombreRetoursTotaux + nombreRetoursPartiels,
+      nombreRetoursTotaux,
+      nombreRetoursPartiels,
+      montantRetoursPartiels,
+      montantRetoursTotaux,
+      detailsPartiels: retoursPartielsDetails
+    }; */
+
+    const commandesRetournees = await db.Bon.findAll({
+      attributes: [
+        'id',
+        'numero',
+        'statutBon',
+        'netAPayer',
+        'montantAvoir'
+      ],
+      where: {
+        ...whereBase,
+        statutBon: { [Op.in]: ['retourné', 'retourné partiellement'] }
+      }
+    });
+
+    let montantRetoursTotaux = 0;
+    let montantRetoursPartiels = 0;
+    let nombreRetoursTotaux = 0;
+    let nombreRetoursPartiels = 0;
+
+    const detailsRetours = [];
+
+    for (const cmd of commandesRetournees) {
+      const estPartiel = cmd.statutBon === 'retourné partiellement';
+
+      const montantRetour = estPartiel
+        ? (parseFloat(cmd.montantAvoir) || 0)
+        : (parseFloat(cmd.netAPayer) || 0);
+
+      if (estPartiel) {
+        montantRetoursPartiels += montantRetour;
+        nombreRetoursPartiels++;
+      } else {
+        montantRetoursTotaux += montantRetour;
+        nombreRetoursTotaux++;
+      }
+
+      detailsRetours.push({
+        numero: cmd.numero,
+        type: estPartiel ? 'partiel' : 'total',
+        montantRetour
+      });
+    }
+
+    const statsRetours = {
+      montantTotal: montantRetoursTotaux + montantRetoursPartiels,
+      nombreTotal: nombreRetoursTotaux + nombreRetoursPartiels,
+      nombreRetoursTotaux,
+      nombreRetoursPartiels,
+      montantRetoursTotaux,
+      montantRetoursPartiels,
+      details: detailsRetours
+    };
+
+    // 5. Taux de conversion (validées vs livrées)
+    const tauxConversion = statsCommandesValidees.nombre > 0 
+      ? (statsCommandesLivrees.nombre / statsCommandesValidees.nombre) * 100 
+      : 0;
+
+    // 6. Taux d'annulation
+    const tauxAnnulation = statsCommandesValidees.nombre > 0
+      ? (statsCommandesAnnulees.nombre / statsCommandesValidees.nombre) * 100
+      : 0;
+
+    return res.json({
+      niveau: magasinId ? 'magasin' : 'structure',
+      periode: periode || 'jour',
+      code_structure,
+      magasinId,
+      agentId,
+      
+      // Statistiques principales
+      commandesValidees: {
+        nombre: statsCommandesValidees.nombre,
+        montantTotal: statsCommandesValidees.montantTotal,
+        nombrePaniers: nombrePaniersValidees,
+        montantPaniers: montantPaniersValidees
+      },
+      
+      commandesLivrees: {
+        nombre: statsCommandesLivrees.nombre,
+        montantTotal: statsCommandesLivrees.montantTotal
+      },
+      
+      commandesAnnulees: {
+        nombre: statsCommandesAnnulees.nombre,
+        montantTotal: statsCommandesAnnulees.montantTotal
+      },
+      
+      commandesRetournees: statsRetours,
+      
+      // Indicateurs de performance
+      tauxConversion: parseFloat(tauxConversion.toFixed(2)),
+      tauxAnnulation: parseFloat(tauxAnnulation.toFixed(2)),
+      
+      // Synthèse
+      synthese: {
+        totalCommandes: statsCommandesValidees.nombre + statsCommandesLivrees.nombre + 
+                       statsCommandesAnnulees.nombre + statsRetours.nombreTotal,
+        montantGlobal: statsCommandesValidees.montantTotal + statsCommandesLivrees.montantTotal + 
+                      statsCommandesAnnulees.montantTotal + statsRetours.montantTotal
+      },
+      
+      dateDebut: dateCondition[Op.between] ? dateCondition[Op.between][0] : null,
+      dateFin: dateCondition[Op.between] ? dateCondition[Op.between][1] : null
+    });
+
+  } catch (error) {
+    console.error('Erreur getStatistiquesCommandes:', error);
+    res.status(500).json({ 
+      error: 'Erreur lors de la récupération des statistiques des commandes',
+      details: error.message 
+    });
   }
 };

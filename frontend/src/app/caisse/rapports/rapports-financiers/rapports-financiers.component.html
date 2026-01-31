@@ -1,243 +1,332 @@
 <div class="container-fluid" id="rapport-financier">
-  <!-- En-tête -->
-  <div
-    *ngIf="filteredDepenses.length > 0 || filteredRecettes.length > 0"
-    class="d-flex justify-content-end align-items-center no-printer"
-  >
-    <div *ngIf="isGeneratingPDF" class="spinner-container me-5">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Génération en cours...</span>
+  <!-- En-tête avec boutons d'export -->
+  <div class="d-flex justify-content-between align-items-center no-printer mb-3">
+    <h3 class="mb-0">
+      <i class="bi bi-graph-up me-2"></i>
+      Rapport Financier
+    </h3>
+    
+    <div class="d-flex align-items-center gap-2">
+      <!-- Indicateur de chargement -->
+      <div *ngIf="isLoading" class="me-3">
+        <div class="spinner-border spinner-border-sm text-primary" role="status">
+          <span class="visually-hidden">Chargement...</span>
+        </div>
+        <span class="text-muted ms-2">Chargement...</span>
       </div>
-      <p>Génération du PDF en cours... {{ progress }}%</p>
+      
+      <div *ngIf="isGeneratingPDF" class="me-3">
+        <div class="spinner-border spinner-border-sm text-primary" role="status">
+          <span class="visually-hidden">Génération PDF...</span>
+        </div>
+        <span class="text-muted ms-2">Génération PDF... {{ progress }}%</span>
+      </div>
+      
+      <button class="btn btn-outline-primary" (click)="impression()" [disabled]="isLoading">
+        <i class="bi bi-printer"></i> Imprimer
+      </button>
+      <button class="btn btn-outline-danger" (click)="exportToPDF()" [disabled]="isLoading || isGeneratingPDF">
+        <i class="bi bi-file-earmark-pdf"></i> PDF
+      </button>
+      <button class="btn btn-outline-success" (click)="exportToExcel()" [disabled]="isLoading">
+        <i class="bi bi-file-earmark-excel"></i> Excel
+      </button>
     </div>
-    <button class="btn btn-outline-dark me-2" (click)="impression()">
-      <i class="bi bi-printer"></i> Imprimer
-    </button>
-    <button class="btn btn-outline-dark me-2" (click)="exportToPDF()">
-      <i class="bi bi-file-earmark-pdf"></i> Exporter PDF
-    </button>
-    <button class="btn btn-outline-dark" (click)="exportToExcel()">
-      <i class="bi bi-file-earmark-excel"></i> Exporter Excel
-    </button>
   </div>
 
   <!-- Filtres -->
-  <div class="card p-3 my-4 shadow-sm no-printer">
-    <h5 class="fw-bold"><i class="bi bi-funnel"></i> Filtres</h5>
+  <div class="card p-3 mb-4 shadow-sm no-printer">
+    <h5 class="fw-bold mb-3"><i class="bi bi-funnel me-2"></i>Filtres</h5>
     <div class="row g-3">
-      <div class="col-md-4">
-        <label for="dateDebut" class="form-label">Date de début :</label>
+      <!-- Sélecteur de période -->
+      <div class="col-md-3">
+        <label for="periode" class="form-label fw-semibold">Période :</label>
+        <select 
+          id="periode" 
+          class="form-select"
+          [(ngModel)]="periodeSelectionnee"
+          (change)="onPeriodeChange()"
+          [disabled]="isLoading"
+        >
+          <option *ngFor="let periode of periodesDisponibles" [value]="periode.value">
+            {{ periode.label }}
+          </option>
+        </select>
+      </div>
+      <div class="col-md-3" *ngIf="periodeSelectionnee !== 'personnalisee'">
+        <label for="dateReference" class="form-label fw-semibold">Date de référence :</label>
         <input
           type="date"
-          name="dateDebut"
+          id="dateReference"
+          class="form-control"
+          [(ngModel)]="dateReference"
+          (change)="filtrerDonnees()"
+          [disabled]="isLoading"
+        />
+        <small class="form-text text-muted">
+          Pour calculer la période à partir de cette date
+        </small>
+      </div>
+
+      <!-- Dates personnalisées -->
+      <div class="col-md-3" *ngIf="periodeSelectionnee === 'personnalisee'">
+        <label for="dateDebut" class="form-label fw-semibold">Date de début :</label>
+        <input
+          type="date"
+          id="dateDebut"
           class="form-control"
           [(ngModel)]="dateDebut"
           (change)="filtrerDates()"
+          [disabled]="isLoading"
         />
       </div>
-      <div class="col-md-4">
-        <label for="dateFin" class="form-label">Date de fin :</label>
+      
+      <div class="col-md-3" *ngIf="periodeSelectionnee === 'personnalisee'">
+        <label for="dateFin" class="form-label fw-semibold">Date de fin :</label>
         <input
           type="date"
-          name="dateFin"
+          id="dateFin"
           class="form-control"
           [(ngModel)]="dateFin"
           (change)="filtrerDates()"
+          [disabled]="isLoading"
         />
       </div>
-      <div class="col-md-4">
-        <label for="magasin" class="form-label">Magasin :</label>
+
+      <!-- Filtre magasin -->
+      <div class="col-md-3">
+        <label for="magasin" class="form-label fw-semibold">Magasin :</label>
         <select
           id="magasin"
           class="form-select"
           [(ngModel)]="selectedMagasinId"
           (change)="onMagasinSelect($event)"
+          [disabled]="isLoading"
         >
-          <option [value]="-1">Tous les magasins</option>
-          <option *ngFor="let magasin of magasins" [value]="magasin.id">{{ magasin.nom }}</option>
+          <option [value]="undefined">Tous les magasins</option>
+          <option *ngFor="let magasin of magasins" [value]="magasin.id">
+            {{ magasin.nom }}
+          </option>
         </select>
+      </div>
+
+      <!-- Filtre agent (si admin) -->
+      <div class="col-md-3" *ngIf="isAdmin">
+        <label for="agent" class="form-label fw-semibold">Agent :</label>
+        <select
+          id="agent"
+          class="form-select"
+          [(ngModel)]="selectedAgentId"
+          (change)="onAgentSelect($event)"
+          [disabled]="isLoading"
+        >
+          <option [value]="undefined">Tous les agents</option>
+          <!-- Les agents seront chargés dynamiquement si nécessaire -->
+        </select>
+      </div>
+
+      <!-- Bouton de rafraîchissement -->
+      <div class="col-12 mt-2">
+        <button class="btn btn-primary" (click)="filtrerDonnees()" [disabled]="isLoading">
+          <i class="bi bi-arrow-clockwise"></i> Appliquer les filtres
+        </button>
+        <button *ngIf="searchTerm" class="btn btn-outline-secondary ms-2" (click)="searchTerm = ''; onSearchChange()">
+          <i class="bi bi-x-circle"></i> Effacer la recherche
+        </button>
       </div>
     </div>
   </div>
 
-  <div
-    *ngIf="filteredDepenses.length === 0 && filteredRecettes.length === 0"
-    class="d-flex justify-content-center no-printer"
-  >
-    <h1 class="text-muted">
-      Aucune donnée correspondant à la période actuelle. Veuillez choisir une autre période
-    </h1>
+  <!-- Message si chargement -->
+  <div *ngIf="isLoading" class="text-center py-5">
+    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+    <p class="mt-3 text-muted">Chargement des données financières...</p>
   </div>
-  <div
-    *ngIf="filteredDepenses.length > 0 || filteredRecettes.length > 0"
-    class="rapport"
-    id="rapport"
+
+  <!-- Message si pas de données -->
+  <div 
+    *ngIf="!isLoading && !indicateursFinanciers" 
+    class="alert alert-warning text-center"
   >
-    <div class="container mt-4 p-4 border">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    Aucune donnée disponible pour les critères sélectionnés. Veuillez ajuster les filtres.
+  </div>
+
+  <!-- Contenu principal du rapport -->
+  <div *ngIf="!isLoading && indicateursFinanciers" class="rapport" id="rapport">
+    <div class="container mt-4 p-4 border bg-white">
       <!-- En-tête du rapport -->
       <div *ngIf="isPrinting" class="d-flex justify-content-between align-items-center mb-4">
         <!-- Logo de l'entreprise -->
         <div>
           <img src="./assets/CMP.png" alt="Logo Entreprise" style="height: 80px" />
         </div>
+        
         <!-- Informations de l'entreprise -->
         <div class="text-end">
-          <!-- <h4 class="fw-bold">Rapport de Stock</h4> -->
-          <p><strong>Entreprise :</strong> Nom de l'Entreprise</p>
-          <p><strong>Adresse :</strong> Dakar, Sénégal</p>
-          <p><strong>Téléphone :</strong> +221 77 123 45 67</p>
-          <p>
+          <p class="mb-1"><strong>Entreprise :</strong> Nom de l'Entreprise</p>
+          <p class="mb-1"><strong>Adresse :</strong> Dakar, Sénégal</p>
+          <p class="mb-1"><strong>Téléphone :</strong> +221 77 123 45 67</p>
+          <p class="mb-1">
             <strong>Succursale :</strong>
-            {{
-              selectedMagasinId !== -1 ? getNomMagasin(selectedMagasinId) : 'Toutes les succursales'
-            }}
+            {{ selectedMagasinId !== undefined ? getNomMagasin(selectedMagasinId) : 'Toutes les succursales' }}
           </p>
-          <p><strong>Responsable : </strong> {{ 'Responsable' }}</p>
-          <p><strong>Date :</strong> {{ dateGeneration | date: 'dd/MM/yyyy' }}</p>
+          <p class="mb-1"><strong>Période :</strong> {{ periodeAffichage }}</p>
+          <p class="mb-1"><strong>Date du rapport :</strong> {{ dateGeneration | date: 'dd/MM/yyyy à HH:mm' }}</p>
         </div>
       </div>
-      <!-- Titres du rapport -->
-      <div class="d-flex justify-content-center my-5">
-        <h1 class="fw-bold">
-          <!-- <i class="bi bi-bar-chart-line"></i>  -->
-          Rapport financier pour la période allant du {{ dateDebut | date: 'dd/MM/yyyy' }} au
-          {{ dateFin | date: 'dd/MM/yyyy' }}
-        </h1>
+      
+      <!-- Titre du rapport -->
+      <div class="text-center mb-5">
+        <h1 class="fw-bold mb-2">Rapport Financier</h1>
+        <h4 class="text-muted">{{ periodeAffichage }}</h4>
       </div>
+
+      <!-- Section indicateurs statistiques -->
       <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-light d-flex justify-content-center">
-          <h3 class="fw-bold">Résumé des indicateurs statistiques</h3>
+        <div class="card-header bg-primary text-white">
+          <h3 class="fw-bold mb-0"><i class="bi bi-bar-chart me-2"></i>Indicateurs Clés</h3>
         </div>
         <div class="card-body">
-          <!-- section des indicateurs-->
-          <div class="row mb-4">
-            <div class="col-md-2">
-              <div class="card border-primary shadow-sm h-100">
+          <div class="row g-3">
+            <!-- Chiffre d'affaires -->
+            <div class="col-md-4">
+              <div class="card border-primary border-2 h-100">
                 <div class="card-body text-center">
-                  <h5 class="text-muted">Chiffre d'affaires</h5>
-                  <h3 class="text-primary">{{ chiffreAffaires | number }} F CFA</h3>
-                  <small class="text-primary">{{ nbVentes | number }} transaction(s) </small>
+                  <div class="d-flex align-items-center justify-content-center mb-2">
+                    <i class="bi bi-currency-exchange text-primary fs-3 me-2"></i>
+                    <h5 class="card-title text-muted mb-0">Chiffre d'affaires</h5>
+                  </div>
+                  <h2 class="text-primary fw-bold">{{ indicateursFinanciers.chiffreAffaires | number }} F CFA</h2>
+                  <div class="mt-2">
+                    <span class="badge bg-primary">
+                      <i class="bi bi-receipt me-1"></i>
+                      {{ indicateursFinanciers.nbVentes | number }} transaction(s)
+                    </span>
+                  </div>
+                  <div class="mt-2">
+                    <small class="text-muted">
+                      Évolution: 
+                      <span [ngClass]="{
+                        'text-success': indicateursFinanciers.evolutionCA.tendance === 'hausse',
+                        'text-danger': indicateursFinanciers.evolutionCA.tendance === 'baisse',
+                        'text-warning': indicateursFinanciers.evolutionCA.tendance === 'stable'
+                      }">
+                        {{ indicateursFinanciers.evolutionCA.pourcentage | number: '1.0-0' }}%
+                        <i class="bi" [ngClass]="{
+                          'bi-arrow-up': indicateursFinanciers.evolutionCA.tendance === 'hausse',
+                          'bi-arrow-down': indicateursFinanciers.evolutionCA.tendance === 'baisse',
+                          'bi-dash': indicateursFinanciers.evolutionCA.tendance === 'stable'
+                        }"></i>
+                      </span>
+                    </small>
+                  </div>
                 </div>
               </div>
             </div>
-            <div class="col-md-2">
-              <div class="card border-danger shadow-sm h-100">
+            
+            <!-- Dépenses totales -->
+            <div class="col-md-4">
+              <div class="card border-danger border-2 h-100">
                 <div class="card-body text-center">
-                  <h5 class="text-muted">Dépenses totales</h5>
-                  <h3 class="text-danger">{{ totalDepenses | number }} F CFA</h3>
-                  <small class="text-danger">{{ nbDepenses | number }} transaction(s) </small>
+                  <div class="d-flex align-items-center justify-content-center mb-2">
+                    <i class="bi bi-cash-stack text-danger fs-3 me-2"></i>
+                    <h5 class="card-title text-muted mb-0">Dépenses totales</h5>
+                  </div>
+                  <h2 class="text-danger fw-bold">{{ indicateursFinanciers.totalDepenses | number }} F CFA</h2>
+                  <div class="mt-2">
+                    <span class="badge bg-danger">
+                      <i class="bi bi-receipt-cutoff me-1"></i>
+                      {{ indicateursFinanciers.nbDepenses | number }} transaction(s)
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-            <div class="col-md-2">
-              <div class="card border-success shadow-sm h-100">
+            
+            <!-- Bénéfice net -->
+            <div class="col-md-4">
+              <div class="card border-success border-2 h-100">
                 <div class="card-body text-center">
-                  <h5 class="text-muted">Autres recettes</h5>
-                  <h3 class="text-success">{{ autresRecettes | number }} F CFA</h3>
-                  <small class="text-success"
-                    >{{ nbAutresRecettes | number }} transaction(s)
-                  </small>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-2">
-              <div class="card border-warning shadow-sm h-100">
-                <div class="card-body text-center">
-                  <h5 class="text-muted">Bénéfice net</h5>
-                  <h3 class="text-warning">{{ beneficeNet | number }} F CFA</h3>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-2">
-              <div class="card border-info shadow-sm h-100">
-                <div class="card-body text-center">
-                  <h5 class="text-muted">Solde de trésorerie</h5>
-                  <h3 class="text-info">{{ soldeTresorerie | number }} F CFA</h3>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-2">
-              <div
-                class="card shadow-sm h-100"
-                [ngClass]="{
-                  'border-success': evolutionCA.tendance === 'hausse',
-                  'border-danger': evolutionCA.tendance === 'baisse',
-                  'border-secondary': evolutionCA.tendance === 'stable',
-                }"
-              >
-                <div class="card-body text-center">
-                  <h5 class="text-muted">Évolution CA</h5>
-                  <h3
+                  <div class="d-flex align-items-center justify-content-center mb-2">
+                    <i class="bi bi-graph-up-arrow text-success fs-3 me-2"></i>
+                    <h5 class="card-title text-muted mb-0">Bénéfice net</h5>
+                  </div>
+                  <h2 
+                    class="fw-bold"
                     [ngClass]="{
-                      'text-success': evolutionCA.tendance === 'hausse',
-                      'text-danger': evolutionCA.tendance === 'baisse',
-                      'text-secondary': evolutionCA.tendance === 'stable',
+                      'text-success': indicateursFinanciers.beneficeNet >= 0,
+                      'text-danger': indicateursFinanciers.beneficeNet < 0
                     }"
                   >
-                    <i
-                      class="bi"
-                      [ngClass]="{
-                        'bi-arrow-up-circle': evolutionCA.tendance === 'hausse',
-                        'bi-arrow-down-circle': evolutionCA.tendance === 'baisse',
-                        'bi-dash-circle': evolutionCA.tendance === 'stable',
-                      }"
-                    ></i>
-                    {{ evolutionCA.pourcentage }}%
-                  </h3>
-                  <small *ngIf="periodePrecedenteCA > 0" class="text-muted">
-                    vs {{ periodePrecedenteCA | number }} F CFA
-                  </small>
+                    {{ indicateursFinanciers.beneficeNet | number }} F CFA
+                  </h2>
+                  <div class="mt-2">
+                    <span class="badge" [ngClass]="{
+                      'bg-success': indicateursFinanciers.beneficeNet >= 0,
+                      'bg-danger': indicateursFinanciers.beneficeNet < 0
+                    }">
+                      <i class="bi bi-percent me-1"></i>
+                      Marge: {{ ((indicateursFinanciers.beneficeNet / (indicateursFinanciers.chiffreAffaires + indicateursFinanciers.autresRecettes)) * 100) | number: '1.0-1' }}%
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+
       <!-- Section Flux de Trésorerie -->
       <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-light d-flex justify-content-center">
-          <h3 class="fw-bold">Flux de Trésorerie</h3>
+        <div class="card-header bg-info text-white">
+          <h3 class="fw-bold mb-0"><i class="bi bi-arrow-left-right me-2"></i>Flux de Trésorerie</h3>
         </div>
         <div class="card-body">
-          <div class="row text-center">
+          <div class="row g-3">
             <div class="col-md-3">
-              <div class="card border-primary">
-                <div class="card-body">
-                  <h5>Solde Initial</h5>
-                  <h3
-                    [class.text-success]="fluxTresorerie.soldeInitial >= 0"
-                    [class.text-danger]="fluxTresorerie.soldeInitial < 0"
-                  >
-                    {{ fluxTresorerie.soldeInitial | number }} F CFA
+              <div class="card">
+                <div class="card-body text-center">
+                  <h6 class="text-muted">Solde Initial</h6>
+                  <h3 [ngClass]="{
+                    'text-success': indicateursFinanciers.fluxTresorerie.soldeInitial >= 0,
+                    'text-danger': indicateursFinanciers.fluxTresorerie.soldeInitial < 0
+                  }">
+                    {{ indicateursFinanciers.fluxTresorerie.soldeInitial | number }} F CFA
                   </h3>
                 </div>
               </div>
             </div>
+            
             <div class="col-md-3">
               <div class="card border-success">
-                <div class="card-body">
-                  <h5>Entrées</h5>
-                  <h3 class="text-success">+ {{ fluxTresorerie.recettesPeriod | number }} F CFA</h3>
+                <div class="card-body text-center">
+                  <h6 class="text-muted">Entrées</h6>
+                  <h3 class="text-success">+ {{ indicateursFinanciers.fluxTresorerie.recettesPeriod | number }} F CFA</h3>
                 </div>
               </div>
             </div>
+            
             <div class="col-md-3">
               <div class="card border-danger">
-                <div class="card-body">
-                  <h5>Sorties</h5>
-                  <h3 class="text-danger">- {{ fluxTresorerie.depensesPeriod | number }} F CFA</h3>
+                <div class="card-body text-center">
+                  <h6 class="text-muted">Sorties</h6>
+                  <h3 class="text-danger">- {{ indicateursFinanciers.fluxTresorerie.depensesPeriod | number }} F CFA</h3>
                 </div>
               </div>
             </div>
+            
             <div class="col-md-3">
               <div class="card border-warning">
-                <div class="card-body">
-                  <h5>Solde Final</h5>
-                  <h3
-                    [class.text-success]="fluxTresorerie.soldeFinal >= 0"
-                    [class.text-danger]="fluxTresorerie.soldeFinal < 0"
-                  >
-                    {{ fluxTresorerie.soldeFinal | number }} F CFA
+                <div class="card-body text-center">
+                  <h6 class="text-muted">Solde Final</h6>
+                  <h3 [ngClass]="{
+                    'text-success': indicateursFinanciers.fluxTresorerie.soldeFinal >= 0,
+                    'text-danger': indicateursFinanciers.fluxTresorerie.soldeFinal < 0
+                  }">
+                    {{ indicateursFinanciers.fluxTresorerie.soldeFinal | number }} F CFA
                   </h3>
                 </div>
               </div>
@@ -245,181 +334,112 @@
           </div>
         </div>
       </div>
-      <!-- Section Tendances -->
-      <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-light d-flex justify-content-center">
-          <h3 class="fw-bold">Tendances Financières</h3>
-        </div>
-        <div class="card-body">
-          <div class="row">
-            <div class="col-md-4">
-              <div class="card">
-                <div class="card-body text-center">
-                  <h5>Chiffre d'Affaires</h5>
-                  <h3
-                    [class.text-success]="tendances.evolutionCA.tendance === '↑'"
-                    [class.text-danger]="tendances.evolutionCA.tendance === '↓'"
-                    [class.text-warning]="tendances.evolutionCA.tendance === '→'"
-                  >
-                    {{ tendances.evolutionCA.valeur }}%
-                    <i
-                      class="bi"
-                      [ngClass]="{
-                        'bi-arrow-up': tendances.evolutionCA.tendance === '↑',
-                        'bi-arrow-down': tendances.evolutionCA.tendance === '↓',
-                        'bi-dash': tendances.evolutionCA.tendance === '→',
-                      }"
-                    ></i>
-                  </h3>
-                  <small>vs période précédente</small>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="card">
-                <div class="card-body text-center">
-                  <h5>Bénéfices</h5>
-                  <h3
-                    [class.text-success]="tendances.evolutionBenefices.tendance === '↑'"
-                    [class.text-danger]="tendances.evolutionBenefices.tendance === '↓'"
-                    [class.text-warning]="tendances.evolutionBenefices.tendance === '→'"
-                  >
-                    {{ tendances.evolutionBenefices.valeur }}%
-                    <i
-                      class="bi"
-                      [ngClass]="{
-                        'bi-arrow-up': tendances.evolutionBenefices.tendance === '↑',
-                        'bi-arrow-down': tendances.evolutionBenefices.tendance === '↓',
-                        'bi-dash': tendances.evolutionBenefices.tendance === '→',
-                      }"
-                    ></i>
-                  </h3>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="card">
-                <div class="card-body text-center">
-                  <h5>Coûts</h5>
-                  <h3
-                    [class.text-success]="tendances.evolutionCouts.tendance === '↓'"
-                    [class.text-danger]="tendances.evolutionCouts.tendance === '↑'"
-                    [class.text-warning]="tendances.evolutionCouts.tendance === '→'"
-                  >
-                    {{ tendances.evolutionCouts.valeur }}%
-                    <i
-                      class="bi"
-                      [ngClass]="{
-                        'bi-arrow-up': tendances.evolutionCouts.tendance === '↑',
-                        'bi-arrow-down': tendances.evolutionCouts.tendance === '↓',
-                        'bi-dash': tendances.evolutionCouts.tendance === '→',
-                      }"
-                    ></i>
-                  </h3>
-                  <small>↓ = bonne tendance</small>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          <!-- Graphique combiné -->
-          <div class="mt-4">
-            <canvas #tendancesChart></canvas>
-          </div>
-        </div>
-      </div>
       <!-- Graphique d'évolution -->
       <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-light d-flex justify-content-center">
-          <h3 class="fw-bold">Évolution des flux financiers</h3>
+        <div class="card-header bg-secondary text-white">
+          <h3 class="fw-bold mb-0"><i class="bi bi-graph-up me-2"></i>Évolution des Flux Financiers</h3>
         </div>
         <div class="card-body">
-          <canvas #evolutionChart></canvas>
+          <div class="chart-container" style="position: relative; height: 400px;">
+            <canvas #evolutionChart></canvas>
+          </div>
         </div>
       </div>
 
-      <!-- Analyse des dépenses -->
+      <!-- Analyse des dépenses et recettes -->
       <div class="row mb-4">
+        <!-- Répartition des dépenses -->
         <div class="col-md-6">
           <div class="card shadow-sm h-100">
-            <div class="card-header bg-light d-flex justify-content-center">
-              <h3 class="fw-bold">Répartition des dépenses</h3>
+            <div class="card-header bg-danger text-white">
+              <h3 class="fw-bold mb-0"><i class="bi bi-pie-chart me-2"></i>Répartition des Dépenses</h3>
             </div>
             <div class="card-body">
-              <canvas #depensesChart></canvas>
-              <div class="mt-3">
-                <table class="table table-sm">
-                  <thead>
-                    <tr>
-                      <th>Catégorie</th>
-                      <th>Montant</th>
-                      <th>Total transactions</th>
-                      <th>%</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let cat of categoriesDepense">
-                      <td>{{ cat.name }}</td>
-                      <td>
-                        {{ getOccurenceDepensesByCategory(cat.id ?? 0).montantTotal | number }} F
-                        CFA
-                      </td>
-                      <td>
-                        {{ getOccurenceDepensesByCategory(cat.id ?? 0).occurrences | number }}
-                      </td>
-                      <td>
-                        {{
-                          (getOccurenceDepensesByCategory(cat.id ?? 0).montantTotal /
-                            totalDepenses) *
-                            100 | number: '1.0-2'
-                        }}%
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="chart-container" style="position: relative; height: 300px;">
+                    <canvas #depensesChart></canvas>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                    <table class="table table-sm table-hover">
+                      <thead>
+                        <tr>
+                          <th>Catégorie</th>
+                          <th class="text-end">Montant</th>
+                          <th class="text-end">%</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let cat of repartitionDepenses?.repartition || []">
+                          <td>{{ cat.categorieName }}</td>
+                          <td class="text-end">{{ cat.montantTotal | number }} F CFA</td>
+                          <td class="text-end">{{ cat.pourcentage | number: '1.0-1' }}%</td>
+                        </tr>
+                        <tr *ngIf="!repartitionDepenses?.repartition?.length">
+                          <td colspan="3" class="text-center text-muted">Aucune donnée</td>
+                        </tr>
+                      </tbody>
+                      <tfoot *ngIf="repartitionDepenses">
+                        <tr class="table-secondary">
+                          <th>Total</th>
+                          <th class="text-end">{{ repartitionDepenses.totalDepenses | number }} F CFA</th>
+                          <th class="text-end">100%</th>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Analyse des recettes -->
+        <!-- Sources de revenus -->
         <div class="col-md-6">
           <div class="card shadow-sm h-100">
-            <div class="card-header bg-light d-flex justify-content-center">
-              <h3 class="fw-bold">Sources de revenus (Recettes)</h3>
+            <div class="card-header bg-success text-white">
+              <h3 class="fw-bold mb-0"><i class="bi bi-pie-chart-fill me-2"></i>Sources de Revenus</h3>
             </div>
             <div class="card-body">
-              <canvas #recettesChart></canvas>
-              <div class="mt-3">
-                <table class="table table-sm">
-                  <thead>
-                    <tr>
-                      <th>Catégorie</th>
-                      <th>Montant</th>
-                      <th>Total transactions</th>
-                      <th>%</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let cat of categoriesRecette">
-                      <td>{{ cat.name }}</td>
-                      <td>
-                        {{ getOccurenceRecettesByCategory(cat.id ?? 0).montantTotal | number }} F
-                        CFA
-                      </td>
-                      <td>
-                        {{ getOccurenceRecettesByCategory(cat.id ?? 0).occurrences | number }}
-                      </td>
-                      <td>
-                        {{
-                          (getOccurenceRecettesByCategory(cat.id ?? 0).montantTotal /
-                            (chiffreAffaires + autresRecettes)) *
-                            100 | number: '1.0-2'
-                        }}%
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="chart-container" style="position: relative; height: 300px;">
+                    <canvas #recettesChart></canvas>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                    <table class="table table-sm table-hover">
+                      <thead>
+                        <tr>
+                          <th>Catégorie</th>
+                          <th class="text-end">Montant</th>
+                          <th class="text-end">%</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let cat of repartitionRecettes?.repartition || []">
+                          <td>{{ cat.categorieName }}</td>
+                          <td class="text-end">{{ cat.montantTotal | number }} F CFA</td>
+                          <td class="text-end">{{ cat.pourcentage | number: '1.0-1' }}%</td>
+                        </tr>
+                        <tr *ngIf="!repartitionRecettes?.repartition?.length">
+                          <td colspan="3" class="text-center text-muted">Aucune donnée</td>
+                        </tr>
+                      </tbody>
+                      <tfoot *ngIf="repartitionRecettes">
+                        <tr class="table-secondary">
+                          <th>Total</th>
+                          <th class="text-end">{{ repartitionRecettes.totalRecettes | number }} F CFA</th>
+                          <th class="text-end">100%</th>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -427,159 +447,263 @@
       </div>
 
       <!-- Modes de paiement -->
-      <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-light d-flex justify-content-center">
-          <h3 class="fw-bold">Modes de paiement</h3>
+      <div class="card mb-4 shadow-sm" *ngIf="modesPaiementStats">
+        <div class="card-header bg-warning text-dark">
+          <h3 class="fw-bold mb-0"><i class="bi bi-credit-card me-2"></i>Modes de Paiement</h3>
         </div>
         <div class="card-body">
-          <table class="table table-bordered">
-            <thead>
-              <tr>
-                <th>Mode</th>
-                <th>Montant</th>
-                <th>Nombre de transaction</th>
-                <th>%</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let mode of modesPaiement">
-                <td>{{ mode.mode }}</td>
-                <td>{{ mode.montantTotal | number }} F CFA</td>
-                <td>{{ mode.occurrences }}</td>
-                <td>{{ (mode.occurrences / filteredRecettes.length) * 100 | number: '1.0-2' }}%</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th>Mode de paiement</th>
+                  <th class="text-end">Montant total</th>
+                  <th class="text-end">Nombre de transactions</th>
+                  <th class="text-end">Pourcentage</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let mode of modesPaiementStats.modesPaiement">
+                  <td>
+                    <i class="bi" [ngClass]="{
+                      'bi-cash': mode.mode === 'Espèce',
+                      'bi-credit-card': mode.mode === 'Carte',
+                      'bi-cash-coin': mode.mode === 'Autre',
+                      'bi-bank': mode.mode === 'Virement',
+                      'bi-bank2': mode.mode === 'Chèque',
+                      'bi-phone': mode.mode === 'Wave',
+                      'bi-phone-fill': mode.mode === 'Orange Money'
+                    }"></i>
+                    {{ mode.mode }}
+                  </td>
+                  <td class="text-end">{{ mode.montantTotal | number }} F CFA</td>
+                  <td class="text-end">{{ mode.occurrences | number }}</td>
+                  <td class="text-end">{{ mode.pourcentage | number: '1.0-1' }}%</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr class="table-secondary">
+                  <th>Total</th>
+                  <th class="text-end">
+                    {{ totalMontantModesPaiement | number }} F CFA
+                  </th>
+                  <th class="text-end">{{ modesPaiementStats.totalTransactions | number }}</th>
+                  <th class="text-end">100%</th>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         </div>
       </div>
 
-      <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-light d-flex justify-content-center">
-          <h3 class="fw-bold">Détails des dépenses</h3>
+      <!-- Détails des dépenses -->
+      <div class="card mb-4 shadow-sm" *ngIf="depensesDetaillees">
+        <div class="card-header bg-danger text-white">
+          <div class="d-flex justify-content-between align-items-center">
+            <h3 class="fw-bold mb-0"><i class="bi bi-receipt-cutoff me-2"></i>Détails des Dépenses</h3>
+            <span class="badge bg-light text-dark">
+              Total: {{ depensesDetaillees.total | number }} transactions
+            </span>
+          </div>
         </div>
         <div class="card-body">
-          <!-- Barre de recherche et sélection du nombre de lignes -->
-          <div class="d-flex justify-content-between my-3 no-printer">
+          <!-- Barre de recherche -->
+          <div class="d-flex justify-content-between mb-3 no-printer">
             <input
               type="text"
               class="form-control w-50"
-              placeholder="Filtrer par catégorie et mode de paiement..."
+              placeholder="Rechercher par description, catégorie, mode de paiement..."
               [(ngModel)]="searchTerm"
-              (input)="onSearchChange('depense')"
+              (input)="onSearchChange()"
             />
-            <select class="form-select w-auto" (change)="setItemsPerPage($event)">
+            <select class="form-select w-auto ms-2" [(ngModel)]="pageSize" (change)="filtrerDonnees()">
               <option [value]="5">5 lignes</option>
               <option [value]="10">10 lignes</option>
               <option [value]="20">20 lignes</option>
-              <option [value]="40">40 lignes</option>
-              <option [value]="80">80 lignes</option>
-              <option [value]="120">120 lignes</option>
-              <!-- <option [value]="160">160 lignes</option>
-                <option [value]="200">200 lignes</option> -->
-              <option
-                *ngIf="filteredDepenses.length > 0 || filteredRecettes.length > 0"
-                [value]="maxItems"
-              >
-                Tous
-              </option>
+              <option [value]="50">50 lignes</option>
+              <option *ngIf="depensesDetaillees.total > 0" [value]="depensesDetaillees.total">Tous</option>
             </select>
           </div>
-          <table class="table table-striped">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Catégorie</th>
-                <th>Montant</th>
-                <th>Mode de Paiement</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let dep of getPaginatedDepense">
-                <td>{{ dep.date | date: 'dd/MM/yyyy à HH:mm' }}</td>
-                <td>{{ getNomCategorieBis(dep.categoryId) }}</td>
-                <td>{{ dep.montant }} F CFA</td>
-                <td>{{ dep.paymentMode }}</td>
-              </tr>
-            </tbody>
-          </table>
+          
+          <div class="table-responsive">
+            <table class="table table-hover table-sm">
+              <thead class="table-light">
+                <tr>
+                  <th>Date</th>
+                  <th>Catégorie</th>
+                  <th class="text-end">Montant</th>
+                  <th>Mode de paiement</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let dep of getDepensesPagines()">
+                  <td>{{ dep.date | date: 'dd/MM/yy HH:mm' }}</td>
+                  <td>{{ dep.categorie?.name || 'Non classé' }}</td>
+                  <td class="text-end">{{ dep.montant | number }} F CFA</td>
+                  <td>
+                    <span class="badge" [ngClass]="{
+                      'bg-success': dep.paymentMode === 'Espèce',
+                      'bg-light': dep.paymentMode === 'Carte',
+                      'bg-dark': dep.paymentMode === 'Autre',
+                      'bg-info': dep.paymentMode === 'Virement',
+                      'bg-secondary': dep.paymentMode === 'Chèque',
+                      'bg-primary': dep.paymentMode === 'Wave',
+                      'bg-warning': dep.paymentMode === 'Orange Money'
+                    }">
+                      {{ dep.paymentMode }}
+                    </span>
+                  </td>
+                  <td>{{ dep.description || '-' }}</td>
+                </tr>
+                <tr *ngIf="getDepensesPagines().length === 0">
+                  <td colspan="5" class="text-center text-muted py-4">
+                    <i class="bi bi-search fs-1 text-muted"></i>
+                    <p class="mt-2">Aucune dépense trouvée pour les critères sélectionnés</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
           <!-- Pagination -->
-          <div class="d-flex justify-content-center align-items-center no-printer">
-            <button
-              class="btn btn-success"
-              (click)="onPageChange(currentPage - 1, 'depense')"
-              [disabled]="currentPage === 1"
-            >
-              <i class="bi bi-arrow-left-circle"></i>
-            </button>
-            <span class="h3">{{ currentPage }} / {{ getTotalPages(filteredDepenses) }}</span>
-            <button
-              class="btn btn-success"
-              (click)="onPageChange(currentPage + 1, 'depense')"
-              [disabled]="currentPage >= getTotalPages(filteredDepenses)"
-            >
-              <i class="bi bi-arrow-right-circle"></i>
-            </button>
+          <div class="d-flex justify-content-between align-items-center mt-3 no-printer">
+            <div>
+              <span class="text-muted">
+                Page {{ currentPageDepenses }} sur {{ getTotalPagesDepenses() }}
+                ({{ depensesDetaillees.total | number }} résultats)
+              </span>
+            </div>
+            <div class="btn-group">
+              <button
+                class="btn btn-outline-primary btn-sm"
+                (click)="onPageChange(currentPageDepenses - 1, 'depenses')"
+                [disabled]="currentPageDepenses === 1"
+              >
+                <i class="bi bi-chevron-left"></i> Précédent
+              </button>
+              <button
+                class="btn btn-outline-primary btn-sm"
+                (click)="onPageChange(currentPageDepenses + 1, 'depenses')"
+                [disabled]="currentPageDepenses >= getTotalPagesDepenses()"
+              >
+                Suivant <i class="bi bi-chevron-right"></i>
+              </button>
+            </div>
           </div>
         </div>
       </div>
-      <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-light d-flex justify-content-center">
-          <h3 class="fw-bold">Détails des recettes</h3>
+
+      <!-- Détails des recettes -->
+      <div class="card mb-4 shadow-sm" *ngIf="recettesDetaillees">
+        <div class="card-header bg-success text-white">
+          <div class="d-flex justify-content-between align-items-center">
+            <h3 class="fw-bold mb-0"><i class="bi bi-receipt me-2"></i>Détails des Recettes</h3>
+            <span class="badge bg-light text-dark">
+              Total: {{ recettesDetaillees.total | number }} transactions
+            </span>
+          </div>
         </div>
         <div class="card-body">
-          <!-- Barre de recherche et sélection du nombre de lignes -->
-          <div class="d-flex justify-content-between my-3 no-printer">
-            <input
-              type="text"
-              class="form-control w-50"
-              placeholder="Filtrer par catégorie et mode de paiement..."
-              [(ngModel)]="searchTerm"
-              (input)="onSearchChange('recette')"
-            />
+          <div class="table-responsive">
+            <table class="table table-hover table-sm">
+              <thead class="table-light">
+                <tr>
+                  <th>Date</th>
+                  <th>Catégorie</th>
+                  <th class="text-end">Montant</th>
+                  <th>Mode de paiement</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let recette of getRecettesPagines()">
+                  <td>{{ recette.date | date: 'dd/MM/yy HH:mm' }}</td>
+                  <td>{{ recette.categorie?.name || 'Non classé' }}</td>
+                  <td class="text-end">{{ recette.montant | number }} F CFA</td>
+                  <td>
+                    <span class="badge" [ngClass]="{
+                      'bg-success': recette.paymentMode === 'Espèce',
+                      'bg-light': recette.paymentMode === 'Carte',
+                      'bg-dark': recette.paymentMode === 'Autre',
+                      'bg-info': recette.paymentMode === 'Virement',
+                      'bg-secondary': recette.paymentMode === 'Chèque',
+                      'bg-primary': recette.paymentMode === 'Wave',
+                      'bg-warning': recette.paymentMode === 'Orange Money'
+                    }">
+                      {{ recette.paymentMode }}
+                    </span>
+                  </td>
+                  <td>{{ recette.description || '-' }}</td>
+                </tr>
+                <tr *ngIf="getRecettesPagines().length === 0">
+                  <td colspan="5" class="text-center text-muted py-4">
+                    <i class="bi bi-search fs-1 text-muted"></i>
+                    <p class="mt-2">Aucune recette trouvée pour les critères sélectionnés</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          <table class="table table-striped">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Catégorie</th>
-                <th>Montant</th>
-                <th>Mode de Paiement</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let recette of getPaginatedRcette">
-                <td>{{ recette.date | date: 'dd/MM/yyyy à HH:mm' }}</td>
-                <td>{{ getNomCategorieBis(recette.categoryId) }}</td>
-                <td>{{ recette.montant }} F CFA</td>
-                <td>{{ recette.paymentMode }}</td>
-              </tr>
-            </tbody>
-          </table>
+          
           <!-- Pagination -->
-          <div class="d-flex justify-content-center align-items-center no-printer">
-            <button
-              class="btn btn-success"
-              (click)="onPageChange(currentPagerecette - 1, 'recette')"
-              [disabled]="currentPagerecette === 1"
-            >
-              <i class="bi bi-arrow-left-circle"></i>
-            </button>
-            <span class="h3">{{ currentPagerecette }} / {{ getTotalPages(filteredRecettes) }}</span>
-            <button
-              class="btn btn-success"
-              (click)="onPageChange(currentPage + 1, 'recette')"
-              [disabled]="currentPagerecette >= getTotalPages(filteredRecettes)"
-            >
-              <i class="bi bi-arrow-right-circle"></i>
-            </button>
+          <div class="d-flex justify-content-between align-items-center mt-3 no-printer">
+            <div>
+              <span class="text-muted">
+                Page {{ currentPageRecettes }} sur {{ getTotalPagesRecettes() }}
+                ({{ recettesDetaillees.total | number }} résultats)
+              </span>
+            </div>
+            <div class="btn-group">
+              <button
+                class="btn btn-outline-success btn-sm"
+                (click)="onPageChange(currentPageRecettes - 1, 'recettes')"
+                [disabled]="currentPageRecettes === 1"
+              >
+                <i class="bi bi-chevron-left"></i> Précédent
+              </button>
+              <button
+                class="btn btn-outline-success btn-sm"
+                (click)="onPageChange(currentPageRecettes + 1, 'recettes')"
+                [disabled]="currentPageRecettes >= getTotalPagesRecettes()"
+              >
+                Suivant <i class="bi bi-chevron-right"></i>
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      <!-- Graphique comparatif des tendances -->
+      <div class="card mb-4 shadow-sm" *ngIf="donneesComparatives">
+        <div class="card-header bg-dark text-white">
+          <h3 class="fw-bold mb-0"><i class="bi bi-bar-chart-steps me-2"></i>Comparaison sur Plusieurs Périodes</h3>
+        </div>
+        <div class="card-body">
+          <div class="chart-container" style="position: relative; height: 400px;">
+            <canvas #tendancesChart></canvas>
+          </div>
+        </div>
+      </div>
+
       <!-- Pied de page -->
-      <div *ngIf="isPrinting" class="mt-4 text-end">
-        <p><strong>Préparé par :</strong> Nom de l'Auteur</p>
-        <p>_________________________</p>
-        <p>Signature</p>
+      <div *ngIf="isPrinting" class="mt-5 pt-5 border-top">
+        <div class="row">
+          <div class="col-6">
+            <p><strong>Préparé par :</strong> Service Financier</p>
+            <p><strong>Date de génération :</strong> {{ dateGeneration | date: 'dd/MM/yyyy à HH:mm' }}</p>
+          </div>
+          <div class="col-6 text-end">
+            <p class="mb-4">_________________________</p>
+            <p><strong>Signature et cachet</strong></p>
+          </div>
+        </div>
+        <div class="text-center text-muted mt-4">
+          <small>
+            Rapport généré automatiquement | Structure: {{ code_structure }} | 
+            Ce document est confidentiel et réservé à un usage interne
+          </small>
+        </div>
       </div>
     </div>
   </div>
