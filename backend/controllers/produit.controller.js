@@ -8,6 +8,11 @@ const BASE_URL = 'http://localhost:5000/uploads/'; //url de l'emplacement des fi
 //Créer un produit
 exports.createProduit = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const produitData = req.body;
 
     // Vérification : produit déjà existant ?
@@ -48,6 +53,11 @@ exports.updateProduit = async (req, res) => {
   console.log('FILE:', req.file);
 
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const produit = await Produit.findByPk(req.params.id);
     if (!produit) {
       return res.status(404).json({ message: 'Produit non trouvé' });
@@ -83,6 +93,11 @@ exports.updateProduit = async (req, res) => {
 //Supprimer un produit (physiquement)
 exports.deleteProduit = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const produit = await Produit.findByPk(req.params.id);
     if (!produit) return res.status(404).json({ message: 'Produit non trouvé' });
 
@@ -96,6 +111,11 @@ exports.deleteProduit = async (req, res) => {
 //Obtenir un produit spécifique par ID
 exports.getProduitById = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const produit = await Produit.findByPk(req.params.id);
     if (!produit) return res.status(404).json({ message: 'Produit non trouvé' });
 
@@ -112,6 +132,11 @@ exports.getProduitById = async (req, res) => {
 //Récupérer les produits par structure
 exports.getProduitsByStructure = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const produits = await Produit.findAll({
       where: { code_structure: req.params.code_structure },
       order: [['createdAt', 'DESC']],
@@ -136,6 +161,11 @@ exports.getProduitsByStructure = async (req, res) => {
 //Mettre à jour le statut d’un produit (actif/inactif, disponible/épuisé, etc.)
 exports.updateStatusProduit = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const produit = await Produit.findByPk(req.params.id);
     if (!produit) return res.status(404).json({ message: 'Produit non trouvé' });
 
@@ -158,6 +188,11 @@ exports.updateStatusProduit = async (req, res) => {
 
 exports.updateTauxTVAProduit = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const produit = await Produit.findByPk(req.params.id);
     if (!produit) return res.status(404).json({ message: 'Produit non trouvé' });
 
@@ -178,6 +213,11 @@ exports.updateTauxTVAProduit = async (req, res) => {
 //Récupérer tous les produits
 exports.getAllProduits = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const produits = await Produit.findAll();
     res.json(produits);
   } catch (error) {
@@ -220,6 +260,11 @@ exports.getAllProduits = async (req, res) => {
 
 exports.updateImageProduit = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const produit = await Produit.findByPk(req.params.id);
     if (!produit) return res.status(404).json({ message: 'Produit non trouvé' });
 
@@ -248,6 +293,11 @@ exports.updateImageProduit = async (req, res) => {
 // Mettre à jour uniquement le code-barre d’un produit
 exports.updateCodeBarreProduit = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { codeBarre } = req.body;
 
     if (!codeBarre || codeBarre.trim() === '') {

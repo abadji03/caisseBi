@@ -1,13 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const fournisseurCtrl = require('../controllers/fournisseur.controller');
+const authenticateToken = require('../middlewares/auth.middleware');
 
-router.post('/', fournisseurCtrl.createFournisseur);
-router.put('/:id', fournisseurCtrl.updateFournisseur);
-router.delete('/:id', fournisseurCtrl.deleteFournisseur);
-router.get('/structure/:code_structure', fournisseurCtrl.getFournisseursByStructure);
-router.patch('/:id/statut', fournisseurCtrl.updateFournisseurStatus);
-router.get('/:id', fournisseurCtrl.getFournisseurById);
-router.get('/:code_structure/:id/bons', fournisseurCtrl.getBonsWithPaniersAndProduits);
+
+router.post('/', authenticateToken, fournisseurCtrl.createFournisseur);
+router.put('/:id', authenticateToken, fournisseurCtrl.updateFournisseur);
+router.delete('/:id', authenticateToken, fournisseurCtrl.deleteFournisseur);
+router.get('/structure/:code_structure', authenticateToken, fournisseurCtrl.getFournisseursByStructure);
+router.patch('/:id/statut', authenticateToken, fournisseurCtrl.updateFournisseurStatus);
+router.get('/:id', authenticateToken, fournisseurCtrl.getFournisseurById);
+router.get('/:code_structure/:id/bons', authenticateToken, fournisseurCtrl.getBonsWithPaniersAndProduits);
 
 module.exports = router;

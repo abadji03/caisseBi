@@ -260,6 +260,8 @@
             <th>Montant</th>
             <th>Mode de Paiement</th>
             <th>Type de dépense</th>
+            <th>Responsable</th>
+            <th>Magasin</th>
             <th>Pièce jointe</th>
             <!-- Nouvelle colonne pour le type de paiement -->
             <th>Actions</th>
@@ -273,6 +275,8 @@
             <td>{{ dep.montant }} F CFA</td>
             <td>{{ dep.paymentMode }}</td>
             <td>{{ dep.type }}</td>
+            <td>{{ dep.user?.nom }}</td>
+            <td>{{ dep.magasin?.nom || 'N/A' }}</td>
             <td>
               <!-- {{ dep.receipt }} -->
                 <span *ngIf="dep.receipt,else noReceipt">
@@ -522,6 +526,8 @@
             <th>Montant</th>
             <th>Mode de Paiement</th>
             <th>Description</th>
+            <td>Responsable</td>
+            <td>Magasin</td>
             <th>Pièce jointe</th>
             <th>Actions</th>
           </tr>
@@ -536,6 +542,8 @@
             <td>{{ recette.montant }} F CFA</td>
             <td>{{ recette.paymentMode }}</td>
             <td>{{ recette.description }}</td>
+            <td>{{ recette.user?.nom }}</td>
+            <td>{{ recette.magasin?.nom || 'N/A' }}</td>
             
             <td>
               <!-- {{ dep.receipt }} -->

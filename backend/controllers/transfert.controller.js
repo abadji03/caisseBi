@@ -3,6 +3,11 @@ const Transfert = db.Transfert;
 
 exports.createTransfert = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const {
       code_structure,
       produitId,
@@ -34,6 +39,11 @@ exports.createTransfert = async (req, res) => {
 
 exports.validerTransfert = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { id } = req.params;
     const { agentValidation, mouvementSortieId, mouvementEntreeId } = req.body;
 
@@ -56,6 +66,11 @@ exports.validerTransfert = async (req, res) => {
 
 exports.listerParStructure = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const transferts = await Transfert.findAll({
       where: { code_structure: req.params.code_structure },
       order: [['dateTransfert', 'DESC']],

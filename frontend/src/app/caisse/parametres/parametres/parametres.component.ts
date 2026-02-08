@@ -1,16 +1,14 @@
-import { Component, OnInit } from '@angular/core';
-import { RolesPermissionsComponent } from '../roles-permissions/roles-permissions.component';
+import { Component } from '@angular/core';
 import { UserComponent } from '../user/user.component';
+import { StructureComponent } from '../structure/structure.component';
 
 @Component({
   selector: 'app-parametres',
   standalone: true,
-  imports: [RolesPermissionsComponent, UserComponent],
+  imports: [StructureComponent, UserComponent],
   templateUrl: './parametres.component.html',
   styleUrl: './parametres.component.css',
 })
-export class ParametresComponent implements OnInit {
-  ngOnInit(): void {
-    throw new Error('Method not implemented.');
-  }
+export class ParametresComponent  {
+  
 }

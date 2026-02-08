@@ -3,10 +3,11 @@
     <div class="left-section"></div>
     <div class="right-section">
       <div class="login-container">
+        <div class="bg-danger text-white" *ngIf="!isActif">Compte suspendu! Veuillez contacter votre administrateur.</div>
         <form class="login-form">
-          <h2 class="login-title"><i class="fas fa-user-circle"></i> Login</h2>
+          <h2 class="login-title"><i class="bi bi-person-circle"></i> Authentification</h2>
           <div class="form-control">
-            <i class="fas fa-user icon"></i>
+            <i class="bi bi-person icon"></i>
             <input
               type="text"
               name="email"
@@ -16,28 +17,36 @@
               required
             />
           </div>
-          <div class="form-control">
-            <i class="fas fa-lock icon"></i>
+          <div class="form-control password-control">
+            <i class="bi bi-lock icon"></i>
             <input
-              type="password"
+              [type]="showPassword ? 'text' : 'password'"
               name="password"
               [(ngModel)]="loginObj.password"
-              placeholder="Password"
+              placeholder="Mot de passe"
               id="password"
             />
+            <button
+                type="button"
+                class="toggle-password-btn"
+                (click)="togglePassword()"
+                [attr.aria-label]="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
+              >
+                <i class="bi" [class.bi-eye]="!showPassword" [class.bi-eye-slash]="showPassword"></i>
+              </button>
           </div>
-          <div class="remember-me">
-            <input type="checkbox" id="rememberMe" class="checkbox-input" />
-            <span class="checkbox-custom"></span>
-            <label for="rememberMe">Remember me</label>
+          <div>
+           <!--  <input type="checkbox" id="rememberMe" class="checkbox-input" />
+            <span class="checkbox-custom"></span> -->
+            <p>Mot de passe oubliè ? Contactez votre administrateur</p>
           </div>
 
-          <div class="social-login">
+          <!-- <div class="social-login">
             <i class="fab fa-google social-icon"></i>
             <i class="fab fa-facebook-f social-icon"></i>
             <i class="fab fa-twitter social-icon"></i>
-          </div>
-          <button type="button" (click)="onLogin()">Login</button>
+          </div> -->
+          <button type="button" (click)="onLogin()">Connexion</button>
         </form>
       </div>
     </div>

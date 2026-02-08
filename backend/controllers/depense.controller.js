@@ -9,6 +9,12 @@ const BASE_URL = 'http://localhost:5000/uploads/';
 
 exports.createDepense = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
     const {
       categoryId,
       code_structure,
@@ -62,6 +68,11 @@ exports.getAllByMagasin = async (req, res) => {
 
 exports.deleteDepense = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { id } = req.params;
 
     const deleted = await Depense.destroy({ where: { id } });
@@ -74,6 +85,11 @@ exports.deleteDepense = async (req, res) => {
 };
 exports.updateDepense = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { id } = req.params;
 
     const depense = await Depense.findByPk(id);
@@ -107,7 +123,7 @@ exports.updateDepense = async (req, res) => {
   }
 };
 
-exports.getAllByStructure = async (req, res) => {
+/* exports.getAllByStructure = async (req, res) => {
   try {
     const { code_structure } = req.params;
 
@@ -128,6 +144,68 @@ exports.getAllByStructure = async (req, res) => {
     res.json(depenses);
   } catch (error) {
     res.status(500).json({ message: 'Erreur de récupération des dépenses', error });
+  }
+}; */
+exports.getAllByStructure = async (req, res) => {
+  try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
+    const { code_structure } = req.params;
+
+    // 🔥 Vérification : l’utilisateur doit appartenir à la structure demandée
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({
+        message: "Accès interdit : structure non autorisée"
+      });
+    }
+
+    // Vérifier rôle
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+
+    if (!isAdminStructure && !isGerant) {
+    return res.status(403).json({
+      message: "Accès interdit : rôle insuffisant"
+    });
+}
+
+    // Clause where par défaut (structure)
+    let whereClause = {
+      code_structure: code_structure
+    };
+
+    // 🔹 Si gérant : filtrer par magasin
+    if (!isAdminStructure && isGerant) {
+      if (!authUser.magasinId) {
+        return res.status(400).json({
+          message: "Ce gérant n’est associé à aucun magasin"
+        });
+      }
+
+      whereClause.magasinId = authUser.magasinId;
+    }
+
+    const depenses = await Depense.findAll({
+      where: whereClause,
+      include: [
+        { model: Magasin,attributes: ["id", "nom","telephone", "email"] },
+        { model: Categorie },
+        { model: User, attributes: ["id", "nom", "email"] }
+      ],
+      order: [["createdAt", "DESC"]]
+    });
+
+    res.json(depenses);
+  } catch (error) {
+    console.error("Erreur récupération dépenses:", error);
+    res.status(500).json({
+      message: "Erreur de récupération des dépenses",
+      error: error.message
+    });
   }
 };
 

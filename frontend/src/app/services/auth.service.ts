@@ -229,7 +229,7 @@ export class AuthService {
       }
     ],
     'Caissier': [
-      {
+      /* {
         label: 'Accueil',
         icon: 'bi bi-house-door',
         route: '/caisse-bi/overview',
@@ -238,7 +238,7 @@ export class AuthService {
         children: [
           { label: 'Vue d\'ensemble', route: '/caisse-bi/overview', titre: 'Accueil', sousTitre: 'Vue d\'ensemble' },
         ],
-      },
+      }, */
       {
         label: 'Ventes',
         icon: 'bi-cash-stack',
@@ -246,7 +246,9 @@ export class AuthService {
         titre: 'Ventes',
         sousTitre: 'Gestion de la caisse',
         children: [
-          { label: 'Caisse', route: '/caisse-bi/caisse', titre: 'Ventes', sousTitre: 'Gestion de la caisse' }
+          { label: 'Caisse', route: '/caisse-bi/caisse', titre: 'Ventes', sousTitre: 'Gestion de la caisse' },
+          { label: 'Clients', route: '/caisse-bi/clients', titre: 'Mes Clients', sousTitre: 'Gestion des clients' }
+
         ]
       },
       {
@@ -257,10 +259,10 @@ export class AuthService {
         sousTitre: 'Consultation du stock',
         children: [
           { label: 'Stock', route: '/caisse-bi/stock', titre: 'Stock', sousTitre: 'Consultation du stock' },
-          { label: 'Catalogue', route: '/caisse-bi/catalogue-produits', titre: 'Stock', sousTitre: 'Consultation du catalogue' }
+          //{ label: 'Catalogue', route: '/caisse-bi/catalogue-produits', titre: 'Stock', sousTitre: 'Consultation du catalogue' }
         ]
       },
-      {
+      /* {
         label: 'Mes Clients',
         icon: 'bi-people',
         route: '/caisse-bi/clients',
@@ -269,7 +271,7 @@ export class AuthService {
         children: [
           { label: 'Clients', route: '/caisse-bi/clients', titre: 'Mes Clients', sousTitre: 'Gestion des clients' }
         ]
-      }
+      } */
     ],
     'Employé': [
       {
@@ -311,11 +313,46 @@ export class AuthService {
   private router = inject(Router);
   private logger = inject(NGXLogger);
   
-  constructor() {
+  /* constructor() {
     this.loadUserFromStorage();
-  }
+  } */
 
-  private loadUserFromStorage(): void {
+  initAuth(): Promise<void> {
+  return new Promise((resolve) => {
+    console.log('APP_INITIALIZER: Début initAuth');
+    
+    const token = this.getToken();
+    console.log('Token présent:', !!token);
+    
+    if (!token) {
+      console.log('Aucun token, résolution immédiate');
+      resolve();
+      return;
+    }
+    
+    if (this.jwtHelper.isTokenExpired(token)) {
+      console.log('Token expiré, logout');
+      this.logout();
+      resolve();
+      return;
+    }
+    
+    console.log('Token valide, récupération user');
+    this.getMe().subscribe({
+      next: () => {
+        console.log('User récupéré avec succès');
+        resolve();
+      },
+      error: (err) => {
+        console.error('Erreur récupération user:', err);
+        this.currentUserSubject.next({} as User);
+        this.logout();
+        resolve(); // TOUJOURS résoudre même en erreur
+      }
+    });
+  });
+}
+  /* private loadUserFromStorage(): void {
     const token = localStorage.getItem('token');
     if (token && !this.jwtHelper.isTokenExpired(token)) {
       this.getMe().subscribe({
@@ -328,7 +365,7 @@ export class AuthService {
     } else {
       this.logout();
     }
-  }
+  } */
 
   login(email: string, password: string): Observable<User> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -359,7 +396,9 @@ export class AuthService {
   }
 
   getMe(): Observable<User> {
-    return this.http.get<User>(`${this.apiUrl}/auth/me`).pipe(
+    const token = this.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    return this.http.get<User>(`${this.apiUrl}/auth/me`,{ headers }).pipe(
       tap(user => {
         this.currentUserSubject.next(user);
         localStorage.setItem('user', JSON.stringify(user));
@@ -393,6 +432,11 @@ export class AuthService {
       this.router.navigate(['/unauthorized']);
       return;
     }
+     if(!user.status){
+      console.log('Utilisateur inactif, redirection vers unauthorized');
+      //this.router.navigate(['/unauthorized']);
+      return;
+     }
 
     const userRoles = user.roles.map(r => r.nom);
    console.log('Rôles de l\'utilisateur:', userRoles);
@@ -435,8 +479,9 @@ export class AuthService {
   }
 
   isAuthenticated(): boolean {
+    //return token ? !this.jwtHelper.isTokenExpired(token) : false; */
     const token = this.getToken();
-    return token ? !this.jwtHelper.isTokenExpired(token) : false;
+    return !!token && !this.jwtHelper.isTokenExpired(token);
   }
 
   getNavigationItems(): NavigationItem[] {
@@ -537,6 +582,9 @@ export class AuthService {
     return this.currentUserSubject.value;
   }
 
+  setUser(user: User) {
+    this.currentUserSubject.next(user);
+  }
   getUserStructureId(): number | null {
     return this.currentUserSubject.value?.structure_id || null;
   }

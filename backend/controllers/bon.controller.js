@@ -23,6 +23,12 @@ const {
 exports.createBon = async (req, res) => {
 
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
     const bon = req.body;
     let fichier = null;
     if (req.file) {
@@ -44,6 +50,12 @@ exports.createBon = async (req, res) => {
 exports.getBonsByStructure = async (req, res) => {
 
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
     const bons = await Bon.findAll({
       where: { code_structure: req.params.code_structure },
       include: [
@@ -79,6 +91,11 @@ exports.getBonsByStructure = async (req, res) => {
 // Lister uniquement les bons clients d'une structure
 exports.getBonsClientsByStructure = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const bons = await Bon.findAll({
       where: { 
         code_structure: req.params.code_structure,
@@ -123,6 +140,11 @@ exports.getBonsClientsByStructure = async (req, res) => {
 // Lister uniquement les bons fournisseurs d'une structure
 exports.getBonsFournisseursByStructure = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const bons = await Bon.findAll({
       where: { 
         code_structure: req.params.code_structure,
@@ -185,6 +207,12 @@ exports.getAllBons = async (req, res) => {
 // Récupérer un bon par ID
 exports.getBonById = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
     const bon = await Bon.findByPk(req.params.id);
     if (!bon) return res.status(404).json({ message: 'Bon non trouvé' });
 
@@ -202,6 +230,12 @@ exports.getBonById = async (req, res) => {
 exports.updateBon = async (req, res) => {
 
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
     const bon = await Bon.findByPk(req.params.id);
     if (!bon) {
       return res.status(404).json({ message: 'Bon non trouvé' });
@@ -250,6 +284,11 @@ exports.deleteBon = async (req, res) => {
   const transaction = await db.sequelize.transaction();
   
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const bonId = req.params.id;
     
     // Trouver le bon avec son panier associé
@@ -321,6 +360,12 @@ exports.deleteBon = async (req, res) => {
 
 exports.updateStatutBon = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
     const { statutBon } = req.body;
     const bon = await Bon.findByPk(req.params.id);
     if (!bon) return res.status(404).json({ message: 'Bon non trouvé' });
@@ -337,6 +382,12 @@ exports.updateStatutBon = async (req, res) => {
 
 exports.updateTypeBon = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
     const { type } = req.body;
     const bon = await Bon.findByPk(req.params.id);
     if (!bon) return res.status(404).json({ message: 'Bon non trouvé' });
@@ -353,6 +404,11 @@ exports.updateTypeBon = async (req, res) => {
 
 exports.updateResteAPayer = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { montant } = req.body; // montant payé
     const bon = await Bon.findByPk(req.params.id);
     if (!bon) return res.status(404).json({ message: 'Bon non trouvé' });
@@ -375,6 +431,11 @@ exports.updateResteAPayer = async (req, res) => {
 
 exports.updateNetAPayer = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { remise } = req.body;
     const bon = await Bon.findByPk(req.params.id);
     if (!bon) return res.status(404).json({ message: 'Bon non trouvé' });
@@ -394,6 +455,12 @@ exports.updateNetAPayer = async (req, res) => {
 exports.updateFichier = async (req, res) => {
 
   try {
+      const authUser = req.user;
+
+      if (!authUser) {
+        return res.status(401).json({ message: "Non authentifié" });
+      }
+
       const bon = await Bon.findByPk(req.params.id);
       if (!bon) return res.status(404).json({ message: 'Bon non trouvé' });
   
@@ -433,6 +500,12 @@ exports.updateFichier = async (req, res) => {
 };
 exports.updateMotifsRetour = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
     const { motifsRetour } = req.body;
     const bon = await Bon.findByPk(req.params.id);
     if (!bon) return res.status(404).json({ message: 'Bon non trouvé' });
@@ -453,6 +526,12 @@ exports.updateMotifsRetour = async (req, res) => {
 // ==========================================
 exports.getBonsByFournisseur = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
     const { code_structure, fournisseurId } = req.params;
 
     const bons = await Bon.findAll({
@@ -493,6 +572,12 @@ exports.getBonsByFournisseur = async (req, res) => {
 // ==========================================
 exports.getBonsByClient = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
     const { code_structure, clientId } = req.params;
 
     const bons = await Bon.findAll({
@@ -585,6 +670,11 @@ exports.uploadFichier = async (req, res) => {
 // Supprimer un fichier
 exports.supprimerFichier = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { bonId } = req.params;
 
     const bon = await db.Bon.findByPk(bonId);
@@ -615,6 +705,11 @@ exports.createBonComplet = async (req, res) => {
   const transaction = await db.sequelize.transaction();
   
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { bon, panier, articles, paiement, code_structure, magasinId, agentId, fournisseurId, clientId, typeEntite } = req.body;
     
     // Validation
@@ -853,6 +948,12 @@ exports.changerStatutPanier = async (req, res) => {
   const transaction = await db.sequelize.transaction();
   
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
     const { panierId, nouveauStatut, confirmation } = req.body;
     
     if (!panierId || !nouveauStatut) {
@@ -1032,6 +1133,12 @@ exports.traiterBonClient = async (bon, articles, magasinId, agentId, code_struct
 // Dans le contrôleur
 exports.getBonsBrouillons = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
     const { code_structure } = req.params;
     const bons = await db.Bon.findAll({
       where: { 
@@ -1049,6 +1156,11 @@ exports.getBonsBrouillons = async (req, res) => {
 exports.supprimerBonComplet = async (req, res) => {
   const transaction = await db.sequelize.transaction();
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { bonId } = req.params;
     
     const bon = await db.Bon.findByPk(bonId, { 

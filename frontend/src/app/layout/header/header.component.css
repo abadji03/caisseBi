@@ -62,3 +62,17 @@
 .dropdown-menu li button:hover {
   background-color: #bdc3c7;
 }
+
+.avatar-letter {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: #343a40; /* noir clair */
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+}

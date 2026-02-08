@@ -4,9 +4,9 @@
      <button class="menu-toggle" (click)="toggleCollapse()">
         <i class="bi bi-list"></i>
       </button>
-      <img src="./assets/CMP.png" class="avatar img-fluid rounded me-1" alt="User" width="50" height="50" />
+      <img [src]="logoUrl" class="avatar img-fluid rounded me-1" alt="User" width="50" height="50" />
       <!-- <span class="text-dark" *ngIf="!isSidebarCollapsed">User</span> -->
-      <h4 *ngIf="!isSidebarCollapsed">Nom Structure</h4>
+      <h4 *ngIf="!isSidebarCollapsed">{{ nomStructure }}</h4>
     </div>
     <div class="accordion" id="accordionSidebar">
       @for (item of sidebarItems; track item.label) {
@@ -16,6 +16,7 @@
               class="accordion-button no-arrow"
               (click)="toggleSubtitre(item.label)"
               [attr.aria-expanded]="isSubtitreOpen(item.label)"
+              [title]="item.label"
             >
               <i class="{{ item.icon }} me-2"></i>
               <span *ngIf="!isSidebarCollapsed">{{ item.label }}</span>

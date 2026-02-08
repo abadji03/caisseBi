@@ -6,6 +6,11 @@ const { ValidationError, UniqueConstraintError } = require('sequelize');
 exports.createCategorie = async (req, res) => {
   try {
 
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     console.log('📝 Création catégorie - Données reçues:', req.body);
     const { code_structure, name, description, type,isActive } = req.body;
 
@@ -58,6 +63,11 @@ exports.createCategorie = async (req, res) => {
 
 exports.getAllByStructure = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { code_structure } = req.params;
     const categories = await Categorie.findAll({
       where: { 
@@ -75,6 +85,12 @@ exports.getAllByStructure = async (req, res) => {
 
 exports.updateCategorie = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
     const { id } = req.params;
     const { name, description, type } = req.body;
 
@@ -95,6 +111,13 @@ exports.updateCategorie = async (req, res) => {
 
 exports.toggleActive = async (req, res) => {
   try {
+
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
     const { id } = req.params;
 
     const categorie = await Categorie.findByPk(id);
@@ -111,6 +134,11 @@ exports.toggleActive = async (req, res) => {
 
 exports.deleteCategorie = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { id } = req.params;
 
     const deleted = await Categorie.destroy({ where: { id } });

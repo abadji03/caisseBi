@@ -18,6 +18,11 @@ class PanierCompletController {
     const transaction = await db.sequelize.transaction();
     
     try {
+      const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
       const { panier, paiement, articles, code_structure, magasinId, agentId, clientId, typeEntite } = req.body;
 
       console.log('Données reçues pour création panier complet:', {

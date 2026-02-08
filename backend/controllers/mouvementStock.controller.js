@@ -5,6 +5,11 @@ const MouvementStock = db.MouvementStock;
 exports.createMouvementStock = async (req, res) => {
   console.log(req.body);
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const mouvement = await MouvementStock.create(req.body);
     res.status(201).json({ message: 'Mouvement créé avec succès', mouvement });
   } catch (error) {
@@ -18,6 +23,11 @@ exports.createMouvementStock = async (req, res) => {
 //Récupérer tous les mouvements de stock
 exports.getAllMouvementsStock = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const mouvements = await MouvementStock.findAll({ order: [['createdAt', 'DESC']] });
     res.status(200).json(mouvements);
   } catch (error) {
@@ -30,6 +40,11 @@ exports.getAllMouvementsStock = async (req, res) => {
 //Récupérer un mouvement par ID
 exports.getMouvementStockById = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const mouvement = await MouvementStock.findByPk(req.params.id);
     if (!mouvement) {
       return res.status(404).json({ message: 'Mouvement non trouvé' });
@@ -45,6 +60,11 @@ exports.getMouvementStockById = async (req, res) => {
 //Mettre à jour un mouvement
 exports.updateMouvementStock = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const mouvement = await MouvementStock.findByPk(req.params.id);
     if (!mouvement) {
       return res.status(404).json({ message: 'Mouvement non trouvé' });
@@ -60,6 +80,11 @@ exports.updateMouvementStock = async (req, res) => {
 //Supprimer un mouvement
 exports.deleteMouvementStock = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const mouvement = await MouvementStock.findByPk(req.params.id);
     if (!mouvement) {
       return res.status(404).json({ message: 'Mouvement non trouvé' });
@@ -75,6 +100,11 @@ exports.deleteMouvementStock = async (req, res) => {
 // ✅ Récupérer tous les mouvements d'une structure donnée
 exports.getMouvementsByStructure = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const mouvements = await MouvementStock.findAll({
       where: { code_structure: req.params.code_structure },
       order: [['createdAt', 'DESC']],

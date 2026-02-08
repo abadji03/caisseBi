@@ -149,7 +149,7 @@ export const routes: Routes = [
         data: { 
           roles: ['Administrateur Général', 'Administrateur', 'Gérant'],
           requireStructure: true,
-          permissions: [PERMISSIONS.MANAGE_PRODUCTS]
+          permissions: [PERMISSIONS.MANAGE_PRODUCTS, PERMISSIONS.VIEW_PRODUCTS]
         }
       },
       {
@@ -227,7 +227,7 @@ export const routes: Routes = [
         component: ParametresComponent,
         canActivate: [roleGuard],
         data: { 
-          roles: ['Administrateur Général', 'Administrateur'],
+          roles: ['Administrateur'],
           permissions: [PERMISSIONS.MANAGE_SETTINGS]
         }
       },

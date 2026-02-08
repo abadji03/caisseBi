@@ -12,10 +12,29 @@
         <span class="badge bg-danger position-absolute top-0 start-100 translate-middle">3</span>
       </i>
     </div>
-    <button class="btn dropdown-toggle" id="idMenu" data-bs-toggle="dropdown">
-      <img src="./assets/CMP.png" class="avatar img-fluid rounded me-1" alt="Logo application" width="30" height="30" />
-      <span class="text-dark">{{ userName }}</span>
-    </button>
+    <button class="btn dropdown-toggle d-flex align-items-center" id="idMenu" data-bs-toggle="dropdown">
+
+        <!-- Cas image -->
+        <ng-container *ngIf="photoProfilUrl; else defaultAvatar">
+          <img
+            [src]="photoProfilUrl"
+            class="avatar img-fluid rounded-circle me-1"
+            alt="Photo profil"
+            width="30"
+            height="30"
+          />
+        </ng-container>
+
+        <!-- Cas lettre -->
+        <ng-template #defaultAvatar>
+          <div class="avatar-letter me-1">
+            {{ userName.charAt(0).toUpperCase() }}
+          </div>
+        </ng-template>
+
+        <span class="text-dark ms-1">{{ userName }}</span>
+      </button>
+
     <ul class="dropdown-menu">
       <!-- <li>
         <button class="dropdown-item" routerLink="/user-login">

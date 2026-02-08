@@ -3,6 +3,11 @@ const Permission = db.permission;
 
 exports.create = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const data = await Permission.create(req.body);
     res.status(201).json(data);
   } catch (err) {
@@ -12,6 +17,11 @@ exports.create = async (req, res) => {
 
 exports.findAll = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const data = await Permission.findAll();
     res.json(data);
   } catch (err) {
@@ -21,6 +31,11 @@ exports.findAll = async (req, res) => {
 
 exports.findOne = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const data = await Permission.findByPk(req.params.id);
     if (!data) return res.status(404).json({ message: 'Permission non trouvée' });
     res.json(data);
@@ -31,6 +46,11 @@ exports.findOne = async (req, res) => {
 
 exports.update = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const [updated] = await Permission.update(req.body, {
       where: { id: req.params.id },
     });
@@ -43,6 +63,11 @@ exports.update = async (req, res) => {
 
 exports.delete = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const deleted = await Permission.destroy({ where: { id: req.params.id } });
     if (!deleted) return res.status(404).json({ message: 'Permission non trouvée' });
     res.json({ message: 'Permission supprimée' });

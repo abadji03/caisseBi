@@ -64,7 +64,7 @@
                       <td>{{ magasin.nom }}</td>
                       <td>{{ magasin.code_structure }}</td>
                       <td>{{ magasin.adresse }}</td>
-                      <td>{{ getResponsableName(magasin.responsableId!) }}</td>
+                      <td>{{ getResponsable(magasin)?.nom || 'Aucun responsable' }}</td>
                       <!-- <td>{{ magasin.responsableId}}</td> -->
                       <td>
                         <span
@@ -115,13 +115,13 @@
                           </button>
 
                           <!-- Bouton Supprimer -->
-                          <button
+                          <!-- <button
                             class="btn btn-danger"
                             (click)="supprimerMagasin(magasin.id)"
                             title="Supprimer"
                           >
                             <i class="bi bi-trash"></i>
-                          </button>
+                          </button> -->
                         </div>
                       </td>
                     </tr>
@@ -146,8 +146,13 @@
                                   {{ magasin.email }}
                                 </li>
                                 <li class="list-group-item">
-                                  <strong>Responsable:</strong>
-                                  {{ getResponsableName(magasin.responsableId!) }}
+                                  <strong>Employés:</strong>
+                                  <ul class="list-group list-group-flush">
+                                    <li *ngFor="let user of magasin.users" class="list-group-item" >
+                                      {{ user?.['nom'] }} : <span> {{getUserRoles(user) }}</span>
+                                    </li>
+                                  </ul>
+                                  <!-- {{ getResponsableName(magasin.responsableId!) }} -->
                                 </li>
                               </ul>
                             </div>
@@ -1180,7 +1185,7 @@
             </div>
 
             <!-- Responsable -->
-            <div class="col-md-6">
+            <!-- <div class="col-md-6">
               <label for="responsable" class="form-label"
                 >Responsable <span class="text-danger">*</span></label
               >
@@ -1210,7 +1215,7 @@
               >
                 Le responsable est obligatoire
               </div>
-            </div>
+            </div> -->
 
             <!-- Capacité de stock -->
             <div class="col-md-6">

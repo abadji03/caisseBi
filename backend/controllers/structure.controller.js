@@ -1,6 +1,7 @@
 // controllers/structure.controller.js
 const db = require('../models');
 const Structure = db.Structure;
+const User = db.Users;
 const fs = require('fs');
 const path = require('path');
 
@@ -19,6 +20,11 @@ const BASE_URL = 'http://localhost:5000/uploads/';
 //Création d'une structure
 exports.createStructure = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const {
       nom_structure,
       proprietaire,
@@ -98,32 +104,14 @@ exports.createStructure = async (req, res) => {
   }
 };
 
-/* // Récupérer toutes les structures
-exports.getAllStructures = async (req, res) => {
-  try {
-    const structures = await Structure.findAll();
-    res.status(200).json(structures);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Erreur lors de la récupération des structures." });
-  }
-};
 
-// Récupérer une structure par son ID
-exports.getStructureById = async (req, res) => {
-  try {
-    const structure = await Structure.findByPk(req.params.id);
-    if (!structure) {
-      return res.status(404).json({ message: "Structure non trouvée" });
-    }
-    res.status(200).json(structure);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Erreur lors de la récupération de la structure." });
-  }
-}; */
 exports.getAllStructures = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const structures = await Structure.findAll({
       order: [['createdAt', 'DESC']],
     });
@@ -144,6 +132,11 @@ exports.getAllStructures = async (req, res) => {
 
 exports.getStructureById = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const structure = await Structure.findByPk(req.params.id);
 
     if (!structure) {
@@ -163,6 +156,11 @@ exports.getStructureById = async (req, res) => {
 
 exports.getStructureByCodeStructure = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const structure = await Structure.findOne( {where: { code_structure: req.params.code_structure }});
 
     if (!structure) {
@@ -183,6 +181,11 @@ exports.getStructureByCodeStructure = async (req, res) => {
 //Modification d'une structure
 exports.updateStructure = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const id = req.params.id;
     const structure = await Structure.findByPk(id); // Cherche la structure par son ID
 
@@ -209,6 +212,11 @@ exports.updateStructure = async (req, res) => {
 //Suppression d'une structure
 exports.deleteStructure = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const id = req.params.id;
     const structure = await Structure.findByPk(id); // Récupère la structure par ID
 
@@ -230,26 +238,52 @@ exports.deleteStructure = async (req, res) => {
 };
 
 //Mettre àjour le status de la structure
-// Mettre à jour uniquement le statut d'une structure
 exports.updateStructureStatus = async (req, res) => {
+  const transaction = await db.sequelize.transaction();
+
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { id } = req.params;
     const { estActive } = req.body;
 
-    const structure = await Structure.findByPk(id);
+    const structure = await Structure.findByPk(id, { transaction });
+
     if (!structure) {
+      await transaction.rollback();
       return res.status(404).json({ message: 'Structure non trouvée' });
     }
 
-    // Met à jour uniquement le champ estActive
-    await structure.update({ estActive });
+    // 1️⃣ Mise à jour du statut de la structure
+    await structure.update({ estActive }, { transaction });
+
+    // 2️⃣ Mise à jour des utilisateurs liés à la structure
+    await User.update(
+      { status: estActive },
+      {
+        where: {
+          code_structure: structure.code_structure,
+          structure_id: structure.id
+        },
+        transaction
+      }
+    );
+
+    await transaction.commit();
 
     res.status(200).json({
-      message: 'Statut mis à jour avec succès',
-      structure,
+      message: 'Statut de la structure et des utilisateurs mis à jour avec succès',
+      structure
     });
+
   } catch (err) {
+    await transaction.rollback();
     console.error(err);
-    res.status(500).json({ message: 'Erreur lors de la mise à jour du statut' });
+    res.status(500).json({
+      message: 'Erreur lors de la mise à jour du statut de la structure'
+    });
   }
 };

@@ -95,8 +95,8 @@ db.Magasin.belongsTo(db.Structure, {
 });
 
 // Relation entre Users et Magasins
-db.Users.hasMany(db.Magasin, { foreignKey: 'responsableId' });
-db.Magasin.belongsTo(db.Users, { foreignKey: 'responsableId' });
+db.Users.belongsTo(db.Magasin, { foreignKey: 'magasinId' });
+db.Magasin.hasMany(db.Users, { foreignKey: 'magasinId' });
 
 //Relations Produits, Fournisseur et CatégorieProduits et Structure
 // Produit appartient à une Structure

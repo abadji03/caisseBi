@@ -5,6 +5,11 @@ const Produit = db.Produit; // Assure-toi que l'association a été définie (Re
 //Créer une réconciliation
 exports.createReconciliation = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { code_structure, produitId, stockTheorique, stockPhysique, responsable, note } =
       req.body;
 
@@ -29,6 +34,11 @@ exports.createReconciliation = async (req, res) => {
 //Récupérer toutes les réconciliations d'une structure
 exports.getReconciliationsByStructure = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const reconciliations = await Reconciliation.findAll({
       where: { code_structure: req.params.code_structure },
       order: [['dateReconciliation', 'DESC']],
@@ -44,6 +54,11 @@ exports.getReconciliationsByStructure = async (req, res) => {
 //Récupérer une réconciliation par ID
 exports.getReconciliationById = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const reconciliation = await Reconciliation.findByPk(req.params.id, {
       include: [{ model: Produit }],
     });
@@ -61,6 +76,11 @@ exports.getReconciliationById = async (req, res) => {
 //Mettre à jour une réconciliation
 exports.updateReconciliation = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { stockTheorique, stockPhysique, responsable, note } = req.body;
 
     const reconciliation = await Reconciliation.findByPk(req.params.id);
@@ -87,6 +107,11 @@ exports.updateReconciliation = async (req, res) => {
 //Supprimer une réconciliation
 exports.deleteReconciliation = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const reconciliation = await Reconciliation.findByPk(req.params.id);
     if (!reconciliation) {
       return res.status(404).json({ message: 'Réconciliation non trouvée' });
@@ -102,6 +127,11 @@ exports.deleteReconciliation = async (req, res) => {
 //Récupérer toutes les réconciliations (admin/export)
 exports.getAllReconciliations = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const reconciliations = await Reconciliation.findAll({
       order: [['dateReconciliation', 'DESC']],
       include: [{ model: Produit }],
@@ -115,6 +145,11 @@ exports.getAllReconciliations = async (req, res) => {
 // Récupérer les réconciliations d’un produit
 exports.getReconciliationsByProduit = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const reconciliations = await Reconciliation.findAll({
       where: { produitId: req.params.produitId },
       order: [['dateReconciliation', 'DESC']],

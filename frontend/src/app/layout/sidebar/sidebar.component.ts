@@ -1,10 +1,12 @@
-import { Component, EventEmitter, inject, Input, OnInit, Output } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, EventEmitter, inject, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { NavigationEnd, Router, RouterLink } from '@angular/router';
 //import { TitreService } from '../../services/titre.service';
 import { CommonModule } from '@angular/common';
 import { NavigationItem } from '../../modeles/user.model';
 import { AuthService } from '../../services/auth.service';
 import { NGXLogger } from 'ngx-logger';
+import { StructureService } from '../../services/structure.service';
+import { filter, finalize, Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-sidebar',
@@ -13,13 +15,21 @@ import { NGXLogger } from 'ngx-logger';
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.css'
 })
-export class SidebarComponent implements OnInit{
+export class SidebarComponent implements OnInit,OnDestroy{
 
   @Output() toggleSidebar = new EventEmitter<void>();
   isSidebarCollapsed = false;
   @Input() isCollapsed = false;
   openSubtitre: string | null = null;
   sidebarItems: NavigationItem[] = [];
+  private structureService = inject(StructureService);
+  logoUrl = './assets/CMP.png';
+  code_structure: string | null = null;
+  nomStructure = 'Ma Structure';
+  isloading = false;
+
+  private destroy$ = new Subject<void>();
+  
 
 
   /* sidebarItems: SidebarItem[] = [
@@ -101,17 +111,53 @@ export class SidebarComponent implements OnInit{
 //private titreService = inject(TitreService);
 private authService = inject(AuthService);
 private logger = inject(NGXLogger);
+private router = inject(Router);
+
 
  ngOnInit(): void {
     this.loadNavigationItems();
     
     // Recharger les items si l'utilisateur change
-    this.authService.currentUser.subscribe((user) => {
-      if (user && user.id) { // Vérifier que l'utilisateur est bien connecté
+     this.authService.currentUser
+    .pipe(takeUntil(this.destroy$))
+    .subscribe((user) => {
+      if (user?.id) {
+        this.code_structure = user.code_structure || null;
         this.loadNavigationItems();
+        this.loadStructureLogo();
+        this.openSubmenuFromRoute();
       }
     });
+
+  // 🔥 Écoute les changements de route (navigation interne)
+  this.router.events
+    .pipe(
+      filter(event => event instanceof NavigationEnd),
+      takeUntil(this.destroy$)
+    )
+    .subscribe(() => {
+      this.openSubmenuFromRoute();
+    });
   }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private openSubmenuFromRoute(): void {
+    const currentUrl = this.router.url;
+
+    for (const item of this.sidebarItems) {
+      if (item.children?.some(child => currentUrl.startsWith(child.route))) {
+        this.openSubtitre = item.label;
+        return;
+      }
+    }
+
+    this.openSubtitre = null;
+  }
+
   private loadNavigationItems(): void {
     this.sidebarItems = this.authService.getNavigationItems();
     // Si aucun item n'est disponible, afficher un message
@@ -146,4 +192,28 @@ canShowItem(item: NavigationItem): boolean {
     }
     return true;
 }
+
+ loadStructureLogo(): void {
+    if (!this.code_structure) {
+      this.logger.error('Code structure non défini pour l’utilisateur actuel.');
+      return;
+    }
+      this.structureService
+        .getByCodeStructure(this.code_structure)
+        .pipe(
+          takeUntil(this.destroy$),
+          finalize(() => (this.isloading = false))
+        )
+        .subscribe({
+          next: (structure) => {
+            if (structure.logo) {
+              this.logoUrl = structure.logo;
+              this.nomStructure = structure.nom_structure || 'Ma Structure';
+            }
+          },
+          error: (err) => {
+            console.error('Erreur lors du chargement des détails de la structure:', err);
+          }
+        });
+    } 
 }

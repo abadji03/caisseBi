@@ -1,4 +1,4 @@
-// interceptors/auth.interceptor.ts
+/* // interceptors/auth.interceptor.ts
 import { inject, Injectable } from '@angular/core';
 import { HttpRequest, HttpHandler, HttpEvent, HttpInterceptor } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -18,3 +18,25 @@ export class AuthInterceptor implements HttpInterceptor {
     return next.handle(request);
   }
 }
+ */
+import { HttpInterceptorFn } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { AuthService } from '../services/auth.service';
+
+export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
+  const authService = inject(AuthService);
+  const token = authService.getToken();
+
+  if (token) {
+    req = req.clone({
+      setHeaders: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  }
+   else {
+    console.log('Interceptor: Pas de token disponible');
+  }
+
+  return next(req);
+};

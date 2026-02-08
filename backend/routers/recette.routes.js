@@ -2,12 +2,11 @@ const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/recette.controller');
 const upload = require('../middlewares/uploadMiddleware');
+const authenticateToken = require('../middlewares/auth.middleware');
 
-
-router.post('/',upload.single('receipt'), ctrl.createRecette);
-router.get('/structure/:code_structure', ctrl.getByStructure);
+router.post('/', authenticateToken, upload.single('receipt'), ctrl.createRecette);
+router.get('/structure/:code_structure', authenticateToken, ctrl.getByStructure);
 router.get('/paiement/:paiementId', ctrl.findByPaiementId);
-router.delete('/:id', ctrl.deleteRecette);
-router.put('/:id',upload.single('receipt'), ctrl.updateRecette);
-
+router.delete('/:id', authenticateToken, ctrl.deleteRecette);
+router.put('/:id', authenticateToken, upload.single('receipt'), ctrl.updateRecette);
 module.exports = router;

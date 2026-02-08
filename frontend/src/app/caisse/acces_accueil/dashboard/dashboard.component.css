@@ -1,28 +1,149 @@
-/* Conteneur principal */
-.main-content {
-  /*margin-left: 5px;  Laisser de la place pour la sidebar */
-  /* padding: 20px; */
-  /* width: 100%; */
-  /* overflow-y: auto; */
-  background-color: #ecf0f1;
-  transition: all 0.3s;
-  padding: 0; 
-}
-.sidebar-container {
+/* Reset et base */
+.container-fluid {
   padding: 0;
+  height: 100vh;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
 }
 
-/* .col-10,
-.col-11 {
-  transition: all 0.3s;
-} */
+.row.dashboard-layout {
+  height: 100vh;
+  margin: 0;
+  display: flex;
+  position: relative;
+}
 
-/* Dashboard Overview */
+/* Sidebar wrapper */
+.sidebar-wrapper {
+  width: 250px;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1000;
+  transition: width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+  background: transparent;
+}
+
+.sidebar-wrapper.collapsed {
+  width: 70px;
+}
+
+/* Content wrapper */
+.content-wrapper {
+  flex: 1;
+  height: 100vh;
+  overflow-y: auto;
+  margin-left: 250px;
+  transition: margin-left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+}
+
+.content-wrapper.collapsed {
+  margin-left: 70px;
+}
+
+/* Header */
+app-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: white;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+}
+
+/* Dashboard content area */
 .dashboard-overview {
-  background-color: white;
-  margin-top: 0px;
-  border-radius: 10px;
-  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
-  padding: 10px;
-  margin-top: 5px;
+  flex: 1;
+  padding: 25px;
+  background: transparent;
+  min-height: calc(100vh - 80px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .sidebar-wrapper {
+    width: 70px;
+    transform: translateX(-100%);
+  }
+  
+  .sidebar-wrapper:not(.collapsed) {
+    transform: translateX(0);
+    width: 250px;
+  }
+  
+  .content-wrapper {
+    margin-left: 0 !important;
+    width: 100%;
+  }
+  
+  /* Overlay pour mobile */
+  .sidebar-wrapper:not(.collapsed) + .content-wrapper::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+  }
+}
+
+/* Smooth animations */
+.content-wrapper {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Scrollbar styling */
+.content-wrapper::-webkit-scrollbar {
+  width: 8px;
+}
+
+.content-wrapper::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.content-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+  transition: background 0.3s;
+}
+
+.content-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* Ajustements pour le contenu */
+.dashboard-overview {
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Pour les écrans très larges */
+@media (min-width: 1400px) {
+  .dashboard-overview {
+    padding: 30px 40px;
+  }
+}
+
+/* Pour les petits écrans */
+@media (max-width: 576px) {
+  .dashboard-overview {
+    padding: 15px;
+  }
 }

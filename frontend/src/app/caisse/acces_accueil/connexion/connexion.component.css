@@ -12,7 +12,7 @@
 }
 
 .left-section {
-  background: url('https://img.freepik.com/premium-vector/man-freelancer-sits-table-cafe-working-laptop-remote-worker-drinking-beverage-coworking-space-workplace-cafeteria-restaurant_575670-1291.jpg?size=626&ext=jpg&ga=GA1.1.1546980028.1702771200&semt=ais')
+  background: url('/assets/CMP.png')
     no-repeat center center;
   display: none;
 }
@@ -181,7 +181,7 @@
   background-color: #69c0ff;
 }
 
-button {
+.login-form > button {
   width: 100%;
   padding: 15px;
   border: none;
@@ -196,8 +196,32 @@ button {
   align-items: center;
 }
 
-button:hover {
+.login-form > button:hover {
   background-color: #405d7d;
+}
+
+.password-control {
+  position: relative;
+  padding-right: 10px;
+}
+
+.toggle-password-btn {
+  position: absolute;
+  left: 308px;
+  top: 10%;
+  transform: translateY(-10%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #666;
+}
+
+.toggle-password-btn:hover {
+  color: #000;
+}
+
+.toggle-password-btn:focus {
+  outline: none;
 }
 
 /*Responsive*/

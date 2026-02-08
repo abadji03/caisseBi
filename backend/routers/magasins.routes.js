@@ -1,13 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const magasinCtrl = require('../controllers/magasin.controller');
+const authenticateToken = require('../middlewares/auth.middleware');
 
-router.post('/', magasinCtrl.createMagasin);
-router.put('/:id', magasinCtrl.updateMagasin);
-router.delete('/:id', magasinCtrl.deleteMagasin);
-router.get('/structure/:code_structure', magasinCtrl.getMagasinsByStructure);
-router.get('/', magasinCtrl.getAllMagasins);
-router.patch('/:id/statut', magasinCtrl.updateStatutMagasin);
-router.get('/:id', magasinCtrl.getMagasinById);
+
+router.post('/', authenticateToken, magasinCtrl.createMagasin);
+router.put('/:id', authenticateToken, magasinCtrl.updateMagasin);
+router.delete('/:id', authenticateToken, magasinCtrl.deleteMagasin);
+router.get('/structure/:code_structure', authenticateToken, magasinCtrl.getMagasinsByStructure);
+router.get('/', authenticateToken, magasinCtrl.getAllMagasins);
+router.patch('/:id/statut', authenticateToken, magasinCtrl.updateStatutMagasin);
+router.get('/:id', authenticateToken, magasinCtrl.getMagasinById);
 
 module.exports = router;

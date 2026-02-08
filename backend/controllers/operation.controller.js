@@ -306,6 +306,11 @@ exports.synchroniserOperations = async (code_structure, transaction = null) => {
 exports.create = async (req, res) => {
   const transaction = await db.sequelize.transaction();
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const operation = await Operation.create(req.body, { transaction });
     await transaction.commit();
     res.status(201).json(operation);
@@ -318,6 +323,11 @@ exports.create = async (req, res) => {
 // Récupérer toutes les opérations avec filtres
 exports.findAll = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { 
       code_structure, 
       dateDebut, 
@@ -413,6 +423,11 @@ exports.findAll = async (req, res) => {
 // Récupérer les opérations par fournisseur
 exports.findByFournisseur = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { code_structure, fournisseurId } = req.params;
     const { dateDebut, dateFin, type, statut } = req.query;
 
@@ -478,6 +493,11 @@ exports.findByFournisseur = async (req, res) => {
 // Récupérer les opérations par client
 exports.findByClient = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { code_structure, clientId } = req.params;
     const { dateDebut, dateFin, type, statut } = req.query;
 
@@ -528,6 +548,11 @@ exports.findByClient = async (req, res) => {
 // Récupérer une opération par ID
 exports.findById = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const operation = await Operation.findByPk(req.params.id, {
       include: [
         {
@@ -563,6 +588,11 @@ exports.findById = async (req, res) => {
 exports.update = async (req, res) => {
   const transaction = await db.sequelize.transaction();
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const [updated] = await Operation.update(req.body, {
       where: { id: req.params.id },
       transaction
@@ -586,6 +616,11 @@ exports.update = async (req, res) => {
 exports.delete = async (req, res) => {
   const transaction = await db.sequelize.transaction();
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const deleted = await Operation.destroy({
       where: { id: req.params.id },
       transaction

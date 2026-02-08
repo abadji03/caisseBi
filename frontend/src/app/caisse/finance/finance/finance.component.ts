@@ -14,10 +14,12 @@ import { Fournisseur } from '../../../modeles/fournisseur.model';
 import { Bon } from '../../../modeles/bon.model';
 import { CategoriesDepencesRecettesService } from '../../../services/categories-depences-recettes.service';
 import { ToastrService } from 'ngx-toastr';
-import { finalize, Subject, takeUntil } from 'rxjs';
+import { finalize, Subject, Subscription, takeUntil } from 'rxjs';
 import { DepencesService } from '../../../services/depences.service';
 import { RecettesService } from '../../../services/recettes.service';
 import { PaiementsService } from '../../../services/paiements.service';
+import { AuthService } from '../../../services/auth.service';
+import { User } from '../../../modeles/user.model';
 
 @Component({
   selector: 'app-finance',
@@ -82,17 +84,20 @@ export class FinanceComponent implements OnInit,OnDestroy {
   // Variables d'état
   isLoading = false;
   errorMessage = '';
-  code_structure = 'MASTRUCTURET-NZNC'; // À adapter selon votre structure
-  magasinId = 1; // À adapter selon votre contexte
-  agentId = 1; // À adapter selon votre contexte
+  code_structure:string|null = null; // À adapter selon votre structure
+  magasinId:number|null = null; // À adapter selon votre contexte
+  agentId:number|null = null; // À adapter selon votre contexte
 
   // Fichier pour la dépense
   selectedFile: File | null = null;
   selectedRecetteFile: File | null = null; // Fichier pour la recette
+  currentUser: User | null = null;
 
+  private userSubscription!: Subscription;
 
   private fb = inject(FormBuilder);
   private cdr = inject(ChangeDetectorRef);
+  private authService = inject(AuthService);
   private categorieService = inject(CategoriesDepencesRecettesService);
   private depenseService = inject(DepencesService);
   private paiementService = inject(PaiementsService);
@@ -101,6 +106,19 @@ export class FinanceComponent implements OnInit,OnDestroy {
 
 
   ngOnInit(): void {
+    this.userSubscription = this.authService.currentUser.subscribe(user => {
+      this.currentUser = user;
+      // Initialiser la variable code_structure
+      this.code_structure = user?.code_structure || null;
+      this.magasinId = user?.magasinId || null;
+      this.agentId = user?.id || null;
+      console.log('Code structure initialisé :', this.code_structure);
+      // Déterminer si on doit montrer le champ structure
+      //this.isStructureAdmin = this.authService.hasRole('Administrateur'); // Ou vérifiez par ID
+
+      // Récupérer l'ID de la structure de l'utilisateur connecté
+      
+    });
     this.initForms();
     this.loadCategories();
     this.loadDepenses();
@@ -111,6 +129,9 @@ export class FinanceComponent implements OnInit,OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if(this.userSubscription) {
+      this.userSubscription.unsubscribe();
+    }
   }
 
   // Gestion de la recherche
@@ -197,7 +218,7 @@ export class FinanceComponent implements OnInit,OnDestroy {
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.categorieService.getAllByStructure(this.code_structure)
+    this.categorieService.getAllByStructure(this.code_structure!)
       .pipe(takeUntil(this.destroy$),
         finalize(() => {
         this.isLoading = false;
@@ -225,7 +246,7 @@ export class FinanceComponent implements OnInit,OnDestroy {
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.depenseService.getDepensesByStructure(this.code_structure)
+    this.depenseService.getDepensesByStructure(this.code_structure!)
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => {
@@ -255,7 +276,7 @@ export class FinanceComponent implements OnInit,OnDestroy {
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.recetteService.getByStructure(this.code_structure)
+    this.recetteService.getByStructure(this.code_structure!)
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => {
@@ -282,7 +303,7 @@ export class FinanceComponent implements OnInit,OnDestroy {
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.paiementService.getByStructure(this.code_structure)
+    this.paiementService.getByStructure(this.code_structure!)
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => {
@@ -377,9 +398,9 @@ export class FinanceComponent implements OnInit,OnDestroy {
     const recetteData = this.recetteForm.value;
 
     // Ajouter les données au FormData
-    formData.append('code_structure', this.code_structure);
-    formData.append('magasinId', this.magasinId.toString());
-    formData.append('agentId', this.agentId.toString());
+    formData.append('code_structure', this.code_structure!);
+    formData.append('magasinId', this.magasinId!.toString());
+    formData.append('agentId', this.agentId!.toString());
     formData.append('categoryId', recetteData.categoryId);
     formData.append('montant', recetteData.montant);
     formData.append('paymentMode', recetteData.paymentMode);
@@ -556,9 +577,9 @@ export class FinanceComponent implements OnInit,OnDestroy {
     const depenseData = this.depenseForm.value;
 
     // Ajouter les données au FormData
-    formData.append('code_structure', this.code_structure);
-    formData.append('magasinId', this.magasinId.toString());
-    formData.append('agentId', this.agentId.toString());
+    formData.append('code_structure', this.code_structure!);
+    formData.append('magasinId', this.magasinId!.toString());
+    formData.append('agentId', this.agentId!.toString());
     formData.append('categoryId', depenseData.categoryId);
     formData.append('montant', depenseData.montant);
     formData.append('paymentMode', depenseData.paymentMode);

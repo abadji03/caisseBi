@@ -17,7 +17,6 @@ module.exports = (sequelize, DataTypes) => {
     ville: DataTypes.STRING,
     telephone: DataTypes.STRING,
     email: DataTypes.STRING,
-    responsableId: DataTypes.INTEGER,
     capaciteStock: DataTypes.DECIMAL(10, 2),
     statut: {
       type: DataTypes.ENUM('Actif', 'Inactif'),

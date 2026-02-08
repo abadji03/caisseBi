@@ -1,7 +1,7 @@
 <!-- structure.component.html -->
 <div class="container-fluid">
   <!-- Section tableau pour l'admin général -->
-  <!-- <div *ngIf="isGeneralAdmin && !isEditMode" class="mb-5"> -->
+  <div *ngIf="isGeneralAdmin && !isEditMode" class="mb-5">
   <div>
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h2>Gestion des structures</h2>
@@ -91,13 +91,13 @@
                   ></i>
                 </button>
 
-                <button
+                <<!-- button
                   class="btn btn-sm btn-danger"
                   (click)="prepareEdit(structure)"
                   title="Modifier"
                 >
                   <i class="bi bi-trash"></i>
-                </button>
+                </button> -->
               </div>
             </td>
           </tr>
@@ -136,6 +136,7 @@
       </div>
     </div>
   </div>
+</div>
 
   <!-- Section formulaire (visible pour admin général en mode édition/création OU pour admin structure) -->
   <div *ngIf="isEditMode || !isGeneralAdmin" id="form-section">
@@ -146,11 +147,11 @@
             ? isEditMode && currentStructureId
               ? 'Modifier la structure'
               : 'Ajouter une structure'
-            : 'Informations de ma structure'
+            : 'Informations de la structure'
         }}
       </h2>
       <button
-        *ngIf="isEditMode && currentStructureId"
+        *ngIf="isEditMode && currentStructureId && isGeneralAdmin"
         class="btn btn-secondary"
         (click)="cancelEdit()"
       >

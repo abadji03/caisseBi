@@ -1,17 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/reconciliation.controller');
+const authenticateToken = require('../middlewares/auth.middleware');
+
 
 //router.post("/", ctrl.createReconciliation);
 //router.get("/structure/:code_structure", ctrl.getReconciliationsByStructure);
 
-router.post('/', ctrl.createReconciliation);
-router.get('/', ctrl.getAllReconciliations); // Tous
-router.get('/:id', ctrl.getReconciliationById); // Par ID
-router.put('/:id', ctrl.updateReconciliation); // MAJ
-router.delete('/:id', ctrl.deleteReconciliation); // Suppression
+router.post('/',authenticateToken, ctrl.createReconciliation);
+router.get('/',authenticateToken, ctrl.getAllReconciliations); // Tous
+router.get('/:id',authenticateToken, ctrl.getReconciliationById); // Par ID
+router.put('/:id',authenticateToken, ctrl.updateReconciliation); // MAJ
+router.delete('/:id',authenticateToken, ctrl.deleteReconciliation); // Suppression
 
-router.get('/structure/:code_structure', ctrl.getReconciliationsByStructure); // Par structure
-router.get('/produit/:produitId', ctrl.getReconciliationsByProduit); // Par produit
+router.get('/structure/:code_structure',authenticateToken, ctrl.getReconciliationsByStructure); // Par structure
+router.get('/produit/:produitId',authenticateToken, ctrl.getReconciliationsByProduit); // Par produit
 
 module.exports = router;

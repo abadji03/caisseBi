@@ -1,9 +1,14 @@
+import { Magasin } from "./magasin.model";
+import { User } from "./user.model";
+
 export class Depense {
   id?: number;
   date: Date = new Date();
   categoryId!: number;
   statutDepense?: 'validé' | 'annulé' = 'validé';
   paiementId?: number;
+  user?:User;
+  magasin?:Magasin;
   montant = 0;
   type: 'STANDARD' | 'STOCK'|'FRAIS'|'INVESTISSEMENT' = 'STANDARD';
   description = '';
@@ -23,6 +28,8 @@ export class Recette {
   paiementId?: number;
   categoryId!: number;
   montant = 0;
+  user?:User;
+  magasin?:Magasin;
   description = '';
   paymentMode!: string;
   receipt?: string; // URL du fichier justificatif

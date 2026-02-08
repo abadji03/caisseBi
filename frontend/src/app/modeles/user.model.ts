@@ -1,5 +1,3 @@
-import { Magasin } from "./magasin.model";
-
 export class User {
   // Champs obligatoires
   id!: number;
@@ -25,7 +23,7 @@ export class User {
   structure_id?: number | null;
   code_structure?: string | null;
   isGeneralAdmin?: boolean; // Nouveau flag
-  magasin?:Magasin; // Magasin associé à l'utilisateur
+  magasinId?: number; // Magasin associé à l'utilisateur
 
 
   constructor(data?: Partial<User>) {

@@ -3,6 +3,11 @@ const CategorieProduit = db.CategoriesProduits;
 
 exports.createCategorie = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const categorie = await CategorieProduit.create(req.body);
     res.status(201).json(categorie);
   } catch (error) {
@@ -12,6 +17,11 @@ exports.createCategorie = async (req, res) => {
 
 exports.updateCategorie = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const categorie = await CategorieProduit.findByPk(req.params.id);
     if (!categorie) return res.status(404).json({ message: 'Catégorie non trouvée' });
 
@@ -24,6 +34,11 @@ exports.updateCategorie = async (req, res) => {
 
 exports.deleteCategorie = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const categorie = await CategorieProduit.findByPk(req.params.id);
     if (!categorie) return res.status(404).json({ message: 'Catégorie non trouvée' });
 
@@ -35,6 +50,11 @@ exports.deleteCategorie = async (req, res) => {
 };
 exports.getCategoriesById = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const categorie = await CategorieProduit.findByPk(req.params.id);
     if (!categorie) return res.status(404).json({ message: 'Catégorie non trouvé' });
 
@@ -48,6 +68,11 @@ exports.getCategoriesById = async (req, res) => {
 
 exports.getCategoriesByStructure = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const categories = await CategorieProduit.findAll({
       where: { code_structure: req.params.code_structure },
       order: [['createdAt', 'DESC']],
@@ -60,6 +85,11 @@ exports.getCategoriesByStructure = async (req, res) => {
 
 exports.updateStatutCategorie = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const categorie = await CategorieProduit.findByPk(req.params.id);
     if (!categorie) return res.status(404).json({ message: 'Catégorie non trouvée' });
 

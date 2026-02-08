@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, inject, OnDestroy, OnInit } from '@angular/core';
 import {
@@ -8,10 +9,10 @@ import {
   Validators,
 } from '@angular/forms';
 import { Magasin } from '../../../modeles/magasin.model';
-import { ArticlePanier, Panier } from '../../../modeles/panier.model';
+import { Panier } from '../../../modeles/panier.model';
 import { Produits } from '../../../modeles/produit.modele';
 import { Transfert } from '../../../modeles/transfert.model';
-import { Depense, Recette } from '../../../modeles/finance.model';
+import { Depense } from '../../../modeles/finance.model';
 import { MouvementsStock, Stock } from '../../../modeles/entrees-sorties.model';
 import { Structure } from '../../../modeles/structure.model';
 import { User } from '../../../modeles/user.model';
@@ -20,7 +21,8 @@ import { StructureService } from '../../../services/structure.service';
 import { MaagasinsService } from '../../../services/maagasins.service';
 import { ToastrService } from 'ngx-toastr';
 import { normalize } from '../../../utils/string-utils';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, Subscription, takeUntil } from 'rxjs';
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-magazin',
@@ -79,14 +81,27 @@ export class MagazinComponent implements OnInit, OnDestroy {
 
   selectedPanierId: number | null = null;
 
+  currentUser: User | null = null;
+  code_structure: string | null = null;
+
+  private userSubscription!: Subscription;
+
   private fb = inject(FormBuilder);
   private cdr = inject(ChangeDetectorRef);
   private magasinService = inject(MaagasinsService);
   private structureService = inject(StructureService);
   private userService = inject(UserService);
   private toastr = inject(ToastrService);
+   private authService = inject(AuthService);
 
   ngOnInit(): void {
+
+    this.userSubscription = this.authService.currentUser.subscribe(user => {
+      this.currentUser = user;
+      // Initialiser la variable code_structure
+      this.code_structure = user?.code_structure || null;
+      console.log('Code structure initialisé :', this.code_structure);
+    });
     this.chargerMagasins();
     this.loadStructures();
     this.loadAllUsers();
@@ -109,6 +124,9 @@ export class MagazinComponent implements OnInit, OnDestroy {
  ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.userSubscription) {
+      this.userSubscription.unsubscribe();
+    }
   }
 
   iniMagasinForm(){
@@ -119,7 +137,7 @@ export class MagazinComponent implements OnInit, OnDestroy {
       ville: [''],
       telephone: [''],
       email: ['', [Validators.email]],
-      responsableId: ['', Validators.required],
+      //responsableId: ['', Validators.required],
       capaciteStock: [0],
       statut: ['Actif'],
     });
@@ -261,7 +279,7 @@ modifierMagasin(): void {
   }
 } */
 
-  loadMagasins(): Magasin[] {
+  /* loadMagasins(): Magasin[] {
     const magasins: Magasin[] = [];
 
     // Génération des produits une seule fois
@@ -454,7 +472,7 @@ modifierMagasin(): void {
     }
 
     return magasins;
-  }
+  } */
 
   // Exemple de méthode pour récupérer les stocks d'un magasin
   private getStockForMagasin(magasin: Magasin): Stock[] {
@@ -586,7 +604,6 @@ modifierMagasin(): void {
     return soldeInitial - this.getTotalDepensesDuJour();
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setItemsPerPage(event: any) {
     this.pageSize = Number(event.target.value);
 
@@ -735,7 +752,6 @@ modifierMagasin(): void {
     return this.paginate(this.filteredTransferts, this.currentPageTransferts, this.pageSize);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   paginate(data: any[], currentPage: number, itemsPerPage: number) {
     const start = (currentPage - 1) * itemsPerPage;
     return data.slice(start, start + itemsPerPage);
@@ -804,7 +820,7 @@ modifierMagasin(): void {
 
   chargerMagasins(): void {
     this.isloading = true;
-    this.magasinService.getAllMagasins()
+    this.magasinService.getMagasinsByStructure(this.code_structure!)
     .pipe(takeUntil(this.destroy$))
     .subscribe({
       next: (magasins) => {
@@ -848,7 +864,6 @@ modifierMagasin(): void {
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onStructureChange(event: any): void {
     const code_structure = event.target.value;
     //const structureCode = this.magasinForm.get('code_structure')?.value;
@@ -857,7 +872,6 @@ modifierMagasin(): void {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onMagasinChange(event: any): void {
     const magasinId = event.target.value;
     this.magasinService.getMagasinById(Number(magasinId))
@@ -901,7 +915,7 @@ modifierMagasin(): void {
       ville: magasin.ville,
       telephone: magasin.telephone,
       email: magasin.email,
-      responsableId: magasin.responsableId,
+      //responsableId: magasin.responsableId,
       capaciteStock: magasin.capaciteStock,
       code_structure: magasin.code_structure,
       statut: magasin.statut,
@@ -985,7 +999,6 @@ modifierMagasin(): void {
     // Fermer le modal Bootstrap
     const modal = document.getElementById('modalMagasin');
     if (modal) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).bootstrap.Modal.getInstance(modal).hide();
       /* if (modalInstance) {
         modalInstance.hide();
@@ -1092,9 +1105,21 @@ modifierMagasin(): void {
     // Scroll vers la section des détails si nécessaire
   }
 
+  // Dans ton composant TypeScript
+  getResponsable(magasin: any) {
+    return magasin.users?.find((user: any) =>
+      user.roles?.some((role: any) => role.nom === 'Gérant')
+    );
+  }
+
+  getUserRoles(user: any): string {
+    return user?.['roles']?.map((r: any) => r.nom).join(', ') || '';
+  }
+
+
   // Récupération du nom du responsable
-  getResponsableName(responsableId: number): string {
+  /* getResponsableName(responsableId: number): string {
     const responsable = this.allUsers.find((r) => r.id === responsableId);
     return responsable ? `${responsable.nom}` : 'Non attribué';
-  }
+  } */
 }

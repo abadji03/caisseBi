@@ -15,7 +15,8 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { NgbModal, NgbModalModule } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
-import { finalize, Subject, takeUntil } from 'rxjs';
+import { finalize, Subject, Subscription, takeUntil } from 'rxjs';
+import { User } from '../../../modeles/user.model';
 
 @Component({
   selector: 'app-structure',
@@ -44,6 +45,11 @@ export class StructureComponent implements OnInit, OnDestroy {
   itemsPerPage = 10;
   errorMessage = '';
   isloading = true;
+  code_structure: string | null = null;
+  currentUser: User | null = null;
+    
+  private userSubscription!: Subscription;
+
   private fb = inject(FormBuilder);
   private structureService = inject(StructureService);
   private authService = inject(AuthService);
@@ -54,6 +60,15 @@ export class StructureComponent implements OnInit, OnDestroy {
 
 
   ngOnInit(): void {
+    this.userSubscription = this.authService.currentUser.subscribe(user => {
+      this.currentUser = user;
+      // Initialiser la variable code_structure
+      this.code_structure = user?.code_structure || null;
+      this.currentStructureId = user?.structure_id || null;
+      console.log('Code structure initialisé :', this.code_structure);
+    });
+    this.isGeneralAdmin = this.authService.isGeneralAdmin();
+
     this.initForm();
     this.checkUserRole();
     this.loadData();
@@ -101,7 +116,7 @@ export class StructureComponent implements OnInit, OnDestroy {
 
   checkUserRole(): void {
     // À adapter selon votre système d'authentification
-    //this.isGeneralAdmin = this.authService.is();
+    this.isGeneralAdmin = this.authService.isGeneralAdmin();
 
     if (!this.isGeneralAdmin) {
       // Si c'est un admin de structure, charger les données de sa structure
@@ -113,9 +128,9 @@ export class StructureComponent implements OnInit, OnDestroy {
   }
 
   loadData(): void {
-    //if (this.isGeneralAdmin) {
+    if (this.isGeneralAdmin) {
     this.loadStructures();
-    //}
+    }
   }
 
   loadStructures(): void {

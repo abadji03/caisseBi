@@ -20,6 +20,7 @@ export class UserService {
     });
   }
 
+  
   // Récupère tous les utilisateurs (filtrés par structure si nécessaire)
   getAll(): Observable<User[]> {
     //const structureId = this.authService.getUserStructureId();

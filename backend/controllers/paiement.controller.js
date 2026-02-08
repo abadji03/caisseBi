@@ -12,7 +12,11 @@ const BASE_URL = 'http://localhost:5000/uploads/';
 exports.create = async (req, res) => {
   const transaction = await db.sequelize.transaction();
   try {
+    const authUser = req.user;
 
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const paie = req.body;
 
     let fichier = null;
@@ -43,6 +47,11 @@ exports.create = async (req, res) => {
 
 exports.findAll = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const paiements = await Paiement.findAll({
       include: ['Client', 'Fournisseur', 'Bon', 'Panier', 'Magasin'],
     });
@@ -55,6 +64,11 @@ exports.findAll = async (req, res) => {
 exports.findById = async (req, res) => {
 
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const paiement = await Paiement.findByPk(req.params.id);
     if (!paiement) return res.status(404).json({ message: 'Paiement non trouvé' });
 
@@ -70,6 +84,11 @@ exports.findById = async (req, res) => {
 
 exports.update = async (req, res) => {
 try {
+  const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
   const paiement = await Paiement.findByPk(req.params.id);
   if (!paiement) {
     return res.status(404).json({ message: 'Paiement non trouvé' });
@@ -103,6 +122,11 @@ try {
 
 exports.delete = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const deleted = await Paiement.destroy({
       where: { id: req.params.id },
     });
@@ -116,6 +140,11 @@ exports.delete = async (req, res) => {
 // Lister les paiements d'une structure
 exports.getPaiementsByStructure = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const paiements = await Paiement.findAll({
       where: { code_structure: req.params.code_structure },
       order: [['createdAt', 'DESC']],
@@ -140,6 +169,11 @@ exports.getPaiementsByStructure = async (req, res) => {
 // Récupérer les paiements d'une structure par fournisseur
 exports.getPaiementsByFournisseur = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { code_structure, fournisseurId } = req.params;
 
     const paiements = await Paiement.findAll({
@@ -162,6 +196,11 @@ exports.getPaiementsByFournisseur = async (req, res) => {
 // Récupérer les paiements d'une structure par client
 exports.getPaiementsByClient = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { code_structure, clientId } = req.params;
 
     const paiements = await Paiement.findAll({

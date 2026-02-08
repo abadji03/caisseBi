@@ -13,6 +13,11 @@ exports.createBonComplet = async (req, res) => {
   const transaction = await db.sequelize.transaction();
   
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { bon, panier, articles, paiement, code_structure, magasinId, agentId, fournisseurId, clientId, typeEntite } = req.body;
 
     console.log('Données reçues pour création bon complet:', {

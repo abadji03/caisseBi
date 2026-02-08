@@ -39,7 +39,8 @@
           <!-- <th>Téléphone</th> -->
           <th>Email</th>
           <th>Rôle</th>
-          <th>Structure</th>
+          <th *ngIf="isGeneralAdmin">Structure</th>
+          <th>Magasin</th>
           <th>Statut</th>
           <th>Actions</th>
         </tr>
@@ -57,7 +58,8 @@
             <ng-template #loadingRoles>Chargement...</ng-template>
           </td>
 
-          <td>{{ user.structure_id ? getNomStructure(user.structure_id) : 'Admin général' }}</td>
+          <td *ngIf="isGeneralAdmin">{{ user.structure_id ? getNomStructure(user.structure_id) : 'Admin général' }}</td>
+          <td>{{ getNomMagasin(user.magasinId) }}</td>
           <td>
             <span class="badge" [ngClass]="user.status ? 'bg-success' : 'bg-danger'">
               {{ user.status ? 'Actif' : 'Inactif' }}
@@ -79,9 +81,9 @@
                 ></i>
                 <!-- {{ user.status ? 'Désactiver' : 'Activer' }} -->
               </button>
-              <button class="btn btn-sm btn-danger" (click)="deleteUser(user.id)">
+              <!-- <button class="btn btn-sm btn-danger" (click)="deleteUser(user.id)">
                 <i class="bi bi-trash"></i>
-              </button>
+              </button> -->
             </div>
           </td>
         </tr>
@@ -125,7 +127,7 @@
   <ng-template #userModal let-modal>
     <div class="modal-header">
       <h5 class="modal-title">{{ isEditMode ? 'Modifier' : 'Ajouter' }} un utilisateur</h5>
-      <button type="button" class="btn-close" (click)="modal.dismiss()">Fermer</button>
+      <button type="button" class="btn-close" (click)="modal.dismiss()" aria-label="Fermer"><i class="bi bi-x-lg"></i></button>
     </div>
     <div class="modal-body">
       <form [formGroup]="userForm" (ngSubmit)="onSubmit()">
@@ -169,15 +171,70 @@
               Email invalide
             </div>
           </div>
-          <div class="col-md-6 mb-3">
+          <!-- <div class="col-md-6 mb-3">
             <label for="structure_id" class="form-label">Structure</label>
             <select class="form-control" id="structure_id" formControlName="structure_id">
               <option *ngFor="let structure of structures" [value]="structure.id">
                 {{ structure.nom_structure }}
               </option>
             </select>
+          </div> -->
+          <!-- Champ Structure - Conditionnel selon le type d'utilisateur -->
+      <div class="col-md-6 mb-3" *ngIf="isGeneralAdmin">
+        <label for="structure_id" class="form-label">Structure *</label>
+        <select 
+          class="form-control" 
+          id="structure_id" 
+          formControlName="structure_id"
+          [class.is-invalid]="userForm.get('structure_id')?.invalid && userForm.get('structure_id')?.touched"
+        >
+          <option value=null>-- Sélectionner une structure --</option>
+          <option *ngFor="let structure of structures" [value]="structure.id">
+            {{ structure.nom_structure }}
+          </option>
+        </select>
+        <div *ngIf="userForm.get('structure_id')?.invalid && userForm.get('structure_id')?.touched" 
+             class="text-danger">
+          La structure est requise
+        </div>
+      </div>
+      
+      <!-- Affichage de la structure pour les non-admins -->
+      <div class="col-md-6 mb-3" *ngIf="!isGeneralAdmin">
+        <label for="selectedStructure" class="form-label">Structure</label>
+        <div class="form-control bg-light">
+          {{ getSelectedStructureName() || 'Chargement...' }}
+          <input type="hidden" formControlName="structure_id" />
+        </div>
+        <small class="text-muted">La structure est automatiquement assignée à votre propre structure</small>
+      </div>
+    </div>
+
+    <!-- Champ Magasin (conditionnel) -->
+      <div class="row" *ngIf="showMagasinField">
+        <div class="col-md-12 mb-3">
+          <label for="magasinId" class="form-label  ">Magasin *</label>
+          <select 
+            class="form-control" 
+            id="magasinId" 
+            formControlName="magasinId"
+            [class.is-invalid]="userForm.get('magasinId')?.invalid && userForm.get('magasinId')?.touched"
+          >
+            <option value=null>-- Sélectionner un magasin --</option>
+            <option *ngFor="let magasin of magasins" [value]="magasin.id">
+              {{ magasin.nom }}
+            </option>
+          </select>
+          <div *ngIf="userForm.get('magasinId')?.invalid && userForm.get('magasinId')?.touched" 
+               class="text-danger">
+            Le magasin est requis pour ce type de rôle
+          </div>
+          <div *ngIf="magasins.length === 0 && showMagasinField" class="text-warning">
+            Aucun magasin disponible pour cette structure
           </div>
         </div>
+      </div>
+
 
         <div class="row">
           <div class="col-md-6 mb-3">
@@ -191,10 +248,13 @@
                   [id]="'role-' + rol.id"
                   [value]="rol.id"
                   (change)="onRoleChange($event, rol.id!)"
-                  [checked]="userForm.value.role.includes(rol.id)"
+                  [checked]="userRoles.includes(rol.id!)"
                 />
                 <label class="form-check-label" [for]="'role-' + rol.id">
                   {{ rol.nom }}
+                  <span *ngIf="!isGeneralAdmin && rol.id === adminRoleId" class="text-muted small">
+                    (admin général seulement)
+                  </span>
                 </label>
               </div>
             </div>
@@ -203,7 +263,6 @@
             <label for="statut" class="form-label">Statut *</label>
             <div class="form-check">
               <input
-                name="statut"
                 class="form-check-input"
                 type="radio"
                 id="status-active"
@@ -269,7 +328,19 @@
             {{ isEditMode ? 'Modifier' : 'Enregistrer' }}
           </button>
         </div>
-
+      <!-- <div class="mt-3 p-2 border rounded bg-light">
+        <small class="text-muted">Debug info:</small>
+        <div class="small">
+          <div>showMagasinField: {{ showMagasinField }}</div>
+          <div>selectedRoleIds: {{ selectedRoleIds }}</div>
+          <div>adminRoleId: {{ adminRoleId }}</div>
+          <div>otherRoles: {{ otherRoles }}</div>
+          <div>isGeneralAdmin: {{ isGeneralAdmin }}</div>
+          <div>isStructureAdmin: {{ isStructureAdmin }}</div>
+          <div>magasins chargés: {{ magasins.length }}</div>
+          <div>magasin sélectionné: {{ userForm.get('magasinId')?.value }}</div>
+        </div>
+      </div> -->
         <!-- Message d'erreur général -->
         <div *ngIf="errorMessage" class="alert alert-danger mt-3">
           {{ errorMessage }}

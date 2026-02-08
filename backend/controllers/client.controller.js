@@ -3,9 +3,14 @@ const Client = db.Client;
 
 //Créer un client
 exports.createClient = async (req, res) => {
-  const { email, telephone } = req.body;
 
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+    const { email, telephone } = req.body;
     // Vérifie s'il existe un client avec le même email ou téléphone
     const existingClient = await Client.findOne({
       where: {
@@ -34,6 +39,11 @@ exports.createClient = async (req, res) => {
 //Mettre à jour un client
 exports.updateClient = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const client = await Client.findByPk(req.params.id);
     if (!client) return res.status(404).json({ message: 'Client non trouvé' });
 
@@ -47,6 +57,11 @@ exports.updateClient = async (req, res) => {
 //Supprimer un client
 exports.deleteClient = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const client = await Client.findByPk(req.params.id);
     if (!client) return res.status(404).json({ message: 'Client non trouvé' });
 
@@ -60,6 +75,11 @@ exports.deleteClient = async (req, res) => {
 //Obtenir un client par ID
 exports.getClientById = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const client = await Client.findByPk(req.params.id);
     if (!client) return res.status(404).json({ message: 'Client non trouvé' });
 
@@ -72,6 +92,11 @@ exports.getClientById = async (req, res) => {
 //Obtenir tous les clients d'une structure
 exports.getClientsByStructure = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const clients = await Client.findAll({
       where: { code_structure: req.params.code_structure },
       order: [['createdAt', 'DESC']],
@@ -85,6 +110,11 @@ exports.getClientsByStructure = async (req, res) => {
 //Mettre à jour le statut (activer/désactiver)
 exports.updateClientStatut = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const client = await Client.findByPk(req.params.id);
     if (!client) return res.status(404).json({ message: 'Client non trouvé' });
 
@@ -98,6 +128,11 @@ exports.updateClientStatut = async (req, res) => {
 //Mettre à jour le plafond
 exports.updateClientPlafond = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const client = await Client.findByPk(req.params.id);
     if (!client) return res.status(404).json({ message: 'Client non trouvé' });
 
@@ -111,6 +146,11 @@ exports.updateClientPlafond = async (req, res) => {
 //Mettre à jour le solde
 exports.updateClientSolde = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const client = await Client.findByPk(req.params.id);
     if (!client) return res.status(404).json({ message: 'Client non trouvé' });
 
@@ -124,6 +164,11 @@ exports.updateClientSolde = async (req, res) => {
 //Mettre à jour le montant à payer
 exports.updateMontantANousPayer = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const client = await Client.findByPk(req.params.id);
     if (!client) return res.status(404).json({ message: 'Client non trouvé' });
 

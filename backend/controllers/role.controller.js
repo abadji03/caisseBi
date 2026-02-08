@@ -5,6 +5,11 @@ const Permission = db.permission;
 //Créer un rôle
 exports.create = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const role = await Role.create(req.body);
     res.status(201).json(role);
   } catch (err) {
@@ -15,6 +20,11 @@ exports.create = async (req, res) => {
 //Récupérer tous les rôles
 exports.findAll = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const roles = await Role.findAll({ include: Permission });
     res.json(roles);
   } catch (err) {
@@ -25,6 +35,11 @@ exports.findAll = async (req, res) => {
 //Obtenir un rôle par ID
 exports.getRoleById = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const role = await Role.findByPk(req.params.id);
     if (!role) return res.status(404).json({ message: 'Rôle non trouvé' });
     res.json(role);
@@ -36,6 +51,11 @@ exports.getRoleById = async (req, res) => {
 //Mettre à jour un rôle
 exports.updateRole = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const role = await Role.findByPk(req.params.id);
     if (!role) return res.status(404).json({ message: 'Rôle non trouvé' });
 
@@ -51,6 +71,11 @@ exports.updateRole = async (req, res) => {
 //Supprimer un rôle
 exports.deleteRole = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const role = await Role.findByPk(req.params.id);
     if (!role) return res.status(404).json({ message: 'Rôle non trouvé' });
 
@@ -64,6 +89,11 @@ exports.deleteRole = async (req, res) => {
 //Assigner une permission à un rôle
 exports.assignPermissions = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const role = await Role.findByPk(req.params.id);
     if (!role) return res.status(404).json({ message: 'Rôle non trouvé' });
 

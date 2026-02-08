@@ -8,6 +8,11 @@ const path = require('path');
 
 exports.createPanier = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const panier = await Panier.create(req.body);
     return res.status(201).json(panier);
   } catch (error) {
@@ -19,6 +24,11 @@ exports.createPanier = async (req, res) => {
 // Lister les paniers d'une structure
 exports.getPaniersByStructure = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { code_structure } = req.params;
     const { magasinId } = req.query; // Ajout du paramètre magasinId depuis les query params
     
@@ -44,6 +54,11 @@ exports.getPaniersByStructure = async (req, res) => {
 // Lister tous les paniers avec associations
 exports.getAllPaniers = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const paniers = await Panier.findAll({
       include: [
         { model: db.Client, as: 'Client' },
@@ -63,6 +78,11 @@ exports.getAllPaniers = async (req, res) => {
 // Récupérer un panier par ID
 exports.getPanierById = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const panier = await Panier.findByPk(req.params.id);
     if (!panier) return res.status(404).json({ message: 'Panier non trouvé' });
     return res.json(panier);
@@ -75,6 +95,11 @@ exports.getPanierById = async (req, res) => {
 // Mettre à jour un panier
 exports.updatePanier = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     req.body.dateMiseAJour = new Date(); // maj auto de la date
     const [updated] = await Panier.update(req.body, {
       where: { id: req.params.id },
@@ -90,6 +115,11 @@ exports.updatePanier = async (req, res) => {
 
 exports.deleteOnlyPanier = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { id } = req.params;
 
     const deleted = await Panier.destroy({ where: { id } });
@@ -103,8 +133,12 @@ exports.deleteOnlyPanier = async (req, res) => {
 // Supprimer un panier avec cascade
 exports.deletePanier = async (req, res) => {
   const transaction = await db.sequelize.transaction();
-  
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const panierId = req.params.id;
     
     // Trouver le panier avec ses articles et le bon associé
@@ -185,6 +219,11 @@ exports.deletePanier = async (req, res) => {
 
 exports.updateStatutPanier = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { statut } = req.body;
     const panier = await Panier.findByPk(req.params.id);
     if (!panier) return res.status(404).json({ message: 'Panier non trouvé' });
@@ -203,6 +242,11 @@ exports.updateStatutPanier = async (req, res) => {
 
 exports.updateTotauxPanier = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { totalHT, tva } = req.body;
     const panier = await Panier.findByPk(req.params.id);
     if (!panier) return res.status(404).json({ message: 'Panier non trouvé' });
@@ -222,6 +266,11 @@ exports.updateTotauxPanier = async (req, res) => {
 
 exports.updateDetailsVisible = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { visible } = req.body; // true ou false
     const panier = await Panier.findByPk(req.params.id);
     if (!panier) return res.status(404).json({ message: 'Panier non trouvé' });
@@ -239,6 +288,11 @@ exports.updateDetailsVisible = async (req, res) => {
 
 exports.resetPanier = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const panier = await Panier.findByPk(req.params.id);
     if (!panier) return res.status(404).json({ message: 'Panier non trouvé' });
 
@@ -258,6 +312,11 @@ exports.resetPanier = async (req, res) => {
 
 exports.getPanierByBonId = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { bonId } = req.params;
 
     const panier = await Panier.findOne({
@@ -294,6 +353,11 @@ exports.getPanierByBonId = async (req, res) => {
 // Récupérer les paniers pour une journée spécifique (par date)
 exports.getPaniersParDate = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { date } = req.params; // Format: YYYY-MM-DD
     const { code_structure, magasinId } = req.query;
     
@@ -385,6 +449,11 @@ exports.getPaniersParDate = async (req, res) => {
 // Lister les paniers d'une structure avec filtre par magasin
 exports.getPaniersByStructureBis = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { code_structure } = req.params;
     const { magasinId, dateDebut, dateFin, statut } = req.query;
     
@@ -453,6 +522,11 @@ exports.getPaniersByStructureBis = async (req, res) => {
 
 exports.getPaniersBrouillons = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { code_structure,magasinId } = req.params;
     const paniers = await db.Panier.findAll({
       where: { 
@@ -472,6 +546,11 @@ exports.getPaniersBrouillons = async (req, res) => {
 // Récupérer uniquement les paniers d'aujourd'hui
 exports.getPaniersAujourdhui = async (req, res) => {
   try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
     const { code_structure, magasinId,bonId } = req.query;
     const { Op } = db.Sequelize;
     
