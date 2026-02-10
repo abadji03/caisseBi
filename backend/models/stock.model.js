@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     magasinId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
     },
     quantiteTotale: {
       type: DataTypes.DECIMAL(10, 2),

@@ -1,5 +1,6 @@
 const db = require('../models');
 const Client = db.Client;
+const Magasin = db.Magasin;
 
 //Créer un client
 exports.createClient = async (req, res) => {
@@ -97,8 +98,46 @@ exports.getClientsByStructure = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
+    const { code_structure } = req.params;
+
+    // 🔥 Vérification : l’utilisateur doit appartenir à la structure demandée
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({
+        message: "Accès interdit : structure non autorisée"
+      });
+    }
+
+    // Vérifier rôle
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+    const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
+
+    if (!isAdminStructure && !isGerant && !isCaissier) {
+    return res.status(403).json({
+      message: "Accès interdit : rôle insuffisant"
+    });
+}
+
+    // Clause where par défaut (structure)
+    let whereClause = {
+      code_structure: code_structure
+    };
+
+    // 🔹 Si gérant : filtrer par magasin
+    if (!isAdminStructure && (isGerant || isCaissier)) {
+      if (!authUser.magasinId) {
+        return res.status(400).json({
+          message: "Ce gérant ou caissier n’est associé à aucun magasin"
+        });
+      }
+
+      whereClause.magasinId = authUser.magasinId;
+    }
     const clients = await Client.findAll({
-      where: { code_structure: req.params.code_structure },
+      where: whereClause,
+      include:[
+          { model: Magasin,attributes: ["id", "nom","telephone", "email"] },
+        ], 
       order: [['createdAt', 'DESC']],
     });
     res.json(clients);

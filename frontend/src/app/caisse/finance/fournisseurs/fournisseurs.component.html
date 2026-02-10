@@ -130,6 +130,9 @@
                     </tr>
                   </thead>
                   <tbody>
+                    <tr *ngIf="getPaginatedFournisseurs.length === 0">
+                      <td colspan="6" class="text-center">Aucun fournisseur trouvé</td>
+                    </tr>
                     <tr
                       *ngFor="let fournisseur of getPaginatedFournisseurs"
                       (click)="onRowSelect(fournisseur)"
@@ -845,6 +848,9 @@
             </tr>
           </thead>
           <tbody>
+            <tr *ngIf="getPaginatedBons.length === 0">
+                <td colspan="6" class="text-center">Aucun bon trouvé</td>
+              </tr>
             <ng-container *ngFor="let bon of getPaginatedBons; let i = index">
               <!-- Ligne principale du bon -->
               <tr>
@@ -889,6 +895,9 @@
                         </tr>
                       </thead>
                       <tbody>
+                        <tr *ngIf="bon.Panier.ArticlePaniers.length === 0">
+                            <td colspan="4" class="text-center">Aucun produit associé</td>
+                         </tr>
                         <tr *ngFor="let produit of bon.Panier.ArticlePaniers">
                           <td>{{ produit.Produit.designation || produit.produit.designation }}</td>
                           <td>{{ produit.quantite }}</td>
@@ -968,6 +977,9 @@
             </tr>
           </thead>
           <tbody>
+            <tr *ngIf="getPaginatedPaiements.length === 0">
+                <td colspan="5" class="text-center">Aucun paiement trouvé</td>
+              </tr>
             <ng-container *ngFor="let paiement of getPaginatedPaiements; let i = index">
               <tr>
                 <td>{{ paiement.description }}</td>

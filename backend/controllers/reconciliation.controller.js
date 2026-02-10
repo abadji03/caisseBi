@@ -39,10 +39,47 @@ exports.getReconciliationsByStructure = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
+    const { code_structure } = req.params;
+
+    // 🔥 Vérification : l’utilisateur doit appartenir à la structure demandée
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({
+        message: "Accès interdit : structure non autorisée"
+      });
+    }
+
+    // Vérifier rôle
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+
+    if (!isAdminStructure && !isGerant) {
+    return res.status(403).json({
+      message: "Accès interdit : rôle insuffisant"
+    });
+}
+
+    // Clause where par défaut (structure)
+    let whereClause = {
+      code_structure: code_structure
+    };
+
+    // 🔹 Si gérant : filtrer par magasin
+    if (!isAdminStructure && isGerant) {
+      if (!authUser.magasinId) {
+        return res.status(400).json({
+          message: "Ce gérant n’est associé à aucun magasin"
+        });
+      }
+
+      whereClause.magasinId = authUser.magasinId;
+    }
     const reconciliations = await Reconciliation.findAll({
-      where: { code_structure: req.params.code_structure },
-      order: [['dateReconciliation', 'DESC']],
-      include: [{ model: Produit }],
+      where: whereClause,
+      include: [
+        { model: Produit,attributes: ["id", "designation", "unite", "prixAchatUnitaire"] },
+        { model: db.Users, attributes: ["id", "nom"] }
+    ],
+      order: [['createdAt', 'DESC']],
     });
 
     res.json(reconciliations);

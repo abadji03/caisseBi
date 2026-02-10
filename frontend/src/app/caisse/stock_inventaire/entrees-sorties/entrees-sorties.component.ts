@@ -15,12 +15,14 @@ import {
 } from '../../../modeles/entrees-sorties.model';
 import { Produits } from '../../../modeles/produit.modele';
 import { Fournisseur } from '../../../modeles/fournisseur.model';
-import { finalize, forkJoin, Subject, takeUntil } from 'rxjs';
+import { finalize, forkJoin, Subject, Subscription, takeUntil } from 'rxjs';
 import { ProduitsService } from '../../../services/produits.service';
 import { StockInventaireService } from '../../../services/stock-inventaire.service';
 import { ToastrService } from 'ngx-toastr';
 import { MouvementsStockService } from '../../../services/mouvements-stock.service';
 import { ReconciliationService } from '../../../services/reconciliation.service';
+import { User } from '../../../modeles/user.model';
+import { AuthService } from '../../../services/auth.service';
 @Component({
   selector: 'app-entrees-sorties',
   standalone: true,
@@ -41,10 +43,15 @@ export class EntreesSortiesComponent implements OnInit, OnDestroy {
   currentPageMouvement = 1;
   currentPageEcarts = 1;
   currentPageReconcialiation = 1;
-  code_structure = 'MASTRUCTURET-NZNC';
+  code_structure:string|null=null;
+  agentId : number|null=null;
+  magasinId:number|null=null;
   isLoading = false;
-  agentId = 15;
-  magasinId = 1;
+
+  currentUser: User | null = null;
+  
+  private userSubscription!: Subscription;
+  
   stock: Stock[] = [];
 
   // Ajoutez une variable pour gérer l'état du formulaire
@@ -80,8 +87,22 @@ export class EntreesSortiesComponent implements OnInit, OnDestroy {
   private mouvementsStockService = inject(MouvementsStockService);
   private reconciliationService = inject(ReconciliationService);
   private toastr = inject(ToastrService);
+  private authService = inject(AuthService);
 
   ngOnInit() {
+    this.userSubscription = this.authService.currentUser.subscribe(user => {
+      this.currentUser = user;
+      // Initialiser la variable code_structure
+      this.code_structure = user?.code_structure || null;
+      this.magasinId = user?.magasinId || null;
+      this.agentId = user?.id || null;
+      console.log('Code structure initialisé :', this.code_structure);
+      // Déterminer si on doit montrer le champ structure
+      //this.isStructureAdmin = this.authService.hasRole('Administrateur'); // Ou vérifiez par ID
+
+      // Récupérer l'ID de la structure de l'utilisateur connecté
+      
+    });
     this.loadMouvementStock();
     this.loadReconciliation();
     this.loadDataProdFourStock();
@@ -194,7 +215,7 @@ export class EntreesSortiesComponent implements OnInit, OnDestroy {
   loadReconciliation(): void {
   this.isLoading = true;
 
-  this.reconciliationService.getByStructure(this.code_structure)
+  this.reconciliationService.getByStructure(this.code_structure!)
   .pipe(takeUntil(this.destroy$))
   .subscribe({
     next: (data) => {
@@ -237,9 +258,9 @@ export class EntreesSortiesComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     forkJoin([
       //this.fournissseurService.getFournisseursByStructure(this.code_structure),
-      this.produitsService.getAllProduits(this.code_structure),
+      this.produitsService.getAllProduits(this.code_structure!),
       //this.isGeneralAdmin ? this.structureService.getAll() : of([])
-      this.stockServcice.getStocksByStructure(this.code_structure),
+      this.stockServcice.getStocksByStructure(this.code_structure!),
     ])
       .pipe(
         takeUntil(this.destroy$),

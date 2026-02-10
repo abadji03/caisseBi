@@ -233,10 +233,6 @@
           </div>
         </div>
       </div>
-
-      <div class="d-flex justify-content-center">
-        <h4 class="mt-4">Historique des Dépenses</h4>
-      </div>
       <!-- Barre de recherche et sélection du nombre de lignes -->
       <div class="d-flex justify-content-between mb-2">
         <input
@@ -252,7 +248,11 @@
           <option [value]="20">20 lignes</option>
         </select>
       </div>
-      <table class="table table-striped">
+      <div class="table-responsive">
+        <div class="d-flex justify-content-center">
+          <h4 class="mt-4">Historique des Dépenses</h4>
+        </div>
+        <table class="table table-striped">
         <thead class="table-success">
           <tr>
             <th>Date</th>
@@ -263,6 +263,7 @@
             <th>Responsable</th>
             <th>Magasin</th>
             <th>Pièce jointe</th>
+            <th>Statut</th>
             <!-- Nouvelle colonne pour le type de paiement -->
             <th>Actions</th>
             <!-- Nouvelle colonne pour les actions -->
@@ -289,6 +290,7 @@
                 </ng-template>
                 
             </td>
+            <td>{{ dep.statutDepense }}</td>
             <!-- Affichage du type de paiement -->
             <td>
               <!-- Actions, visibles uniquement si le mode de paiement est différent de 'standard' -->
@@ -311,6 +313,8 @@
           </tr>
         </tbody>
       </table>
+      </div>
+      
       <!-- Pagination -->
       <div class="d-flex justify-content-center align-items-center">
         <button
@@ -499,11 +503,6 @@
         </div>
       </div>
 
-      <!-- Tableau des Recettes -->
-      <div class="d-flex justify-content-center">
-        <h4 class="mt-4">Historique des recettes</h4>
-      </div>
-
       <div class="d-flex justify-content-between mb-2">
         <input
           type="text"
@@ -518,7 +517,12 @@
           <option [value]="20">20 lignes</option>
         </select>
       </div>
-      <table class="table table-striped">
+      <div class="table-responsive">
+        <!-- Tableau des Recettes -->
+        <div class="d-flex justify-content-center">
+          <h4 class="mt-4">Historique des recettes</h4>
+        </div>
+        <table class="table table-striped">
         <thead class="table-success">
           <tr>
             <th>Date</th>
@@ -526,9 +530,10 @@
             <th>Montant</th>
             <th>Mode de Paiement</th>
             <th>Description</th>
-            <td>Responsable</td>
-            <td>Magasin</td>
+            <th>Responsable</th>
+            <th>Magasin</th>
             <th>Pièce jointe</th>
+            <th>Statut</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -557,6 +562,7 @@
                 </ng-template>
                 
             </td>
+            <td>{{ recette.statutRecette }}</td>
             <td>
               <button class="btn btn-warning btn-sm me-3" (click)="editRecette(recette)">
                 <i class="bi bi-pencil"></i>
@@ -568,6 +574,7 @@
           </tr>
         </tbody>
       </table>
+      </div>
       <div class="d-flex justify-content-center align-items-center">
         <button
           class="btn btn-success"
@@ -590,11 +597,6 @@
     <!-- Onglet Paiements -->
     <div *ngIf="activeTab === 'paiements'">
 
-      <!-- Tableau des Paiements -->
-      <div class="d-flex justify-content-center">
-        <h4 class="mt-4">Historique des paiements</h4>
-      </div>
-
       <div class="d-flex justify-content-between mb-2">
         <input
           type="text"
@@ -609,40 +611,53 @@
           <option [value]="20">20 lignes</option>
         </select>
       </div>
-      <table class="table table-striped">
-        <thead class="table-success">
-          <tr>
-            <th>Date</th>
-            <th>Type Paiement</th>
-            <!-- <th>Fournisseur/Client</th> -->
-            <th>Description</th> 
-            <th>Mode de Paiement</th>
-            <th>Montant</th>
-            <!-- <th>Actions</th> -->
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngIf="getPaginatedPaiements.length === 0">
-            <td colspan="7" class="text-center">Aucun paiement trouvé</td>
-          </tr>
-          <tr *ngFor="let paiement of getPaginatedPaiements">
-            <td>{{ paiement.date | date: 'dd/MM/yyyy à HH:mm' }}</td>
-            <td>{{ paiement.typePaiement || 'N/A' }}</td>
-            <!-- <td>{{ paiement.fournisseurId || 'N/A' }}</td>-->
-            <td>{{ paiement.description || 'N/A' }}</td> 
-            <td>{{ paiement.methodePaiement }}</td>
-            <td>{{ paiement.montant }} F CFA</td>
-            <!-- <td>
-              <button class="btn btn-warning btn-sm me-2" (click)="editPaiement(paiement)">
-                <i class="bi bi-pencil"></i>
-              </button>
-              <button class="btn btn-danger btn-sm" (click)="deletePaiement(paiement)">
-                <i class="bi bi-trash"></i>
-              </button>
-            </td> -->
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-responsive">
+        <!-- Tableau des Paiements -->
+        <div class="d-flex justify-content-center">
+          <h4 class="mt-4">Historique des paiements</h4>
+        </div>
+        <table class="table table-striped">
+          <thead class="table-success">
+            <tr>
+              <th>Date</th>
+              <th>Type Paiement</th>
+              <!-- <th>Fournisseur/Client</th> -->
+              <th>Description</th> 
+              <th>Mode de Paiement</th>
+              <th>Montant</th>
+              <th>Responsable</th>
+              <th>Magasin</th>
+              <th>Statut</th>
+              <!-- <th>Actions</th> -->
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="getPaginatedPaiements.length === 0">
+              <td colspan="7" class="text-center">Aucun paiement trouvé</td>
+            </tr>
+            <tr *ngFor="let paiement of getPaginatedPaiements">
+              <td>{{ paiement.date | date: 'dd/MM/yyyy à HH:mm' }}</td>
+              <td>{{ paiement.typePaiement || 'N/A' }}</td>
+              <!-- <td>{{ paiement.fournisseurId || 'N/A' }}</td>-->
+              <td>{{ paiement.description || 'N/A' }}</td> 
+              <td>{{ paiement.methodePaiement }}</td>
+              <td>{{ paiement.montant }} F CFA</td>
+              <td>{{ paiement.user?.nom }}</td>
+              <td>{{ paiement.magasin?.nom || 'N/A' }}</td>
+              <td>{{ paiement.statutPaiement }}</td>
+              <!-- <td>
+                <button class="btn btn-warning btn-sm me-2" (click)="editPaiement(paiement)">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-danger btn-sm" (click)="deletePaiement(paiement)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td> -->
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
       <div class="d-flex justify-content-center align-items-center">
         <button
           class="btn btn-success"
@@ -671,9 +686,6 @@
               <i class="bi bi-plus-circle text-white me-2"></i>Nouvelle catégorie
             </button>
           </div>
-          <div class="d-flex justify-content-center">
-            <h4 class="mt-4">Liste des catégories</h4>
-          </div>
           <div class="d-flex justify-content-between mb-2">
             <input
               type="text"
@@ -688,7 +700,11 @@
               <option [value]="20">20 lignes</option>
             </select>
           </div>
-          <table class="table table-bordered">
+          <div class="table-responsive">
+            <div class="d-flex justify-content-center">
+              <h4 class="mt-4">Liste des catégories</h4>
+            </div>
+            <table class="table table-bordered">
             <thead class="table-success">
               <tr>
                 <th>Nom</th>
@@ -733,13 +749,14 @@
                       class="bi"
                       [ngClass]="cat.isActive ? 'bi-x-circle-fill' : 'bi-check-circle-fill'"
                     ></i>
-                    {{ cat.isActive ? 'Désactiver' : 'Activer' }}
+                    <!-- {{ cat.isActive ? 'Désactiver' : 'Activer' }} -->
                   </button>
                 </td>
               </tr>
             </tbody>
           </table>
-
+          </div>
+          
           <div class="d-flex justify-content-center align-items-center">
             <button
               class="btn btn-success"
@@ -774,50 +791,8 @@
               </div>
             </div>
           </div>
-          <!-- <div class="d-flex justify-content-end">
-            <button class="btn btn-danger btn-sm" (click)="closeFormCategorie()">
-              <i class="bi bi-x text-white me-2"></i>
-            </button>
-          </div> -->
+         
           <div class="card-body">
-            <!-- <form [formGroup]="categoryForm" (ngSubmit)="onSubmitCategoryForm()">
-            <div class="mb-2">
-              <label for="name" class="form-label">Nom de la catégorie</label>
-              <input type="text" class="form-control" id="name" formControlName="name" />
-            </div>
-            <div class="mb-2">
-              <label for="type" class="form-label">Type</label>
-              <select class="form-control" id="type" formControlName="type">
-                <option value="DEPENSE">Dépense</option>
-                <option value="RECETTE">Recette</option>
-              </select>
-            </div>
-            <div class="mb-2">
-              <label for="description" class="form-label">Description</label>
-              <textarea
-                type="text"
-                class="form-control"
-                id="description"
-                formControlName="description"
-              ></textarea>
-            </div>
-            <div class="mb-3 form-check">
-              <input
-                type="checkbox"
-                class="form-check-input"
-                id="isActive"
-                formControlName="isActive"
-              />
-              <label class="form-check-label" for="isActive">Actif</label>
-            </div>
-            <div class="d-flex justify-content-between">
-              <button type="submit" class="btn btn-success w-50 me-2">
-                {{ selectedCategory ? 'Modifier' : 'Enregistrer' }}
-              </button>
-              <button type="reset" class="btn btn-danger w-50">Annuler</button>
-            </div>
-          </form> -->
-
           <form [formGroup]="categoryForm" (ngSubmit)="onSubmitCategoryForm()">
                 <!-- Nom -->
                 <div class="mb-3">

@@ -1,5 +1,6 @@
 const db = require('../models');
 const Produit = db.Produit;
+const Stock = db.Stock;
 const fs = require('fs');
 const path = require('path');
 
@@ -137,8 +138,57 @@ exports.getProduitsByStructure = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
+    const { code_structure } = req.params;
+
+    // 🔥 Vérification : l’utilisateur doit appartenir à la structure demandée
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({
+        message: "Accès interdit : structure non autorisée"
+      });
+    }
+
+    // Vérifier rôle
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+     const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
+    const isEmploye = authUser.roles?.some(r => r.nom === "Employé");
+
+    if (!isAdminStructure && !isGerant && !isCaissier && !isEmploye) {
+    return res.status(403).json({
+      message: "Accès interdit : rôle insuffisant"
+    });
+}
+
+    // Clause where par défaut (structure)
+    let whereClause = {
+      code_structure: code_structure
+    };
+
+     // --- INCLUDE STOCK
+    let stockInclude = {
+      model: Stock,
+      attributes: ["id", "magasinId","quantiteTotale", "quantiteReservee"],
+      required: false // admin -> on garde même les produits sans stock
+    };
+
+    // 🔹 Si gérant : filtrer par magasin
+    if (!isAdminStructure && (isGerant || isCaissier || isEmploye)) {
+      if (!authUser.magasinId) {
+        return res.status(400).json({
+          message: "Ce gérant ou caissier ou employe n’est associé à aucun magasin"
+        });
+      }
+
+      //whereClause.magasinId = authUser.magasinId;
+      stockInclude = {
+          ...stockInclude,
+          where: { magasinId: authUser.magasinId },
+          required: true // 🔥 important : produit doit avoir un stock dans ce magasin
+        };
+    }
     const produits = await Produit.findAll({
-      where: { code_structure: req.params.code_structure },
+      where: whereClause,
+      include: [stockInclude],
       order: [['createdAt', 'DESC']],
     });
 

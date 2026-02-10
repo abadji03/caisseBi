@@ -89,6 +89,9 @@
           </tr>
         </thead>
         <tbody>
+          <tr *ngIf="getPaginatedInventaire.length === 0">
+            <td colspan="4" class="text-center">Aucun produit trouvé</td>
+          </tr>
           <tr *ngFor="let produit of getPaginatedInventaire">
             <td>{{ produit.designation }}</td>
             <td>{{ getNomMagasinByProduitId(produit.id, stocks, magasins) }}</td>
@@ -152,6 +155,9 @@
           </tr>
         </thead>
         <tbody>
+          <tr *ngIf="getPaginatedQtesDisponibles.length === 0">
+            <td colspan="2" class="text-center">Aucune quantité disponible trouvée</td>
+          </tr>
           <tr *ngFor="let produit of getPaginatedQtesDisponibles">
             <td>{{ getNomProduitById(produit.id) }}</td>
             <td>{{ getQteDisponibleById(produit.id, qtsDisponibles) }}</td>
@@ -209,6 +215,9 @@
           </tr>
         </thead>
         <tbody>
+          <tr *ngIf="getPaginatedNiveauStock.length === 0">
+            <td colspan="3" class="text-center">Aucun niveau de stock trouvé</td>
+          </tr>
           <tr *ngFor="let produit of getPaginatedNiveauStock">
             <td>{{ getNomProduitById(produit.id) }}</td>
             <td>{{ getNomMagasinByProduitId(produit.id, stocks, magasins) }}</td>
@@ -269,6 +278,9 @@
           </tr>
         </thead>
         <tbody>
+          <tr *ngIf="getPaginatedAlertes.length === 0">
+            <td colspan="5" class="text-center">Aucune alerte trouvée</td>
+          </tr>
           <tr *ngFor="let alerte of getPaginatedAlertes">
             <td>{{ getNomProduitById(alerte.produitId) }}</td>
             <td>{{ alerte.quantiteTotale }}</td>
@@ -337,6 +349,9 @@
           </tr>
         </thead>
         <tbody>
+          <tr *ngIf="getPaginatedPerissables.length === 0">
+            <td colspan="4" class="text-center">Aucun produit périssable trouvé</td>
+          </tr>
           <tr *ngFor="let produit of getPaginatedPerissables">
             <td>{{ getNomProduitById(produit.produitId) }}</td>
             <!-- <td>{{ produit.dateExpiration | date:'short' }}</td> -->

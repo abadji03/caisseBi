@@ -214,6 +214,9 @@ db.Reconciliation.belongsTo(db.Produit, { foreignKey: 'produitId' });
 db.Users.hasMany(db.Reconciliation, { foreignKey: 'responsable' });
 db.Reconciliation.belongsTo(db.Users, { foreignKey: 'responsable' });
 
+db.Magasin.hasMany(db.Reconciliation, { foreignKey: 'magasinId' });
+db.Reconciliation.belongsTo(db.Magasin, { foreignKey: 'magasinId' });
+
 db.Structure.hasMany(db.Reconciliation, {
   foreignKey: 'code_structure',
   sourceKey: 'code_structure',

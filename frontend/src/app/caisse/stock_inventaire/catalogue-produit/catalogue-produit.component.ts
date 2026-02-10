@@ -13,13 +13,14 @@ import JsBarcode from 'jsbarcode';
 import { ProduitsService } from '../../../services/produits.service';
 import { ToastrService } from 'ngx-toastr';
 import { FournisseursService } from '../../../services/fournisseurs.service';
-import { finalize, forkJoin, Subject, takeUntil } from 'rxjs';
+import { finalize, forkJoin, Subject, Subscription, takeUntil } from 'rxjs';
 import { Fournisseur } from '../../../modeles/fournisseur.model';
 import { StockInventaireService } from '../../../services/stock-inventaire.service';
 import { UserService } from '../../../services/user.service';
 import { User } from '../../../modeles/user.model';
 import { Stock } from '../../../modeles/entrees-sorties.model';
 import { normalize } from '../../../utils/string-utils';
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-catalogue-produit',
@@ -32,10 +33,10 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
   prods: Produits[] = []; // Liste de prods
   users: User[] = [];
   stock: Stock[] = [];
-  code_structure = 'MASTRUCTURET-NZNC';
+  code_structure : string | null = null;
+  agentId : number | null = null;
+  magasinId : number | null = null;
   isLoading = false;
-  agentId = 15;
-  magasinId = 1;
   codeBarre = '';
   selectedImageFile: File | null = null;
   logoPreview: string | null = null;
@@ -99,6 +100,7 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
   selectedImage: File | null = null;
 
   private destroy$ = new Subject<void>();
+  private userSubscription!: Subscription;
 
   private fb = inject(FormBuilder);
   private produitsServices = inject(ProduitsService);
@@ -107,8 +109,22 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
   private userService = inject(UserService);
   private stockService = inject(StockInventaireService);
   private cdr = inject(ChangeDetectorRef);
+  private authService = inject(AuthService);
 
   ngOnInit(): void {
+    this.userSubscription = this.authService.currentUser.subscribe(user => {
+      //this.currentUser = user;
+      // Initialiser la variable code_structure
+      this.code_structure = user?.code_structure || null;
+      this.magasinId = user?.magasinId || null;
+      this.agentId = user?.id || null;
+      console.log('Code structure initialisé :', this.code_structure);
+      // Déterminer si on doit montrer le champ structure
+      //this.isStructureAdmin = this.authService.hasRole('Administrateur'); // Ou vérifiez par ID
+
+      // Récupérer l'ID de la structure de l'utilisateur connecté
+      
+    });
     this.loadData();
     this.iniFormulaire();
     this.loadCategories();
@@ -121,6 +137,9 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if(this.userSubscription) {
+      this.userSubscription.unsubscribe();
+    }
   }
 
   iniFormulaire(): void {
@@ -521,7 +540,7 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
     const categorieData: CategorieProduits = {
       nom: formValue.nom,
       description: formValue.description,
-      code_structure: this.code_structure, //this.authService.getUserStructure()
+      code_structure: this.code_structure!, //this.authService.getUserStructure()
       statut: formValue.statut,
     };
 
@@ -547,7 +566,7 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
   loadCategories(): void {
     //onst code_structure = this.authService.getUserStructure();
     this.isLoading = true;
-    this.produitsServices.getAllCategoriesProduits(this.code_structure)
+    this.produitsServices.getAllCategoriesProduits(this.code_structure!)
     .pipe(takeUntil(this.destroy$))
     .subscribe({
       next: (data) => {
@@ -567,7 +586,7 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
   loadFournisseurs(): void {
     //onst code_structure = this.authService.getUserStructure();
     this.isLoading = true;
-    this.fournisseurService.getFournisseursByStructure(this.code_structure)
+    this.fournisseurService.getFournisseursByStructure(this.code_structure!)
     .pipe(takeUntil(this.destroy$))
     .subscribe({
       next: (data) => {
@@ -587,10 +606,10 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
   loadData(): void {
     this.isLoading = true;
     forkJoin([
-      this.userService.getByStructure(this.code_structure),
-      this.produitsServices.getAllProduits(this.code_structure),
+      this.userService.getByStructure(this.code_structure!),
+      this.produitsServices.getAllProduits(this.code_structure!),
       //this.isGeneralAdmin ? this.structureService.getAll() : of([])
-      this.stockService.getStocksByStructure(this.code_structure),
+      this.stockService.getStocksByStructure(this.code_structure!),
     ])
       .pipe(
         takeUntil(this.destroy$),
@@ -1057,7 +1076,7 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
     });
 
     // Champs additionnels nécessaires
-    formData.append('code_structure', this.code_structure);
+    formData.append('code_structure', this.code_structure!);
     formData.append('agentId', String(this.agentId));
     //formData.append('codeBarre', this.codeBarre);
 

@@ -19,7 +19,7 @@ import { Magasin } from '../../../modeles/magasin.model';
 import { ToastrService } from 'ngx-toastr';
 import { ClientsService } from '../../../services/clients.service';
 import { MaagasinsService } from '../../../services/maagasins.service';
-import { finalize, forkJoin, Subject, takeUntil } from 'rxjs';
+import { finalize, forkJoin, Subject, Subscription, takeUntil } from 'rxjs';
 import { normalize } from '../../../utils/string-utils';
 import { PaiementComponent } from '../../../sharedComposants/paiement/paiement.component';
 import { BonBrouillonService } from '../../../services/bon-brouillon.service';
@@ -36,6 +36,8 @@ import { ArticlePanier, Panier } from '../../../modeles/panier.model';
 import { Stock } from '../../../modeles/entrees-sorties.model';
 import { RecettesService } from '../../../services/recettes.service';
 import { BonsComponent } from '../../../sharedComposants/bons/bons.component';
+import { User } from '../../../modeles/user.model';
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-clients',
@@ -55,7 +57,7 @@ export class ClientsComponent implements OnInit, OnDestroy {
   typeEntite: 'client' | 'fournisseur'|'autre' = 'client';
   actionEnCours: string | null = null;
 
-  agentId = 18;
+  agentId:number|null = null;
 
    // Variables de brouillon
   bonBrouillon: Bon | null = null;
@@ -129,8 +131,8 @@ export class ClientsComponent implements OnInit, OnDestroy {
 
 
 
-  code_structure = 'MASTRUCTURET-NZNC';
-  magasinId = 1;
+  code_structure :string|null = null;
+  magasinId : number|null = null;
   bonForm!: FormGroup;
   //panier!: FormArray;
   currentDate = ' ';
@@ -166,7 +168,9 @@ export class ClientsComponent implements OnInit, OnDestroy {
 
   selectedBonIndexC: number | null = null;
 
+ currentUser: User | null = null;
 
+  private userSubscription!: Subscription;
 
   
   private fb = inject(FormBuilder);
@@ -186,8 +190,22 @@ export class ClientsComponent implements OnInit, OnDestroy {
   private pdfGenerator = inject(PdfMakerServiceService);
   private structureService = inject(StructureService);
   private recetteService = inject(RecettesService);
+  private authService = inject(AuthService);
 
   ngOnInit(): void {
+    this.userSubscription = this.authService.currentUser.subscribe(user => {
+      this.currentUser = user;
+      // Initialiser la variable code_structure
+      this.code_structure = user?.code_structure || null;
+      this.magasinId = user?.magasinId || null;
+      this.agentId = user?.id || null;
+      console.log('Code structure initialisé :', this.code_structure);
+      // Déterminer si on doit montrer le champ structure
+      //this.isStructureAdmin = this.authService.hasRole('Administrateur'); // Ou vérifiez par ID
+
+      // Récupérer l'ID de la structure de l'utilisateur connecté
+      
+    });
     // Chargement des données des clients (par exemple via un service)
     //this.loadClients();
     this.loadData();
@@ -211,6 +229,9 @@ export class ClientsComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if(this.userSubscription) {
+      this.userSubscription.unsubscribe();
+    }
   }
 
   min(a: number, b: number): number {
@@ -712,8 +733,8 @@ toggleDetails(index: number,operation: Operation) {
   loadData(): void {
     this.isLoading = true;
     forkJoin([
-      this.magasinService.getMagasinsByStructure(this.code_structure),
-      this.clientService.getClientsByStructure(this.code_structure),
+      this.magasinService.getMagasinsByStructure(this.code_structure!),
+      this.clientService.getClientsByStructure(this.code_structure!),
     ])
       .pipe(
         takeUntil(this.destroy$),
@@ -938,7 +959,7 @@ toggleDetails(index: number,operation: Operation) {
   private chargerBrouillonsExistants(): void {
     if (!this.selectedClient) return;
 
-    this.bonService.getBonsBrouillons(this.code_structure)
+    this.bonService.getBonsBrouillons(this.code_structure!)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (bonsBrouillons) => {
@@ -1025,7 +1046,7 @@ toggleDetails(index: number,operation: Operation) {
   }
   checkBrouillonExists(callback: (exists: boolean) => void): void {
 
-  this.bonService.getBonsBrouillons(this.code_structure)
+  this.bonService.getBonsBrouillons(this.code_structure!)
     .pipe(takeUntil(this.destroy$))
     .subscribe({
       next: (bonsBrouillons) => {
@@ -1086,9 +1107,9 @@ toggleDetails(index: number,operation: Operation) {
     // Étape 1 : compléter les données du paiement
     const paiementCompletData = new Paiement ({
       ...paiement,
-      agentId: this.agentId,
-      code_structure: this.code_structure,
-      magasinId: this.magasinId,
+      agentId: this.agentId || undefined,
+      code_structure: this.code_structure || undefined,
+      magasinId: this.magasinId || undefined,
       clientId: this.selectedClient.id
     });
 
@@ -1396,7 +1417,7 @@ private rafraichirDonneesClient(): void {
       formattedEnd: endDateFormatted
     });
     
-    this.operationService.getOperationsByClient(this.code_structure, this.selectedClient.id!, { dateDebut: this.startDate, dateFin: this.endDate })
+    this.operationService.getOperationsByClient(this.code_structure!, this.selectedClient.id!, { dateDebut: this.startDate, dateFin: this.endDate })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (ops) => {
@@ -1716,8 +1737,8 @@ private uploadFichierSepare(fichier: File, bonId: number, resultBon: any): void 
    loadBonAndPaiement(): void {
       this.isLoading = true;
       forkJoin([
-        this.bonService.getBonsClientByStructure(this.code_structure),
-        this.paiementService.getByStructure(this.code_structure),
+        this.bonService.getBonsClientByStructure(this.code_structure!),
+        this.paiementService.getByStructure(this.code_structure!),
       ])
         .pipe(
           takeUntil(this.destroy$),
@@ -1737,8 +1758,8 @@ private uploadFichierSepare(fichier: File, bonId: number, resultBon: any): void 
   loadDataProduits(): void {
       this.isLoading = true;
       forkJoin([
-        this.produitsServices.getAllProduits(this.code_structure),
-        this.stockService.getStocksByStructure(this.code_structure),
+        this.produitsServices.getAllProduits(this.code_structure!),
+        this.stockService.getStocksByStructure(this.code_structure!),
       ])
         .pipe(
           takeUntil(this.destroy$),
@@ -1758,7 +1779,7 @@ private uploadFichierSepare(fichier: File, bonId: number, resultBon: any): void 
     }
  // Charger les informations de la structure pour le PDF
 private loadStructureInfo(): void {
-    this.structureService.getByCodeStructure(this.code_structure)
+    this.structureService.getByCodeStructure(this.code_structure!)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (structure) => {

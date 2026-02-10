@@ -157,9 +157,9 @@ export const routes: Routes = [
         component: FinanceComponent,
         canActivate: [roleGuard, structureGuard],
         data: { 
-          roles: ['Administrateur Général', 'Administrateur'],
+          roles: ['Administrateur Général', 'Administrateur', 'Gérant'],
           requireStructure: true,
-          permissions: [PERMISSIONS.MANAGE_FINANCE]
+          permissions: [PERMISSIONS.MANAGE_FINANCE, PERMISSIONS.EDIT_FINANCE, PERMISSIONS.VIEW_FINANCE,]
         }
       },
       {

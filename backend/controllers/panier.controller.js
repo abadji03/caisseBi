@@ -31,13 +31,57 @@ exports.getPaniersByStructure = async (req, res) => {
     }
     const { code_structure } = req.params;
     const { magasinId } = req.query; // Ajout du paramètre magasinId depuis les query params
+
+    // 🔥 Vérification : l’utilisateur doit appartenir à la structure demandée
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({ message: "Accès interdit : structure non autorisée" });
+    }
+
+    const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+    const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
+    const isEmploye = authUser.roles?.some(r => r.nom === "Employé");
+
+    let whereCondition = { code_structure };
     
     // Construire la condition where
-    const whereCondition = { code_structure };
+    //const whereCondition = { code_structure };
     
     // Ajouter la condition magasinId si elle est fournie
-    if (magasinId) {
-      whereCondition.magasinId = magasinId;
+    // if (magasinId) {
+    //   whereCondition.magasinId = magasinId;
+    // }
+    // ==========================
+    // 🔹 SCOPE SELON ROLE
+    // ==========================
+
+    if (isAdmin) {
+      // Admin -> tout dans la structure
+      // (optionnel) filtre magasin si query donnée
+      if (magasinId) whereCondition.magasinId = magasinId;
+    }
+
+    else if (isGerant) {
+      // Gérant -> uniquement son magasin
+      if (!authUser.magasinId) {
+        return res.status(400).json({ message: "Ce gérant n’est associé à aucun magasin" });
+      }
+
+      whereCondition.magasinId = authUser.magasinId;
+    }
+
+    else if (isCaissier || isEmploye) {
+      // Caissier/Employé -> uniquement ses ventes
+      whereCondition.userId = authUser.id;
+
+      // (Optionnel) si tu veux aussi limiter au magasin
+      if (authUser.magasinId) {
+        whereCondition.magasinId = authUser.magasinId;
+      }
+    }
+
+    else {
+      return res.status(403).json({ message: "Accès interdit : rôle insuffisant" });
     }
     
     const paniers = await Panier.findAll({
@@ -457,7 +501,7 @@ exports.getPaniersByStructureBis = async (req, res) => {
     const { code_structure } = req.params;
     const { magasinId, dateDebut, dateFin, statut } = req.query;
     
-    // Construire la condition where
+    /* // Construire la condition where
     const whereCondition = { code_structure };
     
     // Filtre par magasin
@@ -485,26 +529,98 @@ exports.getPaniersByStructureBis = async (req, res) => {
         fin.setHours(23, 59, 59, 999);
         whereCondition.dateCreation[db.Sequelize.Op.lte] = fin;
       }
+    } */
+   // 🔥 Vérification : l’utilisateur doit appartenir à la structure demandée
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({ message: "Accès interdit : structure non autorisée" });
+    }
+
+    const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+    const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
+    const isEmploye = authUser.roles?.some(r => r.nom === "Employé");
+
+    // ==========================
+    // 🔹 BASE WHERE (structure)
+    // ==========================
+    const whereCondition = { code_structure };
+
+    // ==========================
+    // 🔹 SCOPE SELON ROLE
+    // ==========================
+    if (isAdmin) {
+      // Admin -> tout dans la structure
+      // (il peut filtrer magasinId via query)
+      if (magasinId) whereCondition.magasinId = magasinId;
+    }
+
+    else if (isGerant) {
+      // Gérant -> uniquement son magasin
+      if (!authUser.magasinId) {
+        return res.status(400).json({ message: "Ce gérant n’est associé à aucun magasin" });
+      }
+      whereCondition.magasinId = authUser.magasinId;
+    }
+
+    else if (isCaissier || isEmploye) {
+      // Caissier/Employé -> uniquement ses paniers
+      whereCondition.userId = authUser.id;
+
+      // Optionnel : renforcer aussi par magasin
+      if (authUser.magasinId) {
+        whereCondition.magasinId = authUser.magasinId;
+      }
+    }
+
+    else {
+      return res.status(403).json({ message: "Accès interdit : rôle insuffisant" });
+    }
+
+    // ==========================
+    // 🔹 FILTRES QUERY PARAMS
+    // ==========================
+
+    // Filtre statut
+    if (statut) {
+      whereCondition.statut = statut;
+    }
+
+    // Filtre magasinId (uniquement si Admin)
+    if (magasinId && isAdmin) {
+      whereCondition.magasinId = magasinId;
+    }
+
+    // Filtre date
+    if (dateDebut || dateFin) {
+      whereCondition.dateCreation = {};
+
+      if (dateDebut) {
+        const debut = new Date(dateDebut);
+        debut.setHours(0, 0, 0, 0);
+        whereCondition.dateCreation[db.Sequelize.Op.gte] = debut;
+      }
+
+      if (dateFin) {
+        const fin = new Date(dateFin);
+        fin.setHours(23, 59, 59, 999);
+        whereCondition.dateCreation[db.Sequelize.Op.lte] = fin;
+      }
     }
     
     const paniers = await Panier.findAll({
       where: whereCondition,
       include: [
         { 
-          model: db.Client, 
-          as: 'Client' 
+          model: db.Client, attributes: ['id', 'nomComplet'] 
         },
         { 
-          model: db.Bon, 
-          as: 'Bon' 
+          model: db.Bon, attributes: ['id', 'numero', 'type', 'netAPayer'],
         },
         { 
-          model: db.Magasin, 
-          as: 'Magasin' 
+          model: db.Magasin, attributes: ['id', 'nom','telephone', 'email'],
         },
         { 
-          model: db.Users, 
-          as: 'User' 
+          model: db.Users, attributes: ['id', 'nom'],
         }
       ],
       order: [['dateCreation', 'DESC']],

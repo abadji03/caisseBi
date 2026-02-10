@@ -1,5 +1,8 @@
 // paiement.model.ts
 
+import { Magasin } from "./magasin.model";
+import { User } from "./user.model";
+
 // paiement.mapping.ts
 export const METHODE_VERS_COMPTE: Record<
   Paiement['methodePaiement'],
@@ -36,6 +39,8 @@ export class Paiement {
   agentId?:number;
   typePaiement: 'fournisseur' | 'client' | 'autre' = 'client';
   magasinId?: number;
+  user?:User;
+  magasin?:Magasin;
   fichier?: string;
   fichierFile?: File; // Pour gérer le fichier uploadé
   statutPaiement?: 'validé' | 'annulé' = 'validé';

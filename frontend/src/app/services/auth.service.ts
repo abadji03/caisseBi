@@ -216,6 +216,17 @@ export class AuthService {
         ]
       },
       {
+        label: 'Finance',
+        icon: 'bi-wallet',
+        route: '/caisse-bi/finance',
+        titre: 'Finance',
+        sousTitre: 'Gestion financière',
+        children: [
+          { label: 'Gestion Financière', route: '/caisse-bi/finance', titre: 'Finance', sousTitre: 'Gestion financière' },
+          { label: 'Fournisseurs', route: '/caisse-bi/fournisseurs', titre: 'Finance', sousTitre: 'Gestion des fournisseurs' },
+        ]
+      },
+      {
         label: 'Rapports',
         icon: 'bi-graph-up',
         route: '/caisse-bi/rapport-financier',

@@ -7,7 +7,8 @@ import { Magasin } from '../../../modeles/magasin.model';
 import { ProduitsService } from '../../../services/produits.service';
 import { StockInventaireService } from '../../../services/stock-inventaire.service';
 import { MaagasinsService } from '../../../services/maagasins.service';
-import { finalize, forkJoin, Subject, takeUntil } from 'rxjs';
+import { finalize, forkJoin, Subject, Subscription, takeUntil } from 'rxjs';
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-stock-inventaires',
@@ -17,7 +18,7 @@ import { finalize, forkJoin, Subject, takeUntil } from 'rxjs';
   styleUrl: './stock-inventaires.component.css',
 })
 export class StockInventairesComponent implements OnInit, OnDestroy {
-    private destroy$ = new Subject<void>();
+  private destroy$ = new Subject<void>();
   searchTerm = ''; // Recherche
   filteredInventaire: Produits[] = [];
   filteredQtesDisponibles: Stock[] = [];
@@ -26,7 +27,7 @@ export class StockInventairesComponent implements OnInit, OnDestroy {
   //filteredMouvements: MouvementsStock[] = [];
   filteredPerissables: Stock[] = [];
   produitsPerissables: Produits[] = [];
-  code_structure = 'MASTRUCTURET-NZNC';
+  code_structure :string|null = null;
   alertes: Stock[] = [];
   niveauStock: Stock[] = [];
   qtsDisponibles: Stock[] = [];
@@ -46,28 +47,45 @@ export class StockInventairesComponent implements OnInit, OnDestroy {
   produits: Produits[] = [];
   isLoading = false;
 
+  private userSubscription!: Subscription;
 
   private produitsService = inject(ProduitsService);
   private stockServcice = inject(StockInventaireService);
   private magasinService = inject(MaagasinsService);
+  private authService = inject(AuthService);
   
 
   ngOnInit(): void {
+    this.userSubscription = this.authService.currentUser.subscribe(user => {
+      //this.currentUser = user;
+      // Initialiser la variable code_structure
+      this.code_structure = user?.code_structure || null;
+      //this.magasinId = user?.magasinId || null;
+      //this.agentId = user?.id || null;
+      console.log('Code structure initialisé :', this.code_structure);
+      // Déterminer si on doit montrer le champ structure
+      //this.isStructureAdmin = this.authService.hasRole('Administrateur'); // Ou vérifiez par ID
 
+      // Récupérer l'ID de la structure de l'utilisateur connecté
+      
+    });
     this.loadData();
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if(this.userSubscription) {
+      this.userSubscription.unsubscribe();
+    }
   }
   loadData(): void {
       this.isLoading = true;
       forkJoin([
-        this.magasinService.getMagasinsByStructure(this.code_structure),
-        this.produitsService.getAllProduits(this.code_structure),
+        this.magasinService.getMagasinsByStructure(this.code_structure!),
+        this.produitsService.getAllProduits(this.code_structure!),
         //this.isGeneralAdmin ? this.structureService.getAll() : of([])
-        this.stockServcice.getStocksByStructure(this.code_structure),
+        this.stockServcice.getStocksByStructure(this.code_structure!),
       ])
         .pipe(
           takeUntil(this.destroy$),

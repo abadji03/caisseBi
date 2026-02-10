@@ -170,6 +170,9 @@
             </tr>
           </thead>
           <tbody>
+            <tr *ngIf="paginatedProducts.length === 0">
+              <td colspan="13" class="text-center">Aucun produit trouvé</td>
+            </tr>
             <tr *ngFor="let produit of paginatedProducts" (click)="onRowSelect(produit)">
               <!-- Case à cocher pour chaque produit -->
               <td class="petit-colonne">

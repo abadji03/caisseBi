@@ -86,6 +86,9 @@
             </tr>
           </thead>
           <tbody>
+            <tr *ngIf="getPaginatedMouvements.length === 0">
+              <td colspan="7" class="text-center">Aucun mouvement trouvé</td>
+            </tr>
             <tr *ngFor="let mouvement of getPaginatedMouvements">
               <td>
                 <span
@@ -368,6 +371,9 @@
             </tr>
           </thead>
           <tbody>
+            <tr *ngIf="getPaginatedReconciliations.length === 0">
+            <td colspan="6" class="text-center">Aucune réconciliation trouvée</td>
+          </tr>
             <tr *ngFor="let reconciliation of getPaginatedReconciliations">
               <td>{{ getNomProduitById(reconciliation.produitId, produits) }}</td>
               <td>{{ reconciliation.stockTheorique }}</td>
@@ -507,6 +513,9 @@
             </tr>
           </thead>
           <tbody>
+            <tr *ngIf="getPaginatedEcarts.length === 0">
+              <td colspan="7" class="text-center">Aucun écart trouvé</td>
+            </tr>
             <tr *ngFor="let analyse of getPaginatedEcarts">
               <td>{{ getNomProduitById(analyse.produitId, produits) }}</td>
               <td

@@ -18,7 +18,7 @@ import { MaagasinsService } from '../../../services/maagasins.service';
 import { Magasin } from '../../../modeles/magasin.model';
 import { FournisseursService } from '../../../services/fournisseurs.service';
 import { ToastrService } from 'ngx-toastr';
-import { finalize, forkJoin,Subject, takeUntil } from 'rxjs';
+import { finalize, forkJoin,Subject, Subscription, takeUntil } from 'rxjs';
 import { normalize } from '../../../utils/string-utils';
 import {  Panier } from '../../../modeles/panier.model';
 import { ProduitsService } from '../../../services/produits.service';
@@ -35,6 +35,8 @@ import { PdfMakerServiceService } from '../../../services/pdf-maker-service.serv
 import { StructureService } from '../../../services/structure.service';
 import { DepencesService } from '../../../services/depences.service';
 import { BonsComponent } from '../../../sharedComposants/bons/bons.component';
+import { User } from '../../../modeles/user.model';
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-fournisseurs',
@@ -57,9 +59,12 @@ export class FournisseursComponent implements OnInit, OnDestroy {
   private static sequence = 0;
 
   // Informations sur la structure et autres entités
-  code_structure = 'MASTRUCTURET-NZNC';
-  magasinId = 1;
-  agentId = 18;
+  code_structure:string|null = null;
+  magasinId:number|null = null ;
+  agentId : number|null = null;
+
+  currentUser: User | null = null;
+  private userSubscription!: Subscription;
 
   // Variables pour la génération des numéros
   generatedNumeroPaiement!: string ;
@@ -182,9 +187,23 @@ export class FournisseursComponent implements OnInit, OnDestroy {
   private pdfGenerator = inject(PdfMakerServiceService);
   private structureService = inject(StructureService);
   private depensesService = inject(DepencesService);
+  private authService = inject(AuthService);
   
 
   ngOnInit(): void {
+    this.userSubscription = this.authService.currentUser.subscribe(user => {
+      this.currentUser = user;
+      // Initialiser la variable code_structure
+      this.code_structure = user?.code_structure || null;
+      this.magasinId = user?.magasinId || null;
+      this.agentId = user?.id || null;
+      console.log('Code structure initialisé :', this.code_structure);
+      // Déterminer si on doit montrer le champ structure
+      //this.isStructureAdmin = this.authService.hasRole('Administrateur'); // Ou vérifiez par ID
+
+      // Récupérer l'ID de la structure de l'utilisateur connecté
+      
+    });
     // Chargement des données des fournisseurs (par exemple via un service)
     this.loadData();
     this.loadDataProduits();
@@ -207,6 +226,9 @@ export class FournisseursComponent implements OnInit, OnDestroy {
    ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if(this.userSubscription) {
+      this.userSubscription.unsubscribe();
+    }
   }
   initForm(): void {
     this.fournisseurForm = this.fb.group({
@@ -691,7 +713,7 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
   private chargerBrouillonsExistants(): void {
     if (!this.selectedFournisseur) return;
 
-    this.bonService.getBonsBrouillons(this.code_structure)
+    this.bonService.getBonsBrouillons(this.code_structure!)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (bonsBrouillons) => {
@@ -726,7 +748,7 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
 
   checkBrouillonExists(callback: (exists: boolean) => void): void {
 
-  this.bonService.getBonsBrouillons(this.code_structure)
+  this.bonService.getBonsBrouillons(this.code_structure!)
     .pipe(takeUntil(this.destroy$))
     .subscribe({
       next: (bonsBrouillons) => {
@@ -863,8 +885,8 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
  loadDataProduits(): void {
       this.isLoading = true;
       forkJoin([
-        this.produitsServices.getAllProduits(this.code_structure),
-        this.stockService.getStocksByStructure(this.code_structure),
+        this.produitsServices.getAllProduits(this.code_structure!),
+        this.stockService.getStocksByStructure(this.code_structure!),
       ])
         .pipe(
           takeUntil(this.destroy$),
@@ -1050,9 +1072,9 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
     }; */
     const paiementCompletData = new Paiement({
       ...paiement,
-      agentId: this.agentId,
-      code_structure: this.code_structure,
-      magasinId: this.magasinId,
+      agentId: this.agentId || undefined,
+      code_structure: this.code_structure || undefined,
+      magasinId: this.magasinId || undefined,
       fournisseurId: this.selectedFournisseur.id
     });
     console.log('Données à envoyer:', paiementCompletData);
@@ -1152,8 +1174,8 @@ private createDepense(formData: FormData): void {
   loadData(): void {
     this.isLoading = true;
     forkJoin([
-      this.magasinService.getMagasinsByStructure(this.code_structure),
-      this.fournisseurService.getFournisseursByStructure(this.code_structure),
+      this.magasinService.getMagasinsByStructure(this.code_structure!),
+      this.fournisseurService.getFournisseursByStructure(this.code_structure!),
     ])
       .pipe(
         takeUntil(this.destroy$),
@@ -1282,7 +1304,7 @@ private createDepense(formData: FormData): void {
       formattedEnd: endDateFormatted
     });
     
-    this.operationService.getOperationsByFournisseur(this.code_structure, this.selectedFournisseur.id!, { dateDebut: this.startDate, dateFin: this.endDate })
+    this.operationService.getOperationsByFournisseur(this.code_structure!, this.selectedFournisseur.id!, { dateDebut: this.startDate, dateFin: this.endDate })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (ops) => {
@@ -1326,8 +1348,8 @@ private rafraichirDonneesImmediatement(): void {
   loadBonAndPaiement(): void {
       this.isLoading = true;
       forkJoin([
-        this.bonService.getBonsFournisseursByStructure(this.code_structure),
-        this.paiementService.getByStructure(this.code_structure),
+        this.bonService.getBonsFournisseursByStructure(this.code_structure!),
+        this.paiementService.getByStructure(this.code_structure!),
       ])
         .pipe(
           takeUntil(this.destroy$),
@@ -1452,7 +1474,7 @@ private rafraichirDonneesFournisseur(): void {
 }
 // Charger les informations de la structure pour le PDF
 private loadStructureInfo(): void {
-    this.structureService.getByCodeStructure(this.code_structure)
+    this.structureService.getByCodeStructure(this.code_structure!)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (structure) => {
