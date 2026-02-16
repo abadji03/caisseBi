@@ -147,7 +147,8 @@ exports.getPaiementsByStructure = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-    const { code_structure } = req.params;
+    const code_structure = authUser.code_structure;
+    //const { code_structure } = req.params;
     // 🔥 Vérification : l’utilisateur doit appartenir à la structure demandée
     if (authUser.code_structure !== code_structure) {
       return res.status(403).json({
@@ -213,7 +214,9 @@ exports.getPaiementsByFournisseur = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-    const { code_structure, fournisseurId } = req.params;
+    const { fournisseurId } = req.params;
+
+    const code_structure = authUser.code_structure;
 
     const paiements = await Paiement.findAll({
       where: {
@@ -240,7 +243,9 @@ exports.getPaiementsByClient = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-    const { code_structure, clientId } = req.params;
+    const { clientId } = req.params;
+
+    const code_structure = authUser.code_structure;
 
     const paiements = await Paiement.findAll({
       where: {

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, ElementRef, inject, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Chart, registerables } from 'chart.js';
 import { 
@@ -18,6 +18,9 @@ import { Magasin } from '../../../modeles/magasin.model';
 import { MaagasinsService } from '../../../services/maagasins.service';
 import { PdfMakerServiceService } from '../../../services/pdf-maker-service.service';
 import { StructureService } from '../../../services/structure.service';
+import { finalize, Subject, Subscription, takeUntil } from 'rxjs';
+import { AuthService } from '../../../services/auth.service';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-rapports-financiers',
@@ -26,7 +29,7 @@ import { StructureService } from '../../../services/structure.service';
   templateUrl: './rapports-financiers.component.html',
   styleUrl: './rapports-financiers.component.css',
 })
-export class RapportsFinanciersComponent implements OnInit {
+export class RapportsFinanciersComponent implements OnInit, OnDestroy {
   @ViewChild('evolutionChart') evolutionChartRef!: ElementRef;
   @ViewChild('depensesChart') depensesChartRef!: ElementRef;
   @ViewChild('recettesChart') recettesChartRef!: ElementRef;
@@ -44,6 +47,8 @@ export class RapportsFinanciersComponent implements OnInit {
   private pdfMakerService = inject(PdfMakerServiceService);
   private structureService = inject(StructureService);
   private cdr = inject(ChangeDetectorRef);
+  private authService = inject(AuthService);
+  private toastr = inject(ToastrService);
 
   // Filtres
   dateGeneration = new Date();
@@ -51,6 +56,7 @@ export class RapportsFinanciersComponent implements OnInit {
   dateFin = '';
   dateReference = ''; 
 
+  private userSubscription!: Subscription;
   
   // Nouveau filtre période prédéfinie
   periodeSelectionnee = 'personnalisee';
@@ -62,14 +68,16 @@ export class RapportsFinanciersComponent implements OnInit {
     { value: 'annee', label: 'Cette année' },
     { value: 'personnalisee', label: 'Période personnalisée' }
   ];
+
+  private destroy$ = new Subject<void>();
   
   magasins: Magasin[] = [];
   selectedMagasinId?: number;
   selectedAgentId?: number;
-  code_structure = 'MASTRUCTURET-NZNC'; // À remplacer par la vraie valeur
+  code_structure : string|null = null; // À remplacer par la vraie valeur
 
   // État du composant
-  isAdmin = true;
+  isAdmin = false;
   isPrinting = false;
   isGeneratingPDF = false;
   isLoading = false;
@@ -96,10 +104,31 @@ export class RapportsFinanciersComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.userSubscription = this.authService.currentUser.subscribe(user => {
+      //this.currentUser = user;
+      // Initialiser la variable code_structure
+      this.code_structure = user?.code_structure || null;
+      //this.magasinId = user?.magasinId || null;
+      //this.agentId = user?.id || null;
+      console.log('Code structure initialisé :', this.code_structure);
+      // Déterminer si on doit montrer le champ structure
+      this.isAdmin = this.authService.hasRole('Administrateur'); // Ou vérifiez par ID
+
+      // Récupérer l'ID de la structure de l'utilisateur connecté
+      
+    });
     this.initDateFilters();
     this.chargerMagasins();
     this.chargerDonnees();
     this.loadStructureInfo();
+  }
+
+  ngOnDestroy(): void {
+    //this.destroy$.next();
+    //this.destroy$.complete();
+    if(this.userSubscription) {
+      this.userSubscription.unsubscribe();
+    }
   }
 
   // Initialiser les filtres de date
@@ -116,7 +145,12 @@ export class RapportsFinanciersComponent implements OnInit {
 
   // Charger les magasins
   chargerMagasins(): void {
-    this.magasinService.getMagasinsByStructure(this.code_structure).subscribe({
+    this.isLoading = true;
+    this.magasinService.getMagasinsByStructure(this.code_structure!)
+    .pipe(takeUntil(this.destroy$),finalize(() => {
+        this.isLoading = false;
+      }))
+    .subscribe({
       next: (magasins) => {
         this.magasins = magasins;
       },
@@ -188,11 +222,17 @@ export class RapportsFinanciersComponent implements OnInit {
 
   // Charger les données comparatives
   chargerDonneesComparatives(): void {
+    this.isLoading = true;
     const filters = this.construireFiltres();
-    this.rapportsService.getDonneesComparatives(filters).subscribe({
+    this.rapportsService.getDonneesComparatives(filters)
+    .pipe(takeUntil(this.destroy$),finalize(() => {
+        this.isLoading = false;
+         this.cdr.detectChanges();
+      }))
+    .subscribe({
       next: (comparatives) => {
         this.donneesComparatives = comparatives;
-        this.cdr.detectChanges();
+       
         // Recréer le graphique de tendances avec les nouvelles données
         this.creerGraphiqueTendances();
       },
@@ -235,15 +275,17 @@ export class RapportsFinanciersComponent implements OnInit {
         }
     }
     else if (this.dateDebut && this.dateFin) {
-      filters.fromDate = new Date(this.dateDebut);
-      filters.toDate = new Date(this.dateFin);
+      //filters.fromDate = new Date(this.dateDebut);
+      //filters.toDate = new Date(this.dateFin);
+      filters.fromDate = this.formatDate(new Date(this.dateDebut));
+      filters.toDate = this.formatDate(new Date(this.dateFin));
     } 
     else {
       // Par défaut, utiliser le mois en cours
       const today = new Date();
       const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      filters.fromDate = firstDayOfMonth;
-      filters.toDate = today;
+      filters.fromDate = this.formatDate(firstDayOfMonth);//firstDayOfMonth;
+      filters.toDate = this.formatDate(today);//today;
     }
 
     // Ajouter pagination pour les détails
@@ -289,9 +331,22 @@ export class RapportsFinanciersComponent implements OnInit {
   }
 
   filtrerDates(): void {
-    if (this.periodeSelectionnee === 'personnalisee' && this.dateDebut && this.dateFin) {
+    /* if (this.periodeSelectionnee === 'personnalisee' && this.dateDebut && this.dateFin) {
       this.filtrerDonnees();
+    } */
+   if (this.periodeSelectionnee === 'personnalisee') {
+    // ✅ Vérifier que les dates sont valides
+    if (this.dateDebut && this.dateFin) {
+      // S'assurer que la date de début <= date de fin
+      if (new Date(this.dateDebut) > new Date(this.dateFin)) {
+        this.toastr?.warning('La date de début doit être antérieure à la date de fin');
+        return;
+      }
+      this.filtrerDonnees();
+    } else {
+      this.toastr?.warning('Veuillez sélectionner une date de début et une date de fin');
     }
+  }
   }
 
   // Recherche
@@ -326,10 +381,15 @@ export class RapportsFinanciersComponent implements OnInit {
     const filters = this.construireFiltres();
     filters.page = page;
     filters.limit = this.pageSize;
+    this.isLoading = true;
     
     if (type === 'depenses') {
       this.currentPageDepenses = page;
-      this.rapportsService.getDepensesDetaillees(filters).subscribe({
+      this.rapportsService.getDepensesDetaillees(filters)
+      .pipe(takeUntil(this.destroy$),finalize(() => {
+        this.isLoading = false;
+      }))
+      .subscribe({
         next: (depenses) => {
           this.depensesDetaillees = depenses;
         },
@@ -686,7 +746,11 @@ export class RapportsFinanciersComponent implements OnInit {
   }
 // Charger les informations de la structure pour le PDF
 private loadStructureInfo(): void {
-    this.structureService.getByCodeStructure(this.code_structure)
+    this.isLoading = true;
+    this.structureService.getByCodeStructure(this.code_structure!)
+      .pipe(takeUntil(this.destroy$),finalize(() => {
+        this.isLoading = false;
+      }))
       .subscribe({
         next: (structure) => {
           this.pdfMakerService.setStructureInfo(structure);

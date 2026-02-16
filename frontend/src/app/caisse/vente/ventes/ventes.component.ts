@@ -55,14 +55,14 @@ export class VentesComponent implements OnInit, OnDestroy,OnChanges {
   
   // Structure courante (fixe)
   currentStructure: Structure | null = null;
-  structureCode= ''; 
+  //structureCode= ''; 
 
   // Informations utilisateur connecté
   currentUser: User|null = null;
-  userMagasinId = 1; // number | null = null;
+  magasinId : number | null = null;
   isAdmin = false;
   
-  code_structure = 'MASTRUCTURET-NZNC';
+  code_structure :string|null = null;
 
   // États
   loading = false;
@@ -89,6 +89,8 @@ export class VentesComponent implements OnInit, OnDestroy,OnChanges {
     { label: 'Cette année', value: 'annee' }
   ];
   
+  private userSubscription!: Subscription;
+
   // Références aux charts
   @ViewChild('chartPaiements') chartPaiementsRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('chartCADaily') chartCADailyRef!: ElementRef<HTMLCanvasElement>;
@@ -102,11 +104,22 @@ export class VentesComponent implements OnInit, OnDestroy,OnChanges {
   private userService = inject(UserService);
   private magasinService = inject(MaagasinsService);
   private authService = inject(AuthService);
-
-
   
   
   ngOnInit(): void {
+     this.userSubscription = this.authService.currentUser.subscribe(user => {
+      this.currentUser = user;
+      // Initialiser la variable code_structure
+      this.code_structure = user?.code_structure || null;
+      this.magasinId = user?.magasinId || null;
+      //this.agentId = user?.id || null;
+      console.log('Code structure initialisé :', this.code_structure);
+      // Déterminer si on doit montrer le champ structure
+      this.isAdmin = this.authService.hasRole('Administrateur'); // Ou vérifiez par ID
+
+      // Récupérer l'ID de la structure de l'utilisateur connecté
+      
+    });
     //this.loadData();
     //this.chargerDonnees();
     this.loadUserAndStructure();
@@ -127,6 +140,10 @@ export class VentesComponent implements OnInit, OnDestroy,OnChanges {
     // Détruire le chart des commandes
     if (this.chartCommandes) {
       this.chartCommandes.destroy();
+    }
+
+    if(this.userSubscription) {
+      this.userSubscription.unsubscribe();
     }
   }
 
@@ -163,7 +180,7 @@ export class VentesComponent implements OnInit, OnDestroy,OnChanges {
     } */
     
     // Charger les données de la structure
-    this.structureService.getByCodeStructure(this.code_structure).subscribe({
+    this.structureService.getByCodeStructure(this.code_structure!).subscribe({
     //this.structureService.getByCodeStructure(this.structureCode).subscribe({
       next: (structure) => {
         this.currentStructure = structure;
@@ -184,8 +201,8 @@ export class VentesComponent implements OnInit, OnDestroy,OnChanges {
     forkJoin([
       // this.magasinService.getMagasinsByStructure(this.structureCode),
       // this.userService.getByStructure(this.structureCode),
-      this.magasinService.getMagasinsByStructure(this.code_structure),
-      this.userService.getByStructure(this.code_structure),
+      this.magasinService.getMagasinsByStructure(this.code_structure!),
+      this.userService.getByStructure(this.code_structure!),
     ])
       .pipe(
         finalize(() => this.loading = false)
@@ -196,13 +213,13 @@ export class VentesComponent implements OnInit, OnDestroy,OnChanges {
           this.agents = users;
           
           // Déterminer le magasin de l'utilisateur (si non admin)
-          /* if (!this.isAdmin && this.currentUser.magasinId) {
-            this.userMagasinId = Number(this.currentUser.magasinId);
+          if (!this.isAdmin && this.currentUser?.['magasinId']) {
+            this.magasinId = Number(this.currentUser?.['magasinId']);
             // Sélectionner automatiquement le magasin de l'utilisateur
-            this.magasinSelectionne = this.magasins.find(m => m.id === this.userMagasinId) || null;
-          } */
+            this.magasinSelectionne = this.magasins.find(m => m.id === this.magasinId) || null;
+          } 
 
-          this.magasinSelectionne = this.magasins.find(m => m.id === this.userMagasinId) || null;
+          this.magasinSelectionne = this.magasins.find(m => m.id === this.magasinId) || null;
           
           // Charger les données KPI
           this.chargerDonnees();
@@ -237,7 +254,7 @@ export class VentesComponent implements OnInit, OnDestroy,OnChanges {
     // Préparer les paramètres journaliers
     const params: KPIParamsJournalier = {
       //code_structure: this.structureCode,
-      code_structure: this.code_structure,
+      code_structure: this.code_structure!,
       magasinId: this.getMagasinIdForApi(),
       agentId: this.agentSelectionne?.id ? Number(this.agentSelectionne.id) : undefined
     };
@@ -320,7 +337,7 @@ calculerTotalPaiementsCompte(): number {
       periode: this.periodeSelectionnee,
       dateReference: this.dateReference,
       //code_structure: this.structureCode,
-      code_structure: this.code_structure,
+      code_structure: this.code_structure!,
       magasinId: this.getMagasinIdForApi(),
       agentId: this.agentSelectionne?.id ? Number(this.agentSelectionne.id) : undefined
     };
@@ -369,16 +386,16 @@ calculerTotalPaiementsCompte(): number {
    */
   private getMagasinIdForApi(): number | undefined {
     // Si c'est un admin et qu'il a sélectionné un magasin
-    /* if (this.isAdmin && this.magasinSelectionne) {
+    if (this.isAdmin && this.magasinSelectionne) {
       return this.magasinSelectionne.id;
     }
     // Si c'est un non-admin, utiliser son magasin
-    else if (!this.isAdmin && this.userMagasinId) {
-      return this.userMagasinId;
+    else if (!this.isAdmin && this.magasinId) {
+      return this.magasinId;
     }
     // Sinon, pas de filtre magasin (tous les magasins de la structure)
-    return undefined; */
-    return this.userMagasinId
+    return undefined;
+    //return this.userMagasinId
   }
   /**
    * Obtenir le niveau actuel pour l'affichage
@@ -386,7 +403,7 @@ calculerTotalPaiementsCompte(): number {
   get currentNiveau(): string {
     if (this.isAdmin && this.magasinSelectionne) {
       return 'magasin';
-    } else if (!this.isAdmin && this.userMagasinId) {
+    } else if (!this.isAdmin && this.magasinId) {
       return 'magasin';
     } else {
       return 'structure';
@@ -420,7 +437,7 @@ calculerTotalPaiementsCompte(): number {
       periode: this.periodeSelectionnee,
       dateReference: this.dateReference,
       //code_structure: this.structureCode,
-      code_structure: this.code_structure,
+      code_structure: this.code_structure!,
       magasinId: this.getMagasinIdForApi(),
       agentId: this.agentSelectionne?.id ? Number(this.agentSelectionne.id) : undefined
     };
@@ -446,7 +463,7 @@ calculerTotalPaiementsCompte(): number {
   private chargerCAParJour(): void {
   const params: KPIParams = {
     //code_structure: this.structureCode,
-    code_structure: this.code_structure,
+    code_structure: this.code_structure!,
     magasinId: this.getMagasinIdForApi(),
     agentId: this.agentSelectionne?.id ? Number(this.agentSelectionne.id) : undefined
   };
@@ -825,7 +842,7 @@ private chargerStatistiquesSpeciales(): void {
   const params: KPIParams = {
     periode: this.periodeSelectionnee,
     dateReference: this.dateReference,
-    code_structure: this.code_structure,
+    code_structure: this.code_structure!,
     magasinId: this.getMagasinIdForApi(),
     agentId: this.agentSelectionne?.id ? Number(this.agentSelectionne.id) : undefined
   };
@@ -881,7 +898,7 @@ private chargerStatistiquesCommandes(): void {
   const params: KPIParams = {
     periode: this.periodeSelectionnee,
     dateReference: this.periodeSelectionnee !== 'jour' ? this.dateReference : undefined,
-    code_structure: this.code_structure,
+    code_structure: this.code_structure!,
     magasinId: this.getMagasinIdForApi(),
     agentId: this.agentSelectionne?.id ? Number(this.agentSelectionne.id) : undefined
   };

@@ -4,7 +4,7 @@ import { inject, Injectable } from '@angular/core';
 import { AuthService } from './auth.service';
 import { NGXLogger } from 'ngx-logger';
 import { throwError } from 'rxjs/internal/observable/throwError';
-import { CaisseTheorique, CAParJourResponse, CommandeStats, ComparatifCA, ComparatifMagasin, EncaissementsResponse,KPICaissePeriode, KPIParams, KPIParamsJournalier, StatsAvances, StatsAvoirs, StatsRemises, StatsStructureParMagasinResponse, StatsVentesCaisseAnnulees, StatsVentesCredit, StatsVentesCreditAnnulees, ToutesStatistiquesSpeciales } from '../modeles/kpiCaisse.model';
+import { CaisseTheorique, CAParJourResponse, CommandeStats, ComparaisonOptions, ComparaisonResponse, ComparatifCA, ComparatifMagasin, EncaissementsResponse,KPICaissePeriode, KPIParams, KPIParamsJournalier, RapportVenteParams, RapportVenteResponse, StatsAvances, StatsAvoirs, StatsRemises, StatsStructureParMagasinResponse, StatsVentesCaisseAnnulees, StatsVentesCredit, StatsVentesCreditAnnulees, ToutesStatistiquesSpeciales, VendeurDetailsResponse } from '../modeles/kpiCaisse.model';
 import { catchError, Observable } from 'rxjs';
 
 @Injectable({
@@ -703,4 +703,278 @@ export class KpiCaisseService {
     );
   }
 
+  //............................Partie pour le rapport de vente.....................................
+  // ================================
+//  API RAPPORT DE VENTE COMPLET
+// ================================
+
+/**
+ * Récupère le rapport de vente complet avec tous les KPI
+ * @param params Paramètres incluant période, dates, pagination, recherche
+ */
+getRapportVente(params: RapportVenteParams): Observable<RapportVenteResponse> {
+  if (!params.code_structure) {
+    return throwError(() => new Error('Le paramètre "code_structure" est requis'));
+  }
+
+  const url = `${this.apiUrl}/rapport-vente`;
+  let httpParams = this.buildParams(params);
+  
+  // Ajouter les paramètres spécifiques
+  if (params.page) {
+    httpParams = httpParams.set('page', params.page.toString());
+  }
+  if (params.limit) {
+    httpParams = httpParams.set('limit', params.limit.toString());
+  }
+  if (params.search) {
+    httpParams = httpParams.set('search', params.search);
+  }
+  if (params.fromDate) {
+    httpParams = httpParams.set('fromDate', params.fromDate);
+  }
+  if (params.toDate) {
+    httpParams = httpParams.set('toDate', params.toDate);
+  }
+
+  return this.http.get<RapportVenteResponse>(url, {
+    headers: this.getHeaders(),
+    params: httpParams
+  }).pipe(
+    catchError(error => this.handleError<RapportVenteResponse>('getRapportVente', error))
+  );
+}
+
+// ================================
+//  API DÉTAILS VENDEUR
+// ================================
+
+/**
+ * Récupère les détails d'un vendeur spécifique
+ * @param vendeurId ID du vendeur
+ * @param params Paramètres de période
+ */
+getDetailsVendeur(vendeurId: number, params: KPIParams): Observable<VendeurDetailsResponse> {
+  // if (!params.code_structure) {
+  //   return throwError(() => new Error('Le paramètre "code_structure" est requis'));
+  // }
+  if (!vendeurId) {
+    return throwError(() => new Error('Le paramètre "vendeurId" est requis'));
+  }
+
+  const url = `${this.apiUrl}/rapport-vente/vendeur/${vendeurId}/details`;
+  const httpParams = this.buildParams(params);
+
+  return this.http.get<VendeurDetailsResponse>(url, {
+    headers: this.getHeaders(),
+    params: httpParams
+  }).pipe(
+    catchError(error => this.handleError<VendeurDetailsResponse>('getDetailsVendeur', error))
+  );
+}
+
+// ================================
+//  API OPTIONS DE COMPARAISON
+// ================================
+
+/**
+ * Récupère les options disponibles pour la comparaison
+ * @param type Type de comparaison ('periode', 'vendeur', 'magasin')
+ */
+getOptionsComparaison(type: string): Observable<ComparaisonOptions[]> {
+  
+
+  const url = `${this.apiUrl}/rapport-vente/comparaison/options`;
+  const params = new HttpParams()
+    .set('type', type);
+    //.set('code_structure', code_struc);
+
+  return this.http.get<ComparaisonOptions[]>(url, {
+    headers: this.getHeaders(),
+    params
+  }).pipe(
+    catchError(error => this.handleError<ComparaisonOptions[]>('getOptionsComparaison', error))
+  );
+}
+
+// ================================
+//  API GÉNÉRER COMPARAISON
+// ================================
+
+/**
+ * Génère une comparaison entre deux éléments
+ * @param data Données de comparaison
+ */
+genererComparaison(data: {
+  type: string;
+  element1: string;
+  element2: string;
+  periode?: string;
+  dateReference?: string;
+  fromDate?: string;
+  toDate?: string;
+  magasinId?: number;
+  agentId?: number;
+}): Observable<ComparaisonResponse> {
+  
+
+  const url = `${this.apiUrl}/rapport-vente/comparaison`;
+  let params = new HttpParams()
+    .set('type', data.type)
+    .set('element1', data.element1)
+    .set('element2', data.element2);
+
+  if (data.periode) {
+    params = params.set('periode', data.periode);
+  }
+  if (data.dateReference) {
+    params = params.set('dateReference', data.dateReference);
+  }
+  if (data.fromDate) {
+    params = params.set('fromDate', data.fromDate);
+  }
+  if (data.toDate) {
+    params = params.set('toDate', data.toDate);
+  }
+  if (data.magasinId) {
+    params = params.set('magasinId', data.magasinId.toString());
+  }
+  if (data.agentId) {
+    params = params.set('agentId', data.agentId.toString());
+  }
+
+  return this.http.get<ComparaisonResponse>(url, {
+    headers: this.getHeaders(),
+    params
+  }).pipe(
+    catchError(error => this.handleError<ComparaisonResponse>('genererComparaison', error))
+  );
+}
+
+// ================================
+//  MÉTHODES UTILITAIRES POUR LE RAPPORT
+// ================================
+
+/**
+ * Formate les données du rapport pour l'affichage
+ */
+formatRapportVente(rapport: RapportVenteResponse): any {
+  return {
+    ...rapport,
+    // KPI formatés
+    chiffreAffairesTTCFormatted: this.formatMontant(rapport.chiffreAffairesTTC),
+    chiffreAffairesHTFormatted: this.formatMontant(rapport.chiffreAffairesHT),
+    margeBeneficiaireFormatted: this.formatMontant(rapport.margeBeneficiaire),
+    ticketMoyenFormatted: this.formatMontant(rapport.ticketMoyen),
+    
+    // Modes de paiement avec pourcentage
+    statmodesPaiement: rapport.statmodesPaiement.map(mode => ({
+      ...mode,
+      montantTotalFormatted: this.formatMontant(mode.montantTotal),
+      pourcentage: rapport.chiffreAffairesTTC > 0 
+        ? (mode.montantTotal / rapport.chiffreAffairesTTC * 100).toFixed(1)
+        : 0
+    })),
+    
+    // Top produits formatés
+    topProduits: rapport.topProduits.map(p => ({
+      ...p,
+      caFormatted: this.formatMontant(p.ca),
+      margeFormatted: this.formatMontant(p.marge),
+      margePourcentage: p.ca > 0 ? (p.marge / p.ca * 100).toFixed(1) : 0
+    })),
+    
+    // Top clients formatés
+    topClients: rapport.topClients.map(c => ({
+      ...c,
+      caFormatted: this.formatMontant(c.ca),
+      dernierAchat: c.dernierAchat ? new Date(c.dernierAchat) : null
+    })),
+    
+    // Performance vendeurs formatée
+    vendeursPerformance: rapport.vendeursPerformance.map(v => ({
+      ...v,
+      caHTFormatted: this.formatMontant(v.caHT),
+      caTTCFormatted: this.formatMontant(v.caTTC),
+      ticketMoyenFormatted: this.formatMontant(v.ticketMoyen)
+    }))
+  };
+}
+
+/**
+ * Calcule les tendances pour le rapport
+ */
+calculerTendances(rapport: RapportVenteResponse): {
+  caTendance: 'positive' | 'negative' | 'stable';
+  volumeTendance: 'positive' | 'negative' | 'stable';
+  message: string;
+} {
+  const caTendance = rapport.evolutionCA.valeur > 0 ? 'positive' 
+    : rapport.evolutionCA.valeur < 0 ? 'negative' : 'stable';
+  
+  const volumeTendance = rapport.evolutionVolume.valeur > 0 ? 'positive'
+    : rapport.evolutionVolume.valeur < 0 ? 'negative' : 'stable';
+
+  let message = '';
+  if (caTendance === 'positive' && volumeTendance === 'positive') {
+    message = '📈 Excellente performance : CA et volume en hausse';
+  } else if (caTendance === 'positive' && volumeTendance === 'negative') {
+    message = '📊 CA en hausse malgré une baisse du volume (ticket moyen plus élevé)';
+  } else if (caTendance === 'negative' && volumeTendance === 'positive') {
+    message = '📉 Baisse du CA malgré une hausse du volume (ticket moyen en baisse)';
+  } else if (caTendance === 'negative' && volumeTendance === 'negative') {
+    message = '📉 Performance en baisse sur tous les indicateurs';
+  } else {
+    message = '📊 Performance stable par rapport à la période précédente';
+  }
+
+  return { caTendance, volumeTendance, message };
+}
+
+/**
+ * Prépare les données pour les graphiques du rapport
+ */
+prepareChartData(rapport: RapportVenteResponse): {
+  evolutionChart: { labels: string[]; datasets: any[] };
+  paiementsChart: { labels: string[]; data: number[] };
+  topProduitsChart: { labels: string[]; data: number[] };
+} {
+  // Évolution des ventes
+  const evolutionChart = {
+    labels: rapport.evolutionParJour.map(e => {
+      const date = new Date(e.date);
+      return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+    }),
+    datasets: [
+      {
+        label: 'Chiffre d\'affaires',
+        data: rapport.evolutionParJour.map(e => e.ca),
+        borderColor: '#4CAF50',
+        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+        yAxisID: 'y'
+      },
+      {
+        label: 'Nombre de ventes',
+        data: rapport.evolutionParJour.map(e => e.nombreVentes),
+        borderColor: '#2196F3',
+        backgroundColor: 'rgba(33, 150, 243, 0.1)',
+        yAxisID: 'y1'
+      }
+    ]
+  };
+
+  // Modes de paiement
+  const paiementsChart = {
+    labels: rapport.statmodesPaiement.map(m => m.mode),
+    data: rapport.statmodesPaiement.map(m => m.montantTotal)
+  };
+
+  // Top produits
+  const topProduitsChart = {
+    labels: rapport.topProduits.map(p => p.produit.designation.substring(0, 20) + '...'),
+    data: rapport.topProduits.map(p => p.ca)
+  };
+
+  return { evolutionChart, paiementsChart, topProduitsChart };
+}
 }

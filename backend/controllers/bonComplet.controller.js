@@ -18,7 +18,11 @@ exports.createBonComplet = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-    const { bon, panier, articles, paiement, code_structure, magasinId, agentId, fournisseurId, clientId, typeEntite } = req.body;
+    const code_structure = authUser.code_structure;
+    const magasinId = authUser.magasinId;
+    const agentId = authUser.id;
+
+    const { bon, panier, articles, paiement,fournisseurId, clientId, typeEntite } = req.body;
 
     console.log('Données reçues pour création bon complet:', {
       bon,
@@ -61,7 +65,7 @@ exports.createBonComplet = async (req, res) => {
       // Préparer les données et mettre à jour le bon
       const bonData = await statutManager.preparerDonneesBon(bon, typeEntite, clientId, fournisseurId);
       // Mettre à jour le bon
-      await nouveauBon.update(bonData, { transaction });
+      await nouveauBon.update({...bonData, agentId,code_structure,magasinId}, { transaction });
 
       // Mettre à jour le panier associé
       nouveauPanier = await db.Panier.findOne({ where: { bonId: nouveauBon.id }, transaction });
@@ -69,12 +73,15 @@ exports.createBonComplet = async (req, res) => {
       if (nouveauPanier) {
         await nouveauPanier.update({
           ...panier,
+          code_structure,
+          magasinId,
+          agentId,
           statut: panier.statut || 'validé',
         }, { transaction });
         
         //Supprimer tous les anciens articles et recréer
         await db.ArticlePanier.destroy({ 
-          where: { panierId: nouveauPanier.id }, 
+          where: { panierId: nouveauPanier.id, code_structure }, 
           transaction 
         });
         

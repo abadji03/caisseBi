@@ -103,6 +103,7 @@ exports.getMe = async (req, res) => {
       email: user.email,
       photoProfil: user.photoProfil,
       status: user.status,
+      magasinId: user.magasinId,
       magasin: user.Magasin ? { id: user.Magasin.id, nom: user.Magasin.nom } : null,
       /* roles: user.roles.map((role) => ({
         nom: role.nom,

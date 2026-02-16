@@ -9,7 +9,7 @@
       <div class="alert alert-info border-0 py-2 mb-0"> 
           <small>
             <i class="bi bi-info-circle-fill me-2 fs-5"></i>
-            <span *ngIf="!isAdmin && userMagasinId" class="ms-1">Votre magasin seulement</span>
+            <span *ngIf="!isAdmin && magasinId" class="ms-1">Votre magasin seulement</span>
             <span *ngIf="isAdmin && magasinSelectionne" class="ms-1">Magasin spécifique</span>
             <span *ngIf="isAdmin && !magasinSelectionne" class="ms-1">Tous les magasins de la structure</span>
           </small>

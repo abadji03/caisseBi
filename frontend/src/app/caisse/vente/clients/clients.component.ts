@@ -1550,9 +1550,9 @@ private enregistrerBon(bon: Bon, panier: Panier, fichier:File|null): void {
       totalHT: article.totalHT,
       totalTTC: article.totalTTC
     })),
-    code_structure: this.code_structure,
+    /* code_structure: this.code_structure,
     magasinId: this.magasinId,
-    agentId: this.agentId,
+    agentId: this.agentId, */
     clientId: this.selectedClient.id,
     typeEntite:this.typeEntite,
     paiement: bon.avance?? 0 > 0 ? new Paiement ({

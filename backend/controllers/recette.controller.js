@@ -83,7 +83,8 @@ exports.getByStructure = async (req, res) => {
       return res.status(401).json({ message: "Non authentifié" });
     }
 
-    const { code_structure } = req.params;
+    //const { code_structure } = req.params;
+    const code_structure = authUser.code_structure;
 
     // 🔥 Vérification : l’utilisateur doit appartenir à la structure demandée
     if (authUser.code_structure !== code_structure) {

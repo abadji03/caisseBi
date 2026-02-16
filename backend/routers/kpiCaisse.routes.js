@@ -1,42 +1,64 @@
 const express = require('express');
 const router = express.Router();
 const kpiCaisseCTR = require('../controllers/kpiCaisse.controller');
+const authenticateToken = require('../middlewares/auth.middleware');
+
 
 // API unifiées qui supportent à la fois les KPI journaliers et par période
-router.get('/stats/caisse/kpi', kpiCaisseCTR.getKpiCaisseJour); // Pour le jour courant
-router.get('/stats/caisse/kpi-periode', kpiCaisseCTR.getStatsCaissePeriode); // Pour une période spécifique
-router.get('/stats/caisse/kpi-structure', kpiCaisseCTR.getKpiCaisse); // Pour une structure (nécessite code_structure)
+router.get('/stats/caisse/kpi', authenticateToken, kpiCaisseCTR.getKpiCaisseJour); // Pour le jour courant
+router.get('/stats/caisse/kpi-periode', authenticateToken, kpiCaisseCTR.getStatsCaissePeriode); // Pour une période spécifique
+router.get('/stats/caisse/kpi-structure', authenticateToken, kpiCaisseCTR.getKpiCaisse); // Pour une structure (nécessite code_structure)
 
 // Paiements par mode (supporte jour et période)
-router.get('/stats/caisse/paiements', kpiCaisseCTR.getEncaissementsParMode);
+router.get('/stats/caisse/paiements', authenticateToken, kpiCaisseCTR.getEncaissementsParMode);
 
 // Remises (supporte jour et période)
-router.get('/stats/caisse/remises', kpiCaisseCTR.getStatsRemises);
+router.get('/stats/caisse/remises', authenticateToken, kpiCaisseCTR.getStatsRemises);
 
 // Avoirs (supporte jour et période)
-router.get('/stats/caisse/avoirs', kpiCaisseCTR.getAvoirs);
+router.get('/stats/caisse/avoirs', authenticateToken, kpiCaisseCTR.getAvoirs);
 
 // Caisse théorique (supporte jour et période)
-router.get('/stats/caisse/caisse-theorique', kpiCaisseCTR.getCaisseTheorique);
+router.get('/stats/caisse/caisse-theorique', authenticateToken, kpiCaisseCTR.getCaisseTheorique);
 
 // Statistiques comparatives
-router.get('/stats/caisse/comparatif', kpiCaisseCTR.getStatsComparatives);
-router.get('/stats/caisse/comparatif-magasin', kpiCaisseCTR.compareMagasinVsStructure);
+router.get('/stats/caisse/comparatif', authenticateToken, kpiCaisseCTR.getStatsComparatives);
+router.get('/stats/caisse/comparatif-magasin', authenticateToken, kpiCaisseCTR.compareMagasinVsStructure);
 
 // CA par jour
-router.get('/stats/caisse/ca-par-jour', kpiCaisseCTR.getCAParJour);
+router.get('/stats/caisse/ca-par-jour', authenticateToken, kpiCaisseCTR.getCAParJour);
 
 // Statistiques par magasin
-router.get('/stats/caisse/structure-par-magasin', kpiCaisseCTR.getStatsStructureParMagasin);
+router.get('/stats/caisse/structure-par-magasin', authenticateToken, kpiCaisseCTR.getStatsStructureParMagasin);
 
 // Statistiques pour les ventes à crédits et ceux annulé
-router.get('/stats/caisse/ventes-credit', kpiCaisseCTR.getVentesCredit);
-router.get('/stats/caisse/avances', kpiCaisseCTR.getAvances);
-router.get('/stats/caisse/ventes-credit-annulees', kpiCaisseCTR.getVentesCreditAnnulees);
-router.get('/stats/caisse/ventes-caisse-annulees', kpiCaisseCTR.getVentesCaisseAnnulees);
-router.get('/stats/caisse/toutes-statistiques-speciales', kpiCaisseCTR.getToutesStatistiquesSpeciales);
+router.get('/stats/caisse/ventes-credit', authenticateToken, kpiCaisseCTR.getVentesCredit);
+router.get('/stats/caisse/avances', authenticateToken, kpiCaisseCTR.getAvances);
+router.get('/stats/caisse/ventes-credit-annulees', authenticateToken, kpiCaisseCTR.getVentesCreditAnnulees);
+router.get('/stats/caisse/ventes-caisse-annulees', authenticateToken, kpiCaisseCTR.getVentesCaisseAnnulees);
+router.get('/stats/caisse/toutes-statistiques-speciales', authenticateToken, kpiCaisseCTR.getToutesStatistiquesSpeciales);
 
 //Statistiques pour les commandes clients
-router.get('/stats/caisse/toutes-statistiques-commandes', kpiCaisseCTR.getStatistiquesCommandes);
+router.get('/stats/caisse/toutes-statistiques-commandes', authenticateToken,kpiCaisseCTR.getStatistiquesCommandes);
 
+// Routes pour le rapport de vente
+router.get('/rapport-vente', 
+    authenticateToken, 
+    kpiCaisseCTR.getRapportVente
+);
+
+router.get('/rapport-vente/vendeur/:vendeurId/details', 
+    authenticateToken, 
+    kpiCaisseCTR.getDetailsVendeur
+);
+
+router.get('/rapport-vente/comparaison/options', 
+    authenticateToken, 
+    kpiCaisseCTR.getOptionsComparaison
+);
+
+router.post('/rapport-vente/comparaison', 
+    authenticateToken, 
+    kpiCaisseCTR.getComparaison
+);
 module.exports = router;

@@ -1,26 +1,29 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, ElementRef, inject, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { jsPDF } from 'jspdf'; // Import jsPDF
+import { jsPDF } from 'jspdf';
 import { Chart, registerables } from 'chart.js';
 import * as ExcelJS from 'exceljs';
-import { Magasin } from '../../../modeles/magasin.model';
-import { Produits } from '../../../modeles/produit.modele';
 import html2canvas from 'html2canvas';
-import {
-  magasins,
-  produits,
-  paniers,
-  clients,
-  vendeurs,
-  modesPaiement,
-} from '../../../modeles/donnees_fictives';
-import { Panier } from '../../../modeles/panier.model';
-import { Client } from '../../../modeles/clients.model';
-import { ModePaiement } from '../../../modeles/paiement.model';
-import { User } from '../../../modeles/user.model';
 import saveAs from 'file-saver';
+import { finalize, Subject, takeUntil } from 'rxjs';
+
+import { Magasin } from '../../../modeles/magasin.model';
+import { User } from '../../../modeles/user.model';
+import { AuthService } from '../../../services/auth.service';
+import { KpiCaisseService } from '../../../services/kpi-caisse.service';
+import {
+  RapportVenteParams,
+  RapportVenteResponse,
+  VendeurDetailsResponse,
+  ComparaisonOptions,
+  ComparaisonResponse,
+  VendeurInfo
+} from '../../../modeles/kpiCaisse.model';
+import { ToastrService } from 'ngx-toastr';
+import { UserService } from '../../../services/user.service';
+import { MaagasinsService } from '../../../services/maagasins.service';
 
 @Component({
   selector: 'app-rapports-ventes',
@@ -29,16 +32,18 @@ import saveAs from 'file-saver';
   templateUrl: './rapports-ventes.component.html',
   styleUrl: './rapports-ventes.component.css',
 })
-export class RapportsVentesComponent implements OnInit {
+export class RapportsVentesComponent implements OnInit,OnDestroy {
   @ViewChild('evolutionVentesChart') evolutionVentesChartRef!: ElementRef;
   @ViewChild('paiementsChart') paiementsChartRef!: ElementRef;
   @ViewChild('topProduitsChart') topProduitsChartRef!: ElementRef;
   @ViewChild('vendeurEvolutionChart') vendeurEvolutionChartRef!: ElementRef;
   @ViewChild('comparaisonChart') comparaisonChartRef!: ElementRef;
-  vendeurEvolutionChart: any;
+
+  // Graphiques
   evolutionVentesChart: any;
   paiementsChart: any;
   topProduitsChart: any;
+  vendeurEvolutionChart: any;
   comparaisonChart: any;
 
   // Données et filtres
@@ -53,13 +58,9 @@ export class RapportsVentesComponent implements OnInit {
   isGeneratingPDF = false;
   progress = 0;
 
-  // Données de vente
-  allVentes: Panier[] = [];
-  filteredVentes: Panier[] = [];
-  allClients: Client[] = [];
-  allProduits: Produits[] = [];
-  modesPaiement: ModePaiement[] = [];
-  statmodesPaiement: undefined | any;
+  // Données du rapport
+  rapportData: RapportVenteResponse | null = null;
+  filteredVentes: any[] = [];
 
   // Indicateurs clés
   totalVentes = 0;
@@ -75,19 +76,21 @@ export class RapportsVentesComponent implements OnInit {
   topProduits: any[] = [];
   topClients: any[] = [];
   vendeursPerformance: any[] = [];
+  statmodesPaiement: any[] = [];
+  evolutionParJour: any[] = [];
 
-  // pour les détails d'un vendeur
-  selectedVendeurDetails: User | null = null;
+  // Détails vendeur
+  selectedVendeurDetails: VendeurInfo | null = null;
   showVendeurModal = false;
   vendeurStats: any = null;
 
-  //pour les comparaisons
+  // Comparaison
   comparaisonType: 'periode' | 'vendeur' | 'magasin' = 'periode';
   comparaisonElement1: any = '';
   comparaisonElement2: any = '';
-  comparaisonData: any = null;
+  comparaisonData: ComparaisonResponse | null = null;
   comparaisonLabels: string[] = [];
-  comparisonOptions: { value: any; label: string }[] = [];
+  comparisonOptions: ComparaisonOptions[] = [];
   isLoading = false;
 
   // Pagination et recherche
@@ -96,371 +99,159 @@ export class RapportsVentesComponent implements OnInit {
   searchTerm = '';
   triVendeursPar: 'ca' | 'transactions' | 'moyenne' = 'ca';
 
+  // États
+  errorMessage = '';
+  code_structure: string | null = null;
+  currentUser: User | null = null;
+
+  private destroy$ = new Subject<void>();
   private cdr = inject(ChangeDetectorRef);
+  private authService = inject(AuthService);
+  private kpiService = inject(KpiCaisseService);
+  private toastr = inject(ToastrService);
+  private userService = inject(UserService);
+  private magasinService = inject(MaagasinsService);
 
   constructor() {
     Chart.register(...registerables);
   }
 
   ngOnInit(): void {
-    this.initDateFilters();
-    this.loadDonneesVentes();
-    this.filtrerDonnees();
-    this.initializeComparison();
+    this.authService.currentUser.pipe(takeUntil(this.destroy$)).subscribe(user => {
+      this.currentUser = user;
+      this.code_structure = user?.code_structure || null;
+
+      if (this.code_structure) {
+        this.initDateFilters();
+        this.loadMagasins();
+        this.loadVendeurs();
+        this.chargerRapport();
+        this.initializeComparison();
+      } else {
+        this.errorMessage = 'Code structure non disponible';
+        this.toastr.error(this.errorMessage);
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   initDateFilters(): void {
     const today = new Date();
-    const dayOfWeek = today.getDay();
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-    this.dateDebut = this.formatDate(monday);
+    this.dateDebut = this.formatDate(firstDayOfMonth);
     this.dateFin = this.formatDate(today);
   }
 
-  loadDonneesVentes(): void {
-    // Simuler des données (à remplacer par des appels API)
-    this.magasins = magasins;
-
-    this.vendeurs = vendeurs;
-
-    this.modesPaiement = modesPaiement;
-
-    // Générer des données de vente fictives
-    this.allVentes = paniers;
-    this.allClients = clients;
-    this.allProduits = produits;
-
-    this.filteredVentes = [...this.allVentes];
+  formatDate(date: Date): string {
+    return date.toISOString().split('T')[0];
   }
 
-  getStatistiquesModesPaiementArray(): {
-    mode: string;
-    montantTotal: number;
-    occurrences: number;
-  }[] {
-    const statsMap = new Map<string, { montantTotal: number; occurrences: number }>();
-
-    // Parcourir toutes les ventes filtrées
-    this.filteredVentes.forEach((vente) => {
-      // Parcourir tous les paiements de chaque vente
-      vente.paiements?.forEach((paiement) => {
-        // Trouver le libellé du mode de paiement à partir de l'ID
-        const modePaiement = this.modesPaiement.find((mp) => mp.libelle === paiement.methodePaiement);
-        const modeLabel = modePaiement?.libelle || 'Inconnu';
-
-        // Récupérer ou initialiser les statistiques pour ce mode de paiement
-        const current = statsMap.get(modeLabel) || { montantTotal: 0, occurrences: 0 };
-
-        // Mettre à jour les statistiques
-        statsMap.set(modeLabel, {
-          montantTotal: current.montantTotal + paiement.montant,
-          occurrences: current.occurrences + 1,
-        });
-      });
-    });
-
-    // Convertir la Map en tableau d'objets
-    return Array.from(statsMap.entries()).map(([mode, stats]) => ({
-      mode,
-      ...stats,
-    }));
-  }
-  generateMockVentes(): Panier[] {
-    const ventes: Panier[] = [];
-    /* const today = new Date();
-
-        for (let i = 0; i < 50; i++) {
-          const date = new Date();
-          date.setDate(today.getDate() - Math.floor(Math.random() * 30));
-
-          const produits: Produits[] = [];
-          const nbProduits = Math.floor(Math.random() * 5) + 1;
-          let totalHT = 0;
-
-          for (let j = 0; j < nbProduits; j++) {
-            const produit = new Produits({
-              id: j + 1,
-              designation: `Produit ${j + 1}`,
-              prixVenteUnitaire: Math.floor(Math.random() * 10000) + 1000,
-              prixAchatUnitaire: Math.floor(Math.random() * 8000) + 800
-            });
-            produits.push(produit);
-            totalHT += produit.prixVenteUnitaire;
-          }
-
-          const tva = totalHT * 0.18;
-          const totalTTC = totalHT + tva;
-
-          ventes.push(new Panier({
-            id: i + 1,
-            clientId: Math.floor(Math.random() * 5) + 1,
-            articles: produits,
-            totalHT,
-            tva,
-            totalTTC,
-            dateCreation: date,
-            magasinId: Math.floor(Math.random() * 2) + 1,
-            statut: 'VALIDE'
-          }));
-        } */
-
-    return ventes;
+  loadMagasins(): void {
+    this.isLoading = true;
+    this.magasinService.getMagasinsByStructure(this.code_structure!)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (magasins) => {
+          this.magasins = magasins;
+          this.isLoading = false;
+        },
+        error: (err) => {
+          this.errorMessage = err.error?.message || 'Erreur lors du chargement des magasins';
+          this.toastr.error(this.errorMessage);
+          this.isLoading = false;
+        }
+      });   
   }
 
-  generateMockClients(): Client[] {
-    return [];
-  }
-
-  generateMockProduits(): Produits[] {
-    return [];
-  }
-
-  filtrerDates(): void {
-    this.filtrerDonnees();
-  }
-
-  onMagasinSelect(event: Event): void {
-    const target = event.target as HTMLSelectElement;
-    this.selectedMagasinId = Number(target.value) || -1;
-    this.filtrerDonnees();
-  }
-
-  onVendeurSelect(event: Event): void {
-    const target = event.target as HTMLSelectElement;
-    this.selectedVendeurId = Number(target.value) || -1;
-    this.filtrerDonnees();
-  }
-
-  filtrerDonnees(): void {
-    if (!this.dateDebut || !this.dateFin) return;
-
-    const startDate = this.resetTime(new Date(this.dateDebut));
-    const endDate = this.resetTime(new Date(this.dateFin));
-
-    this.filteredVentes = this.allVentes.filter(
-      (v) =>
-        this.resetTime(new Date(v.dateCreation)) >= startDate &&
-        this.resetTime(new Date(v.dateCreation)) <= endDate &&
-        (this.selectedMagasinId === -1 || v.magasinId === this.selectedMagasinId),
-      //(this.selectedVendeurId === -1 || /* logique pour filtrer par vendeur */ true)
-    );
-
-    this.calculerIndicateurs();
-    this.calculerTopListes();
-    this.statmodesPaiement = this.getStatistiquesModesPaiementArray();
-    this.cdr.detectChanges();
-
-    setTimeout(() => {
-      this.mettreAJourGraphiques();
-    }, 100);
-  }
-
-  calculerIndicateurs(): void {
-    // Chiffre d'affaires
-    this.totalVentes = this.filteredVentes.length;
-    this.chiffreAffairesHT = this.filteredVentes.reduce((sum, v) => sum + v.totalHT, 0);
-    this.chiffreAffairesTTC = this.filteredVentes.reduce((sum, v) => sum + v.totalTTC, 0);
-
-    // Marge bénéficiaire (si prix d'achat connu)
-    this.margeBeneficiaire = this.filteredVentes.reduce((sum, v) => {
-      const margeVente = v.articles.reduce(
-        (s, a) => s + ((a.prixVenteUnitaire || 0) - (a.prixAchatUnitaire || 0)),
-        0,
-      );
-      return sum + margeVente;
-    }, 0);
-
-    // Ticket moyen et panier moyen
-    this.ticketMoyen = this.totalVentes > 0 ? this.chiffreAffairesTTC / this.totalVentes : 0;
-    this.panierMoyen =
-      this.totalVentes > 0
-        ? this.filteredVentes.reduce((sum, v) => sum + v.articles.length, 0) / this.totalVentes
-        : 0;
-
-    // Évolution CA
-    const periodePrecedente = this.getDonneesPeriodePrecedente();
-    this.evolutionCA = this.calculerEvolution(
-      this.chiffreAffairesTTC,
-      periodePrecedente.chiffreAffairesTTC,
-    );
-
-    // Évolution volume
-    this.evolutionVolume = this.calculerEvolution(this.totalVentes, periodePrecedente.totalVentes);
-  }
-
-  calculerTopListes(): void {
-    const produitsMap = new Map<
-      number,
-      {
-        produit: Produits;
-        quantite: number;
-        ca: number;
-        marge: number;
-        nombreVentes: number;
+  loadVendeurs(): void {
+    this.isLoading = true;
+    this.userService.getByStructure(this.code_structure!)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (vendeurs) => {
+        this.vendeurs = vendeurs.filter(v =>
+          v.roles?.some(r => r.nom === 'Caissier' || r.nom === 'Gérant')
+        );
+        this.isLoading = false;
+      },
+      error: (err) => {
+        this.errorMessage = err.error?.message || 'Erreur lors du chargement des vendeurs';
+        this.toastr.error(this.errorMessage);
+        this.isLoading = false;
       }
-    >();
-
-    this.filteredVentes.forEach((v) => {
-      const produitsDéjàComptés = new Set<number>(); // pour cette vente
-
-      v.articles.forEach((a) => {
-        const produitId = a?.produit?.id?? 0;
-        const quantite = a.quantite || 0;
-        const prixVente = a.prixVenteUnitaire || 0;
-        const prixAchat = a.prixAchatUnitaire || 0;
-
-        const existant = produitsMap.get(produitId) || {
-          produit: a.produit,
-          quantite: 0,
-          ca: 0,
-          marge: 0,
-          nombreVentes: 0,
-        };
-
-        const dejaCompte = produitsDéjàComptés.has(produitId);
-
-        produitsMap.set(produitId, {
-          //produit: a.produit,
-          produit: a.produit ? new Produits(a.produit) : new Produits(),
-          quantite: existant.quantite + quantite,
-          ca: existant.ca + quantite * prixVente,
-          marge: existant.marge + quantite * (prixVente - prixAchat),
-          nombreVentes: existant.nombreVentes + (dejaCompte ? 0 : 1),
-        });
-
-        produitsDéjàComptés.add(produitId);
-      });
-    });
-
-    this.topProduits = Array.from(produitsMap.values())
-      .sort((a, b) => b.quantite - a.quantite)
-      .slice(0, 10);
-
-    // Top clients
-    const clientsMap = new Map<
-      number,
-      { client: Client; nbAchats: number; ca: number; dernierAchat: Date }
-    >();
-
-    this.filteredVentes.forEach((v) => {
-      if (!v.clientId) return;
-
-      const client = this.allClients.find((c) => c.id === v.clientId);
-      if (!client) return;
-
-      const existant = clientsMap.get(v.clientId) || {
-        client,
-        nbAchats: 0,
-        ca: 0,
-        dernierAchat: new Date(0),
-      };
-
-      clientsMap.set(v.clientId, {
-        client,
-        nbAchats: existant.nbAchats + 1,
-        ca: existant.ca + v.totalTTC,
-        dernierAchat:
-          v.dateCreation > existant.dernierAchat ? v.dateCreation : existant.dernierAchat,
-      });
-    });
-
-    this.topClients = Array.from(clientsMap.values())
-      .sort((a, b) => b.ca - a.ca)
-      .slice(0, 10);
-
-    // Performance vendeurs
-    const vendeursMap = new Map<
-      number,
-      { vendeur: User; nbVentes: number; caHT: number; caTTC: number }
-    >();
-
-    this.filteredVentes.forEach((v) => {
-      const vendeurId = v.agentId;
-      const vendeur = this.vendeurs.find((vu) => vu.id === vendeurId);
-
-      if (!vendeur) return; // vendeur introuvable, on ignore cette vente
-
-      const existant = vendeursMap.get(vendeurId!) || {
-        vendeur,
-        nbVentes: 0,
-        caHT: 0,
-        caTTC: 0,
-      };
-
-      vendeursMap.set(vendeurId!, {
-        vendeur,
-        nbVentes: existant.nbVentes + 1,
-        caHT: existant.caHT + v.totalHT,
-        caTTC: existant.caTTC + v.totalTTC,
-      });
-    });
-
-    this.vendeursPerformance = Array.from(vendeursMap.values()).map((v) => ({
-      ...v,
-      ticketMoyen: v.nbVentes > 0 ? v.caTTC / v.nbVentes : 0,
-    }));
-
-    this.trierVendeurs();
+    }); 
   }
 
-  trierVendeurs(): void {
-    switch (this.triVendeursPar) {
-      case 'ca':
-        this.vendeursPerformance.sort((a, b) => b.caTTC - a.caTTC);
-        break;
-      case 'transactions':
-        this.vendeursPerformance.sort((a, b) => b.nbVentes - a.nbVentes);
-        break;
-      case 'moyenne':
-        this.vendeursPerformance.sort((a, b) => b.ticketMoyen - a.ticketMoyen);
-        break;
-    }
-  }
+  chargerRapport(): void {
+    if (!this.code_structure) return;
 
-  getDonneesPeriodePrecedente(): { totalVentes: number; chiffreAffairesTTC: number } {
-    const startDate = new Date(this.dateDebut);
-    const endDate = new Date(this.dateFin);
-    const dureePeriode =
-      Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    this.isLoading = true;
+    this.errorMessage = '';
 
-    const startDatePrecedent = new Date(startDate);
-    startDatePrecedent.setDate(startDate.getDate() - dureePeriode);
-
-    const endDatePrecedent = new Date(startDate);
-    endDatePrecedent.setDate(startDate.getDate() - 1);
-
-    const ventesPrecedentes = this.allVentes.filter(
-      (v) =>
-        this.resetTime(new Date(v.dateCreation)) >= this.resetTime(startDatePrecedent) &&
-        this.resetTime(new Date(v.dateCreation)) <= this.resetTime(endDatePrecedent) &&
-        (this.selectedMagasinId === -1 || v.magasinId === this.selectedMagasinId),
-    );
-
-    return {
-      totalVentes: ventesPrecedentes.length,
-      chiffreAffairesTTC: ventesPrecedentes.reduce((sum, v) => sum + v.totalTTC, 0),
+    const params: RapportVenteParams = {
+      code_structure: this.code_structure,
+      fromDate: this.dateDebut,
+      toDate: this.dateFin,
+      magasinId: this.selectedMagasinId !== -1 ? this.selectedMagasinId : undefined,
+      agentId: this.selectedVendeurId !== -1 ? this.selectedVendeurId : undefined,
+      page: this.currentPage,
+      limit: this.pageSize,
+      search: this.searchTerm
     };
+
+    this.kpiService.getRapportVente(params)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        })
+      )
+      .subscribe({
+        next: (data) => {
+          this.rapportData = data;
+          this.filteredVentes = data.ventes;
+          this.mettreAJourIndicateurs();
+          this.mettreAJourGraphiques();
+          this.toastr.success('Rapport chargé avec succès');
+        },
+        error: (err) => {
+          this.errorMessage = 'Erreur lors du chargement du rapport';
+          this.toastr.error(this.errorMessage);
+          console.error('Erreur chargement rapport:', err);
+        }
+      });
   }
 
-  calculerEvolution(
-    valeurActuelle: number,
-    valeurPrecedente: number,
-  ): { valeur: number; tendance: '↑' | '↓' | '→' } {
-    if (valeurPrecedente === 0) return { valeur: 0, tendance: '→' };
+  mettreAJourIndicateurs(): void {
+    if (!this.rapportData) return;
 
-    const evolution = ((valeurActuelle - valeurPrecedente) / valeurPrecedente) * 100;
-    return {
-      valeur: Math.round(evolution),
-      tendance: evolution > 0 ? '↑' : evolution < 0 ? '↓' : '→',
-    };
+    this.totalVentes = this.rapportData.totalVentes;
+    this.chiffreAffairesTTC = this.rapportData.chiffreAffairesTTC;
+    this.chiffreAffairesHT = this.rapportData.chiffreAffairesHT;
+    this.margeBeneficiaire = this.rapportData.margeBeneficiaire;
+    this.ticketMoyen = this.rapportData.ticketMoyen;
+    this.panierMoyen = this.rapportData.panierMoyen;
+    this.evolutionCA = this.rapportData.evolutionCA;
+    this.evolutionVolume = this.rapportData.evolutionVolume;
+    this.topProduits = this.rapportData.topProduits;
+    this.topClients = this.rapportData.topClients;
+    this.vendeursPerformance = this.rapportData.vendeursPerformance;
+    this.statmodesPaiement = this.rapportData.statmodesPaiement;
+    this.evolutionParJour = this.rapportData.evolutionParJour;
   }
 
   mettreAJourGraphiques(): void {
-    this.creerGraphiqueEvolutionVentes();
-    this.creerGraphiquePaiements();
-    this.creerGraphiqueTopProduits();
+    setTimeout(() => {
+      this.creerGraphiqueEvolutionVentes();
+      this.creerGraphiquePaiements();
+      this.creerGraphiqueTopProduits();
+    }, 200);
   }
 
   creerGraphiqueEvolutionVentes(): void {
@@ -469,23 +260,15 @@ export class RapportsVentesComponent implements OnInit {
     }
 
     const ctx = this.evolutionVentesChartRef?.nativeElement.getContext('2d');
-    if (!ctx) return;
+    if (!ctx || !this.evolutionParJour.length) return;
 
-    const dates = this.getDatesBetween(new Date(this.dateDebut), new Date(this.dateFin));
-    const labels = dates.map((d) => this.formatDateForChart(d));
-    const dataCA = dates.map((d) =>
-      this.filteredVentes
-        .filter(
-          (v) => this.resetTime(new Date(v.dateCreation)).getTime() === this.resetTime(d).getTime(),
-        )
-        .reduce((sum, v) => sum + v.totalTTC, 0),
-    );
-    const dataVolume = dates.map(
-      (d) =>
-        this.filteredVentes.filter(
-          (v) => this.resetTime(new Date(v.dateCreation)).getTime() === this.resetTime(d).getTime(),
-        ).length,
-    );
+    const labels = this.evolutionParJour.map(e => {
+      const date = new Date(e.date);
+      return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+    });
+
+    const dataCA = this.evolutionParJour.map(e => e.ca);
+    const dataVolume = this.evolutionParJour.map(e => e.nombreVentes);
 
     this.evolutionVentesChart = new Chart(ctx, {
       type: 'line',
@@ -551,31 +334,21 @@ export class RapportsVentesComponent implements OnInit {
     }
 
     const ctx = this.paiementsChartRef?.nativeElement.getContext('2d');
-    if (!ctx) return;
+    if (!ctx || !this.statmodesPaiement.length) return;
 
-    // Utilisation des vraies données de statModesPaiement
-    const paiementsData = this.statmodesPaiement;
-
-    // Couleurs pour les différents modes de paiement
     const backgroundColors = [
-      '#FF6384', // Espèce
-      '#36A2EB', // Carte
-      '#FFCE56', // Mobile Money
-      '#4BC0C0', // Virement
-      '#9966FF', // Autre
+      '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
     ];
 
     this.paiementsChart = new Chart(ctx, {
       type: 'doughnut',
       data: {
-        labels: paiementsData.map((p: any) => p.mode),
-        datasets: [
-          {
-            data: paiementsData.map((p: any) => p.montantTotal),
-            backgroundColor: backgroundColors.slice(0, paiementsData.length),
-            borderWidth: 1,
-          },
-        ],
+        labels: this.statmodesPaiement.map(p => p.mode),
+        datasets: [{
+          data: this.statmodesPaiement.map(p => p.montantTotal),
+          backgroundColor: backgroundColors.slice(0, this.statmodesPaiement.length),
+          borderWidth: 1,
+        }],
       },
       options: {
         responsive: true,
@@ -584,27 +357,16 @@ export class RapportsVentesComponent implements OnInit {
           title: {
             display: true,
             text: 'Répartition des modes de paiement',
-            font: {
-              size: 16,
-            },
           },
           legend: {
             position: 'right',
-            labels: {
-              padding: 20,
-              usePointStyle: true,
-              pointStyle: 'circle',
-            },
           },
           tooltip: {
             callbacks: {
               label: (context) => {
                 const label = context.label || '';
                 const value = context.raw as number;
-                const total = context.dataset.data.reduce(
-                  (a, b) => (a as number) + (b as number),
-                  0,
-                );
+                const total = context.dataset.data.reduce((a, b) => (a as number) + (b as number), 0);
                 const percentage = Math.round((value / (total as number)) * 100);
                 return `${label}: ${value.toLocaleString('fr-FR')} F CFA (${percentage}%)`;
               },
@@ -614,29 +376,30 @@ export class RapportsVentesComponent implements OnInit {
       },
     });
   }
+
   creerGraphiqueTopProduits(): void {
     if (this.topProduitsChart) {
       this.topProduitsChart.destroy();
     }
 
     const ctx = this.topProduitsChartRef?.nativeElement.getContext('2d');
-    if (!ctx) return;
+    if (!ctx || !this.topProduits.length) return;
 
     this.topProduitsChart = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: this.topProduits.map((p) => p.produit.designation),
+        labels: this.topProduits.map(p => p.produit.designation.substring(0, 15) + '...'),
         datasets: [
           {
             label: 'Quantité vendue',
-            data: this.topProduits.map((p) => p.quantite),
+            data: this.topProduits.map(p => p.quantite),
             backgroundColor: 'rgba(54, 162, 235, 0.6)',
             borderColor: 'rgba(54, 162, 235, 1)',
             borderWidth: 1,
           },
           {
             label: "Chiffre d'affaires (F CFA)",
-            data: this.topProduits.map((p) => p.ca),
+            data: this.topProduits.map(p => p.ca),
             backgroundColor: 'rgba(75, 192, 192, 0.6)',
             borderColor: 'rgba(75, 192, 192, 1)',
             borderWidth: 1,
@@ -679,129 +442,94 @@ export class RapportsVentesComponent implements OnInit {
     });
   }
 
-  /* genererComparaison(): void {
-        if (!this.comparaisonElement1 || !this.comparaisonElement2) return;
-
-        let data1, data2, label1, label2;
-
-        switch (this.comparaisonType) {
-          case 'periode':
-            // Logique pour comparer deux périodes
-            break;
-          case 'vendeur':
-            // Logique pour comparer deux vendeurs
-            break;
-          case 'magasin':
-            // Logique pour comparer deux magasins
-            break;
-        }
-
-        this.comparaisonData = {
-          ca1: data1.chiffreAffairesTTC,
-          ca2: data2.chiffreAffairesTTC,
-          ventes1: data1.totalVentes,
-          ventes2: data2.totalVentes,
-          ticketMoyen1: data1.totalVentes > 0 ? data1.chiffreAffairesTTC / data1.totalVentes : 0,
-          ticketMoyen2: data2.totalVentes > 0 ? data2.chiffreAffairesTTC / data2.totalVentes : 0
-        };
-
-        this.comparaisonLabels = [label1, label2];
-        this.creerGraphiqueComparaison();
-      } */
-
-  creerGraphiqueComparaison(): void {
-    if (!this.comparaisonData) return;
-
-    const ctx = this.comparaisonChartRef?.nativeElement.getContext('2d');
-    if (!ctx) return;
-
-    if (this.comparaisonChart) {
-      this.comparaisonChart.destroy();
-    }
-
-    this.comparaisonChart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: ["Chiffre d'affaires", 'Nombre de ventes', 'Ticket moyen'],
-        datasets: [
-          {
-            label: this.comparaisonLabels[0],
-            data: [
-              this.comparaisonData.ca1,
-              this.comparaisonData.ventes1,
-              this.comparaisonData.ticketMoyen1,
-            ],
-            backgroundColor: 'rgba(54, 162, 235, 0.7)',
-          },
-          {
-            label: this.comparaisonLabels[1],
-            data: [
-              this.comparaisonData.ca2,
-              this.comparaisonData.ventes2,
-              this.comparaisonData.ticketMoyen2,
-            ],
-            backgroundColor: 'rgba(255, 99, 132, 0.7)',
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          title: {
-            display: true,
-            text: 'Analyse comparative',
-          },
-          tooltip: {
-            callbacks: {
-              label: (context) => {
-                let label = context.dataset.label || '';
-                if (label) label += ': ';
-                if (context.parsed.y !== null) {
-                  if (context.dataIndex === 0) {
-                    // CA
-                    label += `${context.parsed.y.toLocaleString('fr-FR')} F CFA`;
-                  } else if (context.dataIndex === 1) {
-                    // Nombre de ventes
-                    label += `${context.parsed.y}`;
-                  } else {
-                    // Ticket moyen
-                    label += `${context.parsed.y.toLocaleString('fr-FR')} F CFA`;
-                  }
-                }
-                return label;
-              },
-            },
-          },
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              callback: (value) => {
-                if (typeof value === 'number') {
-                  return value.toLocaleString('fr-FR');
-                }
-                return value;
-              },
-            },
-          },
-        },
-      },
-    });
+  // Filtres
+  filtrerDates(): void {
+    this.currentPage = 1;
+    this.chargerRapport();
   }
 
-  private creerGraphiqueEvolutionVendeur(): void {
+  onMagasinSelect(event: Event): void {
+    const target = event.target as HTMLSelectElement;
+    this.selectedMagasinId = Number(target.value) || -1;
+    this.filtrerDates();
+  }
+
+  onVendeurSelect(event: Event): void {
+    const target = event.target as HTMLSelectElement;
+    this.selectedVendeurId = Number(target.value) || -1;
+    this.filtrerDates();
+  }
+
+  // Détails vendeur
+  voirDetailsVendeur(vendeurId: number): void {
+    if (!this.code_structure) return;
+
+    const params: RapportVenteParams = {  // ← Utiliser RapportVenteParams
+    code_structure: this.code_structure,
+    fromDate: this.dateDebut,
+    toDate: this.dateFin,
+    magasinId: this.selectedMagasinId !== -1 ? this.selectedMagasinId : undefined
+  };
+    
+    this.isLoading = true;
+    this.kpiService.getDetailsVendeur(vendeurId, params)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (details:VendeurDetailsResponse) => {
+        this.selectedVendeurDetails = details.vendeur;
+        this.vendeurStats = details.stats;
+        this.showVendeurModal = true;
+        this.isLoading = false;
+
+        setTimeout(() => {
+          this.creerGraphiqueEvolutionVendeur(details.evolution);
+        }, 200);
+      },
+      error: (err) => {
+        this.toastr.error('Erreur lors du chargement des détails du vendeur');
+        console.error(err);
+        this.isLoading = false;
+      }
+    });
+  }
+/**
+ * Trie les vendeurs selon le critère sélectionné
+ */
+trierVendeurs(): void {
+  if (!this.vendeursPerformance || this.vendeursPerformance.length === 0) {
+    return;
+  }
+
+  switch (this.triVendeursPar) {
+    case 'ca':
+      this.vendeursPerformance.sort((a, b) => b.caTTC - a.caTTC);
+      break;
+    case 'transactions':
+      this.vendeursPerformance.sort((a, b) => b.nbVentes - a.nbVentes);
+      break;
+    case 'moyenne':
+      this.vendeursPerformance.sort((a, b) => b.ticketMoyen - a.ticketMoyen);
+      break;
+    default:
+      this.vendeursPerformance.sort((a, b) => b.caTTC - a.caTTC);
+  }
+}
+
+  creerGraphiqueEvolutionVendeur(evolution: any[]): void {
     if (this.vendeurEvolutionChart) {
       this.vendeurEvolutionChart.destroy();
     }
 
     const ctx = this.vendeurEvolutionChartRef?.nativeElement.getContext('2d');
-    if (!ctx || !this.vendeurStats) return;
+    if (!ctx || !evolution.length) return;
 
-    const labels = this.vendeurStats.ventesParJour.map((v: any) => this.formatDateForChart(v.date));
-    const dataCA = this.vendeurStats.ventesParJour.map((v: any) => v.chiffreAffaires);
-    const dataVolume = this.vendeurStats.ventesParJour.map((v: any) => v.nombreVentes);
+    const labels = evolution.map(e => {
+      const date = new Date(e.date);
+      return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+    });
+
+    const dataCA = evolution.map(e => e.ca);
+    const dataVolume = evolution.map(e => e.nombreVentes);
 
     this.vendeurEvolutionChart = new Chart(ctx, {
       type: 'line',
@@ -861,556 +589,230 @@ export class RapportsVentesComponent implements OnInit {
     });
   }
 
-  voirDetailsVendeur(vendeurId: number): void {
-    this.selectedVendeurDetails = this.vendeurs.find((v) => v.id === vendeurId) || null;
-
-    if (this.selectedVendeurDetails) {
-      this.calculerStatsVendeur(vendeurId);
-      this.showVendeurModal = true;
-
-      // Attendre un cycle de détection de changement pour que la vue soit mise à jour
-      setTimeout(() => {
-        this.creerGraphiqueEvolutionVendeur();
-      }, 100);
-    } else {
-      console.error('Vendeur non trouvé avec ID:', vendeurId);
-    }
-  }
-
-  private calculerStatsVendeur(vendeurId: number): void {
-    // Filtrer les ventes pour ce vendeur
-    const ventesVendeur = this.filteredVentes.filter((v) => v.agentId === vendeurId);
-
-    // Calculer les indicateurs clés
-    const totalVentes = ventesVendeur.length;
-    const chiffreAffairesTTC = ventesVendeur.reduce((sum, v) => sum + v.totalTTC, 0);
-    const chiffreAffairesHT = ventesVendeur.reduce((sum, v) => sum + v.totalHT, 0);
-    const margeBeneficiaire = ventesVendeur.reduce((sum, v) => {
-      return (
-        sum +
-        v.articles.reduce(
-          (s, a) => s + ((a.prixVenteUnitaire || 0) - (a.prixAchatUnitaire || 0)),
-          0,
-        )
-      );
-    }, 0);
-
-    // Calculer le ticket moyen
-    const ticketMoyen = totalVentes > 0 ? chiffreAffairesTTC / totalVentes : 0;
-
-    // Calculer le panier moyen (nombre moyen d'articles par vente)
-    const panierMoyen =
-      totalVentes > 0
-        ? ventesVendeur.reduce((sum, v) => sum + v.articles.length, 0) / totalVentes
-        : 0;
-
-    // Trouver les produits les plus vendus par ce vendeur
-    const produitsMap = new Map<number, { produit: Produits; quantite: number; ca: number }>();
-
-    ventesVendeur.forEach((v) => {
-      v.articles.forEach((a) => {
-        const produitId = a?.produit?.id?? 0;
-        const quantite = a.quantite || 0;
-        const prixVente = a.prixVenteUnitaire || 0;
-
-        const existant = produitsMap.get(produitId) || {
-          produit: a.produit,
-          quantite: 0,
-          ca: 0,
-        };
-
-        produitsMap.set(produitId, {
-          //produit: a.produit,
-          produit: a.produit ? new Produits(a.produit) : new Produits(),
-          quantite: existant.quantite + quantite,
-          ca: existant.ca + quantite * prixVente,
-        });
-      });
-    });
-
-    const topProduits = Array.from(produitsMap.values())
-      .sort((a, b) => b.quantite - a.quantite)
-      .slice(0, 5);
-
-    // Enregistrer les statistiques
-    this.vendeurStats = {
-      totalVentes,
-      chiffreAffairesHT,
-      chiffreAffairesTTC,
-      margeBeneficiaire,
-      ticketMoyen,
-      panierMoyen,
-      topProduits,
-      ventesParJour: this.calculerVentesParJour(ventesVendeur),
-      modesPaiement: this.getStatistiquesModesPaiementVendeur(ventesVendeur),
-    };
-  }
-
-  private calculerVentesParJour(ventes: Panier[]): any[] {
-    const dates = this.getDatesBetween(new Date(this.dateDebut), new Date(this.dateFin));
-    return dates.map((d) => {
-      const ventesJour = ventes.filter(
-        (v) => this.resetTime(new Date(v.dateCreation)).getTime() === this.resetTime(d).getTime(),
-      );
-      return {
-        date: d,
-        nombreVentes: ventesJour.length,
-        chiffreAffaires: ventesJour.reduce((sum, v) => sum + v.totalTTC, 0),
-      };
-    });
-  }
-
-  private getStatistiquesModesPaiementVendeur(ventes: Panier[]): any[] {
-    const statsMap = new Map<string, { montantTotal: number; occurrences: number }>();
-
-    ventes.forEach((vente) => {
-      vente.paiements?.forEach((paiement) => {
-        const modePaiement = this.modesPaiement.find((mp) => mp.libelle === paiement.methodePaiement);
-        const modeLabel = modePaiement?.libelle || 'Inconnu';
-
-        const current = statsMap.get(modeLabel) || { montantTotal: 0, occurrences: 0 };
-
-        statsMap.set(modeLabel, {
-          montantTotal: current.montantTotal + paiement.montant,
-          occurrences: current.occurrences + 1,
-        });
-      });
-    });
-
-    return Array.from(statsMap.entries()).map(([mode, stats]) => ({
-      mode,
-      ...stats,
-    }));
-  }
-
   fermerModalVendeur(): void {
     this.showVendeurModal = false;
     this.selectedVendeurDetails = null;
     this.vendeurStats = null;
   }
 
-  // Méthodes utilitaires
-  private getDatesBetween(start: Date, end: Date): Date[] {
-    const dates = [];
-    const current = new Date(start);
-    while (current <= end) {
-      dates.push(new Date(current));
-      current.setDate(current.getDate() + 1);
+  // Comparaison
+  initializeComparison(): void {
+    this.updateComparisonOptions();
+  }
+
+  onComparaisonTypeChange(): void {
+    this.comparaisonElement1 = '';
+    this.comparaisonElement2 = '';
+    this.comparaisonData = null;
+    this.updateComparisonOptions();
+  }
+
+  updateComparisonOptions(): void {
+    if (!this.code_structure) return;
+
+    this.isLoading = true;
+    this.kpiService.getOptionsComparaison(this.comparaisonType)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (options) => {
+          this.comparisonOptions = options;
+          this.isLoading = false;
+        },
+        error: (err) => {
+          console.error('Erreur chargement options comparaison:', err);
+          this.isLoading = false;
+        }
+      });
+  }
+
+  genererComparaison(): void {
+    if (!this.comparaisonElement1 || !this.comparaisonElement2) {
+      this.toastr.warning('Veuillez sélectionner deux éléments à comparer');
+      return;
     }
-    return dates;
+
+    if (this.comparaisonElement1 === this.comparaisonElement2) {
+      this.toastr.warning('Veuillez sélectionner deux éléments différents');
+      return;
+    }
+
+    this.isLoading = true;
+
+    const data = {
+      type: this.comparaisonType,
+      element1: this.comparaisonElement1,
+      element2: this.comparaisonElement2,
+      fromDate: this.dateDebut,
+      toDate: this.dateFin,
+      magasinId: this.selectedMagasinId !== -1 ? this.selectedMagasinId : undefined,
+      agentId: this.selectedVendeurId !== -1 ? this.selectedVendeurId : undefined
+    };
+
+    this.kpiService.genererComparaison(data)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (result) => {
+          this.comparaisonData = result;
+          this.comparaisonLabels = [
+            this.getLabelForElement(this.comparaisonElement1),
+            this.getLabelForElement(this.comparaisonElement2)
+          ];
+          this.isLoading = false;
+
+          setTimeout(() => {
+            this.creerGraphiqueComparaison();
+          }, 100);
+        },
+        error: (err) => {
+          this.toastr.error('Erreur lors de la génération de la comparaison');
+          console.error(err);
+          this.isLoading = false;
+        }
+      });
   }
 
-  private resetTime(date: Date): Date {
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  getLabelForElement(element: any): string {
+    const option = this.comparisonOptions.find(opt => opt.value === element);
+    return option ? option.label : 'Élément inconnu';
   }
 
-  private formatDate(date: Date): string {
-    return date.toISOString().split('T')[0];
-  }
+  creerGraphiqueComparaison(): void {
+    if (!this.comparaisonData) return;
 
-  private formatDateForChart(date: Date): string {
-    return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    if (this.comparaisonChart) {
+      this.comparaisonChart.destroy();
+    }
+
+    const ctx = this.comparaisonChartRef?.nativeElement.getContext('2d');
+    if (!ctx) return;
+
+    this.comparaisonChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Chiffre d\'affaires', 'Nombre de ventes', 'Ticket moyen'],
+        datasets: [
+          {
+            label: this.comparaisonLabels[0],
+            data: [
+              this.comparaisonData.ca1,
+              this.comparaisonData.ventes1,
+              this.comparaisonData.ticketMoyen1,
+            ],
+            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+          },
+          {
+            label: this.comparaisonLabels[1],
+            data: [
+              this.comparaisonData.ca2,
+              this.comparaisonData.ventes2,
+              this.comparaisonData.ticketMoyen2,
+            ],
+            backgroundColor: 'rgba(255, 99, 132, 0.7)',
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: {
+            display: true,
+            text: 'Analyse comparative',
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                let label = context.dataset.label || '';
+                if (context.parsed.y !== null) {
+                  if (context.dataIndex === 0) {
+                    label += `: ${context.parsed.y.toLocaleString('fr-FR')} F CFA`;
+                  } else if (context.dataIndex === 1) {
+                    label += `: ${context.parsed.y}`;
+                  } else {
+                    label += `: ${context.parsed.y.toLocaleString('fr-FR')} F CFA`;
+                  }
+                }
+                return label;
+              },
+            },
+          },
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: (value) => {
+                if (typeof value === 'number') {
+                  return value.toLocaleString('fr-FR');
+                }
+                return value;
+              },
+            },
+          },
+        },
+      },
+    });
   }
 
   // Pagination
-  get getPaginatedVentes(): Panier[] {
-    const start = (this.currentPage - 1) * this.pageSize;
-    return this.filteredVentes.slice(start, start + this.pageSize);
+  get getPaginatedVentes(): any[] {
+    return this.filteredVentes;
   }
 
   get totalPages(): number {
-    return Math.ceil(this.filteredVentes.length / this.pageSize);
+    return this.rapportData?.pagination.totalPages || 1;
   }
 
   previousPage(): void {
     if (this.currentPage > 1) {
       this.currentPage--;
+      this.chargerRapport();
     }
   }
 
   nextPage(): void {
     if (this.currentPage < this.totalPages) {
       this.currentPage++;
+      this.chargerRapport();
     }
   }
 
   onSearchChange(): void {
-    const search = this.searchTerm.toLowerCase();
-    this.filteredVentes = this.allVentes.filter(
-      (v) =>
-        v.id?.toString().includes(search) ||
-        (v.clientId &&
-          this.allClients.some(
-            (c) => c.id === v.clientId && c.nomComplet.toLowerCase().includes(search),
-          )),
-    );
     this.currentPage = 1;
-    this.calculerIndicateurs();
-    this.calculerTopListes();
+    this.chargerRapport();
   }
 
-  public getNomMagasin(id: number): string {
-    const magasin = this.magasins.find((m) => m.id === id);
+  // Utilitaires
+  getNomMagasin(id: number): string {
+    const magasin = this.magasins.find(m => m.id === id);
     return magasin ? magasin.nom : 'Inconnu';
   }
-  public getNomClient(id: number): string {
-    const client = this.allClients.find((m) => m.id === id);
-    return client ? client.nomComplet : 'Inconnu';
+
+  getNomClient(id: number): string {
+    const vente = this.filteredVentes.find(v => v.clientId === id);
+    return vente ? vente.clientNom : 'Client anonyme';
   }
 
-  public getNomVendeur(id: number): string {
-    const vendeur = this.vendeurs.find((m) => m.id === id);
-    return vendeur ? vendeur.nom : 'Inconnu';
+  getNomVendeur(id: number): string {
+    const vendeur = this.vendeurs.find(v => v.id === id);
+    return vendeur ? `${vendeur.nom}`.trim() : 'Inconnu';
   }
 
-  getNomModePaiement(modePaiementId: number): string {
-    const mode = this.modesPaiement.find((mp) => mp.id === modePaiementId);
-    return mode ? mode.libelle : 'Inconnu';
+  getNomModePaiement(methode: string): string {
+    return methode || 'Inconnu';
   }
 
-  // Méthode principale pour générer la comparaison
-  genererComparaison(): void {
-    if (!this.comparaisonElement1 || !this.comparaisonElement2) {
-      console.error('Veuillez sélectionner deux éléments à comparer');
-      return;
-    }
-
-    if (this.comparaisonElement1 === this.comparaisonElement2) {
-      console.error('Veuillez sélectionner deux éléments différents');
-      return;
-    }
-
-    let data1, data2, label1, label2;
-
-    try {
-      switch (this.comparaisonType) {
-        case 'periode': {
-          const periode1 = this.getDonneesPourPeriode(this.comparaisonElement1);
-          const periode2 = this.getDonneesPourPeriode(this.comparaisonElement2);
-          data1 = periode1.data;
-          data2 = periode2.data;
-          label1 = periode1.label;
-          label2 = periode2.label;
-          break;
-        }
-        case 'vendeur': {
-          const vendeur1 = this.getDonneesPourVendeur(+this.comparaisonElement1);
-          const vendeur2 = this.getDonneesPourVendeur(+this.comparaisonElement2);
-          data1 = vendeur1.data;
-          data2 = vendeur2.data;
-          label1 = vendeur1.label;
-          label2 = vendeur2.label;
-          break;
-        }
-        case 'magasin': {
-          const magasin1 = this.getDonneesPourMagasin(+this.comparaisonElement1);
-          const magasin2 = this.getDonneesPourMagasin(+this.comparaisonElement2);
-          data1 = magasin1.data;
-          data2 = magasin2.data;
-          label1 = magasin1.label;
-          label2 = magasin2.label;
-          break;
-        }
-        default:
-          console.error('Type de comparaison non reconnu:', this.comparaisonType);
-          return;
-      }
-
-      console.log('Données de comparaison:', { data1, data2, label1, label2 });
-
-      this.comparaisonData = {
-        ca1: data1.chiffreAffairesTTC || 0,
-        ca2: data2.chiffreAffairesTTC || 0,
-        ventes1: data1.totalVentes || 0,
-        ventes2: data2.totalVentes || 0,
-        ticketMoyen1:
-          data1.totalVentes > 0 ? (data1.chiffreAffairesTTC || 0) / data1.totalVentes : 0,
-        ticketMoyen2:
-          data2.totalVentes > 0 ? (data2.chiffreAffairesTTC || 0) / data2.totalVentes : 0,
-      };
-
-      this.comparaisonLabels = [label1, label2];
-
-      // Force la mise à jour de la vue
-      this.cdr.detectChanges();
-
-      // Crée le graphique après un léger délai
-      setTimeout(() => {
-        this.creerGraphiqueComparaison();
-      }, 100);
-    } catch (error) {
-      console.error('Erreur lors de la génération de la comparaison:', error);
-    }
-  }
-
-  // Méthodes utilitaires pour chaque type de comparaison
-  private getDonneesPourPeriode(periode: string): { data: any; label: string } {
-    let startDate: Date;
-    let endDate: Date;
-    const today = new Date(this.dateFin); // Utilisez la date de fin du filtre actuel comme référence
-
-    switch (periode) {
-      case 'semaine_precedente':
-        startDate = new Date(today);
-        startDate.setDate(today.getDate() - 7);
-        endDate = new Date(today);
-        endDate.setDate(today.getDate() - 1);
-        break;
-      case 'mois_precedent':
-        startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        endDate = new Date(today.getFullYear(), today.getMonth(), 0);
-        break;
-      case 'trimestre_precedent':
-        startDate = new Date(today.getFullYear(), today.getMonth() - 3, 1);
-        endDate = new Date(today.getFullYear(), today.getMonth(), 0);
-        break;
-      case 'annee_precedente':
-        startDate = new Date(today.getFullYear() - 1, 0, 1);
-        endDate = new Date(today.getFullYear() - 1, 11, 31);
-        break;
-      default:
-        startDate = new Date(this.dateDebut);
-        endDate = new Date(this.dateFin);
-    }
-
-    // Assurez-vous de filtrer aussi par magasin si un magasin est sélectionné
-    const ventes = this.allVentes.filter((v) => {
-      const dateVente = this.resetTime(new Date(v.dateCreation));
-      return (
-        dateVente >= this.resetTime(startDate) &&
-        dateVente <= this.resetTime(endDate) &&
-        (this.selectedMagasinId === -1 || v.magasinId === this.selectedMagasinId)
-      );
-    });
-
-    return {
-      data: {
-        totalVentes: ventes.length,
-        chiffreAffairesTTC: ventes.reduce((sum, v) => sum + v.totalTTC, 0),
-      },
-      label: this.getLabelForPeriode(periode),
-    };
-  }
-
-  private getDonneesPourVendeur(vendeurId: number): { data: any; label: string } {
-    const vendeur = this.vendeurs.find((v) => v.id === vendeurId);
-    if (!vendeur) {
-      console.error('Vendeur non trouvé avec ID:', vendeurId);
-      return { data: { totalVentes: 0, chiffreAffairesTTC: 0 }, label: 'Vendeur inconnu' };
-    }
-
-    // Filtrer aussi par période et magasin
-    const ventes = this.allVentes.filter(
-      (v) =>
-        v.agentId === vendeurId &&
-        this.resetTime(new Date(v.dateCreation)) >= this.resetTime(new Date(this.dateDebut)) &&
-        this.resetTime(new Date(v.dateCreation)) <= this.resetTime(new Date(this.dateFin)) &&
-        (this.selectedMagasinId === -1 || v.magasinId === this.selectedMagasinId),
-    );
-
-    return {
-      data: {
-        totalVentes: ventes.length,
-        chiffreAffairesTTC: ventes.reduce((sum, v) => sum + v.totalTTC, 0),
-      },
-      label: vendeur.nom || `Vendeur ${vendeurId}`,
-    };
-  }
-
-  private getDonneesPourMagasin(magasinId: number): { data: any; label: string } {
-    const magasin = this.magasins.find((m) => m.id === magasinId);
-    if (!magasin) {
-      console.error('Magasin non trouvé avec ID:', magasinId);
-      return { data: { totalVentes: 0, chiffreAffairesTTC: 0 }, label: 'Magasin inconnu' };
-    }
-
-    // Filtrer par période
-    const ventes = this.allVentes.filter(
-      (v) =>
-        v.magasinId === magasinId &&
-        this.resetTime(new Date(v.dateCreation)) >= this.resetTime(new Date(this.dateDebut)) &&
-        this.resetTime(new Date(v.dateCreation)) <= this.resetTime(new Date(this.dateFin)),
-    );
-
-    return {
-      data: {
-        totalVentes: ventes.length,
-        chiffreAffairesTTC: ventes.reduce((sum, v) => sum + v.totalTTC, 0),
-      },
-      label: magasin.nom || `Magasin ${magasinId}`,
-    };
-  }
-
-  private getLabelForPeriode(periode: string): string {
-    switch (periode) {
-      case 'semaine_precedente':
-        return 'Semaine précédente';
-      case 'mois_precedent':
-        return 'Mois précédent';
-      case 'trimestre_precedent':
-        return 'Trimestre précédent';
-      case 'annee_precedente':
-        return 'Année précédente';
-      default:
-        return 'Période inconnue';
-    }
-  }
-
-  // Méthode pour créer le graphique de comparaison
-  // private creerGraphiqueComparaison(): void {
-  //   if (this.comparaisonChart) {
-  //     this.comparaisonChart.destroy();
-  //   }
-
-  //   const ctx = document.createElement('canvas').getContext('2d');
-  //   if (!ctx || !this.comparaisonData) return;
-
-  //   this.comparaisonChart = new Chart(ctx, {
-  //     type: 'bar',
-  //     data: {
-  //       labels: ['Chiffre d\'affaires', 'Nombre de ventes', 'Ticket moyen'],
-  //       datasets: [
-  //         {
-  //           label: this.comparaisonLabels[0],
-  //           data: [
-  //             this.comparaisonData.ca1,
-  //             this.comparaisonData.ventes1,
-  //             this.comparaisonData.ticketMoyen1
-  //           ],
-  //           backgroundColor: 'rgba(54, 162, 235, 0.7)'
-  //         },
-  //         {
-  //           label: this.comparaisonLabels[1],
-  //           data: [
-  //             this.comparaisonData.ca2,
-  //             this.comparaisonData.ventes2,
-  //             this.comparaisonData.ticketMoyen2
-  //           ],
-  //           backgroundColor: 'rgba(255, 99, 132, 0.7)'
-  //         }
-  //       ]
-  //     },
-  //     options: {
-  //       responsive: true,
-  //       plugins: {
-  //         title: {
-  //           display: true,
-  //           text: 'Analyse comparative'
-  //         },
-  //         tooltip: {
-  //           callbacks: {
-  //             label: (context) => {
-  //               let label = context.dataset.label || '';
-  //               if (label) {
-  //                 label += ': ';
-  //               }
-  //               if (context.parsed.y !== null) {
-  //                 if (context.dataIndex === 0) { // CA
-  //                   label += `${context.parsed.y.toLocaleString('fr-FR')} F CFA`;
-  //                 } else if (context.dataIndex === 1) { // Nombre de ventes
-  //                   label += `${context.parsed.y}`;
-  //                 } else { // Ticket moyen
-  //                   label += `${context.parsed.y.toLocaleString('fr-FR')} F CFA`;
-  //                 }
-  //               }
-  //               return label;
-  //             }
-  //           }
-  //         }
-  //       },
-  //       scales: {
-  //         y: {
-  //           beginAtZero: true,
-  //           ticks: {
-  //             callback: (value) => {
-  //               if (typeof value === 'number') {
-  //                 return value.toLocaleString('fr-FR');
-  //               }
-  //               return value;
-  //             }
-  //           }
-  //         }
-  //       }
-  //     }
-  //   });
-  // }
-  // Méthode appelée quand le type de comparaison change
-  onComparaisonTypeChange(): void {
-    // Réinitialiser les sélections
-    this.comparaisonElement1 = null;
-    this.comparaisonElement2 = null;
-    this.comparaisonData = null;
-
-    // Mettre à jour les options disponibles
-    this.updateComparisonOptions();
-  }
-
-  // Mettre à jour les options de comparaison
-  updateComparisonOptions(): void {
-    this.isLoading = true;
-
-    // Simuler un léger délai pour le chargement (optionnel)
-    setTimeout(() => {
-      this.comparisonOptions = this.getComparisonOptions();
-      this.isLoading = false;
-
-      // Réinitialiser le graphique si existant
-      if (this.comparaisonChart) {
-        this.comparaisonChart.destroy();
-        this.comparaisonChart = undefined;
-      }
-    }, 100);
-  }
-
-  // Méthode pour obtenir les options (optimisée)
-  getComparisonOptions(): { value: any; label: string }[] {
-    if (!this.magasins || !this.vendeurs) {
-      return [];
-    }
-
-    switch (this.comparaisonType) {
-      case 'periode':
-        return [
-          { value: 'semaine_precedente', label: 'Semaine précédente' },
-          { value: 'mois_precedent', label: 'Mois précédent' },
-          { value: 'trimestre_precedent', label: 'Trimestre précédent' },
-          { value: 'annee_precedente', label: 'Année précédente' },
-        ];
-
-      case 'vendeur':
-        return this.vendeurs
-          .filter((v) => v.id) // Filtre les vendeurs valides
-          .map((v) => ({ value: v.id, label: v.nom || `Vendeur ${v.id}` }));
-
-      case 'magasin':
-        return this.magasins
-          .filter((m) => m.id) // Filtre les magasins valides
-          .map((m) => ({ value: m.id, label: m.nom || `Magasin ${m.id}` }));
-
-      default:
-        return [];
-    }
-  }
-
-  // Dans ngOnInit() ou après le chargement des données
-  initializeComparison(): void {
-    this.updateComparisonOptions();
-  }
-
+  // Impression et export
   async impression() {
     this.isPrinting = true;
 
-    // 1. Préparer les graphiques AVANT le clonage
     await this.prepareChartsForExport();
 
-    // 2. Obtenir l'élément original
     const printContent = document.getElementById('rapport');
     if (!printContent) return;
 
-    // 3. Convertir les canvas en images dans l'ORIGINAL avant clonage
     await this.convertChartsToImages(printContent);
 
-    // 4. Maintenant cloner l'élément avec les images déjà converties
     const clone = printContent.cloneNode(true) as HTMLElement;
     clone.style.position = 'absolute';
     clone.style.left = '0';
@@ -1418,122 +820,77 @@ export class RapportsVentesComponent implements OnInit {
     clone.style.width = '100%';
     clone.id = 'print-clone';
 
-    // 5. Styles d'impression
     const style = document.createElement('style');
     style.innerHTML = `
-    body > * {
-      display: none !important;
-    }
-    #print-clone {
-      display: block !important;
-      visibility: visible !important;
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 100%;
-      background: white;
-    }
-    .no-printer {
-      display: none !important;
-    }
-    .printer-only {
-      display: block !important;
-    }
-  `;
+      body > * { display: none !important; }
+      #print-clone { display: block !important; visibility: visible !important; position: absolute; left: 0; top: 0; width: 100%; background: white; }
+      .no-printer { display: none !important; }
+      .printer-only { display: block !important; }
+    `;
 
     document.body.appendChild(style);
     document.body.appendChild(clone);
 
-    // 6. Délai plus long pour assurer le rendu
     setTimeout(() => {
       window.print();
-
-      // 7. Nettoyage
       document.body.removeChild(clone);
       document.head.removeChild(style);
       this.isPrinting = false;
-
-      // 8. Re-créer les graphiques dans l'original si nécessaire
-      this.recreateCharts();
-    }, 800); // Délai augmenté
-  }
-
-  private recreateCharts() {
-    // Implémentez la recréation des graphiques si nécessaire
-    // Par exemple: this.initCharts();
-    this.prepareChartsForExport(); // Redessine les graphiques dans la nouvelle fenêtre
+      this.mettreAJourGraphiques();
+    }, 800);
   }
 
   private async convertChartsToImages(element: HTMLElement) {
     const canvases = element.querySelectorAll('canvas');
-
     for (const canvas of Array.from(canvases)) {
       const canvasEl = canvas as HTMLCanvasElement;
-
-      // Créer une image de haute qualité
       const img = new Image();
       img.src = canvasEl.toDataURL('image/png', 1.0);
       img.style.width = canvasEl.offsetWidth + 'px';
       img.style.height = canvasEl.offsetHeight + 'px';
 
-      // Créer un conteneur pour préserver l'espacement
       const container = document.createElement('div');
       container.style.width = canvasEl.offsetWidth + 'px';
       container.style.height = canvasEl.offsetHeight + 'px';
       container.appendChild(img);
 
-      // Remplacer le canvas
       canvasEl.parentNode?.replaceChild(container, canvasEl);
-
-      // Petite pause entre chaque conversion
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
   }
 
-  // Méthodes d'export
   async exportToPDF() {
-    this.isGeneratingPDF = true; // Afficher le loader
-    this.progress = 0; // Initialisation de la barre de progression
+    this.isGeneratingPDF = true;
+    this.progress = 0;
+    this.isPrinting = true;
 
-    this.isPrinting = true; // Afficher les éléments avant la capture
     await this.prepareChartsForExport();
 
     const noPrintElements = document.querySelectorAll('.no-printer');
-    noPrintElements.forEach((el) => el.classList.add('d-none'));
+    noPrintElements.forEach(el => el.classList.add('d-none'));
 
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await new Promise(resolve => setTimeout(resolve, 200));
 
     try {
       const element = document.getElementById('rapport');
-      if (!element) {
-        console.error("Élément 'rapport' non trouvé.");
-        return;
-      }
+      if (!element) return;
 
       const pdf = new jsPDF('p', 'mm', 'a3');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const margin = 5;
 
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-      });
-
+      const canvas = await html2canvas(element, { scale: 2, useCORS: true });
       const imgWidth = pageWidth - 2 * margin;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-      const yPosition = margin;
-      const currentHeight = imgHeight;
+      const stepCount = Math.ceil(canvas.height / (pageHeight - 2 * margin));
+      let step = 0;
 
-      const stepCount = Math.ceil(canvas.height / (pageHeight - 2 * margin)); // Nombre total d'étapes
-      let step = 0; // Étape actuelle
-
-      if (currentHeight > pageHeight - 2 * margin) {
+      if (imgHeight > pageHeight - 2 * margin) {
         const pageCanvas = document.createElement('canvas');
         const pageCtx = pageCanvas.getContext('2d');
 
-        const sX = 0;
         let sY = 0;
         const dX = canvas.width;
         const dY = (pageHeight - 2 * margin) * (canvas.width / imgWidth);
@@ -1541,39 +898,35 @@ export class RapportsVentesComponent implements OnInit {
         while (sY < canvas.height) {
           pageCanvas.width = dX;
           pageCanvas.height = dY;
-          pageCtx?.drawImage(canvas, sX, sY, dX, dY, 0, 0, dX, dY);
+          pageCtx?.drawImage(canvas, 0, sY, dX, dY, 0, 0, dX, dY);
 
           const pageImgData = pageCanvas.toDataURL('image/png');
           pdf.addImage(pageImgData, 'PNG', margin, margin, imgWidth, dY * (imgWidth / dX));
 
           sY += dY;
-          step++; // Incrémentation de la progression
-          this.progress = Math.round((step / stepCount) * 100); // Mise à jour de la barre
+          step++;
+          this.progress = Math.round((step / stepCount) * 100);
 
-          if (sY < canvas.height) {
-            pdf.addPage();
-          }
-
-          await new Promise((resolve) => setTimeout(resolve, 100)); // Délai pour voir la progression
+          if (sY < canvas.height) pdf.addPage();
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
       } else {
         const imgData = canvas.toDataURL('image/png');
-        pdf.addImage(imgData, 'PNG', margin, yPosition, imgWidth, imgHeight);
-        this.progress = 100; // Fin de la progression
+        pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight);
+        this.progress = 100;
       }
 
-      pdf.save('rapport_vente.pdf');
+      pdf.save(`rapport_vente_${this.formatDate(new Date())}.pdf`);
     } catch (error) {
-      console.error('Erreur lors de la génération du PDF :', error);
+      console.error('Erreur PDF:', error);
     } finally {
-      noPrintElements.forEach((el) => el.classList.remove('d-none'));
+      noPrintElements.forEach(el => el.classList.remove('d-none'));
       this.isPrinting = false;
-      this.isGeneratingPDF = false; // Cacher le loader après la génération
+      this.isGeneratingPDF = false;
       this.progress = 0;
     }
   }
 
-  // Ajoutez cette méthode à votre composant
   async prepareChartsForExport() {
     const charts = [
       this.evolutionVentesChart,
@@ -1582,328 +935,93 @@ export class RapportsVentesComponent implements OnInit {
       this.topProduitsChart,
     ];
 
-    // Forcer le rendu des graphiques
-    charts.forEach((chart) => {
+    charts.forEach(chart => {
       if (chart) {
         chart.resize();
         chart.render();
       }
     });
 
-    // Attendre que les graphiques soient rendus
-    await new Promise((resolve) => setTimeout(resolve, 400));
+    await new Promise(resolve => setTimeout(resolve, 400));
   }
 
   async exportToExcel() {
-    // Vérifier si ExcelJS est disponible
     if (!ExcelJS) {
       console.error("ExcelJS n'est pas chargé.");
       return;
     }
 
-    // Créer un nouveau classeur Excel
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'Rapport de Vente';
     workbook.created = new Date();
-    workbook.modified = new Date();
 
-    // Styles réutilisables
-    const getStyle = (options: Partial<ExcelJS.Style>): Partial<ExcelJS.Style> => ({
-      font: { size: 11, ...options.font },
-      alignment: { vertical: 'middle', horizontal: 'center', ...options.alignment },
-      border: {
-        top: { style: 'thin' },
-        bottom: { style: 'thin' },
-        left: { style: 'thin' },
-        right: { style: 'thin' },
-        ...options.border,
-      },
-      fill: options.fill,
-    });
-
-    const headerStyle = getStyle({
+    // Styles
+    const headerStyle: Partial<ExcelJS.Style> = {
       font: { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 },
       fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0070C0' } },
-      border: {
-        top: { style: 'thin', color: { argb: 'FF000000' } },
-        bottom: { style: 'thin', color: { argb: 'FF000000' } },
-        left: { style: 'thin', color: { argb: 'FF000000' } },
-        right: { style: 'thin', color: { argb: 'FF000000' } },
-      },
       alignment: { vertical: 'middle', horizontal: 'center' },
-    });
+      border: {
+        top: { style: 'thin' }, bottom: { style: 'thin' },
+        left: { style: 'thin' }, right: { style: 'thin' }
+      }
+    };
 
-    const titleStyle = getStyle({
+    const titleStyle: Partial<ExcelJS.Style> = {
       font: { bold: true, size: 14 },
-      alignment: { vertical: 'middle', horizontal: 'center' },
-    });
+      alignment: { vertical: 'middle', horizontal: 'center' }
+    };
 
-    const dataStyle = getStyle({
-      font: { size: 11 },
-      border: {
-        top: { style: 'thin', color: { argb: 'FFD3D3D3' } },
-        bottom: { style: 'thin', color: { argb: 'FFD3D3D3' } },
-        left: { style: 'thin', color: { argb: 'FFD3D3D3' } },
-        right: { style: 'thin', color: { argb: 'FFD3D3D3' } },
-      },
-    });
-
-    /** Feuille Résumé **/
+    // Feuille Résumé
     const summarySheet = workbook.addWorksheet('Résumé');
-
-    // En-tête du rapport
     summarySheet.mergeCells('A1:F2');
     const titleCell = summarySheet.getCell('A1');
     titleCell.value = 'Rapport de Vente';
     Object.assign(titleCell.style, titleStyle);
 
-    // Informations de base
     summarySheet.addRow([
-      'Entreprise',
-      "Nom de l'Entreprise",
-      '',
-      'Date',
-      new Date().toISOString().slice(0, 10),
+      'Entreprise', "Nom de l'Entreprise", '', 'Date', new Date().toLocaleDateString('fr-FR')
     ]);
     summarySheet.addRow([
-      'Période',
-      `${this.dateDebut} au ${this.dateFin}`,
-      '',
-      'Magasin',
-      this.selectedMagasinId !== -1 ? this.getNomMagasin(this.selectedMagasinId) : 'Tous',
+      'Période', `${this.dateDebut} au ${this.dateFin}`, '', 'Magasin',
+      this.selectedMagasinId !== -1 ? this.getNomMagasin(this.selectedMagasinId) : 'Tous'
     ]);
     summarySheet.addRow([]);
 
-    // Vue d'ensemble des ventes
+    // Indicateurs clés
     summarySheet.mergeCells('A5:F5');
     const overviewTitle = summarySheet.getCell('A5');
-    overviewTitle.value = "Vue d'ensemble des ventes";
+    overviewTitle.value = "Vue d'ensemble";
     Object.assign(overviewTitle.style, titleStyle);
 
-    // Indicateurs clés
-    const indicators = [
-      ['Total Ventes', this.totalVentes, `${this.filteredVentes.length} transactions`],
-      [
-        "Chiffre d'Affaires",
-        `${this.chiffreAffairesTTC.toLocaleString()} F CFA`,
-        `${this.chiffreAffairesHT.toLocaleString()} F CFA HT`,
-      ],
-      [
-        'Marge bénéficiaire',
-        `${this.margeBeneficiaire.toLocaleString()} F CFA`,
-        `${((this.margeBeneficiaire / this.chiffreAffairesHT) * 100).toFixed(2)}%`,
-      ],
-      [
-        'Ticket moyen',
-        `${this.ticketMoyen.toLocaleString()} F CFA`,
-        `${this.panierMoyen.toFixed(1)} produits/vente`,
-      ],
-      [
-        'Évolution CA',
-        `${this.evolutionCA.valeur}%`,
-        this.evolutionCA.tendance === '↑'
-          ? 'Hausse'
-          : this.evolutionCA.tendance === '↓'
-            ? 'Baisse'
-            : 'Stable',
-      ],
-      [
-        'Évolution volume',
-        `${this.evolutionVolume.valeur}%`,
-        this.evolutionVolume.tendance === '↑'
-          ? 'Hausse'
-          : this.evolutionVolume.tendance === '↓'
-            ? 'Baisse'
-            : 'Stable',
-      ],
-    ];
+    summarySheet.addRow(['Indicateur', 'Valeur', 'Détail']).eachCell(cell => Object.assign(cell.style, headerStyle));
+    summarySheet.addRow(['Total Ventes', this.totalVentes, `${this.totalVentes} transactions`]);
+    summarySheet.addRow(['Chiffre d\'Affaires TTC', `${this.chiffreAffairesTTC.toLocaleString()} F CFA`, '']);
+    summarySheet.addRow(['Chiffre d\'Affaires HT', `${this.chiffreAffairesHT.toLocaleString()} F CFA`, '']);
+    summarySheet.addRow(['Marge bénéficiaire', `${this.margeBeneficiaire.toLocaleString()} F CFA`, `${((this.margeBeneficiaire / this.chiffreAffairesHT) * 100).toFixed(2)}%`]);
+    summarySheet.addRow(['Ticket moyen', `${this.ticketMoyen.toLocaleString()} F CFA`, `${this.panierMoyen.toFixed(1)} produits/vente`]);
 
-    summarySheet
-      .addRow(['Indicateur', 'Valeur', 'Détail'])
-      .eachCell((cell) => Object.assign(cell.style, headerStyle));
-
-    indicators.forEach((row) => {
-      const r = summarySheet.addRow(row);
-      r.eachCell((cell) => Object.assign(cell.style, dataStyle));
-    });
-
-    /** Feuille Modes de Paiement **/
+    // Feuille Modes Paiement
     const paymentSheet = workbook.addWorksheet('Modes Paiement');
     paymentSheet.mergeCells('A1:D1');
     const paymentTitle = paymentSheet.getCell('A1');
     paymentTitle.value = 'Répartition des modes de paiement';
     Object.assign(paymentTitle.style, titleStyle);
 
-    paymentSheet
-      .addRow(['Mode', 'Montant (F CFA)', 'Transactions', 'Pourcentage'])
-      .eachCell((cell) => Object.assign(cell.style, headerStyle));
+    paymentSheet.addRow(['Mode', 'Montant (F CFA)', 'Transactions', '%'])
+      .eachCell(cell => Object.assign(cell.style, headerStyle));
 
-    /* this.statmodesPaiement.forEach(mode => {
-    paymentSheet.addRow([
-      mode.mode,
-      mode.montantTotal,
-      mode.occurrences,
-      `${((mode.montantTotal / this.chiffreAffairesTTC) * 100).toFixed(1)}%`
-    ]).eachCell(cell => Object.assign(cell.style, dataStyle));
-  }); */
-
-    this.statmodesPaiement.forEach(
-      (mode: { mode: string; montantTotal: number; occurrences: number }) => {
-        paymentSheet
-          .addRow([
-            mode.mode,
-            mode.montantTotal,
-            mode.occurrences,
-            `${((mode.montantTotal / this.chiffreAffairesTTC) * 100).toFixed(1)}%`,
-          ])
-          .eachCell((cell) => Object.assign(cell.style, dataStyle));
-      },
-    );
-
-    /** Feuille Top Produits **/
-    const productsSheet = workbook.addWorksheet('Top Produits');
-    productsSheet.mergeCells('A1:G1');
-    const productsTitle = productsSheet.getCell('A1');
-    productsTitle.value = 'Top 10 des produits';
-    Object.assign(productsTitle.style, titleStyle);
-
-    productsSheet
-      .addRow([
-        'Produit',
-        'Quantité',
-        'Prix de vente',
-        'Transactions',
-        'CA TTC',
-        'Marge',
-        '% Marge',
-      ])
-      .eachCell((cell) => Object.assign(cell.style, headerStyle));
-
-    this.topProduits.forEach((produit) => {
-      productsSheet
-        .addRow([
-          produit.produit.designation,
-          produit.quantite,
-          produit.produit.prixVenteUnitaire,
-          produit.nombreVentes,
-          produit.ca,
-          produit.marge,
-          `${((produit.marge / produit.ca) * 100).toFixed(2)}%`,
-        ])
-        .eachCell((cell) => Object.assign(cell.style, dataStyle));
+    this.statmodesPaiement.forEach(mode => {
+      paymentSheet.addRow([
+        mode.mode,
+        mode.montantTotal,
+        mode.occurrences,
+        `${((mode.montantTotal / this.chiffreAffairesTTC) * 100).toFixed(1)}%`
+      ]);
     });
 
-    /** Feuille Top Clients **/
-    const clientsSheet = workbook.addWorksheet('Top Clients');
-    clientsSheet.mergeCells('A1:E1');
-    const clientsTitle = clientsSheet.getCell('A1');
-    clientsTitle.value = 'Top 10 des clients';
-    Object.assign(clientsTitle.style, titleStyle);
-
-    clientsSheet
-      .addRow(['Client', 'Transactions', 'CA TTC', 'Dernière visite', 'Ticket moyen'])
-      .eachCell((cell) => Object.assign(cell.style, headerStyle));
-
-    this.topClients.forEach((client) => {
-      clientsSheet
-        .addRow([
-          client.client.nomComplet || 'Client anonyme',
-          client.nbAchats,
-          client.ca,
-          client.dernierAchat ? new Date(client.dernierAchat).toISOString().slice(0, 10) : '-',
-          (client.ca / client.nbAchats).toFixed(0),
-        ])
-        .eachCell((cell) => Object.assign(cell.style, dataStyle));
-    });
-
-    /** Feuille Performance Vendeurs **/
-    const sellersSheet = workbook.addWorksheet('Performance Vendeurs');
-    sellersSheet.mergeCells('A1:F1');
-    const sellersTitle = sellersSheet.getCell('A1');
-    sellersTitle.value = 'Performance des vendeurs';
-    Object.assign(sellersTitle.style, titleStyle);
-
-    sellersSheet
-      .addRow(['Vendeur', 'Ventes', 'CA HT', 'CA TTC', 'Ticket moyen', 'Panier moyen'])
-      .eachCell((cell) => Object.assign(cell.style, headerStyle));
-
-    this.vendeursPerformance.forEach((vendeur) => {
-      sellersSheet
-        .addRow([
-          vendeur.vendeur.nom,
-          vendeur.nbVentes,
-          vendeur.caHT,
-          vendeur.caTTC,
-          vendeur.ticketMoyen,
-          vendeur.panierMoyen,
-        ])
-        .eachCell((cell) => Object.assign(cell.style, dataStyle));
-    });
-
-    /** Feuille Détails Ventes **/
-    const salesSheet = workbook.addWorksheet('Détails Ventes');
-    salesSheet.mergeCells('A1:H1');
-    const salesTitle = salesSheet.getCell('A1');
-    salesTitle.value = 'Détails des ventes';
-    Object.assign(salesTitle.style, titleStyle);
-
-    salesSheet
-      .addRow([
-        'Date',
-        'N° Ticket',
-        'Client',
-        'Articles',
-        'Total TTC',
-        'Paiement',
-        'Vendeur',
-        'Statut',
-      ])
-      .eachCell((cell) => Object.assign(cell.style, headerStyle));
-
-    this.filteredVentes.forEach((vente) => {
-      const paiements =
-        vente.paiements
-          ?.map(
-            (p) => `${this.getNomModePaiement(0)}: ${p.montant.toFixed(0)} F CFA`,
-          )
-          .join('\n') || 'Non spécifié';
-
-      salesSheet
-        .addRow([
-          new Date(vente.dateCreation).toISOString().slice(0, 10),
-          vente.id,
-          this.getNomClient(vente.clientId!),
-          vente.articles.length,
-          vente.totalTTC,
-          { text: paiements, style: { alignment: { wrapText: true } } },
-          this.getNomVendeur(vente.agentId!),
-          vente.statut,
-        ])
-        .eachCell((cell, colNumber) => {
-          if (colNumber !== 6) {
-            // Ne pas appliquer le style à la colonne des paiements (qui a un style spécial)
-            Object.assign(cell.style, dataStyle);
-          }
-        });
-    });
-
-    // Ajuster la largeur des colonnes pour la feuille des ventes
-    salesSheet.columns = [
-      { width: 15 }, // Date
-      { width: 10 }, // N° Ticket
-      { width: 25 }, // Client
-      { width: 10 }, // Articles
-      { width: 15 }, // Total TTC
-      { width: 30 }, // Paiement
-      { width: 20 }, // Vendeur
-      { width: 15 }, // Statut
-    ];
-
-    /** Génération du fichier Excel **/
+    // Sauvegarde
     const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    });
-    saveAs(blob, `rapport_vente_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, `rapport_vente_${this.formatDate(new Date())}.xlsx`);
   }
 }

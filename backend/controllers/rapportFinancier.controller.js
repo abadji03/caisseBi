@@ -1,381 +1,22 @@
 const db = require('../models');
 const FonctionsUtilitaires = require('./utils/fonctionsUtilitaires');
 const { Op, fn, col } = db.Sequelize;
+const utilitaireRapport  = require('./utils/rapportFinancierUtilitaire');
 
 
-/**
- * Calculer les indicateurs financiers principaux
- */
-const calculerIndicateursPrincipaux = async (filters) => {
-    const {
-        code_structure,
-        periode,
-        dateReference,
-        fromDate,
-        toDate,
-        magasinId,
-        agentId
-    } = filters;
 
-    // Déterminer les dates
-    let dateCondition;
-    if (periode) {
-        const { debut, fin } = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
-        dateCondition = { [Op.between]: [debut, fin] };
-    } else if (fromDate && toDate) {
-        dateCondition = { [Op.between]: [fromDate, toDate] };
-    } else {
-        // Par défaut, période du jour
-        const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
-        dateCondition = { [Op.between]: [debutJournee, finJournee] };
-    }
-
-    // 1. Calcul du chiffre d'affaires (recettes de catégorie vente)
-    const categoriesVente = await db.Categorie.findAll({
-        where: {
-            code_structure,
-            type: 'RECETTE',
-            [Op.or]: [
-                { name: { [Op.like]: '%vente%' } },
-                { name: { [Op.like]: '%ventes%' } },
-                { name: { [Op.like]: '%service%' } },
-                { name: { [Op.like]: '%services%' } },
-                { description: { [Op.like]: '%vente%' } },
-                { description: { [Op.like]: '%ventes%' } }
-            ]
-        },
-        attributes: ['id']
-    });
-
-    const categoryIdsVente = categoriesVente.map(cat => cat.id);
-
-    const [resultCA, resultAutresRecettes, resultDepenses] = await Promise.all([
-        // Chiffre d'affaires
-        db.Recette.findOne({
-            attributes: [
-                [fn('SUM', col('montant')), 'total'],
-                [fn('COUNT', col('id')), 'nbTransactions']
-            ],
-            where: {
-                code_structure,
-                statutRecette: 'validé',
-                date: dateCondition,
-                categoryId: categoryIdsVente.length > 0 ? { [Op.in]: categoryIdsVente } : null,
-                ...(magasinId && { magasinId }),
-                ...(agentId && { agentId })
-            },
-            raw: true
-        }),
-
-        // Autres recettes (hors ventes)
-        db.Recette.findOne({
-            attributes: [
-                [fn('SUM', col('montant')), 'total'],
-                [fn('COUNT', col('id')), 'nbTransactions']
-            ],
-            where: {
-                code_structure,
-                statutRecette: 'validé',
-                date: dateCondition,
-                ...(categoryIdsVente.length > 0 ? { categoryId: { [Op.notIn]: categoryIdsVente } } : {}),
-                ...(magasinId && { magasinId }),
-                ...(agentId && { agentId })
-            },
-            raw: true
-        }),
-
-        // Dépenses totales
-        db.Depense.findOne({
-            attributes: [
-                [fn('SUM', col('montant')), 'total'],
-                [fn('COUNT', col('id')), 'nbTransactions']
-            ],
-            where: {
-                code_structure,
-                statutDepense: 'validé',
-                date: dateCondition,
-                ...(magasinId && { magasinId }),
-                ...(agentId && { agentId })
-            },
-            raw: true
-        })
-    ]);
-
-    const chiffreAffaires = parseFloat(resultCA?.total || 0);
-    const nbVentes = parseInt(resultCA?.nbTransactions || 0);
-    const autresRecettes = parseFloat(resultAutresRecettes?.total || 0);
-    const nbAutresRecettes = parseInt(resultAutresRecettes?.nbTransactions || 0);
-    const totalDepenses = parseFloat(resultDepenses?.total || 0);
-    const nbDepenses = parseInt(resultDepenses?.nbTransactions || 0);
-
-    const beneficeNet = (chiffreAffaires + autresRecettes) - totalDepenses;
-    const soldeTresorerie = beneficeNet; // Pour simplifier, on utilise le bénéfice net comme solde
-
-    return {
-        chiffreAffaires,
-        nbVentes,
-        autresRecettes,
-        nbAutresRecettes,
-        totalDepenses,
-        nbDepenses,
-        beneficeNet,
-        soldeTresorerie
-    };
-};
-
-/**
- * Calculer l'évolution du CA par rapport à la période précédente
- */
-const calculerEvolutionCA = async (filters, indicateursActuels) => {
-    const {
-        code_structure,
-        periode,
-        dateReference,
-        fromDate,
-        toDate,
-        magasinId,
-        agentId
-    } = filters;
-
-    let periodePrecedente;
-    
-    if (periode) {
-        // Calculer la période précédente
-        periodePrecedente = FonctionsUtilitaires.getPeriodePrecedente(periode, dateReference);
-    } else if (fromDate && toDate) {
-        // Pour une plage de dates personnalisée, calculer la période précédente de même durée
-        const startDate = new Date(fromDate);
-        const endDate = new Date(toDate);
-        const dureePeriode = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-        
-        const startDatePrecedent = new Date(startDate);
-        startDatePrecedent.setDate(startDate.getDate() - dureePeriode);
-        
-        const endDatePrecedent = new Date(startDate);
-        endDatePrecedent.setDate(startDate.getDate() - 1);
-        
-        periodePrecedente = { debut: startDatePrecedent, fin: endDatePrecedent };
-    } else {
-        // Par défaut, période précédente du jour
-        const hier = new Date();
-        hier.setDate(hier.getDate() - 1);
-        periodePrecedente = FonctionsUtilitaires.getPeriodeDates('jour', hier);
-    }
-
-    // Calculer le CA de la période précédente
-    const categoriesVente = await db.Categorie.findAll({
-        where: {
-            code_structure,
-            type: 'RECETTE',
-            [Op.or]: [
-                { name: { [Op.like]: '%vente%' } },
-                { name: { [Op.like]: '%ventes%' } },
-                { name: { [Op.like]: '%service%' } },
-                { name: { [Op.like]: '%services%' } },
-                { description: { [Op.like]: '%vente%' } },
-                { description: { [Op.like]: '%ventes%' } }
-            ]
-        },
-        attributes: ['id']
-    });
-
-    const categoryIdsVente = categoriesVente.map(cat => cat.id);
-
-    const resultCAPrecedent = await db.Recette.findOne({
-        attributes: [
-            [fn('SUM', col('montant')), 'total']
-        ],
-        where: {
-            code_structure,
-            statutRecette: 'validé',
-            date: { [Op.between]: [periodePrecedente.debut, periodePrecedente.fin] },
-            categoryId: categoryIdsVente.length > 0 ? { [Op.in]: categoryIdsVente } : null,
-            ...(magasinId && { magasinId }),
-            ...(agentId && { agentId })
-        },
-        raw: true
-    });
-
-    const caPrecedent = parseFloat(resultCAPrecedent?.total || 0);
-    const caActuel = indicateursActuels.chiffreAffaires;
-
-    let pourcentage = 0;
-    let tendance = 'stable';
-
-    if (caPrecedent > 0) {
-        pourcentage = ((caActuel - caPrecedent) / caPrecedent) * 100;
-        tendance = caActuel > caPrecedent ? 'hausse' : caActuel < caPrecedent ? 'baisse' : 'stable';
-    } else if (caActuel > 0) {
-        pourcentage = 100;
-        tendance = 'hausse';
-    }
-
-    return {
-        evolutionCA: {
-            pourcentage: Math.round(pourcentage),
-            tendance
-        },
-        periodePrecedenteCA: caPrecedent
-    };
-};
-
-/**
- * Calculer le flux de trésorerie
- */
-const calculerFluxTresorerie = async (filters) => {
-    const {
-        code_structure,
-        periode,
-        dateReference,
-        fromDate,
-        toDate,
-        magasinId,
-        agentId
-    } = filters;
-
-    let dateCondition;
-    if (periode) {
-        const { debut, fin } = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
-        dateCondition = { [Op.between]: [debut, fin] };
-    } else if (fromDate && toDate) {
-        dateCondition = { [Op.between]: [fromDate, toDate] };
-    } else {
-        const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
-        dateCondition = { [Op.between]: [debutJournee, finJournee] };
-    }
-
-    // 1. Solde initial (toutes les transactions AVANT la période)
-    const debutPeriode = periode ? 
-        FonctionsUtilitaires.getPeriodeDates(periode, dateReference).debut : 
-        new Date(fromDate || FonctionsUtilitaires.getPeriodeJournee().debutJournee);
-
-    const [soldeInitialRecettes, soldeInitialDepenses] = await Promise.all([
-        db.Recette.sum('montant', {
-            where: {
-                code_structure,
-                statutRecette: 'validé',
-                date: { [Op.lt]: debutPeriode },
-                ...(magasinId && { magasinId }),
-                ...(agentId && { agentId })
-            }
-        }),
-        db.Depense.sum('montant', {
-            where: {
-                code_structure,
-                statutDepense: 'validé',
-                date: { [Op.lt]: debutPeriode },
-                ...(magasinId && { magasinId }),
-                ...(agentId && { agentId })
-            }
-        })
-    ]);
-
-    const soldeInitial = (soldeInitialRecettes || 0) - (soldeInitialDepenses || 0);
-
-    // 2. Recettes et dépenses de la période
-    const [recettesPeriod, depensesPeriod] = await Promise.all([
-        db.Recette.sum('montant', {
-            where: {
-                code_structure,
-                statutRecette: 'validé',
-                date: dateCondition,
-                ...(magasinId && { magasinId }),
-                ...(agentId && { agentId })
-            }
-        }),
-        db.Depense.sum('montant', {
-            where: {
-                code_structure,
-                statutDepense: 'validé',
-                date: dateCondition,
-                ...(magasinId && { magasinId }),
-                ...(agentId && { agentId })
-            }
-        })
-    ]);
-
-    const soldeFinal = soldeInitial + (recettesPeriod || 0) - (depensesPeriod || 0);
-
-    return {
-        soldeInitial,
-        recettesPeriod: recettesPeriod || 0,
-        depensesPeriod: depensesPeriod || 0,
-        soldeFinal
-    };
-};
-
-/**
- * Calculer les tendances financières
- */
-const calculerTendances = async (filters, indicateursActuels) => {
-    const {
-        periode,
-        dateReference,
-        fromDate,
-        toDate,
-    } = filters;
-
-    // Récupérer les données de la période précédente
-    let periodePrecedente;
-    if (periode) {
-        periodePrecedente = FonctionsUtilitaires.getPeriodePrecedente(periode, dateReference);
-    } else if (fromDate && toDate) {
-        const startDate = new Date(fromDate);
-        const endDate = new Date(toDate);
-        const dureePeriode = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-        
-        const startDatePrecedent = new Date(startDate);
-        startDatePrecedent.setDate(startDate.getDate() - dureePeriode);
-        
-        const endDatePrecedent = new Date(startDate);
-        endDatePrecedent.setDate(startDate.getDate() - 1);
-        
-        periodePrecedente = { debut: startDatePrecedent, fin: endDatePrecedent };
-    } else {
-        const hier = new Date();
-        hier.setDate(hier.getDate() - 1);
-        periodePrecedente = FonctionsUtilitaires.getPeriodeDates('jour', hier);
-    }
-
-    // Calculer les indicateurs de la période précédente
-    const indicateursPrecedents = await calculerIndicateursPrincipaux({
-        ...filters,
-        fromDate: periodePrecedente.debut,
-        toDate: periodePrecedente.fin,
-        periode: null // On utilise les dates directement
-    });
-
-    // Calculer les évolutions
-    const calculerEvolution = (actuel, precedent) => {
-        if (precedent === 0) return { valeur: 0, tendance: '→' };
-        const variation = ((actuel - precedent) / precedent) * 100;
-        const tendance = variation > 0 ? '↑' : variation < 0 ? '↓' : '→';
-        return { valeur: Math.round(variation), tendance };
-    };
-
-    return {
-        evolutionCA: calculerEvolution(
-            indicateursActuels.chiffreAffaires,
-            indicateursPrecedents.chiffreAffaires
-        ),
-        evolutionBenefices: calculerEvolution(
-            indicateursActuels.beneficeNet,
-            indicateursPrecedents.beneficeNet
-        ),
-        evolutionCouts: calculerEvolution(
-            indicateursActuels.totalDepenses,
-            indicateursPrecedents.totalDepenses
-        )
-    };
-};
 
 /**
  * API principale pour les indicateurs financiers
  */
-exports.getIndicateursFinanciers = async (req, res) => {
+/* exports.getIndicateursFinanciers = async (req, res) => {
     try {
+        const authUser = req.user;
+
+        if (!authUser) {
+        return res.status(401).json({ message: "Non authentifié" });
+        }
         const {
-            code_structure,
             magasinId,
             agentId,
             periode,
@@ -384,6 +25,8 @@ exports.getIndicateursFinanciers = async (req, res) => {
             toDate
         } = req.query;
 
+        const code_structure = authUser.code_structure;
+        
         // Validation
         if (!code_structure) {
             return res.status(400).json({
@@ -429,14 +72,16 @@ exports.getIndicateursFinanciers = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
-
-/**
- * API pour la répartition des dépenses par catégorie
  */
-exports.getRepartitionDepenses = async (req, res) => {
+/* exports.getIndicateursFinanciers = async (req, res) => {
     try {
+        const authUser = req.user;
+
+        if (!authUser) {
+            return res.status(401).json({ message: "Non authentifié" });
+        }
+        
         const {
-            code_structure,
             magasinId,
             agentId,
             periode,
@@ -445,13 +90,206 @@ exports.getRepartitionDepenses = async (req, res) => {
             toDate
         } = req.query;
 
+        const code_structure = authUser.code_structure;
+        
+        console.log('📥 Requête reçue - indicateurs financiers:');
+        console.log('  - code_structure:', code_structure);
+        console.log('  - periode:', periode);
+        console.log('  - fromDate brut:', fromDate);
+        console.log('  - toDate brut:', toDate);
+        console.log('  - magasinId:', magasinId);
+        console.log('  - agentId:', agentId);
+
         if (!code_structure) {
             return res.status(400).json({
                 error: 'Le paramètre "code_structure" est requis'
             });
         }
 
-        let dateCondition;
+        // ✅ CORRECTION: Normaliser les dates AVANT de les passer aux fonctions
+        let fromDateNormalized, toDateNormalized;
+        
+        if (fromDate && toDate) {
+            fromDateNormalized = FonctionsUtilitaires.normalizeDate(fromDate, 'start');
+            toDateNormalized = FonctionsUtilitaires.normalizeDate(toDate, 'end');
+            
+            console.log('  - fromDate normalisé:', fromDateNormalized.toLocaleString());
+            console.log('  - toDate normalisé:', toDateNormalized.toLocaleString());
+        }
+
+
+
+        const filters = {
+            code_structure,
+            magasinId: magasinId ? parseInt(magasinId) : undefined,
+            agentId: agentId ? parseInt(agentId) : undefined,
+            periode,
+            dateReference: dateReference ? FonctionsUtilitaires.normalizeDate(dateReference, 'start') : new Date(),
+            fromDate: fromDateNormalized,
+            toDate: toDateNormalized
+        };
+
+        // Calculer tous les indicateurs en parallèle
+        const [indicateursPrincipaux, fluxTresorerie] = await Promise.all([
+            calculerIndicateursPrincipaux(filters),
+            calculerFluxTresorerie(filters),
+        ]);
+
+        const evolutionRecalcul = await calculerEvolutionCA(filters, indicateursPrincipaux);
+        const tendancesRecalcul = await calculerTendances(filters, indicateursPrincipaux);
+
+        return res.json({
+            niveau: magasinId ? 'magasin' : 'structure',
+            periode: periode || 'personnalisée',
+            dateDebut: fromDateNormalized || (periode ? FonctionsUtilitaires.getPeriodeDates(periode, dateReference).debut : undefined),
+            dateFin: toDateNormalized || (periode ? FonctionsUtilitaires.getPeriodeDates(periode, dateReference).fin : undefined),
+            ...indicateursPrincipaux,
+            ...evolutionRecalcul,
+            fluxTresorerie,
+            tendances: tendancesRecalcul
+        });
+
+    } catch (error) {
+        console.error('❌ Erreur getIndicateursFinanciers:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+ *//**
+ 
+ 
+ * API pour la répartition des dépenses par catégorie
+ */
+
+exports.getIndicateursFinanciers = async (req, res) => {
+    try {
+        const authUser = req.user;
+        if (!authUser) {
+            return res.status(401).json({ message: "Non authentifié" });
+        }
+
+        const {
+            magasinId,
+            agentId,
+            periode,
+            dateReference,
+            fromDate,
+            toDate
+        } = req.query;
+
+        const code_structure = authUser.code_structure;
+        
+        console.log('📥 [Indicateurs] Requête reçue:');
+        console.log('  - Période:', periode);
+        console.log('  - FromDate brut:', fromDate);
+        console.log('  - ToDate brut:', toDate);
+
+        if (!code_structure) {
+            return res.status(400).json({ error: 'code_structure requis' });
+        }
+
+        const magasinIdFromQuery = magasinId ? parseInt(magasinId) : null;
+        const agentIdFromQuery = agentId ? parseInt(agentId) : null;
+
+        const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
+        const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+
+        // magasin final
+        let magasinIdFinal = magasinIdFromQuery;
+
+        // agent final
+        let agentIdFinal = agentIdFromQuery;
+
+        // ✅ Gérant => uniquement son magasin
+        if (isGerant && !isAdmin) {
+        magasinIdFinal = authUser.magasinId;
+        }
+
+
+        const filters = {
+            code_structure,
+            magasinId: magasinIdFinal,
+            agentId: agentIdFinal,
+            periode,
+            dateReference: dateReference ? FonctionsUtilitaires.normalizeDate(dateReference, 'start') : new Date(),
+            fromDate: fromDate ? FonctionsUtilitaires.normalizeDate(fromDate, 'start') : undefined,
+            toDate: toDate ? FonctionsUtilitaires.normalizeDate(toDate, 'end') : undefined
+        };
+
+        console.log('  ✅ Dates normalisées:');
+        console.log('    - FromDate:', filters.fromDate?.toLocaleString());
+        console.log('    - ToDate:', filters.toDate?.toLocaleString());
+
+        const [indicateursPrincipaux, fluxTresorerie] = await Promise.all([
+            utilitaireRapport.calculerIndicateursPrincipaux(filters),
+            utilitaireRapport.calculerFluxTresorerie(filters),
+        ]);
+
+        const evolutionRecalcul = await utilitaireRapport.calculerEvolutionCA(filters, indicateursPrincipaux);
+        const tendancesRecalcul = await utilitaireRapport.calculerTendances(filters, indicateursPrincipaux);
+
+        return res.json({
+            niveau: magasinId ? 'magasin' : 'structure',
+            periode: periode || 'personnalisée',
+            dateDebut: filters.fromDate,
+            dateFin: filters.toDate,
+            ...indicateursPrincipaux,
+            ...evolutionRecalcul,
+            fluxTresorerie,
+            tendances: tendancesRecalcul
+        });
+
+    } catch (error) {
+        console.error('❌ Erreur getIndicateursFinanciers:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+ /** 
+  * API pour la répartition des dépenses par catégorie
+ */
+ exports.getRepartitionDepenses = async (req, res) => {
+    try {
+        const authUser = req.user;
+
+        if (!authUser) {
+        return res.status(401).json({ message: "Non authentifié" });
+        }
+        const {
+            magasinId,
+            agentId,
+            periode,
+            dateReference,
+            fromDate,
+            toDate
+        } = req.query;
+
+        const code_structure = authUser.code_structure;
+
+        if (!code_structure) {
+            return res.status(400).json({
+                error: 'Le paramètre "code_structure" est requis'
+            });
+        }
+
+        const magasinIdFromQuery = magasinId ? parseInt(magasinId) : null;
+        const agentIdFromQuery = agentId ? parseInt(agentId) : null;
+
+        const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
+        const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+
+        // magasin final
+        let magasinIdFinal = magasinIdFromQuery;
+
+        // agent final
+        let agentIdFinal = agentIdFromQuery;
+
+        // ✅ Gérant => uniquement son magasin
+        if (isGerant && !isAdmin) {
+        magasinIdFinal = authUser.magasinId;
+        }
+
+        /* let dateCondition;
         if (periode) {
             const { debut, fin } = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
             dateCondition = { [Op.between]: [debut, fin] };
@@ -460,7 +298,18 @@ exports.getRepartitionDepenses = async (req, res) => {
         } else {
             const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
             dateCondition = { [Op.between]: [debutJournee, finJournee] };
-        }
+        } */
+
+        const whereDepenses = FonctionsUtilitaires.buildWhereFinance({
+            periode,
+            dateReference,
+            fromDate,
+            toDate,
+            code_structure,
+            magasinId: magasinIdFinal,
+            agentId: agentIdFinal,
+            type: 'DEPENSE'
+        });
 
         // Récupérer les catégories de dépenses
         const categories = await db.Categorie.findAll({
@@ -481,12 +330,9 @@ exports.getRepartitionDepenses = async (req, res) => {
                         [fn('COUNT', col('id')), 'occurrences']
                     ],
                     where: {
-                        code_structure,
-                        statutDepense: 'validé',
-                        date: dateCondition,
+                        ...whereDepenses,
                         categoryId: categorie.id,
-                        ...(magasinId && { magasinId }),
-                        ...(agentId && { agentId })
+                        
                     },
                     raw: true
                 });
@@ -530,8 +376,12 @@ exports.getRepartitionDepenses = async (req, res) => {
  */
 exports.getRepartitionRecettes = async (req, res) => {
     try {
+        const authUser = req.user;
+
+        if (!authUser) {
+        return res.status(401).json({ message: "Non authentifié" });
+        }
         const {
-            code_structure,
             magasinId,
             agentId,
             periode,
@@ -540,13 +390,32 @@ exports.getRepartitionRecettes = async (req, res) => {
             toDate
         } = req.query;
 
+        const code_structure = authUser.code_structure;
+
         if (!code_structure) {
             return res.status(400).json({
                 error: 'Le paramètre "code_structure" est requis'
             });
         }
 
-        let dateCondition;
+        const magasinIdFromQuery = magasinId ? parseInt(magasinId) : null;
+        const agentIdFromQuery = agentId ? parseInt(agentId) : null;
+
+        const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
+        const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+
+        // magasin final
+        let magasinIdFinal = magasinIdFromQuery;
+
+        // agent final
+        let agentIdFinal = agentIdFromQuery;
+
+        // ✅ Gérant => uniquement son magasin
+        if (isGerant && !isAdmin) {
+        magasinIdFinal = authUser.magasinId;
+        }
+
+        /* let dateCondition;
         if (periode) {
             const { debut, fin } = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
             dateCondition = { [Op.between]: [debut, fin] };
@@ -555,7 +424,18 @@ exports.getRepartitionRecettes = async (req, res) => {
         } else {
             const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
             dateCondition = { [Op.between]: [debutJournee, finJournee] };
-        }
+        } */
+
+        const whereRecettes = FonctionsUtilitaires.buildWhereFinance({
+            periode,
+            dateReference,
+            fromDate,
+            toDate,
+            code_structure,
+            magasinId: magasinIdFinal,
+            agentId: agentIdFinal,
+            type: 'RECETTE'
+        });
 
         // Récupérer les catégories de recettes
         const categories = await db.Categorie.findAll({
@@ -576,12 +456,9 @@ exports.getRepartitionRecettes = async (req, res) => {
                         [fn('COUNT', col('id')), 'occurrences']
                     ],
                     where: {
-                        code_structure,
-                        statutRecette: 'validé',
-                        date: dateCondition,
+                        ...whereRecettes,
                         categoryId: categorie.id,
-                        ...(magasinId && { magasinId }),
-                        ...(agentId && { agentId })
+                        
                     },
                     raw: true
                 });
@@ -625,8 +502,12 @@ exports.getRepartitionRecettes = async (req, res) => {
  */
 exports.getStatistiquesModesPaiement = async (req, res) => {
     try {
+        const authUser = req.user;
+
+        if (!authUser) {
+            return res.status(401).json({ message: "Non authentifié" });
+        }
         const {
-            code_structure,
             magasinId,
             agentId,
             periode,
@@ -635,13 +516,42 @@ exports.getStatistiquesModesPaiement = async (req, res) => {
             toDate
         } = req.query;
 
+        const code_structure = authUser.code_structure;
+
         if (!code_structure) {
             return res.status(400).json({
                 error: 'Le paramètre "code_structure" est requis'
             });
         }
+        const magasinIdFromQuery = magasinId ? parseInt(magasinId) : null;
+        const agentIdFromQuery = agentId ? parseInt(agentId) : null;
 
-        let dateCondition;
+        const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
+        const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+
+        // magasin final
+        let magasinIdFinal = magasinIdFromQuery;
+
+        // agent final
+        let agentIdFinal = agentIdFromQuery;
+
+        // ✅ Gérant => uniquement son magasin
+        if (isGerant && !isAdmin) {
+        magasinIdFinal = authUser.magasinId;
+        }
+
+        const whereRecettes = FonctionsUtilitaires.buildWhereFinance({
+            periode,
+            dateReference,
+            fromDate,
+            toDate,
+            code_structure,
+            magasinId:magasinIdFinal,
+            agentId: agentIdFinal,
+            type: 'RECETTE'
+        });
+
+        /* let dateCondition;
         if (periode) {
             const { debut, fin } = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
             dateCondition = { [Op.between]: [debut, fin] };
@@ -650,7 +560,7 @@ exports.getStatistiquesModesPaiement = async (req, res) => {
         } else {
             const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
             dateCondition = { [Op.between]: [debutJournee, finJournee] };
-        }
+        } */
 
         // Statistiques pour les recettes
         const statsRecettes = await db.Recette.findAll({
@@ -659,13 +569,7 @@ exports.getStatistiquesModesPaiement = async (req, res) => {
                 [fn('SUM', col('montant')), 'montantTotal'],
                 [fn('COUNT', col('id')), 'occurrences']
             ],
-            where: {
-                code_structure,
-                statutRecette: 'validé',
-                date: dateCondition,
-                ...(magasinId && { magasinId }),
-                ...(agentId && { agentId })
-            },
+            where: whereRecettes,
             group: ['paymentMode'],
             raw: true
         });
@@ -704,8 +608,12 @@ exports.getStatistiquesModesPaiement = async (req, res) => {
  */
 exports.getDepensesDetaillees = async (req, res) => {
     try {
+        const authUser = req.user;
+
+        if (!authUser) {
+         return res.status(401).json({ message: "Non authentifié" });
+        }
         const {
-            code_structure,
             magasinId,
             agentId,
             periode,
@@ -718,13 +626,43 @@ exports.getDepensesDetaillees = async (req, res) => {
             categoryId
         } = req.query;
 
+        const code_structure = authUser.code_structure;
+
         if (!code_structure) {
             return res.status(400).json({
                 error: 'Le paramètre "code_structure" est requis'
             });
         }
 
-        let dateCondition;
+        const magasinIdFromQuery = magasinId ? parseInt(magasinId) : null;
+        const agentIdFromQuery = agentId ? parseInt(agentId) : null;
+
+        const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
+        const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+
+        // magasin final
+        let magasinIdFinal = magasinIdFromQuery;
+
+        // agent final
+        let agentIdFinal = agentIdFromQuery;
+
+        // ✅ Gérant => uniquement son magasin
+        if (isGerant && !isAdmin) {
+        magasinIdFinal = authUser.magasinId;
+        }
+
+        const whereDepenses = FonctionsUtilitaires.buildWhereFinance({
+            periode,
+            dateReference,
+            fromDate,
+            toDate,
+            code_structure,
+            magasinId: magasinIdFinal,
+            agentId: agentIdFinal,
+            type: 'DEPENSE'
+        });
+
+        /* let dateCondition;
         if (periode) {
             const { debut, fin } = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
             dateCondition = { [Op.between]: [debut, fin] };
@@ -733,18 +671,14 @@ exports.getDepensesDetaillees = async (req, res) => {
         } else {
             const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
             dateCondition = { [Op.between]: [debutJournee, finJournee] };
-        }
+        } */
 
         const offset = (parseInt(page) - 1) * parseInt(limit);
 
         // Construire la condition de recherche
         const where = {
-            code_structure,
-            statutDepense: 'validé',
-            date: dateCondition,
-            ...(magasinId && { magasinId }),
-            ...(agentId && { agentId }),
-            ...(categoryId && { categoryId })
+            ...whereDepenses,
+            ...(categoryId && { categoryId: parseInt(categoryId) }) //...(categoryId && { categoryId })
         };
 
         // Ajouter la recherche si spécifiée
@@ -804,8 +738,12 @@ exports.getDepensesDetaillees = async (req, res) => {
  */
 exports.getRecettesDetaillees = async (req, res) => {
     try {
+        const authUser = req.user;
+
+        if (!authUser) {
+         return res.status(401).json({ message: "Non authentifié" });
+        }
         const {
-            code_structure,
             magasinId,
             agentId,
             periode,
@@ -818,13 +756,32 @@ exports.getRecettesDetaillees = async (req, res) => {
             categoryId
         } = req.query;
 
+        const code_structure = authUser.code_structure;
+
         if (!code_structure) {
             return res.status(400).json({
                 error: 'Le paramètre "code_structure" est requis'
             });
         }
 
-        let dateCondition;
+        const magasinIdFromQuery = magasinId ? parseInt(magasinId) : null;
+        const agentIdFromQuery = agentId ? parseInt(agentId) : null;
+
+        const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
+        const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+
+        // magasin final
+        let magasinIdFinal = magasinIdFromQuery;
+
+        // agent final
+        let agentIdFinal = agentIdFromQuery;
+
+        // ✅ Gérant => uniquement son magasin
+        if (isGerant && !isAdmin) {
+        magasinIdFinal = authUser.magasinId;
+        }
+
+        /* let dateCondition;
         if (periode) {
             const { debut, fin } = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
             dateCondition = { [Op.between]: [debut, fin] };
@@ -833,18 +790,25 @@ exports.getRecettesDetaillees = async (req, res) => {
         } else {
             const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
             dateCondition = { [Op.between]: [debutJournee, finJournee] };
-        }
+        } */
+
+        const whereRecettes = FonctionsUtilitaires.buildWhereFinance({
+            periode,
+            dateReference,
+            fromDate,
+            toDate,
+            code_structure,
+            magasinId: magasinIdFinal,
+            agentId:agentIdFinal,
+            type: 'RECETTE'
+        });
 
         const offset = (parseInt(page) - 1) * parseInt(limit);
 
         // Construire la condition de recherche
         const where = {
-            code_structure,
-            statutRecette: 'validé',
-            date: dateCondition,
-            ...(magasinId && { magasinId }),
-            ...(agentId && { agentId }),
-            ...(categoryId && { categoryId })
+            ...whereRecettes,
+            ...(categoryId && { categoryId: parseInt(categoryId) }) //...(categoryId && { categoryId })
         };
 
         // Ajouter la recherche si spécifiée
@@ -904,8 +868,12 @@ exports.getRecettesDetaillees = async (req, res) => {
  */
 exports.getDonneesEvolutives = async (req, res) => {
     try {
+        const authUser = req.user;
+
+        if (!authUser) {
+          return res.status(401).json({ message: "Non authentifié" });
+        }
         const {
-            code_structure,
             magasinId,
             agentId,
             periode,
@@ -915,13 +883,32 @@ exports.getDonneesEvolutives = async (req, res) => {
             groupBy = 'jour' // jour, semaine, mois
         } = req.query;
 
+        const code_structure = authUser.code_structure;
+
         if (!code_structure) {
             return res.status(400).json({
                 error: 'Le paramètre "code_structure" est requis'
             });
         }
 
-        let dateCondition;
+        const magasinIdFromQuery = magasinId ? parseInt(magasinId) : null;
+        const agentIdFromQuery = agentId ? parseInt(agentId) : null;
+
+        const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
+        const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+
+        // magasin final
+        let magasinIdFinal = magasinIdFromQuery;
+
+        // agent final
+        let agentIdFinal = agentIdFromQuery;
+
+        // ✅ Gérant => uniquement son magasin
+        if (isGerant && !isAdmin) {
+        magasinIdFinal = authUser.magasinId;
+        }
+
+        /* let dateCondition;
         if (periode) {
             const { debut, fin } = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
             dateCondition = { [Op.between]: [debut, fin] };
@@ -933,7 +920,29 @@ exports.getDonneesEvolutives = async (req, res) => {
             const debut = new Date();
             debut.setMonth(debut.getMonth() - 1);
             dateCondition = { [Op.between]: [debut, fin] };
-        }
+        } */
+       
+        const whereRecettes = FonctionsUtilitaires.buildWhereFinance({
+            periode,
+            dateReference,
+            fromDate,
+            toDate,
+            code_structure,
+            magasinId:magasinIdFinal,
+            agentId: agentIdFinal,
+            type: 'RECETTE'
+        });
+
+        const whereDepenses = FonctionsUtilitaires.buildWhereFinance({
+            periode,
+            dateReference,
+            fromDate,
+            toDate,
+            code_structure,
+            magasinId: magasinIdFinal,
+            agentId: agentIdFinal,
+            type: 'DEPENSE'
+        });
 
         // Déterminer la fonction de groupement
         let groupFunction;
@@ -957,13 +966,7 @@ exports.getDonneesEvolutives = async (req, res) => {
                 [fn('SUM', col('montant')), 'montantRecettes'],
                 [fn('COUNT', col('id')), 'nbRecettes']
             ],
-            where: {
-                code_structure,
-                statutRecette: 'validé',
-                date: dateCondition,
-                ...(magasinId && { magasinId }),
-                ...(agentId && { agentId })
-            },
+            where: whereRecettes,
             group: [groupFunction],
             order: [[groupFunction, 'ASC']],
             raw: true
@@ -976,13 +979,7 @@ exports.getDonneesEvolutives = async (req, res) => {
                 [fn('SUM', col('montant')), 'montantDepenses'],
                 [fn('COUNT', col('id')), 'nbDepenses']
             ],
-            where: {
-                code_structure,
-                statutDepense: 'validé',
-                date: dateCondition,
-                ...(magasinId && { magasinId }),
-                ...(agentId && { agentId })
-            },
+            where: whereDepenses,
             group: [groupFunction],
             order: [[groupFunction, 'ASC']],
             raw: true
@@ -1019,8 +1016,12 @@ exports.getDonneesEvolutives = async (req, res) => {
  */
 exports.getDonneesComparatives = async (req, res) => {
     try {
+        const authUser = req.user;
+
+        if (!authUser) {
+            return res.status(401).json({ message: "Non authentifié" });
+        }
         const {
-            code_structure,
             magasinId,
             agentId,
             periode = 'mois',
@@ -1028,10 +1029,29 @@ exports.getDonneesComparatives = async (req, res) => {
             nombrePeriodes = 3
         } = req.query;
 
+        const code_structure = authUser.code_structure;
+
         if (!code_structure) {
             return res.status(400).json({
                 error: 'Le paramètre "code_structure" est requis'
             });
+        }
+
+        const magasinIdFromQuery = magasinId ? parseInt(magasinId) : null;
+        const agentIdFromQuery = agentId ? parseInt(agentId) : null;
+
+        const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
+        const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+
+        // magasin final
+        let magasinIdFinal = magasinIdFromQuery;
+
+        // agent final
+        let agentIdFinal = agentIdFromQuery;
+
+        // ✅ Gérant => uniquement son magasin
+        if (isGerant && !isAdmin) {
+        magasinIdFinal = authUser.magasinId;
         }
 
         const donneesPeriodes = [];
@@ -1053,15 +1073,15 @@ exports.getDonneesComparatives = async (req, res) => {
             // Calculer les indicateurs pour cette période
             const filters = {
                 code_structure,
-                magasinId: magasinId ? parseInt(magasinId) : undefined,
-                agentId: agentId ? parseInt(agentId) : undefined,
+                magasinId: magasinIdFinal,
+                agentId: agentIdFinal,
                 fromDate: periodeActuelle.debut,
                 toDate: periodeActuelle.fin
             };
 
             const [indicateurs, fluxTresorerie] = await Promise.all([
-                calculerIndicateursPrincipaux(filters),
-                calculerFluxTresorerie(filters)
+                utilitaireRapport.calculerIndicateursPrincipaux(filters),
+                utilitaireRapport.calculerFluxTresorerie(filters)
             ]);
 
             donneesPeriodes.push({

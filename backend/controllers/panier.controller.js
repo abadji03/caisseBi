@@ -72,7 +72,7 @@ exports.getPaniersByStructure = async (req, res) => {
 
     else if (isCaissier || isEmploye) {
       // Caissier/Employé -> uniquement ses ventes
-      whereCondition.userId = authUser.id;
+      whereCondition.agentId = authUser.id;
 
       // (Optionnel) si tu veux aussi limiter au magasin
       if (authUser.magasinId) {
@@ -395,7 +395,7 @@ exports.getPanierByBonId = async (req, res) => {
 };
 
 // Récupérer les paniers pour une journée spécifique (par date)
-exports.getPaniersParDate = async (req, res) => {
+/* exports.getPaniersParDate = async (req, res) => {
   try {
     const authUser = req.user;
 
@@ -488,7 +488,138 @@ exports.getPaniersParDate = async (req, res) => {
       error: error.message 
     });
   }
+}; */
+
+exports.getPaniersParDate = async (req, res) => {
+  try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
+    const { date } = req.params; // YYYY-MM-DD
+    const { magasinId } = req.query; // accepté seulement pour admin
+    const { Op } = db.Sequelize;
+
+    // 🔥 code_structure vient du token, pas du query
+    const code_structure = authUser.code_structure;
+
+    // Vérifier le format de la date
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({
+        message: "Format de date invalide. Utilisez YYYY-MM-DD"
+      });
+    }
+
+    // Calculer début et fin de la journée spécifiée
+    const dateSpecifique = new Date(date);
+
+    const debutJournee = new Date(dateSpecifique);
+    debutJournee.setHours(0, 0, 0, 0);
+
+    const finJournee = new Date(dateSpecifique);
+    finJournee.setHours(23, 59, 59, 999);
+
+    // Vérifier rôle
+    const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+    const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
+    const isEmploye = authUser.roles?.some(r => r.nom === "Employé");
+
+    // ==========================
+    // 🔹 BASE WHERE
+    // ==========================
+    const whereCondition = {
+      code_structure,
+      dateCreation: {
+        [Op.between]: [debutJournee, finJournee]
+      }
+    };
+
+    // ==========================
+    // 🔹 SCOPE SELON ROLE
+    // ==========================
+    if (isAdmin) {
+      // Admin -> tout structure
+      if (magasinId) {
+        whereCondition.magasinId = magasinId;
+      }
+    }
+
+    else if (isGerant) {
+      // Gérant -> uniquement son magasin
+      if (!authUser.magasinId) {
+        return res.status(400).json({
+          message: "Ce gérant n’est associé à aucun magasin"
+        });
+      }
+
+      whereCondition.magasinId = authUser.magasinId;
+    }
+
+    else if (isCaissier || isEmploye) {
+      // Caissier/Employé -> uniquement ses paniers
+      whereCondition.agentId = authUser.id;
+
+      // Optionnel : renforcer aussi par magasin
+      if (authUser.magasinId) {
+        whereCondition.magasinId = authUser.magasinId;
+      }
+    }
+
+    else {
+      return res.status(403).json({ message: "Accès interdit : rôle insuffisant" });
+    }
+
+    // ==========================
+    // 🔹 QUERY
+    // ==========================
+    const paniers = await Panier.findAll({
+      where: whereCondition,
+      include: [
+        { model: db.Client, as: "Client" },
+        { model: db.Bon, as: "Bon" },
+        { model: db.Magasin, as: "Magasin" },
+        { model: db.Users, as: "User" },
+        {
+          model: db.ArticlePanier,
+          as: "ArticlePaniers",
+          include: [{ model: db.Produit, as: "Produit" }]
+        }
+      ],
+      order: [["dateCreation", "DESC"]],
+    });
+
+    // ==========================
+    // 🔹 STATS
+    // ==========================
+    const stats = {
+      totalVentes: paniers.length,
+      totalHT: paniers.reduce((sum, panier) => sum + parseFloat(panier.totalHT || 0), 0),
+      totalTTC: paniers.reduce((sum, panier) => sum + parseFloat(panier.totalTTC || 0), 0),
+      parStatut: {
+        validé: paniers.filter(p => p.statut === "validé").length,
+        annulé: paniers.filter(p => p.statut === "annulé").length,
+        retourné: paniers.filter(p => p.statut === "retourné").length,
+        en_cours: paniers.filter(p => p.statut === "en_cours").length,
+      }
+    };
+
+    return res.json({
+      date,
+      paniers,
+      statistiques: stats
+    });
+
+  } catch (error) {
+    console.error("Erreur récupération paniers par date:", error);
+    return res.status(500).json({
+      error: error.message
+    });
+  }
 };
+
 
 // Lister les paniers d'une structure avec filtre par magasin
 exports.getPaniersByStructureBis = async (req, res) => {
@@ -501,35 +632,6 @@ exports.getPaniersByStructureBis = async (req, res) => {
     const { code_structure } = req.params;
     const { magasinId, dateDebut, dateFin, statut } = req.query;
     
-    /* // Construire la condition where
-    const whereCondition = { code_structure };
-    
-    // Filtre par magasin
-    if (magasinId) {
-      whereCondition.magasinId = magasinId;
-    }
-    
-    // Filtre par statut
-    if (statut) {
-      whereCondition.statut = statut;
-    }
-    
-    // Filtre par date
-    if (dateDebut || dateFin) {
-      whereCondition.dateCreation = {};
-      
-      if (dateDebut) {
-        const debut = new Date(dateDebut);
-        debut.setHours(0, 0, 0, 0);
-        whereCondition.dateCreation[db.Sequelize.Op.gte] = debut;
-      }
-      
-      if (dateFin) {
-        const fin = new Date(dateFin);
-        fin.setHours(23, 59, 59, 999);
-        whereCondition.dateCreation[db.Sequelize.Op.lte] = fin;
-      }
-    } */
    // 🔥 Vérification : l’utilisateur doit appartenir à la structure demandée
     if (authUser.code_structure !== code_structure) {
       return res.status(403).json({ message: "Accès interdit : structure non autorisée" });
@@ -564,7 +666,7 @@ exports.getPaniersByStructureBis = async (req, res) => {
 
     else if (isCaissier || isEmploye) {
       // Caissier/Employé -> uniquement ses paniers
-      whereCondition.userId = authUser.id;
+      whereCondition.agentId = authUser.id;
 
       // Optionnel : renforcer aussi par magasin
       if (authUser.magasinId) {
@@ -575,6 +677,7 @@ exports.getPaniersByStructureBis = async (req, res) => {
     else {
       return res.status(403).json({ message: "Accès interdit : rôle insuffisant" });
     }
+    
 
     // ==========================
     // 🔹 FILTRES QUERY PARAMS
@@ -660,14 +763,17 @@ exports.getPaniersBrouillons = async (req, res) => {
 };
 
 // Récupérer uniquement les paniers d'aujourd'hui
-exports.getPaniersAujourdhui = async (req, res) => {
+/* exports.getPaniersAujourdhui = async (req, res) => {
   try {
     const authUser = req.user;
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-    const { code_structure, magasinId,bonId } = req.query;
+    // 🔥 Vérification structure (obligatoire)
+    const code_structure = authUser.code_structure;
+
+    const { magasinId,bonId } = req.query;
     const { Op } = db.Sequelize;
     
     // Date d'aujourd'hui
@@ -751,5 +857,148 @@ exports.getPaniersAujourdhui = async (req, res) => {
       error: error.message 
     });
   }
+}; */
+exports.getPaniersAujourdhui = async (req, res) => {
+  try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
+    const { Op } = db.Sequelize;
+    const { bonId, magasinId } = req.query; // magasinId sera autorisé seulement pour admin
+
+    // 🔥 Vérification structure (obligatoire)
+    const code_structure = authUser.code_structure;
+
+    // Date d'aujourd'hui
+    const aujourdhui = new Date();
+    const debutJournee = new Date(aujourdhui);
+    debutJournee.setHours(0, 0, 0, 0);
+
+    const finJournee = new Date(aujourdhui);
+    finJournee.setHours(23, 59, 59, 999);
+
+    // Vérifier rôle
+    const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+    const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
+    const isEmploye = authUser.roles?.some(r => r.nom === "Employé");
+
+    // ==========================
+    // 🔹 BASE WHERE
+    // ==========================
+    const whereCondition = {
+      code_structure,
+      statut: { [Op.ne]: "en_cours" },
+      dateCreation: {
+        [Op.between]: [debutJournee, finJournee],
+      },
+      [Op.or]: [
+        { typeEntite: "autre" },
+        { typeEntite: { [Op.notIn]: ["client", "fournisseur"] } },
+      ],
+    };
+
+    // ==========================
+    // 🔹 SCOPE SELON ROLE
+    // ==========================
+    if (isAdmin) {
+      // Admin -> tout structure
+      // Filtre magasinId optionnel (query)
+      if (magasinId) {
+        whereCondition.magasinId = magasinId;
+      }
+    } 
+    else if (isGerant) {
+      // Gérant -> uniquement son magasin
+      if (!authUser.magasinId) {
+        return res.status(400).json({
+          message: "Ce gérant n’est associé à aucun magasin"
+        });
+      }
+
+      whereCondition.magasinId = authUser.magasinId;
+    } 
+    else if (isCaissier || isEmploye) {
+      // Caissier/Employé -> uniquement ses paniers
+      whereCondition.agentId = authUser.id;
+
+      // Optionnel : renforcer par magasin
+      if (authUser.magasinId) {
+        whereCondition.magasinId = authUser.magasinId;
+      }
+    } 
+    else {
+      return res.status(403).json({ message: "Accès interdit : rôle insuffisant" });
+    }
+
+    // ==========================
+    // 🔹 FILTRE bonId
+    // ==========================
+    if (bonId === "null" || bonId === "") {
+      // Ventes directes (sans bon)
+      whereCondition.bonId = null;
+    } else if (bonId) {
+      // si bonId est un vrai ID
+      whereCondition.bonId = bonId;
+    }
+
+    // ==========================
+    // 🔹 QUERY PANIERS
+    // ==========================
+    const paniers = await Panier.findAll({
+      where: whereCondition,
+      include: [
+        {
+          model: db.Magasin,
+          attributes: ["id", "nom"],
+        },
+        {
+          model: db.Users,
+          attributes: ["id", "nom"],
+        },
+        {
+          model: db.Paiement,
+        },
+        {
+          model: db.ArticlePanier,
+          include: [
+            {
+              model: db.Produit,
+            },
+          ],
+        },
+      ],
+      order: [["dateCreation", "DESC"]],
+    });
+
+    // ==========================
+    // 🔹 TOTAL GLOBAL
+    // ==========================
+    const whereTotalGlobal = {
+      ...whereCondition,
+      statut: {
+        [Op.notIn]: ["annulé", "retourné", "en_cours"],
+      },
+    };
+
+    const totalGlobal = await Panier.sum("totalTTC", {
+      where: whereTotalGlobal,
+    });
+
+    return res.json({
+      totalGlobal: totalGlobal || 0,
+      nombrePaniers: paniers.length,
+      paniers,
+    });
+  } catch (error) {
+    console.error("Erreur récupération paniers du jour:", error);
+    return res.status(500).json({
+      error: error.message,
+    });
+  }
 };
+
 

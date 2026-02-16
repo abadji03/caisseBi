@@ -304,3 +304,376 @@ export interface CommandeStats {
   dateDebut: string;
   dateFin: string;
 }
+
+//..................KPI RAPPORT STOCK..................................
+export interface IndicateursStocks {
+  niveau: string;
+  periode: string;
+  dateDebut: Date;
+  dateFin: Date;
+  totalProduits: number;
+  produitsUniques: number;
+  produitsEnAlerte: number;
+  produitsRupture: number;
+  produitsEnSurStock: number;
+  produitsAReapprovisionner: number;
+  produitsPerissable: number;
+  valeurStockInitial: number;
+  valeurStockFinal: number;
+  valeurStockInitialVente: number;
+  valeurStockFinalVente: number;
+}
+
+export interface StatistiqueProduit {
+  produitId: number;
+  produit: {
+    id: number;
+    designation: string;
+    categorieId: number;
+    categorie?: string;
+    unite: string;
+    perissable: boolean;
+  };
+  prixAchat: number;
+  prixVente: number;
+  stockInitial: number;
+  valeurStockInitial: number;
+  entrees: number;
+  sorties: number;
+  stockFinal: number;
+  valeurStockFinal: number;
+  tauxRotation: number;
+  statut: string;
+  seuilAlerte: number;
+  seuilReapprovisionnement: number;
+  datePeremption?: Date;
+}
+
+export interface StatsProduitsResponse {
+  niveau: string;
+  periode: string;
+  total: number;
+  page: number;
+  totalPages: number;
+  limit: number;
+  produits: StatistiqueProduit[];
+}
+
+export interface MouvementsResponse {
+  niveau: string;
+  periode: string;
+  total: number;
+  page: number;
+  totalPages: number;
+  limit: number;
+  mouvements: MouvementStock[];
+}
+
+export interface EvolutionStock {
+  date: string;
+  entrees: number;
+  sorties: number;
+  solde: number;
+}
+
+export interface RepartitionCategorie {
+  categorie: string;
+  quantite: number;
+  nombreProduits: number;
+}
+
+export interface TopProduitVendu {
+  produitId: number;
+  designation: string;
+  famille: string;
+  quantiteVendue: number;
+  totalSorties: number;
+}
+
+export interface StatsGraphiquesResponse {
+  niveau: string;
+  periode: string;
+  evolution: EvolutionStock[];
+  repartitionCategories: RepartitionCategorie[];
+  topProduits: TopProduitVendu[];
+}
+
+export interface ProduitSpecifique {
+  produitId: number;
+  designation: string;
+  magasinId: number;
+  quantite: number;
+  seuilAlerte: number;
+  seuilReapprovisionnement: number;
+  datePeremption?: Date;
+  dateDerniereMiseAJour: Date;
+}
+
+export interface ProduitsSpecifiquesResponse {
+  niveau: string;
+  periode: string;
+  produitsRupture: ProduitSpecifique[];
+  produitsAlerte: ProduitSpecifique[];
+  produitsAReapprovisionner: ProduitSpecifique[];
+  produitsSurStock: ProduitSpecifique[];
+  produitsPeremption: ProduitSpecifique[];
+  produitsRecents: ProduitSpecifique[];
+  produitsRotationLente: ProduitSpecifique[];
+}
+
+export interface MouvementStock {
+  id: number;
+  ref: string;
+  produitId: number;
+  produit: string;
+  magasinId: number;
+  magasin: string;
+  typeMouvement: string;
+  quantite: number;
+  prixUnitaire: number;
+  prixTotal: number;
+  dateMouvement: Date;
+  description: string;
+  acteurId: number;
+  acteur: string;
+}
+export interface RapportCompletStocksResponse {
+  niveau: string;
+  periode: string;
+  dateGeneration: Date;
+  indicateurs: IndicateursStocks;
+  produits: {
+    items: StatistiqueProduit[];
+    total: number;
+    page: number;
+    totalPages: number;
+  };
+  mouvements: {
+    items: MouvementStock[];
+    total: number;
+    page: number;
+    totalPages: number;
+  };
+  graphiques: StatsGraphiquesResponse;
+  produitsSpecifiques: {
+    produitsRupture: number;
+    produitsAlerte: number;
+    produitsAReapprovisionner: number;
+    produitsSurStock: number;
+    produitsPeremption: number;
+    produitsRecents: number;
+    produitsRotationLente: number;
+    details: {
+      rupture: ProduitSpecifique[];
+      alerte: ProduitSpecifique[];
+      peremption: ProduitSpecifique[];
+    };
+  };
+}
+
+export interface StatistiquesProduit {
+  produit: StatistiqueProduit;
+  mouvements: MouvementStock[];
+  tendances: {
+    evolutionJournaliere: { date: string; quantite: number }[];
+    saisonnalite: string;
+    recommandations: string[];
+  };
+}
+
+/* export interface DonneesRapport {
+  indicateurs: IndicateursStocks | null;
+  produits: StatsProduitsResponse | null;
+  mouvements: MouvementsResponse | null;
+  graphiques: StatsGraphiquesResponse | null;
+  produitsSpecifiques: ProduitsSpecifiquesResponse | null;
+} */
+export interface DonneesRapport {
+  indicateurs: IndicateursStocks | null;
+  produits: (StatsProduitsResponse & { items: StatistiqueProduit[] }) | null;
+  mouvements: (MouvementsResponse & { items: MouvementStock[] }) | null;
+  graphiques: StatsGraphiquesResponse | null;
+  produitsSpecifiques: ProduitsSpecifiquesResponse | null;
+}
+
+//..................................KPI DE VENTE POUR LE RAPPORT ..........................
+// À ajouter dans kpiCaisse.model.ts
+
+export interface RapportVenteParams extends KPIParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  fromDate?: string;
+  toDate?: string;
+}
+
+export interface ProduitVendu {
+  produit: {
+    id: number;
+    designation: string;
+    prixVenteUnitaire: number;
+  };
+  quantite: number;
+  ca: number;
+  marge: number;
+  nombreVentes: number;
+}
+
+export interface ClientStat {
+  client: {
+    id: number | null;
+    nomComplet: string;
+  };
+  nbAchats: number;
+  ca: number;
+  dernierAchat: Date | null;
+}
+
+export interface VendeurPerformance {
+  vendeur: VendeurInfo;
+  nbVentes: number;
+  caHT: number;
+  caTTC: number;
+  ticketMoyen: number;
+  panierMoyen: number;
+}
+
+export interface EvolutionParJour {
+  date: string;
+  nombreVentes: number;
+  ca: number;
+}
+
+export interface ModePaiementStat {
+  mode: string;
+  montantTotal: number;
+  occurrences: number;
+  pourcentage?: number;
+}
+
+export interface ArticleVente {
+  quantite: number;
+  produit: string;
+  totalTTC: number;
+}
+
+export interface PaiementVente {
+  methodePaiement: string;
+  montant: number;
+  statut: string;
+}
+
+export interface VenteDetail {
+  id: number;
+  dateCreation: Date;
+  totalTTC: number;
+  totalHT: number;
+  statut: string;
+  clientId?: number;
+  clientNom: string;
+  agent: {
+    id: number;
+    nom: string;
+    prenom: string;
+  } | null;
+  articles: ArticleVente[];
+  nombreArticles: number;
+  paiements: PaiementVente[];
+}
+
+export interface RapportVenteResponse {
+  niveau: 'structure' | 'magasin';
+  periode: string;
+  dateDebut: Date;
+  dateFin: Date;
+  dateGeneration: Date;
+  
+  // KPI principaux
+  totalVentes: number;
+  chiffreAffairesTTC: number;
+  chiffreAffairesHT: number;
+  margeBeneficiaire: number;
+  ticketMoyen: number;
+  panierMoyen: number;
+  
+  // Évolution
+  evolutionCA: {
+    valeur: number;
+    tendance: '↑' | '↓' | '→';
+  };
+  evolutionVolume: {
+    valeur: number;
+    tendance: '↑' | '↓' | '→';
+  };
+  
+  // Données détaillées
+  evolutionParJour: EvolutionParJour[];
+  statmodesPaiement: ModePaiementStat[];
+  topProduits: ProduitVendu[];
+  topClients: ClientStat[];
+  vendeursPerformance: VendeurPerformance[];
+  
+  // Détails des ventes avec pagination
+  ventes: VenteDetail[];
+  pagination: {
+    total: number;
+    page: number;
+    totalPages: number;
+    limit: number;
+  };
+}
+export interface VendeurInfo {
+  id: number;
+  nom: string;
+  prenom: string;
+  email: string;
+}
+export interface VendeurDetailsResponse {
+  vendeur: VendeurInfo;
+  periode: string;
+  dateDebut: Date;
+  dateFin: Date;
+  stats: {
+    totalVentes: number;
+    chiffreAffairesHT: number;
+    chiffreAffairesTTC: number;
+    ticketMoyen: number;
+    panierMoyen: number;
+    topProduits: {
+      produit: { id: number; designation: string };
+      quantite: number;
+      ca: number;
+    }[];
+    modesPaiement: {
+      mode: string;
+      montantTotal: number;
+      occurrences: number;
+    }[];
+    evolution?: EvolutionParJour[];
+  };
+  evolution: EvolutionParJour[];
+  ventes: {
+    id: number;
+    dateCreation: Date;
+    totalTTC: number;
+    client: string;
+    nombreArticles: number;
+    paiements: string;
+    statut: string;
+  }[];
+}
+
+export interface ComparaisonOptions {
+  value: string;
+  label: string;
+}
+
+export interface ComparaisonResponse {
+  type: 'periode' | 'vendeur' | 'magasin';
+  ca1: number;
+  ca2: number;
+  ventes1: number;
+  ventes2: number;
+  ticketMoyen1: number;
+  ticketMoyen2: number;
+}

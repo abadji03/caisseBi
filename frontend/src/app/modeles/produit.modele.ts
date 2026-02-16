@@ -136,6 +136,7 @@ export class Produits {
   public dernierPrixAchat?: number; // Dernier prix d'achat connu
   public statut?: boolean; // Dernier prix d'achat connu
   public tauxTVA = 0; // TVA par produit
+  categorie?: CategorieProduits; // Catégorie du produit
 
 
   constructor(data?: Partial<Produits>) {

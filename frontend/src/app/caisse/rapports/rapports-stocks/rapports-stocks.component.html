@@ -1,541 +1,718 @@
-<div class="container-fluid">
-  <div
-    *ngIf="filteredProduits.length > 0"
-    class="d-flex justify-content-end align-items-center no-printer"
-  >
-    <div *ngIf="isGeneratingPDF" class="spinner-container me-5">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Génération en cours...</span>
-      </div>
-      <p>Génération du PDF en cours... {{ progress }}%</p>
-    </div>
-    <button class="btn btn-outline-dark me-2" (click)="impression()">
-      <i class="bi bi-printer"></i> Imprimer
-    </button>
-    <button class="btn btn-outline-dark me-2" (click)="exportToPDF()">
-      <i class="bi bi-file-earmark-pdf"></i> Exporter PDF
-    </button>
-    <button class="btn btn-outline-dark" (click)="exportToExcel()">
-      <i class="bi bi-file-earmark-excel"></i> Exporter Excel
-    </button>
-  </div>
+<div class="container-fluid" id="rapport-stock">
+  <!-- En-tête avec boutons d'export -->
+  <div class="d-flex justify-content-between align-items-center no-printer mb-3">
+    <h3 class="mb-0">
+      <i class="bi bi-boxes me-2"></i>
+      Rapport des Stocks
+    </h3>
 
-  <hr class="border border-primary no-printer" />
+    <div class="d-flex align-items-center gap-2">
+      <!-- Indicateur de chargement -->
+      <div *ngIf="isLoading" class="me-3">
+        <div class="spinner-border spinner-border-sm text-primary" role="status">
+          <span class="visually-hidden">Chargement...</span>
+        </div>
+        <span class="text-muted ms-2">Chargement...</span>
+      </div>
+
+      <div *ngIf="isGeneratingPDF" class="me-3">
+        <div class="spinner-border spinner-border-sm text-primary" role="status">
+          <span class="visually-hidden">Génération PDF...</span>
+        </div>
+        <span class="text-muted ms-2">Génération PDF... {{ progress }}%</span>
+      </div>
+
+      <button class="btn btn-outline-primary" (click)="impression()" [disabled]="isLoading">
+        <i class="bi bi-printer"></i> Imprimer
+      </button>
+      <button class="btn btn-outline-danger" (click)="exportToPDF()" [disabled]="isLoading || isGeneratingPDF">
+        <i class="bi bi-file-earmark-pdf"></i> PDF
+      </button>
+      <button class="btn btn-outline-success" (click)="exportToExcel()" [disabled]="isLoading">
+        <i class="bi bi-file-earmark-excel"></i> Excel
+      </button>
+    </div>
+  </div>
 
   <!-- Filtres -->
   <div class="card p-3 mb-4 shadow-sm no-printer">
-    <h5 class="fw-bold"><i class="bi bi-funnel"></i> Filtres</h5>
-    <div class="row g-3 align-items-center">
-      <div class="col-md-4">
-        <label for="dateDebut" class="form-label fw-bold">Date de début :</label>
+    <h5 class="fw-bold mb-3"><i class="bi bi-funnel me-2"></i>Filtres</h5>
+    <div class="row g-3">
+      <!-- Sélecteur de période -->
+      <div class="col-md-3">
+        <label for="periode" class="form-label fw-semibold">Période :</label>
+        <select
+          id="periode"
+          class="form-select"
+          [(ngModel)]="periodeSelectionnee"
+          (change)="onPeriodeChange()"
+          [disabled]="isLoading"
+        >
+          <option *ngFor="let periode of periodesDisponibles" [value]="periode.value">
+            {{ periode.label }}
+          </option>
+        </select>
+      </div>
+
+      <div class="col-md-3" *ngIf="periodeSelectionnee !== 'personnalisee'">
+        <label for="dateReference" class="form-label fw-semibold">Date de référence :</label>
+        <input
+          type="date"
+          id="dateReference"
+          class="form-control"
+          [(ngModel)]="dateReference"
+          (change)="filtrerDonnees()"
+          [disabled]="isLoading"
+        />
+        <small class="form-text text-muted">
+          Pour calculer la période à partir de cette date
+        </small>
+      </div>
+
+      <!-- Dates personnalisées -->
+      <div class="col-md-3" *ngIf="periodeSelectionnee === 'personnalisee'">
+        <label for="dateDebut" class="form-label fw-semibold">Date de début :</label>
         <input
           type="date"
           id="dateDebut"
           class="form-control"
           [(ngModel)]="dateDebut"
           (change)="filtrerDates()"
+          [disabled]="isLoading"
         />
       </div>
 
-      <div class="col-md-4">
-        <label for="dateFin" class="form-label fw-bold">Date de fin :</label>
+      <div class="col-md-3" *ngIf="periodeSelectionnee === 'personnalisee'">
+        <label for="dateFin" class="form-label fw-semibold">Date de fin :</label>
         <input
           type="date"
           id="dateFin"
           class="form-control"
           [(ngModel)]="dateFin"
           (change)="filtrerDates()"
+          [disabled]="isLoading"
         />
       </div>
 
-      <div class="col-md-4" *ngIf="isAdmin">
-        <label for="succursales" class="fw-bold">Succursale :</label>
-        <select class="form-control" name="succursales" (change)="onMagasinSelect($event)">
-          <option value="-1">Toutes les succursales</option>
-          <option *ngFor="let magasin of magasins" [value]="magasin.id">{{ magasin.nom }}</option>
+      <!-- Filtre magasin (si admin) -->
+      <div class="col-md-3" *ngIf="isAdmin">
+        <label for="magasin" class="form-label fw-semibold">Magasin :</label>
+        <select
+          id="magasin"
+          class="form-select"
+          [(ngModel)]="selectedMagasinId"
+          (change)="onMagasinSelect($event)"
+          [disabled]="isLoading"
+        >
+          <option [value]="-1">Tous les magasins</option>
+          <option *ngFor="let magasin of magasins" [value]="magasin.id">
+            {{ magasin.nom }}
+          </option>
         </select>
+      </div>
+
+      <!-- Filtre catégorie -->
+      <div class="col-md-3">
+        <label for="categorie" class="form-label fw-semibold">Catégorie :</label>
+        <select
+          id="categorie"
+          class="form-select"
+          [(ngModel)]="selectedCategorie"
+          (change)="filtrerDonnees()"
+          [disabled]="isLoading"
+        >
+          <option value="all">Toutes les catégories</option>
+          <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+        </select>
+      </div>
+
+      <!-- Filtre statut -->
+      <div class="col-md-3">
+        <label for="statut" class="form-label fw-semibold">Statut :</label>
+        <select
+          id="statut"
+          class="form-select"
+          [(ngModel)]="selectedStatut"
+          (change)="filtrerDonnees()"
+          [disabled]="isLoading"
+        >
+          <option value="all">Tous les statuts</option>
+          <option *ngFor="let statut of statutsDisponibles" [value]="statut">{{ statut }}</option>
+        </select>
+      </div>
+
+      <!-- Bouton de rafraîchissement -->
+      <div class="col-12 mt-2">
+        <button class="btn btn-primary" (click)="filtrerDonnees()" [disabled]="isLoading">
+          <i class="bi bi-arrow-clockwise"></i> Appliquer les filtres
+        </button>
+        <button *ngIf="searchTerm" class="btn btn-outline-secondary ms-2" (click)="searchTerm = ''; onSearchChange('stock')">
+          <i class="bi bi-x-circle"></i> Effacer la recherche
+        </button>
       </div>
     </div>
   </div>
-  <div *ngIf="filteredProduits.length === 0" class="d-flex justify-content-center no-printer">
-    <h1 class="text-muted">
-      Aucune donnée correspondant à la période actuelle. Veuillez choisir une autre période
-    </h1>
+
+  <!-- Message si chargement -->
+  <div *ngIf="isLoading" class="text-center py-5">
+    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+    <p class="mt-3 text-muted">Chargement des données de stock...</p>
   </div>
-  <div *ngIf="filteredProduits.length > 0" class="rapport" id="rapport">
-    <div class="container mt-4 p-4 border">
+
+  <!-- Message si pas de données -->
+  <div
+    *ngIf="!isLoading && indicateursStocks && indicateursStocks.totalProduits === 0"
+    class="alert alert-warning text-center"
+  >
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    Aucune donnée disponible pour les critères sélectionnés. Veuillez ajuster les filtres.
+  </div>
+
+  <!-- Contenu principal du rapport -->
+  <div *ngIf="!isLoading && indicateursStocks && indicateursStocks.totalProduits > 0" class="rapport" id="rapport">
+    <div class="container mt-4 p-4 border bg-white">
       <!-- En-tête du rapport -->
       <div *ngIf="isPrinting" class="d-flex justify-content-between align-items-center mb-4">
         <!-- Logo de l'entreprise -->
         <div>
           <img src="./assets/CMP.png" alt="Logo Entreprise" style="height: 80px" />
         </div>
+
         <!-- Informations de l'entreprise -->
         <div class="text-end">
-          <!-- <h4 class="fw-bold">Rapport de Stock</h4> -->
-          <p><strong>Entreprise :</strong> Nom de l'Entreprise</p>
-          <p><strong>Adresse :</strong> Dakar, Sénégal</p>
-          <p><strong>Téléphone :</strong> +221 77 123 45 67</p>
-          <p>
+          <p class="mb-1"><strong>Entreprise :</strong> Nom de l'Entreprise</p>
+          <p class="mb-1"><strong>Adresse :</strong> Dakar, Sénégal</p>
+          <p class="mb-1"><strong>Téléphone :</strong> +221 77 123 45 67</p>
+          <p class="mb-1">
             <strong>Succursale :</strong>
-            {{
-              selectedMagasinId !== -1
-                ? getNomMagasinsById(selectedMagasinId)
-                : 'Toutes les succursales'
-            }}
+            {{ selectedMagasinId !== -1 ? getNomMagasin(selectedMagasinId) : 'Toutes les succursales' }}
           </p>
-          <p><strong>Responsable : </strong> {{ 'Responsable' }}</p>
-          <p><strong>Date :</strong> {{ dateGeneration | date: 'dd/MM/yyyy' }}</p>
+          <p class="mb-1"><strong>Période :</strong> {{ periodeAffichage }}</p>
+          <p class="mb-1"><strong>Date du rapport :</strong> {{ dateGeneration | date: 'dd/MM/yyyy à HH:mm' }}</p>
         </div>
       </div>
 
-      <!-- Contenu du rapport -->
-      <div class="border-top pt-3">
-        <!-- Vue d'Ensemble -->
-        <div class="d-flex justify-content-center my-5">
-          <h1 class="fw-bold">
-            <!-- <i class="bi bi-bar-chart-line"></i>  -->
-            Rapport des Stocks pour la période allant du {{ dateDebut | date: 'dd/MM/yyyy' }} au
-            {{ dateFin | date: 'dd/MM/yyyy' }}
-          </h1>
+      <!-- Titre du rapport -->
+      <div class="text-center mb-5">
+        <h1 class="fw-bold mb-2">Rapport des Stocks</h1>
+        <h4 class="text-muted">{{ periodeAffichage }}</h4>
+      </div>
+
+      <!-- Section indicateurs statistiques -->
+      <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h3 class="fw-bold mb-0"><i class="bi bi-bar-chart me-2"></i>Indicateurs Clés</h3>
         </div>
-        <div class="bg-light d-flex justify-content-center align-items-center p-2">
-          <h3 class="fw-bold">Résumé du rapport des stocks</h3>
+        <div class="card-body">
+          <div class="row g-3">
+            <!-- Total Produits -->
+            <div class="col-md-4 col-lg-3">
+              <div class="card border-info shadow-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-list-check fs-2 text-info me-3"></i>
+                  <div>
+                    <h5 class="text-muted fw-bold mb-1">Total Produits</h5>
+                    <p class="fs-4 fw-bold mb-0">{{ indicateursStocks.totalProduits }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Valeur Stock Initial -->
+            <div class="col-md-4 col-lg-3">
+              <div class="card border-success shadow-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-cash-stack fs-2 text-success me-3"></i>
+                  <div>
+                    <h5 class="text-muted fw-bold mb-1">Valeur Stock Initial</h5>
+                    <p class="fs-8 fw-bold mb-0">{{ indicateursStocks.valeurStockInitial | number }} F CFA</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Valeur Stock Final -->
+            <div class="col-md-4 col-lg-3">
+              <div class="card border-primary shadow-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-graph-up-arrow fs-2 text-primary me-3"></i>
+                  <div>
+                    <h5 class="text-muted fw-bold mb-1">Valeur Stock Final</h5>
+                    <p class="fs-8 fw-bold mb-0">{{ indicateursStocks.valeurStockFinal | number }} F CFA</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Produits Uniques -->
+            <div class="col-md-4 col-lg-3">
+              <div class="card border-secondary shadow-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-tags fs-2 text-secondary me-3"></i>
+                  <div>
+                    <h5 class="text-muted fw-bold mb-1">Produits Uniques</h5>
+                    <p class="fs-4 fw-bold mb-0">{{ indicateursStocks.produitsUniques }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Produits en Rupture -->
+            <div class="col-md-4 col-lg-3">
+              <div class="card border-danger shadow-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-exclamation-circle fs-2 text-danger me-3"></i>
+                  <div>
+                    <h5 class="text-muted fw-bold mb-1">Produits en Rupture</h5>
+                    <p class="fs-4 fw-bold mb-0">{{ indicateursStocks.produitsRupture }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Produits en Alerte -->
+            <div class="col-md-4 col-lg-3">
+              <div class="card border-warning shadow-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-exclamation-triangle fs-2 text-warning me-3"></i>
+                  <div>
+                    <h5 class="text-muted fw-bold mb-1">Produits en Alerte</h5>
+                    <p class="fs-4 fw-bold mb-0">{{ indicateursStocks.produitsEnAlerte }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Produits à Réapprovisionner -->
+            <div class="col-md-4 col-lg-3">
+              <div class="card border-warning shadow-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-arrow-down-circle fs-2 text-warning me-3"></i>
+                  <div>
+                    <h5 class="text-muted fw-bold mb-1">À Réapprovisionner</h5>
+                    <p class="fs-4 fw-bold mb-0">{{ indicateursStocks.produitsAReapprovisionner }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Produits en Surstock -->
+            <div class="col-md-4 col-lg-3">
+              <div class="card border-dark shadow-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-box-arrow-up fs-2 text-dark me-3"></i>
+                  <div>
+                    <h5 class="text-muted fw-bold mb-1">Produits en Surstock</h5>
+                    <p class="fs-4 fw-bold mb-0">{{ indicateursStocks.produitsEnSurStock }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Produits Périssables -->
+            <div class="col-md-4 col-lg-3">
+              <div class="card border-primary shadow-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-calendar-x fs-2 text-primary me-3"></i>
+                  <div>
+                    <h5 class="text-muted fw-bold mb-1">Produits Périssables</h5>
+                    <p class="fs-4 fw-bold mb-0">{{ indicateursStocks.produitsPerissable }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="row mb-4">
-          <div class="col-md-6 col-lg-3 mt-3">
-            <div class="card border-info shadow-sm">
-              <div class="card-body d-flex align-items-center">
-                <i class="bi bi-list-check fs-2 text-info me-3"></i>
-                <div>
-                  <h5 class="text-muted fw-bold mb-1">Total Produits</h5>
-                  <p class="fs-5 fw-bold mb-0">{{ totalProduits }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
+      </div>
 
-          <div class="col-md-6 col-lg-3 mt-3">
-            <div class="card border-success shadow-sm">
-              <div class="card-body d-flex align-items-center">
-                <i class="bi bi-cash-stack fs-2 text-success me-3"></i>
-                <div>
-                  <h5 class="text-muted fw-bold mb-1">Valeur achat du Stock intial</h5>
-                  <p class="fs-5 fw-bold mb-0">
-                    {{ valeurTotaleStockAchatInitial | number }} F CFA
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-6 col-lg-3 mt-3">
-            <div class="card border-primary shadow-sm">
-              <div class="card-body d-flex align-items-center">
-                <i class="bi bi-graph-up-arrow fs-2 text-primary me-3"></i>
-                <div>
-                  <h5 class="text-muted fw-bold mb-1">Valeur achat du Stock final</h5>
-                  <p class="fs-5 fw-bold mb-0">
-                    {{ valeurTotaleVenteStockAchatFinal | number }} F CFA
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-6 col-lg-3 mt-3">
-            <div class="card border-secondary shadow-sm">
-              <div class="card-body d-flex align-items-center">
-                <i class="bi bi-tags fs-2 text-secondary me-3"></i>
-                <div>
-                  <h5 class="text-muted fw-bold mb-1">Produits Uniques</h5>
-                  <p class="fs-5 fw-bold mb-0">{{ produitsUniques }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-md-6 col-lg-3 mt-3">
-            <div class="card border-danger shadow-sm">
-              <div class="card-body d-flex align-items-center">
-                <i class="bi bi-exclamation-circle fs-2 text-danger me-3"></i>
-                <div>
-                  <h5 class="text-muted fw-bold mb-1">Produits en Rupture</h5>
-                  <p class="fs-5 fw-bold mb-0">{{ produitsRupture }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-md-6 col-lg-3 mt-3">
-            <div class="card border-warning shadow-sm">
-              <div class="card-body d-flex align-items-center">
-                <i class="bi bi-exclamation-triangle fs-2 text-warning me-3"></i>
-                <div>
-                  <h5 class="text-muted fw-bold mb-1">Produits sous Alerte</h5>
-                  <p class="fs-5 fw-bold mb-0">{{ produitsEnAlerte }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-md-6 col-lg-3 mt-3">
-            <div class="card border-warning shadow-sm">
-              <div class="card-body d-flex align-items-center">
-                <i class="bi bi-arrow-down-circle fs-2 text-warning me-3"></i>
-                <div>
-                  <h5 class="text-muted fw-bold mb-1">Produits à Réapprovisionner</h5>
-                  <p class="fs-5 fw-bold mb-0">{{ produitsAReapprovisionne }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-md-6 col-lg-3 mt-3">
-            <div class="card border-dark shadow-sm">
-              <div class="card-body d-flex align-items-center">
-                <i class="bi bi-box-arrow-up fs-2 text-dark me-3"></i>
-                <div>
-                  <h5 class="text-muted fw-bold mb-1">Produits en Surstock</h5>
-                  <p class="fs-5 fw-bold mb-0">{{ produitsEnSurStock }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-md-6 col-lg-3 mt-3">
-            <div class="card border-primary shadow-sm">
-              <div class="card-body d-flex align-items-center">
-                <i class="bi bi-calendar-x fs-2 text-primary me-3"></i>
-                <div>
-                  <h5 class="text-muted fw-bold mb-1">Produits Périssables</h5>
-                  <p class="fs-5 fw-bold mb-0">{{ produitsPerissable }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
+      <!-- Graphique d'évolution du stock -->
+      <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-secondary text-white">
+          <h3 class="fw-bold mb-0"><i class="bi bi-graph-up me-2"></i>Évolution du Stock dans le Temps</h3>
         </div>
-
-        <div class="bg-light d-flex justify-content-center align-items-center p-2">
-          <h3 class="fw-bold">Liste des produits en stock pour la période sélectionnée</h3>
-        </div>
-        <!-- Barre de recherche et sélection du nombre de lignes -->
-        <div class="d-flex justify-content-between my-3 no-printer">
-          <input
-            type="text"
-            class="form-control w-50"
-            placeholder="Filtrer par catégorie et statut..."
-            [(ngModel)]="searchTerm"
-            (input)="onSearchChange('stock')"
-          />
-          <select class="form-select w-auto" (change)="setItemsPerPage($event)">
-            <option [value]="5">5 lignes</option>
-            <option [value]="10">10 lignes</option>
-            <option [value]="20">20 lignes</option>
-            <option [value]="40">40 lignes</option>
-            <option [value]="80">80 lignes</option>
-            <option [value]="120">120 lignes</option>
-            <option [value]="160">160 lignes</option>
-            <option [value]="200">200 lignes</option>
-            <option
-              *ngIf="filteredProduits.length > 0 || filteredMouvements.length > 0"
-              [value]="maxItems"
-            >
-              {{ maxItems }} (Tous)
-            </option>
-          </select>
-        </div>
-        <!-- Liste des Produits -->
-        <table class="table table-bordered table-striped shadow-sm">
-          <thead class="table-dark text-white">
-            <tr>
-              <!-- <th>ID produit</th> -->
-              <th>Produit</th>
-              <th>Catégorie</th>
-              <th>Unité stock</th>
-              <th>Prix d'Achat</th>
-              <!-- <th>Prixe de vente</th> -->
-              <th>Stock intial</th>
-              <th>Entrées</th>
-              <th>Sorties</th>
-              <th>Stock final</th>
-              <th>Taux de rotation</th>
-              <th>Statut</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let produit of getPaginatedProduits">
-              <!-- <td>{{ produit.id }}</td> -->
-              <td>{{ produit.designation }}</td>
-              <td>{{ produit.famille }}</td>
-              <td>{{ produit.unite }}</td>
-              <td>{{ getDernierPrixAchatById(produit.id) }} F CFA</td>
-              <!-- <td>{{ getDernierPrixVenteById(produit.id)}} F CFA</td> -->
-              <td>
-                Qte:{{ getStatProduit(produit).stockInitial }} <br />
-                Valeur achat: {{ getStatProduit(produit).valeurStockInitial | number: '1.2-2' }}
-              </td>
-              <td>{{ getStatProduit(produit).entrees }}</td>
-              <td>{{ getStatProduit(produit).sorties }}</td>
-              <td>
-                Qte:{{ getStatProduit(produit).stockFinal }}<br />
-                Valeur achat: {{ getStatProduit(produit).valeurStockFinal | number: '1.2-2' }}
-              </td>
-              <td>{{ getStatProduit(produit).tauxRotation | number: '1.2-2' }}</td>
-              <td class="fw-bold">
-                <span
-                  class="badge bg-success"
-                  *ngIf="getStatutProduitById(produit.id) === 'En stock'"
-                  >En stock</span
-                >
-                <span
-                  class="badge bg-danger"
-                  *ngIf="getStatutProduitById(produit.id) === 'En rupture'"
-                  >En rupture</span
-                >
-                <span
-                  class="badge bg-warning"
-                  *ngIf="getStatutProduitById(produit.id) === 'En alerte'"
-                  >En alerte</span
-                >
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Pagination -->
-      <div class="d-flex justify-content-center align-items-center no-printer">
-        <button
-          class="btn btn-success"
-          (click)="onPageChange(currentPage - 1, 'stock')"
-          [disabled]="currentPage === 1"
-        >
-          <i class="bi bi-arrow-left-circle"></i>
-        </button>
-        <span class="h3">{{ currentPage }} / {{ getTotalPages(filteredProduits) }}</span>
-        <button
-          class="btn btn-success"
-          (click)="onPageChange(currentPage + 1, 'stock')"
-          [disabled]="currentPage >= getTotalPages(filteredProduits)"
-        >
-          <i class="bi bi-arrow-right-circle"></i>
-        </button>
-      </div>
-      <!-- Listes des mouvements pour la période sélectionnée -->
-      <div class="bg-light d-flex justify-content-center align-items-center p-2">
-        <h3 class="fw-bold">Liste des mouvements pour la période sélectionnée</h3>
-      </div>
-      <!-- Barre de recherche et sélection du nombre de lignes -->
-      <div class="d-flex justify-content-between my-3 no-printer">
-        <input
-          type="text"
-          class="form-control w-50"
-          placeholder="Filtrer par type de mouvement et nom produit..."
-          [(ngModel)]="searchTerm"
-          (input)="onSearchChange('mouvement')"
-        />
-        <!-- <select class="form-select w-auto" (change)="setItemsPerPage($event)">
-                  <option [value]="5">5 lignes</option>
-                  <option [value]="10">10 lignes</option>
-                  <option [value]="20">20 lignes</option>
-                  <option [value]="40">40 lignes</option>
-                  <option [value]="80">80 lignes</option>
-                  <option [value]="120">120 lignes</option>
-                  <option [value]="160">160 lignes</option>
-                  <option [value]="200">200 lignes</option>
-              </select> -->
-      </div>
-      <table class="table table-bordered table-striped shadow-sm">
-        <thead class="table-dark text-white">
-          <tr>
-            <th>Reférence</th>
-            <th>Produit</th>
-            <th>Magasin</th>
-            <th>Type mouvement</th>
-            <th>Quantité</th>
-            <th>Prix unitaire</th>
-            <th>Prix total</th>
-            <th>Date mouvement</th>
-            <th>Description</th>
-            <th>Responsable</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let mvt of getPaginatedMvt">
-            <td>{{ mvt.ref }}</td>
-            <td>{{ getNomProduitById(mvt.produitId) }}</td>
-            <td>{{ getNomMagasinsById(mvt.magasinId) }}</td>
-            <td>{{ mvt.typeMouvement }}</td>
-            <td>Qte:{{ mvt.quantite }}</td>
-            <td>{{ mvt.prixUnitaire }}</td>
-            <td>{{ mvt.prixTotal | number: '1.2-2' }}</td>
-            <td>{{ mvt.dateMouvement | date: 'dd/MM/yyyy' }}</td>
-            <td>{{ mvt.description }}</td>
-            <td>{{ mvt.acteurId }}</td>
-          </tr>
-        </tbody>
-      </table>
-      <!-- Pagination -->
-      <div class="d-flex justify-content-center align-items-center no-printer">
-        <button
-          class="btn btn-success"
-          (click)="onPageChange(currentPageMvt - 1, 'mouvement')"
-          [disabled]="currentPageMvt === 1"
-        >
-          <i class="bi bi-arrow-left-circle"></i>
-        </button>
-        <span class="h3">{{ currentPageMvt }} / {{ getTotalPages(filteredMouvements) }}</span>
-        <button
-          class="btn btn-success"
-          (click)="onPageChange(currentPageMvt + 1, 'mouvement')"
-          [disabled]="currentPageMvt >= getTotalPages(filteredMouvements)"
-        >
-          <i class="bi bi-arrow-right-circle"></i>
-        </button>
-      </div>
-      <!-- Graphiques et analyses-->
-      <div class="bg-light d-flex justify-content-center align-items-center p-2">
-        <h3 class="fw-bold">
-          Evolution des stock, repartition par catégorie et les produits les plus vendus
-        </h3>
-      </div>
-      <div class="chart-container">
-        <div class="chart-row">
-          <div class="chart-wrapper">
-            <h3>Évolution du stock dans le temps</h3>
+        <div class="card-body">
+          <div class="chart-container" style="position: relative; height: 400px;">
             <canvas #evolutionChart></canvas>
           </div>
-          <div class="chart-wrapper">
-            <h3>Répartition par catégorie</h3>
-            <canvas #repartitionChart></canvas>
-          </div>
-        </div>
-        <div class="chart-row">
-          <div class="chart-wrapper full-width">
-            <h3>Produits les plus vendus</h3>
-            <canvas #topProduitsChart></canvas>
-          </div>
         </div>
       </div>
 
-      <!-- Graphiques et analyses -->
-      <div class="bg-light d-flex justify-content-center align-items-center p-2">
-        <h3 class="fw-bold">Observations et commentaires</h3>
+      <!-- Analyse des stocks -->
+      <div class="row mb-4">
+        <!-- Répartition par catégorie -->
+        <div class="col-md-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-header bg-info text-white">
+              <h3 class="fw-bold mb-0"><i class="bi bi-pie-chart me-2"></i>Répartition par Catégorie</h3>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-12">
+                  <div class="chart-container" style="position: relative; height: 300px;">
+                    <canvas #repartitionChart></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top produits les plus vendus -->
+        <div class="col-md-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-header bg-success text-white">
+              <h3 class="fw-bold mb-0"><i class="bi bi-trophy me-2"></i>Top 10 Produits les Plus Vendus</h3>
+            </div>
+            <div class="card-body">
+              <div class="chart-container" style="position: relative; height: 300px;">
+                <canvas #topProduitsChart></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="mt-4">
-        <ul *ngIf="stocks && stocks.length > 0">
-          <!-- Produits en rupture de stock -->
-          <li *ngIf="getListeProduitsEnRupture.length > 0">
-            Les produits suivants sont en rupture de stock :
-            <b
-              ><span *ngFor="let stock of getListeProduitsEnRupture">
-                {{ getNomProduitById(stock.produitId) }},
-              </span></b
-            >
-            pensez à les recommander rapidement.
-          </li>
 
-          <!-- Produits nécessitant un réapprovisionnement -->
-          <li *ngIf="getListeProduitsAReapprovisionner.length > 0">
-            Les produits suivants ont un stock faible et doivent être réapprovisionnés :
-            <b
-              ><span *ngFor="let stock of getListeProduitsAReapprovisionner">
-                {{ getNomProduitById(stock.produitId) }},
-              </span></b
-            >
-          </li>
+      <!-- Liste des produits en stock -->
+      <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-dark text-white">
+          <div class="d-flex justify-content-between align-items-center">
+            <h3 class="fw-bold mb-0"><i class="bi bi-box me-2"></i>Détail des Produits en Stock</h3>
+            <span class="badge bg-light text-dark">
+              Total: {{ statsProduits?.total || 0 }} produits
+            </span>
+          </div>
+        </div>
+        <div class="card-body">
+          <!-- Barre de recherche et sélection du nombre de lignes -->
+          <div class="d-flex justify-content-between mb-3 no-printer">
+            <input
+              type="text"
+              class="form-control w-50"
+              placeholder="Rechercher par produit, catégorie, statut..."
+              [(ngModel)]="searchTerm"
+              (input)="onSearchChange('stock')"
+            />
+            <select class="form-select w-auto ms-2" [(ngModel)]="pageSize" (change)="onPageSizeChange('produits')">
+              <option [value]="5">5 lignes</option>
+              <option [value]="10">10 lignes</option>
+              <option [value]="20">20 lignes</option>
+              <option [value]="50">50 lignes</option>
+              <option *ngIf="statsProduits?.total! > 0" [value]="statsProduits?.total">Tous</option>
+            </select>
+          </div>
 
-          <!-- Produits en surstock -->
-          <li *ngIf="getListeProduitsEnSurstockr.length > 0">
-            Les produits suivants sont en surstock, envisagez de réduire les commandes :
-            <b
-              ><span *ngFor="let stock of getListeProduitsEnSurstockr">
-                {{ getNomProduitById(stock.produitId) }},
-              </span></b
-            >
-          </li>
+          <div class="table-responsive">
+            <table class="table table-hover table-sm">
+              <thead class="table-light">
+                <tr>
+                  <th>Produit</th>
+                  <th>Catégorie</th>
+                  <th>Unité</th>
+                  <th class="text-end">Prix Achat</th>
+                  <th class="text-end">Stock Initial</th>
+                  <th class="text-end">Entrées</th>
+                  <th class="text-end">Sorties</th>
+                  <th class="text-end">Stock Final</th>
+                  <th class="text-end">Taux Rotation</th>
+                  <th>Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let produit of getPaginatedProduits()">
+                  <td>{{ produit.produit.designation }}</td>
+                  <td>{{ produit.produit.categorie || 'Non catégorisé' }}</td>
+                  <td>{{ produit.produit.unite }}</td>
+                  <td class="text-end">{{ produit.prixAchat | number }} F CFA</td>
+                  <td class="text-end">
+                    {{ produit.stockInitial }} <br>
+                    <small>{{ produit.valeurStockInitial | number }}</small>
+                  </td>
+                  <td class="text-end">{{ produit.entrees }}</td>
+                  <td class="text-end">{{ produit.sorties }}</td>
+                  <td class="text-end">
+                    {{ produit.stockFinal }} <br>
+                    <small>{{ produit.valeurStockFinal | number }}</small>
+                  </td>
+                  <td class="text-end">{{ produit.tauxRotation | number:'1.2-2' }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="{
+                      'bg-success': produit.statut === 'En stock',
+                      'bg-danger': produit.statut === 'En rupture',
+                      'bg-warning': produit.statut === 'En alerte'
+                    }">
+                      {{ produit.statut }}
+                    </span>
+                  </td>
+                </tr>
+                <tr *ngIf="getPaginatedProduits().length === 0">
+                  <td colspan="11" class="text-center text-muted py-4">
+                    <i class="bi bi-search fs-1 text-muted"></i>
+                    <p class="mt-2">Aucun produit trouvé pour les critères sélectionnés</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-          <!-- Produits à rotation lente (faible vente) -->
-          <li *ngIf="getListeProduitsRotationLente.length > 0">
-            Les produits suivants ont une faible rotation et risquent d’être en surplus :
-            <b
-              ><span *ngFor="let stock of getListeProduitsRotationLente">
-                {{ getNomProduitById(stock.produitId) }},
-              </span></b
-            >
-            Envisagez des promotions ou une optimisation des ventes.
-          </li>
-
-          <!-- Produits périssables bientôt expirés -->
-          <li *ngIf="getListeProduitsProchesPeremption.length > 0">
-            Attention, les produits suivants approchent leur date d’expiration :
-            <b
-              ><span *ngFor="let stock of getListeProduitsProchesPeremption">
-                {{ getNomProduitById(stock.produitId) }} (Exp:
-                {{ stock.datePeremption | date: 'dd/MM/yyyy' }}),
-              </span></b
-            >
-            Pensez à écouler le stock rapidement.
-          </li>
-
-          Produits les plus vendus
-          <li *ngIf="getListeProduitsPlusVendus.length > 0">
-            Les produits suivants sont les plus vendus et ont une forte demande :
-            <b
-              ><span *ngFor="let stock of getListeProduitsPlusVendus"> {{ stock }}, </span></b
-            >
-            Assurez-vous d'un réapprovisionnement régulier.
-          </li>
-
-          <!-- Produits récemment ajoutés -->
-          <li *ngIf="getListeProduitsRecemmentAjoutes.length > 0">
-            Les nouveaux produits suivants ont été récemment ajoutés :
-            <b
-              ><span *ngFor="let stock of getListeProduitsRecemmentAjoutes">
-                {{ getNomProduitById(stock.produitId) }} (ajouté le
-                {{ stock.dateDerniereMiseAJour | date: 'dd/MM/yyyy' }}),
-              </span></b
-            >
-            Surveillez leur performance sur le marché.
-          </li>
-        </ul>
+          <!-- Pagination -->
+          <div class="d-flex justify-content-between align-items-center mt-3 no-printer">
+            <div>
+              <span class="text-muted">
+                Page {{ currentPage }} sur {{ getTotalPagesProduits() }}
+                ({{ statsProduits?.total || 0 }} résultats)
+              </span>
+            </div>
+            <div class="btn-group">
+              <button
+                class="btn btn-outline-primary btn-sm"
+                (click)="onPageChange(currentPage - 1, 'produits')"
+                [disabled]="currentPage === 1"
+              >
+                <i class="bi bi-chevron-left"></i> Précédent
+              </button>
+              <button
+                class="btn btn-outline-primary btn-sm"
+                (click)="onPageChange(currentPage + 1, 'produits')"
+                [disabled]="currentPage >= getTotalPagesProduits()"
+              >
+                Suivant <i class="bi bi-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <!-- Pied de page -->
-    <div class="mt-4 text-end">
-      <p><strong>Préparé par :</strong> Nom de l'Auteur</p>
-      <p>_________________________</p>
-      <p>Signature</p>
+      <!-- Liste des mouvements -->
+      <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-info text-white">
+          <div class="d-flex justify-content-between align-items-center">
+            <h3 class="fw-bold mb-0"><i class="bi bi-arrow-left-right me-2"></i>Mouvements de Stock</h3>
+            <span class="badge bg-light text-dark">
+              Total: {{ mouvements?.total || 0 }} mouvements
+            </span>
+          </div>
+        </div>
+        <div class="card-body">
+          <!-- Barre de recherche pour mouvements -->
+          <div class="d-flex justify-content-between mb-3 no-printer">
+            <input
+              type="text"
+              class="form-control w-50"
+              placeholder="Rechercher par référence, produit, description..."
+              [(ngModel)]="searchTerm"
+              (input)="onSearchChange('mouvement')"
+            />
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-hover table-sm">
+              <thead class="table-light">
+                <tr>
+                  <th>Référence</th>
+                  <th>Produit</th>
+                  <th>Magasin</th>
+                  <th>Type</th>
+                  <th class="text-end">Quantité</th>
+                  <th class="text-end">Prix Unitaire</th>
+                  <th class="text-end">Prix Total</th>
+                  <th>Date</th>
+                  <th>Description</th>
+                  <th>Responsable</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let mvt of getPaginatedMouvements()">
+                  <td>{{ mvt.ref }}</td>
+                  <td>{{ mvt.produit }}</td>
+                  <td>{{ mvt.magasin }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="{
+                      'bg-success': mvt.typeMouvement === 'Entrée',
+                      'bg-danger': mvt.typeMouvement === 'Sortie'
+                    }">
+                      {{ mvt.typeMouvement }}
+                    </span>
+                  </td>
+                  <td class="text-end">{{ mvt.quantite }}</td>
+                  <td class="text-end">{{ mvt.prixUnitaire | number }} F CFA</td>
+                  <td class="text-end">{{ mvt.prixTotal | number }} F CFA</td>
+                  <td>{{ mvt.dateMouvement | date: 'dd/MM/yyyy' }}</td>
+                  <td>{{ mvt.description || '-' }}</td>
+                  <td>{{ mvt.acteur }}</td>
+                </tr>
+                <tr *ngIf="getPaginatedMouvements().length === 0">
+                  <td colspan="10" class="text-center text-muted py-4">
+                    <i class="bi bi-search fs-1 text-muted"></i>
+                    <p class="mt-2">Aucun mouvement trouvé pour la période</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="d-flex justify-content-between align-items-center mt-3 no-printer">
+            <div>
+              <span class="text-muted">
+                Page {{ currentPageMvt }} sur {{ getTotalPagesMouvements() }}
+                ({{ mouvements?.total || 0 }} résultats)
+              </span>
+            </div>
+            <div class="btn-group">
+              <button
+                class="btn btn-outline-info btn-sm"
+                (click)="onPageChange(currentPageMvt - 1, 'mouvements')"
+                [disabled]="currentPageMvt === 1"
+              >
+                <i class="bi bi-chevron-left"></i> Précédent
+              </button>
+              <button
+                class="btn btn-outline-info btn-sm"
+                (click)="onPageChange(currentPageMvt + 1, 'mouvements')"
+                [disabled]="currentPageMvt >= getTotalPagesMouvements()"
+              >
+                Suivant <i class="bi bi-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Observations et commentaires -->
+      <div class="card mb-4 shadow-sm" *ngIf="produitsSpecifiques">
+        <div class="card-header bg-warning text-dark">
+          <h3 class="fw-bold mb-0"><i class="bi bi-chat-quote me-2"></i>Observations et Recommandations</h3>
+        </div>
+        <div class="card-body">
+          <ul class="list-group list-group-flush">
+            <!-- Produits en rupture -->
+            <li class="list-group-item" *ngIf="produitsSpecifiques.produitsRupture.length > 0">
+              <i class="bi bi-exclamation-circle text-danger me-2"></i>
+              <strong>Produits en rupture de stock :</strong>
+              <span *ngFor="let p of produitsSpecifiques.produitsRupture.slice(0, 5); let last = last">
+                {{ p.designation }}<span *ngIf="!last">, </span>
+              </span>
+              <span *ngIf="produitsSpecifiques.produitsRupture.length > 5">
+                et {{ produitsSpecifiques.produitsRupture.length - 5 }} autre(s)
+              </span>
+              . Pensez à les recommander rapidement.
+            </li>
+
+            <!-- Produits en alerte -->
+            <li class="list-group-item" *ngIf="produitsSpecifiques.produitsAlerte.length > 0">
+              <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+              <strong>Produits sous seuil d'alerte :</strong>
+              <span *ngFor="let p of produitsSpecifiques.produitsAlerte.slice(0, 5); let last = last">
+                {{ p.designation }}<span *ngIf="!last">, </span>
+              </span>
+              <span *ngIf="produitsSpecifiques.produitsAlerte.length > 5">
+                et {{ produitsSpecifiques.produitsAlerte.length - 5 }} autre(s)
+              </span>
+              . Préparez un réapprovisionnement.
+            </li>
+
+            <!-- Produits à réapprovisionner -->
+            <li class="list-group-item" *ngIf="produitsSpecifiques.produitsAReapprovisionner.length > 0">
+              <i class="bi bi-arrow-down-circle text-warning me-2"></i>
+              <strong>Produits à réapprovisionner :</strong>
+              <span *ngFor="let p of produitsSpecifiques.produitsAReapprovisionner.slice(0, 5); let last = last">
+                {{ p.designation }}<span *ngIf="!last">, </span>
+              </span>
+              <span *ngIf="produitsSpecifiques.produitsAReapprovisionner.length > 5">
+                et {{ produitsSpecifiques.produitsAReapprovisionner.length - 5 }} autre(s)
+              </span>
+              .
+            </li>
+
+            <!-- Produits en surstock -->
+            <li class="list-group-item" *ngIf="produitsSpecifiques.produitsSurStock.length > 0">
+              <i class="bi bi-box-arrow-up text-dark me-2"></i>
+              <strong>Produits en surstock :</strong>
+              <span *ngFor="let p of produitsSpecifiques.produitsSurStock.slice(0, 5); let last = last">
+                {{ p.designation }}<span *ngIf="!last">, </span>
+              </span>
+              <span *ngIf="produitsSpecifiques.produitsSurStock.length > 5">
+                et {{ produitsSpecifiques.produitsSurStock.length - 5 }} autre(s)
+              </span>
+              . Envisagez des promotions ou une réduction des commandes.
+            </li>
+
+            <!-- Produits proches de péremption -->
+            <li class="list-group-item" *ngIf="produitsSpecifiques.produitsPeremption.length > 0">
+              <i class="bi bi-calendar-x text-primary me-2"></i>
+              <strong>Produits proches de péremption :</strong>
+              <span *ngFor="let p of produitsSpecifiques.produitsPeremption.slice(0, 5); let last = last">
+                {{ p.designation }}<span *ngIf="!last">, </span>
+              </span>
+              <span *ngIf="produitsSpecifiques.produitsPeremption.length > 5">
+                et {{ produitsSpecifiques.produitsPeremption.length - 5 }} autre(s)
+              </span>
+              . Écoulez rapidement ces stocks.
+            </li>
+
+            <!-- Produits récemment ajoutés -->
+            <li class="list-group-item" *ngIf="produitsSpecifiques.produitsRecents.length > 0">
+              <i class="bi bi-star text-success me-2"></i>
+              <strong>Nouveaux produits :</strong>
+              <span *ngFor="let p of produitsSpecifiques.produitsRecents.slice(0, 5); let last = last">
+                {{ p.designation }}<span *ngIf="!last">, </span>
+              </span>
+              <span *ngIf="produitsSpecifiques.produitsRecents.length > 5">
+                et {{ produitsSpecifiques.produitsRecents.length - 5 }} autre(s)
+              </span>
+              . Surveillez leur performance.
+            </li>
+
+            <!-- Produits à rotation lente -->
+            <li class="list-group-item" *ngIf="produitsSpecifiques.produitsRotationLente.length > 0">
+              <i class="bi bi-slow-down text-secondary me-2"></i>
+              <strong>Produits à rotation lente :</strong>
+              <span *ngFor="let p of produitsSpecifiques.produitsRotationLente.slice(0, 5); let last = last">
+                {{ p.designation }}<span *ngIf="!last">, </span>
+              </span>
+              <span *ngIf="produitsSpecifiques.produitsRotationLente.length > 5">
+                et {{ produitsSpecifiques.produitsRotationLente.length - 5 }} autre(s)
+              </span>
+              . Envisagez des actions marketing.
+            </li>
+
+            <!-- Aucune observation -->
+            <li class="list-group-item" *ngIf="
+                produitsSpecifiques.produitsRupture.length === 0 &&
+                produitsSpecifiques.produitsAlerte.length === 0 &&
+                produitsSpecifiques.produitsAReapprovisionner.length === 0 &&
+                produitsSpecifiques.produitsSurStock.length === 0 &&
+                produitsSpecifiques.produitsPeremption.length === 0 &&
+                produitsSpecifiques.produitsRotationLente.length === 0
+              ">
+              <i class="bi bi-check-circle text-success me-2"></i>
+              Aucune observation particulière. La gestion des stocks est optimale.
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Pied de page -->
+      <div *ngIf="isPrinting" class="mt-5 pt-5 border-top">
+        <div class="row">
+          <div class="col-6">
+            <p><strong>Préparé par :</strong> Service Gestion des Stocks</p>
+            <p><strong>Date de génération :</strong> {{ dateGeneration | date: 'dd/MM/yyyy à HH:mm' }}</p>
+          </div>
+          <div class="col-6 text-end">
+            <p class="mb-4">_________________________</p>
+            <p><strong>Signature et cachet</strong></p>
+          </div>
+        </div>
+        <div class="text-center text-muted mt-4">
+          <small>
+            Rapport généré automatiquement | Structure: {{ code_structure }} |
+            Ce document est confidentiel et réservé à un usage interne
+          </small>
+        </div>
+      </div>
     </div>
   </div>
-
-  <!-- Exportation -->
-  <!-- <button class="btn btn-danger mt-3" (click)="exportToPDF()">Exporter en PDF</button>
-    <button class="btn btn-success mt-3" (click)="exportToExcel()">Exporter en Excel</button>
-
-    <table class="table table-bordered table-striped shadow-sm">
-      <thead class="table-dark text-white">
-        <tr>
-          <th>id</th>
-          <th>Produit</th>
-          <th>Magasin</th>
-          <th>Qte total</th>
-          <th>Qte disponible</th>
-          <th>Qte réservée</th>
-          <th>Date mise à jour</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let mvt of allStocks">
-          <td>{{ mvt.produitId }}</td>
-          <td>{{ getNomProduitById(mvt.produitId) }}</td>
-          <td>{{ getNomMagasinsById(mvt.magasinId)}}</td>
-          <td>{{ mvt.quantiteTotale}}</td>
-          <td>Qte:{{  mvt.quantiteDisponible }}</td>
-          <td>{{  mvt.quantiteReservee }}</td>
-          <td>{{ mvt.dateDerniereMiseAJour | date :'dd/MM/yyyy'}}</td>
-        </tr>
-      </tbody>
-    </table>
- -->
 </div>

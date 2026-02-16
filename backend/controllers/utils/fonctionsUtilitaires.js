@@ -10,7 +10,7 @@ class FonctionsUtilitaires{
     }
 
     //Utilitaire de calcul des dates
-    static getPeriodeDates(periode, dateReference = new Date()) {
+    /* static getPeriodeDates(periode, dateReference = new Date()) {
         const date = new Date(dateReference);
 
         switch (periode) {
@@ -47,8 +47,59 @@ class FonctionsUtilitaires{
             default:
             throw new Error('Période invalide');
         }
-    }
+    } */
 
+    // Utilitaire de calcul des dates - CORRIGÉ
+static getPeriodeDates(periode, dateReference = new Date()) {
+    const date = this.normalizeDate(dateReference, 'start');;
+
+    switch (periode) {
+        case 'jour':{
+            // ✅ IMPORTANT: Créer les dates en heure locale
+            const debutJour = new Date(date);
+            debutJour.setHours(0, 0, 0, 0);
+            
+            const finJour = new Date(date);
+            finJour.setHours(23, 59, 59, 999);
+            
+            return { debut: debutJour, fin: finJour };
+        }
+        case 'semaine': {
+            const debut = new Date(date);
+            debut.setDate(date.getDate() - date.getDay());
+            debut.setHours(0, 0, 0, 0);
+
+            const fin = new Date(debut);
+            fin.setDate(debut.getDate() + 6);
+            fin.setHours(23, 59, 59, 999);
+
+            return { debut, fin };
+        }
+
+        case 'mois': {
+            const debut = new Date(date.getFullYear(), date.getMonth(), 1);
+            debut.setHours(0, 0, 0, 0);
+            
+            const fin = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+            fin.setHours(23, 59, 59, 999);
+            
+            return { debut, fin };
+        }
+
+        case 'annee': {
+            const debut = new Date(date.getFullYear(), 0, 1);
+            debut.setHours(0, 0, 0, 0);
+            
+            const fin = new Date(date.getFullYear(), 11, 31);
+            fin.setHours(23, 59, 59, 999);
+            
+            return { debut, fin };
+        }
+
+        default:
+            throw new Error('Période invalide');
+    }
+}
     //Utilitaire pour calculer la pérode pécédente
     static getPeriodePrecedente(periode, dateReference = new Date()) {
         const date = new Date(dateReference);
@@ -72,12 +123,12 @@ class FonctionsUtilitaires{
     }
 
     //Une autre fonction qui calcule une période
-    static buildWhereStats({
+    /* static buildWhereStats({
         periode,
         dateReference,
         code_structure,
         magasinId,
-        userId
+        agentId
         }) {
         const { Op } = db.Sequelize;
         const { debut, fin } = this.getPeriodeDates(periode, dateReference);
@@ -92,17 +143,71 @@ class FonctionsUtilitaires{
             where.magasinId = magasinId;
         }
 
-        if (userId) {
-            where.userId = userId;
+        if (agentId) {
+            where.agentId = agentId;
         }
 
         return { where, debut, fin };
+    } */
+
+    //Construction condition WHERE pour statistiques
+    static buildWhereStats({
+        periode,
+        dateReference,
+        fromDate,
+        toDate,
+        code_structure,
+        magasinId,
+        agentId,
+        tableType = 'panier' // 'panier', 'depense', 'recette'
+    }) {
+        const { Op } = db.Sequelize;
+        
+        let dateCondition;
+        let dateField = 'dateCreation';
+        
+        if (tableType === 'depense' || tableType === 'recette') {
+            dateField = 'date';
+        }
+        
+        if (periode) {
+            const { debut, fin } = this.getPeriodeDates(periode, dateReference);
+            dateCondition = { [Op.between]: [debut, fin] };
+        } 
+        else if (fromDate && toDate) {
+            const debut = this.normalizeDate(fromDate, 'start');
+            const fin = this.normalizeDate(toDate, 'end');
+            dateCondition = { [Op.between]: [debut, fin] };
+        } 
+        else {
+            const { debutJournee, finJournee } = this.getPeriodeJournee();
+            dateCondition = { [Op.between]: [debutJournee, finJournee] };
+        }
+
+        const where = {
+            code_structure,
+            [dateField]: dateCondition
+        };
+
+        if (tableType === 'panier') {
+            where.statut = { [Op.notIn]: ['annulé', 'retourné', 'en_cours'] };
+        }
+
+        if (magasinId) {
+            where.magasinId = magasinId;
+        }
+
+        if (agentId) {
+            where[tableType === 'panier' ? 'agentId' : 'agentId'] = agentId;
+        }
+
+        return { where, debut: dateCondition[Op.between][0], fin: dateCondition[Op.between][1] };
     }
 
     // Fonction pour calculer la période précédente d'une plage personnalisée
     static getPeriodePrecedentePersonnalisee(dateDebut, dateFin) {
-        const startDate = new Date(dateDebut);
-        const endDate = new Date(dateFin);
+        const startDate = this.normalizeDate(dateDebut, 'start');
+        const endDate = this.normalizeDate(dateFin, 'end');
         
         // Calculer la durée de la période en jours
         const dureePeriode = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
@@ -122,7 +227,7 @@ class FonctionsUtilitaires{
     }
 
     // Fonction utilitaire pour les statistiques financières
-    static buildWhereFinance({
+    /* static buildWhereFinance({
         periode,
         dateReference,
         fromDate,
@@ -167,7 +272,80 @@ class FonctionsUtilitaires{
 
         return where;
     }
+ */
+// Fonction utilitaire pour les statistiques financières - CORRIGÉE
+static buildWhereFinance({
+    periode,
+    dateReference,
+    fromDate,
+    toDate,
+    code_structure,
+    magasinId,
+    agentId,
+    type, // 'DEPENSE' ou 'RECETTE'
+    statut
+}) {
+    const { Op } = db.Sequelize;
+    
+    let dateCondition;
+    
+    if (periode) {
+        const { debut, fin } = this.getPeriodeDates(periode, dateReference);
+        dateCondition = { [Op.between]: [debut, fin] };
+    } 
+    else if (fromDate && toDate) {
+        // ✅ SOLUTION: Traiter correctement les dates personnalisées
+        const debut = this.normalizeDate(fromDate, 'start');
+        const fin = this.normalizeDate(toDate, 'end');
+        dateCondition = { [Op.between]: [debut, fin] };
+    } 
+    else {
+        const { debutJournee, finJournee } = this.getPeriodeJournee();
+        dateCondition = { [Op.between]: [debutJournee, finJournee] };
+    }
 
+    const where = {
+        code_structure,
+        date: dateCondition
+    };
+
+    if (type === 'DEPENSE') {
+        where.statutDepense = statut || 'validé';
+    } else if (type === 'RECETTE') {
+        where.statutRecette = statut ||'validé';
+    }
+
+    if (magasinId) {
+        where.magasinId = magasinId;
+    }
+
+    if (agentId) {
+        where.agentId = agentId;
+    }
+
+    return where;
+}
+
+// NOUVELLE FONCTION UTILITAIRE POUR NORMALISER LES DATES
+static normalizeDate(dateInput, type = 'start') {
+    let date;
+    
+    if (dateInput instanceof Date) {
+        date = new Date(dateInput);
+    } else {
+        // Si c'est une string "YYYY-MM-DD", on crée la date en local
+        const [year, month, day] = dateInput.split('T')[0].split('-').map(Number);
+        date = new Date(year, month - 1, day); // Mois: 0-indexé
+    }
+    
+    if (type === 'start') {
+        date.setHours(0, 0, 0, 0);
+    } else {
+        date.setHours(23, 59, 59, 999);
+    }
+    
+    return date;
+}
 }
 
 module.exports = FonctionsUtilitaires;

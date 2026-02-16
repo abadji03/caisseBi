@@ -1,246 +1,23 @@
 const db = require('../models');
-const { safeNumber } = require('./bonComplet/statutManager');
 const FonctionsUtilitaires  = require('./utils/fonctionsUtilitaires');
+const kpiUtilitaires  = require('./utils/kpiCaisseUtilitaires');
 const Panier = db.Panier;
-
-// Constantes pour les statuts
-const STATUTS_EXCLUS = ['annulé', 'retourné', 'en_cours'];
-const STATUTS_EXCLUS_SANS_EN_COURS = ['annulé', 'retourné'];
-
-// Fonction utilitaire pour construire la condition where
-const buildWhereCondition = (filters, includeDateRange = true, isPaiement = false) => {
-  const { Op } = db.Sequelize;
-  const {
-    code_structure,
-    magasinId,
-    agentId,
-    periode,
-    dateReference,
-    statutsExclus = STATUTS_EXCLUS,
-    type,
-    remise,
-    fromDate,
-    toDate
-  } = filters;
-
- // Validation : code_structure est obligatoire
-  if (!code_structure) {
-    throw new Error('Le paramètre "code_structure" est requis');
-  }
-
-  const where = {
-    code_structure // Toujours requis
-  };
-
-  // Gestion des statuts exclus
-  if (statutsExclus && statutsExclus.length > 0) {
-      if (isPaiement) {
-          where.statutPaiement = { [Op.notIn]: statutsExclus }; // Pour la table Paiement
-        } 
-        else {
-          where.statut = { [Op.notIn]: statutsExclus }; // Pour la table Panier
-      }
-  }
-
-  // Gestion de la période ou de la plage de dates
-  if (includeDateRange) {
-    if (periode) {
-      const { debut, fin } = FonctionsUtilitaires .getPeriodeDates(periode, dateReference);
-      where.dateCreation = { [Op.between]: [debut, fin] };
-    } else if (fromDate && toDate) {
-      where.dateCreation = { [Op.between]: [fromDate, toDate] };
-    }
-  }
-
-  // Filtres optionnels
-  if (magasinId) where.magasinId = magasinId;
-  if (agentId) where.agentId = agentId;
-  if (type) where.type = type;
-  if (remise !== undefined) {
-    where.remise = remise;
-  }
-
-  return where;
-};
+const { Op, fn, col } = db.Sequelize;
 
 
-const getCAVenduBaseData = async ({
-  code_structure,
-  debut,
-  fin,
-  magasinId,
-  agentId
-}) => {
-
-  const { Op } = db.Sequelize;
-
-  /* =========================
-     1️⃣ VENTES CAISSE
-  ========================== */
-  const paniersCaisse = await Panier.findAll({
-    attributes: ['id', 'totalTTC'],
-    where: {
-      code_structure,
-      dateCreation: { [Op.between]: [debut, fin] },
-      statut: { [Op.notIn]: ['annulé', 'retourné', 'en_cours'] },
-      bonId: null,
-      ...(magasinId && { magasinId }),
-      ...(agentId && { agentId })
-    }
-  });
-
-  /* =========================
-     2️⃣ BONS NORMAUX (vente validée / commande livrée)
-  ========================== */
-  const paniersBonNormaux = await Panier.findAll({
-    attributes: ['id', 'totalTTC'],
-    include: [
-      {
-        model: db.Bon,
-        required: true,
-        attributes: [],
-        where: {
-          code_structure,
-          typeEntite: 'client',
-          dateBon: { [Op.between]: [debut, fin] },
-          [Op.or]: [
-            { type: 'vente', statutBon: 'validé' },
-            { type: 'commande', statutBon: 'livré' }
-          ],
-          ...(magasinId && { magasinId }),
-          ...(agentId && { agentId })
-        }
-      }
-    ],
-    where: {
-      code_structure,
-      statut: { [Op.notIn]: ['annulé', 'retourné', 'en_cours'] }
-    }
-  });
-
-  /* =========================
-     3️⃣ BONS RETOURNÉS PARTIELLEMENT
-  ========================== */
-  const bonsRetourPartiel = await db.Bon.findAll({
-    attributes: ['id', 'netAPayer', 'montantAvoir'],
-    where: {
-      code_structure,
-      typeEntite: 'client',
-      statutBon: 'retourné partiellement',
-      dateBon: { [Op.between]: [debut, fin] },
-      ...(magasinId && { magasinId }),
-      ...(agentId && { agentId })
-    }
-  });
-
-  /* =========================
-     4️⃣ CALCUL DES MONTANTS
-  ========================== */
-
-  const totalCaisse = paniersCaisse.reduce(
-    (sum, p) => sum + (safeNumber(p.totalTTC) || 0),
-    0
-  );
-
-  const totalBonNormaux = paniersBonNormaux.reduce(
-    (sum, p) => sum + (safeNumber(p.totalTTC) || 0),
-    0
-  );
-
-  const totalRetourPartiel = bonsRetourPartiel.reduce(
-    (sum, b) =>
-      sum + (
-        (safeNumber(b.netAPayer) || 0) -
-        (safeNumber(b.montantAvoir) || 0)
-      ),
-    0
-  );
-
-  const totalVendu = totalCaisse + totalBonNormaux + totalRetourPartiel;
-
-  const nombrePaniers =
-    paniersCaisse.length +
-    paniersBonNormaux.length +
-    bonsRetourPartiel.length;
-
-  return {
-    totalVendu,
-    nombrePaniers,
-    ticketMoyenVente:
-      nombrePaniers > 0 ? totalVendu / nombrePaniers : 0
-  };
-};
-
-
-const getCAEncaisseBaseData = async ({
-  code_structure,
-  debut,
-  fin,
-  magasinId,
-  agentId
-}) => {
-
-  const { fn, col, Op } = db.Sequelize;
-
-  const result = await db.Paiement.findOne({
-    attributes: [
-      [fn('SUM', col('Paiement.montant')), 'totalEncaisse'],
-      [fn('COUNT', col('Paiement.id')), 'nombrePaiements']
-    ],
-    /* include: [
-      {
-        model: Panier,
-        required: false,
-        attributes: [],
-        where:{
-          code_structure,
-          typeEntite: { [Op.ne]: 'fournisseur' },
-              ...(magasinId && { magasinId }),
-              ...(agentId && { agentId })
-        },
-        include: [
-          {
-            model: db.Bon,
-            required: false,
-            attributes: [],
-            where: {
-              code_structure,
-              typeEntite: { [Op.ne]: 'fournisseur' },
-              ...(magasinId && { magasinId }),
-              ...(agentId && { agentId })
-            }
-          }
-        ]
-      }
-    ], */
-    where: {
-      code_structure,
-      statutPaiement: 'validé',
-      typePaiement: { [Op.ne]: 'fournisseur' },
-      date: { [Op.between]: [debut, fin] },
-      ...(magasinId && { magasinId }),
-      ...(agentId && { agentId })
-    },
-    raw: true
-  });
-
-  const totalEncaisse = Number(result?.totalEncaisse || 0);
-  const nombrePaiements = Number(result?.nombrePaiements || 0);
-
-  return {
-    totalEncaisse,
-    nombrePaiements,
-    ticketMoyenEncaisse:
-      nombrePaiements > 0 ? totalEncaisse / nombrePaiements : 0
-  };
-};
 
 
 //..................................... API pour KPI journaliers................................
 // KPI caisse dans la journée
 exports.getKpiCaisseJour = async (req, res) => {
   try {
-    const { code_structure, magasinId, agentId } = req.query;
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+    const code_structure = authUser.code_structure;
+    const { magasinId, agentId } = req.query;
      // Validation
     if (!code_structure) {
       return res.status(400).json({ 
@@ -260,8 +37,8 @@ exports.getKpiCaisseJour = async (req, res) => {
     //const data = await getCABaseData(whereCondition);
 
     const [caVendu, caEncaisse] = await Promise.all([
-      getCAVenduBaseData(params),
-      getCAEncaisseBaseData(params)
+      kpiUtilitaires.getCAVenduBaseData(params),
+      kpiUtilitaires.getCAEncaisseBaseData(params)
     ]);
     //return res.json(data);
     return res.json({
@@ -285,8 +62,14 @@ exports.getKpiCaisseJour = async (req, res) => {
 // Encaissements par mode + par compte
 exports.getEncaissementsParMode = async (req, res) => {
   try {
-    const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+    const { periode, dateReference, magasinId, agentId } = req.query;
     const { fn, col, Op } = db.Sequelize;
+    const code_structure = authUser.code_structure;
 
     if (!code_structure) {
       return res.status(400).json({
@@ -312,7 +95,7 @@ exports.getEncaissementsParMode = async (req, res) => {
     const wherePanier = {
       code_structure,
       typeEntite: { [Op.ne]: 'fournisseur' },
-      statut: { [Op.notIn]: STATUTS_EXCLUS },
+      statut: { [Op.notIn]: kpiUtilitaires.STATUTS_EXCLUS },
       dateCreation: dateCondition,
       ...(magasinId && { magasinId }),
       ...(agentId && { agentId })
@@ -387,8 +170,14 @@ exports.getEncaissementsParMode = async (req, res) => {
 // Remises accordées
 exports.getStatsRemises = async (req, res) => {
   try {
-    const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+    const { periode, dateReference, magasinId, agentId } = req.query;
     const { Op } = db.Sequelize;
+    const code_structure = authUser.code_structure;
     // Validation : code_structure toujours requis
     if (!code_structure) {
       return res.status(400).json({ 
@@ -408,7 +197,7 @@ exports.getStatsRemises = async (req, res) => {
     }
     const whereCondition = {
       code_structure,
-      statut: { [db.Sequelize.Op.notIn]: STATUTS_EXCLUS_SANS_EN_COURS },
+      statut: { [db.Sequelize.Op.notIn]: kpiUtilitaires.STATUTS_EXCLUS_SANS_EN_COURS },
       [Op.or]: [
         { remise: { [Op.gt]: 0 } },
         { remiseGlobale: { [Op.gt]: 0 } }
@@ -438,8 +227,16 @@ exports.getStatsRemises = async (req, res) => {
 // Avoirs émis (bons de type avoir)
 exports.getAvoirs = async (req, res) => {
   try {
-    const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
+    const { periode, dateReference, magasinId, agentId } = req.query;
     const { Op, fn, col } = db.Sequelize;
+
+    const code_structure = authUser.code_structure;
 
     // Validation : code_structure toujours requis
     if (!code_structure) {
@@ -492,8 +289,14 @@ exports.getAvoirs = async (req, res) => {
 // Caisse théorique
 exports.getCaisseTheorique = async (req, res) => {
   try {
-    const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+    const { periode, dateReference, magasinId, agentId } = req.query;
     const { Op } = db.Sequelize;
+    const code_structure = authUser.code_structure;
 
     // -------------------------
     // VALIDATION
@@ -524,7 +327,7 @@ exports.getCaisseTheorique = async (req, res) => {
     const wherePanier = {
       code_structure,
       typeEntite: { [Op.ne]: 'fournisseur' },
-      statut: { [Op.notIn]: STATUTS_EXCLUS },
+      statut: { [Op.notIn]: kpiUtilitaires.STATUTS_EXCLUS },
       dateCreation: dateCondition,
       ...(magasinId && { magasinId }),
       ...(agentId && { agentId: agentId })
@@ -536,7 +339,7 @@ exports.getCaisseTheorique = async (req, res) => {
     const wherePaiement = {
       methodePaiement: 'Espèce',
       typePaiement: { [Op.ne]: 'fournisseur' },
-      statutPaiement: { [Op.notIn]: STATUTS_EXCLUS }
+      statutPaiement: { [Op.notIn]: kpiUtilitaires.STATUTS_EXCLUS }
     };
 
     // -------------------------
@@ -565,7 +368,13 @@ exports.getCaisseTheorique = async (req, res) => {
 //..................................... API pour KPI par période................................
 exports.getStatsCaissePeriode = async (req, res) => {
   try {
-    const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+    const { periode, dateReference, magasinId, agentId } = req.query;
+    const code_structure = authUser.code_structure;
 
     if (!periode || !code_structure) {
       return res.status(400).json({
@@ -585,8 +394,8 @@ exports.getStatsCaissePeriode = async (req, res) => {
     };
 
     const [caVendu, caEncaisse] = await Promise.all([
-      getCAVenduBaseData(params),
-      getCAEncaisseBaseData(params)
+      kpiUtilitaires.getCAVenduBaseData(params),
+      kpiUtilitaires.getCAEncaisseBaseData(params)
     ]);
 
     return res.json({
@@ -615,8 +424,13 @@ const calculVariation = (actuel, precedent) => {
 
 exports.getStatsComparatives = async (req, res) => {
   try {
-    const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
+    const authUser = req.user;
 
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+    const { periode, dateReference, magasinId, agentId } = req.query;
+    const code_structure = authUser.code_structure;
     // ========================
     // Validation
     // ========================
@@ -644,28 +458,28 @@ exports.getStatsComparatives = async (req, res) => {
       caEncaisseActuel,
       caEncaissePrecedent
     ] = await Promise.all([
-      getCAVenduBaseData({
+      kpiUtilitaires.getCAVenduBaseData({
         code_structure,
         magasinId,
         agentId,
         debut: periodeActuelle.debut,
         fin: periodeActuelle.fin
       }),
-      getCAVenduBaseData({
+      kpiUtilitaires.getCAVenduBaseData({
         code_structure,
         magasinId,
         agentId,
         debut: periodePrecedente.debut,
         fin: periodePrecedente.fin
       }),
-      getCAEncaisseBaseData({
+      kpiUtilitaires.getCAEncaisseBaseData({
         code_structure,
         magasinId,
         agentId,
         debut: periodeActuelle.debut,
         fin: periodeActuelle.fin
       }),
-      getCAEncaisseBaseData({
+      kpiUtilitaires.getCAEncaisseBaseData({
         code_structure,
         magasinId,
         agentId,
@@ -717,8 +531,15 @@ exports.getStatsComparatives = async (req, res) => {
 // CA par jour (VENDU + ENCAISSÉ)
 exports.getCAParJour = async (req, res) => {
   try {
-    const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+    const { periode, dateReference, magasinId, agentId } = req.query;
     const { fn, col, Op } = db.Sequelize;
+
+    const code_structure = authUser.code_structure;
 
     if (!code_structure) {
       return res.status(400).json({
@@ -801,7 +622,13 @@ exports.getCAParJour = async (req, res) => {
 // KPI caisse (alias de getStatsCaissePeriode avec validation de code_structure)
 exports.getKpiCaisse = async (req, res) => {
   try {
-    const { code_structure, periode, dateReference, magasinId, agentId } = req.query;
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+    const { periode, dateReference, magasinId, agentId } = req.query;
+    const code_structure = authUser.code_structure;
 
     if (!code_structure) {
       return res.status(400).json({ error: 'Le paramètre "code_structure" est requis' });
@@ -824,8 +651,8 @@ exports.getKpiCaisse = async (req, res) => {
     //const data = await getCABaseData(whereCondition);
 
     const [caVendu, caEncaisse] = await Promise.all([
-      getCAVenduBaseData(params),
-      getCAEncaisseBaseData(params)
+      kpiUtilitaires.getCAVenduBaseData(params),
+      kpiUtilitaires.getCAEncaisseBaseData(params)
     ]);
     //return res.json(data);
     return res.json({
@@ -849,7 +676,14 @@ exports.getKpiCaisse = async (req, res) => {
 // Comparer le CA d'un magasin vs sa structure
 exports.compareMagasinVsStructure = async (req, res) => {
   try {
-    const { periode, dateReference, code_structure, magasinId } = req.query;
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
+    const { periode, dateReference, magasinId } = req.query;
+    const code_structure = authUser.code_structure;
 
     if (!code_structure || !magasinId) {
       return res.status(400).json({ error: 'Les paramètres "code_structure" et "magasinId" sont requis' });
@@ -859,8 +693,8 @@ exports.compareMagasinVsStructure = async (req, res) => {
       return res.status(400).json({ error: 'Le paramètre "periode" est requis' });
     }
 
-    const whereStructure = buildWhereCondition({ periode, dateReference, code_structure });
-    const whereMagasin = buildWhereCondition({ periode, dateReference, code_structure, magasinId });
+    const whereStructure = kpiUtilitaires.buildWhereCondition({ periode, dateReference, code_structure });
+    const whereMagasin = kpiUtilitaires.buildWhereCondition({ periode, dateReference, code_structure, magasinId });
 
     const [caStructure, caMagasin] = await Promise.all([
       Panier.sum('totalTTC', { where: whereStructure }),
@@ -887,8 +721,15 @@ exports.compareMagasinVsStructure = async (req, res) => {
 // Statistiques par magasin pour une structure
 exports.getStatsStructureParMagasin = async (req, res) => {
   try {
-    const { periode, dateReference, code_structure } = req.query;
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+    const { periode, dateReference } = req.query;
     const { Op, fn, col } = db.Sequelize;
+
+    const code_structure = authUser.code_structure;
 
     if (!code_structure) {
       return res.status(400).json({ error: 'Le paramètre "code_structure" est requis' });
@@ -910,7 +751,7 @@ exports.getStatsStructureParMagasin = async (req, res) => {
       where: {
         code_structure,
         typeEntite: { [Op.ne]: 'fournisseur' },
-        statut: { [db.Sequelize.Op.notIn]: STATUTS_EXCLUS },
+        statut: { [db.Sequelize.Op.notIn]: kpiUtilitaires.STATUTS_EXCLUS },
         dateCreation: { [db.Sequelize.Op.between]: [debut, fin] }
       },
       group: ['magasinId'],
@@ -941,16 +782,26 @@ exports.getStatsStructureParMagasin = async (req, res) => {
 // Ventes à crédit (bons de type vente avec typeEntite client)
 exports.getVentesCredit = async (req, res) => {
   try {
-    const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
-    const { Op,fn,col } = db.Sequelize;
+    const authUser = req.user;
 
-    if (!code_structure) {
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+    const { periode, dateReference, magasinId, agentId } = req.query;
+    //const { Op,fn,col } = db.Sequelize;
+
+    const code_structure = authUser.code_structure;
+
+     if (!code_structure) {
       return res.status(400).json({ 
         error: 'Le paramètre "code_structure" est requis' 
       });
     }
 
-    // Déterminer les dates
+    const data = await kpiUtilitaires.getVentesCreditData({ code_structure, periode, dateReference, magasinId, agentId });
+    return res.json(data);
+
+    /*// Déterminer les dates
     let dateCondition;
     if (periode) {
       const { debut, fin } = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
@@ -1008,7 +859,7 @@ exports.getVentesCredit = async (req, res) => {
       nombrePaniersCredit: nombrePaniers,
       nombreBonsCredit: bonIds.length
     });
-
+ */
   } catch (error) {
     console.error('Erreur getVentesCredit:', error);
     res.status(500).json({ error: error.message });
@@ -1018,17 +869,25 @@ exports.getVentesCredit = async (req, res) => {
 // Avances (bons avec colonne avance non nulle)
 exports.getAvances = async (req, res) => {
   try {
-    const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
-    const { Op, fn, col } = db.Sequelize;
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+    const { periode, dateReference, magasinId, agentId } = req.query;
+    //const { Op, fn, col } = db.Sequelize;
+
+    const code_structure = authUser.code_structure;
 
     if (!code_structure) {
       return res.status(400).json({ 
         error: 'Le paramètre "code_structure" est requis' 
       });
     }
-
+    const data = await kpiUtilitaires.getAvancesData({code_structure,periode,dateReference,magasinId,agentId})
+    return res.json(data);
     // Déterminer les dates
-    let dateCondition;
+    /* let dateCondition;
     if (periode) {
       const { debut, fin } = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
       dateCondition = { [Op.between]: [debut, fin] };
@@ -1089,7 +948,7 @@ exports.getAvances = async (req, res) => {
       nombrePaniersAvecAvance: nombrePaniers,
       moyenneAvance: parseFloat(data.moyenneAvance) || 0
     });
-
+ */
   } catch (error) {
     console.error('Erreur getAvances:', error);
     res.status(500).json({ error: error.message });
@@ -1199,83 +1058,25 @@ exports.getAvances = async (req, res) => {
  */
 exports.getVentesCreditAnnulees = async (req, res) => {
   try {
-    const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
-    const { Op } = db.Sequelize;
+    const authUser = req.user;
 
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+    const { periode, dateReference, magasinId, agentId } = req.query;
+    //const { Op } = db.Sequelize;
+    
+    const code_structure = authUser.code_structure;
+    
     if (!code_structure) {
       return res.status(400).json({
         error: 'Le paramètre "code_structure" est requis'
       });
     }
 
-    /* =========================
-       1️⃣ PÉRIODE
-    ========================== */
-    let dateCondition;
-    if (periode) {
-      const { debut, fin } = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
-      dateCondition = { [Op.between]: [debut, fin] };
-    } else {
-      const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
-      dateCondition = { [Op.between]: [debutJournee, finJournee] };
-    }
-
-    /* =========================
-       2️⃣ BONS DE VENTE RETOURNÉS
-    ========================== */
-    const bons = await db.Bon.findAll({
-      attributes: [
-        'id',
-        'numero',
-        'statutBon',
-        'netAPayer',
-        'montantAvoir'
-      ],
-      where: {
-        code_structure,
-        typeEntite: 'client',
-        type: 'vente',
-        statutBon: { [Op.in]: ['retourné', 'retourné partiellement'] },
-        dateBon: dateCondition,
-        ...(magasinId && { magasinId }),
-        ...(agentId && { agentId })
-      }
-    });
-
-    /* =========================
-       3️⃣ AGRÉGATION
-    ========================== */
-    let totalMontantRetour = 0;
-    let nombreRetoursTotaux = 0;
-    let nombreRetoursPartiels = 0;
-
-    const details = bons.map(bon => {
-      const estPartiel = bon.statutBon === 'retourné partiellement';
-
-      const montant = estPartiel
-        ? safeNumber(bon.montantAvoir)
-        : safeNumber(bon.netAPayer);
-
-      totalMontantRetour += montant;
-
-      estPartiel ? nombreRetoursPartiels++ : nombreRetoursTotaux++;
-
-      return {
-        numeroBon: bon.numero,
-        type: estPartiel ? 'partiel' : 'total',
-        montant
-      };
-    });
-
-    return res.json({
-      niveau: magasinId ? 'magasin' : 'structure',
-      periode: periode || 'jour',
-      totalMontantRetour,
-      nombreRetours: bons.length,
-      nombreRetoursTotaux,
-      nombreRetoursPartiels,
-      details
-    });
+    const data = await kpiUtilitaires.getVentesCreditAnnuleesData({code_structure,periode,dateReference,magasinId,agentId})
+    
+    return res.json(data)
 
   } catch (error) {
     console.error('Erreur getVentesCreditAnnulees:', error);
@@ -1286,8 +1087,15 @@ exports.getVentesCreditAnnulees = async (req, res) => {
 // Ventes en caisse annulées ou retournées
 exports.getVentesCaisseAnnulees = async (req, res) => {
   try {
-    const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
-    const { Op,fn, col } = db.Sequelize;
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+    const { periode, dateReference, magasinId, agentId } = req.query;
+    //const { Op,fn, col } = db.Sequelize;
+
+    const code_structure = authUser.code_structure;
 
     if (!code_structure) {
       return res.status(400).json({ 
@@ -1295,8 +1103,10 @@ exports.getVentesCaisseAnnulees = async (req, res) => {
       });
     }
 
+    const data = await kpiUtilitaires.getVentesCaisseAnnuleesData({code_structure,periode,dateReference,magasinId,agentId});
+
     // Déterminer les dates
-    let dateCondition;
+    /* let dateCondition;
     if (periode) {
       const { debut, fin } = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
       dateCondition = { [Op.between]: [debut, fin] };
@@ -1387,8 +1197,8 @@ exports.getVentesCaisseAnnulees = async (req, res) => {
     // 4. Calculer les totaux généraux
     result.totalPaniers = result.totalPaniersAnnules + result.totalPaniersRetournes;
     result.totalMontant = result.totalMontantAnnule + result.totalMontantRetourne;
-
-    return res.json(result);
+ */
+    return res.json(data);
 
   } catch (error) {
     console.error('Erreur getVentesCaisseAnnulees:', error);
@@ -1399,7 +1209,15 @@ exports.getVentesCaisseAnnulees = async (req, res) => {
 // API combinée pour toutes les statistiques spéciales
 exports.getToutesStatistiquesSpeciales = async (req, res) => {
   try {
-    const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
+    const { periode, dateReference, magasinId, agentId } = req.query;
+
+    const code_structure = authUser.code_structure;
 
     if (!code_structure) {
       return res.status(400).json({ 
@@ -1447,7 +1265,7 @@ exports.getToutesStatistiquesSpeciales = async (req, res) => {
         return result[0] || { montantAvoir: 0, nombreAvoirs: 0 };
       })(),
       
-      // Appeler la fonction getVentesCredit
+      /* // Appeler la fonction getVentesCredit
       exports.getVentesCredit({ query: { periode, dateReference, code_structure, magasinId, agentId } }, { json: (data) => data }),
       
       // Appeler la fonction getAvances
@@ -1457,7 +1275,11 @@ exports.getToutesStatistiquesSpeciales = async (req, res) => {
       exports.getVentesCreditAnnulees({ query: { periode, dateReference, code_structure, magasinId, agentId } }, { json: (data) => data }),
       
       // Appeler la fonction getVentesCaisseAnnulees
-      exports.getVentesCaisseAnnulees({ query: { periode, dateReference, code_structure, magasinId, agentId } }, { json: (data) => data })
+      exports.getVentesCaisseAnnulees({ query: { periode, dateReference, code_structure, magasinId, agentId } }, { json: (data) => data }) */
+      kpiUtilitaires.getVentesCreditData({ code_structure, periode, dateReference, magasinId, agentId }),
+      kpiUtilitaires.getAvancesData({ code_structure, periode, dateReference, magasinId, agentId }),
+      kpiUtilitaires.getVentesCreditAnnuleesData({ code_structure, periode, dateReference, magasinId, agentId }),
+      kpiUtilitaires.getVentesCaisseAnnuleesData({ code_structure, periode, dateReference, magasinId, agentId })
     ]);
 
     return res.json({
@@ -1488,8 +1310,15 @@ exports.getToutesStatistiquesSpeciales = async (req, res) => {
 //Statistiques des commandes clients
 exports.getStatistiquesCommandes = async (req, res) => {
   try {
-    const { periode, dateReference, code_structure, magasinId, agentId } = req.query;
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+    const { periode, dateReference, magasinId, agentId } = req.query;
     const { Op, fn, col } = db.Sequelize;
+
+    const code_structure = authUser.code_structure;
 
     if (!code_structure) {
       return res.status(400).json({ 
@@ -1590,86 +1419,6 @@ exports.getStatistiquesCommandes = async (req, res) => {
       nombre: commandesAnnulees.length,
       montantTotal: commandesAnnulees.reduce((sum, cmd) => sum + (parseFloat(cmd.netAPayer) || 0), 0)
     };
-
-    // 4. Commandes retournées (avec gestion des retours partiels)
-    // D'abord, les commandes avec statut retourné
-    /* const whereCommandesRetournees = {
-      ...whereBase,
-      statutBon: 'retourné'
-    };
-
-    const commandesRetournees = await db.Bon.findAll({
-      attributes: ['id', 'numero', 'montantTotal'],
-      where: whereCommandesRetournees
-    });
-
-    let montantRetoursCommandes = commandesRetournees.reduce((sum, cmd) => sum + (parseFloat(cmd.montantTotal) || 0), 0);
-    let nombreRetoursCommandes = commandesRetournees.length;
-
-    // Ensuite, traiter les bons de retour client (retours partiels)
-    const whereBonsRetour = {
-      code_structure,
-      type: 'retour',
-      typeEntite: 'client',
-      dateBon: dateCondition,
-      ...(magasinId && { magasinId }),
-      ...(agentId && { agentId: agentId })
-    };
-
-    const bonsRetourClient = await db.Bon.findAll({
-      attributes: ['id', 'numero', 'montantTotal', 'numeroBonOrigine', 'montantAvoir'],
-      where: whereBonsRetour
-    });
-
-    let montantRetoursPartiels = 0;
-    let nombreRetoursPartiels = 0;
-    let montantRetoursTotaux = montantRetoursCommandes;
-    let nombreRetoursTotaux = nombreRetoursCommandes;
-
-    // Traitement des retours partiels
-    const retoursPartielsDetails = [];
-    
-    for (const bonRetour of bonsRetourClient) {
-      if (bonRetour.numeroBonOrigine) {
-        // Vérifier si la commande d'origine existe
-        const bonOrigine = await db.Bon.findOne({
-          where: {
-            numero: bonRetour.numeroBonOrigine,
-            type: 'commande'
-          }
-        });
-
-        if (bonOrigine) {
-          const montantOrigine = parseFloat(bonOrigine.montantTotal) || 0;
-          const montantRetour = parseFloat(bonRetour.montantAvoir) || parseFloat(bonRetour.montantTotal) || 0;
-          
-          // Si le montant du retour est inférieur au montant d'origine, c'est un retour partiel
-          if (montantRetour > 0 && montantRetour < montantOrigine) {
-            montantRetoursPartiels += montantRetour;
-            nombreRetoursPartiels++;
-            
-            retoursPartielsDetails.push({
-              numeroRetour: bonRetour.numero,
-              numeroOrigine: bonRetour.numeroBonOrigine,
-              montantOrigine,
-              montantRetour,
-              type: 'partiel'
-            });
-          }
-        }
-      }
-    }
-
-    // Total des retours (complets + partiels)
-    const statsRetours = {
-      montantTotal: montantRetoursTotaux + montantRetoursPartiels,
-      nombreTotal: nombreRetoursTotaux + nombreRetoursPartiels,
-      nombreRetoursTotaux,
-      nombreRetoursPartiels,
-      montantRetoursPartiels,
-      montantRetoursTotaux,
-      detailsPartiels: retoursPartielsDetails
-    }; */
 
     const commandesRetournees = await db.Bon.findAll({
       attributes: [
@@ -1784,4 +1533,738 @@ exports.getStatistiquesCommandes = async (req, res) => {
       details: error.message 
     });
   }
+};
+
+//..............................API pour le rapport de ventes............................  
+/**
+ * API principale pour le rapport de vente
+ */
+exports.getRapportVente = async (req, res) => {
+    try {
+        const authUser = req.user;
+        if (!authUser) {
+            return res.status(401).json({ message: "Non authentifié" });
+        }
+
+        const {
+            magasinId,
+            agentId,
+            periode,
+            dateReference,
+            fromDate,
+            toDate,
+            page = 1,
+            limit = 10,
+            search = ''
+        } = req.query;
+
+        const code_structure = authUser.code_structure;
+
+        if (!code_structure) {
+            return res.status(400).json({ error: 'code_structure requis' });
+        }
+
+        // Gestion des rôles
+        const magasinIdFromQuery = magasinId ? parseInt(magasinId) : null;
+        //const agentIdFromQuery = agentId ? parseInt(agentId) : null;
+
+        const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
+        const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+
+        let magasinIdFinal = magasinIdFromQuery;
+        //let agentIdFinal = agentIdFromQuery;
+
+        if (isGerant && !isAdmin) {
+            magasinIdFinal = authUser.magasinId;
+        }
+
+        // Normalisation des dates
+        let debut, fin;
+        if (periode) {
+            const dates = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
+            debut = dates.debut;
+            fin = dates.fin;
+        } 
+        else if (fromDate && toDate) {
+            debut = FonctionsUtilitaires.normalizeDate(fromDate, 'start');
+            fin = FonctionsUtilitaires.normalizeDate(toDate, 'end');
+        } 
+        else {
+            const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
+            debut = debutJournee;
+            fin = finJournee;
+        }
+
+        const params = {
+            code_structure,
+            debut,
+            fin,
+            magasinId: magasinIdFinal,
+            agentId
+        };
+
+        console.log('📊 Génération rapport vente du', debut.toLocaleString(), 'au', fin.toLocaleString());
+
+        // Récupération des clients pour le mapping (optionnel)
+        const clients = await db.Client.findAll({
+            where: { code_structure },
+            attributes: ['id', 'nomComplet']
+        });
+        const clientsMap = clients.reduce((acc, c) => {
+            acc[c.id] = c;
+            return acc;
+        }, {});
+
+        // Récupération de toutes les données en parallèle
+        const [
+            caData,
+            evolutionParJour,
+            topProduits,
+            topClients,
+            performanceVendeurs,
+            modesPaiement,
+            ventesDetail
+        ] = await Promise.all([
+            // CA et KPI de base
+            (async () => {
+                const [caVendu, caEncaisse] = await Promise.all([
+                    kpiUtilitaires.getCAVenduBaseData(params),
+                    kpiUtilitaires.getCAEncaisseBaseData(params)
+                ]);
+                return { caVendu, caEncaisse };
+            })(),
+
+            // Évolution des ventes par jour
+            kpiUtilitaires.getEvolutionVentesParJour(params),
+
+            // Top 10 produits
+            kpiUtilitaires.getTopProduits(params),
+
+            // Top 10 clients (ceux avec des bons)
+            kpiUtilitaires.getTopClients(params),
+
+            // Performance des vendeurs
+            kpiUtilitaires.getPerformanceVendeurs(params),
+
+            // Modes de paiement (via les paiements directement)
+            (async () => {
+                // Récupérer les IDs des paniers de la période
+                const paniersIds = await db.Panier.findAll({
+                    attributes: ['id'],
+                    where: {
+                        code_structure,
+                        dateCreation: { [Op.between]: [debut, fin] },
+                        statut: { [Op.notIn]: kpiUtilitaires.STATUTS_EXCLUS },
+                        ...(magasinIdFinal && { magasinId: magasinIdFinal }),
+                        ...(agentId && { agentId: agentId })
+                    },
+                    raw: true
+                }).then(paniers => paniers.map(p => p.id));
+
+                if (paniersIds.length === 0) {
+                    return [];
+                }
+
+                const stats = await db.Paiement.findAll({
+                    attributes: [
+                        'methodePaiement',
+                        [fn('SUM', col('montant')), 'montantTotal'],
+                        [fn('COUNT', col('id')), 'occurrences']
+                    ],
+                    where: {
+                        panierId: { [Op.in]: paniersIds },
+                        statutPaiement: 'validé'
+                    },
+                    group: ['methodePaiement'],
+                    raw: true
+                });
+
+                return stats.map(s => ({
+                    mode: s.methodePaiement,
+                    montantTotal: parseFloat(s.montantTotal) || 0,
+                    occurrences: parseInt(s.occurrences) || 0
+                }));
+            })(),
+
+            // Détails des ventes avec pagination
+            (async () => {
+                const offset = (parseInt(page) - 1) * parseInt(limit);
+
+                const where = {
+                    code_structure,
+                    dateCreation: { [Op.between]: [debut, fin] },
+                    statut: { [Op.notIn]: kpiUtilitaires.STATUTS_EXCLUS },
+                    ...(magasinIdFinal && { magasinId: magasinIdFinal }),
+                    ...(agentId && { agentId: agentId })
+                };
+
+                if (search) {
+                    where[Op.or] = [
+                        { '$agent.nom$': { [Op.like]: `%${search}%` } },
+                        //{ '$agent.prenom$': { [Op.like]: `%${search}%` } }
+                    ];
+                    
+                    // Recherche par ID de ticket (conversion en nombre)
+                    if (!isNaN(search)) {
+                        where[Op.or].push({ id: { [Op.eq]: parseInt(search) } });
+                    }
+                }
+
+                const { count, rows } = await db.Panier.findAndCountAll({
+                    where,
+                    include: [
+                        {
+                            model: db.Users,
+                            attributes: ['id', 'nom'],
+                            required: false
+                        },
+                        {
+                            model: db.Paiement,
+                            attributes: ['id', 'methodePaiement', 'montant', 'statutPaiement'],
+                            required: false
+                        },
+                        {
+                            model: db.ArticlePanier,
+                            attributes: ['id', 'quantite', 'produitId', 'totalTTC'],
+                            required: false,
+                            include: [
+                                {
+                                    model: db.Produit,
+                                    attributes: ['id', 'designation'],
+                                    required: false
+                                }
+                            ]
+                        }
+                    ],
+                    order: [['dateCreation', 'DESC']],
+                    offset,
+                    limit: parseInt(limit),
+                    distinct: true
+                });
+
+                return {
+                    ventes: rows,
+                    total: count,
+                    page: parseInt(page),
+                    totalPages: Math.ceil(count / parseInt(limit)),
+                    limit: parseInt(limit)
+                };
+            })()
+        ]);
+
+        // Calcul des KPI dérivés
+        const totalVentes = caData.caVendu.nombrePaniers;
+        const chiffreAffairesTTC = caData.caVendu.totalVendu;
+        const chiffreAffairesHT = caData.caVendu.totalVenduHT || (caData.caVendu.totalVendu / 1.18);
+        
+        // Marge bénéficiaire (à partir des données réelles si disponibles)
+        let margeBeneficiaire = 0;
+        if (topProduits && topProduits.length > 0) {
+            margeBeneficiaire = topProduits.reduce((sum, p) => sum + (p.marge || 0), 0);
+        } 
+        else {
+            margeBeneficiaire = chiffreAffairesHT * 0.25; // Approximation
+        }
+        
+        const ticketMoyen = caData.caVendu.ticketMoyenVente;
+        const panierMoyen = caData.caVendu.panierMoyen || 0;
+
+        // Évolution par rapport à la période précédente
+        const periodePrecedente = FonctionsUtilitaires.getPeriodePrecedentePersonnalisee(debut, fin);
+        const caPrecedent = await kpiUtilitaires.getCAVenduBaseData({
+            ...params,
+            debut: periodePrecedente.debut,
+            fin: periodePrecedente.fin
+        });
+
+        const evolutionCA = {
+            valeur: caPrecedent.totalVendu > 0 
+                ? Number(((chiffreAffairesTTC - caPrecedent.totalVendu) / caPrecedent.totalVendu * 100).toFixed(2))
+                : 0,
+            tendance: chiffreAffairesTTC > caPrecedent.totalVendu ? '↑' : 
+                     chiffreAffairesTTC < caPrecedent.totalVendu ? '↓' : '→'
+        };
+
+        const evolutionVolume = {
+            valeur: caPrecedent.nombrePaniers > 0
+                ? Number(((totalVentes - caPrecedent.nombrePaniers) / caPrecedent.nombrePaniers * 100).toFixed(2))
+                : 0,
+            tendance: totalVentes > caPrecedent.nombrePaniers ? '↑' : 
+                     totalVentes < caPrecedent.nombrePaniers ? '↓' : '→'
+        };
+
+        // Formater les ventes pour le frontend
+        const ventesFormatted = ventesDetail.ventes.map(vente => ({
+            id: vente.id,
+            dateCreation: vente.dateCreation,
+            totalTTC: vente.totalTTC,
+            totalHT: vente.totalHT,
+            statut: vente.statut,
+            clientId: vente.clientId,
+            clientNom: vente.clientId && clientsMap[vente.clientId] 
+                ? clientsMap[vente.clientId].nomComplet 
+                : 'Client anonyme',
+            agent: vente.agent ? {
+                id: vente.agent.id,
+                nom: vente.agent.nom,
+                prenom: vente.agent.prenom
+            } : null,
+            articles: vente.ArticlePaniers ? vente.ArticlePaniers.map(a => ({
+                quantite: a.quantite,
+                produit: a.Produit ? a.Produit.designation : 'Produit inconnu',
+                totalTTC: a.totalTTC
+            })) : [],
+            nombreArticles: vente.ArticlePaniers ? vente.ArticlePaniers.length : 0,
+            paiements: vente.Paiements ? vente.Paiements.map(p => ({
+                methodePaiement: p.methodePaiement,
+                montant: p.montant,
+                statut: p.statutPaiement
+            })) : []
+        }));
+
+        // Formatage de la réponse
+        return res.json({
+            niveau: magasinIdFinal ? 'magasin' : 'structure',
+            periode: periode || 'personnalisée',
+            dateDebut: debut,
+            dateFin: fin,
+            dateGeneration: new Date(),
+            
+            // KPI principaux
+            totalVentes,
+            chiffreAffairesTTC,
+            chiffreAffairesHT,
+            margeBeneficiaire,
+            ticketMoyen,
+            panierMoyen,
+            
+            // Évolution
+            evolutionCA,
+            evolutionVolume,
+            
+            // Données détaillées
+            evolutionParJour,
+            statmodesPaiement: modesPaiement,
+            topProduits,
+            topClients,
+            vendeursPerformance: performanceVendeurs,
+            
+            // Détails des ventes avec pagination
+            ventes: ventesFormatted,
+            pagination: {
+                total: ventesDetail.total,
+                page: ventesDetail.page,
+                totalPages: ventesDetail.totalPages,
+                limit: ventesDetail.limit
+            }
+        });
+
+    } catch (error) {
+        console.error('Erreur getRapportVente:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+/**
+ * API pour les détails d'un vendeur
+ */
+exports.getDetailsVendeur = async (req, res) => {
+    try {
+        const authUser = req.user;
+        if (!authUser) {
+            return res.status(401).json({ message: "Non authentifié" });
+        }
+
+        const { vendeurId } = req.params;
+        const {
+            magasinId,
+            periode,
+            dateReference,
+            fromDate,
+            toDate
+        } = req.query;
+
+        if (!vendeurId) {
+            return res.status(400).json({ error: 'vendeurId requis' });
+        }
+
+        const code_structure = authUser.code_structure;
+
+        // Gestion des rôles
+        const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
+        const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+
+        let magasinIdFinal = magasinId ? parseInt(magasinId) : null;
+
+        if (isGerant && !isAdmin) {
+            magasinIdFinal = authUser.magasinId;
+        }
+
+        // Normalisation des dates
+        let debut, fin;
+        if (periode) {
+            const dates = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
+            debut = dates.debut;
+            fin = dates.fin;
+        } else if (fromDate && toDate) {
+            debut = FonctionsUtilitaires.normalizeDate(fromDate, 'start');
+            fin = FonctionsUtilitaires.normalizeDate(toDate, 'end');
+        } else {
+            const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
+            debut = debutJournee;
+            fin = finJournee;
+        }
+
+        // Récupérer les informations du vendeur
+        const vendeur = await db.Users.findByPk(vendeurId, {
+            attributes: ['id', 'nom', 'email']
+        });
+
+        if (!vendeur) {
+            return res.status(404).json({ error: 'Vendeur non trouvé' });
+        }
+
+        // Récupérer les statistiques du vendeur via la fonction utilitaire corrigée
+        const stats = await kpiUtilitaires.getStatsVendeurDetails({
+            code_structure,
+            debut,
+            fin,
+            vendeurId: parseInt(vendeurId),
+            magasinId: magasinIdFinal
+        });
+
+        // Récupérer les détails des ventes du vendeur pour le tableau
+        const ventesVendeur = await db.Panier.findAll({
+            attributes: [
+                'id',
+                'dateCreation',
+                'totalTTC',
+                'totalHT',
+                'clientId',
+                'statut'
+            ],
+            where: {
+                code_structure,
+                dateCreation: { [Op.between]: [debut, fin] },
+                statut: { [Op.notIn]: kpiUtilitaires.STATUTS_EXCLUS },
+                agentId: parseInt(vendeurId),
+                ...(magasinIdFinal && { magasinId: magasinIdFinal })
+            },
+            include: [
+                {
+                    model: db.ArticlePanier,
+                    attributes: ['id', 'quantite', 'totalTTC'],
+                    required: false,
+                    include: [
+                        {
+                            model: db.Produit,
+                            attributes: ['id', 'designation'],
+                            required: false
+                        }
+                    ]
+                },
+                {
+                    model: db.Paiement,
+                    attributes: ['id', 'methodePaiement', 'montant'],
+                    required: false
+                }
+            ],
+            order: [['dateCreation', 'DESC']],
+            limit: 20 // Limiter aux 20 dernières ventes
+        });
+
+        // Récupérer les clients pour le mapping
+        const clients = await db.Client.findAll({
+            where: { code_structure },
+            attributes: ['id', 'nomComplet']
+        });
+        const clientsMap = clients.reduce((acc, c) => {
+            acc[c.id] = c;
+            return acc;
+        }, {});
+
+        // Formater les ventes
+        const ventesFormatted = ventesVendeur.map(vente => ({
+            id: vente.id,
+            dateCreation: vente.dateCreation,
+            totalTTC: vente.totalTTC,
+            client: vente.clientId && clientsMap[vente.clientId] 
+                ? clientsMap[vente.clientId].nomComplet 
+                : 'Client anonyme',
+            nombreArticles: vente.ArticlePaniers ? vente.ArticlePaniers.length : 0,
+            paiements: vente.Paiements ? vente.Paiements.map(p => p.methodePaiement).join(', ') : 'Non spécifié',
+            statut: vente.statut
+        }));
+
+        return res.json({
+            vendeur: {
+                id: vendeur.id,
+                nom: vendeur.nom,
+                prenom: vendeur.prenom,
+                email: vendeur.email
+            },
+            periode: periode || 'personnalisée',
+            dateDebut: debut,
+            dateFin: fin,
+            stats,
+            evolution: stats.evolution || [], // Déjà inclus dans stats
+            ventes: ventesFormatted
+        });
+
+    } catch (error) {
+        console.error('Erreur getDetailsVendeur:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+/**
+ * API pour la comparaison (magasins, vendeurs, périodes)
+ */
+exports.getComparaison = async (req, res) => {
+    try {
+        const authUser = req.user;
+        if (!authUser) {
+            return res.status(401).json({ message: "Non authentifié" });
+        }
+
+        const {
+            type, // 'periode', 'vendeur', 'magasin'
+            element1,
+            element2,
+            periode,
+            dateReference,
+            fromDate,
+            toDate,
+            magasinId,
+            agentId
+        } = req.query;
+
+        const code_structure = authUser.code_structure;
+
+        if (!type || !element1 || !element2) {
+            return res.status(400).json({ 
+                error: 'type, element1 et element2 sont requis' 
+            });
+        }
+
+        // Gestion des rôles
+        const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
+        const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+
+        let magasinIdFinal = magasinId ? parseInt(magasinId) : null;
+
+        if (isGerant && !isAdmin) {
+            magasinIdFinal = authUser.magasinId;
+        }
+
+        // Fonction pour récupérer les données d'un élément
+        const getDataForElement = async (elementValue, elementType) => {
+            let params = {
+                code_structure,
+                magasinId: magasinIdFinal,
+                agentId: agentId ? parseInt(agentId) : null
+            };
+
+            try {
+                if (elementType === 'periode') {
+                    // Pour les périodes, elementValue est un JSON stringifié
+                    const dates = JSON.parse(elementValue);
+                    params.debut = FonctionsUtilitaires.normalizeDate(dates.debut, 'start');
+                    params.fin = FonctionsUtilitaires.normalizeDate(dates.fin, 'end');
+                } 
+                else if (elementType === 'magasin') {
+                    params.magasinId = parseInt(elementValue);
+                    // Utiliser la période de référence ou les dates personnalisées
+                    if (periode) {
+                        const dates = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
+                        params.debut = dates.debut;
+                        params.fin = dates.fin;
+                    } 
+                    else if (fromDate && toDate) {
+                        params.debut = FonctionsUtilitaires.normalizeDate(fromDate, 'start');
+                        params.fin = FonctionsUtilitaires.normalizeDate(toDate, 'end');
+                    } 
+                    else {
+                        const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
+                        params.debut = debutJournee;
+                        params.fin = finJournee;
+                    }
+                } else if (elementType === 'vendeur') {
+                    params.agentId = parseInt(elementValue);
+                    if (periode) {
+                        const dates = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
+                        params.debut = dates.debut;
+                        params.fin = dates.fin;
+                    } else if (fromDate && toDate) {
+                        params.debut = FonctionsUtilitaires.normalizeDate(fromDate, 'start');
+                        params.fin = FonctionsUtilitaires.normalizeDate(toDate, 'end');
+                    } else {
+                        const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
+                        params.debut = debutJournee;
+                        params.fin = finJournee;
+                    }
+                }
+
+                console.log(`🔍 Comparaison - Élément ${elementType}:`, params);
+
+                const caVendu = await kpiUtilitaires.getCAVenduBaseData(params);
+                
+                return {
+                    ca: caVendu.totalVendu || 0,
+                    ventes: caVendu.nombrePaniers || 0,
+                    ticketMoyen: caVendu.ticketMoyenVente || 0
+                };
+            } catch (error) {
+                console.error(`❌ Erreur pour l'élément ${elementType}:`, error);
+                return { ca: 0, ventes: 0, ticketMoyen: 0 };
+            }
+        };
+
+        // Récupérer les données pour les deux éléments
+        const [data1, data2] = await Promise.all([
+            getDataForElement(element1, type),
+            getDataForElement(element2, type)
+        ]);
+
+        return res.json({
+            type,
+            ca1: data1.ca,
+            ca2: data2.ca,
+            ventes1: data1.ventes,
+            ventes2: data2.ventes,
+            ticketMoyen1: data1.ticketMoyen,
+            ticketMoyen2: data2.ticketMoyen
+        });
+
+    } catch (error) {
+        console.error('❌ Erreur getComparaison:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+/**
+ * API pour obtenir les options de comparaison
+ */
+exports.getOptionsComparaison = async (req, res) => {
+    try {
+        const authUser = req.user;
+        if (!authUser) {
+            return res.status(401).json({ message: "Non authentifié" });
+        }
+
+        const { type } = req.query;
+        const code_structure = authUser.code_structure;
+
+        let options = [];
+
+        if (type === 'magasin') {
+            const magasins = await db.Magasin.findAll({
+                where: { 
+                    code_structure, 
+                    statut: true 
+                },
+                attributes: ['id', 'nom'],
+                order: [['nom', 'ASC']]
+            });
+            options = magasins.map(m => ({
+                value: m.id.toString(),
+                label: m.nom
+            }));
+        } 
+        else if (type === 'vendeur') {
+            const vendeurs = await db.Users.findAll({
+                where: { 
+                    code_structure,
+                    status: true
+                    // Note: La recherche par rôle dépend de votre structure
+                },
+                attributes: ['id', 'nom'],
+                order: [['nom', 'ASC']]
+            });
+            options = vendeurs.map(v => ({
+                value: v.id.toString(),
+                label: `${v.nom}`.trim()
+            }));
+        } 
+        else if (type === 'periode') {
+            // Générer des périodes prédéfinies
+            const aujourdhui = new Date();
+            
+            // Aujourd'hui
+            const debutAujourdhui = new Date(aujourdhui);
+            debutAujourdhui.setHours(0, 0, 0, 0);
+            const finAujourdhui = new Date(aujourdhui);
+            finAujourdhui.setHours(23, 59, 59, 999);
+            
+            // Hier
+            const hier = new Date(aujourdhui);
+            hier.setDate(hier.getDate() - 1);
+            const debutHier = new Date(hier);
+            debutHier.setHours(0, 0, 0, 0);
+            const finHier = new Date(hier);
+            finHier.setHours(23, 59, 59, 999);
+            
+            // Cette semaine (lundi à dimanche)
+            const debutSemaine = new Date(aujourdhui);
+            const jour = aujourdhui.getDay();
+            const diff = jour === 0 ? 6 : jour - 1; // Ajustement pour lundi
+            debutSemaine.setDate(aujourdhui.getDate() - diff);
+            debutSemaine.setHours(0, 0, 0, 0);
+            
+            const finSemaine = new Date(debutSemaine);
+            finSemaine.setDate(debutSemaine.getDate() + 6);
+            finSemaine.setHours(23, 59, 59, 999);
+            
+            // Semaine dernière
+            const debutSemaineDerniere = new Date(debutSemaine);
+            debutSemaineDerniere.setDate(debutSemaineDerniere.getDate() - 7);
+            const finSemaineDerniere = new Date(finSemaine);
+            finSemaineDerniere.setDate(finSemaineDerniere.getDate() - 7);
+            
+            // Ce mois
+            const debutMois = new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), 1);
+            debutMois.setHours(0, 0, 0, 0);
+            const finMois = new Date(aujourdhui.getFullYear(), aujourdhui.getMonth() + 1, 0);
+            finMois.setHours(23, 59, 59, 999);
+            
+            // Mois dernier
+            const debutMoisDernier = new Date(aujourdhui.getFullYear(), aujourdhui.getMonth() - 1, 1);
+            debutMoisDernier.setHours(0, 0, 0, 0);
+            const finMoisDernier = new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), 0);
+            finMoisDernier.setHours(23, 59, 59, 999);
+
+            options = [
+                {
+                    value: JSON.stringify({ debut: debutAujourdhui, fin: finAujourdhui }),
+                    label: "Aujourd'hui"
+                },
+                {
+                    value: JSON.stringify({ debut: debutHier, fin: finHier }),
+                    label: "Hier"
+                },
+                {
+                    value: JSON.stringify({ debut: debutSemaine, fin: finSemaine }),
+                    label: "Cette semaine"
+                },
+                {
+                    value: JSON.stringify({ debut: debutSemaineDerniere, fin: finSemaineDerniere }),
+                    label: "Semaine dernière"
+                },
+                {
+                    value: JSON.stringify({ debut: debutMois, fin: finMois }),
+                    label: "Ce mois"
+                },
+                {
+                    value: JSON.stringify({ debut: debutMoisDernier, fin: finMoisDernier }),
+                    label: "Mois dernier"
+                }
+            ];
+        }
+
+        res.json(options);
+
+    } catch (error) {
+        console.error('❌ Erreur getOptionsComparaison:', error);
+        res.status(500).json({ error: error.message });
+    }
 };

@@ -23,7 +23,10 @@ class PanierCompletController {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-      const { panier, paiement, articles, code_structure, magasinId, agentId, clientId, typeEntite } = req.body;
+    const code_structure = authUser.code_structure;
+    const magasinId = authUser.magasinId;
+    const agentId = authUser.id;
+    const { panier, paiement, articles, clientId, typeEntite } = req.body;
 
       console.log('Données reçues pour création panier complet:', {
         panier,
@@ -67,6 +70,9 @@ class PanierCompletController {
         // Mettre à jour le panier
         await nouveauPanier.update({
           ...panier,
+          code_structure,
+          magasinId,
+          agentId,
           clientId: clientId || panier.clientId,
           typeEntite: typeEntite || panier.typeEntite,
           dateMiseAJour: new Date()
@@ -149,6 +155,7 @@ class PanierCompletController {
             montant: nouveauPanier.totalTTC,
             clientId: clientId || paiementExistant.clientId,
             magasinId,
+            code_structure,
             agentId,
             typePaiement: typeEntite,
             date: new Date()

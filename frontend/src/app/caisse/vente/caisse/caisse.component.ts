@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { ChangeDetectorRef, Component, EventEmitter, inject, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, inject, OnDestroy, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Client } from '../../../modeles/clients.model';
 import { Produits } from '../../../modeles/produit.modele';
@@ -13,11 +13,10 @@ import {
 } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
 import { BonBrouillonService } from '../../../services/bon-brouillon.service';
-import { NGXLogger } from 'ngx-logger';
 import { ProduitsService } from '../../../services/produits.service';
 import { PdfMakerServiceService } from '../../../services/pdf-maker-service.service';
 import { PaniersService } from '../../../services/paniers.service';
-import { finalize, forkJoin, Subject, takeUntil } from 'rxjs';
+import { finalize, forkJoin, Subject, Subscription, takeUntil } from 'rxjs';
 import { PanierComponent } from '../../../sharedComposants/panier/panier.component';
 import { StockInventaireService } from '../../../services/stock-inventaire.service';
 import { MouvementsStock, Stock } from '../../../modeles/entrees-sorties.model';
@@ -26,6 +25,7 @@ import { ModePaiement, Paiement } from '../../../modeles/paiement.model';
 import { MouvementsStockService } from '../../../services/mouvements-stock.service';
 import { ClientsService } from '../../../services/clients.service';
 import { StructureService } from '../../../services/structure.service';
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-caisse',
@@ -94,9 +94,11 @@ export class CaisseComponent implements OnInit, OnDestroy {
   clientForm!: FormGroup;
   selectedClient: Client | null = null;
 
-  code_structure = 'MASTRUCTURET-NZNC';
-  magasinId = 1;
-  agentId = 18;
+  code_structure :string|null = null;
+  magasinId :number|null = null;
+  agentId : number|null = null;
+
+  private userSubscription!: Subscription;
 
   panierData: Panier | null = null;
   
@@ -119,10 +121,8 @@ export class CaisseComponent implements OnInit, OnDestroy {
 
   private fb = inject(FormBuilder);
     //private paginationService = inject(ApplicationService);
-    private cdr = inject(ChangeDetectorRef);
     private toastr = inject(ToastrService);
     private bonBrouillonService = inject(BonBrouillonService);
-    private logger = inject(NGXLogger);
     private produitsServices = inject(ProduitsService);
     private panierService = inject(PaniersService);
     private stockService = inject(StockInventaireService);
@@ -131,8 +131,22 @@ export class CaisseComponent implements OnInit, OnDestroy {
     private mouvementsStockService = inject(MouvementsStockService);
     private clientsService = inject(ClientsService);
     private structureService = inject(StructureService)
+    private authService = inject(AuthService);
 
   ngOnInit() {
+    this.userSubscription = this.authService.currentUser.subscribe(user => {
+      //this.currentUser = user;
+      // Initialiser la variable code_structure
+      this.code_structure = user?.code_structure || null;
+      this.magasinId = user?.magasinId || null;
+      this.agentId = user?.id || null;
+      console.log('Données user connecté :',user, this.code_structure, this.magasinId, this.agentId );
+      // Déterminer si on doit montrer le champ structure
+      //this.isStructureAdmin = this.authService.hasRole('Administrateur'); // Ou vérifiez par ID
+
+      // Récupérer l'ID de la structure de l'utilisateur connecté
+      
+    });
     this.iniForms();
     this.loadDataProduits();
     this.loadTransactions();
@@ -173,6 +187,9 @@ export class CaisseComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if(this.userSubscription) {
+      this.userSubscription.unsubscribe();
+    }
   }
 
    /** AJOUTER UN CLIENT */
@@ -446,9 +463,9 @@ togglePanier() {
         totalHT: article.totalHT,
         totalTTC: article.totalTTC
       })),
-      code_structure: this.code_structure,
+      /* code_structure: this.code_structure,
       magasinId: this.magasinId,
-      agentId: this.agentId,
+      agentId: this.agentId, */
       clientId: panierAEnregistrer.clientId || null,
       typeEntite:this.typeEntite,
       paiement: panierAEnregistrer.totalTTC ?? 0 > 0 ? new Paiement ({
@@ -851,9 +868,9 @@ updateStockApresSuppressionArticle(article: ArticlePanier): void {
                     uniteStock:article.produit?.unite || article.Produit?.unite || 'unités',
                     typeMouvement: 'Entree',
                     description: `Retour d'article du panier ID: ${this.selectedTransaction?.id}`,
-                    code_structure: this.code_structure,
-                    magasinId: this.magasinId,
-                    acteurId: this.agentId,
+                    code_structure: this.code_structure!,
+                    magasinId: this.magasinId!,
+                    acteurId: this.agentId!,
                     prixTotal: article.prixUnitaire * article.quantite,
                     dateMouvement: new Date()
                   };
@@ -892,7 +909,7 @@ updateStockApresSuppressionArticle(article: ArticlePanier): void {
   /** CHARGER LES TRANSACTIONS */
   private loadTransactions(): void {
     console.log('Chargement des transactions de la caisse...');
-    this.panierService.getPaniersAujourdhui(this.code_structure, this.magasinId,null)
+    this.panierService.getPaniersAujourdhui(this.code_structure!, this.magasinId!,null)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (result) => {
@@ -911,7 +928,7 @@ updateStockApresSuppressionArticle(article: ArticlePanier): void {
 
   //.............................................................................
 private chargerBrouillonsExistants(): void {
-  this.panierService.getPaniersBrouillon(this.code_structure, this.magasinId)
+  this.panierService.getPaniersBrouillon(this.code_structure!, this.magasinId!)
     .pipe(takeUntil(this.destroy$))
     .subscribe({
       next: (paniersBrouillons) => {
@@ -933,7 +950,7 @@ private chargerBrouillonsExistants(): void {
         }
       },
       error: (err) => {
-        console.error('Erreur chargement brouillons:', err);
+        console.error('Erreur chargement brouillons:', err.error?.message || err.message || err);
         this.creerNouveauBrouillon();
       }
     });
@@ -979,9 +996,9 @@ private creerNouveauBrouillon(): void {
   loadDataProduits(): void {
         this.isLoading = true;
         forkJoin([
-          this.produitsServices.getAllProduits(this.code_structure),
-          this.stockService.getStocksByStructure(this.code_structure),
-          this.clientsService.getClientsByStructure(this.code_structure)  
+          this.produitsServices.getAllProduits(this.code_structure!),
+          this.stockService.getStocksByStructure(this.code_structure!),
+          this.clientsService.getClientsByStructure(this.code_structure!)  
         ])
           .pipe(
             takeUntil(this.destroy$),
@@ -1058,7 +1075,7 @@ imprimerTicket(panier: Panier) {
 
 // Charger les informations de la structure pour le PDF
 private loadStructureInfo(): void {
-    this.structureService.getByCodeStructure(this.code_structure)
+    this.structureService.getByCodeStructure(this.code_structure!)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (structure) => {
