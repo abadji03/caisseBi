@@ -6,10 +6,13 @@ const authenticateToken = require('../middlewares/auth.middleware');
 
 
 router.post('/',authenticateToken, controller.createMouvementStock);
-router.get('/',authenticateToken, controller.getAllMouvementsStock);
+router.get('/structure/:code_structure', authenticateToken, controller.getMouvementsByStructure);
+//router.get('/',authenticateToken, controller.getAllMouvementsStock);
 router.get('/:id',authenticateToken, controller.getMouvementStockById);
 router.put('/:id',authenticateToken, controller.updateMouvementStock);
 router.delete('/:id',authenticateToken, controller.deleteMouvementStock);
-router.get('/structure/:code_structure', authenticateToken, controller.getMouvementsByStructure);
+
+
+router.patch('/:id/statut', authenticateToken, controller.updateStatut);
 
 module.exports = router;

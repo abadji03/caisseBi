@@ -39,6 +39,10 @@ module.exports = (sequelize, DataTypes) => {
     note: {
       type: DataTypes.TEXT,
     },
+    statut: {
+      type: DataTypes.ENUM('validé', 'annulé'),
+      defaultValue: 'validé',
+    },
   });
 
   return Reconciliation;

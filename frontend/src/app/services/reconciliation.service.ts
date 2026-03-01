@@ -96,4 +96,12 @@ export class ReconciliationService {
   deleteHistorique(id: number): Observable<unknown> {
     return this.http.delete(`${this.apiUrlBis}/${id}`, { headers: this.getHeaders() });
   }
+
+  updateStatut(id: number, statut: string): Observable<Reconciliation> {
+      return this.http.patch<Reconciliation>(
+        `${this.apiUrl}/${id}/statut`,
+        { statut },
+        { headers: this.getHeaders() },
+      );
+    }
 }

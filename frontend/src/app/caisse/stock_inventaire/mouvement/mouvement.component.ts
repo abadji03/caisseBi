@@ -22,7 +22,6 @@ export class MouvementComponent implements OnInit, OnDestroy {
   @Input() magasinId: number | null = null;
   @Input() agentId: number | null = null;
 
-  pageSize = 5;
   mouvementForm!: FormGroup;
   mouvements: MouvementsStock[] = [];
   filteredMouvements: MouvementsStock[] = [];
@@ -31,6 +30,21 @@ export class MouvementComponent implements OnInit, OnDestroy {
   isLoading = false;
   isEditing = false;
   currentMouvement: MouvementsStock | null = null;
+
+  currentPage = 1;
+  pageSize = 10;
+  totalItems = 0;
+  totalPages = 0;
+  hasNext = false;
+  hasPrev = false;
+  
+  // Filtres
+  selectedTypeMouvement = 'tous';
+  
+  
+  // Loading state pour la pagination
+  isLoadingMore = false;
+
 
   produits: Produits[] = [];
   stock: Stock[] = [];
@@ -59,6 +73,7 @@ export class MouvementComponent implements OnInit, OnDestroy {
 
   private initForm() {
     this.mouvementForm = this.fb.group({
+      produitId: [null], // Ajout du champ produitId
       uniteStock: [{ value: '', disabled: false }, Validators.required],
       quantite: [null, [Validators.required, Validators.min(0.01)]],
       typeMouvement: ['', Validators.required],
@@ -78,18 +93,28 @@ export class MouvementComponent implements OnInit, OnDestroy {
     forkJoin([
       this.produitsService.getAllProduits(this.codeStructure!),
       this.stockService.getStocksByStructure(this.codeStructure!),
-      this.mouvementsStockService.getAll()
+      this.mouvementsStockService.getByStructure(
+      this.codeStructure!,
+      this.currentPage,
+      this.pageSize,
+      this.searchTextMouvement,
+      this.selectedTypeMouvement,
+      )
     ])
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => (this.isLoading = false))
       )
       .subscribe({
-        next: ([produits, stocks, mouvements]) => {
+        next: ([produits, stocks, response]) => {
           this.produits = produits;
           this.stock = stocks;
-          this.mouvements = mouvements;
-          this.filteredMouvements = [...mouvements];
+          this.mouvements = response.mouvements;
+          this.filteredMouvements = response.mouvements; // Plus besoin de filtrer côté client
+          this.totalItems = response.pagination.total;
+          this.totalPages = response.pagination.totalPages;
+          this.hasNext = response.pagination.hasNext;
+          this.hasPrev = response.pagination.hasPrev;
           this.filteredProduits = [...produits];
         },
         error: (err) => {
@@ -106,7 +131,7 @@ export class MouvementComponent implements OnInit, OnDestroy {
     );
   }
 
-  selectProduit(prod: Produits): void {
+  /* selectProduit(prod: Produits): void {
     this.selectedProduct = prod;
     this.searchInput = prod.designation;
     this.filteredProduits = [];
@@ -116,8 +141,28 @@ export class MouvementComponent implements OnInit, OnDestroy {
 
     this.mouvementForm.patchValue({ uniteStock: prod.unite });
     this.updatePrixUnitaire(this.mouvementForm.get('typeMouvement')!.value);
-  }
+  } */
 
+  selectProduit(prod: Produits): void {
+    console.log('Produit sélectionné:', prod);
+    
+    this.selectedProduct = prod;
+    this.searchInput = prod.designation;
+    this.filteredProduits = [];
+    
+    const stk = this.stock.find(stoc => stoc.produitId === prod.id);
+    if (stk) {
+      this.idStockPoduct = stk.id;
+      console.log('Stock associé:', stk);
+    }
+
+    this.mouvementForm.patchValue({ 
+      produitId: prod.id,  // Important : mettre à jour produitId
+      uniteStock: prod.unite 
+    });
+    
+    this.updatePrixUnitaire(this.mouvementForm.get('typeMouvement')!.value);
+  }
   private updatePrixUnitaire(type: 'Entrée' | 'Sortie' | null) {
     if (!this.selectedProduct || !type) {
       this.mouvementForm.patchValue({ prixUnitaire: null });
@@ -131,7 +176,7 @@ export class MouvementComponent implements OnInit, OnDestroy {
     this.mouvementForm.patchValue({ prixUnitaire: prix });
   }
 
-  onSearchChange(): void {
+  /* onSearchChange(): void {
     this.filteredMouvements = this.mouvements.filter(mvt =>
       mvt.ref.toLowerCase().includes(this.searchTextMouvement.toLowerCase()) ||
       this.getNomProduitById(mvt.produitId).toLowerCase().includes(this.searchTextMouvement.toLowerCase()) ||
@@ -140,11 +185,31 @@ export class MouvementComponent implements OnInit, OnDestroy {
       new Date(mvt.dateMouvement).toLocaleDateString().toLowerCase().includes(this.searchTextMouvement.toLowerCase())
     );
     this.currentPageMouvement = 1;
+  } */
+
+  onSearchChange(): void {
+    this.currentPage = 1; // Revenir à la première page
+    this.loadData();
   }
 
-  getNomProduitById(produitId: number): string {
+  /* getNomProduitById(produitId: number): string {
     const produit = this.produits.find(p => p.id === produitId);
     return produit ? produit.designation : 'Produit introuvable';
+  } */
+
+  getNomProduitById(produitId: number | null | undefined): string {
+    if (!produitId) {
+      console.warn('getNomProduitById appelé avec produitId null/undefined');
+      return 'Produit non spécifié';
+    }
+    
+    const produit = this.produits.find(p => p.id === produitId);
+    if (!produit) {
+      console.warn(`Produit avec ID ${produitId} non trouvé dans la liste`);
+      return `Produit (ID: ${produitId})`;
+    }
+    
+    return produit.designation;
   }
 
   getUniteProduitById(produitId: number): string {
@@ -161,8 +226,32 @@ export class MouvementComponent implements OnInit, OnDestroy {
     return Math.ceil(this.filteredMouvements.length / this.pageSize);
   }
 
-  onPageChange(page: number) {
-    this.currentPageMouvement = page;
+  // onPageChange(page: number) {
+  //   this.currentPageMouvement = page;
+  // }
+
+  onPageChange(page: number): void {
+    if (page < 1 || page > this.totalPages) return;
+    
+    this.currentPage = page;
+    this.loadData();
+  }
+  // Méthode pour réinitialiser les filtres
+  resetFilters(): void {
+    this.searchTextMouvement = '';
+    this.selectedTypeMouvement = 'tous';
+    this.currentPage = 1;
+    this.loadData();
+  }
+  onTypeMouvementChange(): void {
+      this.currentPage = 1;
+      this.loadData();
+    }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onPageSizeChange(event: any): void {
+    this.pageSize = Number(event.target.value);
+    this.currentPage = 1;
+    this.loadData();
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -172,7 +261,7 @@ export class MouvementComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  modifierMouvement(mouvement: MouvementsStock) {
+  /* modifierMouvement(mouvement: MouvementsStock) {
     this.isEditing = true;
     this.currentMouvement = mouvement;
     this.searchInput = this.getNomProduitById(mouvement.produitId);
@@ -190,7 +279,45 @@ export class MouvementComponent implements OnInit, OnDestroy {
     });
 
     this.openModal();
+  } */
+
+  modifierMouvement(mouvement: MouvementsStock) {
+  console.log('=== MODIFICATION MOUVEMENT ===');
+  console.log('Mouvement à modifier:', mouvement);
+  
+  this.isEditing = true;
+  this.currentMouvement = mouvement;
+  
+  // Récupérer le produit correspondant
+  const produit = this.produits.find(p => p.id === mouvement.produitId);
+  console.log('Produit trouvé:', produit);
+  
+  if (produit) {
+    this.selectedProduct = produit;
+    this.searchInput = produit.designation; // Pour l'affichage
+    
+    // Récupérer le stock pour ce produit
+    const stk = this.stock.find(s => s.produitId === produit.id);
+    if (stk) {
+      this.idStockPoduct = stk.id;
+      console.log('Stock trouvé:', stk);
+    }
   }
+  
+  // Remplir le formulaire avec les données du mouvement
+  this.mouvementForm.patchValue({
+    produitId: mouvement.produitId,
+    uniteStock: this.getUniteProduitById(mouvement.produitId),
+    quantite: mouvement.quantite,
+    typeMouvement: mouvement.typeMouvement,
+    description: mouvement.description,
+    prixUnitaire: mouvement.prixUnitaire
+  });
+  
+  console.log('Formulaire après patch:', this.mouvementForm.value);
+  
+  this.openModal();
+}
 
   supprimerMouvement(mouvement: MouvementsStock) {
     if (confirm('Êtes-vous sûr de vouloir supprimer ce mouvement ?')) {
@@ -199,7 +326,7 @@ export class MouvementComponent implements OnInit, OnDestroy {
         ? Number(mouvement.quantite) 
         : -Number(mouvement.quantite);
 
-      this.mouvementsStockService.delete(mouvement.id!)
+      this.mouvementsStockService.updateStatut(mouvement.id!,'annulé')
         .pipe(finalize(() => (this.isLoading = false)))
         .subscribe({
           next: () => {
@@ -217,19 +344,31 @@ export class MouvementComponent implements OnInit, OnDestroy {
   }
 
   enregistrerMouvement() {
+    console.log('=== ENREGISTREMENT MOUVEMENT ===');
+    console.log('isEditing:', this.isEditing);
+    console.log('Valeurs formulaire:', this.mouvementForm.value);
+
     if (this.mouvementForm.invalid) {
       this.toastr.error('Veuillez remplir tous les champs obligatoires');
       return;
     }
 
     const f = this.mouvementForm.value;
+    // Vérification critique : produitId doit être défini
+    const produitId = this.isEditing && this.currentMouvement 
+      ? this.currentMouvement.produitId 
+      : this.selectedProduct?.id;
+      
+    if (!produitId) {
+      console.error('produitId est undefined!');
+      this.toastr.error('Erreur: Produit non sélectionné');
+      return;
+    }
     const variation = f.typeMouvement === 'Sortie' ? -Number(f.quantite) : Number(f.quantite);
 
     const payload = {
       ...f,
-      produitId: this.isEditing && this.currentMouvement 
-        ? this.currentMouvement.produitId 
-        : this.selectedProduct?.id,
+      produitId: produitId,
       uniteStock: this.isEditing && this.currentMouvement 
         ? this.getUniteProduitById(this.currentMouvement.produitId)
         : this.selectedProduct?.unite,
@@ -244,6 +383,9 @@ export class MouvementComponent implements OnInit, OnDestroy {
       stockId: this.isEditing && this.currentMouvement ? this.currentMouvement.stockId : this.idStockPoduct,
       magasinId: this.isEditing && this.currentMouvement ? this.currentMouvement.magasinId : this.magasinId,
     };
+
+
+    console.log('Payload préparé:', payload);
 
     const operation = this.isEditing && this.currentMouvement
       ? this.mouvementsStockService.update(this.currentMouvement.id!, payload)
@@ -269,11 +411,23 @@ export class MouvementComponent implements OnInit, OnDestroy {
   }
 
   resetForm() {
+    console.log('Réinitialisation du formulaire');
+    
+    this.mouvementForm.reset({
+      produitId: null,
+      uniteStock: '',
+      quantite: null,
+      typeMouvement: '',
+      description: '',
+      prixUnitaire: ''
+    });
+    
     this.searchInput = '';
     this.selectedProduct = null;
-    this.mouvementForm.reset();
     this.isEditing = false;
     this.currentMouvement = null;
+    this.idStockPoduct = 0;
+    this.filteredProduits = [];
   }
 
   openModal() {

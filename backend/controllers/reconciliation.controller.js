@@ -1,5 +1,6 @@
 const db = require('../models');
 const Reconciliation = db.Reconciliation;
+const MouvementStock = db.MouvementStock;
 const Produit = db.Produit; // Assure-toi que l'association a été définie (Reconciliation.belongsTo(Produit))
 
 //Créer une réconciliation
@@ -61,7 +62,8 @@ exports.getReconciliationsByStructure = async (req, res) => {
 
     // Clause where par défaut (structure)
     let whereClause = {
-      code_structure: code_structure
+      code_structure: code_structure,
+      statut:'validé'
     };
 
     // 🔹 Si gérant : filtrer par magasin
@@ -78,7 +80,8 @@ exports.getReconciliationsByStructure = async (req, res) => {
       where: whereClause,
       include: [
         { model: Produit,attributes: ["id", "designation", "unite", "prixAchatUnitaire"] },
-        { model: db.Users, attributes: ["id", "nom"] }
+        { model: db.Users, attributes: ["id", "nom"] },
+        { model: MouvementStock, attributes:['id','produitId'] }
     ],
       order: [['createdAt', 'DESC']],
     });
@@ -98,7 +101,10 @@ exports.getReconciliationById = async (req, res) => {
       return res.status(401).json({ message: "Non authentifié" });
     }
     const reconciliation = await Reconciliation.findByPk(req.params.id, {
-      include: [{ model: Produit }],
+      include: [
+        { model: Produit, attributes:['id','designation','unite'] },
+        { model: MouvementStock, attributes:['id','produitId'] }
+      ],
     });
 
     if (!reconciliation) {
@@ -136,7 +142,7 @@ exports.updateReconciliation = async (req, res) => {
       note,
     });
 
-    res.json({ message: 'Réconciliation mise à jour', reconciliation });
+    res.json(reconciliation);
   } catch (err) {
     res.status(500).json({ message: 'Erreur mise à jour', error: err.message });
   }
@@ -197,5 +203,27 @@ exports.getReconciliationsByProduit = async (req, res) => {
     res.json(reconciliations);
   } catch (err) {
     res.status(500).json({ message: 'Erreur récupération', error: err.message });
+  }
+};
+
+// Mettre à jour le statut d'une reconciliation
+exports.updateStatut = async (req, res) => {
+  try {
+    const authUser = req.user; // utilisateur connecté
+
+    if (!authUser) {
+      return res.status(401).json({ message: 'Non authentifié' });
+    }
+    const reconciliation = await Reconciliation.findByPk(req.params.id);
+    if (!reconciliation) return res.status(404).json({ message: 'Reconciliation non trouvé' });
+
+    const { statut } = req.body;
+    /* if (typeof statut !== 'boolean')
+      return res.status(400).json({ message: 'Le statut doit être un booléen' }); */
+
+    await reconciliation.update({ statut });
+    res.json(reconciliation );
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur mise à jour du statut', error });
   }
 };

@@ -92,6 +92,7 @@ export class MouvementsStock {
   public acteurId!: number;
   public description?: string;
   public motif?: string;
+  public statut?:boolean;
   public dateMouvement: Date = new Date();
   public reconciliationId?:number;
   public transfertId?:number;
@@ -354,9 +355,12 @@ export class Reconciliation {
   stockTheorique!: number;
   code_structure!:string;
   magasinId!:number;
+  MouvementStocks?: MouvementsStock[];
+  Produit?:Produits;
   stockPhysique!: number;
   private _ecart!: number; // Stocke l'écart interne
   dateReconciliation!: Date;
+  statut?:boolean;
   responsable?: number; // Personne ayant effectué la réconciliation
   note?: string; // Explication de l'écart
   historiqueEcart?: { date: Date; ecart: number; note?: string }[] = []; // Historique des écarts
@@ -407,7 +411,11 @@ export class Reconciliation {
       stockPhysique: data.stockPhysique,
       dateReconciliation: new Date(data.dateReconciliation),
       responsable: data.responsable,
+      Produit:data.Produit,
+      MouvementStocks:data.MouvementStocks,
+      magasinId:data.magasinId,
       note: data.note,
+      statut: data.statut,
       historiqueEcart:
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         data.historiqueEcart?.map((h: any) => ({
@@ -499,4 +507,16 @@ export class AnalyseEcart {
 
     return instance;
   }
+}
+
+export interface PaginatedResponse<T> {
+  mouvements: T[];
+  pagination: {
+    total: number;
+    page: number;
+    totalPages: number;
+    limit: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
 }

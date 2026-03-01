@@ -1,5 +1,54 @@
 <div class="table-responsive">
-  <div class="d-flex justify-content-between">
+  <div class="row mb-3">
+  <div class="col-md-4">
+    <input
+      [(ngModel)]="searchTextMouvement"
+      type="text"
+      placeholder="Rechercher par référence, produit, description..."
+      class="form-control"
+      (input)="onSearchChange()"
+    />
+  </div>
+  
+  <div class="col-md-2">
+    <select 
+      class="form-select" 
+      [(ngModel)]="selectedTypeMouvement" 
+      (change)="onTypeMouvementChange()"
+    >
+      <option value="tous">Tous les types</option>
+      <option value="Entrée">Entrées</option>
+      <option value="Sortie">Sorties</option>
+    </select>
+  </div>
+  
+  <!-- <div class="col-md-2">
+    <input
+      type="date"
+      class="form-control"
+      [(ngModel)]="dateDebut"
+      (change)="onDateChange()"
+      placeholder="Date début"
+    />
+  </div>
+  
+  <div class="col-md-2">
+    <input
+      type="date"
+      class="form-control"
+      [(ngModel)]="dateFin"
+      (change)="onDateChange()"
+      placeholder="Date fin"
+    /> 
+  </div>-->
+  
+  <div class="col-md-2">
+    <button class="btn btn-outline-secondary w-100" (click)="resetFilters()">
+      <i class="bi bi-eraser"></i> Réinitialiser
+    </button>
+  </div>
+</div>
+  <!-- <div class="d-flex justify-content-between">
     <input
       [(ngModel)]="searchTextMouvement"
       type="text"
@@ -25,8 +74,29 @@
       <option *ngFor="let option of [5, 10, 20, 50]" [value]="option">{{ option }}</option>
     </select>
     <span>lignes par page</span>
+  </div> -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <span class="text-muted">
+        Total: {{ totalItems }} mouvement(s) - Page {{ currentPage }}/{{ totalPages }}
+      </span>
+    </div>
+    
+    <div class="d-flex align-items-center">
+      <label for="pageSize" class="me-2">Afficher</label>
+      <select
+        id="pageSize"
+        class="form-select w-auto"
+        (change)="onPageSizeChange($event)"
+      >
+        <option [value]="5">5</option>
+        <option [value]="10" selected>10</option>
+        <option [value]="20">20</option>
+        <option [value]="50">50</option>
+      </select>
+      <span class="ms-2">lignes par page</span>
+    </div>
   </div>
-
   <table class="table table-bordered table-hover">
     <thead class="table-success">
       <tr>
@@ -40,7 +110,14 @@
       </tr>
     </thead>
     <tbody>
-      <tr *ngIf="getPaginatedMouvements().length === 0">
+      <tr *ngIf="isLoading">
+        <td colspan="7" class="text-center">
+          <div class="spinner-border text-success" role="status">
+            <span class="visually-hidden">Chargement...</span>
+          </div>
+        </td>
+      </tr>
+      <tr *ngIf="!isLoading && mouvements.length === 0">
         <td colspan="7" class="text-center">Aucun mouvement trouvé</td>
       </tr>
       <tr *ngFor="let mouvement of getPaginatedMouvements()">
@@ -80,7 +157,7 @@
 </div>
 
 <!-- Pagination -->
-<div class="d-flex justify-content-center align-items-center">
+<!-- <div class="d-flex justify-content-center align-items-center">
   <button
     class="btn btn-success w-auto"
     (click)="onPageChange(currentPageMouvement - 1)"
@@ -96,8 +173,33 @@
   >
     <i class="bi bi-arrow-right-circle"></i>
   </button>
+</div> -->
+<div class="d-flex justify-content-center align-items-center" *ngIf="totalPages > 1">
+  <nav aria-label="Page navigation">
+    <ul class="pagination">
+      <li class="page-item" [class.disabled]="!hasPrev">
+        <button class="page-link" (click)="onPageChange(currentPage - 1)" style="cursor: pointer;">
+          <i class="bi bi-chevron-left"></i>
+        </button>
+      </li>
+      
+      <li class="page-item" *ngFor="let page of [].constructor(totalPages); let i = index" 
+          [class.active]="currentPage === i + 1">
+        <button class="page-link" (click)="onPageChange(i + 1)" style="cursor: pointer;">
+          {{ i + 1 }}
+        </button>
+      </li>
+      
+      <li class="page-item" [class.disabled]="!hasNext">
+        <button class="page-link" (click)="onPageChange(currentPage + 1)" style="cursor: pointer;">
+          <i class="bi bi-chevron-right"></i>
+        </button>
+      </li>
+    </ul>
+  </nav>
 </div>
 
+<!-- Modal pour ajouter un mouvement -->
 <!-- Modal pour ajouter un mouvement -->
 <div class="modal fade" id="mouvementModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
@@ -136,32 +238,46 @@
           </div>
 
           <div *ngIf="mouvementForm.get('typeMouvement')?.value">
-            <div class="mb-3 position-relative">
-              <label for="produitInput" class="form-label">Produit</label>
+            <!-- MODE CRÉATION : champ de recherche actif -->
+            <div *ngIf="!isEditing" class="mb-3 position-relative">
+              <label for="produitInput" class="form-label">Produit <span class="text-danger">*</span></label>
               <input
                 type="text"
                 class="form-control"
                 id="produitInput"
                 [(ngModel)]="searchInput"
                 (input)="filterProduits()"
+                (focus)="filterProduits()"
                 placeholder="Rechercher un produit..."
                 [ngModelOptions]="{ standalone: true }"
                 required
               />
 
+              <!-- Liste déroulante des résultats -->
               <ul
                 *ngIf="filteredProduits.length > 0 && searchInput"
                 class="list-group position-absolute mt-1"
-                style="width: 100%; max-height: 150px; overflow-y: auto; z-index: 1000;"
+                style="width: 100%; max-height: 150px; overflow-y: auto; z-index: 1000; background-color: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);"
               >
                 <li
                   *ngFor="let prod of filteredProduits"
                   class="list-group-item list-group-item-action"
                   (click)="selectProduit(prod)"
+                  style="cursor: pointer; padding: 8px 12px;"
                 >
                   {{ prod.designation }}
                 </li>
               </ul>
+            </div>
+
+            <!-- MODE ÉDITION : affichage du produit sélectionné (readonly) -->
+            <div *ngIf="isEditing" class="mb-3">
+              <label for="produitId" class="form-label">Produit</label>
+              <div class="form-control bg-light" style="cursor: not-allowed; background-color: #e9ecef;">
+                <strong>{{ getNomProduitById(mouvementForm.get('produitId')?.value || currentMouvement?.produitId) }}</strong>
+              </div>
+              <!-- On garde la liaison avec le formulaire via un champ caché -->
+              <input type="hidden" formControlName="produitId" [value]="currentMouvement?.produitId">
             </div>
 
             <div class="mb-3">
@@ -232,7 +348,7 @@
               >
                 {{ isEditing ? 'Mettre à jour' : 'Enregistrer' }}
               </button>
-              <button type="reset" class="btn btn-secondary w-25" data-bs-dismiss="modal">
+              <button type="reset" class="btn btn-secondary w-25" data-bs-dismiss="modal" (click)="resetForm()">
                 Annuler
               </button>
             </div>

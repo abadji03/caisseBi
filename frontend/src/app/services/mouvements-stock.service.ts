@@ -1,7 +1,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { AuthService } from './auth.service';
-import { MouvementsStock } from '../modeles/entrees-sorties.model';
+import { MouvementsStock, PaginatedResponse } from '../modeles/entrees-sorties.model';
 import { Observable } from 'rxjs';
 
 @Injectable({
@@ -52,9 +52,51 @@ export class MouvementsStockService {
   /** ------------------- End‑point spécifique ------------------- */
 
   /** Obtenir les mouvements d’une structure donnée */
-  getByStructure(code_structure: string): Observable<MouvementsStock[]> {
+  /* getByStructure(code_structure: string): Observable<MouvementsStock[]> {
     return this.http.get<MouvementsStock[]>(`${this.apiUrl}/structure/${code_structure}`, {
       headers: this.getHeaders(),
     });
+  } */
+
+  getByStructure(
+    code_structure: string, 
+    page= 1, 
+    limit= 10, 
+    search= '',
+    typeMouvement: string,
+ 
+): Observable<PaginatedResponse<MouvementsStock>> {
+  
+  // Construire les paramètres de requête
+  let params = `?page=${page}&limit=${limit}`;
+  
+  if (search) {
+    params += `&search=${encodeURIComponent(search)}`;
   }
+  
+  if (typeMouvement && typeMouvement !== 'tous') {
+    params += `&typeMouvement=${encodeURIComponent(typeMouvement)}`;
+  }
+  
+  /* if (dateDebut) {
+    params += `&dateDebut=${encodeURIComponent(dateDebut)}`;
+  }
+  
+  if (dateFin) {
+    params += `&dateFin=${encodeURIComponent(dateFin)}`;
+  } */
+
+  return this.http.get<PaginatedResponse<MouvementsStock>>(
+    `${this.apiUrl}/structure/${code_structure}${params}`, 
+    { headers: this.getHeaders() }
+  );
+}
+
+  updateStatut(id: number, statut: string): Observable<MouvementsStock> {
+      return this.http.patch<MouvementsStock>(
+        `${this.apiUrl}/${id}/statut`,
+        { statut },
+        { headers: this.getHeaders() },
+      );
+    }
 }

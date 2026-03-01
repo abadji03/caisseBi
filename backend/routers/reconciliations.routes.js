@@ -15,6 +15,9 @@ router.get('/:id',authenticateToken, ctrl.getReconciliationById); // Par ID
 router.put('/:id',authenticateToken, ctrl.updateReconciliation); // MAJ
 router.delete('/:id',authenticateToken, ctrl.deleteReconciliation); // Suppression
 
+router.patch('/:id/statut', authenticateToken, ctrl.updateStatut);
+
+
 router.get('/produit/:produitId',authenticateToken, ctrl.getReconciliationsByProduit); // Par produit
 
 module.exports = router;
