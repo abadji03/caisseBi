@@ -5,6 +5,7 @@ import { AuthService } from './auth.service';
 import { NGXLogger } from 'ngx-logger';
 import { catchError, Observable, throwError } from 'rxjs';
 import { IndicateursStocks, MouvementsResponse, ProduitsSpecifiquesResponse, RapportCompletStocksResponse, StatistiquesProduit, StatsGraphiquesResponse, StatsProduitsResponse } from '../modeles/kpiCaisse.model';
+import { RapportStockParams } from '../modeles/finance.model';
 
 @Injectable({
   providedIn: 'root'
@@ -404,4 +405,78 @@ export class RapportStockService {
   getTypesMouvement(): string[] {
     return ['Entrée', 'Sortie', 'Tous'];
   }
+
+  /**
+   * Génère un PDF du rapport de stock
+   */
+  generateRapportStockPDF(params: RapportStockParams): Observable<Blob> {
+    let httpParams = new HttpParams();
+
+    // Ajouter les paramètres
+    if (params.periode) httpParams = httpParams.set('periode', params.periode);
+    if (params.dateReference) httpParams = httpParams.set('dateReference', params.dateReference);
+    if (params.fromDate) httpParams = httpParams.set('fromDate', params.fromDate);
+    if (params.toDate) httpParams = httpParams.set('toDate', params.toDate);
+    if (params.magasinId) httpParams = httpParams.set('magasinId', params.magasinId.toString());
+    if (params.categorie) httpParams = httpParams.set('categorie', params.categorie);
+    if (params.statut) httpParams = httpParams.set('statut', params.statut);
+
+    console.log('📤 Génération PDF Stock avec params:', httpParams.toString());
+
+    return this.http.get(`${this.apiUrl}/pdf`, {
+      params: httpParams,
+      responseType: 'blob'
+    });
+  }
+
+  /**
+   * Sauvegarde le PDF
+   */
+  savePDF(blob: Blob, filename: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  }
+
+/**
+ * Exporte le rapport de stock au format Excel
+ */
+exportRapportStockExcel(params: RapportStockParams): Observable<Blob> {
+  let httpParams = new HttpParams();
+
+  // Ajouter les paramètres
+  if (params.periode) httpParams = httpParams.set('periode', params.periode);
+  if (params.dateReference) httpParams = httpParams.set('dateReference', params.dateReference);
+  if (params.fromDate) httpParams = httpParams.set('fromDate', params.fromDate);
+  if (params.toDate) httpParams = httpParams.set('toDate', params.toDate);
+  if (params.magasinId) httpParams = httpParams.set('magasinId', params.magasinId.toString());
+  if (params.categorie) httpParams = httpParams.set('categorie', params.categorie);
+  if (params.statut) httpParams = httpParams.set('statut', params.statut);
+
+  console.log('Export Excel Stock avec params:', httpParams.toString());
+
+  return this.http.get(`${this.apiUrl}/excel`, {
+    params: httpParams,
+    responseType: 'blob'
+  });
+}
+
+/**
+ * Sauvegarde le fichier Excel
+ */
+saveExcel(blob: Blob, filename: string): void {
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+}
 }

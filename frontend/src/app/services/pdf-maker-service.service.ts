@@ -9,6 +9,8 @@ import { ImageConverterService } from './image-converter.service';
 import { ArticlePanier } from '../modeles/panier.model';
 import { Operation } from '../modeles/operation.model';
 import { Fournisseur } from '../modeles/fournisseur.model';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 
 
 
@@ -32,6 +34,10 @@ export class PdfMakerServiceService {
   private defaultLogo = ''; // Logo par défaut en base64
 
 private imageConverter = inject(ImageConverterService)
+
+private apiUrl = 'http://localhost:5000/api/kpi-caisse';
+  
+private http = inject(HttpClient);
 
   constructor() {
     this.loadDefaultLogo();
@@ -1970,6 +1976,37 @@ private generateTicketVersementClientFallback(versementData: any): void {
 }
 
 //.....................................Génération rapport financier.........................
+
+/**
+   * Génère un PDF de rapport de vente
+   */
+  generateRapportVentePDF(params: any): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/pdf`, {
+      params: params,
+      responseType: 'blob'
+    });
+  }
+
+  /**
+   * Sauvegarde le PDF sur le disque
+   */
+  savePDF(blob: Blob, filename= 'rapport-vente.pdf'): void {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  }
+
+  /**
+   * Ouvre le PDF dans un nouvel onglet
+   */
+  openPDF(blob: Blob): void {
+    const url = window.URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  }
+
 /**
  * Génère un rapport financier complet
  */

@@ -61,4 +61,23 @@ router.post('/rapport-vente/comparaison',
     authenticateToken, 
     kpiCaisseCTR.getComparaison
 );
+
+// Route pour tester le rendu HTML
+router.get('/test-html', 
+    authenticateToken, 
+    kpiCaisseCTR.testRapportHTML
+);
+
+// Route pour générer le PDF
+router.get('/pdf', 
+    authenticateToken, 
+    kpiCaisseCTR.genererRapportPDF
+);
+
+// Dans votre fichier de routes
+router.get('/rapport-vente/excel', 
+    authenticateToken, 
+    kpiCaisseCTR.exportRapportExcel
+);
+
 module.exports = router;

@@ -1,0 +1,118 @@
+<div class="table-responsive">
+  <div class="d-flex justify-content-between">
+    <input
+      [(ngModel)]="searchTextEcart"
+      type="text"
+      placeholder="Rechercher un produit à analyser..."
+      class="form-control w-50 mb-3"
+      (input)="onSearchChange()"
+    />
+    
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <label for="rowsPerPage" class="me-2">Afficher</label>
+      <select
+        id="rowsPerPage"
+        class="form-select w-auto me-2"
+        (change)="onRowsPerPageChange($event)"
+      >
+        <option *ngFor="let option of [5, 10, 20, 50]" [value]="option">{{ option }}</option>
+      </select>
+      <span>lignes par page</span>
+    </div>
+  </div>
+
+  <table class="table table-bordered">
+    <thead class="table-success">
+      <tr>
+        <th>Produit</th>
+        <th>Écart Total</th>
+        <th>Dernière Réconciliation</th>
+        <th>Nombre de Réconciliations</th>
+        <th>Moyenne des Écarts</th>
+        <th>Taux de Correction (%)</th>
+        <th>Détails des Écarts</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngIf="getPaginatedEcarts().length === 0">
+        <td colspan="7" class="text-center">Aucun écart trouvé</td>
+      </tr>
+      <tr *ngFor="let analyse of getPaginatedEcarts()">
+        <td>{{ getNomProduitById(analyse.produitId) }}</td>
+        <td
+          [ngClass]="{
+            'text-danger': analyse.ecartTotal < 0,
+            'text-success': analyse.ecartTotal >= 0
+          }"
+        >
+          {{ analyse.ecartTotal }}
+        </td>
+        <td>{{ analyse.dernierEcart | date: 'yyyy-MM-dd' }}</td>
+        <td>{{ analyse.nombreReconciliations ?? '-' }}</td>
+        <td>{{ analyse.moyenneEcart?.toFixed(2) ?? '-' }}</td>
+        <td>{{ analyse.tauxCorrection?.toFixed(2) ?? '-' }}%</td>
+        <td class="text-center">
+          <button class="btn btn-info btn-sm" (click)="voirDetails(analyse)">
+            <i class="bi bi-eye"></i> Détails
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Pagination -->
+<div class="d-flex justify-content-center align-items-center">
+  <button
+    class="btn btn-success w-auto"
+    (click)="onPageChange(currentPageEcarts - 1)"
+    [disabled]="currentPageEcarts === 1"
+  >
+    <i class="bi bi-arrow-left-circle"></i>
+  </button>
+  <span class="h3 mx-3">{{ currentPageEcarts }} / {{ getTotalPages() }}</span>
+  <button
+    class="btn btn-success w-auto"
+    (click)="onPageChange(currentPageEcarts + 1)"
+    [disabled]="currentPageEcarts >= getTotalPages()"
+  >
+    <i class="bi bi-arrow-right-circle"></i>
+  </button>
+</div>
+
+<!-- Modal des Détails des Écarts -->
+<div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header d-flex justify-content-between align-items-center">
+        <h3 class="modal-title">Détails des Écarts</h3>
+        <button
+          type="button"
+          class="w-auto text-white bg-danger border-3 px-2"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        >
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <ul class="list-group">
+          <li class="list-group-item" *ngFor="let detail of detailsSelectionnes">
+            <b>{{ detail.date | date: 'yyyy-MM-dd HH:mm' }}</b> :
+            <span
+              [ngClass]="{
+                'text-danger': detail.ecart < 0,
+                'text-success': detail.ecart >= 0
+              }"
+            >
+              {{ detail.ecart }}
+            </span>
+            <br />
+            <span *ngIf="detail.corrige" class="badge bg-success">Corrigé</span>
+            <span *ngIf="!detail.corrige" class="badge bg-danger">Non corrigé</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

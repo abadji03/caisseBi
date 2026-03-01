@@ -1,13 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, ElementRef, inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { jsPDF } from 'jspdf';
 import { Chart, registerables } from 'chart.js';
-import * as ExcelJS from 'exceljs';
-import html2canvas from 'html2canvas';
-import saveAs from 'file-saver';
-import { finalize, Subject, takeUntil } from 'rxjs';
+import { ToastrService } from 'ngx-toastr';
+import { finalize, Subject, Subscription, takeUntil } from 'rxjs';
 
 import { Magasin } from '../../../modeles/magasin.model';
 import { User } from '../../../modeles/user.model';
@@ -19,11 +16,13 @@ import {
   VendeurDetailsResponse,
   ComparaisonOptions,
   ComparaisonResponse,
-  VendeurInfo
+  VendeurInfo,
 } from '../../../modeles/kpiCaisse.model';
-import { ToastrService } from 'ngx-toastr';
 import { UserService } from '../../../services/user.service';
 import { MaagasinsService } from '../../../services/maagasins.service';
+import { PdfMakerServiceService } from '../../../services/pdf-maker-service.service';
+import { StructureService } from '../../../services/structure.service';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-rapports-ventes',
@@ -32,7 +31,8 @@ import { MaagasinsService } from '../../../services/maagasins.service';
   templateUrl: './rapports-ventes.component.html',
   styleUrl: './rapports-ventes.component.css',
 })
-export class RapportsVentesComponent implements OnInit,OnDestroy {
+export class RapportsVentesComponent implements OnInit, OnDestroy,AfterViewInit {
+  // Références aux canvas pour les graphiques
   @ViewChild('evolutionVentesChart') evolutionVentesChartRef!: ElementRef;
   @ViewChild('paiementsChart') paiementsChartRef!: ElementRef;
   @ViewChild('topProduitsChart') topProduitsChartRef!: ElementRef;
@@ -40,22 +40,55 @@ export class RapportsVentesComponent implements OnInit,OnDestroy {
   @ViewChild('comparaisonChart') comparaisonChartRef!: ElementRef;
 
   // Graphiques
-  evolutionVentesChart: any;
-  paiementsChart: any;
-  topProduitsChart: any;
-  vendeurEvolutionChart: any;
-  comparaisonChart: any;
+  evolutionVentesChart: Chart | undefined;
+  paiementsChart: Chart | undefined;
+  topProduitsChart: Chart | undefined;
+  vendeurEvolutionChart: Chart | undefined;
+  comparaisonChart: Chart | undefined;
 
-  // Données et filtres
+  // Services
+  private kpiService = inject(KpiCaisseService);
+  private magasinService = inject(MaagasinsService);
+  private userService = inject(UserService);
+  private authService = inject(AuthService);
+  private pdfMakerService = inject(PdfMakerServiceService);
+  private structureService = inject(StructureService);
+  private toastr = inject(ToastrService);
+  private cdr = inject(ChangeDetectorRef);
+
+  // Filtres
   dateGeneration = new Date();
   dateDebut = '';
   dateFin = '';
+  dateReference = '';
+
+  private userSubscription!: Subscription;
+  private destroy$ = new Subject<void>();
+
+  // Périodes prédéfinies
+  periodeSelectionnee = 'personnalisee';
+  periodesDisponibles = [
+    { value: 'jour', label: 'Aujourd\'hui' },
+    { value: 'semaine', label: 'Cette semaine' },
+    { value: 'mois', label: 'Ce mois' },
+    { value: 'annee', label: 'Cette année' },
+    { value: 'personnalisee', label: 'Période personnalisée' }
+  ];
+
+  // Données du composant
   magasins: Magasin[] = [];
   vendeurs: User[] = [];
+  
   selectedMagasinId = -1;
   selectedVendeurId = -1;
+  code_structure: string | null = null;
+  currentUser: User | null = null;
+
+  // État du composant
+  isAdmin = false;
   isPrinting = false;
   isGeneratingPDF = false;
+  isLoading = false;
   progress = 0;
 
   // Données du rapport
@@ -68,7 +101,7 @@ export class RapportsVentesComponent implements OnInit,OnDestroy {
   chiffreAffairesTTC = 0;
   margeBeneficiaire = 0;
   ticketMoyen = 0;
-  panierMoyen = 0;
+  //panierMoyen = 0;
   evolutionCA: { valeur: number; tendance: '↑' | '↓' | '→' } = { valeur: 0, tendance: '→' };
   evolutionVolume: { valeur: number; tendance: '↑' | '↓' | '→' } = { valeur: 0, tendance: '→' };
 
@@ -82,7 +115,7 @@ export class RapportsVentesComponent implements OnInit,OnDestroy {
   // Détails vendeur
   selectedVendeurDetails: VendeurInfo | null = null;
   showVendeurModal = false;
-  vendeurStats: any = null;
+  vendeurStats: VendeurDetailsResponse|null = null;
 
   // Comparaison
   comparaisonType: 'periode' | 'vendeur' | 'magasin' = 'periode';
@@ -91,42 +124,38 @@ export class RapportsVentesComponent implements OnInit,OnDestroy {
   comparaisonData: ComparaisonResponse | null = null;
   comparaisonLabels: string[] = [];
   comparisonOptions: ComparaisonOptions[] = [];
-  isLoading = false;
-
+  
   // Pagination et recherche
   currentPage = 1;
   pageSize = 10;
   searchTerm = '';
   triVendeursPar: 'ca' | 'transactions' | 'moyenne' = 'ca';
 
-  // États
+  // Message d'erreur
   errorMessage = '';
-  code_structure: string | null = null;
-  currentUser: User | null = null;
-
-  private destroy$ = new Subject<void>();
-  private cdr = inject(ChangeDetectorRef);
-  private authService = inject(AuthService);
-  private kpiService = inject(KpiCaisseService);
-  private toastr = inject(ToastrService);
-  private userService = inject(UserService);
-  private magasinService = inject(MaagasinsService);
 
   constructor() {
-    Chart.register(...registerables);
+    try {
+      Chart.register(...registerables);
+      Chart.defaults.font.family = "'Helvetica', 'Arial', sans-serif";
+      Chart.defaults.font.size = 12;
+    } catch (error) {
+      console.error('Erreur lors de l\'initialisation de Chart.js:', error);
+    }
   }
 
   ngOnInit(): void {
-    this.authService.currentUser.pipe(takeUntil(this.destroy$)).subscribe(user => {
+    this.userSubscription = this.authService.currentUser.subscribe(user => {
       this.currentUser = user;
       this.code_structure = user?.code_structure || null;
+      this.isAdmin = this.authService.hasRole('Administrateur');
 
       if (this.code_structure) {
         this.initDateFilters();
         this.loadMagasins();
         this.loadVendeurs();
         this.chargerRapport();
-        this.initializeComparison();
+        this.loadStructureInfo();
       } else {
         this.errorMessage = 'Code structure non disponible';
         this.toastr.error(this.errorMessage);
@@ -137,87 +166,183 @@ export class RapportsVentesComponent implements OnInit,OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.userSubscription) {
+      this.userSubscription.unsubscribe();
+    }
+    this.destroyGraphiques();
+  }
+  ngAfterViewInit(): void {
+    // S'assurer que les références canvas sont disponibles après l'initialisation de la vue
+    setTimeout(() => {
+      if (this.rapportData) {
+        this.mettreAJourGraphiques();
+      }
+    }, 500);
+  }
+  private destroyGraphiques(): void {
+    const charts = [
+      this.evolutionVentesChart,
+      this.paiementsChart,
+      this.topProduitsChart,
+      this.vendeurEvolutionChart,
+      this.comparaisonChart
+    ];
+    
+    charts.forEach(chart => {
+      if (chart) {
+        try {
+          chart.destroy();
+        } catch (e) {
+          console.warn('Erreur lors de la destruction du graphique:', e);
+        }
+      }
+    });
   }
 
+  // Initialiser les filtres de date
   initDateFilters(): void {
     const today = new Date();
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
     this.dateDebut = this.formatDate(firstDayOfMonth);
     this.dateFin = this.formatDate(today);
+    this.dateReference = this.formatDate(today);
   }
 
+  // Formater la date en YYYY-MM-DD
   formatDate(date: Date): string {
     return date.toISOString().split('T')[0];
   }
 
+  // Charger les magasins
   loadMagasins(): void {
-    this.isLoading = true;
     this.magasinService.getMagasinsByStructure(this.code_structure!)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (magasins) => {
           this.magasins = magasins;
-          this.isLoading = false;
         },
         error: (err) => {
-          this.errorMessage = err.error?.message || 'Erreur lors du chargement des magasins';
-          this.toastr.error(this.errorMessage);
-          this.isLoading = false;
+          console.error('Erreur lors du chargement des magasins:', err);
         }
-      });   
+      });
   }
 
+  // Charger les vendeurs
   loadVendeurs(): void {
-    this.isLoading = true;
     this.userService.getByStructure(this.code_structure!)
-    .pipe(takeUntil(this.destroy$))
-    .subscribe({
-      next: (vendeurs) => {
-        this.vendeurs = vendeurs.filter(v =>
-          v.roles?.some(r => r.nom === 'Caissier' || r.nom === 'Gérant')
-        );
-        this.isLoading = false;
-      },
-      error: (err) => {
-        this.errorMessage = err.error?.message || 'Erreur lors du chargement des vendeurs';
-        this.toastr.error(this.errorMessage);
-        this.isLoading = false;
-      }
-    }); 
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (vendeurs) => {
+          this.vendeurs = vendeurs.filter(v =>
+            v.roles?.some(r => r.nom === 'Caissier' || r.nom === 'Gérant' || r.nom === 'Employé')
+          );
+        },
+        error: (err) => {
+          console.error('Erreur lors du chargement des vendeurs:', err);
+        }
+      });
   }
 
+  // Charger les informations de la structure pour le PDF
+  private loadStructureInfo(): void {
+    this.structureService.getByCodeStructure(this.code_structure!)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (structure) => {
+          this.pdfMakerService.setStructureInfo(structure);
+        },
+        error: (err) => {
+          console.error('Erreur chargement structure:', err);
+        }
+      });
+  }
+
+  // Construire les filtres pour l'API
+  construireFiltres(): RapportVenteParams {
+    const filters: RapportVenteParams = {
+      code_structure: this.code_structure!
+    };
+
+    if (this.selectedMagasinId !== -1) {
+      filters.magasinId = this.selectedMagasinId;
+    }
+
+    if (this.selectedVendeurId !== -1) {
+      filters.agentId = this.selectedVendeurId;
+    }
+
+    // Gestion de la période
+    if (this.periodeSelectionnee !== 'personnalisee') {
+      filters.periode = this.periodeSelectionnee as 'jour' | 'semaine' | 'mois' | 'annee';
+      if (this.dateReference) {
+        filters.dateReference = this.dateReference;
+      }
+    } else if (this.dateDebut && this.dateFin) {
+      filters.fromDate = this.dateDebut;
+      filters.toDate = this.dateFin;
+    }
+
+    // Pagination et recherche
+    filters.page = this.currentPage;
+    filters.limit = this.pageSize;
+    if (this.searchTerm) {
+      filters.search = this.searchTerm;
+    }
+
+    return filters;
+  }
+
+  // Charger le rapport de vente
   chargerRapport(): void {
     if (!this.code_structure) return;
 
     this.isLoading = true;
     this.errorMessage = '';
+    this.progress = 0;
 
-    const params: RapportVenteParams = {
-      code_structure: this.code_structure,
-      fromDate: this.dateDebut,
-      toDate: this.dateFin,
-      magasinId: this.selectedMagasinId !== -1 ? this.selectedMagasinId : undefined,
-      agentId: this.selectedVendeurId !== -1 ? this.selectedVendeurId : undefined,
-      page: this.currentPage,
-      limit: this.pageSize,
-      search: this.searchTerm
-    };
+    const filters = this.construireFiltres();
 
-    this.kpiService.getRapportVente(params)
+    this.kpiService.getRapportVente(filters)
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => {
           this.isLoading = false;
+          setTimeout(() => {
+            this.progress = 0;
+          }, 500);
           this.cdr.detectChanges();
         })
       )
       .subscribe({
         next: (data) => {
           this.rapportData = data;
-          this.filteredVentes = data.ventes;
+          this.filteredVentes = data.ventes || [];
           this.mettreAJourIndicateurs();
-          this.mettreAJourGraphiques();
+
+          // Utiliser ChangeDetectorRef pour forcer la mise à jour du DOM
+          this.cdr.detectChanges();
+
+          /* setTimeout(() => {
+            this.mettreAJourGraphiques();
+          }, 200); */
+          // Utiliser setTimeout avec un délai plus long et vérifier
+        setTimeout(() => {
+          // Vérifier que les canvas sont bien dans le DOM
+          if (this.evolutionVentesChartRef?.nativeElement && 
+              this.paiementsChartRef?.nativeElement && 
+              this.topProduitsChartRef?.nativeElement) {
+            this.mettreAJourGraphiques();
+          } else {
+            console.warn('Canvas non trouvés après détection, nouvelle tentative...');
+            // Réessayer après un délai supplémentaire
+            setTimeout(() => {
+              this.mettreAJourGraphiques();
+            }, 500);
+          }
+        }, 300);
+          
+          this.progress = 100;
           this.toastr.success('Rapport chargé avec succès');
         },
         error: (err) => {
@@ -228,43 +353,96 @@ export class RapportsVentesComponent implements OnInit,OnDestroy {
       });
   }
 
+  // Mettre à jour les indicateurs à partir des données
   mettreAJourIndicateurs(): void {
     if (!this.rapportData) return;
 
-    this.totalVentes = this.rapportData.totalVentes;
-    this.chiffreAffairesTTC = this.rapportData.chiffreAffairesTTC;
-    this.chiffreAffairesHT = this.rapportData.chiffreAffairesHT;
-    this.margeBeneficiaire = this.rapportData.margeBeneficiaire;
-    this.ticketMoyen = this.rapportData.ticketMoyen;
-    this.panierMoyen = this.rapportData.panierMoyen;
-    this.evolutionCA = this.rapportData.evolutionCA;
-    this.evolutionVolume = this.rapportData.evolutionVolume;
-    this.topProduits = this.rapportData.topProduits;
-    this.topClients = this.rapportData.topClients;
-    this.vendeursPerformance = this.rapportData.vendeursPerformance;
-    this.statmodesPaiement = this.rapportData.statmodesPaiement;
-    this.evolutionParJour = this.rapportData.evolutionParJour;
+    this.totalVentes = this.rapportData.totalVentes || 0;
+    this.chiffreAffairesTTC = this.rapportData.chiffreAffairesTTC || 0;
+    this.chiffreAffairesHT = this.rapportData.chiffreAffairesHT || 0;
+    this.margeBeneficiaire = this.rapportData.margeBeneficiaire || 0;
+    this.ticketMoyen = this.rapportData.ticketMoyen || 0;
+    //this.panierMoyen = this.rapportData.panierMoyen || 0;
+    this.evolutionCA = this.rapportData.evolutionCA || { valeur: 0, tendance: '→' };
+    this.evolutionVolume = this.rapportData.evolutionVolume || { valeur: 0, tendance: '→' };
+    this.topProduits = this.rapportData.topProduits || [];
+    this.topClients = this.rapportData.topClients || [];
+    this.vendeursPerformance = this.rapportData.vendeursPerformance || [];
+    this.statmodesPaiement = this.rapportData.statmodesPaiement || [];
+    this.evolutionParJour = this.rapportData.evolutionParJour || [];
   }
 
+  // ============================================
+  // GRAPHIQUES
+  // ============================================
+
   mettreAJourGraphiques(): void {
-    setTimeout(() => {
-      this.creerGraphiqueEvolutionVentes();
-      this.creerGraphiquePaiements();
-      this.creerGraphiqueTopProduits();
-    }, 200);
+    this.destroyGraphiques();
+
+    /* setTimeout(() => {
+      try {
+        if (this.evolutionParJour?.length && this.evolutionVentesChartRef?.nativeElement) {
+          this.creerGraphiqueEvolutionVentes();
+        }
+        
+        if (this.statmodesPaiement?.length && this.paiementsChartRef?.nativeElement) {
+          this.creerGraphiquePaiements();
+        }
+        
+        if (this.topProduits?.length && this.topProduitsChartRef?.nativeElement) {
+          this.creerGraphiqueTopProduits();
+        }
+      } catch (error) {
+        console.error('Erreur lors de la création des graphiques:', error);
+      }
+    }, 100); */
+    // Utiliser requestAnimationFrame pour s'assurer que le DOM est prêt
+    requestAnimationFrame(() => {
+      try {
+        // Vérifier que les données existent ET que les références canvas sont disponibles
+        if (this.evolutionParJour?.length && this.evolutionVentesChartRef?.nativeElement) {
+          this.creerGraphiqueEvolutionVentes();
+        } else {
+          console.warn('Données ou canvas manquants pour le graphique d\'évolution');
+        }
+        
+        if (this.statmodesPaiement?.length && this.paiementsChartRef?.nativeElement) {
+          this.creerGraphiquePaiements();
+        } else {
+          console.warn('Données ou canvas manquants pour le graphique des paiements');
+        }
+        
+        if (this.topProduits?.length && this.topProduitsChartRef?.nativeElement) {
+          this.creerGraphiqueTopProduits();
+        }
+         else {
+          console.warn('Données ou canvas manquants pour le graphique des top produits');
+        } 
+        if (this.comparaisonData && this.comparaisonChartRef?.nativeElement) {
+          this.creerGraphiqueComparaison();
+        }
+        else {
+          console.warn('Données ou canvas manquants pour le graphique des comparaison');
+        }
+        if (this.vendeurStats && this.vendeurEvolutionChartRef?.nativeElement) {
+          this.creerGraphiqueEvolutionVendeur(this.vendeurStats.evolution);
+        }
+        else {
+          console.warn('Données ou canvas manquants pour le graphique des vendeurs');
+        }
+      } catch (error) {
+        console.error('Erreur lors de la création des graphiques:', error);
+      }
+    });
   }
 
   creerGraphiqueEvolutionVentes(): void {
-    if (this.evolutionVentesChart) {
-      this.evolutionVentesChart.destroy();
-    }
-
-    const ctx = this.evolutionVentesChartRef?.nativeElement.getContext('2d');
-    if (!ctx || !this.evolutionParJour.length) return;
+    const ctx = this.evolutionVentesChartRef?.nativeElement?.getContext('2d');
+    if (!ctx || !this.evolutionParJour?.length) return;
 
     const labels = this.evolutionParJour.map(e => {
       const date = new Date(e.date);
-      return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+      return `${date.getDate()}/${date.getMonth() + 1}`;
     });
 
     const dataCA = this.evolutionParJour.map(e => e.ca);
@@ -282,6 +460,7 @@ export class RapportsVentesComponent implements OnInit,OnDestroy {
             backgroundColor: 'rgba(76, 175, 80, 0.1)',
             yAxisID: 'y',
             tension: 0.3,
+            fill: true,
           },
           {
             label: 'Nombre de ventes',
@@ -290,15 +469,25 @@ export class RapportsVentesComponent implements OnInit,OnDestroy {
             backgroundColor: 'rgba(33, 150, 243, 0.1)',
             yAxisID: 'y1',
             tension: 0.3,
+            fill: true,
           },
         ],
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
-          title: {
+          legend: {
             display: true,
-            text: 'Évolution des ventes',
+            position: 'top',
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const value = context.raw as number;
+                return `${context.dataset.label}: ${value.toLocaleString('fr-FR')}`;
+              },
+            },
           },
         },
         scales: {
@@ -309,6 +498,9 @@ export class RapportsVentesComponent implements OnInit,OnDestroy {
             title: {
               display: true,
               text: "Chiffre d'affaires (F CFA)",
+            },
+            ticks: {
+              callback: (value) => (value as number).toLocaleString('fr-FR'),
             },
           },
           y1: {
@@ -329,12 +521,8 @@ export class RapportsVentesComponent implements OnInit,OnDestroy {
   }
 
   creerGraphiquePaiements(): void {
-    if (this.paiementsChart) {
-      this.paiementsChart.destroy();
-    }
-
-    const ctx = this.paiementsChartRef?.nativeElement.getContext('2d');
-    if (!ctx || !this.statmodesPaiement.length) return;
+    const ctx = this.paiementsChartRef?.nativeElement?.getContext('2d');
+    if (!ctx || !this.statmodesPaiement?.length) return;
 
     const backgroundColors = [
       '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
@@ -354,11 +542,8 @@ export class RapportsVentesComponent implements OnInit,OnDestroy {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          title: {
-            display: true,
-            text: 'Répartition des modes de paiement',
-          },
           legend: {
+            display: true,
             position: 'right',
           },
           tooltip: {
@@ -366,8 +551,8 @@ export class RapportsVentesComponent implements OnInit,OnDestroy {
               label: (context) => {
                 const label = context.label || '';
                 const value = context.raw as number;
-                const total = context.dataset.data.reduce((a, b) => (a as number) + (b as number), 0);
-                const percentage = Math.round((value / (total as number)) * 100);
+                const total = (context.dataset.data as number[]).reduce((a, b) => a + b, 0);
+                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
                 return `${label}: ${value.toLocaleString('fr-FR')} F CFA (${percentage}%)`;
               },
             },
@@ -378,29 +563,30 @@ export class RapportsVentesComponent implements OnInit,OnDestroy {
   }
 
   creerGraphiqueTopProduits(): void {
-    if (this.topProduitsChart) {
-      this.topProduitsChart.destroy();
-    }
-
-    const ctx = this.topProduitsChartRef?.nativeElement.getContext('2d');
-    if (!ctx || !this.topProduits.length) return;
+    const ctx = this.topProduitsChartRef?.nativeElement?.getContext('2d');
+    if (!ctx || !this.topProduits?.length) return;
 
     this.topProduitsChart = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: this.topProduits.map(p => p.produit.designation.substring(0, 15) + '...'),
+        labels: this.topProduits.map(p => 
+          p.produit.designation.length > 15 ? 
+          p.produit.designation.substring(0, 15) + '...' : 
+          p.produit.designation
+        ),
         datasets: [
           {
             label: 'Quantité vendue',
             data: this.topProduits.map(p => p.quantite),
-            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+            backgroundColor: 'rgba(54, 162, 235, 0.7)',
             borderColor: 'rgba(54, 162, 235, 1)',
             borderWidth: 1,
+            yAxisID: 'y',
           },
           {
             label: "Chiffre d'affaires (F CFA)",
             data: this.topProduits.map(p => p.ca),
-            backgroundColor: 'rgba(75, 192, 192, 0.6)',
+            backgroundColor: 'rgba(75, 192, 192, 0.7)',
             borderColor: 'rgba(75, 192, 192, 1)',
             borderWidth: 1,
             yAxisID: 'y1',
@@ -409,10 +595,19 @@ export class RapportsVentesComponent implements OnInit,OnDestroy {
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
-          title: {
+          legend: {
             display: true,
-            text: 'Top 10 des produits',
+            position: 'top',
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const value = context.raw as number;
+                return `${context.dataset.label}: ${value.toLocaleString('fr-FR')}`;
+              },
+            },
           },
         },
         scales: {
@@ -436,96 +631,27 @@ export class RapportsVentesComponent implements OnInit,OnDestroy {
             grid: {
               drawOnChartArea: false,
             },
+            ticks: {
+              callback: (value) => (value as number).toLocaleString('fr-FR'),
+            },
           },
         },
       },
     });
   }
 
-  // Filtres
-  filtrerDates(): void {
-    this.currentPage = 1;
-    this.chargerRapport();
-  }
-
-  onMagasinSelect(event: Event): void {
-    const target = event.target as HTMLSelectElement;
-    this.selectedMagasinId = Number(target.value) || -1;
-    this.filtrerDates();
-  }
-
-  onVendeurSelect(event: Event): void {
-    const target = event.target as HTMLSelectElement;
-    this.selectedVendeurId = Number(target.value) || -1;
-    this.filtrerDates();
-  }
-
-  // Détails vendeur
-  voirDetailsVendeur(vendeurId: number): void {
-    if (!this.code_structure) return;
-
-    const params: RapportVenteParams = {  // ← Utiliser RapportVenteParams
-    code_structure: this.code_structure,
-    fromDate: this.dateDebut,
-    toDate: this.dateFin,
-    magasinId: this.selectedMagasinId !== -1 ? this.selectedMagasinId : undefined
-  };
-    
-    this.isLoading = true;
-    this.kpiService.getDetailsVendeur(vendeurId, params)
-    .pipe(takeUntil(this.destroy$))
-    .subscribe({
-      next: (details:VendeurDetailsResponse) => {
-        this.selectedVendeurDetails = details.vendeur;
-        this.vendeurStats = details.stats;
-        this.showVendeurModal = true;
-        this.isLoading = false;
-
-        setTimeout(() => {
-          this.creerGraphiqueEvolutionVendeur(details.evolution);
-        }, 200);
-      },
-      error: (err) => {
-        this.toastr.error('Erreur lors du chargement des détails du vendeur');
-        console.error(err);
-        this.isLoading = false;
-      }
-    });
-  }
-/**
- * Trie les vendeurs selon le critère sélectionné
- */
-trierVendeurs(): void {
-  if (!this.vendeursPerformance || this.vendeursPerformance.length === 0) {
-    return;
-  }
-
-  switch (this.triVendeursPar) {
-    case 'ca':
-      this.vendeursPerformance.sort((a, b) => b.caTTC - a.caTTC);
-      break;
-    case 'transactions':
-      this.vendeursPerformance.sort((a, b) => b.nbVentes - a.nbVentes);
-      break;
-    case 'moyenne':
-      this.vendeursPerformance.sort((a, b) => b.ticketMoyen - a.ticketMoyen);
-      break;
-    default:
-      this.vendeursPerformance.sort((a, b) => b.caTTC - a.caTTC);
-  }
-}
-
   creerGraphiqueEvolutionVendeur(evolution: any[]): void {
     if (this.vendeurEvolutionChart) {
       this.vendeurEvolutionChart.destroy();
+      this.vendeurEvolutionChart = undefined;
     }
 
-    const ctx = this.vendeurEvolutionChartRef?.nativeElement.getContext('2d');
-    if (!ctx || !evolution.length) return;
+    const ctx = this.vendeurEvolutionChartRef?.nativeElement?.getContext('2d');
+    if (!ctx || !evolution?.length) return;
 
     const labels = evolution.map(e => {
       const date = new Date(e.date);
-      return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+      return `${date.getDate()}/${date.getMonth() + 1}`;
     });
 
     const dataCA = evolution.map(e => e.ca);
@@ -543,6 +669,7 @@ trierVendeurs(): void {
             backgroundColor: 'rgba(76, 175, 80, 0.1)',
             yAxisID: 'y',
             tension: 0.3,
+            fill: true,
           },
           {
             label: 'Nombre de ventes',
@@ -551,12 +678,18 @@ trierVendeurs(): void {
             backgroundColor: 'rgba(33, 150, 243, 0.1)',
             yAxisID: 'y1',
             tension: 0.3,
+            fill: true,
           },
         ],
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+          },
           title: {
             display: true,
             text: 'Performance quotidienne',
@@ -589,13 +722,276 @@ trierVendeurs(): void {
     });
   }
 
+  creerGraphiqueComparaison(): void {
+    if (!this.comparaisonData) return;
+
+    /* if (this.comparaisonChart) {
+      this.comparaisonChart.destroy();
+      this.comparaisonChart = undefined;
+    } */
+
+    const ctx = this.comparaisonChartRef?.nativeElement?.getContext('2d');
+    if (!ctx) return;
+
+    this.comparaisonChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Chiffre d\'affaires', 'Ticket moyen'],
+        datasets: [
+          {
+            label: this.comparaisonLabels[0],
+            data: [
+              this.comparaisonData.ca1,
+              //this.comparaisonData.ventes1,
+              this.comparaisonData.ticketMoyen1,
+            ],
+            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+          },
+          {
+            label: this.comparaisonLabels[1],
+            data: [
+              this.comparaisonData.ca2,
+              //this.comparaisonData.ventes2,
+              this.comparaisonData.ticketMoyen2,
+            ],
+            backgroundColor: 'rgba(255, 99, 132, 0.7)',
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+          },
+          title: {
+            display: true,
+            text: 'Analyse comparative',
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                let label = context.dataset.label || '';
+                const value = context.raw as number;
+                if (context.dataIndex === 0 || context.dataIndex === 2) {
+                  label += `: ${value.toLocaleString('fr-FR')} F CFA`;
+                } else {
+                  label += `: ${value}`;
+                }
+                return label;
+              },
+            },
+          },
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: (value) => {
+                if (typeof value === 'number') {
+                  return value.toLocaleString('fr-FR');
+                }
+                return value;
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  // ============================================
+  // GESTIONNAIRES D'ÉVÉNEMENTS
+  // ============================================
+
+  onPeriodeChange(): void {
+    if (this.periodeSelectionnee !== 'personnalisee') {
+      this.dateDebut = '';
+      this.dateFin = '';
+    }
+    this.filtrerDates();
+  }
+
+  onMagasinSelect(event: Event): void {
+    const target = event.target as HTMLSelectElement;
+    this.selectedMagasinId = Number(target.value) || -1;
+    this.filtrerDates();
+  }
+
+  onVendeurSelect(event: Event): void {
+    const target = event.target as HTMLSelectElement;
+    this.selectedVendeurId = Number(target.value) || -1;
+    this.filtrerDates();
+  }
+
+  filtrerDates(): void {
+    if (this.periodeSelectionnee === 'personnalisee') {
+      if (this.dateDebut && this.dateFin) {
+        if (new Date(this.dateDebut) > new Date(this.dateFin)) {
+          this.toastr.warning('La date de début doit être antérieure à la date de fin');
+          return;
+        }
+        this.currentPage = 1;
+        this.chargerRapport();
+      } else {
+        this.toastr.warning('Veuillez sélectionner une date de début et une date de fin');
+      }
+    } else {
+      this.currentPage = 1;
+      this.chargerRapport();
+    }
+  }
+
+  clearSearch(): void {
+    this.searchTerm = '';
+    this.onSearchChange();
+  }
+
+  onSearchChange(): void {
+    this.currentPage = 1;
+    this.chargerRapport();
+  }
+
+  onPageSizeChange(): void {
+    this.currentPage = 1;
+    this.chargerRapport();
+  }
+
+  previousPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      this.chargerRapport();
+    }
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      this.chargerRapport();
+    }
+  }
+
+  get totalPages(): number {
+    return this.rapportData?.pagination?.totalPages || 1;
+  }
+
+  get getPaginatedVentes(): any[] {
+    return this.filteredVentes;
+  }
+
+  // ============================================
+  // TRI DES VENDEURS
+  // ============================================
+
+  trierVendeurs(): void {
+    if (!this.vendeursPerformance || this.vendeursPerformance.length === 0) {
+      return;
+    }
+
+    switch (this.triVendeursPar) {
+      case 'ca':
+        this.vendeursPerformance.sort((a, b) => b.caTTC - a.caTTC);
+        break;
+      case 'transactions':
+        this.vendeursPerformance.sort((a, b) => b.nbVentes - a.nbVentes);
+        break;
+      case 'moyenne':
+        this.vendeursPerformance.sort((a, b) => b.ticketMoyen - a.ticketMoyen);
+        break;
+    }
+  }
+
+  // ============================================
+  // DÉTAILS VENDEUR
+  // ============================================
+
+  // Ajouter cette fonction utilitaire dans votre composant
+  private formatDateForAPI(date: string | undefined, type: 'start' | 'end'): string | undefined {
+    if (!date) return undefined;
+    
+    if (type === 'start') {
+      return `${date}T00:00:00.000Z`;
+    } else {
+      return `${date}T23:59:59.999Z`;
+    }
+  }
+
+  voirDetailsVendeur(vendeurId: number): void {
+    if (!this.code_structure) return;
+
+    /* const params: RapportVenteParams = {
+      periode:this.periodeSelectionnee as 'jour' | 'semaine' | 'mois' | 'annee',
+      code_structure: this.code_structure,
+      fromDate: this.dateDebut,
+      toDate: this.dateFin,
+      magasinId: this.selectedMagasinId !== -1 ? this.selectedMagasinId : undefined
+    };  */
+    const filters: RapportVenteParams = {
+      code_structure: this.code_structure!
+    };
+
+    if (this.selectedMagasinId !== -1) {
+      filters.magasinId = this.selectedMagasinId;
+    }
+
+    if (this.selectedVendeurId !== -1) {
+      filters.agentId = this.selectedVendeurId;
+    }
+
+    // Gestion de la période
+    if (this.periodeSelectionnee !== 'personnalisee') {
+      filters.periode = this.periodeSelectionnee as 'jour' | 'semaine' | 'mois' | 'annee';
+      if (this.dateReference) {
+        filters.dateReference = this.dateReference;
+      }
+    } else if (this.dateDebut && this.dateFin) {
+      filters.fromDate = this.dateDebut;
+      filters.toDate = this.dateFin;
+    }
+
+
+    console.log('📤 Paramètres envoyés:', filters); // AJOUTER CE LOG
+
+    this.isLoading = true;
+    this.kpiService.getDetailsVendeur(vendeurId, filters)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (details) => {
+          console.log('Détails vendeur depuis API', details)
+          this.selectedVendeurDetails = details.vendeur;
+          //console.log('Détails vendeur depuis selectedVendeurDetails', this.selectedVendeurDetails);
+          this.vendeurStats = details;
+          this.mettreAJourGraphiques();
+          //console.log('Statitisques vendeur ', this.vendeurStats, details.stats);
+          this.showVendeurModal = true;
+          this.isLoading = false;
+
+          setTimeout(() => {
+            if (details.evolution) {
+              this.creerGraphiqueEvolutionVendeur(details.evolution);
+            }
+          }, 200);
+        },
+        error: (err) => {
+          this.toastr.error('Erreur lors du chargement des détails du vendeur');
+          console.error(err);
+          this.isLoading = false;
+        }
+      });
+  }
+
   fermerModalVendeur(): void {
     this.showVendeurModal = false;
     this.selectedVendeurDetails = null;
     this.vendeurStats = null;
   }
 
-  // Comparaison
+  // ============================================
+  // COMPARAISON
+  // ============================================
+
   initializeComparison(): void {
     this.updateComparisonOptions();
   }
@@ -610,17 +1006,14 @@ trierVendeurs(): void {
   updateComparisonOptions(): void {
     if (!this.code_structure) return;
 
-    this.isLoading = true;
     this.kpiService.getOptionsComparaison(this.comparaisonType)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (options) => {
           this.comparisonOptions = options;
-          this.isLoading = false;
         },
         error: (err) => {
           console.error('Erreur chargement options comparaison:', err);
-          this.isLoading = false;
         }
       });
   }
@@ -658,14 +1051,17 @@ trierVendeurs(): void {
             this.getLabelForElement(this.comparaisonElement2)
           ];
           this.isLoading = false;
+          this.mettreAJourGraphiques();
+          
 
-          setTimeout(() => {
-            this.creerGraphiqueComparaison();
-          }, 100);
+          //setTimeout(() => {
+            //this.creerGraphiqueComparaison();
+          //}, 100);
         },
         error: (err) => {
-          this.toastr.error('Erreur lors de la génération de la comparaison');
-          console.error(err);
+          this.errorMessage = err.error?.message || 'Erreur lors de la génération de la comparaison';
+          this.toastr.error(this.errorMessage);
+          console.error(this.errorMessage);
           this.isLoading = false;
         }
       });
@@ -676,352 +1072,366 @@ trierVendeurs(): void {
     return option ? option.label : 'Élément inconnu';
   }
 
-  creerGraphiqueComparaison(): void {
-    if (!this.comparaisonData) return;
+  // ============================================
+  // UTILITAIRES
+  // ============================================
 
-    if (this.comparaisonChart) {
-      this.comparaisonChart.destroy();
-    }
-
-    const ctx = this.comparaisonChartRef?.nativeElement.getContext('2d');
-    if (!ctx) return;
-
-    this.comparaisonChart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: ['Chiffre d\'affaires', 'Nombre de ventes', 'Ticket moyen'],
-        datasets: [
-          {
-            label: this.comparaisonLabels[0],
-            data: [
-              this.comparaisonData.ca1,
-              this.comparaisonData.ventes1,
-              this.comparaisonData.ticketMoyen1,
-            ],
-            backgroundColor: 'rgba(54, 162, 235, 0.7)',
-          },
-          {
-            label: this.comparaisonLabels[1],
-            data: [
-              this.comparaisonData.ca2,
-              this.comparaisonData.ventes2,
-              this.comparaisonData.ticketMoyen2,
-            ],
-            backgroundColor: 'rgba(255, 99, 132, 0.7)',
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          title: {
-            display: true,
-            text: 'Analyse comparative',
-          },
-          tooltip: {
-            callbacks: {
-              label: (context) => {
-                let label = context.dataset.label || '';
-                if (context.parsed.y !== null) {
-                  if (context.dataIndex === 0) {
-                    label += `: ${context.parsed.y.toLocaleString('fr-FR')} F CFA`;
-                  } else if (context.dataIndex === 1) {
-                    label += `: ${context.parsed.y}`;
-                  } else {
-                    label += `: ${context.parsed.y.toLocaleString('fr-FR')} F CFA`;
-                  }
-                }
-                return label;
-              },
-            },
-          },
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              callback: (value) => {
-                if (typeof value === 'number') {
-                  return value.toLocaleString('fr-FR');
-                }
-                return value;
-              },
-            },
-          },
-        },
-      },
-    });
-  }
-
-  // Pagination
-  get getPaginatedVentes(): any[] {
-    return this.filteredVentes;
-  }
-
-  get totalPages(): number {
-    return this.rapportData?.pagination.totalPages || 1;
-  }
-
-  previousPage(): void {
-    if (this.currentPage > 1) {
-      this.currentPage--;
-      this.chargerRapport();
-    }
-  }
-
-  nextPage(): void {
-    if (this.currentPage < this.totalPages) {
-      this.currentPage++;
-      this.chargerRapport();
-    }
-  }
-
-  onSearchChange(): void {
-    this.currentPage = 1;
-    this.chargerRapport();
-  }
-
-  // Utilitaires
   getNomMagasin(id: number): string {
     const magasin = this.magasins.find(m => m.id === id);
-    return magasin ? magasin.nom : 'Inconnu';
+    return magasin ? magasin.nom : 'Tous les magasins';
   }
 
-  getNomClient(id: number): string {
-    const vente = this.filteredVentes.find(v => v.clientId === id);
-    return vente ? vente.clientNom : 'Client anonyme';
+  get libellePeriodeSelectionnee(): string {
+    const periode = this.periodesDisponibles.find(p => p.value === this.periodeSelectionnee);
+    return periode ? periode.label : '';
   }
 
-  getNomVendeur(id: number): string {
-    const vendeur = this.vendeurs.find(v => v.id === id);
-    return vendeur ? `${vendeur.nom}`.trim() : 'Inconnu';
-  }
-
-  getNomModePaiement(methode: string): string {
-    return methode || 'Inconnu';
-  }
-
-  // Impression et export
-  async impression() {
-    this.isPrinting = true;
-
-    await this.prepareChartsForExport();
-
-    const printContent = document.getElementById('rapport');
-    if (!printContent) return;
-
-    await this.convertChartsToImages(printContent);
-
-    const clone = printContent.cloneNode(true) as HTMLElement;
-    clone.style.position = 'absolute';
-    clone.style.left = '0';
-    clone.style.top = '0';
-    clone.style.width = '100%';
-    clone.id = 'print-clone';
-
-    const style = document.createElement('style');
-    style.innerHTML = `
-      body > * { display: none !important; }
-      #print-clone { display: block !important; visibility: visible !important; position: absolute; left: 0; top: 0; width: 100%; background: white; }
-      .no-printer { display: none !important; }
-      .printer-only { display: block !important; }
-    `;
-
-    document.body.appendChild(style);
-    document.body.appendChild(clone);
-
-    setTimeout(() => {
-      window.print();
-      document.body.removeChild(clone);
-      document.head.removeChild(style);
-      this.isPrinting = false;
-      this.mettreAJourGraphiques();
-    }, 800);
-  }
-
-  private async convertChartsToImages(element: HTMLElement) {
-    const canvases = element.querySelectorAll('canvas');
-    for (const canvas of Array.from(canvases)) {
-      const canvasEl = canvas as HTMLCanvasElement;
-      const img = new Image();
-      img.src = canvasEl.toDataURL('image/png', 1.0);
-      img.style.width = canvasEl.offsetWidth + 'px';
-      img.style.height = canvasEl.offsetHeight + 'px';
-
-      const container = document.createElement('div');
-      container.style.width = canvasEl.offsetWidth + 'px';
-      container.style.height = canvasEl.offsetHeight + 'px';
-      container.appendChild(img);
-
-      canvasEl.parentNode?.replaceChild(container, canvasEl);
-      await new Promise(resolve => setTimeout(resolve, 100));
+  get periodeAffichage(): string {
+    if (this.periodeSelectionnee !== 'personnalisee') {
+      const dateRef = this.dateReference ? new Date(this.dateReference) : new Date();
+      const formattedDate = dateRef.toLocaleDateString('fr-FR');
+      return `${this.libellePeriodeSelectionnee} (${formattedDate})`;
+    } else if (this.dateDebut && this.dateFin) {
+      return `Du ${new Date(this.dateDebut).toLocaleDateString('fr-FR')} au ${new Date(this.dateFin).toLocaleDateString('fr-FR')}`;
     }
+    return 'Période non définie';
   }
 
-  async exportToPDF() {
+  // ============================================
+  // IMPRESSION ET EXPORT
+  // ============================================
+
+  // Dans votre composant
+async impression(): Promise<void> {
+  try {
     this.isGeneratingPDF = true;
     this.progress = 0;
-    this.isPrinting = true;
 
-    await this.prepareChartsForExport();
+    // Construire les paramètres (comme pour le PDF)
+    const params = this.construireFiltresPDF();
+    
+    // Ajouter un paramètre pour indiquer que c'est pour impression
+    //params.print = true;
 
-    const noPrintElements = document.querySelectorAll('.no-printer');
-    noPrintElements.forEach(el => el.classList.add('d-none'));
+    // Générer le PDF
+    const pdfBlob = await this.pdfMakerService.generateRapportVentePDF(params).toPromise();
 
-    await new Promise(resolve => setTimeout(resolve, 200));
-
-    try {
-      const element = document.getElementById('rapport');
-      if (!element) return;
-
-      const pdf = new jsPDF('p', 'mm', 'a3');
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 5;
-
-      const canvas = await html2canvas(element, { scale: 2, useCORS: true });
-      const imgWidth = pageWidth - 2 * margin;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      const stepCount = Math.ceil(canvas.height / (pageHeight - 2 * margin));
-      let step = 0;
-
-      if (imgHeight > pageHeight - 2 * margin) {
-        const pageCanvas = document.createElement('canvas');
-        const pageCtx = pageCanvas.getContext('2d');
-
-        let sY = 0;
-        const dX = canvas.width;
-        const dY = (pageHeight - 2 * margin) * (canvas.width / imgWidth);
-
-        while (sY < canvas.height) {
-          pageCanvas.width = dX;
-          pageCanvas.height = dY;
-          pageCtx?.drawImage(canvas, 0, sY, dX, dY, 0, 0, dX, dY);
-
-          const pageImgData = pageCanvas.toDataURL('image/png');
-          pdf.addImage(pageImgData, 'PNG', margin, margin, imgWidth, dY * (imgWidth / dX));
-
-          sY += dY;
-          step++;
-          this.progress = Math.round((step / stepCount) * 100);
-
-          if (sY < canvas.height) pdf.addPage();
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-      } else {
-        const imgData = canvas.toDataURL('image/png');
-        pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight);
-        this.progress = 100;
-      }
-
-      pdf.save(`rapport_vente_${this.formatDate(new Date())}.pdf`);
-    } catch (error) {
-      console.error('Erreur PDF:', error);
-    } finally {
-      noPrintElements.forEach(el => el.classList.remove('d-none'));
-      this.isPrinting = false;
-      this.isGeneratingPDF = false;
-      this.progress = 0;
-    }
-  }
-
-  async prepareChartsForExport() {
-    const charts = [
-      this.evolutionVentesChart,
-      this.comparaisonChart,
-      this.paiementsChart,
-      this.topProduitsChart,
-    ];
-
-    charts.forEach(chart => {
-      if (chart) {
-        chart.resize();
-        chart.render();
-      }
-    });
-
-    await new Promise(resolve => setTimeout(resolve, 400));
-  }
-
-  async exportToExcel() {
-    if (!ExcelJS) {
-      console.error("ExcelJS n'est pas chargé.");
+    if(!pdfBlob){
+      console.log('Echec appel API depuis backend');
       return;
     }
 
-    const workbook = new ExcelJS.Workbook();
-    workbook.creator = 'Rapport de Vente';
-    workbook.created = new Date();
+    // Créer une URL pour le PDF
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    
+    // Ouvrir dans une nouvelle fenêtre et imprimer
+    const printWindow = window.open(pdfUrl, '_blank');
+    
+    if (printWindow) {
+      // Attendre que le PDF soit chargé puis imprimer
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+      };
+    } else {
+      // Si popup bloquée, proposer le téléchargement
+      this.toastr.warning('Popup bloquée. Téléchargez le PDF et imprimez-le manuellement.');
+      this.pdfMakerService.savePDF(pdfBlob, 'rapport-a-imprimer.pdf');
+    }
 
-    // Styles
-    const headerStyle: Partial<ExcelJS.Style> = {
-      font: { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 },
-      fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0070C0' } },
-      alignment: { vertical: 'middle', horizontal: 'center' },
-      border: {
-        top: { style: 'thin' }, bottom: { style: 'thin' },
-        left: { style: 'thin' }, right: { style: 'thin' }
+    this.progress = 100;
+    setTimeout(() => {
+      this.isGeneratingPDF = false;
+      this.progress = 0;
+    }, 500);
+
+  } catch (error) {
+    console.error('❌ Erreur impression:', error);
+    this.toastr.error('Erreur lors de la préparation de l\'impression');
+    this.isGeneratingPDF = false;
+    this.progress = 0;
+  }
+}
+  
+async exportToPDF(): Promise<void> {
+  try {
+    this.isGeneratingPDF = true;
+    this.progress = 0;
+
+    // Animation de progression
+    const updateProgress = () => {
+      if (this.progress < 30) {
+        this.progress += 5;
+        setTimeout(updateProgress, 200);
       }
     };
+    updateProgress();
 
-    const titleStyle: Partial<ExcelJS.Style> = {
-      font: { bold: true, size: 14 },
-      alignment: { vertical: 'middle', horizontal: 'center' }
-    };
+    // Construire les paramètres
+    const params = this.construireFiltresPDF();
 
-    // Feuille Résumé
-    const summarySheet = workbook.addWorksheet('Résumé');
-    summarySheet.mergeCells('A1:F2');
-    const titleCell = summarySheet.getCell('A1');
-    titleCell.value = 'Rapport de Vente';
-    Object.assign(titleCell.style, titleStyle);
+    // Appel API
+    const pdfBlob = await this.pdfMakerService.generateRapportVentePDF(params).toPromise();
+    if(!pdfBlob){
+      console.log('Echec appel API depuis backend');
+      return;
+    }
+    // Progression rapide vers 100%
+    this.progress = 100;
 
-    summarySheet.addRow([
-      'Entreprise', "Nom de l'Entreprise", '', 'Date', new Date().toLocaleDateString('fr-FR')
-    ]);
-    summarySheet.addRow([
-      'Période', `${this.dateDebut} au ${this.dateFin}`, '', 'Magasin',
-      this.selectedMagasinId !== -1 ? this.getNomMagasin(this.selectedMagasinId) : 'Tous'
-    ]);
-    summarySheet.addRow([]);
+    // Sauvegarder avec un nom personnalisé
+    const fileName = this.generateFileName();
+    this.pdfMakerService.savePDF(pdfBlob, fileName);
 
-    // Indicateurs clés
-    summarySheet.mergeCells('A5:F5');
-    const overviewTitle = summarySheet.getCell('A5');
-    overviewTitle.value = "Vue d'ensemble";
-    Object.assign(overviewTitle.style, titleStyle);
+    this.toastr.success('PDF généré avec succès');
 
-    summarySheet.addRow(['Indicateur', 'Valeur', 'Détail']).eachCell(cell => Object.assign(cell.style, headerStyle));
-    summarySheet.addRow(['Total Ventes', this.totalVentes, `${this.totalVentes} transactions`]);
-    summarySheet.addRow(['Chiffre d\'Affaires TTC', `${this.chiffreAffairesTTC.toLocaleString()} F CFA`, '']);
-    summarySheet.addRow(['Chiffre d\'Affaires HT', `${this.chiffreAffairesHT.toLocaleString()} F CFA`, '']);
-    summarySheet.addRow(['Marge bénéficiaire', `${this.margeBeneficiaire.toLocaleString()} F CFA`, `${((this.margeBeneficiaire / this.chiffreAffairesHT) * 100).toFixed(2)}%`]);
-    summarySheet.addRow(['Ticket moyen', `${this.ticketMoyen.toLocaleString()} F CFA`, `${this.panierMoyen.toFixed(1)} produits/vente`]);
+  } catch (error) {
+    this.handlePDFError(error);
+  } finally {
+    // Réinitialiser après un délai
+    setTimeout(() => {
+      this.isGeneratingPDF = false;
+      this.progress = 0;
+    }, 800);
+  }
+}
 
-    // Feuille Modes Paiement
-    const paymentSheet = workbook.addWorksheet('Modes Paiement');
-    paymentSheet.mergeCells('A1:D1');
-    const paymentTitle = paymentSheet.getCell('A1');
-    paymentTitle.value = 'Répartition des modes de paiement';
-    Object.assign(paymentTitle.style, titleStyle);
+private construireFiltresPDF(): any {
+  const params: any = {};
 
-    paymentSheet.addRow(['Mode', 'Montant (F CFA)', 'Transactions', '%'])
-      .eachCell(cell => Object.assign(cell.style, headerStyle));
+  // Période
+  if (this.periodeSelectionnee !== 'personnalisee') {
+    params.periode = this.periodeSelectionnee;
+    if (this.dateReference) {
+      params.dateReference = this.dateReference;
+    }
+  } else {
+    if (this.dateDebut) params.fromDate = this.dateDebut;
+    if (this.dateFin) params.toDate = this.dateFin;
+  }
 
-    this.statmodesPaiement.forEach(mode => {
-      paymentSheet.addRow([
-        mode.mode,
-        mode.montantTotal,
-        mode.occurrences,
-        `${((mode.montantTotal / this.chiffreAffairesTTC) * 100).toFixed(1)}%`
-      ]);
-    });
+  // Filtres
+  if (this.selectedMagasinId !== -1) {
+    params.magasinId = this.selectedMagasinId;
+  }
 
-    // Sauvegarde
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(blob, `rapport_vente_${this.formatDate(new Date())}.xlsx`);
+  if (this.selectedVendeurId !== -1) {
+    params.agentId = this.selectedVendeurId;
+  }
+  // AJOUT LES PARAMÈTRES DE COMPARAISON SI UNE COMPARAISON EST ACTIVE
+  if (this.comparaisonData) {
+    //params.comparaisonType = this.comparaisonType;
+    //params.comparaisonElement1 = this.comparaisonElement1;
+    //params.comparaisonElement2 = this.comparaisonElement2;
+    params.comparaisonLabels = this.comparaisonLabels;
+    params.comparaisonData = JSON.stringify(this.comparaisonData);
+  }
+
+  console.log('📄 Génération PDF avec comparaison:', params);
+
+  // Nettoyer les undefined
+  return Object.fromEntries(
+    Object.entries(params).filter(([_, v]) => v !== undefined && v !== '')
+  );
+}
+
+private generateFileName(): string {
+  const date = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+  let suffix = '';
+
+  if (this.selectedMagasinId !== -1) {
+    const magasin = this.magasins.find(m => m.id === this.selectedMagasinId);
+    suffix += `-${magasin?.nom || 'magasin'}`;
+  }
+
+  if (this.selectedVendeurId !== -1) {
+    const vendeur = this.vendeurs.find(v => v.id === this.selectedVendeurId);
+    suffix += `-${vendeur?.nom || 'vendeur'}`;
+  }
+
+  return `rapport-vente${suffix}-${date}.pdf`;
+}
+
+private handlePDFError(error: any): void {
+  console.error('❌ Erreur PDF:', error);
+
+  if (error instanceof HttpErrorResponse) {
+    switch (error.status) {
+      case 401:
+        this.toastr.error('Session expirée. Veuillez vous reconnecter.');
+        break;
+      case 403:
+        this.toastr.error('Vous n\'avez pas les droits pour générer ce rapport');
+        break;
+      case 400:
+        this.toastr.error('Paramètres invalides: ' + (error.error?.error || 'Vérifiez vos filtres'));
+        break;
+      case 404:
+        this.toastr.error('Service de génération PDF non disponible');
+        break;
+      case 500:
+        this.toastr.error('Erreur serveur lors de la génération du PDF');
+        break;
+      default:
+        this.toastr.error('Erreur: ' + (error.error?.error || error.message));
+    }
+  } else {
+    this.toastr.error('Erreur de connexion au serveur');
+  }
+}
+
+  // Dans votre composant (rapports-ventes.component.ts)
+
+async exportToExcel(): Promise<void> {
+  // Vérifier que les dates sont valides
+  if (this.periodeSelectionnee === 'personnalisee') {
+    if (!this.dateDebut || !this.dateFin) {
+      this.toastr.warning('Veuillez sélectionner une période');
+      return;
+    }
+    if (new Date(this.dateDebut) > new Date(this.dateFin)) {
+      this.toastr.warning('La date de début doit être antérieure à la date de fin');
+      return;
+    }
+  }
+
+  try {
+    this.isGeneratingPDF = true; // Réutiliser le même indicateur
+    this.progress = 0;
+
+    // Animation de progression
+    const interval = setInterval(() => {
+      if (this.progress < 90) this.progress += 10;
+    }, 300);
+
+    // Construire les paramètres (réutiliser la même méthode que pour le PDF)
+    const params = this.construireFiltresExcel();
+
+    console.log('📊 Export Excel avec paramètres:', params);
+
+    // Appel API
+    const excelBlob = await this.kpiService.exportRapportExcel(params).toPromise();
+
+    if(!excelBlob){
+      console.log('Echec appel API');
+      return;
+    }
+
+    clearInterval(interval);
+    this.progress = 100;
+
+    // Sauvegarder le fichier
+    this.saveExcelFile(excelBlob);
+
+    this.toastr.success('Export Excel réussi');
+
+  } catch (error: any) {
+    console.error('❌ Erreur export Excel:', error);
+    
+    if (error.status === 401) {
+      this.toastr.error('Session expirée. Veuillez vous reconnecter.');
+    } else if (error.status === 400) {
+      this.toastr.error('Paramètres invalides: ' + (error.error?.error || ''));
+    } else if (error.status === 500) {
+      this.toastr.error('Erreur serveur lors de l\'export Excel');
+    } else {
+      this.toastr.error('Erreur lors de l\'export Excel');
+    }
+  } finally {
+    setTimeout(() => {
+      this.isGeneratingPDF = false;
+      this.progress = 0;
+    }, 500);
+  }
+}
+
+/**
+ * Construire les filtres spécifiques pour Excel
+ */
+private construireFiltresExcel(): any {
+  const params: any = {};
+
+  // Période
+  if (this.periodeSelectionnee !== 'personnalisee') {
+    params.periode = this.periodeSelectionnee;
+    if (this.dateReference) {
+      params.dateReference = this.dateReference;
+    }
+  } else {
+    if (this.dateDebut) params.fromDate = this.dateDebut;
+    if (this.dateFin) params.toDate = this.dateFin;
+  }
+
+  // Filtres magasin et vendeur
+  if (this.selectedMagasinId !== -1) {
+    params.magasinId = this.selectedMagasinId;
+  }
+
+  if (this.selectedVendeurId !== -1) {
+    params.agentId = this.selectedVendeurId;
+  }
+
+  // Nettoyer les paramètres undefined
+  return Object.fromEntries(
+    Object.entries(params).filter(([_, v]) => v !== undefined && v !== '')
+  );
+}
+
+/**
+ * Sauvegarder le fichier Excel
+ */
+private saveExcelFile(blob: Blob): void {
+  // Générer un nom de fichier avec la date et les filtres
+  const fileName = this.generateExcelFileName();
+  
+  // Créer un lien de téléchargement
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  
+  // Ajouter au DOM, cliquer, puis retirer
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  // Nettoyer l'URL
+  window.URL.revokeObjectURL(url);
+}
+
+/**
+ * Générer un nom de fichier Excel pertinent
+ */
+private generateExcelFileName(): string {
+  const date = new Date();
+  const dateStr = date.toISOString().slice(0, 19).replace(/:/g, '-');
+  
+  let suffix = '';
+  
+  // Ajouter la période
+  if (this.periodeSelectionnee !== 'personnalisee') {
+    const periode = this.periodesDisponibles.find(p => p.value === this.periodeSelectionnee);
+    suffix += `-${periode?.label.toLowerCase().replace(/\s+/g, '-')}`;
+  }
+  
+  // Ajouter le magasin si sélectionné
+  if (this.selectedMagasinId !== -1) {
+    const magasin = this.magasins.find(m => m.id === this.selectedMagasinId);
+    suffix += `-${magasin?.nom.toLowerCase().replace(/\s+/g, '-') || 'magasin'}`;
+  }
+  
+  // Ajouter le vendeur si sélectionné
+  if (this.selectedVendeurId !== -1) {
+    const vendeur = this.vendeurs.find(v => v.id === this.selectedVendeurId);
+    suffix += `-${vendeur?.nom.toLowerCase().replace(/\s+/g, '-') || 'vendeur'}`;
+  }
+  
+  return `rapport-vente${suffix}-${dateStr}.xlsx`;
+}
+
+  getNomVendeur(id: number): string {
+    const vendeur = this.vendeurs.find(v => v.id === id);
+    return vendeur ? vendeur.nom : 'Tous les vendeurs';
   }
 }

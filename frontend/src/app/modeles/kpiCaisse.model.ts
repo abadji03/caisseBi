@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 // Interfaces pour typer les réponses
 export interface KPICaisse {
@@ -322,6 +323,10 @@ export interface IndicateursStocks {
   valeurStockFinal: number;
   valeurStockInitialVente: number;
   valeurStockFinalVente: number;
+  produitsNormaux:number;
+  totalProduitsVendus:number;        
+  totalEntrees : number;              
+  totalSorties : number; 
 }
 
 export interface StatistiqueProduit {
@@ -535,7 +540,7 @@ export interface VendeurPerformance {
   caHT: number;
   caTTC: number;
   ticketMoyen: number;
-  panierMoyen: number;
+  //panierMoyen: number;
 }
 
 export interface EvolutionParJour {
@@ -571,11 +576,7 @@ export interface VenteDetail {
   statut: string;
   clientId?: number;
   clientNom: string;
-  agent: {
-    id: number;
-    nom: string;
-    prenom: string;
-  } | null;
+  agent: VendeurInfo;
   articles: ArticleVente[];
   nombreArticles: number;
   paiements: PaiementVente[];
@@ -676,4 +677,57 @@ export interface ComparaisonResponse {
   ventes2: number;
   ticketMoyen1: number;
   ticketMoyen2: number;
+}
+
+//.....................Dashboard et overview............................
+// Interfaces pour les données du dashboard
+export interface DonneesVentesDashboard {
+  totalVentes: number;
+  nbTransactions: number;
+  caTTC: number;
+  caHT: number;
+  marge: number;
+  tauxMarge: number;
+  ticketMoyen: number;
+  evolutionParJour: any[];
+  modesPaiement: any[];
+  topProduits: any[];
+}
+
+export interface DonneesStockDashboard {
+  totalProduits: number;
+  produitsUniques: number;
+  valeurStockInitial: number;
+  valeurStockFinal: number;
+  valeurStockInitialVente: number;
+  valeurStockFinalVente: number;
+  produitsRupture: number;
+  produitsEnAlerte: number;
+  produitsAReapprovisionner: number;
+  produitsEnSurStock: number;
+  produitsPerissable: number;
+  totalMouvements: number;
+  totalEntrees: number;
+  totalSorties: number;
+  graphique: StatsGraphiquesResponse;
+  derniersMouvements: any[];
+}
+
+ export interface DonneesFinancieresDashboard {
+  ca: number;
+  beneficeNet: number;
+  tauxMarge: number;
+  totalDepenses: number;
+  nbDepenses: number;
+  totalRecettes: number;
+  nbRecettes: number;
+  soldeInitial: number;
+  soldeFinal: number;
+  entrees: number;
+  sorties: number;
+  evolutionCA: { pourcentage: number; tendance: 'hausse' | 'baisse' | 'stable' };
+  evolutionJournaliere: any[];
+  topDepenses: any[];
+  topRecettes: any[];
+  dernieresTransactions: any[];
 }

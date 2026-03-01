@@ -21,4 +21,11 @@ router.get('/recettes',authenticateToken, financeController.getRecettesDetaillee
 router.get('/evolution',authenticateToken, financeController.getDonneesEvolutives);
 router.get('/comparatives',authenticateToken, financeController.getDonneesComparatives);
 
+// Route pour générer PDF
+router.get('/pdf', authenticateToken, financeController.genererRapportPDF);
+
+//Route pour exporter les données vers excel
+router.get('/excel', authenticateToken, financeController.exportRapportExcel);
+
+
 module.exports = router;

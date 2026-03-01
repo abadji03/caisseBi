@@ -9,6 +9,9 @@ dotenv.config();
 
 const app = express();
 app.use(cors());
+// Configuration d'EJS
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
 
 // Connexion à la base de données
 const db = require('./models');

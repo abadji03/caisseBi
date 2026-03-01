@@ -244,6 +244,12 @@ exports.findByStructure = async (req, res) => {
 
     const users = await User.findAll({
       where: { code_structure },
+      include: [
+        {
+          model: Role,
+          attributes: ['id', 'nom'],
+        },
+      ],
       order: [['createdAt', 'DESC']],
     });
 

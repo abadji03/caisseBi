@@ -1,211 +1,239 @@
-<div class="container-fluid mt-4">
-  <!-- Message d'erreur global -->
-  <div *ngIf="errorMessage" class="alert alert-danger mt-3">
-    {{ errorMessage }}
-  </div>
+<div class="container-fluid" id="rapport-vente">
+  <!-- En-tête avec boutons d'export -->
+  <div class="d-flex justify-content-between align-items-center no-printer mb-3">
+    <h3 class="mb-0">
+      <i class="bi bi-bar-chart-line me-2"></i>
+      Rapport de Vente
+    </h3>
 
-  <!-- Indicateur de chargement -->
-  <div *ngIf="isLoading" class="text-center mt-3">
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Chargement...</span>
-    </div>
-    <p class="mt-2">Chargement du rapport de vente...</p>
-  </div>
-
-  <div *ngIf="!isLoading && rapportData" class="rapport" id="rapport">
-    <!-- En-tête avec boutons d'export -->
-    <div *ngIf="filteredVentes.length > 0" class="d-flex justify-content-end align-items-center no-printer mb-3">
-      <div *ngIf="isGeneratingPDF" class="spinner-container me-5">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Génération en cours...</span>
+    <div class="d-flex align-items-center gap-2">
+      <!-- Indicateur de chargement -->
+      <div *ngIf="isLoading" class="me-3">
+        <div class="spinner-border spinner-border-sm text-primary" role="status">
+          <span class="visually-hidden">Chargement...</span>
         </div>
-        <p>Génération du PDF en cours... {{ progress }}%</p>
+        <span class="text-muted ms-2">Chargement...</span>
       </div>
-      <button class="btn btn-outline-dark me-2" (click)="impression()">
+
+      <!-- Progression PDF -->
+      <div *ngIf="isGeneratingPDF" class="me-3">
+        <div class="spinner-border spinner-border-sm text-primary" role="status">
+          <span class="visually-hidden">Génération PDF...</span>
+          <!-- Barre de progression optionnelle -->
+          <div class="progress mt-1" style="width: 150px; height: 5px;">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                [style.width.%]="progress"
+                role="progressbar">
+            </div>
+          </div>
+        </div>
+        <span class="text-muted ms-2">Génération PDF... {{ progress }}%</span>
+      </div>
+
+      <button class="btn btn-outline-primary" (click)="impression()" [disabled]="isLoading">
         <i class="bi bi-printer"></i> Imprimer
       </button>
-      <button class="btn btn-outline-dark me-2" (click)="exportToPDF()">
-        <i class="bi bi-file-earmark-pdf"></i> Exporter PDF
+      <button class="btn btn-outline-danger" (click)="exportToPDF()" [disabled]="isLoading || isGeneratingPDF">
+        <i class="bi bi-file-earmark-pdf"></i> PDF
       </button>
-      <button class="btn btn-outline-dark" (click)="exportToExcel()">
-        <i class="bi bi-file-earmark-excel"></i> Exporter Excel
+      <button class="btn btn-outline-success" (click)="exportToExcel()" [disabled]="isLoading">
+        <i class="bi bi-file-earmark-excel"></i> Excel
       </button>
     </div>
+  </div>
 
-    <!-- Filtres -->
-    <div class="card p-3 my-4 shadow-sm no-printer">
-      <h5 class="fw-bold"><i class="bi bi-funnel"></i> Filtres</h5>
-      <div class="row g-3">
-        <div class="col-md-3">
-          <label for="dateDebut" class="form-label">Date de début :</label>
-          <input
-            type="date"
-            id="dateDebut"
-            name="dateDebut"
-            class="form-control"
-            [(ngModel)]="dateDebut"
-            (change)="filtrerDates()"
-          />
-        </div>
-        <div class="col-md-3">
-          <label for="dateFin" class="form-label">Date de fin :</label>
-          <input
-            type="date"
-            id="dateFin"
-            name="dateFin"
-            class="form-control"
-            [(ngModel)]="dateFin"
-            (change)="filtrerDates()"
-          />
-        </div>
-        <div class="col-md-3">
-          <label for="magasin" class="form-label">Magasin :</label>
-          <select
-            id="magasin"
-            class="form-select"
-            [(ngModel)]="selectedMagasinId"
-            (change)="onMagasinSelect($event)"
-          >
-            <option [value]="-1">Tous les magasins</option>
-            <option *ngFor="let magasin of magasins" [value]="magasin.id">
-              {{ magasin?.nom }}
-            </option>
-          </select>
-        </div>
-        <div class="col-md-3">
-          <label for="vendeur" class="form-label">Vendeur :</label>
-          <select
-            id="vendeur"
-            class="form-select"
-            [(ngModel)]="selectedVendeurId"
-            (change)="onVendeurSelect($event)"
-          >
-            <option [value]="-1">Tous les vendeurs</option>
-            <option *ngFor="let vendeur of vendeurs" [value]="vendeur.id">
-              {{ vendeur?.nom }}
-            </option>
-          </select>
-        </div>
+  
+  <!-- Filtres -->
+  <div class="card p-3 mb-4 shadow-sm no-printer">
+    <h5 class="fw-bold mb-3"><i class="bi bi-funnel me-2"></i>Filtres</h5>
+    <div class="row g-3">
+      <!-- Sélecteur de période -->
+      <div class="col-md-3">
+        <label for="periode" class="form-label fw-semibold">Période :</label>
+        <select
+          id="periode"
+          class="form-select"
+          [(ngModel)]="periodeSelectionnee"
+          (change)="onPeriodeChange()"
+          [disabled]="isLoading"
+        >
+          <option *ngFor="let periode of periodesDisponibles" [value]="periode.value">
+            {{ periode.label }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Date de référence pour périodes prédéfinies -->
+      <div class="col-md-3" *ngIf="periodeSelectionnee !== 'personnalisee'">
+        <label for="dateReference" class="form-label fw-semibold">Date de référence :</label>
+        <input
+          type="date"
+          id="dateReference"
+          class="form-control"
+          [(ngModel)]="dateReference"
+          (change)="filtrerDates()"
+          [disabled]="isLoading"
+        />
+        <small class="form-text text-muted">Période calculée à partir de cette date</small>
+      </div>
+
+      <!-- Dates personnalisées -->
+      <div class="col-md-3" *ngIf="periodeSelectionnee === 'personnalisee'">
+        <label for="dateDebut" class="form-label fw-semibold">Date de début :</label>
+        <input
+          type="date"
+          id="dateDebut"
+          class="form-control"
+          [(ngModel)]="dateDebut"
+          (change)="filtrerDates()"
+          [disabled]="isLoading"
+        />
+      </div>
+
+      <div class="col-md-3" *ngIf="periodeSelectionnee === 'personnalisee'">
+        <label for="dateFin" class="form-label fw-semibold">Date de fin :</label>
+        <input
+          type="date"
+          id="dateFin"
+          class="form-control"
+          [(ngModel)]="dateFin"
+          (change)="filtrerDates()"
+          [disabled]="isLoading"
+        />
+      </div>
+
+      <!-- Filtre magasin -->
+      <div class="col-md-3" *ngIf="isAdmin">
+        <label for="magasin" class="form-label fw-semibold">Magasin :</label>
+        <select
+          id="magasin"
+          class="form-select"
+          [(ngModel)]="selectedMagasinId"
+          (change)="onMagasinSelect($event)"
+          [disabled]="isLoading"
+        >
+          <option [value]="-1">Tous les magasins</option>
+          <option *ngFor="let magasin of magasins" [value]="magasin.id">
+            {{ magasin.nom }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Filtre vendeur -->
+      <!-- <div class="col-md-3" *ngIf="isAdmin">
+        <label for="vendeur" class="form-label fw-semibold">Vendeur :</label>
+        <select
+          id="vendeur"
+          class="form-select"
+          [(ngModel)]="selectedVendeurId"
+          (change)="onVendeurSelect($event)"
+          [disabled]="isLoading"
+        >
+          <option [value]="-1">Tous les vendeurs</option>
+          <option *ngFor="let vendeur of vendeurs" [value]="vendeur.id">
+            {{ vendeur.nom }}
+          </option>
+        </select>
+      </div> -->
+
+      <!-- Bouton de rafraîchissement -->
+      <div class="col-12 mt-2">
+        <button class="btn btn-outline-dark" (click)="filtrerDates()" [disabled]="isLoading">
+          <i class="bi bi-arrow-clockwise"></i> Appliquer les filtres
+        </button>
+        <button *ngIf="searchTerm" class="btn btn-outline-secondary ms-2" (click)="clearSearch()">
+          <i class="bi bi-x-circle"></i> Effacer la recherche
+        </button>
       </div>
     </div>
+  </div>
 
-    <div *ngIf="filteredVentes.length === 0" class="d-flex justify-content-center no-printer">
-      <h1 class="text-muted">
-        Aucune vente correspondant à la période actuelle. Veuillez choisir une autre période
-      </h1>
+  <!-- Message si chargement -->
+  <div *ngIf="isLoading" class="text-center py-5">
+    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+      <span class="visually-hidden">Chargement...</span>
     </div>
+    <p class="mt-3 text-muted">Chargement des données de vente...</p>
+  </div>
 
-    <div *ngIf="filteredVentes.length > 0" class="container mt-4 p-4 border">
-      <!-- En-tête du rapport (visible seulement à l'impression) -->
-      <div *ngIf="isPrinting" class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <img src="./assets/logo.png" alt="Logo Entreprise" style="height: 80px" />
-        </div>
-        <div class="text-end">
-          <p><strong>Entreprise :</strong> Nom de l'Entreprise</p>
-          <p><strong>Adresse :</strong> Dakar, Sénégal</p>
-          <p><strong>Téléphone :</strong> +221 77 123 45 67</p>
-          <p>
-            <strong>Succursale :</strong>
-            {{ selectedMagasinId !== -1 ? getNomMagasin(selectedMagasinId) : 'Toutes les succursales' }}
-          </p>
-          <p><strong>Responsable :</strong> {{ currentUser?.nom || 'Responsable' }}</p>
-          <p><strong>Date :</strong> {{ dateGeneration | date: 'dd/MM/yyyy' }}</p>
-        </div>
-      </div>
+  <!-- Message si pas de données -->
+  <div
+    *ngIf="!isLoading && filteredVentes.length === 0"
+    class="alert alert-warning text-center"
+  >
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    Aucune vente trouvée pour la période sélectionnée. Veuillez ajuster les filtres.
+  </div>
+
+  <!-- Contenu principal du rapport -->
+  <div *ngIf="!isLoading && filteredVentes.length > 0" class="rapport" id="rapport">
+    <div class="container mt-4 p-4 border bg-white">
 
       <!-- Titre du rapport -->
-      <div class="d-flex justify-content-center my-5">
-        <h1 class="fw-bold">
-          Rapport de vente du {{ dateDebut | date: 'dd/MM/yyyy' }} au {{ dateFin | date: 'dd/MM/yyyy' }}
-        </h1>
+      <div class="text-center mb-5">
+        <h1 class="fw-bold mb-2">Rapport de Vente</h1>
+        <h4 class="text-muted">{{ periodeAffichage }}</h4>
       </div>
 
-      <!-- Vue d'ensemble -->
+      <!-- Section indicateurs statistiques -->
       <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-light d-flex justify-content-center">
-          <h3 class="fw-bold">Vue d'ensemble des ventes</h3>
+        <div class="card-header bg-primary text-white">
+          <h3 class="fw-bold mb-0"><i class="bi bi-bar-chart me-2"></i>Indicateurs Clés</h3>
         </div>
         <div class="card-body">
-          <div class="row text-center">
-            <!-- KPI Cards -->
+          <div class="row g-3">
+            <!-- Total Ventes -->
             <div class="col-md-3 mb-3">
-              <div class="card border-primary h-100">
-                <div class="card-body">
-                  <h5>Total Ventes</h5>
-                  <h3 class="text-primary">{{ totalVentes | number }}</h3>
-                  <small>{{ filteredVentes.length | number }} transactions</small>
+              <div class="card border-primary shadow-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-cart-check fs-2 text-primary me-3"></i>
+                  <div>
+                    <h5 class="text-muted fw-bold mb-1">Total Ventes</h5>
+                    <p class="fs-4 fw-bold mb-0">{{ totalVentes | number }}</p>
+                    <small class="text-muted">{{ filteredVentes.length | number }} transactions</small>
+                  </div>
                 </div>
               </div>
             </div>
 
+            <!-- Chiffre d'Affaires TTC -->
             <div class="col-md-3 mb-3">
-              <div class="card border-success h-100">
-                <div class="card-body">
-                  <h5>Chiffre d'Affaires TTC</h5>
-                  <h3 class="text-success">{{ chiffreAffairesTTC | number }} F CFA</h3>
-                  <small>{{ chiffreAffairesHT | number }} F CFA HT</small>
+              <div class="card border-success shadow-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-cash-stack fs-2 text-success me-3"></i>
+                  <div>
+                    <h5 class="text-muted fw-bold mb-1">Chiffre d'Affaires TTC</h5>
+                    <p class="fs-8 fw-bold mb-0">{{ chiffreAffairesTTC | number }} F CFA</p>
+                    <small class="text-muted">{{ chiffreAffairesHT | number }} F CFA HT</small>
+                  </div>
                 </div>
               </div>
             </div>
 
+            <!-- Marge bénéficiaire -->
             <div class="col-md-3 mb-3">
-              <div class="card border-warning h-100">
-                <div class="card-body">
-                  <h5>Marge bénéficiaire</h5>
-                  <h3 class="text-warning">{{ margeBeneficiaire | number }} F CFA</h3>
-                  <small>{{ (margeBeneficiaire / chiffreAffairesHT) * 100 | number: '1.0-2' }}%</small>
+              <div class="card border-warning shadow-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-graph-up-arrow fs-2 text-warning me-3"></i>
+                  <div>
+                    <h5 class="text-muted fw-bold mb-1">Marge bénéficiaire</h5>
+                    <p class="fs-8 fw-bold mb-0">{{ margeBeneficiaire | number }} F CFA</p>
+                    <small class="text-muted">{{ (margeBeneficiaire / chiffreAffairesHT) * 100 | number: '1.0-2' }}%</small>
+                  </div>
                 </div>
               </div>
             </div>
 
+            <!-- Ticket moyen -->
             <div class="col-md-3 mb-3">
-              <div class="card border-info h-100">
-                <div class="card-body">
-                  <h5>Ticket moyen</h5>
-                  <h3 class="text-info">{{ ticketMoyen | number }} F CFA</h3>
-                  <small>{{ panierMoyen | number }} produits/vente</small>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Répartition des paiements -->
-          <div class="row mt-4">
-            <div class="col-md-6">
-              <div class="card h-100">
-                <div class="card-header bg-light d-flex justify-content-center">
-                  <h3 class="fw-bold">Modes de paiement</h3>
-                </div>
-                <div class="card-body">
-                  <canvas #paiementsChart></canvas>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="card h-100">
-                <div class="card-header bg-light d-flex justify-content-center">
-                  <h3 class="fw-bold">Répartition par mode</h3>
-                </div>
-                <div class="card-body">
-                  <table class="table table-sm">
-                    <thead class="table-dark">
-                      <tr>
-                        <th>Mode</th>
-                        <th>Montant</th>
-                        <th>Transactions</th>
-                        <th>%</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr *ngFor="let mode of statmodesPaiement">
-                        <td>{{ mode.mode }}</td>
-                        <td>{{ mode.montantTotal | number }} F CFA</td>
-                        <td>{{ mode.occurrences }}</td>
-                        <td>{{ (mode.montantTotal / chiffreAffairesTTC) * 100 | number: '1.0-1' }}%</td>
-                      </tr>
-                    </tbody>
-                  </table>
+              <div class="card border-info shadow-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                  <i class="bi bi-receipt fs-2 text-info me-3"></i>
+                  <div>
+                    <h5 class="text-muted fw-bold mb-1">Ticket moyen</h5>
+                    <p class="fs-8 fw-bold mb-0">{{ ticketMoyen | number }} F CFA</p>
+                    <!-- <small class="text-muted">{{ panierMoyen | number }} produits/vente</small> -->
+                  </div>
                 </div>
               </div>
             </div>
@@ -213,54 +241,60 @@
         </div>
       </div>
 
-      <!-- Évolution des ventes -->
+      <!-- Graphique d'évolution des ventes -->
       <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-light d-flex justify-content-center">
-          <h3 class="fw-bold">Évolution des ventes</h3>
+        <div class="card-header bg-secondary text-white">
+          <h3 class="fw-bold mb-0"><i class="bi bi-graph-up me-2"></i>Évolution des ventes</h3>
         </div>
         <div class="card-body">
-          <div class="row">
-            <div class="col-md-12">
-              <canvas #evolutionVentesChart></canvas>
-            </div>
+          <div class="chart-container" style="position: relative; height: 400px;">
+            <canvas #evolutionVentesChart></canvas>
           </div>
-          <div class="row mt-3">
-            <div class="col-md-6">
-              <div class="card">
-                <div class="card-body text-center">
-                  <h5>Évolution CA</h5>
-                  <h3 [class.text-success]="evolutionCA.tendance === '↑'"
-                      [class.text-danger]="evolutionCA.tendance === '↓'"
-                      [class.text-warning]="evolutionCA.tendance === '→'">
-                    {{ evolutionCA.valeur }}%
-                    <i class="bi"
-                       [ngClass]="{
-                         'bi-arrow-up': evolutionCA.tendance === '↑',
-                         'bi-arrow-down': evolutionCA.tendance === '↓',
-                         'bi-dash': evolutionCA.tendance === '→'
-                       }"></i>
-                  </h3>
-                  <small>vs période précédente</small>
-                </div>
+        </div>
+      </div>
+
+      <!-- Analyse des ventes -->
+      <div class="row mb-4">
+        <!-- Répartition des paiements -->
+        <div class="col-md-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-header bg-info text-white">
+              <h3 class="fw-bold mb-0"><i class="bi bi-pie-chart me-2"></i>Modes de paiement</h3>
+            </div>
+            <div class="card-body">
+              <div class="chart-container" style="position: relative; height: 300px;">
+                <canvas #paiementsChart></canvas>
               </div>
             </div>
-            <div class="col-md-6">
-              <div class="card">
-                <div class="card-body text-center">
-                  <h5>Évolution volume</h5>
-                  <h3 [class.text-success]="evolutionVolume.tendance === '↑'"
-                      [class.text-danger]="evolutionVolume.tendance === '↓'"
-                      [class.text-warning]="evolutionVolume.tendance === '→'">
-                    {{ evolutionVolume.valeur }}%
-                    <i class="bi"
-                       [ngClass]="{
-                         'bi-arrow-up': evolutionVolume.tendance === '↑',
-                         'bi-arrow-down': evolutionVolume.tendance === '↓',
-                         'bi-dash': evolutionVolume.tendance === '→'
-                       }"></i>
-                  </h3>
-                  <small>vs période précédente</small>
-                </div>
+          </div>
+        </div>
+
+        <!-- Tableau des modes de paiement -->
+        <div class="col-md-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-header bg-info text-white">
+              <h3 class="fw-bold mb-0"><i class="bi bi-table me-2"></i>Répartition par mode</h3>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Mode</th>
+                      <th class="text-end">Montant</th>
+                      <th class="text-end">Transactions</th>
+                      <th class="text-end">%</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let mode of statmodesPaiement">
+                      <td>{{ mode.mode }}</td>
+                      <td class="text-end">{{ mode.montantTotal | number }} F CFA</td>
+                      <td class="text-end">{{ mode.occurrences }}</td>
+                      <td class="text-end">{{ (mode.montantTotal / chiffreAffairesTTC) * 100 | number: '1.0-1' }}%</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -269,34 +303,34 @@
 
       <!-- Top produits -->
       <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-light d-flex justify-content-center">
-          <h3 class="fw-bold">Top 10 des produits</h3>
+        <div class="card-header bg-success text-white">
+          <h3 class="fw-bold mb-0"><i class="bi bi-trophy me-2"></i>Top 10 des produits</h3>
         </div>
         <div class="card-body">
-          <div class="row">
+          <div class="chart-container" style="position: relative; height: 300px;">
             <canvas #topProduitsChart></canvas>
           </div>
-          <div class="row mt-4">
-            <table class="table table-striped">
-              <thead class="table-dark">
+          
+          <div class="table-responsive mt-4">
+            <table class="table table-sm table-hover">
+              <thead class="table-light">
                 <tr>
                   <th>Produit</th>
-                  <th>Quantité</th>
-                  <th>Prix de vente</th>
-                  <th>Transactions</th>
-                  <th>CA TTC</th>
-                  <th>Marge</th>
+                  <th class="text-end">Quantité</th>
+                  <th class="text-end">Prix de vente</th>
+                  <th class="text-end">Transactions</th>
+                  <th class="text-end">CA TTC</th>
+                  <th class="text-end">Marge</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let produit of topProduits">
                   <td>{{ produit.produit.designation }}</td>
-                  <td>{{ produit.quantite | number }}</td>
-                  <td>{{ produit.produit.prixVenteUnitaire | number }} F CFA</td>
-                  <td>{{ produit.nombreVentes }}</td>
-                  <td>{{ produit.ca | number }} F CFA</td>
-                  <td [class.text-success]="produit.marge >= 0"
-                      [class.text-danger]="produit.marge < 0">
+                  <td class="text-end">{{ produit.quantite | number }}</td>
+                  <td class="text-end">{{ produit.produit.prixVenteUnitaire | number }} F CFA</td>
+                  <td class="text-end">{{ produit.nombreVentes }}</td>
+                  <td class="text-end">{{ produit.ca | number }} F CFA</td>
+                  <td class="text-end" [class.text-success]="produit.marge >= 0" [class.text-danger]="produit.marge < 0">
                     {{ produit.marge | number }} F CFA
                   </td>
                 </tr>
@@ -308,170 +342,211 @@
 
       <!-- Top clients -->
       <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-light d-flex justify-content-center">
-          <h3 class="fw-bold">Top 10 des clients</h3>
+        <div class="card-header bg-warning text-dark">
+          <h3 class="fw-bold mb-0"><i class="bi bi-people me-2"></i>Top 10 des clients</h3>
         </div>
         <div class="card-body">
-          <table class="table table-striped">
-            <thead class="table-dark">
-              <tr>
-                <th>Client</th>
-                <th>Transactions</th>
-                <th>CA TTC</th>
-                <th>Dernière visite</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let client of topClients">
-                <td>{{ client.client.nomComplet || 'Client anonyme' }}</td>
-                <td>{{ client.nbAchats }}</td>
-                <td>{{ client.ca | number }} F CFA</td>
-                <td>{{ client.dernierAchat | date: 'dd/MM/yyyy' }}</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="table-responsive">
+            <table class="table table-sm table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th>Client</th>
+                  <th class="text-end">Transactions</th>
+                  <th class="text-end">CA TTC</th>
+                  <th>Dernière visite</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let client of topClients">
+                  <td>{{ client.client.nomComplet || 'Client anonyme' }}</td>
+                  <td class="text-end">{{ client.nbAchats }}</td>
+                  <td class="text-end">{{ client.ca | number }} F CFA</td>
+                  <td>{{ client.dernierAchat | date: 'dd/MM/yyyy' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
       <!-- Performance des vendeurs -->
       <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-light d-flex justify-content-center">
-          <h3 class="fw-bold">Performance des vendeurs</h3>
+        <div class="card-header bg-dark text-white">
+          <div class="d-flex justify-content-between align-items-center">
+            <h3 class="fw-bold mb-0"><i class="bi bi-person-badge me-2"></i>Performance des vendeurs</h3>
+          </div>
         </div>
         <div class="card-body">
-          <div class="row mb-3">
-            <div class="col-md-12">
-              <div class="btn-group no-printer">
-                <button class="btn btn-outline-secondary"
-                        [class.active]="triVendeursPar === 'ca'"
-                        (click)="triVendeursPar = 'ca'; trierVendeurs()">
-                  Par chiffre d'affaires
-                </button>
-                <button class="btn btn-outline-secondary"
-                        [class.active]="triVendeursPar === 'transactions'"
-                        (click)="triVendeursPar = 'transactions'; trierVendeurs()">
-                  Par nombre de ventes
-                </button>
-                <button class="btn btn-outline-secondary"
-                        [class.active]="triVendeursPar === 'moyenne'"
-                        (click)="triVendeursPar = 'moyenne'; trierVendeurs()">
-                  Par ticket moyen
-                </button>
-              </div>
-            </div>
+          <!-- Boutons de tri -->
+          <div class="btn-group mb-3 no-printer">
+            <button class="btn btn-outline-secondary btn-sm"
+                    [class.active]="triVendeursPar === 'ca'"
+                    (click)="triVendeursPar = 'ca'; trierVendeurs()">
+              Par chiffre d'affaires
+            </button>
+            <button class="btn btn-outline-secondary btn-sm"
+                    [class.active]="triVendeursPar === 'transactions'"
+                    (click)="triVendeursPar = 'transactions'; trierVendeurs()">
+              Par nombre de ventes
+            </button>
+            <button class="btn btn-outline-secondary btn-sm"
+                    [class.active]="triVendeursPar === 'moyenne'"
+                    (click)="triVendeursPar = 'moyenne'; trierVendeurs()">
+              Par ticket moyen
+            </button>
           </div>
-          <table class="table table-striped">
-            <thead class="table-dark">
-              <tr>
-                <th>Vendeur</th>
-                <th>Ventes</th>
-                <th>CA HT</th>
-                <th>CA TTC</th>
-                <th>Ticket moyen</th>
-                <th *ngIf="!isPrinting">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let vendeur of vendeursPerformance">
-                <td>{{ vendeur?.vendeur?.nom }}</td>
-                <td>{{ vendeur.nbVentes }}</td>
-                <td>{{ vendeur.caHT | number }} F CFA</td>
-                <td>{{ vendeur.caTTC | number }} F CFA</td>
-                <td>{{ vendeur.ticketMoyen | number }} F CFA</td>
-                <td *ngIf="!isPrinting">
-                  <button class="btn btn-sm btn-outline-secondary"
-                          (click)="voirDetailsVendeur(vendeur.vendeur.id)">
-                    <i class="bi bi-eye"></i> Détails
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+
+          <div class="table-responsive">
+            <table class="table table-sm table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th>Vendeur</th>
+                  <th class="text-end">Ventes</th>
+                  <th class="text-end">CA HT</th>
+                  <th class="text-end">CA TTC</th>
+                  <th class="text-end">Ticket moyen</th>
+                  <th class="text-center no-printer">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let vendeur of vendeursPerformance">
+                  <td>{{ vendeur?.vendeur?.nom || 'Inconnu' }}</td>
+                  <td class="text-end">{{ vendeur.nbVentes | number }}</td>
+                  <td class="text-end">{{ vendeur.caHT | number }} F CFA</td>
+                  <td class="text-end">{{ vendeur.caTTC | number }} F CFA</td>
+                  <td class="text-end">{{ vendeur.ticketMoyen | number }} F CFA</td>
+                  <td class="text-center no-printer">
+                    <button class="btn btn-sm btn-outline-info"
+                            (click)="voirDetailsVendeur(vendeur.vendeur.id)">
+                      <i class="bi bi-eye"></i> Détails
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
       <!-- Détails des ventes -->
       <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-light d-flex justify-content-between align-items-center">
-          <h3 class="fw-bold">Détails des ventes</h3>
-          <div class="no-printer">
-            <input type="text"
-                   class="form-control"
-                   placeholder="Rechercher..."
-                   [(ngModel)]="searchTerm"
-                   (input)="onSearchChange()" />
+        <div class="card-header bg-secondary text-white">
+          <div class="d-flex justify-content-between align-items-center">
+            <h3 class="fw-bold mb-0"><i class="bi bi-list-ul me-2"></i>Détail des ventes</h3>
+            <span class="badge bg-light text-dark">
+              Total: {{ rapportData?.pagination?.total || 0 }} ventes
+            </span>
           </div>
         </div>
         <div class="card-body">
-          <table class="table table-striped">
-            <thead class="table-dark">
-              <tr>
-                <th>Date</th>
-                <th>N° Ticket</th>
-                <th>Client</th>
-                <th>Articles</th>
-                <th>Total TTC</th>
-                <th>Paiement</th>
-                <th>Vendeur</th>
-                <th>Statut</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let vente of getPaginatedVentes">
-                <td>{{ vente.dateCreation | date: 'dd/MM/yyyy HH:mm' }}</td>
-                <td>{{ vente.id }}</td>
-                <td>{{ vente.clientNom }}</td>
-                <td>{{ vente.nombreArticles }}</td>
-                <td>{{ vente.totalTTC | number }} F CFA</td>
-                <td>
-                  <div *ngIf="vente.paiements?.length; else noPaiement">
-                    <div *ngFor="let paiement of vente.paiements">
-                      {{ paiement.methodePaiement }}: {{ paiement.montant | number }} F CFA
+          <!-- Barre de recherche et sélection du nombre de lignes -->
+          <div class="d-flex justify-content-between mb-3 no-printer">
+            <input
+              type="text"
+              class="form-control w-50"
+              placeholder="Rechercher par client, vendeur, statut..."
+              [(ngModel)]="searchTerm"
+              (input)="onSearchChange()"
+            />
+            <select class="form-select w-auto ms-2" [(ngModel)]="pageSize" (change)="onPageSizeChange()">
+              <option [value]="5">5 lignes</option>
+              <option [value]="10">10 lignes</option>
+              <option [value]="20">20 lignes</option>
+              <option [value]="50">50 lignes</option>
+            </select>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-sm table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th>Date</th>
+                  <th>N° Ticket</th>
+                  <th>Client</th>
+                  <th class="text-end">Articles</th>
+                  <th class="text-end">Total TTC</th>
+                  <th>Paiement</th>
+                  <th>Vendeur</th>
+                  <th>Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let vente of getPaginatedVentes">
+                  <td>{{ vente.dateCreation | date: 'dd/MM/yyyy HH:mm' }}</td>
+                  <td>{{ vente.id }}</td>
+                  <td>{{ vente.clientNom || 'Anonyme' }}</td>
+                  <td class="text-end">{{ vente.nombreArticles || 0 }}</td>
+                  <td class="text-end">{{ (vente.totalTTC || 0) | number }} F CFA</td>
+                  <td>
+                    <div *ngIf="vente.paiements?.length; else noPaiement">
+                      <span *ngFor="let paiement of vente.paiements; let last = last">
+                        {{ paiement.methodePaiement }}: {{ paiement.montant | number }} F CFA<ng-container *ngIf="!last">, </ng-container>
+                      </span>
                     </div>
-                  </div>
-                  <ng-template #noPaiement>Non spécifié</ng-template>
-                </td>
-                <td>{{ vente.agent?.nom }}</td>
-                <td>
-                  <span class="badge"
-                        [ngClass]="{
-                          'bg-success': vente.statut === 'validé',
-                          'bg-warning': vente.statut === 'en_cours',
-                          'bg-danger': vente.statut === 'annulé'
-                        }">
-                    {{ vente.statut }}
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                    <ng-template #noPaiement>
+                      <span class="text-muted">Non spécifié</span>
+                    </ng-template>
+                  </td>
+                  <td>{{ vente.agent?.nom || '-' }}</td>
+                  <td>
+                    <span class="badge"
+                          [ngClass]="{
+                            'bg-success': vente.statut === 'validé',
+                            'bg-warning': vente.statut === 'en_cours',
+                            'bg-danger': vente.statut === 'annulé'
+                          }">
+                      {{ vente.statut }}
+                    </span>
+                  </td>
+                </tr>
+                <tr *ngIf="getPaginatedVentes.length === 0">
+                  <td colspan="8" class="text-center text-muted py-4">
+                    <i class="bi bi-search fs-1 text-muted"></i>
+                    <p class="mt-2">Aucune vente trouvée pour les critères sélectionnés</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
           <!-- Pagination -->
-          <div class="d-flex justify-content-center align-items-center no-printer">
-            <button class="btn btn-success"
-                    (click)="previousPage()"
-                    [disabled]="currentPage === 1">
-              <i class="bi bi-arrow-left-circle"></i>
-            </button>
-            <span class="mx-3">Page {{ currentPage }} sur {{ totalPages }}</span>
-            <button class="btn btn-success"
-                    (click)="nextPage()"
-                    [disabled]="currentPage >= totalPages">
-              <i class="bi bi-arrow-right-circle"></i>
-            </button>
+          <div class="d-flex justify-content-between align-items-center mt-3 no-printer">
+            <div>
+              <span class="text-muted">
+                Page {{ currentPage }} sur {{ totalPages }}
+                ({{ rapportData?.pagination?.total || 0 }} résultats)
+              </span>
+            </div>
+            <div class="btn-group">
+              <button
+                class="btn btn-outline-primary btn-sm"
+                (click)="previousPage()"
+                [disabled]="currentPage === 1"
+              >
+                <i class="bi bi-chevron-left"></i> Précédent
+              </button>
+              <button
+                class="btn btn-outline-primary btn-sm"
+                (click)="nextPage()"
+                [disabled]="currentPage >= totalPages"
+              >
+                Suivant <i class="bi bi-chevron-right"></i>
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Rapport comparatif -->
-      <div class="card mb-4 shadow-sm no-printer">
-        <div class="card-header bg-light d-flex justify-content-center">
-          <h3 class="fw-bold">Analyse comparative</h3>
+      <div class="card mb-4 shadow-sm no-printer" *ngIf="isAdmin">
+        <div class="card-header bg-purple text-white" style="background-color: #6f42c1;">
+          <h3 class="fw-bold mb-0"><i class="bi bi-arrow-repeat me-2"></i>Analyse comparative</h3>
         </div>
         <div class="card-body">
           <div class="row mb-3">
             <!-- Sélecteur de type de comparaison -->
             <div class="col-md-4">
-              <label for="comparer" class="form-label">Comparer par :</label>
+              <label for="comparer" class="form-label fw-semibold">Comparer par :</label>
               <select id="comparer"
                       class="form-select"
                       [(ngModel)]="comparaisonType"
@@ -483,7 +558,7 @@
             </div>
             <!-- Premier élément -->
             <div class="col-md-4">
-              <label for="premierElement" class="form-label">Premier élément :</label>
+              <label for="premierElement" class="form-label fw-semibold">Premier élément :</label>
               <select id="premierElement"
                       class="form-select"
                       [(ngModel)]="comparaisonElement1"
@@ -498,7 +573,7 @@
             </div>
             <!-- Deuxième élément -->
             <div class="col-md-4">
-              <label for="deuxiemeElement" class="form-label">Deuxième élément :</label>
+              <label for="deuxiemeElement" class="form-label fw-semibold">Deuxième élément :</label>
               <select id="deuxiemeElement"
                       class="form-select"
                       [(ngModel)]="comparaisonElement2"
@@ -512,8 +587,10 @@
               </select>
             </div>
           </div>
+
           <div class="d-flex justify-content-center">
-            <button class="btn btn-success mb-3"
+            <button class="btn btn-purple text-white mb-3"
+                    style="background-color: #6f42c1;"
                     (click)="genererComparaison()"
                     [disabled]="!comparaisonElement1 || !comparaisonElement2 || isLoading">
               <i class="bi bi-arrow-repeat"></i>
@@ -521,79 +598,88 @@
               <span *ngIf="isLoading">Chargement...</span>
             </button>
           </div>
+
           <div *ngIf="comparaisonData" class="mt-3">
             <div class="chart-container" style="position: relative; height: 400px; width: 100%">
               <canvas #comparaisonChart></canvas>
             </div>
+            
             <div class="row mt-4">
               <div class="col-md-6">
-                <h5>Récapitulatif</h5>
-                <table class="table table-bordered">
-                  <thead class="table-dark">
-                    <tr>
-                      <th>Indicateur</th>
-                      <th>{{ comparaisonLabels[0] }}</th>
-                      <th>{{ comparaisonLabels[1] }}</th>
-                      <th>Différence</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>Chiffre d'affaires</td>
-                      <td>{{ comparaisonData.ca1 | number }} F CFA</td>
-                      <td>{{ comparaisonData.ca2 | number }} F CFA</td>
-                      <td [class.text-success]="comparaisonData.ca2 - comparaisonData.ca1 >= 0"
-                          [class.text-danger]="comparaisonData.ca2 - comparaisonData.ca1 < 0">
-                        {{ comparaisonData.ca2 - comparaisonData.ca1 | number }} F CFA
-                        ({{ ((comparaisonData.ca2 - comparaisonData.ca1) / comparaisonData.ca1) * 100 | number: '1.0-2' }}%)
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Nombre de ventes</td>
-                      <td>{{ comparaisonData.ventes1 | number }}</td>
-                      <td>{{ comparaisonData.ventes2 | number }}</td>
-                      <td [class.text-success]="comparaisonData.ventes2 - comparaisonData.ventes1 >= 0"
-                          [class.text-danger]="comparaisonData.ventes2 - comparaisonData.ventes1 < 0">
-                        {{ comparaisonData.ventes2 - comparaisonData.ventes1 | number }}
-                        ({{ ((comparaisonData.ventes2 - comparaisonData.ventes1) / comparaisonData.ventes1) * 100 | number: '1.0-2' }}%)
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Ticket moyen</td>
-                      <td>{{ comparaisonData.ticketMoyen1 | number }} F CFA</td>
-                      <td>{{ comparaisonData.ticketMoyen2 | number }} F CFA</td>
-                      <td [class.text-success]="comparaisonData.ticketMoyen2 - comparaisonData.ticketMoyen1 >= 0"
-                          [class.text-danger]="comparaisonData.ticketMoyen2 - comparaisonData.ticketMoyen1 < 0">
-                        {{ comparaisonData.ticketMoyen2 - comparaisonData.ticketMoyen1 | number }} F CFA
-                        ({{ ((comparaisonData.ticketMoyen2 - comparaisonData.ticketMoyen1) / comparaisonData.ticketMoyen1) * 100 | number: '1.0-2' }}%)
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+                <h5 class="fw-bold mb-3">Récapitulatif</h5>
+                <div class="table-responsive">
+                  <table class="table table-bordered table-sm">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Indicateur</th>
+                        <th class="text-end">{{ comparaisonLabels[0] }}</th>
+                        <th class="text-end">{{ comparaisonLabels[1] }}</th>
+                        <th class="text-end">Différence</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Chiffre d'affaires</td>
+                        <td class="text-end">{{ comparaisonData.ca1 | number }} F CFA</td>
+                        <td class="text-end">{{ comparaisonData.ca2 | number }} F CFA</td>
+                        <td class="text-end" [class.text-success]="comparaisonData.ca2 - comparaisonData.ca1 >= 0"
+                            [class.text-danger]="comparaisonData.ca2 - comparaisonData.ca1 < 0">
+                          {{ comparaisonData.ca2 - comparaisonData.ca1 | number }} F CFA
+                          <br>
+                          <small>({{ ((comparaisonData.ca2 - comparaisonData.ca1) / comparaisonData.ca1) * 100 | number: '1.0-2' }}%)</small>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Nombre de ventes</td>
+                        <td class="text-end">{{ comparaisonData.ventes1 | number }}</td>
+                        <td class="text-end">{{ comparaisonData.ventes2 | number }}</td>
+                        <td class="text-end" [class.text-success]="comparaisonData.ventes2 - comparaisonData.ventes1 >= 0"
+                            [class.text-danger]="comparaisonData.ventes2 - comparaisonData.ventes1 < 0">
+                          {{ comparaisonData.ventes2 - comparaisonData.ventes1 | number }}
+                          <br>
+                          <small>({{ ((comparaisonData.ventes2 - comparaisonData.ventes1) / comparaisonData.ventes1) * 100 | number: '1.0-2' }}%)</small>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Ticket moyen</td>
+                        <td class="text-end">{{ comparaisonData.ticketMoyen1 | number }} F CFA</td>
+                        <td class="text-end">{{ comparaisonData.ticketMoyen2 | number }} F CFA</td>
+                        <td class="text-end" [class.text-success]="comparaisonData.ticketMoyen2 - comparaisonData.ticketMoyen1 >= 0"
+                            [class.text-danger]="comparaisonData.ticketMoyen2 - comparaisonData.ticketMoyen1 < 0">
+                          {{ comparaisonData.ticketMoyen2 - comparaisonData.ticketMoyen1 | number }} F CFA
+                          <br>
+                          <small>({{ ((comparaisonData.ticketMoyen2 - comparaisonData.ticketMoyen1) / comparaisonData.ticketMoyen1) * 100 | number: '1.0-2' }}%)</small>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
+              
               <div class="col-md-6">
-                <h5>Commentaire d'analyse</h5>
-                <div class="card">
+                <h5 class="fw-bold mb-3">Commentaire d'analyse</h5>
+                <div class="card bg-light">
                   <div class="card-body">
-                    <p *ngIf="comparaisonData.ca2 > comparaisonData.ca1" class="text-success">
-                      <i class="bi bi-arrow-up"></i>
+                    <p *ngIf="comparaisonData.ca2 > comparaisonData.ca1" class="text-success mb-2">
+                      <i class="bi bi-arrow-up-circle-fill me-2"></i>
                       <strong>{{ comparaisonLabels[1] }}</strong> a performé mieux que
                       <strong>{{ comparaisonLabels[0] }}</strong> avec une augmentation de
                       {{ ((comparaisonData.ca2 - comparaisonData.ca1) / comparaisonData.ca1) * 100 | number: '1.0-2' }}%
                       du chiffre d'affaires.
                     </p>
-                    <p *ngIf="comparaisonData.ca2 < comparaisonData.ca1" class="text-danger">
-                      <i class="bi bi-arrow-down"></i>
+                    <p *ngIf="comparaisonData.ca2 < comparaisonData.ca1" class="text-danger mb-2">
+                      <i class="bi bi-arrow-down-circle-fill me-2"></i>
                       <strong>{{ comparaisonLabels[1] }}</strong> a performé moins bien que
                       <strong>{{ comparaisonLabels[0] }}</strong> avec une baisse de
                       {{ ((comparaisonData.ca1 - comparaisonData.ca2) / comparaisonData.ca1) * 100 | number: '1.0-2' }}%
                       du chiffre d'affaires.
                     </p>
-                    <p *ngIf="comparaisonData.ca2 === comparaisonData.ca1" class="text-warning">
-                      <i class="bi bi-dash"></i>
+                    <p *ngIf="comparaisonData.ca2 === comparaisonData.ca1" class="text-warning mb-2">
+                      <i class="bi bi-dash-circle-fill me-2"></i>
                       Les performances sont identiques entre les deux éléments comparés.
                     </p>
-                    <p>
+                    <p class="mb-0">
+                      <i class="bi bi-info-circle-fill me-2 text-info"></i>
                       Le ticket moyen est
                       {{ comparaisonData.ticketMoyen2 > comparaisonData.ticketMoyen1 ? 'plus élevé' : 'moins élevé' }}
                       pour <strong>{{ comparaisonLabels[1] }}</strong> ({{ comparaisonData.ticketMoyen2 | number }} F CFA)
@@ -607,12 +693,6 @@
         </div>
       </div>
 
-      <!-- Pied de page -->
-      <div *ngIf="isPrinting" class="mt-4 text-end">
-        <p><strong>Généré par :</strong> {{ currentUser?.nom }}</p>
-        <p>_________________________</p>
-        <p>Signature</p>
-      </div>
     </div>
   </div>
 
@@ -622,7 +702,7 @@
        tabindex="-1"
        role="dialog"
        style="background-color: rgba(0, 0, 0, 0.5); z-index: 1050;">
-    <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-dialog modal-xl" role="document">
       <div class="modal-content">
         <div class="modal-header bg-success text-white">
           <h5 class="modal-title">
@@ -639,9 +719,9 @@
             <!-- Informations générales -->
             <div class="row mb-4">
               <div class="col-md-3 text-center">
-                <div class="rounded-circle bg-light p-3 mb-2"
-                     style="width: 100px; height: 100px; margin: 0 auto">
-                  <i class="bi bi-person-fill" style="font-size: 3rem"></i>
+                <div class="rounded-circle bg-light p-3 mb-2 mx-auto"
+                     style="width: 100px; height: 100px;">
+                  <i class="bi bi-person-fill" style="font-size: 3rem; line-height: 76px;"></i>
                 </div>
                 <h5>{{ selectedVendeurDetails.nom }}</h5>
                 <p class="text-muted">ID: {{ selectedVendeurDetails.id }}</p>
@@ -649,43 +729,45 @@
               <div class="col-md-9">
                 <div class="row">
                   <div class="col-md-4 mb-3">
-                    <div class="card h-100">
+                    <div class="card h-100 border-primary">
                       <div class="card-body text-center">
-                        <h6>Total Ventes</h6>
-                        <h3 class="text-primary">{{ vendeurStats.totalVentes }}</h3>
+                        <h6 class="text-muted">Total Ventes</h6>
+                        <h3 class="text-primary mb-0">{{ vendeurStats.stats.totalVentes }}</h3>
                         <small>sur la période</small>
                       </div>
                     </div>
                   </div>
                   <div class="col-md-4 mb-3">
-                    <div class="card h-100">
+                    <div class="card h-100 border-success">
                       <div class="card-body text-center">
-                        <h6>Chiffre d'Affaires TTC</h6>
-                        <h3 class="text-success">{{ vendeurStats.chiffreAffairesTTC | number }} F CFA</h3>
-                        <small>{{ vendeurStats.chiffreAffairesHT | number }} F CFA HT</small>
+                        <h6 class="text-muted">Chiffre d'Affaires TTC</h6>
+                        <h3 class="text-success mb-0">{{ vendeurStats.stats.chiffreAffairesTTC | number }}</h3>
+                        <small>{{ vendeurStats.stats.chiffreAffairesHT | number }} F CFA HT</small>
                       </div>
                     </div>
                   </div>
-                  <div class="col-md-4 mb-3">
-                    <div class="card h-100">
+                  <!-- <div class="col-md-4 mb-3">
+                    <div class="card h-100 border-info">
                       <div class="card-body text-center">
-                        <h6>Ticket moyen</h6>
-                        <h3 class="text-info">{{ vendeurStats.ticketMoyen | number }} F CFA</h3>
+                        <h6 class="text-muted">Ticket moyen</h6>
+                        <h3 class="text-info mb-0">{{ vendeurStats.ticketMoyen | number }}</h3>
                         <small>{{ vendeurStats.panierMoyen | number }} produits/vente</small>
                       </div>
                     </div>
-                  </div>
+                  </div> -->
                 </div>
               </div>
             </div>
 
             <!-- Graphique d'évolution -->
             <div class="card mb-4">
-              <div class="card-header bg-light d-flex justify-content-center">
-                <h5>Évolution des ventes</h5>
+              <div class="card-header bg-light">
+                <h5 class="fw-bold mb-0">Évolution des ventes</h5>
               </div>
               <div class="card-body">
-                <canvas #vendeurEvolutionChart></canvas>
+                <div class="chart-container" style="position: relative; height: 300px;">
+                  <canvas #vendeurEvolutionChart></canvas>
+                </div>
               </div>
             </div>
 
@@ -693,51 +775,55 @@
             <div class="row">
               <div class="col-md-6">
                 <div class="card h-100">
-                  <div class="card-header bg-light d-flex justify-content-center">
-                    <h5>Top 5 produits vendus</h5>
+                  <div class="card-header bg-light">
+                    <h5 class="fw-bold mb-0">Top 5 produits vendus</h5>
                   </div>
                   <div class="card-body">
-                    <table class="table table-sm">
-                      <thead class="table-dark">
-                        <tr>
-                          <th>Produit</th>
-                          <th>Quantité</th>
-                          <th>CA</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr *ngFor="let produit of vendeurStats.topProduits">
-                          <td>{{ produit.produit.designation }}</td>
-                          <td>{{ produit.quantite }}</td>
-                          <td>{{ produit.ca | number }} F CFA</td>
-                        </tr>
-                      </tbody>
-                    </table>
+                    <div class="table-responsive">
+                      <table class="table table-sm">
+                        <thead class="table-light">
+                          <tr>
+                            <th>Produit</th>
+                            <th class="text-end">Quantité</th>
+                            <th class="text-end">CA</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr *ngFor="let produit of vendeurStats.stats.topProduits">
+                            <td>{{ produit.produit.designation }}</td>
+                            <td class="text-end">{{ produit.quantite }}</td>
+                            <td class="text-end">{{ produit.ca | number }} F CFA</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="card h-100">
-                  <div class="card-header bg-light d-flex justify-content-center">
-                    <h5>Modes de paiement</h5>
+                  <div class="card-header bg-light">
+                    <h5 class="fw-bold mb-0">Modes de paiement</h5>
                   </div>
                   <div class="card-body">
-                    <table class="table table-sm">
-                      <thead class="table-dark">
-                        <tr>
-                          <th>Mode</th>
-                          <th>Montant</th>
-                          <th>%</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr *ngFor="let mode of vendeurStats.modesPaiement">
-                          <td>{{ mode.mode }}</td>
-                          <td>{{ mode.montantTotal | number }} F CFA</td>
-                          <td>{{ (mode.montantTotal / vendeurStats.chiffreAffairesTTC) * 100 | number: '1.0-1' }}%</td>
-                        </tr>
-                      </tbody>
-                    </table>
+                    <div class="table-responsive">
+                      <table class="table table-sm">
+                        <thead class="table-light">
+                          <tr>
+                            <th>Mode</th>
+                            <th class="text-end">Montant</th>
+                            <th class="text-end">%</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr *ngFor="let mode of vendeurStats.stats.modesPaiement">
+                            <td>{{ mode.mode }}</td>
+                            <td class="text-end">{{ mode.montantTotal | number }} F CFA</td>
+                            <td class="text-end">{{ (mode.montantTotal / vendeurStats.stats.chiffreAffairesTTC) * 100 | number: '1.0-1' }}%</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               </div>

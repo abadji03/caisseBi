@@ -188,3 +188,14 @@ export interface DonneesComparativesResponse {
   nombrePeriodes: number;
   donneesPeriodes: DonneeComparative[];
 }
+
+export interface RapportStockParams {
+  code_structure: string;
+  magasinId?: number;
+  periode?: string;
+  dateReference?: string;
+  fromDate?: string;
+  toDate?: string;
+  categorie?: string;
+  statut?: string;
+}

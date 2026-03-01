@@ -217,6 +217,12 @@ db.Reconciliation.belongsTo(db.Users, { foreignKey: 'responsable' });
 db.Magasin.hasMany(db.Reconciliation, { foreignKey: 'magasinId' });
 db.Reconciliation.belongsTo(db.Magasin, { foreignKey: 'magasinId' });
 
+db.MouvementStock.belongsTo(db.Reconciliation, { foreignKey: 'reconciliationId' });
+db.Reconciliation.hasMany(db.MouvementStock, { foreignKey: 'reconciliationId' });
+
+db.MouvementStock.belongsTo(db.Transfert, { foreignKey: 'transfertId' });
+db.Transfert.hasMany(db.MouvementStock, { foreignKey: 'transfertId' });
+
 db.Structure.hasMany(db.Reconciliation, {
   foreignKey: 'code_structure',
   sourceKey: 'code_structure',

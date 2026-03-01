@@ -111,7 +111,7 @@
       </div>
 
       <!-- Filtre agent (si admin) -->
-      <div class="col-md-3" *ngIf="isAdmin">
+      <!--<div class="col-md-3" *ngIf="isAdmin">
         <label for="agent" class="form-label fw-semibold">Agent :</label>
         <select
           id="agent"
@@ -121,13 +121,13 @@
           [disabled]="isLoading"
         >
           <option [value]="undefined">Tous les agents</option>
-          <!-- Les agents seront chargés dynamiquement si nécessaire -->
+           Les agents seront chargés dynamiquement si nécessaire 
         </select>
-      </div>
+      </div>-->
 
       <!-- Bouton de rafraîchissement -->
       <div class="col-12 mt-2">
-        <button class="btn btn-primary" (click)="filtrerDonnees()" [disabled]="isLoading">
+        <button class="btn btn-outline-dark" (click)="filtrerDonnees()" [disabled]="isLoading">
           <i class="bi bi-arrow-clockwise"></i> Appliquer les filtres
         </button>
         <button *ngIf="searchTerm" class="btn btn-outline-secondary ms-2" (click)="searchTerm = ''; onSearchChange()">
@@ -157,26 +157,6 @@
   <!-- Contenu principal du rapport -->
   <div *ngIf="!isLoading && indicateursFinanciers" class="rapport" id="rapport">
     <div class="container mt-4 p-4 border bg-white">
-      <!-- En-tête du rapport -->
-      <div *ngIf="isPrinting" class="d-flex justify-content-between align-items-center mb-4">
-        <!-- Logo de l'entreprise -->
-        <div>
-          <img src="./assets/CMP.png" alt="Logo Entreprise" style="height: 80px" />
-        </div>
-        
-        <!-- Informations de l'entreprise -->
-        <div class="text-end">
-          <p class="mb-1"><strong>Entreprise :</strong> Nom de l'Entreprise</p>
-          <p class="mb-1"><strong>Adresse :</strong> Dakar, Sénégal</p>
-          <p class="mb-1"><strong>Téléphone :</strong> +221 77 123 45 67</p>
-          <p class="mb-1">
-            <strong>Succursale :</strong>
-            {{ selectedMagasinId !== undefined ? getNomMagasin(selectedMagasinId) : 'Toutes les succursales' }}
-          </p>
-          <p class="mb-1"><strong>Période :</strong> {{ periodeAffichage }}</p>
-          <p class="mb-1"><strong>Date du rapport :</strong> {{ dateGeneration | date: 'dd/MM/yyyy à HH:mm' }}</p>
-        </div>
-      </div>
       
       <!-- Titre du rapport -->
       <div class="text-center mb-5">
@@ -186,18 +166,19 @@
 
       <!-- Section indicateurs statistiques -->
       <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header bg-primary text-white d-flex justify-content-between">
           <h3 class="fw-bold mb-0"><i class="bi bi-bar-chart me-2"></i>Indicateurs Clés</h3>
+          <h5 class="fw-bold mb-0 bg-dark">Solde trésorerie : {{ indicateursFinanciers.soldeTresorerie | number }} F CFA  </h5>
         </div>
         <div class="card-body">
           <div class="row g-3">
             <!-- Chiffre d'affaires -->
-            <div class="col-md-4">
+            <div class="col-md-3">
               <div class="card border-primary border-2 h-100">
                 <div class="card-body text-center">
                   <div class="d-flex align-items-center justify-content-center mb-2">
                     <i class="bi bi-currency-exchange text-primary fs-3 me-2"></i>
-                    <h5 class="card-title text-muted mb-0">Chiffre d'affaires</h5>
+                    <h5 class="card-title text-muted mb-0">Chiffre d'affaires (Recettes ventes)</h5>
                   </div>
                   <h2 class="text-primary fw-bold">{{ indicateursFinanciers.chiffreAffaires | number }} F CFA</h2>
                   <div class="mt-2">
@@ -226,9 +207,44 @@
                 </div>
               </div>
             </div>
+            <!-- autres recettes -->
+            <div class="col-md-3">
+              <div class="card border-primary border-2 h-100">
+                <div class="card-body text-center">
+                  <div class="d-flex align-items-center justify-content-center mb-2">
+                    <i class="bi bi-currency-exchange text-primary fs-3 me-2"></i>
+                    <h5 class="card-title text-muted mb-0">Autres recettes</h5>
+                  </div>
+                  <h2 class="text-primary fw-bold">{{ indicateursFinanciers.autresRecettes | number }} F CFA</h2>
+                  <div class="mt-2">
+                    <span class="badge bg-primary">
+                      <i class="bi bi-receipt me-1"></i>
+                      {{ indicateursFinanciers.nbAutresRecettes | number }} transaction(s)
+                    </span>
+                  </div>
+                  <!-- <div class="mt-2">
+                    <small class="text-muted">
+                      Évolution: 
+                      <span [ngClass]="{
+                        'text-success': indicateursFinanciers.evolutionCA.tendance === 'hausse',
+                        'text-danger': indicateursFinanciers.evolutionCA.tendance === 'baisse',
+                        'text-warning': indicateursFinanciers.evolutionCA.tendance === 'stable'
+                      }">
+                        {{ indicateursFinanciers.evolutionCA.pourcentage | number: '1.0-0' }}%
+                        <i class="bi" [ngClass]="{
+                          'bi-arrow-up': indicateursFinanciers.evolutionCA.tendance === 'hausse',
+                          'bi-arrow-down': indicateursFinanciers.evolutionCA.tendance === 'baisse',
+                          'bi-dash': indicateursFinanciers.evolutionCA.tendance === 'stable'
+                        }"></i>
+                      </span>
+                    </small>
+                  </div> -->
+                </div>
+              </div>
+            </div>
             
             <!-- Dépenses totales -->
-            <div class="col-md-4">
+            <div class="col-md-3">
               <div class="card border-danger border-2 h-100">
                 <div class="card-body text-center">
                   <div class="d-flex align-items-center justify-content-center mb-2">
@@ -247,7 +263,7 @@
             </div>
             
             <!-- Bénéfice net -->
-            <div class="col-md-4">
+            <div class="col-md-3">
               <div class="card border-success border-2 h-100">
                 <div class="card-body text-center">
                   <div class="d-flex align-items-center justify-content-center mb-2">
@@ -683,26 +699,28 @@
           <div class="chart-container" style="position: relative; height: 400px;">
             <canvas #tendancesChart></canvas>
           </div>
-        </div>
-      </div>
-
-      <!-- Pied de page -->
-      <div *ngIf="isPrinting" class="mt-5 pt-5 border-top">
-        <div class="row">
-          <div class="col-6">
-            <p><strong>Préparé par :</strong> Service Financier</p>
-            <p><strong>Date de génération :</strong> {{ dateGeneration | date: 'dd/MM/yyyy à HH:mm' }}</p>
-          </div>
-          <div class="col-6 text-end">
-            <p class="mb-4">_________________________</p>
-            <p><strong>Signature et cachet</strong></p>
-          </div>
-        </div>
-        <div class="text-center text-muted mt-4">
-          <small>
-            Rapport généré automatiquement | Structure: {{ code_structure }} | 
-            Ce document est confidentiel et réservé à un usage interne
-          </small>
+          <div class="table-responsive mt-4">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Période</th>
+                                <th class="text-end">CA</th>
+                                <th class="text-end">Dépenses</th>
+                                <th class="text-end">Bénéfices</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                                <tr *ngFor="let periode of donneesComparatives.donneesPeriodes">
+                                    <td> {{periode?.libelle}} </td>
+                                    <td class="text-end"> {{(periode.chiffreAffaires || 0).toLocaleString('fr-FR') }} F CFA</td>
+                                    <td class="text-end"> {{(periode.totalDepenses || 0).toLocaleString('fr-FR')}}  F CFA</td>
+                                    <td class="text-end">
+                                         {{(periode.beneficeNet || 0).toLocaleString('fr-FR')}}  F CFA
+                                    </td>
+                                </tr>
+                        </tbody>
+                    </table>
+                </div>
         </div>
       </div>
     </div>

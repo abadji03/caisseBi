@@ -84,7 +84,7 @@ export class MouvementsStock {
   public produitId!: number;
   public magasinId!: number;
   public stockId!: number; // Ajout du lien avec le stock
-  public typeMouvement!: 'Entree' | 'Sortie';
+  public typeMouvement!: 'Entrée' | 'Sortie';
   public quantite!: number;
   public uniteStock!: string;
   public code_structure!: string;
@@ -93,7 +93,8 @@ export class MouvementsStock {
   public description?: string;
   public motif?: string;
   public dateMouvement: Date = new Date();
-
+  public reconciliationId?:number;
+  public transfertId?:number;
   //Calcul du prix total
   public get prixTotal(): number {
     return (this.prixUnitaire || 0) * this.quantite;
@@ -145,7 +146,7 @@ export class MouvementsStock {
 
     //Regrouper les entrées et sorties
     const entrees = mouvementsFiltres
-      .filter((mvt) => mvt.typeMouvement === 'Entree')
+      .filter((mvt) => mvt.typeMouvement === 'Entrée')
       .reduce((total, mvt) => total + mvt.quantite, 0);
 
     const sorties = mouvementsFiltres
@@ -204,7 +205,7 @@ export class MouvementsStock {
             mvt.produitId === produitId &&
             mvt.magasinId === magasinId &&
             this.resetTime(mvt.dateMouvement) <= dateDebutReset &&
-            mvt.typeMouvement === 'Entree',
+            mvt.typeMouvement === 'Entrée',
         )
         .reduce((total, mvt) => total + mvt.quantite, 0);
 
@@ -231,7 +232,7 @@ export class MouvementsStock {
         (mvt) =>
           mvt.produitId === produitId &&
           this.resetTime(mvt.dateMouvement) <= dateDebutReset &&
-          mvt.typeMouvement === 'Entree',
+          mvt.typeMouvement === 'Entrée',
       )
       .reduce((total, mvt) => total + mvt.quantite, 0);
 
@@ -303,7 +304,7 @@ export class MouvementsStock {
       produitStatistiques.valeurStockInitial += stockInitial * dernierPrixAchat;
       //produitStatistiques.stockFinal += stockFinal;
       //produitStatistiques.valeurStockFinal += stockFinal * dernierPrixAchat;
-      produitStatistiques.entrees += mvt.typeMouvement === 'Entree' ? mvt.quantite : 0;
+      produitStatistiques.entrees += mvt.typeMouvement === 'Entrée' ? mvt.quantite : 0;
       produitStatistiques.sorties += mvt.typeMouvement === 'Sortie' ? mvt.quantite : 0;
       // Maintenant recalculer le stockFinal
       const stockFinal = stockInitial + produitStatistiques.entrees - produitStatistiques.sorties;
@@ -351,6 +352,8 @@ export class Reconciliation {
   id?: number;
   produitId!: number;
   stockTheorique!: number;
+  code_structure!:string;
+  magasinId!:number;
   stockPhysique!: number;
   private _ecart!: number; // Stocke l'écart interne
   dateReconciliation!: Date;

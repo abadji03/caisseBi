@@ -1,0 +1,1688 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rapport de Vente</title>
+    <!-- Ajout de Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        /* Styles généraux */
+        @page {
+            size: A4;
+            margin: 2cm 1.5cm;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            /* box-sizing: border-box; */
+        }
+        
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            line-height: 1.5;
+            color: #333;
+            background-color: #fff;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+
+        }
+        
+        .container {
+            max-width: 100%;
+            width: 100%;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px 25px;
+            border: none;
+            border-radius: 0;
+            box-sizing: border-box;
+        }
+        
+        /* Titres */
+        .text-center {
+            text-align: center;
+        }
+        
+        .mb-5 {
+            margin-bottom: 30px;
+        }
+        
+        .mb-4 {
+            margin-bottom: 20px;
+        }
+        
+        .mb-3 {
+            margin-bottom: 15px;
+        }
+        
+        .mt-4 {
+            margin-top: 20px;
+        }
+        
+        .mt-5 {
+            margin-top: 30px;
+        }
+        
+        .fw-bold {
+            font-weight: bold;
+        }
+        
+        h1 {
+            font-size: 24px;
+            color: #01050b;
+            margin-bottom: 15px;
+        }
+
+         h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        
+        h4 {
+            font-size: 16px;
+            color: #6c757d;
+            font-weight: normal;
+        }
+
+        h5 {
+            font-size: 14px;
+        }
+        
+        /* Pour l'impression */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+                margin: 0;
+            }
+            
+            .container {
+                max-width: 100%;
+                padding: 10px 15px;
+                border: none;
+                box-shadow: none;
+            }
+            
+            .card {
+                border: 1px solid #ccc;
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            
+            table {
+                page-break-inside: auto;
+            }
+            
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            
+            thead {
+                display: table-header-group;
+            }
+            
+            tfoot {
+                display: table-footer-group;
+            }
+        }
+
+        /* Cartes */
+        .card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .card-header {
+            padding: 12px 20px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .card-header.bg-primary {
+            background-color: #0d6efd;
+            color: white;
+        }
+        
+        .card-header.bg-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .card-header.bg-success {
+            background-color: #198754;
+            color: white;
+        }
+        
+        .card-header.bg-info {
+            background-color: #0dcaf0;
+            color: white;
+        }
+        
+        .card-header.bg-warning {
+            background-color: #ffc107;
+            color: #333;
+        }
+        
+        .card-header.bg-dark {
+            background-color: #212529;
+            color: white;
+        }
+        
+        .card-header.bg-purple {
+            background-color: #6f42c1;
+            color: white;
+        }
+        
+        .card-body {
+            padding: 15px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        /* Indicateurs clés */
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            margin: 0 -10px;
+            width: 100%;
+        }
+        
+        .col-md-3 {
+            flex: 0 0 25%;
+            max-width: 25%;
+            padding: 0 10px;
+            box-sizing: border-box;
+        }
+        
+        .col-md-4 {
+            flex: 0 0 33.333%;
+            max-width: 33.333%;
+            padding: 0 10px;
+            box-sizing: border-box;
+        }
+        
+        .col-md-6 {
+            flex: 0 0 50%;
+            max-width: 50%;
+            padding: 0 10px;
+            box-sizing: border-box;
+        }
+        
+        .stat-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            height: 100%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            width: 100%;
+        }
+        
+        .stat-card-body {
+            padding: 12px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .stat-icon {
+            font-size: 28px;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        
+        .stat-icon.primary { color: #0d6efd; }
+        .stat-icon.success { color: #198754; }
+        .stat-icon.warning { color: #ffc107; }
+        .stat-icon.info { color: #0dcaf0; }
+
+        .stat-content {
+            flex: 1;
+            min-width: 0; /* Éviter les débordements */
+        }
+        
+        .stat-content h5 {
+            font-size: 16px;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        
+        .stat-content .stat-value {
+            font-size: 13px;
+            margin-bottom: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .stat-content .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .stat-content small {
+            font-size: 10px;
+            color: #6c757d;
+        }
+        
+        /* Tableaux */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+        }
+        
+        table{
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px; /* Réduire la taille de police pour les tableaux */
+            table-layout: fixed; /* Forcer la largeur fixe */
+        }
+        
+        table.table {
+            border: 1px solid #dee2e6;
+        }
+        
+        table thead th {
+            background-color: #f8f9fa;
+            padding: 10px;
+            text-align: left;
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        table tbody td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        table th, table td {
+            padding: 8px 5px;
+            word-wrap: break-word; /* Casser les mots longs */
+            overflow-wrap: break-word;
+        }
+        /* Ajuster les largeurs des colonnes */
+        table th:nth-child(1) { width: 15%; } /* Date */
+        table th:nth-child(2) { width: 10%; } /* N° Ticket */
+        table th:nth-child(3) { width: 15%; } /* Client */
+        table th:nth-child(4) { width: 8%; }  /* Articles */
+        table th:nth-child(5) { width: 12%; } /* Total TTC */
+        table th:nth-child(6) { width: 20%; } /* Paiement */
+        table th:nth-child(7) { width: 10%; } /* Vendeur */
+        table th:nth-child(8) { width: 10%; } /* Statut */
+
+        .text-end {
+            text-align: right;
+        }
+        
+        .text-success {
+            color: #198754;
+        }
+        
+        .text-danger {
+            color: #dc3545;
+        }
+        
+        .text-warning {
+            color: #ffc107;
+        }
+        
+        .text-muted {
+            color: #6c757d;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 3px 6px;
+            font-size: 10px;
+            font-weight: bold;
+            border-radius: 3px;
+            white-space: nowrap;
+        }
+        
+        .bg-success { background-color: #198754; }
+        .bg-warning { background-color: #ffc107; color: #333; }
+        .bg-danger { background-color: #dc3545; }
+        
+        /* Graphiques */
+         .chart-container {
+                position: relative;
+                height: 350px;
+                width: 100%;
+                margin-bottom: 20px;
+            }
+        
+        .chart-container-sm {
+            height: 250px;
+            width: 100%;
+        }
+        canvas {
+        max-width: 100%;
+        height: auto !important;
+        width: 100% !important;
+    }
+        /* Pied de page */
+        .rapport-footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+        }
+        
+        .signature {
+            text-align: right;
+        }
+        
+        .signature p {
+            margin-bottom: 5px;
+        }
+        
+        .signature-line {
+            margin-top: 40px;
+            width: 200px;
+            border-top: 1px solid #333;
+            display: inline-block;
+        }
+        
+        .confidential {
+            text-align: center;
+            margin-top: 20px;
+            color: #6c757d;
+            font-size: 12px;
+        }
+        
+        /* Utilitaires */
+        .border-top {
+            border-top: 1px solid #dee2e6;
+        }
+        
+        .pt-5 {
+            padding-top: 30px;
+        }
+        
+        .pb-5 {
+            padding-bottom: 30px;
+        }
+        
+        .mb-0 {
+            margin-bottom: 0;
+        }
+        
+        .d-flex {
+            display: flex;
+        }
+        
+        .justify-content-between {
+            justify-content: space-between;
+        }
+        
+        .align-items-center {
+            align-items: center;
+        }
+        
+        .gap-2 {
+            gap: 10px;
+        }
+        
+        .me-2 {
+            margin-right: 8px;
+        }
+        
+        .me-3 {
+            margin-right: 15px;
+        }
+        
+        .ms-2 {
+            margin-left: 8px;
+        }
+        
+        .ms-auto {
+            margin-left: auto;
+        }
+        
+        .p-4 {
+            padding: 20px;
+        }
+        
+        .border {
+            border: 1px solid #dee2e6;
+        }
+        
+        .bg-white {
+            background-color: #fff;
+        }
+        
+        .bg-light {
+            background-color: #f8f9fa;
+        }
+        
+        /* Page break */
+        /* .page-break {
+             page-break-after: always;
+            break-after: page;
+        }
+
+        .keep-together {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        } */
+
+        /* ============================================ */
+        /* STYLES POUR LA PAGE DE GARDE                  */
+        /* ============================================ */
+        .cover-page {
+            position: relative;
+            width: 100%;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #ffffff 0%, #f5f7fa 100%);
+            display: flex;
+            flex-direction: column;
+            page-break-after: always;
+            break-after: page;
+        }
+
+        .cover-header {
+            position: relative;
+            height: 20px;
+            background: linear-gradient(90deg, #01060e, #081c29, #152d51);
+            background-size: 200% 100%;
+            animation: gradient 15s ease infinite;
+        }
+
+        .cover-ribbon {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 0 100px 100px 0;
+            border-color: transparent rgba(255,255,255,0.2) transparent transparent;
+        }
+
+        .cover-content {
+            flex: 1;
+            padding: 40px 50px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cover-logo-container {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .cover-logo {
+            max-height: 100px;
+            max-width: 250px;
+            object-fit: contain;
+        }
+
+        .cover-logo-placeholder {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #010812, #031b2b);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(13, 110, 253, 0.3);
+        }
+
+        .cover-logo-placeholder span {
+            color: white;
+            font-size: 48px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        .cover-title-container {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .cover-main-title {
+            font-size: 42px;
+            font-weight: 800;
+            color: #01040a;
+            letter-spacing: 4px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .cover-title-underline {
+            width: 150px;
+            height: 4px;
+            background: linear-gradient(90deg, #010710, #00080c);
+            margin: 0 auto;
+            border-radius: 2px;
+        }
+
+        .cover-info-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 60px;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            border: 1px solid rgba(13, 110, 253, 0.1);
+        }
+
+        .cover-info-item {
+            text-align: center;
+        }
+
+        .cover-info-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #6c757d;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .cover-info-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #01040a;
+        }
+
+        .cover-details-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 50px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            overflow: hidden;
+            border: 1px solid rgba(13, 110, 253, 0.1);
+        }
+
+        .cover-details-left, .cover-details-right {
+            padding: 25px;
+        }
+
+        .cover-details-left {
+            background: linear-gradient(135deg, #f8f9fa, #ffffff);
+            border-right: 1px dashed #010915;
+        }
+
+        .cover-details-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #01060e;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #010811;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .cover-details-content p {
+            margin-bottom: 12px;
+            font-size: 14px;
+            color: #495057;
+            line-height: 1.6;
+        }
+
+        .cover-details-content strong {
+            color: #212529;
+            min-width: 100px;
+            display: inline-block;
+        }
+
+        .cover-badge {
+            background: #e7f1ff;
+            color: #00040a;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
+        }
+
+        .cover-footer {
+            margin-top: auto;
+            text-align: center;
+        }
+
+        .cover-confidential {
+            background: #212529;
+            color: white;
+            padding: 12px;
+            border-radius: 50px;
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+        }
+
+        .cover-confidential-icon {
+            color: #ffc107;
+            font-size: 8px;
+        }
+
+        .cover-stamp {
+            color: #6c757d;
+            font-size: 11px;
+            font-style: italic;
+        }
+
+        .cover-footer-band {
+            height: 8px;
+            background: linear-gradient(90deg, #020914, #000b12, #010813);
+            margin-top: 20px;
+        }
+
+        /* Animation pour le bandeau */
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Saut de page */
+        .page-break {
+            page-break-after: always;
+            break-after: page;
+            height: 0;
+            visibility: hidden;
+        }
+        
+        /* Ajustements pour les indicateurs en page 2 */
+        .bg-light {
+            background-color: #f8f9fa;
+        }
+        
+        .rounded {
+            border-radius: 8px;
+        }
+        
+        .mt-3 {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <!-- ============================================ -->
+    <!-- PAGE DE GARDE - Première page uniquement     -->
+    <!-- ============================================ -->
+    <div class="cover-page">
+        <!-- Bandeau supérieur avec filigrane léger -->
+        <div class="cover-header">
+            <div class="cover-ribbon"></div>
+        </div>
+
+        <div class="cover-content">
+            <!-- Logo et titre principal -->
+            <div class="cover-logo-container">
+                <% if (locals.structure && structure.logo) { %>
+                    <img src="<%= structure.logo %>" alt="Logo <%= structure.nom_structure %>" class="cover-logo" />
+                <% } else { %>
+                    <div class="cover-logo-placeholder">
+                        <span><%= structure ? structure.nom_structure.substring(0, 2) : 'CMP' %></span>
+                    </div>
+                <% } %>
+            </div>
+
+            <div class="cover-title-container">
+                <h1 class="cover-main-title">RAPPORT DE VENTE</h1>
+                <div class="cover-title-underline"></div>
+            </div>
+
+            <!-- Informations clés de la période -->
+            <div class="cover-info-grid">
+                <div class="cover-info-item">
+                    <div class="cover-info-label">Période</div>
+                    <div class="cover-info-value"><%= locals.periodeAffichage || 'Période sélectionnée' %></div>
+                </div>
+                
+                <div class="cover-info-item">
+                    <div class="cover-info-label">Date d'édition</div>
+                    <div class="cover-info-value"><%= new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) %></div>
+                </div>
+                
+                <div class="cover-info-item">
+                    <div class="cover-info-label">Heure</div>
+                    <div class="cover-info-value"><%= new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) %></div>
+                </div>
+                
+                <div class="cover-info-item">
+                    <div class="cover-info-label">Référence</div>
+                    <div class="cover-info-value">RPT-<%= new Date().getFullYear() %>-<%= String(new Date().getMonth() + 1).padStart(2, '0') %><%= String(new Date().getDate()).padStart(2, '0') %></div>
+                </div>
+            </div>
+
+            <!-- Informations entreprise et filtres -->
+            <div class="cover-details-section">
+                <div class="cover-details-left">
+                    <h3 class="cover-details-title">Émetteur</h3>
+                    <div class="cover-details-content">
+                        <p><strong><%= structure ? structure.nom_structure : 'Entreprise' %></strong></p>
+                        <p><%= structure ? structure.adresse : 'Adresse' %></p>
+                        <p>Tél: <%= structure ? structure.telephone : '+221 77 123 45 67' %></p>
+                        <p>Email: <%= structure ? structure.email : 'contact@entreprise.com' %></p>
+                        <% if (structure && structure.numero_identification_fiscale) { %>
+                            <p>NIF: <%= structure.numero_identification_fiscale %></p>
+                        <% } %>
+                    </div>
+                </div>
+                
+                <div class="cover-details-right">
+                    <h3 class="cover-details-title">Filtres appliqués</h3>
+                    <div class="cover-details-content">
+                        <p><strong>Succursale:</strong> 
+                            <% if (locals.magasin && magasin !== -1) { %>
+                                <%= locals.magasinNom || 'Magasin sélectionné' %>
+                            <% } else { %>
+                                <span class="cover-badge">Toutes les succursales</span>
+                            <% } %>
+                        </p>
+                        <p><strong>Vendeur:</strong> 
+                            <% if (locals.vendeur && vendeur !== -1) { %>
+                                <%= locals.vendeurNom || 'Vendeur sélectionné' %>
+                            <% } else { %>
+                                <span class="cover-badge">Tous les vendeurs</span>
+                            <% } %>
+                        </p>
+                        <p><strong>Responsable:</strong> <%= utilisateur ? utilisateur.nom : 'Responsable' %></p>
+                        <p><strong>Généré par:</strong> <%= utilisateur ? utilisateur.email : 'Système' %></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mention de confidentialité -->
+            <div class="cover-footer">
+                <div class="cover-confidential">
+                    <span class="cover-confidential-icon">⚫</span>
+                    <span>DOCUMENT CONFIDENTIEL - RÉSERVÉ À USAGE INTERNE</span>
+                    <span class="cover-confidential-icon">⚫</span>
+                </div>
+                <div class="cover-stamp">
+                    Structure: <%= structure ? structure.code_structure : 'N/A' %>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bandeau inférieur -->
+        <div class="cover-footer-band"></div>
+    </div>
+
+    <!-- Saut de page après la couverture -->
+    <div class="page-break"></div>
+
+    <div class="container">
+        <!-- Section indicateurs statistiques -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary">
+                <h3 class="fw-bold mb-0">Indicateurs Clés</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Total Ventes -->
+                    <div class="col-md-3 mb-3">
+                        <div class="stat-card">
+                            <div class="stat-card-body">
+                                <div class="stat-icon primary">📊</div>
+                                <div class="stat-content">
+                                    <h5>Total Ventes</h5>
+                                    <p class="stat-value"><%= totalVentes.toLocaleString('fr-FR') %></p>
+                                    <small><%= (rapportData && rapportData.pagination ? rapportData.pagination.total : totalVentes).toLocaleString('fr-FR') %> transactions</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chiffre d'Affaires TTC -->
+                    <div class="col-md-3 mb-3">
+                        <div class="stat-card">
+                            <div class="stat-card-body">
+                                <div class="stat-icon success">💰</div>
+                                <div class="stat-content">
+                                    <h5>Chiffre d'Affaires TTC</h5>
+                                    <p class="stat-value"><%= chiffreAffairesTTC.toLocaleString('fr-FR') %> F CFA</p>
+                                    <small><%= chiffreAffairesHT.toLocaleString('fr-FR') %> F CFA HT</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Marge bénéficiaire -->
+                    <div class="col-md-3 mb-3">
+                        <div class="stat-card">
+                            <div class="stat-card-body">
+                                <div class="stat-icon warning">📈</div>
+                                <div class="stat-content">
+                                    <h5>Marge bénéficiaire</h5>
+                                    <p class="stat-value"><%= margeBeneficiaire.toLocaleString('fr-FR') %> F CFA</p>
+                                    <small><%= ((margeBeneficiaire / chiffreAffairesHT) * 100).toFixed(2) %>%</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ticket moyen -->
+                    <div class="col-md-3 mb-3">
+                        <div class="stat-card">
+                            <div class="stat-card-body">
+                                <div class="stat-icon info">🧾</div>
+                                <div class="stat-content">
+                                    <h5>Ticket moyen</h5>
+                                    <p class="stat-value"><%= ticketMoyen.toLocaleString('fr-FR') %> F CFA</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Évolution des ventes (graphique) -->
+        <div class="card mb-4">
+            <div class="card-header bg-secondary">
+                <h3 class="fw-bold mb-0">Évolution des ventes</h3>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="evolutionVentesChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analyse des ventes -->
+        <div class="row mb-4">
+            <!-- Répartition des paiements -->
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header bg-info">
+                        <h3 class="fw-bold mb-0">Modes de paiement</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container-sm">
+                            <canvas id="paiementsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tableau des modes de paiement -->
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header bg-info">
+                        <h3 class="fw-bold mb-0">Répartition par mode</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Mode</th>
+                                        <th class="text-end">Montant</th>
+                                        <th class="text-end">Transactions</th>
+                                        <th class="text-end">%</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% if (statmodesPaiement && statmodesPaiement.length > 0) { %>
+                                        <% statmodesPaiement.forEach(function(mode) { %>
+                                            <tr>
+                                                <td><%= mode.mode %></td>
+                                                <td class="text-end"><%= mode.montantTotal.toLocaleString('fr-FR') %> F CFA</td>
+                                                <td class="text-end"><%= mode.occurrences.toLocaleString('fr-FR') %></td>
+                                                <td class="text-end"><%= ((mode.montantTotal / chiffreAffairesTTC) * 100).toFixed(1) %>%</td>
+                                            </tr>
+                                        <% }); %>
+                                    <% } else { %>
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted">Aucune donnée disponible</td>
+                                        </tr>
+                                    <% } %>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top produits -->
+        <div class="card mb-4">
+            <div class="card-header bg-success">
+                <h3 class="fw-bold mb-0">Top 10 des produits</h3>
+            </div>
+            <div class="card-body">
+                <div class="chart-container-sm">
+                    <canvas id="topProduitsChart"></canvas>
+                </div>
+                
+                <div class="table-responsive mt-4">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Produit</th>
+                                <th class="text-end">Quantité</th>
+                                <th class="text-end">Prix de vente</th>
+                                <th class="text-end">Transactions</th>
+                                <th class="text-end">CA TTC</th>
+                                <th class="text-end">Marge</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (topProduits && topProduits.length > 0) { %>
+                                <% topProduits.forEach(function(produit) { %>
+                                    <tr>
+                                        <td><%= produit.produit.designation %></td>
+                                        <td class="text-end"><%= produit.quantite.toLocaleString('fr-FR') %></td>
+                                        <td class="text-end"><%= produit.produit.prixVenteUnitaire.toLocaleString('fr-FR') %> F CFA</td>
+                                        <td class="text-end"><%= produit.nombreVentes.toLocaleString('fr-FR') %></td>
+                                        <td class="text-end"><%= produit.ca.toLocaleString('fr-FR') %> F CFA</td>
+                                        <td class="text-end <%= produit.marge >= 0 ? 'text-success' : 'text-danger' %>">
+                                            <%= produit.marge.toLocaleString('fr-FR') %> F CFA
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">Aucune donnée disponible</td>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top clients -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning">
+                <h3 class="fw-bold mb-0">Top 10 des clients</h3>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Client</th>
+                                <th class="text-end">Transactions</th>
+                                <th class="text-end">CA TTC</th>
+                                <th>Dernière visite</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (topClients && topClients.length > 0) { %>
+                                <% topClients.forEach(function(client) { %>
+                                    <tr>
+                                        <td><%= client.client.nomComplet || 'Client anonyme' %></td>
+                                        <td class="text-end"><%= client.nbAchats.toLocaleString('fr-FR') %></td>
+                                        <td class="text-end"><%= client.ca.toLocaleString('fr-FR') %> F CFA</td>
+                                        <td><%= new Date(client.dernierAchat).toLocaleDateString('fr-FR') %></td>
+                                    </tr>
+                                <% }); %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">Aucune donnée disponible</td>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance des vendeurs -->
+        <div class="card mb-4">
+            <div class="card-header bg-dark">
+                <h3 class="fw-bold mb-0">Performance des vendeurs</h3>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Vendeur</th>
+                                <th class="text-end">Ventes</th>
+                                <th class="text-end">CA HT</th>
+                                <th class="text-end">CA TTC</th>
+                                <th class="text-end">Ticket moyen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (vendeursPerformance && vendeursPerformance.length > 0) { %>
+                                <% vendeursPerformance.forEach(function(vendeur) { %>
+                                    <tr>
+                                        <td><%= vendeur.vendeur ? vendeur.vendeur.nom : 'Inconnu' %></td>
+                                        <td class="text-end"><%= vendeur.nbVentes.toLocaleString('fr-FR') %></td>
+                                        <td class="text-end"><%= vendeur.caHT.toLocaleString('fr-FR') %> F CFA</td>
+                                        <td class="text-end"><%= vendeur.caTTC.toLocaleString('fr-FR') %> F CFA</td>
+                                        <td class="text-end"><%= vendeur.ticketMoyen.toLocaleString('fr-FR') %> F CFA</td>
+                                    </tr>
+                                <% }); %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">Aucune donnée disponible</td>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Détails des ventes -->
+        <div class="card mb-4">
+            <div class="card-header bg-secondary">
+                <h3 class="fw-bold mb-0">Détail des ventes</h3>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>N° Ticket</th>
+                                <th>Client</th>
+                                <th class="text-end">Articles</th>
+                                <th class="text-end">Total TTC</th>
+                                <th>Paiement</th>
+                                <th>Vendeur</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (ventes && ventes.length > 0) { %>
+                                <% ventes.forEach(function(vente) { %>
+                                    <tr>
+                                        <td><%= new Date(vente.dateCreation).toLocaleDateString('fr-FR') %> <%= new Date(vente.dateCreation).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) %></td>
+                                        <td><%= vente.id %></td>
+                                        <td><%= vente.clientNom || 'Anonyme' %></td>
+                                        <td class="text-end"><%= (vente.nombreArticles || 0).toLocaleString('fr-FR') %></td>
+                                        <td class="text-end"><%= (vente.totalTTC || 0).toLocaleString('fr-FR') %> F CFA</td>
+                                        <td>
+                                            <% if (vente.paiements && vente.paiements.length > 0) { %>
+                                                <% vente.paiements.forEach(function(paiement, index) { %>
+                                                    <%= paiement.methodePaiement %>: <%= paiement.montant.toLocaleString('fr-FR') %> F CFA<%= index < vente.paiements.length - 1 ? ', ' : '' %>
+                                                <% }); %>
+                                            <% } else { %>
+                                                <span class="text-muted">Non spécifié</span>
+                                            <% } %>
+                                        </td>
+                                        <td><%= vente.agent ? vente.agent.nom : '-' %></td>
+                                        <td>
+                                            <span class="badge 
+                                                <%= vente.statut === 'validé' ? 'bg-success' : 
+                                                   (vente.statut === 'en_cours' ? 'bg-warning' : 
+                                                   (vente.statut === 'annulé' ? 'bg-danger' : 'bg-secondary')) %>">
+                                                <%= vente.statut %>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted">
+                                        <p>Aucune vente trouvée pour les critères sélectionnés</p>
+                                    </td>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+
+                <% if (rapportData && rapportData.pagination) { %>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div>
+                        <span class="text-muted">
+                            Page <%= rapportData.pagination.page %> sur <%= rapportData.pagination.totalPages %>
+                            (<%= rapportData.pagination.total %> résultats)
+                        </span>
+                    </div>
+                </div>
+                <% } %>
+            </div>
+        </div>
+
+        <!-- Rapport comparatif -->
+        <!-- Section comparaison - NE S'AFFICHE QUE SI DES DONNÉES DE COMPARAISON EXISTENT -->
+        <% if (locals.comparaisonData) { %>
+        <div class="card mb-4">
+            <div class="card-header" style="background-color: #6f42c1; color: white;">
+                <h3 class="fw-bold mb-0">Analyse comparative</h3>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="position: relative; height: 300px; width: 100%">
+                    <canvas id="comparaisonChart"></canvas>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <h5 class="fw-bold mb-3">Récapitulatif</h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Indicateur</th>
+                                        <th class="text-end"><%= comparaisonLabels ? comparaisonLabels[0] : 'Élément 1' %></th>
+                                        <th class="text-end"><%= comparaisonLabels ? comparaisonLabels[1] : 'Élément 2' %></th>
+                                        <th class="text-end">Différence</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Chiffre d'affaires</td>
+                                        <td class="text-end"><%= comparaisonData.ca1.toLocaleString('fr-FR') %> F CFA</td>
+                                        <td class="text-end"><%= comparaisonData.ca2.toLocaleString('fr-FR') %> F CFA</td>
+                                        <td class="text-end <%= comparaisonData.ca2 - comparaisonData.ca1 >= 0 ? 'text-success' : 'text-danger' %>">
+                                            <%= (comparaisonData.ca2 - comparaisonData.ca1).toLocaleString('fr-FR') %> F CFA
+                                            <br>
+                                            <small>(<%= ((comparaisonData.ca2 - comparaisonData.ca1) / comparaisonData.ca1 * 100 || 0).toFixed(2) %>%)</small>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Nombre de ventes</td>
+                                        <td class="text-end"><%= comparaisonData.ventes1.toLocaleString('fr-FR') %></td>
+                                        <td class="text-end"><%= comparaisonData.ventes2.toLocaleString('fr-FR') %></td>
+                                        <td class="text-end <%= comparaisonData.ventes2 - comparaisonData.ventes1 >= 0 ? 'text-success' : 'text-danger' %>">
+                                            <%= (comparaisonData.ventes2 - comparaisonData.ventes1).toLocaleString('fr-FR') %>
+                                            <br>
+                                            <small>(<%= ((comparaisonData.ventes2 - comparaisonData.ventes1) / comparaisonData.ventes1 * 100 || 0).toFixed(2) %>%)</small>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Ticket moyen</td>
+                                        <td class="text-end"><%= comparaisonData.ticketMoyen1.toLocaleString('fr-FR') %> F CFA</td>
+                                        <td class="text-end"><%= comparaisonData.ticketMoyen2.toLocaleString('fr-FR') %> F CFA</td>
+                                        <td class="text-end <%= comparaisonData.ticketMoyen2 - comparaisonData.ticketMoyen1 >= 0 ? 'text-success' : 'text-danger' %>">
+                                            <%= (comparaisonData.ticketMoyen2 - comparaisonData.ticketMoyen1).toLocaleString('fr-FR') %> F CFA
+                                            <br>
+                                            <small>(<%= ((comparaisonData.ticketMoyen2 - comparaisonData.ticketMoyen1) / comparaisonData.ticketMoyen1 * 100 || 0).toFixed(2) %>%)</small>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5 class="fw-bold mb-3">Commentaire d'analyse</h5>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <% if (comparaisonData.ca2 > comparaisonData.ca1) { %>
+                                    <p class="text-success mb-2">
+                                        <strong><%= comparaisonLabels ? comparaisonLabels[1] : 'Élément 2' %></strong> a performé mieux que
+                                        <strong><%= comparaisonLabels ? comparaisonLabels[0] : 'Élément 1' %></strong> avec une augmentation de
+                                        <%= ((comparaisonData.ca2 - comparaisonData.ca1) / comparaisonData.ca1 * 100).toFixed(2) %>%
+                                        du chiffre d'affaires.
+                                    </p>
+                                <% } else if (comparaisonData.ca2 < comparaisonData.ca1) { %>
+                                    <p class="text-danger mb-2">
+                                        <strong><%= comparaisonLabels ? comparaisonLabels[1] : 'Élément 2' %></strong> a performé moins bien que
+                                        <strong><%= comparaisonLabels ? comparaisonLabels[0] : 'Élément 1' %></strong> avec une baisse de
+                                        <%= ((comparaisonData.ca1 - comparaisonData.ca2) / comparaisonData.ca1 * 100).toFixed(2) %>%
+                                        du chiffre d'affaires.
+                                    </p>
+                                <% } else { %>
+                                    <p class="text-warning mb-2">
+                                        Les performances sont identiques entre les deux éléments comparés.
+                                    </p>
+                                <% } %>
+                                <p class="mb-0">
+                                    Le ticket moyen est
+                                    <%= comparaisonData.ticketMoyen2 > comparaisonData.ticketMoyen1 ? 'plus élevé' : 'moins élevé' %>
+                                    pour <strong><%= comparaisonLabels ? comparaisonLabels[1] : 'Élément 2' %></strong>
+                                    (<%= comparaisonData.ticketMoyen2.toLocaleString('fr-FR') %> F CFA)
+                                    par rapport à <strong><%= comparaisonLabels ? comparaisonLabels[0] : 'Élément 1' %></strong>
+                                    (<%= comparaisonData.ticketMoyen1.toLocaleString('fr-FR') %> F CFA).
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+        // Créer le graphique de comparaison uniquement si les données existent
+        (function() {
+            const canvas = document.getElementById('comparaisonChart');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const comparaisonData = <%- JSON.stringify(comparaisonData) %>;
+            const labels = <%- JSON.stringify(comparaisonLabels || ['Élément 1', 'Élément 2']) %>;
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Chiffre d\'affaires', 'Ticket moyen'],
+                    datasets: [
+                        {
+                            label: labels[0],
+                            data: [
+                                comparaisonData.ca1 || 0,
+                                comparaisonData.ticketMoyen1 || 0,
+                            ],
+                            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                        },
+                        {
+                            label: labels[1],
+                            data: [
+                                comparaisonData.ca2 || 0,
+                                comparaisonData.ticketMoyen2 || 0,
+                            ],
+                            backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Analyse comparative',
+                        },
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: (value) => value.toLocaleString('fr-FR'),
+                            },
+                        },
+                    },
+                },
+            });
+        })();
+        </script>
+
+        <% } else { %>
+        <!-- Message si aucune comparaison n'est active -->
+        <div class="card mb-4">
+            <div class="card-header" style="background-color: #6f42c1; color: white;">
+                <h3 class="fw-bold mb-0">Analyse comparative</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-center text-muted py-4">
+                    Aucune comparaison sélectionnée. Utilisez l'outil de comparaison dans l'interface pour générer une analyse comparative.
+                </p>
+            </div>
+        </div>
+        <% } %>
+
+        <!-- Pied de page -->
+        <div class="rapport-footer">
+            <div>
+                <p><strong>Préparé par :</strong> Service Commercial</p>
+                <p><strong>Date de génération :</strong> <%= new Date().toLocaleDateString('fr-FR') %> à <%= new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) %></p>
+            </div>
+            <div class="signature">
+                <p class="mb-4">_________________________</p>
+                <p><strong>Signature et cachet</strong></p>
+            </div>
+        </div>
+        
+        <div class="confidential">
+            <small>
+                Rapport généré automatiquement | Structure: <%= structure ? structure.code_structure : 'N/A' %> |
+                Ce document est confidentiel et réservé à un usage interne
+            </small>
+        </div>
+    </div>
+    <script>
+    // Attendre que le DOM soit chargé
+    document.addEventListener('DOMContentLoaded', function() {
+        createAllCharts();
+    });
+
+    function createAllCharts() {
+        // Données passées par EJS
+        const evolutionParJour = <%- JSON.stringify(evolutionParJour || []) %>;
+        const statmodesPaiement = <%- JSON.stringify(statmodesPaiement || []) %>;
+        const topProduits = <%- JSON.stringify(topProduits || []) %>;
+
+        // Graphique d'évolution des ventes
+        if (document.getElementById('evolutionVentesChart') && evolutionParJour.length > 0) {
+            createEvolutionChart(evolutionParJour);
+        }
+
+        // Graphique des modes de paiement
+        if (document.getElementById('paiementsChart') && statmodesPaiement.length > 0) {
+            createPaiementsChart(statmodesPaiement);
+        }
+
+        // Graphique des top produits
+        if (document.getElementById('topProduitsChart') && topProduits.length > 0) {
+            createTopProduitsChart(topProduits);
+        }
+
+        // Ajuster les options des graphiques pour le PDF
+        Chart.defaults.font.size = 10; // Réduire la taille des polices
+        Chart.defaults.font.family = "'Helvetica', 'Arial', sans-serif";
+        
+        // Pour chaque graphique, ajouter ces options
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 2, // Ratio largeur/hauteur pour les graphiques
+            plugins: {
+                legend: {
+                    labels: {
+                        font: {
+                            size: 10
+                        }
+                    }
+                }
+            }
+        };
+
+        // Appliquer aux graphiques
+        new Chart(ctx, {
+            // ... autres options ...
+            options: {
+                ...chartOptions,
+                // ... options spécifiques
+            }
+        });
+    }
+
+    function createEvolutionChart(data) {
+        const ctx = document.getElementById('evolutionVentesChart').getContext('2d');
+        
+        const labels = data.map(e => {
+            const date = new Date(e.date);
+            return `${date.getDate()}/${date.getMonth() + 1}`;
+        });
+
+        const dataCA = data.map(e => e.ca);
+        const dataVolume = data.map(e => e.nombreVentes);
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: "Chiffre d'affaires (F CFA)",
+                        data: dataCA,
+                        borderColor: '#4CAF50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                        yAxisID: 'y',
+                        tension: 0.3,
+                        fill: true,
+                    },
+                    {
+                        label: 'Nombre de ventes',
+                        data: dataVolume,
+                        borderColor: '#2196F3',
+                        backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                        yAxisID: 'y1',
+                        tension: 0.3,
+                        fill: true,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                const value = context.raw;
+                                return `${context.dataset.label}: ${value.toLocaleString('fr-FR')}`;
+                            },
+                        },
+                    },
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: "Chiffre d'affaires (F CFA)",
+                        },
+                        ticks: {
+                            callback: (value) => value.toLocaleString('fr-FR'),
+                        },
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Nombre de ventes',
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    },
+                },
+            },
+        });
+    }
+
+    function createPaiementsChart(data) {
+        const ctx = document.getElementById('paiementsChart').getContext('2d');
+        
+        const backgroundColors = [
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
+        ];
+
+        const total = data.reduce((sum, item) => sum + item.montantTotal, 0);
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.map(p => p.mode),
+                datasets: [{
+                    data: data.map(p => p.montantTotal),
+                    backgroundColor: backgroundColors.slice(0, data.length),
+                    borderWidth: 1,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'right',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                const label = context.label || '';
+                                const value = context.raw;
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
+                                return `${label}: ${value.toLocaleString('fr-FR')} F CFA (${percentage}%)`;
+                            },
+                        },
+                    },
+                },
+            },
+        });
+    }
+
+    function createTopProduitsChart(data) {
+        const ctx = document.getElementById('topProduitsChart').getContext('2d');
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.map(p => 
+                    p.produit.designation.length > 15 ? 
+                    p.produit.designation.substring(0, 15) + '...' : 
+                    p.produit.designation
+                ),
+                datasets: [
+                    {
+                        label: 'Quantité vendue',
+                        data: data.map(p => p.quantite),
+                        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1,
+                        yAxisID: 'y',
+                    },
+                    {
+                        label: "Chiffre d'affaires (F CFA)",
+                        data: data.map(p => p.ca),
+                        backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1,
+                        yAxisID: 'y1',
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                const value = context.raw;
+                                return `${context.dataset.label}: ${value.toLocaleString('fr-FR')}`;
+                            },
+                        },
+                    },
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Quantité vendue',
+                        },
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: "Chiffre d'affaires (F CFA)",
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                        ticks: {
+                            callback: (value) => value.toLocaleString('fr-FR'),
+                        },
+                    },
+                },
+            },
+        });
+    }
+
+    // Si vous avez aussi le graphique de comparaison
+    <% if (locals.comparaisonData) { %>
+    function createComparaisonChart() {
+        const ctx = document.getElementById('comparaisonChart').getContext('2d');
+        const comparaisonData = <%- JSON.stringify(comparaisonData) %>;
+        const labels = <%- JSON.stringify(comparaisonLabels || ['Élément 1', 'Élément 2']) %>;
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Chiffre d\'affaires', 'Nombre de ventes', 'Ticket moyen'],
+                datasets: [
+                    {
+                        label: labels[0],
+                        data: [
+                            comparaisonData.ca1,
+                            comparaisonData.ventes1,
+                            comparaisonData.ticketMoyen1,
+                        ],
+                        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    },
+                    {
+                        label: labels[1],
+                        data: [
+                            comparaisonData.ca2,
+                            comparaisonData.ventes2,
+                            comparaisonData.ticketMoyen2,
+                        ],
+                        backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Analyse comparative',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                let label = context.dataset.label || '';
+                                const value = context.raw;
+                                if (context.dataIndex === 0 || context.dataIndex === 2) {
+                                    label += `: ${value.toLocaleString('fr-FR')} F CFA`;
+                                } else {
+                                    label += `: ${value}`;
+                                }
+                                return label;
+                            },
+                        },
+                    },
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: (value) => value.toLocaleString('fr-FR'),
+                        },
+                    },
+                },
+            },
+        });
+    }
+    <% } %>
+</script>
+</body>
+</html>

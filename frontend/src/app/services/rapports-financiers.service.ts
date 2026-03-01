@@ -387,4 +387,56 @@ export class RapportsFinanciersService {
       catchError(error => this.handleError<any>('getStatsByCategory', error))
     );
   }
+
+  /**
+   * Génère un PDF du rapport financier
+   */
+  genererRapportPDF(params: any): Observable<Blob> {
+    let httpParams = new HttpParams();
+
+    if (params.periode) httpParams = httpParams.set('periode', params.periode);
+    if (params.dateReference) httpParams = httpParams.set('dateReference', params.dateReference);
+    if (params.fromDate) httpParams = httpParams.set('fromDate', params.fromDate);
+    if (params.toDate) httpParams = httpParams.set('toDate', params.toDate);
+    if (params.magasinId) httpParams = httpParams.set('magasinId', params.magasinId.toString());
+    if (params.agentId) httpParams = httpParams.set('agentId', params.agentId.toString());
+
+    return this.http.get(`${this.apiUrl}/pdf`, {
+      params: httpParams,
+      responseType: 'blob'
+    });
+  }
+
+  /**
+   * Sauvegarde le PDF
+   */
+  savePDF(blob: Blob, filename: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  }
+
+  /**
+   * Exporte le rapport financier au format Excel
+   */
+  exportRapportExcel(params: any): Observable<Blob> {
+    let httpParams = new HttpParams();
+
+    if (params.periode) httpParams = httpParams.set('periode', params.periode);
+    if (params.dateReference) httpParams = httpParams.set('dateReference', params.dateReference);
+    if (params.fromDate) httpParams = httpParams.set('fromDate', params.fromDate);
+    if (params.toDate) httpParams = httpParams.set('toDate', params.toDate);
+    if (params.magasinId) httpParams = httpParams.set('magasinId', params.magasinId.toString());
+    if (params.agentId) httpParams = httpParams.set('agentId', params.agentId.toString());
+
+    return this.http.get(`${this.apiUrl}/excel`, {
+      params: httpParams,
+      responseType: 'blob'
+    });
+  }
 }

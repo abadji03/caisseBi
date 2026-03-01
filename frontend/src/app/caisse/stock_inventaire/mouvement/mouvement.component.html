@@ -1,0 +1,244 @@
+<div class="table-responsive">
+  <div class="d-flex justify-content-between">
+    <input
+      [(ngModel)]="searchTextMouvement"
+      type="text"
+      placeholder="Rechercher un mouvement..."
+      class="form-control w-50 mb-3"
+      (input)="onSearchChange()"
+    />
+    <button
+      class="btn btn-success mb-3 w-auto float-end"
+      (click)="openModal()"
+    >
+      <i class="bi bi-plus-circle me-1"></i> Nouveau mouvement
+    </button>
+  </div>
+  
+  <div class="d-flex justify-content-between align-items-center mb-2 float-end">
+    <label for="rowsPerPage" class="me-2">Afficher</label>
+    <select
+      id="rowsPerPage"
+      class="form-select w-auto me-2"
+      (change)="onRowsPerPageChange($event)"
+    >
+      <option *ngFor="let option of [5, 10, 20, 50]" [value]="option">{{ option }}</option>
+    </select>
+    <span>lignes par page</span>
+  </div>
+
+  <table class="table table-bordered table-hover">
+    <thead class="table-success">
+      <tr>
+        <th>Type</th>
+        <th>Produit</th>
+        <th>Quantité</th>
+        <th>Unité Stock</th>
+        <th>Date / Heure</th>
+        <th>Description</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngIf="getPaginatedMouvements().length === 0">
+        <td colspan="7" class="text-center">Aucun mouvement trouvé</td>
+      </tr>
+      <tr *ngFor="let mouvement of getPaginatedMouvements()">
+        <td>
+          <span
+            class="badge"
+            [ngClass]="{
+              'bg-success': mouvement.typeMouvement === 'Entrée',
+              'bg-danger': mouvement.typeMouvement === 'Sortie',
+            }"
+          >
+            {{ mouvement.typeMouvement }}
+          </span>
+        </td>
+        <td>{{ getNomProduitById(mouvement.produitId) }}</td>
+        <td>{{ mouvement.quantite }}</td>
+        <td>{{ getUniteProduitById(mouvement.produitId) }}</td>
+        <td>{{ mouvement.dateMouvement | date: 'yyyy-MM-dd à HH:mm' }}</td>
+        <td> <small>{{ mouvement.description }}</small></td>
+        <td>
+          <button
+            class="btn btn-warning btn-sm me-1"
+            (click)="modifierMouvement(mouvement)"
+          >
+            <i class="bi bi-pencil text-dark"></i>
+          </button>
+          <button
+            class="btn btn-danger btn-sm"
+            (click)="supprimerMouvement(mouvement)"
+          >
+            <i class="bi bi-trash text-white"></i>
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Pagination -->
+<div class="d-flex justify-content-center align-items-center">
+  <button
+    class="btn btn-success w-auto"
+    (click)="onPageChange(currentPageMouvement - 1)"
+    [disabled]="currentPageMouvement === 1"
+  >
+    <i class="bi bi-arrow-left-circle"></i>
+  </button>
+  <span class="h3 mx-3">{{ currentPageMouvement }} / {{ getTotalPages() }}</span>
+  <button
+    class="btn btn-success w-auto"
+    (click)="onPageChange(currentPageMouvement + 1)"
+    [disabled]="currentPageMouvement >= getTotalPages()"
+  >
+    <i class="bi bi-arrow-right-circle"></i>
+  </button>
+</div>
+
+<!-- Modal pour ajouter un mouvement -->
+<div class="modal fade" id="mouvementModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header d-flex justify-content-between">
+        <h2 class="modal-title">
+          {{ isEditing ? 'Modifier un mouvement' : 'Ajouter un nouveau mouvement' }}
+        </h2>
+        <button
+          type="button"
+          class="w-auto bg-danger border-3 px-2"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        >
+          <i class="bi bi-x-lg text-white"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form [formGroup]="mouvementForm" (ngSubmit)="enregistrerMouvement()">
+          <div class="mb-3">
+            <label for="typeMouvement" class="form-label">Type de Mouvement</label>
+            <select class="form-select" id="typeMouvement" formControlName="typeMouvement">
+              <option value="" disabled selected>Choisir un mouvement</option>
+              <option value="Entrée">Entrée</option>
+              <option value="Sortie">Sortie</option>
+            </select>
+            <div
+              *ngIf="
+                mouvementForm.controls['typeMouvement'].invalid &&
+                mouvementForm.controls['typeMouvement'].touched
+              "
+              class="text-danger"
+            >
+              Ce champ est requis.
+            </div>
+          </div>
+
+          <div *ngIf="mouvementForm.get('typeMouvement')?.value">
+            <div class="mb-3 position-relative">
+              <label for="produitInput" class="form-label">Produit</label>
+              <input
+                type="text"
+                class="form-control"
+                id="produitInput"
+                [(ngModel)]="searchInput"
+                (input)="filterProduits()"
+                placeholder="Rechercher un produit..."
+                [ngModelOptions]="{ standalone: true }"
+                required
+              />
+
+              <ul
+                *ngIf="filteredProduits.length > 0 && searchInput"
+                class="list-group position-absolute mt-1"
+                style="width: 100%; max-height: 150px; overflow-y: auto; z-index: 1000;"
+              >
+                <li
+                  *ngFor="let prod of filteredProduits"
+                  class="list-group-item list-group-item-action"
+                  (click)="selectProduit(prod)"
+                >
+                  {{ prod.designation }}
+                </li>
+              </ul>
+            </div>
+
+            <div class="mb-3">
+              <label for="prixUnitaire" class="form-label">Prix unitaire</label>
+              <input
+                type="text"
+                class="form-control"
+                id="prixUnitaire"
+                formControlName="prixUnitaire"
+                readonly
+              />
+            </div>
+
+            <div class="mb-3">
+              <label for="uniteStock" class="form-label">Unité de Stock</label>
+              <input
+                type="text"
+                class="form-control"
+                id="uniteStock"
+                formControlName="uniteStock"
+                readonly
+              />
+            </div>
+
+            <div class="mb-3">
+              <label for="quantite" class="form-label">Quantité</label>
+              <input
+                type="number"
+                class="form-control"
+                id="quantite"
+                formControlName="quantite"
+              />
+              <div
+                *ngIf="
+                  mouvementForm.controls['quantite'].invalid &&
+                  mouvementForm.controls['quantite'].touched
+                "
+                class="text-danger"
+              >
+                La quantité est requise et doit être > 0.
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="description" class="form-label">Description/Commentaire</label>
+              <textarea
+                class="form-control"
+                id="description"
+                formControlName="description"
+                rows="3"
+              ></textarea>
+              <div
+                *ngIf="
+                  mouvementForm.controls['description'].invalid &&
+                  mouvementForm.controls['description'].touched
+                "
+                class="text-danger"
+              >
+                La description est requise.
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-center">
+              <button
+                type="submit"
+                class="btn btn-success me-4 w-25"
+                [disabled]="mouvementForm.invalid"
+              >
+                {{ isEditing ? 'Mettre à jour' : 'Enregistrer' }}
+              </button>
+              <button type="reset" class="btn btn-secondary w-25" data-bs-dismiss="modal">
+                Annuler
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

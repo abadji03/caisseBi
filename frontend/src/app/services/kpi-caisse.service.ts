@@ -754,7 +754,7 @@ getRapportVente(params: RapportVenteParams): Observable<RapportVenteResponse> {
  * @param vendeurId ID du vendeur
  * @param params Paramètres de période
  */
-getDetailsVendeur(vendeurId: number, params: KPIParams): Observable<VendeurDetailsResponse> {
+getDetailsVendeur(vendeurId: number, params: RapportVenteParams): Observable<VendeurDetailsResponse> {
   // if (!params.code_structure) {
   //   return throwError(() => new Error('Le paramètre "code_structure" est requis'));
   // }
@@ -763,7 +763,23 @@ getDetailsVendeur(vendeurId: number, params: KPIParams): Observable<VendeurDetai
   }
 
   const url = `${this.apiUrl}/rapport-vente/vendeur/${vendeurId}/details`;
-  const httpParams = this.buildParams(params);
+  let  httpParams = this.buildParams(params);
+  // Ajouter les paramètres spécifiques
+  if (params.page) {
+    httpParams = httpParams.set('page', params.page.toString());
+  }
+  if (params.limit) {
+    httpParams = httpParams.set('limit', params.limit.toString());
+  }
+  if (params.search) {
+    httpParams = httpParams.set('search', params.search);
+  }
+  if (params.fromDate) {
+    httpParams = httpParams.set('fromDate', params.fromDate);
+  }
+  if (params.toDate) {
+    httpParams = httpParams.set('toDate', params.toDate);
+  }
 
   return this.http.get<VendeurDetailsResponse>(url, {
     headers: this.getHeaders(),
@@ -843,7 +859,11 @@ genererComparaison(data: {
     params = params.set('agentId', data.agentId.toString());
   }
 
-  return this.http.get<ComparaisonResponse>(url, {
+   console.log('URL complète:', url);
+  console.log('Params:', params.toString());
+  console.log('URL avec params:', `${url}?${params.toString()}`);
+  
+  return this.http.post<ComparaisonResponse>(url,{}, {
     headers: this.getHeaders(),
     params
   }).pipe(
@@ -977,4 +997,26 @@ prepareChartData(rapport: RapportVenteResponse): {
 
   return { evolutionChart, paiementsChart, topProduitsChart };
 }
+
+/**
+   * Exporte le rapport de vente au format Excel
+   */
+  exportRapportExcel(params: any): Observable<Blob> {
+    let httpParams = new HttpParams();
+
+    // Ajouter les paramètres
+    if (params.periode) httpParams = httpParams.set('periode', params.periode);
+    if (params.dateReference) httpParams = httpParams.set('dateReference', params.dateReference);
+    if (params.fromDate) httpParams = httpParams.set('fromDate', params.fromDate);
+    if (params.toDate) httpParams = httpParams.set('toDate', params.toDate);
+    if (params.magasinId) httpParams = httpParams.set('magasinId', params.magasinId.toString());
+    if (params.agentId) httpParams = httpParams.set('agentId', params.agentId.toString());
+
+    console.log('📤 Export Excel avec paramètres:', httpParams.toString());
+
+    return this.http.get(`${this.apiUrl}/rapport-vente/excel`, {
+      params: httpParams,
+      responseType: 'blob'
+    });
+  }
 }

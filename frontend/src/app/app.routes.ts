@@ -12,7 +12,7 @@ import { CaisseComponent } from './caisse/vente/caisse/caisse.component';
 // import { VenteComponent } from './caisse/vente/vente/vente.component';
 //import { EnregistrementActeurComponent } from './caisse/acces_accueil/enregistrement-acteur/enregistrement-acteur.component';
 //import { EspaceVendeursComponent } from './caisse/acces_accueil/espace-vendeurs/espace-vendeurs.component';
-import { OverviewComponent } from './caisse/parametres/overview/overview.component';
+import { OverviewComponent } from './caisse/acces_accueil/overview/overview.component';
 import { VentesComponent } from './caisse/vente/ventes/ventes.component';
 import { FournisseursComponent } from './caisse/finance/fournisseurs/fournisseurs.component';
 import { ClientsComponent } from './caisse/vente/clients/clients.component';

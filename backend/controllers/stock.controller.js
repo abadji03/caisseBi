@@ -173,11 +173,17 @@ exports.adjustQuantiteTotale = async (req, res) => {
       return res.status(400).json({ message: 'La quantité totale ne peut pas être négative' });
     }
 
-    await stock.update({ quantiteTotale: nouvelleQuantite });
+    //await stock.update({ quantiteTotale: nouvelleQuantite });
 
     // Recalcul du statut
     const nouveauStatut = calculerStatut({ ...stock.dataValues, quantiteTotale: nouvelleQuantite });
-    await stock.update({ statutStock: nouveauStatut });
+    //await stock.update({ statutStock: nouveauStatut });
+    //Update unique (meilleure pratique)
+    await stock.update({
+      quantiteTotale: nouvelleQuantite,
+      statutStock: nouveauStatut,
+      dateDerniereMiseAJour: new Date()
+    });
 
     res.json({ message: 'Quantité totale ajustée avec succès', stock });
   } catch (error) {

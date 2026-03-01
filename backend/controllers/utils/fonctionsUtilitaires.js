@@ -346,6 +346,29 @@ static normalizeDate(dateInput, type = 'start') {
     
     return date;
 }
+
+// Dans fonctionsUtilitaires.js, ajoutez cette méthode
+static buildDateRange(periode, dateReference, fromDate, toDate) {
+    let debut, fin;
+    
+    if (periode && periode !== 'personnalisee') {
+        const dates = this.getPeriodeDates(periode, dateReference);
+        debut = dates.debut;
+        fin = dates.fin;
+    } else if (fromDate && toDate) {
+        debut = this.normalizeDate(fromDate, 'start');
+        fin = this.normalizeDate(toDate, 'end');
+    } else {
+        // Par défaut : 30 derniers jours
+        fin = new Date();
+        debut = new Date();
+        debut.setDate(debut.getDate() - 30);
+        debut = this.normalizeDate(debut, 'start');
+        fin = this.normalizeDate(fin, 'end');
+    }
+    
+    return { debut, fin };
+}
 }
 
 module.exports = FonctionsUtilitaires;

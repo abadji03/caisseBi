@@ -399,7 +399,10 @@ export class RapportsFinanciersComponent implements OnInit, OnDestroy {
       });
     } else {
       this.currentPageRecettes = page;
-      this.rapportsService.getRecettesDetaillees(filters).subscribe({
+      this.rapportsService.getRecettesDetaillees(filters)
+      .pipe(takeUntil(this.destroy$),finalize(() => {
+        this.isLoading = false;
+      })).subscribe({
         next: (recettes) => {
           this.recettesDetaillees = recettes;
         },
@@ -762,105 +765,293 @@ private loadStructureInfo(): void {
   }
 
   // Méthodes d'export (simplifiées pour l'instant)
-  async exportToPDF(): Promise<void> {
+  // Dans rapports-financiers.component.ts
+
+async exportToPDF(): Promise<void> {
   try {
     this.isGeneratingPDF = true;
     this.progress = 0;
 
-    // Charger TOUTES les données sans pagination
-    const filters = this.construireFiltres();
-    filters.page = 1;
-    filters.limit = 1000; // Un grand nombre pour tout récupérer
-    
-    // Charger toutes les dépenses
-    const toutesDepenses = await this.rapportsService.getDepensesDetaillees(filters).toPromise();
-    // Charger toutes les recettes
-    const toutesRecettes = await this.rapportsService.getRecettesDetaillees(filters).toPromise();
-
-    
-    // Préparer les données pour le PDF
-    const rapportData = {
-      periode: this.periodeAffichage,
-      dateGeneration: new Date(),
-      filters: {
-        periodeSelectionnee: this.periodeSelectionnee,
-        dateDebut: this.dateDebut,
-        dateFin: this.dateFin,
-        magasin: this.selectedMagasinId ? this.getNomMagasin(this.selectedMagasinId) : 'Tous',
-        dateReference: this.dateReference
-      },
-      indicateursFinanciers: this.indicateursFinanciers,
-      repartitionDepenses: this.repartitionDepenses,
-      repartitionRecettes: this.repartitionRecettes,
-      modesPaiementStats: this.modesPaiementStats,
-      depensesDetaillees: toutesDepenses, // Utiliser TOUTES les dépenses
-      recettesDetaillees: toutesRecettes, // Utiliser TOUTES les recettes
-      donneesComparatives: this.donneesComparatives,
-      donneesEvolutives: this.donneesEvolutives
-    };
-
-    // Simuler une progression
+    // Animation de progression
     const interval = setInterval(() => {
       if (this.progress < 90) {
         this.progress += 10;
       }
-    }, 200);
+    }, 300);
+
+    // Construire les filtres
+    const params = this.construireFiltresPDF();
+
+    console.log('📄 Génération PDF financier avec params:', params);
 
     // Générer le PDF
-    await this.pdfMakerService.generateRapportFinancier(rapportData);
-    
+    const pdfBlob = await this.rapportsService.genererRapportPDF(params).toPromise();
+
+    if(!pdfBlob){
+      console.log('Echec appel API pour générer PDF');
+      return;
+    }
+
     clearInterval(interval);
     this.progress = 100;
+
+    // Sauvegarder le fichier
+    this.savePDF(pdfBlob);
+
+    this.toastr.success('PDF généré avec succès');
+
+  } catch (error: any) {
+    console.error('❌ Erreur génération PDF:', error);
     
+    if (error.status === 401) {
+      this.toastr.error('Session expirée. Veuillez vous reconnecter.');
+    } else {
+      this.toastr.error('Erreur lors de la génération du PDF');
+    }
+  } finally {
     setTimeout(() => {
       this.isGeneratingPDF = false;
       this.progress = 0;
     }, 500);
-    
-  } catch (error) {
-    console.error('Erreur lors de la génération du PDF:', error);
-    this.isGeneratingPDF = false;
-    this.progress = 0;
-    alert('Erreur lors de la génération du PDF. Veuillez réessayer.');
   }
 }
 
-  async exportToExcel(): Promise<void> {
-    // Implémentation simplifiée - à compléter avec votre logique existante
-    alert('Export Excel fonctionnalité à implémenter');
+/**
+ * Construire les filtres spécifiques pour le PDF
+ */
+private construireFiltresPDF(): any {
+  const params: any = {};
+
+  // Période
+  if (this.periodeSelectionnee !== 'personnalisee') {
+    params.periode = this.periodeSelectionnee;
+    if (this.dateReference) {
+      params.dateReference = this.dateReference;
+    }
+  } else {
+    if (this.dateDebut) params.fromDate = this.dateDebut;
+    if (this.dateFin) params.toDate = this.dateFin;
   }
+
+  // Filtres magasin
+  if (this.selectedMagasinId !== undefined) {
+    params.magasinId = this.selectedMagasinId;
+  }
+
+  // Nettoyer les paramètres undefined
+  return Object.fromEntries(
+    Object.entries(params).filter(([_, v]) => v !== undefined && v !== '')
+  );
+}
+
+/**
+ * Sauvegarder le fichier PDF
+ */
+private savePDF(blob: Blob): void {
+  const fileName = `rapport-financier-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.pdf`;
+  
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  window.URL.revokeObjectURL(url);
+}
+
+// Dans rapports-financiers.component.ts
+
+async exportToExcel(): Promise<void> {
+  // Vérifier que les dates sont valides
+  if (this.periodeSelectionnee === 'personnalisee') {
+    if (!this.dateDebut || !this.dateFin) {
+      this.toastr.warning('Veuillez sélectionner une période');
+      return;
+    }
+    if (new Date(this.dateDebut) > new Date(this.dateFin)) {
+      this.toastr.warning('La date de début doit être antérieure à la date de fin');
+      return;
+    }
+  }
+
+  try {
+    this.isGeneratingPDF = true; // Réutiliser le même indicateur
+    this.progress = 0;
+
+    // Animation de progression
+    const interval = setInterval(() => {
+      if (this.progress < 90) {
+        this.progress += 10;
+      }
+    }, 300);
+
+    // Construire les filtres
+    const params = this.construireFiltresExcel();
+
+    console.log('📊 Export Excel financier avec params:', params);
+
+    // Appel API
+    const excelBlob = await this.rapportsService.exportRapportExcel(params).toPromise();
+
+    if(!excelBlob){
+      console.log('Echec appel API');
+      return;
+    }
+
+    clearInterval(interval);
+    this.progress = 100;
+
+    // Sauvegarder le fichier
+    this.saveExcelFile(excelBlob);
+
+    this.toastr.success('Export Excel réussi');
+
+  } catch (error: any) {
+    console.error('❌ Erreur export Excel:', error);
+    
+    if (error.status === 401) {
+      this.toastr.error('Session expirée. Veuillez vous reconnecter.');
+    } else if (error.status === 400) {
+      this.toastr.error('Paramètres invalides: ' + (error.error?.error || ''));
+    } else if (error.status === 500) {
+      this.toastr.error('Erreur serveur lors de l\'export Excel');
+    } else {
+      this.toastr.error('Erreur lors de l\'export Excel');
+    }
+  } finally {
+    setTimeout(() => {
+      this.isGeneratingPDF = false;
+      this.progress = 0;
+    }, 500);
+  }
+}
+
+/**
+ * Construire les filtres spécifiques pour Excel
+ */
+private construireFiltresExcel(): any {
+  const params: any = {};
+
+  // Période
+  if (this.periodeSelectionnee !== 'personnalisee') {
+    params.periode = this.periodeSelectionnee;
+    if (this.dateReference) {
+      params.dateReference = this.dateReference;
+    }
+  } else {
+    if (this.dateDebut) params.fromDate = this.dateDebut;
+    if (this.dateFin) params.toDate = this.dateFin;
+  }
+
+  // Filtres magasin et agent
+  if (this.selectedMagasinId !== undefined) {
+    params.magasinId = this.selectedMagasinId;
+  }
+
+  if (this.selectedAgentId !== undefined) {
+    params.agentId = this.selectedAgentId;
+  }
+
+  // Nettoyer les paramètres undefined
+  return Object.fromEntries(
+    Object.entries(params).filter(([_, v]) => v !== undefined && v !== '')
+  );
+}
+
+/**
+ * Sauvegarder le fichier Excel
+ */
+private saveExcelFile(blob: Blob): void {
+  const fileName = this.generateExcelFileName();
+  
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  window.URL.revokeObjectURL(url);
+}
+
+/**
+ * Générer un nom de fichier Excel pertinent
+ */
+private generateExcelFileName(): string {
+  const date = new Date();
+  const dateStr = date.toISOString().slice(0, 19).replace(/:/g, '-');
+  
+  let suffix = '';
+  
+  // Ajouter la période
+  if (this.periodeSelectionnee !== 'personnalisee') {
+    const periode = this.periodesDisponibles.find(p => p.value === this.periodeSelectionnee);
+    suffix += `-${periode?.label.toLowerCase().replace(/\s+/g, '-')}`;
+  }
+  
+  // Ajouter le magasin si sélectionné
+  if (this.selectedMagasinId !== undefined) {
+    const magasin = this.magasins.find(m => m.id === this.selectedMagasinId);
+    suffix += `-${magasin?.nom.toLowerCase().replace(/\s+/g, '-') || 'magasin'}`;
+  }
+  
+  return `rapport-financier${suffix}-${dateStr}.xlsx`;
+}
 
   async impression(): Promise<void> {
-  this.isPrinting = true;
-  
-  // Préparer l'impression
-  const printContent = document.getElementById('rapport');
-  if (printContent) {
-    const originalDisplay = printContent.style.display;
-    printContent.style.display = 'block';
-    
-    // Attendre que tout soit rendu
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Imprimer
-    window.print();
-    
-    // Restaurer l'affichage original
-    printContent.style.display = originalDisplay;
-  }
-  
-  this.isPrinting = false;
-}
+  try {
+    this.isGeneratingPDF = true;
+    this.progress = 0;
 
-  // Méthodes pour préparer l'export
-  async prepareChartsForExport(): Promise<void> {
-    const charts = [this.evolutionChart, this.depensesChart, this.recettesChart, this.tendancesChart];
-    charts.forEach(chart => {
-      if (chart) {
-        chart.resize();
-        chart.render();
-      }
-    });
-    await new Promise(resolve => setTimeout(resolve, 400));
+    // Construire les paramètres (comme pour le PDF)
+    const params = this.construireFiltresPDF();
+    
+    // Ajouter un paramètre pour indiquer que c'est pour impression
+    //params.print = true;
+
+    // Générer le PDF
+    const pdfBlob = await this.rapportsService.genererRapportPDF(params).toPromise();
+
+    if(!pdfBlob){
+      console.log('Echec appel API depuis backend');
+      return;
+    }
+
+    // Créer une URL pour le PDF
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    
+    // Ouvrir dans une nouvelle fenêtre et imprimer
+    const printWindow = window.open(pdfUrl, '_blank');
+    
+    if (printWindow) {
+      // Attendre que le PDF soit chargé puis imprimer
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+      };
+    } else {
+      // Si popup bloquée, proposer le téléchargement
+      this.toastr.warning('Popup bloquée. Téléchargez le PDF et imprimez-le manuellement.');
+      this.pdfMakerService.savePDF(pdfBlob, 'rapport-a-imprimer.pdf');
+    }
+
+    this.progress = 100;
+    setTimeout(() => {
+      this.isGeneratingPDF = false;
+      this.progress = 0;
+    }, 500);
+
+  } catch (error) {
+    console.error('❌ Erreur impression:', error);
+    this.toastr.error('Erreur lors de la préparation de l\'impression');
+    this.isGeneratingPDF = false;
+    this.progress = 0;
   }
+} 
 }

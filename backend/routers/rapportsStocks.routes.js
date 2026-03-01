@@ -28,4 +28,16 @@ router.get('/rapport-complet', authenticateToken, rapportsStocksController.getRa
 // API 7: Export des données
 router.get('/export', authenticateToken, rapportsStocksController.exportDonneesStocks);
 
+// Route pour la génération PDF
+router.get('/pdf', 
+    authenticateToken, 
+    rapportsStocksController.genererRapportStockPDF
+);
+
+// Route pour l'export Excel
+router.get('/excel', 
+    authenticateToken, 
+    rapportsStocksController.exportRapportStockExcel
+);
+
 module.exports = router;

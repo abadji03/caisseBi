@@ -45,6 +45,18 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
+    transfertId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    reconciliationId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    statut: {
+      type: DataTypes.ENUM('validé', 'annulé'),
+      defaultValue: 'validé',
+    },
     description: DataTypes.TEXT,
     dateMouvement: {
       type: DataTypes.DATE,

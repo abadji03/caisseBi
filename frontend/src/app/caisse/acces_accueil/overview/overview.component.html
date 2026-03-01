@@ -1,0 +1,628 @@
+<div class="container-fluid" id="dashboard">
+  <!-- En-tête du tableau de bord -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">
+      <i class="bi bi-speedometer2 me-2 text-primary"></i>
+      Tableau de Bord
+    </h2>
+    <div class="d-flex align-items-center gap-2">
+      <span class="text-muted">
+        <i class="bi bi-calendar3 me-1"></i>
+        {{ dateGeneration | date: 'dd/MM/yyyy HH:mm' }}
+      </span>
+      <button class="btn btn-outline-primary" (click)="rafraichirDonnees()" [disabled]="isLoading">
+        <i class="bi bi-arrow-clockwise me-1"></i>
+        Rafraîchir
+      </button>
+    </div>
+  </div>
+
+  <!-- Filtres communs -->
+  <div class="card p-3 mb-4 shadow-sm">
+    <h5 class="fw-bold mb-3"><i class="bi bi-funnel me-2"></i>Filtres</h5>
+    <div class="row g-3">
+      <!-- Sélecteur de période -->
+      <div class="col-md-3">
+        <label for="periode" class="form-label fw-semibold">Période :</label>
+        <select
+          id="periode"
+          class="form-select"
+          [(ngModel)]="periodeSelectionnee"
+          (change)="onPeriodeChange()"
+          [disabled]="isLoading"
+        >
+          <option *ngFor="let periode of periodesDisponibles" [value]="periode.value">
+            {{ periode.label }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Date de référence -->
+      <div class="col-md-3" *ngIf="periodeSelectionnee !== 'personnalisee'">
+        <label for="dateReference" class="form-label fw-semibold">Date de référence :</label>
+        <input
+          type="date"
+          id="dateReference"
+          class="form-control"
+          [(ngModel)]="dateReference"
+          (change)="appliquerFiltres()"
+          [disabled]="isLoading"
+        />
+      </div>
+
+      <!-- Dates personnalisées -->
+      <ng-container *ngIf="periodeSelectionnee === 'personnalisee'">
+        <div class="col-md-3">
+          <label for="dateDebut" class="form-label fw-semibold">Date début :</label>
+          <input
+            type="date"
+            id="dateDebut"
+            class="form-control"
+            [(ngModel)]="dateDebut"
+            (change)="appliquerFiltres()"
+            [disabled]="isLoading"
+          />
+        </div>
+        <div class="col-md-3">
+          <label for="dateFin" class="form-label fw-semibold">Date fin :</label>
+          <input
+            type="date"
+            id="dateFin"
+            class="form-control"
+            [(ngModel)]="dateFin"
+            (change)="appliquerFiltres()"
+            [disabled]="isLoading"
+          />
+        </div>
+      </ng-container>
+
+      <!-- Filtre magasin -->
+      <div class="col-md-3" *ngIf="isAdmin">
+        <label for="magasin" class="form-label fw-semibold">Magasin :</label>
+        <select
+          id="magasin"
+          class="form-select"
+          [(ngModel)]="selectedMagasinId"
+          (change)="appliquerFiltres()"
+          [disabled]="isLoading"
+        >
+          <option [value]="-1">Tous les magasins</option>
+          <option *ngFor="let magasin of magasins" [value]="magasin.id">
+            {{ magasin.nom }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Indicateur de chargement -->
+      <div class="col-12 mt-2" *ngIf="isLoading">
+        <div class="d-flex align-items-center">
+          <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+            <span class="visually-hidden">Chargement...</span>
+          </div>
+          <span class="text-muted">Mise à jour des données...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Message d'erreur -->
+  <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    {{ errorMessage }}
+    <button type="button" class="btn-close" (click)="errorMessage = ''"><i class="bi bi-x-circle me-2"></i></button>
+  </div>
+
+  <!-- === SECTION 1 : DONNÉES DE VENTE (EN HAUT) === -->
+  <div class="dashboard-section mb-4">
+    <div class="d-flex align-items-center mb-3">
+      <div class="bg-primary bg-opacity-10 p-2 rounded-circle me-2">
+        <i class="bi bi-cart-check text-primary fs-5"></i>
+      </div>
+      <h4 class="fw-bold mb-0">Performance Commerciale</h4>
+    </div>
+
+    <!-- KPI Ventes -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+                <i class="bi bi-cart-check text-primary fs-4"></i>
+              </div>
+              <div>
+                <h6 class="text-muted mb-1">Total Ventes</h6>
+                <h3 class="fw-bold mb-0">{{ donneesVentes?.totalVentes || 0 | number }}</h3>
+                <small class="text-muted">{{ donneesVentes?.nbTransactions || 0 }} transactions</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="bg-success bg-opacity-10 p-3 rounded-circle me-3">
+                <i class="bi bi-cash-stack text-success fs-4"></i>
+              </div>
+              <div>
+                <h6 class="text-muted mb-1">CA TTC</h6>
+                <h3 class="fw-bold mb-0">{{ donneesVentes?.caTTC || 0 | number }} F CFA</h3>
+                <small class="text-muted">{{ donneesVentes?.caHT || 0 | number }} F CFA HT</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="bg-warning bg-opacity-10 p-3 rounded-circle me-3">
+                <i class="bi bi-graph-up-arrow text-warning fs-4"></i>
+              </div>
+              <div>
+                <h6 class="text-muted mb-1">Marge</h6>
+                <h3 class="fw-bold mb-0">{{ donneesVentes?.marge || 0 | number }} F CFA</h3>
+                <small class="text-muted">{{ donneesVentes?.tauxMarge || 0 | number }}%</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="bg-info bg-opacity-10 p-3 rounded-circle me-3">
+                <i class="bi bi-receipt text-info fs-4"></i>
+              </div>
+              <div>
+                <h6 class="text-muted mb-1">Ticket Moyen</h6>
+                <h3 class="fw-bold mb-0">{{ donneesVentes?.ticketMoyen || 0 | number }} F CFA</h3>
+                <!-- <small class="text-muted">{{ donneesVentes?.panierMoyen || 0 }} produits</small> -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Graphiques Ventes et Top Produits -->
+    <div class="row g-3">
+      <div class="col-md-8">
+        <div class="card shadow-sm">
+          <div class="card-header bg-light">
+            <h5 class="fw-bold mb-0"><i class="bi bi-graph-up me-2 text-primary"></i>Évolution des Ventes</h5>
+          </div>
+          <div class="card-body">
+            <div class="chart-container" style="position: relative; height: 250px;">
+              <canvas #evolutionVentesChart></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+          <div class="card-header bg-light">
+            <h5 class="fw-bold mb-0"><i class="bi bi-pie-chart me-2 text-primary"></i>Modes de Paiement</h5>
+          </div>
+          <div class="card-body">
+            <div class="chart-container" style="position: relative; height: 200px;">
+              <canvas #paiementsChart></canvas>
+            </div>
+            <!-- <div class="mt-3">
+              <div *ngFor="let mode of donneesVentes?.modesPaiement" class="d-flex justify-content-between small mb-1">
+                <span class="text-muted">{{ mode.mode }}({{ mode.occurrences }} occurences ):</span>
+                <span class="fw-semibold">{{ (mode.montantTotal/donneesVentes?.caTTC!) * 100| number:'1.0-1' }}%</span>
+              </div>
+            </div> -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top 5 Produits -->
+    <div class="row mt-3">
+      <div class="col-12">
+        <div class="card shadow-sm">
+          <div class="card-header bg-light">
+            <h5 class="fw-bold mb-0"><i class="bi bi-trophy me-2 text-primary"></i>Top 5 Produits</h5>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-sm table-hover">
+                <thead>
+                  <tr>
+                    <th>Produit</th>
+                    <th class="text-end">Quantité</th>
+                    <th class="text-end">CA</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let produit of donneesVentes?.topProduits | slice:0:5">
+                    <td>{{ produit.produit.designation }}</td>
+                    <td class="text-end">{{ produit.quantite | number }}</td>
+                    <td class="text-end">{{ produit.ca | number }} F CFA</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- === SECTION 2 : DONNÉES DE STOCK (AU MILIEU) === -->
+  <div class="dashboard-section mb-4">
+    <div class="d-flex align-items-center mb-3">
+      <div class="bg-success bg-opacity-10 p-2 rounded-circle me-2">
+        <i class="bi bi-boxes text-success fs-5"></i>
+      </div>
+      <h4 class="fw-bold mb-0">État des Stocks</h4>
+    </div>
+
+    <!-- KPI Stocks -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+                <i class="bi bi-box text-primary fs-4"></i>
+              </div>
+              <div>
+                <h6 class="text-muted mb-1">Total Produits</h6>
+                <h3 class="fw-bold mb-0">{{ donneesStock?.totalProduits || 0 | number }}</h3>
+                <small class="text-muted">{{ donneesStock?.produitsUniques || 0 }} sont uniques</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="bg-success bg-opacity-10 p-3 rounded-circle me-3">
+                <i class="bi bi-cash-stack text-success fs-4"></i>
+              </div>
+              <div>
+                <h6 class="text-muted mb-1">Valeur vente Stock final</h6>
+                <h3 class="fw-bold mb-0">{{ donneesStock?.valeurStockFinalVente || 0 | number }} F CFA</h3>
+                <small class="text-muted">valeur intial: {{ donneesStock?.valeurStockInitialVente || 0 | number }} F CFA</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+
+      <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="bg-danger bg-opacity-10 p-3 rounded-circle me-3">
+                <i class="bi bi-exclamation-triangle text-danger fs-4"></i>
+              </div>
+              <div>
+                <h6 class="text-muted mb-1">Alertes Stock</h6>
+                <h3 class="fw-bold mb-0 text-danger">{{ donneesStock?.produitsEnAlerte || 0 }}</h3>
+                <small class="text-muted">Produits en rupture: {{ donneesStock?.produitsRupture || 0 }}</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="bg-warning bg-opacity-10 p-3 rounded-circle me-3">
+                <i class="bi bi-arrow-repeat text-warning fs-4"></i>
+              </div>
+              <div>
+                <h6 class="text-muted mb-1">Mouvements</h6>
+                <h3 class="fw-bold mb-0">{{ donneesStock?.totalMouvements || 0 | number }}</h3>
+                <small class="text-muted">Entrées: {{ donneesStock?.totalEntrees || 0 }}</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Évolution du Stock et Alertes -->
+    <div class="row g-3">
+      <div class="col-md-7">
+        <div class="card shadow-sm">
+          <div class="card-header bg-light">
+            <h5 class="fw-bold mb-0"><i class="bi bi-graph-up me-2 text-success"></i>Évolution du Stock</h5>
+          </div>
+          <div class="card-body">
+            <div class="chart-container" style="position: relative; height: 200px;">
+              <canvas #stockEvolutionChart></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-5">
+        <div class="card shadow-sm h-100">
+          <div class="card-header bg-light">
+            <h5 class="fw-bold mb-0"><i class="bi bi-exclamation-diamond me-2 text-warning"></i>Points d'Attention</h5>
+          </div>
+          <div class="card-body">
+            <ul class="list-unstyled mb-0">
+              <li *ngIf="donneesStock?.produitsRupture" class="mb-2">
+                <i class="bi bi-x-circle-fill text-danger me-2"></i>
+                <strong>{{ donneesStock?.produitsRupture }}</strong> produit(s) en rupture
+              </li>
+              <li *ngIf="donneesStock?.produitsEnAlerte" class="mb-2">
+                <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>
+                <strong>{{ donneesStock?.produitsEnAlerte }}</strong> produit(s) sous seuil d'alerte
+              </li>
+              <li *ngIf="donneesStock?.produitsAReapprovisionner" class="mb-2">
+                <i class="bi bi-arrow-down-circle-fill text-info me-2"></i>
+                <strong>{{ donneesStock?.produitsAReapprovisionner }}</strong> à réapprovisionner
+              </li>
+              <li *ngIf="donneesStock?.produitsEnSurStock" class="mb-2">
+                <i class="bi bi-box-arrow-up-fill text-secondary me-2"></i>
+                <strong>{{ donneesStock?.produitsEnSurStock }}</strong> en surstock
+              </li>
+              <li *ngIf="donneesStock?.produitsPerissable" class="mb-2">
+                <i class="bi bi-calendar-x-fill text-primary me-2"></i>
+                <strong>{{ donneesStock?.produitsPerissable }}</strong> produits périssables
+              </li>
+              <li *ngIf="!donneesStock?.produitsRupture && !donneesStock?.produitsEnAlerte" class="text-muted">
+                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                Aucune alerte stock
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Derniers mouvements -->
+    <div class="row mt-3">
+      <div class="col-12">
+        <div class="card shadow-sm">
+          <div class="card-header bg-light">
+            <h5 class="fw-bold mb-0"><i class="bi bi-arrow-left-right me-2 text-success"></i>Derniers Mouvements</h5>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-sm table-hover">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Produit</th>
+                    <th>Type</th>
+                    <th class="text-end">Quantité</th>
+                    <th>Magasin</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let mvt of donneesStock?.derniersMouvements | slice:0:5">
+                    <td>{{ mvt.dateMouvement | date:'dd/MM HH:mm' }}</td>
+                    <td>{{ mvt.produit }}</td>
+                    <td>
+                      <span class="badge" [ngClass]="{
+                        'bg-success': mvt.typeMouvement === 'Entrée',
+                        'bg-danger': mvt.typeMouvement === 'Sortie'
+                      }">{{ mvt.typeMouvement }}</span>
+                    </td>
+                    <td class="text-end">{{ mvt.quantite }}</td>
+                    <td>{{ mvt.magasin }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- === SECTION 3 : DONNÉES FINANCIÈRES (EN BAS) === -->
+  <div class="dashboard-section">
+    <div class="d-flex align-items-center mb-3">
+      <div class="bg-info bg-opacity-10 p-2 rounded-circle me-2">
+        <i class="bi bi-graph-up text-info fs-5"></i>
+      </div>
+      <h4 class="fw-bold mb-0">Situation Financière</h4>
+    </div>
+
+    <!-- KPI Financiers -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+                <i class="bi bi-currency-exchange text-primary fs-4"></i>
+              </div>
+              <div>
+                <h6 class="text-muted mb-1">Chiffre d'Affaires</h6>
+                <h3 class="fw-bold mb-0">{{ donneesFinancieres?.ca || 0 | number }} F</h3>
+                <small *ngIf="donneesFinancieres?.evolutionCA" 
+                       [ngClass]="{'text-success': donneesFinancieres?.evolutionCA?.tendance === 'hausse',
+                                  'text-danger': donneesFinancieres?.evolutionCA?.tendance === 'baisse'}">
+                  <i class="bi" [ngClass]="{
+                    'bi-arrow-up': donneesFinancieres?.evolutionCA?.tendance === 'hausse',
+                    'bi-arrow-down': donneesFinancieres?.evolutionCA?.tendance === 'baisse'
+                  }"></i>
+                  {{ donneesFinancieres?.evolutionCA?.pourcentage | number }}%
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="bg-success bg-opacity-10 p-3 rounded-circle me-3">
+                <i class="bi bi-cash-stack text-success fs-4"></i>
+              </div>
+              <div>
+                <h6 class="text-muted mb-1">Bénéfice Net</h6>
+                <h3 class="fw-bold mb-0" [ngClass]="{
+                  'text-success': (donneesFinancieres?.beneficeNet || 0) >= 0,
+                  'text-danger': (donneesFinancieres?.beneficeNet || 0) < 0
+                }">{{ donneesFinancieres?.beneficeNet || 0 | number }} F</h3>
+                <small>Marge: {{ donneesFinancieres?.tauxMarge || 0 | number }}%</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="bg-danger bg-opacity-10 p-3 rounded-circle me-3">
+                <i class="bi bi-arrow-down-circle text-danger fs-4"></i>
+              </div>
+              <div>
+                <h6 class="text-muted mb-1">Dépenses</h6>
+                <h3 class="fw-bold mb-0">{{ donneesFinancieres?.totalDepenses || 0 | number }} F</h3>
+                <small>{{ donneesFinancieres?.nbDepenses || 0 }} transactions</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="bg-warning bg-opacity-10 p-3 rounded-circle me-3">
+                <i class="bi bi-wallet2 text-warning fs-4"></i>
+              </div>
+              <div>
+                <h6 class="text-muted mb-1">Trésorerie</h6>
+                <h3 class="fw-bold mb-0" [ngClass]="{
+                  'text-success': (donneesFinancieres?.soldeFinal || 0) >= 0,
+                  'text-danger': (donneesFinancieres?.soldeFinal || 0) < 0
+                }">{{ donneesFinancieres?.soldeFinal || 0 | number }} F</h3>
+                <small>Entrées: +{{ donneesFinancieres?.entrees || 0 | number }} F</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Graphiques Financiers -->
+    <div class="row g-3">
+      <div class="col-md-7">
+        <div class="card shadow-sm">
+          <div class="card-header bg-light">
+            <h5 class="fw-bold mb-0"><i class="bi bi-graph-up me-2 text-info"></i>Évolution Financière</h5>
+          </div>
+          <div class="card-body">
+            <div class="chart-container" style="position: relative; height: 250px;">
+              <canvas #evolutionFinanciereChart></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-5">
+        <div class="card shadow-sm h-100">
+          <div class="card-header bg-light">
+            <h5 class="fw-bold mb-0"><i class="bi bi-pie-chart me-2 text-info"></i>Répartition</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-6">
+                <h6 class="text-center text-muted mb-2">Dépenses</h6>
+                <div class="chart-container" style="position: relative; height: 150px;">
+                  <canvas #depensesChart></canvas>
+                </div>
+                <div class="mt-2">
+                  <div *ngFor="let cat of donneesFinancieres?.topDepenses | slice:0:2" class="d-flex justify-content-between small">
+                    <span>{{ cat.categorieName }}:</span>
+                    <span>{{ cat.pourcentage | number }}%</span>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6">
+                <h6 class="text-center text-muted mb-2">Recettes</h6>
+                <div class="chart-container" style="position: relative; height: 150px;">
+                  <canvas #recettesChart></canvas>
+                </div>
+                <div class="mt-2">
+                  <div *ngFor="let cat of donneesFinancieres?.topRecettes | slice:0:2" class="d-flex justify-content-between small">
+                    <span>{{ cat.categorieName }}:</span>
+                    <span>{{ cat.pourcentage | number }}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dernières transactions financières -->
+    <div class="row mt-3">
+      <div class="col-12">
+        <div class="card shadow-sm">
+          <div class="card-header bg-light">
+            <h5 class="fw-bold mb-0"><i class="bi bi-receipt me-2 text-info"></i>Dernières Transactions</h5>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-sm table-hover">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Catégorie</th>
+                    <th class="text-end">Montant</th>
+                    <th>Mode de Paiement</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let trans of donneesFinancieres?.dernieresTransactions | slice:0:5">
+                    <td>{{ trans.date | date:'dd/MM HH:mm' }}</td>
+                    <td>
+                      <span class="badge" [ngClass]="{
+                        'bg-success': trans.type === 'recette',
+                        'bg-danger': trans.type === 'depense'
+                      }">{{ trans.type === 'recette' ? 'Recette' : 'Dépense' }}</span>
+                    </td>
+                    <td>{{ trans.categorie?.name || 'Non classé' }}</td>
+                    <td class="text-end" [ngClass]="{
+                      'text-success': trans.type === 'recette',
+                      'text-danger': trans.type === 'depense'
+                    }">{{ trans.montant | number }} F</td>
+                    <td>{{ trans.paymentMode }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pied de page pour impression -->
+  <div *ngIf="isPrinting" class="mt-4 text-center text-muted">
+    <hr>
+    <small>Rapport généré le {{ dateGeneration | date:'dd/MM/yyyy à HH:mm' }}</small>
+  </div>
+</div>

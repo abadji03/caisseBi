@@ -24,6 +24,7 @@ export class ReconciliationService {
 
   /** Créer une réconciliation */
   create(reconciliation: Reconciliation): Observable<Reconciliation> {
+    console.log('Données réconciliation',reconciliation)
     return this.http.post<Reconciliation>(this.apiUrl, reconciliation, { headers: this.getHeaders() });
   }
 

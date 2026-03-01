@@ -866,7 +866,7 @@ updateStockApresSuppressionArticle(article: ArticlePanier): void {
                     prixUnitaire:article.prixUnitaire,
                     quantite: article.quantite,
                     uniteStock:article.produit?.unite || article.Produit?.unite || 'unités',
-                    typeMouvement: 'Entree',
+                    typeMouvement: 'Entrée',
                     description: `Retour d'article du panier ID: ${this.selectedTransaction?.id}`,
                     code_structure: this.code_structure!,
                     magasinId: this.magasinId!,

@@ -1,0 +1,246 @@
+<div class="table-responsive">
+  <div class="d-flex justify-content-between">
+    <input
+      [(ngModel)]="searchTextReconciliation"
+      type="text"
+      placeholder="Rechercher une réconciliation..."
+      class="form-control w-50 mb-3"
+      (input)="onSearchChange()"
+    />
+    <button
+      class="btn btn-success mb-3 w-auto"
+      (click)="openModal()"
+    >
+      <i class="bi bi-plus-circle me-1"></i> Nouvelle réconciliation
+    </button>
+  </div>
+  
+  <div class="d-flex justify-content-between align-items-center mb-2 float-end">
+    <label for="rowsPerPage" class="me-2">Afficher</label>
+    <select
+      id="rowsPerPage"
+      class="form-select w-auto me-2"
+      (change)="onRowsPerPageChange($event)"
+    >
+      <option *ngFor="let option of [5, 10, 20, 50]" [value]="option">{{ option }}</option>
+    </select>
+    <span>lignes par page</span>
+  </div>
+
+  <table class="table table-bordered table-hover">
+    <thead class="table-success">
+      <tr>
+        <th>Produit</th>
+        <th>Stock Théorique</th>
+        <th>Stock Physique</th>
+        <th>Écart</th>
+        <th>Historique des écarts</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngIf="getPaginatedReconciliations().length === 0">
+        <td colspan="6" class="text-center">Aucune réconciliation trouvée</td>
+      </tr>
+      <tr *ngFor="let reconciliation of getPaginatedReconciliations()">
+        <td>{{ getNomProduitById(reconciliation.produitId) }}</td>
+        <td>{{ reconciliation.stockTheorique }}</td>
+        <td>{{ reconciliation.stockPhysique }}</td>
+        <td
+          [ngClass]="{
+            'text-danger': reconciliation.ecart < 0,
+            'text-success': reconciliation.ecart >= 0
+          }"
+        >
+          {{ reconciliation.ecart }}
+        </td>
+        <td class="text-center">
+          <button
+            class="btn btn-info btn-sm"
+            (click)="voirHistorique(reconciliation)"
+          >
+            <i class="bi bi-clock-history"></i>
+          </button>
+        </td>
+        <td>
+          <button
+            class="btn btn-warning btn-sm me-2"
+            (click)="modifierReconciliation(reconciliation)"
+          >
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button
+            class="btn btn-danger btn-sm"
+            (click)="supprimerReconciliation(reconciliation)"
+          >
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Pagination -->
+<div class="d-flex justify-content-center align-items-center">
+  <button
+    class="btn btn-success w-auto"
+    (click)="onPageChange(currentPageReconciliation - 1)"
+    [disabled]="currentPageReconciliation === 1"
+  >
+    <i class="bi bi-arrow-left-circle"></i>
+  </button>
+  <span class="h3 mx-3">{{ currentPageReconciliation }} / {{ getTotalPages() }}</span>
+  <button
+    class="btn btn-success w-auto"
+    (click)="onPageChange(currentPageReconciliation + 1)"
+    [disabled]="currentPageReconciliation >= getTotalPages()"
+  >
+    <i class="bi bi-arrow-right-circle"></i>
+  </button>
+</div>
+
+<!-- Modal Historique -->
+<div class="modal fade" id="historiqueModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header d-flex justify-content-between align-items-center">
+        <h3 class="modal-title">Historique des Écarts</h3>
+        <button
+          type="button"
+          class="w-auto bg-danger border-3 px-2"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        >
+          <i class="bi bi-x-lg text-white"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <ul class="list-group">
+          <li class="list-group-item" *ngFor="let historique of historiqueSelectionne">
+            <b>{{ historique.date | date: 'yyyy-MM-dd HH:mm' }}</b> :
+            <span class="text-danger">{{ historique.ecart }}</span>
+            <br />
+            <small>{{ historique.note || 'Pas de note' }}</small>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Réconciliation -->
+<div class="modal fade" id="reconciliationModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header d-flex justify-content-between align-items-center">
+        <h2 class="modal-title">
+          {{ isEditing ? 'Modifier Réconciliation' : 'Nouvelle Réconciliation' }}
+        </h2>
+        <button
+          type="button"
+          class="w-auto bg-danger text-white border-3 px-2"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        >
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form [formGroup]="reconciliationForm" (ngSubmit)="enregistrerReconciliation()">
+          <div class="mb-3 position-relative">
+            <label *ngIf="!isEditing" for="produitInput" class="form-label">Produit</label>
+            <input
+              *ngIf="!isEditing"
+              type="text"
+              class="form-control"
+              id="produitInput"
+              [(ngModel)]="searchInput"
+              (input)="filterProduits()"
+              (focus)="filterProduits()"
+              placeholder="Rechercher un produit..."
+              [ngModelOptions]="{ standalone: true }"
+              required
+            />
+
+            <ul
+              *ngIf="filteredProduits.length > 0 && searchInput && isEditing"
+              class="list-group position-absolute mt-1"
+              style="width: 100%; max-height: 150px; overflow-y: auto; z-index: 1000; background-color: white;"
+            >
+              <li
+                *ngFor="let prod of filteredProduits"
+                class="list-group-item list-group-item-action"
+                (click)="selectProduit(prod)"
+                style="cursor: pointer; padding: 8px 12px;"
+              >
+                {{ prod.designation }}
+              </li>
+            </ul>
+
+            <div *ngIf="isEditing" class="text-muted mt-1">
+              Réconciliation du produit : <b>{{ getNomProduitById(reconciliationForm.get('produitId')?.value) }}</b>
+            </div>
+          </div>
+
+           <!-- MODE ÉDITION : affichage du produit sélectionné (readonly) -->
+        <div *ngIf="isEditing" class="mb-3">
+          <label class="form-label" for="produitId">Produit</label>
+          <div class="form-control bg-light" style="cursor: not-allowed;">
+            <strong>{{ getNomProduitById(reconciliationForm.get('produitId')?.value) }}</strong>
+            <small class="text-muted ms-2">(ID: {{ reconciliationForm.get('produitId')?.value }})</small>
+          </div>
+          <input type="hidden" formControlName="produitId">
+        </div>
+
+          <div class="mb-3">
+            <label for="stockTheorique" class="form-label">Stock Théorique</label>
+            <input
+              type="number"
+              class="form-control"
+              id="stockTheorique"
+              formControlName="stockTheorique"
+              readonly
+            />
+          </div>
+
+          <div class="mb-3">
+            <label for="stockPhysique" class="form-label">Stock Physique</label>
+            <input
+              type="number"
+              class="form-control"
+              id="stockPhysique"
+              formControlName="stockPhysique"
+              required
+            />
+          </div>
+
+          <div class="mb-3">
+            <label for="note" class="form-label">Note (facultatif)</label>
+            <textarea
+              class="form-control"
+              id="note"
+              formControlName="note"
+              rows="3"
+              placeholder="Ajoutez une note ici..."
+            ></textarea>
+          </div>
+
+          <div class="d-flex justify-content-center">
+            <button type="submit" class="btn btn-success me-3 w-25">
+              {{ isEditing ? 'Mettre à jour' : 'Enregistrer' }}
+            </button>
+            <button
+              type="reset"
+              class="btn btn-secondary w-25"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            >
+              Annuler
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

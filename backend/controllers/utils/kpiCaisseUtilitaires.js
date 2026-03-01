@@ -51,7 +51,9 @@ const buildWhereCondition = (filters, includeDateRange = true, isPaiement = fals
       const { debut, fin } = FonctionsUtilitaires .getPeriodeDates(periode, dateReference);
       where.dateCreation = { [Op.between]: [debut, fin] };
     } else if (fromDate && toDate) {
-      where.dateCreation = { [Op.between]: [fromDate, toDate] };
+      const debut = FonctionsUtilitaires.normalizeDate(fromDate, 'start');
+      const fin = FonctionsUtilitaires.normalizeDate(toDate, 'end');
+      where.dateCreation = { [Op.between]: [debut, fin] };
     }
   }
 
@@ -75,6 +77,9 @@ const getCAVenduBaseData = async ({
   agentId
 }) => {
 
+  // ✅ Utiliser les dates normalisées
+  const dateDebut = FonctionsUtilitaires.normalizeDate(debut, 'start');
+  const dateFin = FonctionsUtilitaires.normalizeDate(fin, 'end');
   /* =========================
      1️⃣ VENTES CAISSE
   ========================== */
@@ -82,7 +87,7 @@ const getCAVenduBaseData = async ({
     attributes: ['id', 'totalTTC'],
     where: {
       code_structure,
-      dateCreation: { [Op.between]: [debut, fin] },
+      dateCreation: { [Op.between]: [dateDebut, dateFin] },
       statut: { [Op.notIn]: ['annulé', 'retourné', 'en_cours'] },
       bonId: null,
       ...(magasinId && { magasinId }),
@@ -103,7 +108,7 @@ const getCAVenduBaseData = async ({
         where: {
           code_structure,
           typeEntite: 'client',
-          dateBon: { [Op.between]: [debut, fin] },
+          dateBon: { [Op.between]: [dateDebut, dateFin] },
           [Op.or]: [
             { type: 'vente', statutBon: 'validé' },
             { type: 'commande', statutBon: 'livré' }
@@ -128,7 +133,7 @@ const getCAVenduBaseData = async ({
       code_structure,
       typeEntite: 'client',
       statutBon: 'retourné partiellement',
-      dateBon: { [Op.between]: [debut, fin] },
+      dateBon: { [Op.between]: [dateDebut, dateFin] },
       ...(magasinId && { magasinId }),
       ...(agentId && { agentId })
     }
@@ -182,6 +187,9 @@ const getCAEncaisseBaseData = async ({
 }) => {
 
 
+  const dateDebut = FonctionsUtilitaires.normalizeDate(debut, 'start');
+  const dateFin = FonctionsUtilitaires.normalizeDate(fin, 'end');
+
   const result = await db.Paiement.findOne({
     attributes: [
       [fn('SUM', col('Paiement.montant')), 'totalEncaisse'],
@@ -217,7 +225,7 @@ const getCAEncaisseBaseData = async ({
       code_structure,
       statutPaiement: 'validé',
       typePaiement: { [Op.ne]: 'fournisseur' },
-      date: { [Op.between]: [debut, fin] },
+      date: { [Op.between]: [dateDebut, dateFin] },
       ...(magasinId && { magasinId }),
       ...(agentId && { agentId })
     },
@@ -680,8 +688,9 @@ const getPerformanceVendeurs = async ({ code_structure, debut, fin, magasinId })
         nest: true
     });
 
+    //console.log('Résultat brut performance vendeurs:', result);
     return result.map(item => ({
-        vendeur: item.agent,
+        vendeur: item.user,
         nbVentes: parseInt(item.nbVentes) || 0,
         caHT: parseFloat(item.caHT) || 0,
         caTTC: parseFloat(item.caTTC) || 0,

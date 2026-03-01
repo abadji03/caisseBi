@@ -1,7 +1,143 @@
 const db = require('../../models');
 const FonctionsUtilitaires  = require('./fonctionsUtilitaires');
 const { Op, fn, col } = db.Sequelize;
+const path = require('path');
+const fs = require('fs').promises;
+const ejs = require('ejs');
 
+// Fonction pour formater la période
+const formatPeriodeAffichage = (debut, fin, periodeType) => {
+    const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+    
+    if (periodeType === 'jour') {
+        return `Journée du ${debut.toLocaleDateString('fr-FR', options)}`;
+    } else if (periodeType === 'semaine') {
+        return `Semaine du ${debut.toLocaleDateString('fr-FR', options)} au ${fin.toLocaleDateString('fr-FR', options)}`;
+    } else if (periodeType === 'mois') {
+        return `Mois de ${debut.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}`;
+    } else {
+        return `Période du ${debut.toLocaleDateString('fr-FR', options)} au ${fin.toLocaleDateString('fr-FR', options)}`;
+    }
+}
+
+// Rendu du template EJS
+const renderEjsTemplate = async (templateName, data) =>{
+    // Trouver la racine du projet (backend)
+    // Part du fichier actuel (utils/rapportStockUtilitaire.js) et remonte
+    const currentDir = __dirname; // .../backend/controllers/utils
+    const backendRoot = path.resolve(currentDir, '..', '..'); // Remonte de 2 niveaux : utils -> controllers -> backend
+    
+    // Chemin correct vers le dossier views à la racine du backend
+    const viewsPath = path.join(backendRoot, 'views');
+    const templatePath = path.join(viewsPath, `${templateName}.ejs`);
+    
+    console.log('📁 Backend root:', backendRoot);
+    console.log('📁 Views path:', viewsPath);
+    console.log('📁 Template path:', templatePath);
+    
+    // Vérifier que le dossier views existe
+    try {
+        await fs.access(viewsPath);
+        console.log('✅ Dossier views trouvé');
+    } catch (error) {
+        console.log(error);
+        throw new Error(`Le dossier views n'existe pas: ${viewsPath}`);
+    }
+    
+    // Vérifier que le template existe
+    try {
+        await fs.access(templatePath);
+        console.log('✅ Template trouvé');
+    } catch (error) {
+        console.log(error)
+        throw new Error(`Template ${templateName}.ejs non trouvé: ${templatePath}`);
+    }
+    
+    return new Promise((resolve, reject) => {
+        ejs.renderFile(templatePath, data, { async: false }, (err, str) => {
+            if (err) {
+                console.error('❌ Erreur rendu EJS:', err);
+                reject(err);
+            } else {
+                console.log('✅ Rendu EJS réussi');
+                resolve(str);
+            }
+        });
+    });
+}
+
+// Génération PDF avec Puppeteer
+const generatePDF = async (html)=> {
+    const puppeteer = require('puppeteer-core');
+    let browser = null;
+    
+    try {
+        // Chemin vers Chrome (à adapter selon votre système)
+        const chromePaths = [
+            //'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+            'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+            //'/usr/bin/google-chrome',
+            //'/usr/bin/chromium-browser',
+            //'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+        ];
+
+        let executablePath = null;
+        for (const path of chromePaths) {
+            try {
+                await require('fs').promises.access(path);
+                executablePath = path;
+                break;
+            } catch (e) {
+                console.log('Erreur',e)
+            }
+        }
+
+        if (!executablePath) {
+            throw new Error('Chrome/Chromium non trouvé');
+        }
+
+        browser = await puppeteer.launch({
+            executablePath,
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+            headless: true
+        });
+
+        const page = await browser.newPage();
+        
+        await page.setContent(html, { 
+            waitUntil: 'networkidle0',
+            timeout: 30000 
+        });
+
+        await page.setViewport({
+            width: 1200,
+            height: 1600,
+            deviceScaleFactor: 1,
+        });
+        
+        const pdf = await page.pdf({
+            format: 'A4',
+            printBackground: true,
+            margin: {
+                top: '20mm',
+                bottom: '20mm',
+                left: '15mm',
+                right: '15mm'
+            },
+            landscape: false,
+            scale: 0.9,
+            displayHeaderFooter: false,
+            preferCSSPageSize: true
+        });
+
+        return pdf;
+
+    } finally {
+        if (browser) {
+            await browser.close();
+        }
+    }
+}
 /**
  * Calculer les indicateurs financiers principaux
  */
@@ -38,7 +174,8 @@ const calculerIndicateursPrincipaux = async (filters) => {
         code_structure,
         magasinId,
         agentId,
-        type: 'RECETTE'
+        type: 'RECETTE',
+        statut: 'validé'
     });
 
     const whereDepenses = FonctionsUtilitaires.buildWhereFinance({
@@ -49,7 +186,8 @@ const calculerIndicateursPrincipaux = async (filters) => {
         code_structure,
         magasinId,
         agentId,
-        type: 'DEPENSE'
+        type: 'DEPENSE',
+        statut: 'validé'
     });
 
     // 1. Calcul du chiffre d'affaires (recettes de catégorie vente)
@@ -59,11 +197,9 @@ const calculerIndicateursPrincipaux = async (filters) => {
             type: 'RECETTE',
             [Op.or]: [
                 { name: { [Op.like]: '%vente%' } },
-                { name: { [Op.like]: '%ventes%' } },
                 { name: { [Op.like]: '%service%' } },
-                { name: { [Op.like]: '%services%' } },
                 { description: { [Op.like]: '%vente%' } },
-                { description: { [Op.like]: '%ventes%' } }
+                { description: { [Op.like]: '%service%' } },
             ]
         },
         attributes: ['id']
@@ -184,11 +320,9 @@ const calculerEvolutionCA = async (filters, indicateursActuels) => {
             type: 'RECETTE',
             [Op.or]: [
                 { name: { [Op.like]: '%vente%' } },
-                { name: { [Op.like]: '%ventes%' } },
                 { name: { [Op.like]: '%service%' } },
-                { name: { [Op.like]: '%services%' } },
                 { description: { [Op.like]: '%vente%' } },
-                { description: { [Op.like]: '%ventes%' } }
+                { description: { [Op.like]: '%service%' } },
             ]
         },
         attributes: ['id']
@@ -393,4 +527,7 @@ const calculerTendances = async (filters, indicateursActuels) => {
 exports.calculerEvolutionCA = calculerEvolutionCA;
 exports.calculerFluxTresorerie = calculerFluxTresorerie;
 exports.calculerTendances = calculerTendances;
-exports.calculerIndicateursPrincipaux = calculerIndicateursPrincipaux
+exports.calculerIndicateursPrincipaux = calculerIndicateursPrincipaux;
+exports.formatPeriodeAffichage = formatPeriodeAffichage;
+exports.renderEjsTemplate = renderEjsTemplate;
+exports.generatePDF = generatePDF;

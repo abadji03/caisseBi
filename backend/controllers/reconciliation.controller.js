@@ -10,7 +10,7 @@ exports.createReconciliation = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-    const { code_structure, produitId, stockTheorique, stockPhysique, responsable, note } =
+    const { code_structure, produitId, stockTheorique, stockPhysique, responsable, note,magasinId } =
       req.body;
 
     const ecart = parseFloat(stockPhysique) - parseFloat(stockTheorique);
@@ -23,6 +23,7 @@ exports.createReconciliation = async (req, res) => {
       ecart,
       responsable,
       note,
+      magasinId
     });
 
     res.status(201).json(reconciliation);
@@ -162,7 +163,7 @@ exports.deleteReconciliation = async (req, res) => {
 };
 
 //Récupérer toutes les réconciliations (admin/export)
-exports.getAllReconciliations = async (req, res) => {
+/* exports.getAllReconciliations = async (req, res) => {
   try {
     const authUser = req.user;
 
@@ -177,7 +178,7 @@ exports.getAllReconciliations = async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: 'Erreur récupération', error: err.message });
   }
-};
+}; */
 
 // Récupérer les réconciliations d’un produit
 exports.getReconciliationsByProduit = async (req, res) => {

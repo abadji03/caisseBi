@@ -1,10 +1,11 @@
 const db = require('../models');
+const puppeteer = require('puppeteer-core');
 const FonctionsUtilitaires  = require('./utils/fonctionsUtilitaires');
 const kpiUtilitaires  = require('./utils/kpiCaisseUtilitaires');
 const Panier = db.Panier;
 const { Op, fn, col } = db.Sequelize;
-
-
+// Import ExcelJS
+const ExcelJS = require('exceljs');
 
 
 //..................................... API pour KPI journaliers................................
@@ -1646,6 +1647,7 @@ exports.getRapportVente = async (req, res) => {
             // Performance des vendeurs
             kpiUtilitaires.getPerformanceVendeurs(params),
 
+
             // Modes de paiement (via les paiements directement)
             (async () => {
                 // Récupérer les IDs des paniers de la période
@@ -1700,8 +1702,8 @@ exports.getRapportVente = async (req, res) => {
 
                 if (search) {
                     where[Op.or] = [
-                        { '$agent.nom$': { [Op.like]: `%${search}%` } },
-                        //{ '$agent.prenom$': { [Op.like]: `%${search}%` } }
+                        { '$user.nom$': { [Op.like]: `%${search}%` } },
+                        { '$client.nomComplet$': { [Op.like]: `%${search}%` } }
                     ];
                     
                     // Recherche par ID de ticket (conversion en nombre)
@@ -1712,10 +1714,16 @@ exports.getRapportVente = async (req, res) => {
 
                 const { count, rows } = await db.Panier.findAndCountAll({
                     where,
+                    subQuery: false,
                     include: [
                         {
                             model: db.Users,
-                            attributes: ['id', 'nom'],
+                            attributes: ['id', 'nom','email'],
+                            required: false
+                        },
+                        {
+                            model: db.Client,
+                            attributes: ['id', 'nomComplet'],
                             required: false
                         },
                         {
@@ -1742,6 +1750,8 @@ exports.getRapportVente = async (req, res) => {
                     distinct: true
                 });
 
+                console.log(`📦 Détails ventes: ${count} ventes trouvées, page ${page}/${Math.ceil(count / parseInt(limit))}`) ;
+                console.log('Premier objet:', Object.keys(rows[0] || {}));
                 return {
                     ventes: rows,
                     total: count,
@@ -1767,7 +1777,7 @@ exports.getRapportVente = async (req, res) => {
         }
         
         const ticketMoyen = caData.caVendu.ticketMoyenVente;
-        const panierMoyen = caData.caVendu.panierMoyen || 0;
+        //const panierMoyen = caData.caVendu.panierMoyen || 0;
 
         // Évolution par rapport à la période précédente
         const periodePrecedente = FonctionsUtilitaires.getPeriodePrecedentePersonnalisee(debut, fin);
@@ -1804,10 +1814,10 @@ exports.getRapportVente = async (req, res) => {
             clientNom: vente.clientId && clientsMap[vente.clientId] 
                 ? clientsMap[vente.clientId].nomComplet 
                 : 'Client anonyme',
-            agent: vente.agent ? {
-                id: vente.agent.id,
-                nom: vente.agent.nom,
-                prenom: vente.agent.prenom
+            agent: vente.user ? {
+                id: vente.user.id,
+                nom: vente.user.nom,
+                email: vente.user.email
             } : null,
             articles: vente.ArticlePaniers ? vente.ArticlePaniers.map(a => ({
                 quantite: a.quantite,
@@ -1822,6 +1832,7 @@ exports.getRapportVente = async (req, res) => {
             })) : []
         }));
 
+        console.log('📊 Performance vendeurs récupérée',performanceVendeurs);
         // Formatage de la réponse
         return res.json({
             niveau: magasinIdFinal ? 'magasin' : 'structure',
@@ -1836,7 +1847,7 @@ exports.getRapportVente = async (req, res) => {
             chiffreAffairesHT,
             margeBeneficiaire,
             ticketMoyen,
-            panierMoyen,
+            //panierMoyen,
             
             // Évolution
             evolutionCA,
@@ -1883,6 +1894,7 @@ exports.getDetailsVendeur = async (req, res) => {
             fromDate,
             toDate
         } = req.query;
+
 
         if (!vendeurId) {
             return res.status(400).json({ error: 'vendeurId requis' });
@@ -2266,5 +2278,942 @@ exports.getOptionsComparaison = async (req, res) => {
     } catch (error) {
         console.error('❌ Erreur getOptionsComparaison:', error);
         res.status(500).json({ error: error.message });
+    }
+};
+
+//...........................Génération de rapport PDF....................
+/**
+ * Génère un rapport de vente au format PDF
+ */
+exports.genererRapportPDF = async (req, res) => {
+    try {
+        const authUser = req.user;
+        if (!authUser) {
+            return res.status(401).json({ message: "Non authentifié" });
+        }
+
+        // Récupération des paramètres de la requête
+        const {
+            magasinId,
+            agentId,
+            periode,
+            dateReference,
+            fromDate,
+            toDate,
+            //comparaisonType,    
+            //comparaisonElement1, 
+            //comparaisonElement2, 
+            comparaisonLabels,   
+            comparaisonData      
+        } = req.query;
+
+        const code_structure = authUser.code_structure;
+
+        // Gestion des rôles
+        const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
+        const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+
+        let magasinIdFinal = magasinId ? parseInt(magasinId) : null;
+
+        // Si c'est un gérant, on force son magasin
+        if (isGerant && !isAdmin) {
+            magasinIdFinal = authUser.magasinId;
+        }
+
+        // Normalisation des dates
+        let debut, fin;
+        if (periode) {
+            const dates = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
+            debut = dates.debut;
+            fin = dates.fin;
+        } else if (fromDate && toDate) {
+            debut = FonctionsUtilitaires.normalizeDate(fromDate, 'start');
+            fin = FonctionsUtilitaires.normalizeDate(toDate, 'end');
+        } else {
+            const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
+            debut = debutJournee;
+            fin = finJournee;
+        }
+
+        // Formatage de la période pour l'affichage
+        const periodeAffichage = formatPeriodeAffichage(debut, fin, periode);
+
+        // Récupération des informations de la structure
+        const structure = await db.Structure.findOne({
+            where: { code_structure }
+        });
+
+        // Récupération des informations du magasin si sélectionné
+        let magasinNom = null;
+        if (magasinIdFinal) {
+            const magasin = await db.Magasin.findByPk(magasinIdFinal);
+            magasinNom = magasin ? magasin.nom : null;
+        }
+
+        // Récupération des informations du vendeur si sélectionné
+        let vendeurNom = null;
+        if (agentId) {
+            const vendeur = await db.Users.findByPk(agentId);
+            vendeurNom = vendeur ? vendeur.nom : null;
+        }
+
+        // Paramètres pour les requêtes
+        const params = {
+            code_structure,
+            debut,
+            fin,
+            magasinId: magasinIdFinal,
+            agentId: agentId ? parseInt(agentId) : null
+        };
+
+        console.log('📊 Génération rapport PDF du', debut, 'au', fin);
+
+        // Récupération des données
+        const [
+            caData,
+            evolutionParJour,
+            topProduits,
+            topClients,
+            performanceVendeurs,
+            modesPaiement,
+            ventesDetail
+        ] = await Promise.all([
+            // CA et KPI de base
+            (async () => {
+                const [caVendu, caEncaisse] = await Promise.all([
+                    kpiUtilitaires.getCAVenduBaseData(params),
+                    kpiUtilitaires.getCAEncaisseBaseData(params)
+                ]);
+                return { caVendu, caEncaisse };
+            })(),
+
+            // Évolution des ventes par jour
+            kpiUtilitaires.getEvolutionVentesParJour(params),
+
+            // Top 10 produits
+            kpiUtilitaires.getTopProduits(params),
+
+            // Top 10 clients
+            kpiUtilitaires.getTopClients(params),
+
+            // Performance des vendeurs
+            kpiUtilitaires.getPerformanceVendeurs(params),
+
+            // Modes de paiement
+            (async () => {
+                const paniersIds = await db.Panier.findAll({
+                    attributes: ['id'],
+                    where: {
+                        code_structure,
+                        dateCreation: { [Op.between]: [debut, fin] },
+                        statut: { [Op.notIn]: kpiUtilitaires.STATUTS_EXCLUS },
+                        ...(magasinIdFinal && { magasinId: magasinIdFinal }),
+                        ...(agentId && { agentId: parseInt(agentId) })
+                    },
+                    raw: true
+                }).then(paniers => paniers.map(p => p.id));
+
+                if (paniersIds.length === 0) return [];
+
+                const stats = await db.Paiement.findAll({
+                    attributes: [
+                        'methodePaiement',
+                        [db.Sequelize.fn('SUM', db.Sequelize.col('montant')), 'montantTotal'],
+                        [db.Sequelize.fn('COUNT', db.Sequelize.col('id')), 'occurrences']
+                    ],
+                    where: {
+                        panierId: { [Op.in]: paniersIds },
+                        statutPaiement: 'validé'
+                    },
+                    group: ['methodePaiement'],
+                    raw: true
+                });
+
+                return stats.map(s => ({
+                    mode: s.methodePaiement,
+                    montantTotal: parseFloat(s.montantTotal) || 0,
+                    occurrences: parseInt(s.occurrences) || 0
+                }));
+            })(),
+
+            // Détails des ventes (limité à 50 pour le PDF)
+            (async () => {
+                const where = {
+                    code_structure,
+                    dateCreation: { [Op.between]: [debut, fin] },
+                    statut: { [Op.notIn]: kpiUtilitaires.STATUTS_EXCLUS },
+                    ...(magasinIdFinal && { magasinId: magasinIdFinal }),
+                    ...(agentId && { agentId: parseInt(agentId) })
+                };
+
+                const rows = await db.Panier.findAll({
+                    where,
+                    include: [
+                        {
+                            model: db.Users,
+                            attributes: ['id', 'nom', 'email'],
+                            required: false
+                        },
+                        {
+                            model: db.Client,
+                            attributes: ['id', 'nomComplet'],
+                            required: false
+                        },
+                        {
+                            model: db.Paiement,
+                            attributes: ['id', 'methodePaiement', 'montant', 'statutPaiement'],
+                            required: false
+                        },
+                        {
+                            model: db.ArticlePanier,
+                            attributes: ['id', 'quantite'],
+                            required: false
+                        }
+                    ],
+                    order: [['dateCreation', 'DESC']],
+                    limit: 50
+                });
+
+                // Récupération des clients pour le mapping
+                const clients = await db.Client.findAll({
+                    where: { code_structure },
+                    attributes: ['id', 'nomComplet']
+                });
+                const clientsMap = clients.reduce((acc, c) => {
+                    acc[c.id] = c;
+                    return acc;
+                }, {});
+
+                const ventesFormatted = rows.map(vente => ({
+                    id: vente.id,
+                    dateCreation: vente.dateCreation,
+                    totalTTC: vente.totalTTC,
+                    statut: vente.statut,
+                    clientNom: vente.clientId && clientsMap[vente.clientId] 
+                        ? clientsMap[vente.clientId].nomComplet 
+                        : 'Client anonyme',
+                    agent: vente.user ? { nom: vente.user.nom } : null,
+                    nombreArticles: vente.ArticlePaniers ? vente.ArticlePaniers.length : 0,
+                    paiements: vente.Paiements ? vente.Paiements.map(p => ({
+                        methodePaiement: p.methodePaiement,
+                        montant: p.montant
+                    })) : []
+                }));
+
+                return ventesFormatted;
+            })()
+        ]);
+
+        // Calcul des KPI dérivés
+        const totalVentes = caData.caVendu.nombrePaniers;
+        const chiffreAffairesTTC = caData.caVendu.totalVendu;
+        const chiffreAffairesHT = caData.caVendu.totalVenduHT || (caData.caVendu.totalVendu / 1.18);
+        
+        let margeBeneficiaire = 0;
+        if (topProduits && topProduits.length > 0) {
+            margeBeneficiaire = topProduits.reduce((sum, p) => sum + (p.marge || 0), 0);
+        } else {
+            margeBeneficiaire = chiffreAffairesHT * 0.25; // Approximation
+        }
+        
+        const ticketMoyen = caData.caVendu.ticketMoyenVente;
+
+        let parsedComparaisonData = null;
+        let parsedComparaisonLabels = null;
+
+        if (comparaisonData) {
+            try {
+                // Si comparaisonData est déjà un objet (passé en POST), on l'utilise directement
+                if (typeof comparaisonData === 'object') {
+                    parsedComparaisonData = comparaisonData;
+                } 
+                // Sinon, on essaie de le parser
+                else {
+                    parsedComparaisonData = JSON.parse(comparaisonData);
+                }
+                console.log('✅ Données comparaison parsées:', parsedComparaisonData);
+            } catch (e) {
+                console.error('❌ Erreur parsing comparaisonData:', e.message);
+                // Ne pas bloquer la génération du PDF, juste ignorer la comparaison
+                parsedComparaisonData = null;
+            }
+        }
+
+        if (comparaisonLabels) {
+            try {
+                if (typeof comparaisonLabels === 'object') {
+                    parsedComparaisonLabels = comparaisonLabels;
+                } else {
+                    parsedComparaisonLabels = JSON.parse(comparaisonLabels);
+                }
+            } catch (e) {
+                console.error('❌ Erreur parsing comparaisonLabels:', e.message);
+                parsedComparaisonLabels = ['Élément 1', 'Élément 2'];
+            }
+        }
+
+
+        // Données pour le template
+        const templateData = {
+            structure,
+            utilisateur: authUser,
+            magasin: magasinIdFinal,
+            magasinNom,
+            vendeur: agentId,
+            vendeurNom,
+            periodeAffichage,
+            totalVentes,
+            chiffreAffairesTTC,
+            chiffreAffairesHT,
+            margeBeneficiaire,
+            ticketMoyen,
+            statmodesPaiement: modesPaiement,
+            topProduits,
+            topClients,
+            vendeursPerformance: performanceVendeurs,
+            ventes: ventesDetail,
+            evolutionParJour,
+            rapportData: {
+                pagination: {
+                    total: ventesDetail.length,
+                    page: 1,
+                    totalPages: 1,
+                    limit: 50
+                }
+            },
+            // AJOUTER LES DONNÉES DE COMPARAISON SI ELLES EXISTENT
+            comparaisonData: parsedComparaisonData,
+            comparaisonLabels: parsedComparaisonLabels
+        };
+
+        // Rendu du template EJS
+        const html = await renderEjsTemplate('rapport-vente', templateData);
+
+        // Génération du PDF avec Puppeteer
+        const pdf = await generatePDF(html);
+
+        // Envoi du PDF
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=rapport-vente-${Date.now()}.pdf`);
+        res.send(pdf);
+
+    } catch (error) {
+        console.error('❌ Erreur génération PDF:', error);
+        res.status(500).json({ 
+            error: 'Erreur lors de la génération du PDF',
+            details: error.message 
+        });
+    }
+};
+
+/**
+ * Fonction pour rendre un template EJS
+ */
+async function renderEjsTemplate(templateName, data) {
+    const ejs = require('ejs');
+    const path = require('path');
+    
+    const templatePath = path.join(__dirname, '..', 'views', `${templateName}.ejs`);
+    
+    return new Promise((resolve, reject) => {
+        ejs.renderFile(templatePath, data, { async: false }, (err, str) => {
+            if (err) reject(err);
+            else resolve(str);
+        });
+    });
+}
+
+/**
+ * Fonction pour générer un PDF à partir de HTML
+ */
+async function generatePDF(html) {
+    let browser = null;
+    
+    try {
+        // Chemin vers Chrome (à adapter selon votre système)
+        const chromePaths = [
+            //'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', // Windows
+            'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe', // Windows 32-bit
+            //'/usr/bin/google-chrome', // Linux
+            //'/usr/bin/chromium-browser', // Linux
+            //'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' // Mac
+        ];
+
+        let executablePath = null;
+        for (const path of chromePaths) {
+            try {
+                await require('fs').promises.access(path);
+                executablePath = path;
+                break;
+            } catch (e) {
+                // Chemin non trouvé
+                console.log('Chemin non trouvé',e);
+            }
+        }
+
+        if (!executablePath) {
+            throw new Error('Chrome/Chromium non trouvé');
+        }
+
+        browser = await puppeteer.launch({
+            executablePath,
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+            headless: true
+        });
+
+        const page = await browser.newPage();
+        
+        // Configuration de la page
+        //await page.setContent(html, { waitUntil: 'networkidle0' });
+        // Configuration de la page avec des dimensions adaptées
+        await page.setContent(html, { 
+            waitUntil: 'networkidle0',
+            timeout: 30000 
+        });
+
+        // Définir la taille de la viewport pour correspondre au format A4
+        await page.setViewport({
+            width: 1200,  // Largeur en pixels pour A4
+            height: 1600, // Hauteur approximative
+            deviceScaleFactor: 1,
+        });
+        
+        // Génération du PDF
+        const pdf = await page.pdf({
+            format: 'A4',
+            printBackground: true,
+            margin: {
+                top: '20mm',
+                bottom: '20mm',
+                left: '15mm',
+                right: '15mm'
+            },
+            landscape: false, // Mode portrait (plus adapté pour les rapports)
+            scale: 0.9,       // Réduire légèrement pour éviter les débordements
+            displayHeaderFooter: false,
+            preferCSSPageSize: true // Utiliser les dimensions CSS
+        });
+
+        return pdf;
+
+    } finally {
+        if (browser) {
+            await browser.close();
+        }
+    }
+}
+
+/**
+ * Formate la période pour l'affichage
+ */
+function formatPeriodeAffichage(debut, fin, periodeType) {
+    const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+    
+    if (periodeType === 'jour') {
+        return `Journée du ${debut.toLocaleDateString('fr-FR', options)}`;
+    } else if (periodeType === 'semaine') {
+        return `Semaine du ${debut.toLocaleDateString('fr-FR', options)} au ${fin.toLocaleDateString('fr-FR', options)}`;
+    } else if (periodeType === 'mois') {
+        return `Mois de ${debut.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}`;
+    } else {
+        return `Période du ${debut.toLocaleDateString('fr-FR', options)} au ${fin.toLocaleDateString('fr-FR', options)}`;
+    }
+}
+
+/**
+ * API de test pour voir le rendu HTML (sans PDF)
+ */
+exports.testRapportHTML = async (req, res) => {
+    try {
+        const authUser = req.user;
+        if (!authUser) {
+            return res.status(401).json({ message: "Non authentifié" });
+        }
+
+        // Données de test
+        const structure = {
+            nom_structure: "Entreprise Test SARL",
+            adresse: "Dakar, Sénégal",
+            telephone: "+221 77 123 45 67",
+            email: "contact@test.com",
+            code_structure: "STR-001",
+            logo: null
+        };
+
+        const templateData = {
+            structure,
+            utilisateur: { nom: "Admin Test" },
+            magasin: -1,
+            magasinNom: null,
+            vendeur: -1,
+            vendeurNom: null,
+            periodeAffichage: "Période du 01/02/2026 au 21/02/2026",
+            totalVentes: 156,
+            chiffreAffairesTTC: 2456789,
+            chiffreAffairesHT: 2082025,
+            margeBeneficiaire: 520506,
+            ticketMoyen: 15748,
+            statmodesPaiement: [
+                { mode: "Espèces", montantTotal: 1500000, occurrences: 98 },
+                { mode: "Carte", montantTotal: 756789, occurrences: 45 },
+                { mode: "Mobile Money", montantTotal: 200000, occurrences: 13 }
+            ],
+            topProduits: [
+                { produit: { designation: "Produit A", prixVenteUnitaire: 5000 }, quantite: 45, ca: 225000, marge: 45000, nombreVentes: 23 },
+                { produit: { designation: "Produit B", prixVenteUnitaire: 3500 }, quantite: 38, ca: 133000, marge: 26600, nombreVentes: 19 }
+            ],
+            topClients: [
+                { client: { nomComplet: "Client 1" }, nbAchats: 12, ca: 180000, dernierAchat: new Date() },
+                { client: { nomComplet: "Client 2" }, nbAchats: 8, ca: 120000, dernierAchat: new Date() }
+            ],
+            vendeursPerformance: [
+                { vendeur: { nom: "Vendeur 1" }, nbVentes: 45, caHT: 450000, caTTC: 531000, ticketMoyen: 11800 },
+                { vendeur: { nom: "Vendeur 2" }, nbVentes: 38, caHT: 380000, caTTC: 448400, ticketMoyen: 11800 }
+            ],
+            ventes: [
+                { id: 1, dateCreation: new Date(), clientNom: "Client Test", nombreArticles: 3, totalTTC: 15000, 
+                  paiements: [{ methodePaiement: "Espèces", montant: 15000 }], agent: { nom: "Vendeur 1" }, statut: "validé" }
+            ],
+            evolutionParJour: [],
+            rapportData: { pagination: { total: 1, page: 1, totalPages: 1, limit: 50 } }
+        };
+
+        const html = await renderEjsTemplate('rapport-vente', templateData);
+        
+        res.send(html);
+
+    } catch (error) {
+        console.error('❌ Erreur test HTML:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+//..................Exporter les données vers Excel......................
+
+/**
+ * Exporte le rapport de vente au format Excel
+ */
+exports.exportRapportExcel = async (req, res) => {
+    try {
+        const authUser = req.user;
+        if (!authUser) {
+            return res.status(401).json({ message: "Non authentifié" });
+        }
+
+        // Récupération des paramètres (comme pour le PDF)
+        const {
+            magasinId,
+            agentId,
+            periode,
+            dateReference,
+            fromDate,
+            toDate
+        } = req.query;
+
+        const code_structure = authUser.code_structure;
+
+        if (!code_structure) {
+            return res.status(400).json({ error: 'code_structure requis' });
+        }
+
+        // Gestion des rôles
+        const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
+        const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+
+        let magasinIdFinal = magasinId ? parseInt(magasinId) : null;
+
+        if (isGerant && !isAdmin) {
+            magasinIdFinal = authUser.magasinId;
+        }
+
+        // Normalisation des dates
+        let debut, fin;
+        if (periode) {
+            const dates = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
+            debut = dates.debut;
+            fin = dates.fin;
+        } else if (fromDate && toDate) {
+            debut = FonctionsUtilitaires.normalizeDate(fromDate, 'start');
+            fin = FonctionsUtilitaires.normalizeDate(toDate, 'end');
+        } else {
+            const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
+            debut = debutJournee;
+            fin = finJournee;
+        }
+
+        const params = {
+            code_structure,
+            debut,
+            fin,
+            magasinId: magasinIdFinal,
+            agentId: agentId ? parseInt(agentId) : null
+        };
+
+        console.log('📊 Génération Excel du', debut, 'au', fin);
+
+        // Récupération des données (similaire au PDF mais sans limite)
+        const [
+            caData,
+            topProduits,
+            topClients,
+            performanceVendeurs,
+            modesPaiement,
+            ventesDetail,
+            structure,
+            magasin,
+            vendeur
+        ] = await Promise.all([
+            // CA et KPI de base
+            (async () => {
+                const [caVendu, caEncaisse] = await Promise.all([
+                    kpiUtilitaires.getCAVenduBaseData(params),
+                    kpiUtilitaires.getCAEncaisseBaseData(params)
+                ]);
+                return { caVendu, caEncaisse };
+            })(),
+
+            // Top produits (sans limite pour Excel)
+            kpiUtilitaires.getTopProduits({ ...params, limit: 100 }),
+
+            // Top clients
+            kpiUtilitaires.getTopClients(params),
+
+            // Performance vendeurs
+            kpiUtilitaires.getPerformanceVendeurs(params),
+
+            // Modes de paiement
+            (async () => {
+                const paniersIds = await db.Panier.findAll({
+                    attributes: ['id'],
+                    where: {
+                        code_structure,
+                        dateCreation: { [Op.between]: [debut, fin] },
+                        statut: { [Op.notIn]: kpiUtilitaires.STATUTS_EXCLUS },
+                        ...(magasinIdFinal && { magasinId: magasinIdFinal }),
+                        ...(agentId && { agentId: parseInt(agentId) })
+                    },
+                    raw: true
+                }).then(paniers => paniers.map(p => p.id));
+
+                if (paniersIds.length === 0) return [];
+
+                const stats = await db.Paiement.findAll({
+                    attributes: [
+                        'methodePaiement',
+                        [fn('SUM', col('montant')), 'montantTotal'],
+                        [fn('COUNT', col('id')), 'occurrences']
+                    ],
+                    where: {
+                        panierId: { [Op.in]: paniersIds },
+                        statutPaiement: 'validé'
+                    },
+                    group: ['methodePaiement'],
+                    raw: true
+                });
+
+                return stats.map(s => ({
+                    mode: s.methodePaiement,
+                    montantTotal: parseFloat(s.montantTotal) || 0,
+                    occurrences: parseInt(s.occurrences) || 0
+                }));
+            })(),
+
+            // Toutes les ventes (sans pagination pour Excel)
+            (async () => {
+                const where = {
+                    code_structure,
+                    dateCreation: { [Op.between]: [debut, fin] },
+                    statut: { [Op.notIn]: kpiUtilitaires.STATUTS_EXCLUS },
+                    ...(magasinIdFinal && { magasinId: magasinIdFinal }),
+                    ...(agentId && { agentId: parseInt(agentId) })
+                };
+
+                const rows = await db.Panier.findAll({
+                    where,
+                    include: [
+                        {
+                            model: db.Users,
+                            attributes: ['id', 'nom', 'email'],
+                            required: false
+                        },
+                        {
+                            model: db.Client,
+                            attributes: ['id', 'nomComplet'],
+                            required: false
+                        },
+                        {
+                            model: db.Paiement,
+                            attributes: ['id', 'methodePaiement', 'montant', 'statutPaiement'],
+                            required: false
+                        },
+                        {
+                            model: db.ArticlePanier,
+                            attributes: ['id', 'quantite', 'produitId'],
+                            required: false,
+                            include: [
+                                {
+                                    model: db.Produit,
+                                    attributes: ['id', 'designation', 'prixVenteUnitaire'],
+                                    required: false
+                                }
+                            ]
+                        }
+                    ],
+                    order: [['dateCreation', 'DESC']]
+                });
+
+                const clients = await db.Client.findAll({
+                    where: { code_structure },
+                    attributes: ['id', 'nomComplet']
+                });
+                const clientsMap = clients.reduce((acc, c) => {
+                    acc[c.id] = c;
+                    return acc;
+                }, {});
+
+                return rows.map(vente => ({
+                    id: vente.id,
+                    dateCreation: vente.dateCreation,
+                    totalTTC: vente.totalTTC,
+                    totalHT: vente.totalHT,
+                    statut: vente.statut,
+                    clientNom: vente.clientId && clientsMap[vente.clientId] 
+                        ? clientsMap[vente.clientId].nomComplet 
+                        : 'Client anonyme',
+                    agent: vente.user ? { nom: vente.user.nom } : null,
+                    articles: vente.ArticlePaniers || [],
+                    paiements: vente.Paiements || []
+                }));
+            })(),
+
+            // Informations structure
+            db.Structure.findOne({ where: { code_structure } }),
+
+            // Info magasin si sélectionné
+            magasinIdFinal ? db.Magasin.findByPk(magasinIdFinal) : null,
+
+            // Info vendeur si sélectionné
+            agentId ? db.Users.findByPk(agentId, { attributes: ['id', 'nom'] }) : null
+        ]);
+
+        // Calcul des KPI
+        const totalVentes = caData.caVendu.nombrePaniers;
+        const chiffreAffairesTTC = caData.caVendu.totalVendu;
+        const chiffreAffairesHT = caData.caVendu.totalVenduHT || (caData.caVendu.totalVendu / 1.18);
+        const ticketMoyen = caData.caVendu.ticketMoyenVente;
+
+        let margeBeneficiaire = 0;
+        if (topProduits && topProduits.length > 0) {
+            margeBeneficiaire = topProduits.reduce((sum, p) => sum + (p.marge || 0), 0);
+        }
+
+        // Création du workbook Excel
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = structure?.nom_structure || 'Application';
+        workbook.created = new Date();
+        workbook.modified = new Date();
+
+        // Styles
+        const headerStyle = {
+            font: { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 },
+            fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D6EFD' } },
+            alignment: { vertical: 'middle', horizontal: 'center' },
+            border: {
+                top: { style: 'thin' }, bottom: { style: 'thin' },
+                left: { style: 'thin' }, right: { style: 'thin' }
+            }
+        };
+
+        const titleStyle = {
+            font: { bold: true, size: 16, color: { argb: 'FF0D6EFD' } },
+            alignment: { horizontal: 'center' }
+        };
+
+        // ==================== FEUILLE RÉSUMÉ ====================
+        const summarySheet = workbook.addWorksheet('Résumé');
+
+        // Titre
+        summarySheet.mergeCells('A1:F2');
+        const titleCell = summarySheet.getCell('A1');
+        titleCell.value = 'RAPPORT DE VENTE';
+        titleCell.style = titleStyle;
+        summarySheet.getRow(1).height = 40;
+
+        // Informations générales
+        summarySheet.addRow([]);
+        summarySheet.addRow(['Informations générales']).font = { bold: true, size: 14 };
+        
+        const infoData = [
+            ['Structure', structure?.nom_structure || 'N/A'],
+            ['Période', formatPeriodeAffichage(debut, fin, periode)],
+            ['Magasin', magasin ? magasin.nom : (magasinIdFinal ? 'Magasin sélectionné' : 'Tous')],
+            ['Vendeur', vendeur ? vendeur.nom : (agentId ? 'Vendeur sélectionné' : 'Tous')],
+            ['Date génération', new Date().toLocaleString('fr-FR')],
+            ['Responsable', authUser.nom || 'Système']
+        ];
+
+        infoData.forEach(([label, value]) => {
+            const row = summarySheet.addRow([label, value]);
+            row.getCell(1).font = { bold: true };
+        });
+
+        summarySheet.addRow([]);
+
+        // Indicateurs clés
+        summarySheet.addRow(['INDICATEURS CLÉS']).font = { bold: true, size: 14 };
+        summarySheet.addRow([]);
+
+        const kpiHeaders = ['Indicateur', 'Valeur', 'Détail'];
+        summarySheet.addRow(kpiHeaders).eachCell(cell => {
+            cell.style = headerStyle;
+        });
+
+        const kpiRows = [
+            ['Total ventes', totalVentes, `${totalVentes} transactions`],
+            ['CA TTC', `${chiffreAffairesTTC.toLocaleString('fr-FR')} F CFA`, ''],
+            ['CA HT', `${chiffreAffairesHT.toLocaleString('fr-FR')} F CFA`, ''],
+            ['Marge', `${margeBeneficiaire.toLocaleString('fr-FR')} F CFA`, 
+             chiffreAffairesHT > 0 ? `${((margeBeneficiaire / chiffreAffairesHT) * 100).toFixed(2)}%` : '0%'],
+            ['Ticket moyen', `${ticketMoyen.toLocaleString('fr-FR')} F CFA`, '']
+        ];
+
+        kpiRows.forEach(row => summarySheet.addRow(row));
+
+        // ==================== FEUILLE MODES DE PAIEMENT ====================
+        const paymentSheet = workbook.addWorksheet('Modes de paiement');
+        
+        paymentSheet.addRow(['RÉPARTITION DES MODES DE PAIEMENT']).font = { bold: true, size: 14 };
+        paymentSheet.addRow([]);
+
+        const paymentHeaders = ['Mode', 'Montant (F CFA)', 'Transactions', '%'];
+        paymentSheet.addRow(paymentHeaders).eachCell(cell => cell.style = headerStyle);
+
+        modesPaiement.forEach(mode => {
+            const pourcentage = chiffreAffairesTTC > 0 ? 
+                ((mode.montantTotal / chiffreAffairesTTC) * 100).toFixed(1) : '0';
+            
+            paymentSheet.addRow([
+                mode.mode,
+                mode.montantTotal.toLocaleString('fr-FR'),
+                mode.occurrences,
+                `${pourcentage}%`
+            ]);
+        });
+
+        // ==================== FEUILLE TOP PRODUITS ====================
+        const productsSheet = workbook.addWorksheet('Top produits');
+        
+        productsSheet.addRow(['TOP PRODUITS']).font = { bold: true, size: 14 };
+        productsSheet.addRow([]);
+
+        const productHeaders = ['Produit', 'Quantité', 'Prix unitaire', 'CA TTC', 'Marge', '% Marge'];
+        productsSheet.addRow(productHeaders).eachCell(cell => cell.style = headerStyle);
+
+        topProduits.forEach(produit => {
+            const margePourcentage = produit.ca > 0 ? 
+                ((produit.marge / produit.ca) * 100).toFixed(1) : '0';
+            
+            productsSheet.addRow([
+                produit.produit.designation,
+                produit.quantite,
+                `${produit.produit.prixVenteUnitaire.toLocaleString('fr-FR')} F CFA`,
+                `${produit.ca.toLocaleString('fr-FR')} F CFA`,
+                `${produit.marge.toLocaleString('fr-FR')} F CFA`,
+                `${margePourcentage}%`
+            ]);
+        });
+
+        // ==================== FEUILLE TOP CLIENTS ====================
+        const clientsSheet = workbook.addWorksheet('Top clients');
+        
+        clientsSheet.addRow(['TOP CLIENTS']).font = { bold: true, size: 14 };
+        clientsSheet.addRow([]);
+
+        const clientHeaders = ['Client', 'Achats', 'CA TTC', 'Dernier achat'];
+        clientsSheet.addRow(clientHeaders).eachCell(cell => cell.style = headerStyle);
+
+        topClients.forEach(client => {
+            clientsSheet.addRow([
+                client.client.nomComplet || 'Client anonyme',
+                client.nbAchats,
+                `${client.ca.toLocaleString('fr-FR')} F CFA`,
+                client.dernierAchat ? new Date(client.dernierAchat).toLocaleDateString('fr-FR') : '-'
+            ]);
+        });
+
+        // ==================== FEUILLE PERFORMANCE VENDEURS ====================
+        const sellersSheet = workbook.addWorksheet('Performance vendeurs');
+        
+        sellersSheet.addRow(['PERFORMANCE DES VENDEURS']).font = { bold: true, size: 14 };
+        sellersSheet.addRow([]);
+
+        const sellerHeaders = ['Vendeur', 'Ventes', 'CA HT', 'CA TTC', 'Ticket moyen'];
+        sellersSheet.addRow(sellerHeaders).eachCell(cell => cell.style = headerStyle);
+
+        performanceVendeurs.forEach(v => {
+            sellersSheet.addRow([
+                v.vendeur?.nom || 'Inconnu',
+                v.nbVentes,
+                `${v.caHT.toLocaleString('fr-FR')} F CFA`,
+                `${v.caTTC.toLocaleString('fr-FR')} F CFA`,
+                `${v.ticketMoyen.toLocaleString('fr-FR')} F CFA`
+            ]);
+        });
+
+        // ==================== FEUILLE DÉTAIL DES VENTES ====================
+        const detailsSheet = workbook.addWorksheet('Détail des ventes');
+        
+        detailsSheet.addRow(['DÉTAIL DES TRANSACTIONS']).font = { bold: true, size: 14 };
+        detailsSheet.addRow([]);
+
+        const detailHeaders = [
+            'Date', 'N° Ticket', 'Client', 'Articles', 'Total TTC', 
+            'Mode paiement', 'Vendeur', 'Statut'
+        ];
+        detailsSheet.addRow(detailHeaders).eachCell(cell => cell.style = headerStyle);
+
+        ventesDetail.forEach(vente => {
+            const paiementStr = vente.paiements?.length > 0 
+                ? vente.paiements.map(p => `${p.methodePaiement}: ${p.montant.toLocaleString('fr-FR')}`).join('; ')
+                : 'Non spécifié';
+
+            detailsSheet.addRow([
+                new Date(vente.dateCreation).toLocaleDateString('fr-FR'),
+                vente.id,
+                vente.clientNom || '-',
+                vente.articles.length,
+                `${vente.totalTTC.toLocaleString('fr-FR')} F CFA`,
+                paiementStr,
+                vente.agent?.nom || '-',
+                vente.statut || '-'
+            ]);
+        });
+
+        // Ajustement automatique des largeurs de colonnes
+        [summarySheet, paymentSheet, productsSheet, clientsSheet, sellersSheet, detailsSheet].forEach(sheet => {
+            sheet.columns.forEach((column) => {
+                let maxLength = 10;
+                column.eachCell({ includeEmpty: true }, cell => {
+                    const cellValue = cell.value ? cell.value.toString() : '';
+                    maxLength = Math.max(maxLength, cellValue.length);
+                });
+                column.width = Math.min(maxLength + 2, 50);
+            });
+        });
+
+        // Génération du buffer
+        const buffer = await workbook.xlsx.writeBuffer();
+
+        // Envoi du fichier
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename=rapport-vente-${Date.now()}.xlsx`);
+        res.send(buffer);
+
+    } catch (error) {
+        console.error('❌ Erreur export Excel:', error);
+        res.status(500).json({ 
+            error: 'Erreur lors de l\'export Excel',
+            details: error.message 
+        });
     }
 };
