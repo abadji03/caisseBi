@@ -167,7 +167,7 @@ exports.getProduitsByStructure = async (req, res) => {
      // --- INCLUDE STOCK
     let stockInclude = {
       model: Stock,
-      attributes: ["id", "magasinId","quantiteTotale", "quantiteReservee"],
+      attributes: ["id", "magasinId","quantiteTotale", "quantiteReservee","statutStock","datePeremption"],
       required: false // admin -> on garde même les produits sans stock
     };
 
@@ -261,7 +261,7 @@ exports.updateTauxTVAProduit = async (req, res) => {
   }
 };
 //Récupérer tous les produits
-exports.getAllProduits = async (req, res) => {
+/* exports.getAllProduits = async (req, res) => {
   try {
     const authUser = req.user;
 
@@ -273,7 +273,7 @@ exports.getAllProduits = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la récupération de tous les produits', error });
   }
-};
+}; */
 
 //Rechercher des produits par désignation ou code-barres
 /* exports.searchProduits = async (req, res) => {

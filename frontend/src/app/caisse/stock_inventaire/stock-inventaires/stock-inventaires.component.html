@@ -1,385 +1,426 @@
 <div class="container-fluid mt-4">
-  <nav>
-    <div class="nav nav-tabs" id="nav-tab" role="tablist">
-      <a
-        class="nav-link active"
-        id="nav-inventaire-tab"
-        data-bs-toggle="tab"
-        href="#nav-inventaire"
-        role="tab"
-        aria-controls="nav-inventaire"
-        aria-selected="true"
-        >Inventaire actuel</a
-      >
-      <a
-        class="nav-link"
-        id="nav-quantites-tab"
-        data-bs-toggle="tab"
-        href="#nav-quantites"
-        role="tab"
-        aria-controls="nav-quantites"
-        aria-selected="false"
-        >Quantités disponibles</a
-      >
-      <a
-        class="nav-link"
-        id="nav-niveaux-tab"
-        data-bs-toggle="tab"
-        href="#nav-niveaux"
-        role="tab"
-        aria-controls="nav-niveaux"
-        aria-selected="false"
-        >Niveaux de stock</a
-      >
-      <a
-        class="nav-link"
-        id="nav-alertes-tab"
-        data-bs-toggle="tab"
-        href="#nav-alertes"
-        role="tab"
-        aria-controls="nav-alertes"
-        aria-selected="false"
-        >Alertes</a
-      >
-      <a
-        class="nav-link"
-        id="nav-périssables-tab"
-        data-bs-toggle="tab"
-        href="#nav-périssables"
-        role="tab"
-        aria-controls="nav-périssables"
-        aria-selected="false"
-        >Produits périssables</a
-      >
-    </div>
-  </nav>
-  <div class="tab-content mt-4" id="nav-tabContent">
-    <!-- Section Inventaire actuel -->
-    <div
-      class="tab-pane fade show active"
-      id="nav-inventaire"
-      role="tabpanel"
-      aria-labelledby="nav-inventaire-tab"
-    >
-      <h4>Inventaire actuel</h4>
-      <p>Liste des produits disponibles dans l'inventaire actuel...</p>
-      <!-- Implémentation de la liste des produits et de leur état -->
-      <!-- Barre de recherche et sélection du nombre de lignes -->
-      <div class="d-flex justify-content-between mb-2">
-        <input
-          type="text"
-          class="form-control w-50"
-          placeholder="Rechercher par nom produit, magasin, quantité ...."
-          [(ngModel)]="searchTerm"
-          (input)="onSearchChange('inventaire')"
-        />
-        <select class="form-select w-auto" (change)="setItemsPerPage($event)">
-          <option [value]="5">5 lignes</option>
-          <option [value]="10">10 lignes</option>
-          <option [value]="20">20 lignes</option>
-        </select>
-      </div>
-      <table class="table table-bordered table-responsive">
-        <thead class="table-success">
-          <tr>
-            <th scope="col">Produit</th>
-            <th scope="col">Magasin</th>
-            <th scope="col">Quantité</th>
-            <th scope="col">Périssable</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngIf="getPaginatedInventaire.length === 0">
-            <td colspan="4" class="text-center">Aucun produit trouvé</td>
-          </tr>
-          <tr *ngFor="let produit of getPaginatedInventaire">
-            <td>{{ produit.designation }}</td>
-            <td>{{ getNomMagasinByProduitId(produit.id, stocks, magasins) }}</td>
-            <td>{{ getQteById(produit.id, stocks) }}</td>
-            <td>{{ produit.perissable ? 'Oui' : 'Non' }}</td>
-          </tr>
-        </tbody>
-      </table>
-      <!-- Pagination -->
-      <div class="d-flex justify-content-center align-items-center">
-        <button
-          class="btn btn-success"
-          (click)="onPageChange(currentPageInventaire - 1, 'inventaire')"
-          [disabled]="currentPageInventaire === 1"
-        >
-          <i class="bi bi-arrow-left-circle"></i>
-        </button>
-        <span class="h3"
-          >{{ currentPageInventaire }} / {{ getTotalPages(filteredInventaire) }}</span
-        >
-        <button
-          class="btn btn-success"
-          (click)="onPageChange(currentPageInventaire + 1, 'inventaire')"
-          [disabled]="currentPageInventaire >= getTotalPages(filteredInventaire)"
-        >
-          <i class="bi bi-arrow-right-circle"></i>
-        </button>
-      </div>
-    </div>
 
-    <!-- Section Quantités disponibles -->
-    <div
-      class="tab-pane fade"
-      id="nav-quantites"
-      role="tabpanel"
-      aria-labelledby="nav-quantites-tab"
-    >
-      <h4>Quantités disponibles</h4>
-        <p>Affichage des quantités disponibles pour chaque produit...</p>
-      <!-- Implémentation de la gestion des quantités -->
-      <!-- Barre de recherche et sélection du nombre de lignes -->
-      <div class="d-flex justify-content-between mb-2">
-        <input
-          type="text"
-          class="form-control w-50"
-          placeholder="Rechercher par nom produit, quantité ...."
-          [(ngModel)]="searchTerm"
-          (input)="onSearchChange('qteDisponible')"
-        />
-        <select class="form-select w-auto" (change)="setItemsPerPage($event)">
-          <option [value]="5">5 lignes</option>
-          <option [value]="10">10 lignes</option>
-          <option [value]="20">20 lignes</option>
-        </select>
-      </div>
-      <table class="table table-bordered table-responsive">
-        <thead class="table-success">
-          <tr>
-            <th scope="col">Produit</th>
-            <th scope="col">Quantité disponible</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngIf="getPaginatedQtesDisponibles.length === 0">
-            <td colspan="2" class="text-center">Aucune quantité disponible trouvée</td>
-          </tr>
-          <tr *ngFor="let produit of getPaginatedQtesDisponibles">
-            <td>{{ getNomProduitById(produit.id) }}</td>
-            <td>{{ getQteDisponibleById(produit.id, qtsDisponibles) }}</td>
-          </tr>
-        </tbody>
-      </table>
-      <!-- Pagination -->
-      <div class="d-flex justify-content-center align-items-center">
-        <button
-          class="btn btn-success"
-          (click)="onPageChange(currentPageQtesDisponibles - 1, 'qteDisponible')"
-          [disabled]="currentPageQtesDisponibles === 1"
-        >
-          <i class="bi bi-arrow-left-circle"></i>
-        </button>
-        <span class="h3"
-          >{{ currentPageQtesDisponibles }} / {{ getTotalPages(filteredQtesDisponibles) }}</span
-        >
-        <button
-          class="btn btn-success"
-          (click)="onPageChange(currentPageQtesDisponibles + 1, 'qteDisponible')"
-          [disabled]="currentPageQtesDisponibles >= getTotalPages(filteredQtesDisponibles)"
-        >
-          <i class="bi bi-arrow-right-circle"></i>
-        </button>
+  <!-- En haut de la page, à droite -->
+  <div *ngIf="isAdmin || isGerant" class="d-flex justify-content-end align-items-center mb-3">
+    <!-- <h4>Gestion des stocks</h4> -->
+    <button class="btn btn-info" (click)="openTransfertsModal()">
+      <i class="bi bi-arrow-left-right"></i> Voir les transferts
+    </button>
+  </div>
+  <!-- Cartes de statistiques globales -->
+  <div class="row mb-4" *ngIf="statsGlobales">
+    <div class="col-md-3">
+      <div class="card text-white bg-primary">
+        <div class="card-body">
+          <h6 class="card-title">Valeur totale du stock</h6>
+          <h3>{{ statsGlobales.valeurTotaleStock | number:'1.0-0' }} FCFA</h3>
+          <small>{{ statsGlobales.totalProduits }} produits</small>
+        </div>
       </div>
     </div>
-
-    <!-- Section Niveaux de stock -->
-    <div class="tab-pane fade" id="nav-niveaux" role="tabpanel" aria-labelledby="nav-niveaux-tab">
-        <h4>Niveaux de stock par magasin</h4>
-        <p>Affichage des niveaux de stock dans chaque magasin...</p>
-      <!-- Barre de recherche et sélection du nombre de lignes -->
-      <div class="d-flex justify-content-between mb-2">
-        <input
-          type="text"
-          class="form-control w-50"
-          placeholder="Rechercher par nom produit, magasin, quantité ...."
-          [(ngModel)]="searchTerm"
-          (input)="onSearchChange('niveauStock')"
-        />
-        <select class="form-select w-auto" (change)="setItemsPerPage($event)">
-          <option [value]="5">5 lignes</option>
-          <option [value]="10">10 lignes</option>
-          <option [value]="20">20 lignes</option>
-        </select>
-      </div>
-      <!-- Implémentation de la gestion des niveaux de stock par magasin -->
-      <table class="table table-bordered table-responsive">
-        <thead class="table-success">
-          <tr>
-            <th scope="col">Produit</th>
-            <th scope="col">Magasin</th>
-            <th scope="col">Quantité</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngIf="getPaginatedNiveauStock.length === 0">
-            <td colspan="3" class="text-center">Aucun niveau de stock trouvé</td>
-          </tr>
-          <tr *ngFor="let produit of getPaginatedNiveauStock">
-            <td>{{ getNomProduitById(produit.id) }}</td>
-            <td>{{ getNomMagasinByProduitId(produit.id, stocks, magasins) }}</td>
-            <td>{{ getQteById(produit.id, niveauStock) }}</td>
-          </tr>
-        </tbody>
-      </table>
-      <!-- Pagination -->
-      <div class="d-flex justify-content-center align-items-center">
-        <button
-          class="btn btn-success"
-          (click)="onPageChange(currentPageNiveauStock - 1, 'niveauStock')"
-          [disabled]="currentPageNiveauStock === 1"
-        >
-          <i class="bi bi-arrow-left-circle"></i>
-        </button>
-        <span class="h3"
-          >{{ currentPageNiveauStock }} / {{ getTotalPages(filteredNiveauStock) }}</span
-        >
-        <button
-          class="btn btn-success"
-          (click)="onPageChange(currentPageNiveauStock + 1, 'niveauStock')"
-          [disabled]="currentPageNiveauStock >= getTotalPages(filteredNiveauStock)"
-        >
-          <i class="bi bi-arrow-right-circle"></i>
-        </button>
+    <div class="col-md-3">
+      <div class="card text-white bg-info">
+        <div class="card-body">
+          <h6 class="card-title">Quantité totale</h6>
+          <h3>{{ statsGlobales.quantiteTotale }}</h3>
+          <small> dont {{ statsGlobales.quantiteDisponibleTotale }} disponible</small>
+        </div>
       </div>
     </div>
-
-    <!-- Section Alertes de réapprovisionnement -->
-    <div class="tab-pane fade" id="nav-alertes" role="tabpanel" aria-labelledby="nav-alertes-tab">
-      <h4>Alertes de réapprovisionnement</h4>
-        <p>Liste des alertes de réapprovisionnement pour les produits...</p>
-      <!-- Barre de recherche et sélection du nombre de lignes -->
-      <div class="d-flex justify-content-between mb-2">
-        <input
-          type="text"
-          class="form-control w-50"
-          placeholder="Rechercher par nom produit, magasin, quantité ...."
-          [(ngModel)]="searchTerm"
-          (input)="onSearchChange('alerte')"
-        />
-        <select class="form-select w-auto" (change)="setItemsPerPage($event)">
-          <option [value]="5">5 lignes</option>
-          <option [value]="10">10 lignes</option>
-          <option [value]="20">20 lignes</option>
-        </select>
+    <div class="col-md-3">
+      <div class="card text-white bg-warning">
+        <div class="card-body">
+          <h6 class="card-title">Alertes</h6>
+          <h3>{{ statsGlobales.produitsEnAlerte }}</h3>
+          <small>Dont {{ statsGlobales.produitsCritiques }} critiques</small>
+        </div>
       </div>
-      <!-- Implémentation de l'affichage des alertes de réapprovisionnement -->
-      <table class="table table-bordered table-responsive">
-        <thead class="table-success">
+    </div>
+    <div class="col-md-3">
+      <div class="card text-white bg-danger">
+        <div class="card-body">
+          <h6 class="card-title">Périssables</h6>
+          <h3>{{ statsGlobales.produitsPerimes }} / {{ statsGlobales.produitsBientotPerimes }}</h3>
+          <small>Périmés / Bientôt périmés</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtres avancés -->
+  <div class="card mb-4">
+    <div class="card-header bg-dark text-white">
+      <i class="bi bi-funnel"></i> Filtres avancés
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-3 mb-2">
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Rechercher produit..."
+            [(ngModel)]="searchText"
+            (input)="onSearchChange()"
+          >
+        </div>
+        <div class="col-md-2 mb-2">
+          <select class="form-select" [(ngModel)]="selectedStatut" (change)="onFilterChange()">
+            <option *ngFor="let opt of statutsOptions" [value]="opt.valeur">
+              {{ opt.label }}
+            </option>
+          </select>
+        </div>
+        <div class="col-md-2 mb-2">
+          <select class="form-select" [(ngModel)]="showAlerte" (change)="onFilterChange()">
+            <option value="tous">Tous les niveaux</option>
+            <option value="oui">Alertes uniquement</option>
+          </select>
+        </div>
+        <div class="col-md-2 mb-2">
+          <select class="form-select" [(ngModel)]="showPerissable" (change)="onFilterChange()">
+            <option value="tous">Tous les produits</option>
+            <option value="oui">Périssables uniquement</option>
+            <option value="non">Non périssables</option>
+          </select>
+        </div>
+        <div class="col-md-3 mb-2">
+          <select class="form-select" [(ngModel)]="selectedTri" (change)="onFilterChange()">
+            <option *ngFor="let opt of optionsTri" [value]="opt.valeur">
+              Trier: {{ opt.label }}
+            </option>
+          </select>
+        </div>
+      </div>
+      <div class="row mt-2">
+        <div class="col-12">
+          <button class="btn btn-outline-secondary btn-sm" (click)="resetFilters()">
+            <i class="bi bi-eraser"></i> Réinitialiser les filtres
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contrôles de pagination -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <span class="text-muted" *ngIf="!isLoading">
+        {{ totalItems }} produit(s) • Page {{ currentPage }}/{{ totalPages }}
+      </span>
+    </div>
+    <div class="d-flex align-items-center">
+      <label for="form-select" class="me-2">Afficher</label>
+      <select class="form-select w-auto" (change)="onPageSizeChange($event)">
+        <option [value]="10" selected>10</option> 
+        <option [value]="25">25</option>
+        <option [value]="50">50</option>
+        <option [value]="100">100</option>
+      </select>
+      <span> lignes par page</span>
+    </div>
+  </div>
+
+  <!-- Tableau principal -->
+  <div class="table-responsive">
+      <table class="table table-bordered table-hover">
+        <thead class="table-dark">
           <tr>
-            <th scope="col">Produit</th>
-            <th scope="col">Quantité restante</th>
-            <th scope="col">Seuil d'alerte</th>
-            <th scope="col">Seuil de réapprovisionnement</th>
-            <th scope="col">Action</th>
+            <th>Produit</th>
+            <th *ngIf="isAdmin">Magasin</th>
+            <th>Quantité totale</th>
+            <th>Disponible</th>
+            <th>Réservé</th>
+            <th>Seuil alerte</th>
+            <th>Niveau</th>
+            <th>Statut</th>
+            <th>Péremption</th>
+            <th>Valeur</th>
+            <th *ngIf="isAdmin || isGerant">Actions</th> <!-- Nouvelle colonne pour les actions -->
           </tr>
         </thead>
         <tbody>
-          <tr *ngIf="getPaginatedAlertes.length === 0">
-            <td colspan="5" class="text-center">Aucune alerte trouvée</td>
-          </tr>
-          <tr *ngFor="let alerte of getPaginatedAlertes">
-            <td>{{ getNomProduitById(alerte.produitId) }}</td>
-            <td>{{ alerte.quantiteTotale }}</td>
-            <td>{{ alerte.seuilAlerte }}</td>
-            <td>{{ alerte.seuilReapprovisionnement }}</td>
-            <td>
-              <button class="btn btn-warning" (click)="envoyerAlerteReapprovisionnement()">
-                Envoyer alerte
-              </button>
+          <tr *ngIf="isLoading">
+            <td [attr.colspan]="isAdmin ? 11 : 10" class="text-center py-4">
+              <div class="spinner-border text-success"></div>
             </td>
           </tr>
+          <tr *ngIf="!isLoading && stocks.length === 0">
+            <td [attr.colspan]="isAdmin ? 11 : 10" class="text-center py-4">
+              Aucun stock trouvé
+            </td>
+          </tr>
+
+          <!-- Boucle principale sur les stocks -->
+          <ng-container *ngFor="let stock of stocks; let i = index">
+            <!-- Ligne principale du stock -->
+            <tr>
+              <td>
+                <strong>{{ stock.produitDesignation }}</strong>
+                <span *ngIf="stock.produitPerissable" class="badge bg-warning ms-1" title="Périssable">
+                  <i class="bi bi-exclamation-triangle"></i>
+                </span>
+              </td>
+              <td *ngIf="isAdmin">{{ stock.magasinNom }}</td>
+              <td class="text-end">{{ stock.quantiteTotale }}</td>
+              <td class="text-end fw-bold">{{ stock.quantiteDisponible }}</td>
+              <td class="text-end">{{ stock.quantiteReservee }}</td>
+              <td class="text-center">{{ stock.seuilAlerte }}</td>
+              <td class="text-center">
+                <span class="badge" [ngClass]="getAlerteBadgeClass(stock.niveauAlerte)">
+                  {{ stock.niveauAlerte }}
+                </span>
+              </td>
+              <td class="text-center">
+                <span class="badge" [ngClass]="getStatutBadgeClass(stock.statutStock)">
+                  {{ stock.statutStock }}
+                </span>
+              </td>
+              <td>
+                <div *ngIf="stock.datePeremption">
+                  <span [class]="getJoursPeremptionClass(stock.joursAvantPeremption)">
+                    {{ stock.datePeremption | date:'dd/MM/yyyy' }}
+                  </span>
+                  <br>
+                  <small class="text-muted">
+                    {{ stock.joursAvantPeremption }} jour(s)
+                  </small>
+                </div>
+                <span *ngIf="!stock.datePeremption">-</span>
+              </td>
+              <td class="text-end">{{ stock.valeurStock | number:'1.0-0' }}</td>
+              <td *ngIf="isAdmin || isGerant" class="text-center">
+                <!-- Bouton pour ouvrir le formulaire de transfert -->
+                <button 
+                  class="btn btn-outline-dark btn-sm" 
+                  (click)="openTransferForm(i, stock)"
+                  [disabled]="stock.quantiteDisponible <= 0"
+                  title="Transférer vers un autre magasin"
+                >
+                  <i class="bi bi-arrow-left-right"></i> Transférer
+                </button>
+              </td>
+            </tr>
+
+            <!-- Ligne du formulaire de transfert (visible seulement pour l'élément sélectionné) -->
+            <tr *ngIf="showFormIndex === i && (isAdmin || isGerant)">
+              <td [attr.colspan]="isAdmin ? 11 : 10" class="p-0">
+                <div class="transfer-form-container p-3 bg-light">
+                  <table class="table table-borderless mb-0">
+                    <tr>
+                      <!-- Magasin Source (actuel) -->
+                      <td width="20%">
+                        <label for="magasinNom" class="form-label mb-1">Magasin source</label>
+                        <input
+                          type="text"
+                          class="form-control form-control-sm"
+                          [value]="stock.magasinNom"
+                          disabled
+                          readonly
+                        />
+                      </td>
+                      
+                      <!-- Magasin Destinataire -->
+                      <td width="25%">
+                        <label for="magasinDestinataire" class="form-label mb-1">Magasin destinataire <span class="text-danger">*</span></label>
+                        <select
+                          class="form-select form-select-sm"
+                          [(ngModel)]="magasinDestinataire"
+                          name="magasinDestinataire"
+                        >
+                          <option [ngValue]="null" disabled selected>Choisir un magasin</option>
+                          <option *ngFor="let magasin of getAutresMagasins(stock.magasinId)" [value]="magasin.id">
+                            {{ magasin.nom }}
+                          </option>
+                        </select>
+                      </td>
+                      
+                      <!-- Quantité -->
+                      <td width="15%">
+                        <label for="quantite" class="form-label mb-1">Quantité <span class="text-danger">*</span></label>
+                        <input
+                          type="number"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="quantiteTransfert"
+                          [max]="stock.quantiteDisponible"
+                          min="1"
+                          name="quantite"
+                          placeholder="Qté"
+                        />
+                        <small class="text-muted">Max: {{ stock.quantiteDisponible }}</small>
+                      </td>
+                      
+                      <!-- Motif -->
+                      <td width="25%">
+                        <label for="motif" class="form-label mb-1">Motif</label>
+                        <input
+                          type="text"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="motifTransfert"
+                          name="motif"
+                          placeholder="Motif du transfert"
+                        />
+                      </td>
+                      <td width="15%">
+                        <label for="magasinDestinataire" class="form-label mb-1">&nbsp;</label>
+                        <div>
+                          <button
+                            class="btn btn-success btn-sm me-1"
+                            (click)="creerDemandeTransfert(stock)"
+                            [disabled]="!magasinDestinataire || !quantiteTransfert || quantiteTransfert > stock.quantiteDisponible"
+                          >
+                            <i class="bi bi-check-circle"></i> Demander
+                          </button>
+                          <button
+                            class="btn btn-danger btn-sm"
+                            (click)="cancelTransferForm()"
+                          >
+                            <i class="bi bi-x-circle"></i> Annuler
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+              </td>
+            </tr>
+          </ng-container>
         </tbody>
       </table>
-      <!-- Pagination -->
-      <div class="d-flex justify-content-center align-items-center">
-        <button
-          class="btn btn-success"
-          (click)="onPageChange(currentPageAlertes - 1, 'alerte')"
-          [disabled]="currentPageAlertes === 1"
-        >
-          <i class="bi bi-arrow-left-circle"></i>
-        </button>
-        <span class="h3">{{ currentPageAlertes }} / {{ getTotalPages(filteredAlertes) }}</span>
-        <button
-          class="btn btn-success"
-          (click)="onPageChange(currentPageAlertes + 1, 'alerte')"
-          [disabled]="currentPageAlertes >= getTotalPages(filteredAlertes)"
-        >
-          <i class="bi bi-arrow-right-circle"></i>
-        </button>
-      </div>
     </div>
 
-    <!-- Section Produits périssables -->
-    <div
-      class="tab-pane fade"
-      id="nav-périssables"
-      role="tabpanel"
-      aria-labelledby="nav-périssables-tab"
-    >
-      <h4>Gestion des produits périssables</h4>
-      <p>Liste des produits périssables et leur gestion...</p>
-      <!-- Barre de recherche et sélection du nombre de lignes -->
-      <div class="d-flex justify-content-between mb-2">
-        <input
-          type="text"
-          class="form-control w-50"
-          placeholder="Rechercher par nom produit, magasin, quantité ...."
-          [(ngModel)]="searchTerm"
-          (input)="onSearchChange('perissable')"
-        />
-        <select class="form-select w-auto" (change)="setItemsPerPage($event)">
-          <option [value]="5">5 lignes</option>
-          <option [value]="10">10 lignes</option>
-          <option [value]="20">20 lignes</option>
-        </select>
+  <!-- Pagination -->
+  <div class="d-flex justify-content-between mt-3" *ngIf="totalPages > 1">
+    <div class="text-muted mb-2 mb-md-0">
+      <small>
+        Page {{ currentPage }}/{{ totalPages }} ({{ totalItems }} produits)
+      </small>
+    </div>
+    <nav>
+      <ul class="pagination">
+        <li class="page-item" [class.disabled]="!hasPrev">
+          <button class="page-link" (click)="onPageChange(currentPage - 1)">«</button>
+        </li>
+        
+        <li class="page-item" *ngFor="let page of pagesToShow" [class.active]="currentPage === page">
+          <button class="page-link" (click)="onPageChange(page)">{{ page }}</button>
+        </li>
+        
+        <li class="page-item" [class.disabled]="!hasNext">
+          <button class="page-link" (click)="onPageChange(currentPage + 1)">»</button>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</div>
+
+<!-- Modal de gestion des transferts -->
+<div class="modal fade" id="transfertsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header bg-light text-dark">
+        <h2 class="modal-title">
+          <i class="bi bi-arrow-left-right"></i> Gestion des transferts
+        </h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg text-danger"></i></button>
       </div>
-      <!-- Implémentation de la gestion des produits périssables -->
-      <table class="table table-bordered table-responsive">
-        <thead class="table-success">
-          <tr>
-            <th scope="col">Produit</th>
-            <th scope="col">Date d'expiration</th>
-            <th scope="col">Quantité</th>
-            <th scope="col">Alerte</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngIf="getPaginatedPerissables.length === 0">
-            <td colspan="4" class="text-center">Aucun produit périssable trouvé</td>
-          </tr>
-          <tr *ngFor="let produit of getPaginatedPerissables">
-            <td>{{ getNomProduitById(produit.produitId) }}</td>
-            <!-- <td>{{ produit.dateExpiration | date:'short' }}</td> -->
-            <td>{{ produit.datePeremption | date: 'dd/MM/yyyy' }}</td>
-            <td>{{ produit.quantiteTotale }}</td>
-            <td><button class="btn btn-danger">Gérer</button></td>
-          </tr>
-        </tbody>
-      </table>
-      <!-- Pagination -->
-      <div class="d-flex justify-content-center align-items-center">
-        <button
-          class="btn btn-success"
-          (click)="onPageChange(currentPagePerissables - 1, 'perissable')"
-          [disabled]="currentPagePerissables === 1"
-        >
-          <i class="bi bi-arrow-left-circle"></i>
-        </button>
-        <span class="h3"
-          >{{ currentPagePerissables }} / {{ getTotalPages(filteredPerissables) }}</span
-        >
-        <button
-          class="btn btn-success"
-          (click)="onPageChange(currentPagePerissables + 1, 'perissable')"
-          [disabled]="currentPagePerissables >= getTotalPages(filteredPerissables)"
-        >
-          <i class="bi bi-arrow-right-circle"></i>
-        </button>
+      <div class="modal-body">
+        <!-- Filtres pour les transferts -->
+        <div class="row mb-3">
+          <div class="col-md-3">
+            <select class="form-select" [(ngModel)]="filtreStatutTransfert" (change)="filtrerTransferts()">
+              <option value="tous">Tous les statuts</option>
+              <option value="En attente">En attente</option>
+              <option value="Validé">Validés</option>
+              <option value="Refusé">Refusés</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <input 
+              type="text" 
+              class="form-control" 
+              placeholder="Rechercher par référence..."
+              [(ngModel)]="rechercheTransfert"
+              (input)="filtrerTransferts()"
+            >
+          </div>
+        </div>
+
+        <!-- Tableau des transferts -->
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover">
+            <thead class="table-secondary">
+              <tr>
+                <th>Référence</th>
+                <th>Produit</th>
+                <th>Quantité</th>
+                <th>Magasin source</th>
+                <th>Magasin destination</th>
+                <th>Date</th>
+                <th>Demandeur</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngIf="isLoadingTransferts">
+                <td colspan="9" class="text-center">
+                  <div class="spinner-border text-info"></div>
+                </td>
+              </tr>
+              <tr *ngIf="!isLoadingTransferts && transfertsFiltres.length === 0">
+                <td colspan="9" class="text-center">Aucun transfert trouvé</td>
+              </tr>
+              <tr *ngFor="let transfert of transfertsFiltres">
+                <td><strong>{{ transfert.reference }}</strong></td>
+                <td>{{ transfert.Produit.designation || 'getNomProduitById(transfert.produitId)' }}</td>
+                <td class="text-end">{{ transfert.quantite }}</td>
+                <td>{{ getNomMagasinById(transfert.magasinSource) }}</td>
+                <td>{{ getNomMagasinById(transfert.magasinDestination) }}</td>
+                <td>{{ transfert.dateTransfert | date:'dd/MM/yyyy HH:mm' }}</td>
+                <td>{{ transfert.Responsable.nom || 'N/A' }}</td>
+                <td>
+                  <span class="badge" [ngClass]="{
+                    'bg-warning': transfert.statut === 'En attente',
+                    'bg-success': transfert.statut === 'Validé',
+                    'bg-danger': transfert.statut === 'Refusé'
+                  }">
+                    {{ transfert.statut }}
+                  </span>
+                </td>
+                <td>
+                  <div class="btn-group btn-group-sm" *ngIf="transfert.statut === 'En attente'">
+                    <button class="btn btn-success" (click)="validerTransfert(transfert)" title="Valider">
+                      <i class="bi bi-check-lg"></i>
+                    </button>
+                    <button class="btn btn-danger" (click)="refuserTransfert(transfert)" title="Refuser">
+                      <i class="bi bi-x-lg"></i>
+                    </button>
+                  </div>
+                  <span *ngIf="transfert.statut !== 'En attente'" class="text-muted">
+                    <small>Traitié le {{ transfert.dateValidation | date:'dd/MM/yyyy' }}</small>
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination des transferts -->
+        <div class="d-flex justify-content-center mt-3" *ngIf="totalPagesTransferts > 1">
+          <nav>
+            <ul class="pagination">
+              <li class="page-item" [class.disabled]="currentPageTransferts === 1">
+                <a class="page-link" (click)="pageTransfertsChange(currentPageTransferts - 1)">«</a>
+              </li>
+              <li class="page-item" *ngFor="let page of pagesTransferts" [class.active]="currentPageTransferts === page">
+                <a class="page-link" (click)="pageTransfertsChange(page)">{{ page }}</a>
+              </li>
+              <li class="page-item" [class.disabled]="currentPageTransferts === totalPagesTransferts">
+                <a class="page-link" (click)="pageTransfertsChange(currentPageTransferts + 1)">»</a>
+              </li>
+            </ul>
+          </nav>
+        </div>
       </div>
     </div>
   </div>

@@ -1,14 +1,15 @@
 const db = require('../models');
 const Stock = db.Stock;
+const { safeNumber } = require('./bonComplet/statutManager')
 //const Produit = db.Produit;  // (si tu as besoin d'inclure les produits dans les requêtes)
 
 // Fonction utilitaire de calcul du statut
 function calculerStatut(stock) {
-  if (stock.quantiteTotale <= stock.seuilAlerte) {
+  if (safeNumber(stock.quantiteTotale ) <= safeNumber(stock.seuilAlerte)) {
     return 'Critique';
-  } else if (stock.quantiteTotale <= stock.seuilReapprovisionnement) {
+  } else if (safeNumber(stock.quantiteTotale) <= safeNumber(stock.seuilReapprovisionnement)) {
     return 'À réapprovisionner';
-  } else if (stock.quantiteTotale === 0) {
+  } else if (safeNumber(stock.quantiteTotale) === 0) {
     return 'En rupture';
   } else {
     return 'En stock';
@@ -115,6 +116,182 @@ exports.getStocksByStructure = async (req, res) => {
   }
 };
 
+exports.getStocksByStructureBis = async (req, res) => {
+  try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
+    const { code_structure } = req.params;
+    
+    // Paramètres de pagination et filtres
+    const { 
+      page = 1, 
+      limit = 10, 
+      search = '',
+      statut = '',
+      perissable = '',
+      alerte = '',
+      tri = 'designation_asc'
+    } = req.query;
+
+    // Vérification des droits
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({ message: "Accès interdit" });
+    }
+
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+    const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
+
+    if (!isAdminStructure && !isGerant && !isCaissier) {
+      return res.status(403).json({ message: "Accès interdit : rôle insuffisant" });
+    }
+
+    // Clause WHERE pour les stocks
+    let stockWhere = { code_structure };
+
+    // Filtrer par magasin selon le rôle
+    if (!isAdminStructure && (isGerant || isCaissier) && authUser.magasinId) {
+      stockWhere.magasinId = authUser.magasinId;
+    } /* else if (magasinId) {
+      stockWhere.magasinId = magasinId;
+    }
+ */
+    // Récupérer tous les stocks avec leurs produits
+    const stocks = await Stock.findAll({
+      where: stockWhere,
+      include: [
+        { 
+          model: db.Produit, 
+          attributes: ['id', 'designation', 'perissable', 'prixAchatUnitaire', 'prixVenteUnitaire']
+        },
+        { 
+          model: db.Magasin, 
+          attributes: ['id', 'nom'] 
+        }
+      ]
+    });
+
+    // Enrichir les données et calculer les métriques
+    const stocksEnrichis = stocks.map(stock => {
+      const quantiteDisponible = safeNumber(stock.quantiteTotale) - (safeNumber(stock.quantiteReservee) || 0);
+      const joursAvantPeremption = safeNumber(stock.datePeremption) 
+        ? Math.ceil((new Date(stock.datePeremption) - new Date()) / (1000 * 60 * 60 * 24))
+        : null;
+      
+      const niveauAlerte = quantiteDisponible <= safeNumber(stock.seuilAlerte) ? 'Critique' :
+                          quantiteDisponible <= safeNumber(stock.seuilReapprovisionnement) ? 'Attention' : 'Normal';
+
+      return {
+        id: stock.id,
+        produitId: stock.produitId,
+        produitDesignation: stock.Produit?.designation || 'Inconnu',
+        produitPerissable: stock.Produit?.perissable || false,
+        magasinId: stock.magasinId,
+        magasinNom: stock.Magasin?.nom || 'Inconnu',
+        quantiteTotale: safeNumber(stock.quantiteTotale),
+        quantiteReservee: safeNumber(stock.quantiteReservee) || 0,
+        quantiteDisponible,
+        seuilAlerte: safeNumber(stock.seuilAlerte),
+        seuilReapprovisionnement: safeNumber(stock.seuilReapprovisionnement),
+        datePeremption: stock.datePeremption,
+        joursAvantPeremption,
+        statutStock: stock.statutStock,
+        niveauAlerte,
+        valeurStock: (stock.quantiteTotale * (stock.Produit?.prixAchatUnitaire || 0)) || 0,
+        dateDerniereMiseAJour: stock.dateDerniereMiseAJour
+      };
+    });
+
+    // Filtrer selon les critères
+    let filteredStocks = stocksEnrichis;
+
+    if (search) {
+      const searchLower = search.toLowerCase();
+      filteredStocks = filteredStocks.filter(s => 
+        s.produitDesignation.toLowerCase().includes(searchLower) ||
+        s.magasinNom.toLowerCase().includes(searchLower) ||
+        s.statutStock.toLowerCase().includes(searchLower)
+      );
+    }
+
+    if (statut && statut !== 'tous') {
+      filteredStocks = filteredStocks.filter(s => s.statutStock === statut);
+    }
+
+    if (alerte === 'oui') {
+      filteredStocks = filteredStocks.filter(s => 
+        s.niveauAlerte === 'Critique' || s.niveauAlerte === 'Attention'
+      );
+    }
+
+    if (perissable === 'oui') {
+      filteredStocks = filteredStocks.filter(s => s.produitPerissable);
+    } else if (perissable === 'non') {
+      filteredStocks = filteredStocks.filter(s => !s.produitPerissable);
+    }
+
+    // Tri
+    const [triChamp, triOrdre] = tri.split('_');
+    filteredStocks.sort((a, b) => {
+      let aVal = a[triChamp] || '';
+      let bVal = b[triChamp] || '';
+      
+      if (typeof aVal === 'string') {
+        aVal = aVal.toLowerCase();
+        bVal = bVal.toLowerCase();
+      }
+      
+      if (triOrdre === 'desc') {
+        return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+      } else {
+        return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+      }
+    });
+
+    // Statistiques globales
+    const statsGlobales = {
+      totalProduits: filteredStocks.length,
+      valeurTotaleStock: filteredStocks.reduce((sum, s) => sum + safeNumber(s.valeurStock), 0),
+      produitsEnAlerte: filteredStocks.filter(s => s.niveauAlerte !== 'Normal').length,
+      produitsCritiques: filteredStocks.filter(s => s.niveauAlerte === 'Critique').length,
+      produitsPerissables: filteredStocks.filter(s => s.produitPerissable).length,
+      produitsPerimes: filteredStocks.filter(s => s.joursAvantPeremption < 0).length,
+      produitsBientotPerimes: filteredStocks.filter(s => 
+        s.joursAvantPeremption > 0 && s.joursAvantPeremption <= 7
+      ).length,
+      quantiteTotale: filteredStocks.reduce((sum, s) => sum + safeNumber(s.quantiteTotale), 0),
+      quantiteDisponibleTotale: filteredStocks.reduce((sum, s) => sum + safeNumber(s.quantiteDisponible), 0),
+      quantiteReserveeTotale: filteredStocks.reduce((sum, s) => sum + safeNumber(s.quantiteReservee), 0)
+    };
+
+    // Pagination
+    const totalItems = filteredStocks.length;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const paginatedStocks = filteredStocks.slice(offset, offset + parseInt(limit));
+    const totalPages = Math.ceil(totalItems / parseInt(limit));
+
+    res.json({
+      stocks: paginatedStocks,
+      statsGlobales,
+      pagination: {
+        total: totalItems,
+        page: parseInt(page),
+        totalPages,
+        limit: parseInt(limit),
+        hasNext: parseInt(page) < totalPages,
+        hasPrev: parseInt(page) > 1
+      }
+    });
+
+  } catch (error) {
+    console.error('Erreur dashboard stock:', error);
+    res.status(500).json({ message: 'Erreur', error: error.message });
+  }
+};
 // 4. Récupérer le stock d'un produit (très demandé)
 exports.getStockByProduitId = async (req, res) => {
   try {

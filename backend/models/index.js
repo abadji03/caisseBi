@@ -238,20 +238,41 @@ db.Produit.hasMany(db.Transfert, { foreignKey: 'produitId' });
 db.Transfert.belongsTo(db.Produit, { foreignKey: 'produitId' });
 
 // Magasins
-db.Magasin.hasMany(db.Transfert, { foreignKey: 'magasinSource' });
-db.Magasin.hasMany(db.Transfert, { foreignKey: 'magasinDestination' });
+db.Magasin.hasMany(db.Transfert, { foreignKey: 'magasinSource', as: 'TransfertsSortants' });
+db.Magasin.hasMany(db.Transfert, { foreignKey: 'magasinDestination',as: 'TransfertsEntrants' });
+
+db.Transfert.belongsTo(db.Magasin, {
+  foreignKey: 'magasinSource',
+  as: 'MagasinSource'
+});
+
+db.Transfert.belongsTo(db.Magasin, {
+  foreignKey: 'magasinDestination',
+  as: 'MagasinDestination'
+});
 
 // Structure
 db.Structure.hasMany(db.Transfert, { foreignKey: 'code_structure', sourceKey: 'code_structure' });
 db.Transfert.belongsTo(db.Structure, { foreignKey: 'code_structure', targetKey: 'code_structure' });
 
 // Users
-db.Users.hasMany(db.Transfert, { foreignKey: 'agentResponsable' });
-db.Users.hasMany(db.Transfert, { foreignKey: 'agentValidation' });
+db.Users.hasMany(db.Transfert, { foreignKey: 'agentResponsable', as:'TransfertsResponsables' });
+db.Users.hasMany(db.Transfert, { foreignKey: 'agentValidation', as:'TransfertsValides' });
+// Responsable du transfert
+db.Transfert.belongsTo(db.Users, {
+  foreignKey: 'agentResponsable',
+  as: 'Responsable'
+});
+
+// Validateur du transfert
+db.Transfert.belongsTo(db.Users, {
+  foreignKey: 'agentValidation',
+  as: 'Validateur'
+});
 
 // Mouvements
-db.MouvementStock.hasMany(db.Transfert, { foreignKey: 'mouvementSortieId' });
-db.MouvementStock.hasMany(db.Transfert, { foreignKey: 'mouvementEntreeId' });
+//db.MouvementStock.hasMany(db.Transfert, { foreignKey: 'mouvementSortieId' });
+//db.MouvementStock.hasMany(db.Transfert, { foreignKey: 'mouvementEntreeId' });
 
 //Relation entre Catégorie (pour les dépenses et recettes) et structure
 db.Structure.hasMany(db.Categorie, { foreignKey: 'code_structure', sourceKey: 'code_structure' });

@@ -11,8 +11,7 @@ export class Transfert {
   public agentResponsable!: number;
   public dateValidation?: Date;
   public agentValidation?: number;
-  public mouvementSortieId?: number; // ID du mouvement stock associé à la sortie
-  public mouvementEntreeId?: number; // ID du mouvement stock associé à l’entrée
+  
 
   constructor(data?: Partial<Transfert>) {
     Object.assign(this, data);

@@ -23,7 +23,6 @@ export class ReconciliationComponent implements OnInit, OnDestroy {
   @Input() agentId: number | null = null;
   @Input() magasinId: number | null = null;
 
-  pageSize = 5;
   reconciliationForm!: FormGroup;
   reconciliations: Reconciliation[] = [];
   filteredReconciliations: Reconciliation[] = [];
@@ -39,6 +38,16 @@ export class ReconciliationComponent implements OnInit, OnDestroy {
   filteredProduits: Produits[] = [];
   searchInput = '';
   selectedProduct: Produits | null = null;
+
+  currentPage = 1;
+  pageSize = 10;
+  totalItems = 0;
+  totalPages = 0;
+  hasNext = false;
+  hasPrev = false;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  statistiques : any;
+  
 
   private destroy$ = new Subject<void>();
   private cdr = inject(ChangeDetectorRef);
@@ -68,17 +77,18 @@ export class ReconciliationComponent implements OnInit, OnDestroy {
     });
   }
 
-  
-private loadData() {
-  this.isLoading = true;
-  
-  console.log('Chargement des données pour la structure:', this.codeStructure);
-  
-  forkJoin([
-    this.produitsService.getAllProduits(this.codeStructure!),
-    this.stockService.getStocksByStructure(this.codeStructure!),
-    this.reconciliationService.getByStructure(this.codeStructure!)
-  ])
+  // Modifier la méthode loadData()
+  private loadData() {
+    this.isLoading = true;
+    
+    console.log('Chargement des réconciliations - Page:', this.currentPage);
+    
+    this.reconciliationService.getByStructure(
+      this.codeStructure!,
+      this.currentPage,
+      this.pageSize,
+      this.searchTextReconciliation,
+    )
     .pipe(
       takeUntil(this.destroy$),
       finalize(() => {
@@ -87,37 +97,57 @@ private loadData() {
       })
     )
     .subscribe({
-      next: ([produits, stocks, reconciliations]) => {
-        console.log('Produits chargés:', produits.length);
-        console.log('Stocks chargés:', stocks.length);
-        console.log('Réconciliations chargées:', reconciliations);
-        
-        this.produits = produits;
-        this.stock = stocks;
+      next: (response) => {
+        console.log('Réconciliations chargées:', response.items.length);
+        console.log('Pagination:', response.pagination);
         
         // Transformer les réconciliations
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        this.reconciliations = reconciliations.map((raw: any) => {
+        this.reconciliations = response.items.map((raw: any) => {
           const rec = Reconciliation.fromRaw(raw);
-          /* const stockProduit = this.stock.find(s => s.produitId === rec.produitId);
-          if (stockProduit) {
-            rec.stockTheorique = stockProduit.quantiteTotale;
-          } */
           return rec;
         });
         
-        this.buildHistorique();
-        this.filteredReconciliations = [...this.reconciliations];
-        this.filteredProduits = [...produits];
+        // Mettre à jour les informations de pagination
+        this.totalItems = response.pagination.total;
+        this.totalPages = response.pagination.totalPages;
+        this.hasNext = response.pagination.hasNext;
+        this.hasPrev = response.pagination.hasPrev;
         
-        console.log('Données prêtes');
+        this.statistiques = response.statistiquesRec
+        // Construire l'historique pour chaque réconciliation
+        this.buildHistorique();
+        
+        // Charger les produits et stocks en parallèle (si nécessaire)
+        this.loadProduitsEtStocks();
       },
       error: (err) => {
-        console.error('Erreur chargement données', err);
-        this.toastr.error('Erreur lors du chargement des données');
+        console.error('Erreur chargement réconciliations', err);
+        this.toastr.error('Erreur lors du chargement des réconciliations');
+        this.isLoading = false;
       }
     });
-}
+  }
+
+  // Nouvelle méthode pour charger produits et stocks
+  private loadProduitsEtStocks() {
+    forkJoin([
+      this.produitsService.getAllProduits(this.codeStructure!),
+      this.stockService.getStocksByStructure(this.codeStructure!)
+    ])
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: ([produits, stocks]) => {
+        this.produits = produits;
+        this.stock = stocks;
+        this.filteredProduits = [...produits];
+        console.log('Produits et stocks chargés');
+      },
+      error: (err) => {
+        console.error('Erreur chargement produits/stocks', err);
+      }
+    });
+  }
 
   private buildHistorique() {
     this.reconciliations.forEach(rec => {
@@ -132,6 +162,7 @@ private loadData() {
     });
   }
 
+  
   filterProduits(): void {
     const input = this.searchInput.trim().toLowerCase();
     this.filteredProduits = this.produits.filter(p =>
@@ -167,14 +198,9 @@ private loadData() {
   return produit.designation;
 } 
 
-  onSearchChange(): void {
-    const searchText = this.searchTextReconciliation.toLowerCase();
-    this.filteredReconciliations = this.reconciliations.filter(rec =>
-      rec.Produit?.designation.toLowerCase().includes(searchText) ||
-      rec.stockTheorique.toString().includes(searchText) ||
-      rec.stockPhysique.toString().includes(searchText)
-    );
-    this.currentPageReconciliation = 1;
+ onSearchChange(): void {
+    this.currentPage = 1; // Revenir à la première page
+    this.loadData();
   }
 
   getPaginatedReconciliations() {
@@ -186,10 +212,48 @@ private loadData() {
     return Math.ceil(this.filteredReconciliations.length / this.pageSize);
   }
 
-  onPageChange(page: number) {
-    this.currentPageReconciliation = page;
+  onPageChange(page: number): void {
+    if (page < 1 || page > this.totalPages) return;
+    
+    this.currentPage = page;
+    this.loadData();
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onPageSizeChange(event: any): void {
+    this.pageSize = Number(event.target.value);
+    this.currentPage = 1;
+    this.loadData();
+  }
+
+  // Getter pour les pages à afficher (à ajouter dans le composant)
+get pagesToShow(): number[] {
+  const pages: number[] = [];
+  const maxVisiblePages = 5;
+  
+  if (this.totalPages <= maxVisiblePages) {
+    for (let i = 1; i <= this.totalPages; i++) {
+      pages.push(i);
+    }
+  } else {
+    let start = Math.max(1, this.currentPage - 2);
+    let end = Math.min(this.totalPages, this.currentPage + 2);
+    
+    if (this.currentPage <= 3) {
+      end = Math.min(this.totalPages, maxVisiblePages);
+    }
+    
+    if (this.currentPage >= this.totalPages - 2) {
+      start = Math.max(1, this.totalPages - maxVisiblePages + 1);
+    }
+    
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+  }
+  
+  return pages;
+}
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onRowsPerPageChange(event: any) {
     this.pageSize = Number(event.target.value);
@@ -231,68 +295,7 @@ modifierReconciliation(reconciliation: Reconciliation) {
   // Ouvrir le modal
   this.openModal();
 }
-  /* supprimerReconciliation(reconciliation: Reconciliation) {
-    if (confirm('Êtes-vous sûr de vouloir supprimer cette réconciliation ?')) {
-      this.isLoading = true;
-
-      if(!reconciliation){
-        console.log('Erreur lors de la suppression de la réconciliation');
-        return;
-      }
-      // Avant de supprimer, on doit annuler l'impact sur le stock
-      // et supprimer le mouvement de correction associé
-      this.mouvementsStockService.updateStatut(reconciliation.MouvementStocks.id!,'annulé')
-        .pipe(
-          switchMap((rec: MouvementsStock) => {
-            // Rechercher le mouvement de correction associé
-            return this.mouvementsStockService.getByStructure(this.codeStructure!).pipe(
-              map(mouvements => {
-                return mouvements.find(m => 
-                  m.description?.includes(`réconciliation du ${new Date(rec.dateReconciliation).toLocaleDateString()}`) &&
-                  m.produitId === rec.produitId
-                );
-              }),
-              switchMap(mouvementCorrection => {
-                // Si un mouvement de correction existe, le supprimer
-                if (mouvementCorrection) {
-                  return this.mouvementsStockService.delete(mouvementCorrection.id!).pipe(
-                    switchMap(() => {
-                      // Annuler l'effet sur le stock
-                      const variation = rec.ecart; // Inverse de la correction initiale
-                      return this.stockService.getStockByProduitId(rec.produitId).pipe(
-                        switchMap(stock => {
-                          return this.stockService.adjustQuantiteTotale(stock.id, variation);
-                        })
-                      );
-                    })
-                  );
-                }
-                return of(null);
-              }),
-              switchMap(() => {
-                // Enfin, supprimer la réconciliation
-                return this.reconciliationService.delete(reconciliation.id!);
-              })
-            );
-          }),
-          takeUntil(this.destroy$),
-          finalize(() => (this.isLoading = false))
-        )
-        .subscribe({
-          next: () => {
-            this.toastr.success('Réconciliation et mouvements associés supprimés avec succès');
-            this.loadData();
-          },
-          error: (err) => {
-            console.error('Erreur:', err);
-            const message = err.error?.message || 'Erreur lors de la suppression';
-            this.toastr.error(message);
-            this.isLoading = false;
-          }
-        });
-    }
-  } */
-
+  
 supprimerReconciliation(reconciliation: Reconciliation) {
 
   //console.log('Reconciliation à supprimer',reconciliation);

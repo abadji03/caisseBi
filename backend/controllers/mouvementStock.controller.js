@@ -1,6 +1,6 @@
 const db = require('../models');
 const MouvementStock = db.MouvementStock;
-const { Op} = db.Sequelize;
+const { Op,fn,col,literal} = db.Sequelize;
 
 
 //Créer un mouvement de stock
@@ -230,21 +230,109 @@ exports.getMouvementsByStructure = async (req, res) => {
       whereClause.typeMouvement = typeMouvement;
     }
 
-    // 📅 FILTRE PAR DATE
-    /* if (dateDebut && dateFin) {
-      whereClause.dateMouvement = {
-        [Op.between]: [new Date(dateDebut), new Date(dateFin)]
-      };
-    } else if (dateDebut) {
-      whereClause.dateMouvement = {
-        [Op.gte]: new Date(dateDebut)
-      };
-    } else if (dateFin) {
-      whereClause.dateMouvement = {
-        [Op.lte]: new Date(dateFin)
-      };
-    } */
+    // STATISTIQUES GLOBALES
+    const statsGlobales = await MouvementStock.findAll({
+      where: whereClause,
+      attributes: [
+        [fn('COUNT', col('id')), 'totalMouvements'],
+        [fn('SUM', col('quantite')), 'quantiteTotale'],
+        [fn('AVG', col('quantite')), 'quantiteMoyenne'],
+        [
+          literal(`SUM(CASE WHEN typeMouvement = 'Entrée' THEN quantite ELSE 0 END)`), 
+          'totalEntrees'
+        ],
+        [
+          literal(`SUM(CASE WHEN typeMouvement = 'Sortie' THEN quantite ELSE 0 END)`), 
+          'totalSorties'
+        ],
+        [
+          literal(`COUNT(CASE WHEN typeMouvement = 'Entrée' THEN 1 END)`), 
+          'nombreEntrees'
+        ],
+        [
+          literal(`COUNT(CASE WHEN typeMouvement = 'Sortie' THEN 1 END)`), 
+          'nombreSorties'
+        ],
+        [
+          literal(`COUNT(DISTINCT produitId)`), 
+          'produitsConcernes'
+        ]
+      ],
+      raw: true
+    });
 
+    // Top produits les plus mouvementés
+    const topProduits = await MouvementStock.findAll({
+      where: whereClause,
+      attributes: [
+        'produitId',
+        [fn('COUNT', col('MouvementStock.id')), 'nombreMouvements'],
+        [fn('SUM', col('MouvementStock.quantite')), 'quantiteTotale'],
+        [
+          literal(`SUM(CASE WHEN typeMouvement = 'Entrée' THEN quantite ELSE 0 END)`), 
+          'entrees'
+        ],
+        [
+          literal(`SUM(CASE WHEN typeMouvement = 'Sortie' THEN quantite ELSE 0 END)`), 
+          'sorties'
+        ]
+      ],
+      include: [
+        {
+          model: db.Produit,
+          attributes: ['designation', 'unite']
+        }
+      ],
+      group: ['produitId', 'Produit.id', 'Produit.designation', 'Produit.unite'],
+      order: [[literal('nombreMouvements'), 'DESC']],
+      limit: 5,
+      raw: true,
+      subQuery: false
+    });
+
+    // Activité par jour (pour les 7 derniers jours)
+    const activiteQuotidienne = await MouvementStock.findAll({
+      where: {
+        ...whereClause,
+        dateMouvement: {
+          [Op.gte]: literal("NOW() - INTERVAL 7 DAY")
+        }
+      },
+      attributes: [
+        [
+          fn('DATE_FORMAT', col('MouvementStock.dateMouvement'), '%Y-%m-%d'),
+          'date'
+        ],
+        [fn('COUNT', col('MouvementStock.id')), 'nombreMouvements'],
+        [
+          literal(`SUM(CASE WHEN typeMouvement = 'Entrée' THEN quantite ELSE 0 END)`),
+          'entrees'
+        ],
+        [
+          literal(`SUM(CASE WHEN typeMouvement = 'Sortie' THEN quantite ELSE 0 END)`),
+          'sorties'
+        ]
+      ],
+      group: [
+        fn('DATE_FORMAT', col('MouvementStock.dateMouvement'), '%Y-%m-%d')
+      ],
+      order: [
+        [fn('DATE_FORMAT', col('MouvementStock.dateMouvement'), '%Y-%m-%d'), 'DESC']
+      ],
+      raw: true
+    });
+
+    // Répartition par type de mouvement
+    const repartitionType = await MouvementStock.findAll({
+      where: whereClause,
+      attributes: [
+        'typeMouvement',
+        [fn('COUNT', col('id')), 'nombre'],
+        [fn('SUM', col('quantite')), 'quantite']
+      ],
+      group: ['typeMouvement'],
+      raw: true
+    });
     // Calcul de l'offset pour la pagination
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const limitInt = parseInt(limit);
@@ -279,7 +367,7 @@ exports.getMouvementsByStructure = async (req, res) => {
 
     // Réponse avec pagination
     res.status(200).json({
-      mouvements: rows,
+      items: rows,
       pagination: {
         total: count,
         page: parseInt(page),
@@ -287,6 +375,24 @@ exports.getMouvementsByStructure = async (req, res) => {
         limit: limitInt,
         hasNext: parseInt(page) < totalPages,
         hasPrev: parseInt(page) > 1
+      },
+      statistiquesMvt: {
+        globales: statsGlobales[0] || {
+          totalMouvements: 0,
+          quantiteTotale: 0,
+          quantiteMoyenne: 0,
+          totalEntrees: 0,
+          totalSorties: 0,
+          nombreEntrees: 0,
+          nombreSorties: 0,
+          produitsConcernes: 0
+        },
+        topProduits: topProduits,
+        activiteQuotidienne: activiteQuotidienne,
+        repartitionType: repartitionType,
+        ratioEntreesSorties: statsGlobales[0]?.totalEntrees > 0 
+          ? (statsGlobales[0].totalSorties / statsGlobales[0].totalEntrees * 100).toFixed(2)
+          : 0
       }
     });
 

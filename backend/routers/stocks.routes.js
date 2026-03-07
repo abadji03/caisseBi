@@ -12,6 +12,7 @@ router.delete('/:id',authenticateToken, stockCtrl.deleteStock);
 
 // Récupérer tous les stocks d'une structure
 router.get('/structure/:code_structure', authenticateToken, stockCtrl.getStocksByStructure);
+router.get('/structure/complet/:code_structure', authenticateToken, stockCtrl.getStocksByStructureBis);
 
 // Récupérer le stock d'un produit
 router.get('/produit/:produitId',authenticateToken, stockCtrl.getStockByProduitId);

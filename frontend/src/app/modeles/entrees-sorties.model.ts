@@ -4,6 +4,7 @@ export class Stock {
   public id!: number;
   public produitId!: number; // Produit concerné
   public magasinId!: number; // Magasin concerné
+  public code_structure!: string;
   public quantiteTotale!: number; // Quantité totale en stock
   public quantiteReservee = 0; // Quantité engagée pour des commandes
   public seuilAlerte = 5; // Niveau minimum avant alerte
@@ -109,12 +110,12 @@ export class MouvementsStock {
   }
 
   //Réinitialiser l'heure d'une date pour éviter les erreurs de comparaison
-  private static resetTime(date: Date): Date {
+  /* private static resetTime(date: Date): Date {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
-  }
+  } */
 
   //Méthode pour calculer les statistiques de stock
-  public static calculerStatistiques(
+  /* public static calculerStatistiques(
     mouvements: MouvementsStock[],
     stocks: Stock[],
     dernierPrixAchat: number,
@@ -176,10 +177,10 @@ export class MouvementsStock {
       valeurStockFinal,
       tauxRotation,
     };
-  }
+  } */
 
   //Méthode pour calculer le stock initial
-  private static getStockInitial(
+  /* private static getStockInitial(
     produitId: number,
     magasinId: number,
     dateDebut: Date,
@@ -247,9 +248,9 @@ export class MouvementsStock {
       .reduce((total, mvt) => total + mvt.quantite, 0);
 
     return stockTotal + totalEntreesGlobales - totalSortiesGlobales;
-  }
+  } */
   // Méthode pour calculer les statistiques globales pour tous les produits
-  public static calculerStatistiquesGlobaux(
+  /* public static calculerStatistiquesGlobaux(
     mouvements: MouvementsStock[],
     stocks: Stock[],
     dateDebut: Date,
@@ -346,7 +347,7 @@ export class MouvementsStock {
       totalStockFinal,
       tauxRotation: totalStockFinal > 0 ? totalSorties / totalStockFinal : 0,
     };
-  }
+  } */
 }
 
 export class Reconciliation {
@@ -392,15 +393,6 @@ export class Reconciliation {
     return (this.stockPhysique ?? 0) - (this.stockTheorique ?? 0);
   }
 
-  // Ajouter un écart au suivi historique
-  /* ajouterHistorique(note?: string): void {
-    this.historiqueEcart?.push({
-      date: new Date(),
-      ecart: this._ecart,
-      note,
-    });
-  } */
-
   //Transformer un objet brut en instance de `Reconciliation`
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static fromRaw(data: any): Reconciliation {
@@ -427,90 +419,171 @@ export class Reconciliation {
   }
 }
 
-export class AnalyseEcart {
-  produitId!: number;
-  ecartTotal!: number;
-  dernierEcart!: Date;
-  nombreReconciliations?: number;
-  moyenneEcart?: number;
-  tauxCorrection?: number;
-  ecartsDetail?: { date: Date; ecart: number; corrige?: boolean }[];
-
-  constructor(data?: Partial<AnalyseEcart>) {
-    Object.assign(this, data);
-
-      //Mettre à jour automatiquement corrige
-    this.mettreAJourCorrections();
-
-    this.moyenneEcart = this.calculerMoyenneEcart();
-    this.tauxCorrection = this.calculerTauxCorrection();
-  }
-
-  private calculerMoyenneEcart(): number {
-    if (!this.ecartsDetail || this.ecartsDetail.length === 0) return 0;
-    const total = this.ecartsDetail.reduce((sum, item) => sum + Math.abs(item.ecart), 0);
-    return total / this.ecartsDetail.length;
-  }
-
-  private calculerTauxCorrection(): number {
-    if (!this.ecartsDetail || this.ecartsDetail.length === 0) return 0;
-    const corriges = this.ecartsDetail.filter((item) => item.corrige).length;
-    return (corriges / this.ecartsDetail.length) * 100;
-  }
-
-  // Met à jour la propriété corrige selon l’écart
-  mettreAJourCorrections(): void {
-    if (!this.ecartsDetail) return;
-    this.ecartsDetail = this.ecartsDetail.map((item) => ({
-      ...item,
-      corrige: item.ecart === 0,
-    }));
-  }
-  // Ajout d'une méthode statique pour convertir un objet brut en instance de la classe
-  /* static fromRaw(data: any): AnalyseEcart {
-    return new AnalyseEcart({
-      produitId: data.produitId,
-      ecartTotal: data.ecartTotal,
-      dernierEcart: new Date(data.dernierEcart),
-      nombreReconciliations: data.nombreReconciliations,
-      ecartsDetail: data.ecartsDetail
-        ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          data.ecartsDetail.map((item: any) => ({
-            date: new Date(item.date),
-            ecart: item.ecart,
-            corrige: item.corrige,
-          }))
-        : [],
-    });
-  } */
-
-    //Conversion objet brut → instance
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  static fromRaw(data: any): AnalyseEcart {
-    const instance = new AnalyseEcart({
-      produitId: data.produitId,
-      ecartTotal: data.ecartTotal,
-      dernierEcart: new Date(data.dernierEcart),
-      nombreReconciliations: data.nombreReconciliations,
-      ecartsDetail: data.ecartsDetail
-        ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          data.ecartsDetail.map((item: any) => ({
-            date: new Date(item.date),
-            ecart: item.ecart,
-            corrige: item.corrige, // sera recalculé par mettreAJourCorrections()
-          }))
-        : [],
-    });
-
-    //S’assurer que corrige est bien recalculé
-    instance.mettreAJourCorrections();
-
-    return instance;
-  }
+export interface PaginatedResponse<T> {
+  items: T[];
+  pagination: {
+    total: number;
+    page: number;
+    totalPages: number;
+    limit: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+  statistiquesRec: StatistiquesReconciliation;
+  statistiquesMvt: StatistiquesMouvement;
 }
 
-export interface PaginatedResponse<T> {
-  mouvements: T[];
+export interface AnalyseEcartDTO {
+  produitId: number;
+  produitDesignation: string;
+  produitUnite: string;
+  ecartTotal: number;
+  dernierEcart: Date;
+  premiereReconciliation: Date;
+  nombreReconciliations: number;
+  ecartsPositifs: number;
+  ecartsNegatifs: number;
+  ecartsNuls: number;
+  sommeEcartAbsolu: number;
+  moyenneEcart: number;
+  moyenneEcartAbsolu: number;
+  tauxCorrection: number;
+  tendance: string;
+  mouvementsCorrection: number;
+  ecartsDetail: {
+    id: number;
+    date: Date;
+    ecart: number;
+    stockTheorique: number;
+    stockPhysique: number;
+    corrige: boolean;
+    note?: string;
+  }[];
+}
+
+export interface StatsGlobales {
+  totalProduitsAvecEcarts: number;
+  totalReconciliations: number;
+  sommeEcarts: number;
+  moyenneEcartsGlobale: number;
+  produitsPositifs: number;
+  produitsNegatifs: number;
+  produitsNuls: number;
+}
+
+export interface PaginatedAnalyseResponse {
+  analyses: AnalyseEcartDTO[];
+  statsGlobales: StatsGlobales;
+  pagination: {
+    total: number;
+    page: number;
+    totalPages: number;
+    limit: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
+
+export interface StatistiquesReconciliation {
+  globales: {
+    totalReconciliations: number;
+    sommeEcarts: number;
+    moyenneEcart: number;
+    ecartMax: number;
+    ecartMin: number;
+    reconciliationsPositives: number;
+    reconciliationsNegatives: number;
+    reconciliationsNulles: number;
+    reconciliationsAvecCorrection: number;
+  };
+  topProduits: {
+    produitId: number;
+    ecartTotal: number;
+    nombreReconciliations: number;
+    moyenneEcart: number;
+    'Produit.designation': string;
+    'Produit.unite': string;
+  }[];
+  evolutionMensuelle: {
+    mois: string;
+    nombreReconciliations: number;
+    sommeEcarts: number;
+    moyenneEcart: number;
+  }[];
+  tauxCorrectionGlobal: number;
+}
+
+export interface StatistiquesMouvement {
+  globales: {
+    totalMouvements: number;
+    quantiteTotale: number;
+    quantiteMoyenne: number;
+    totalEntrees: number;
+    totalSorties: number;
+    nombreEntrees: number;
+    nombreSorties: number;
+    produitsConcernes: number;
+  };
+  topProduits: {
+    produitId: number;
+    nombreMouvements: number;
+    quantiteTotale: number;
+    entrees: number;
+    sorties: number;
+    'Produit.designation': string;
+    'Produit.unite': string;
+  }[];
+  activiteQuotidienne: {
+    date: string;
+    nombreMouvements: number;
+    entrees: number;
+    sorties: number;
+  }[];
+  repartitionType: {
+    typeMouvement: string;
+    nombre: number;
+    quantite: number;
+  }[];
+  ratioEntreesSorties: number;
+}
+
+
+export interface StockDashboardItem {
+  id: number;
+  produitId: number;
+  produitDesignation: string;
+  produitPerissable: boolean;
+  magasinId: number;
+  magasinNom: string;
+  quantiteTotale: number;
+  quantiteReservee: number;
+  quantiteDisponible: number;
+  seuilAlerte: number;
+  seuilReapprovisionnement: number;
+  datePeremption: Date | null;
+  joursAvantPeremption: number | null;
+  statutStock: string;
+  niveauAlerte: 'Critique' | 'Attention' | 'Normal';
+  valeurStock: number;
+  dateDerniereMiseAJour: Date;
+}
+
+export interface StatsGlobalesStock {
+  totalProduits: number;
+  valeurTotaleStock: number;
+  produitsEnAlerte: number;
+  produitsCritiques: number;
+  produitsPerissables: number;
+  produitsPerimes: number;
+  produitsBientotPerimes: number;
+  quantiteTotale: number;
+  quantiteDisponibleTotale: number;
+  quantiteReserveeTotale: number;
+}
+
+export interface DashboardStockResponse {
+  stocks: StockDashboardItem[];
+  statsGlobales: StatsGlobalesStock;
   pagination: {
     total: number;
     page: number;

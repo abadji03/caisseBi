@@ -1,39 +1,56 @@
 import { ChangeDetectorRef, Component, inject, Input, OnDestroy, OnInit } from '@angular/core';
-import { AnalyseEcart, Reconciliation } from '../../../modeles/entrees-sorties.model';
-import { Produits } from '../../../modeles/produit.modele';
-import { finalize, forkJoin, Subject, takeUntil } from 'rxjs';
-import { ProduitsService } from '../../../services/produits.service';
-import { ReconciliationService } from '../../../services/reconciliation.service';
+import { finalize, Subject, takeUntil } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { AnalyseEcartDTO, StatsGlobales } from '../../../modeles/entrees-sorties.model';
+import { ReconciliationService } from '../../../services/reconciliation.service';
 
 @Component({
   selector: 'app-analyse-ecarts',
   standalone: true,
-  imports: [CommonModule,FormsModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './analyse-ecarts.component.html',
   styleUrl: './analyse-ecarts.component.css'
 })
 export class AnalyseEcartsComponent implements OnInit, OnDestroy {
-
   @Input() codeStructure: string | null = null;
 
-  pageSize = 5;
-  analysesEcarts: AnalyseEcart[] = [];
-  filteredEcarts: AnalyseEcart[] = [];
-  searchTextEcart = '';
-  currentPageEcarts = 1;
-  isLoading = false;
-  detailsSelectionnes: { date: Date; ecart: number; corrige?: boolean }[] = [];
+  // Pagination
+  pageSize = 10;
+  currentPage = 1;
+  totalItems = 0;
+  totalPages = 0;
+  hasNext = false;
+  hasPrev = false;
 
-  produits: Produits[] = [];
-  reconciliations: Reconciliation[] = [];
+  // Données
+  analyses: AnalyseEcartDTO[] = [];
+  statsGlobales: StatsGlobales | null = null;
+  isLoading = false;
+
+  // Filtres
+  searchText = '';
+  triSelectionne = 'ecartTotal_desc';
+
+  // Options de tri
+  optionsTri = [
+    { valeur: 'produitDesignation_asc', label: 'Produit (A-Z)' },
+    { valeur: 'produitDesignation_desc', label: 'Produit (Z-A)' },
+    { valeur: 'ecartTotal_desc', label: 'Écart total (plus grand)' },
+    { valeur: 'ecartTotal_asc', label: 'Écart total (plus petit)' },
+    { valeur: 'nombreReconciliations_desc', label: 'Plus de réconciliations' },
+    { valeur: 'tauxCorrection_desc', label: 'Taux de correction (plus haut)' },
+    { valeur: 'dernierEcart_desc', label: 'Récent d\'abord' }
+  ];
+
+  // Détails
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  detailsSelectionnes: any[] = [];
 
   private destroy$ = new Subject<void>();
   private cdr = inject(ChangeDetectorRef);
-  private produitsService = inject(ProduitsService);
-  private reconciliationService = inject(ReconciliationService);
+  private analyseService = inject(ReconciliationService);
   private toastr = inject(ToastrService);
 
   ngOnInit() {
@@ -46,105 +63,88 @@ export class AnalyseEcartsComponent implements OnInit, OnDestroy {
   }
 
   private loadData() {
+    if (!this.codeStructure) return;
+
     this.isLoading = true;
-    forkJoin([
-      this.produitsService.getAllProduits(this.codeStructure!),
-      this.reconciliationService.getByStructure(this.codeStructure!)
-    ])
-      .pipe(
-        takeUntil(this.destroy$),
-        finalize(() => (this.isLoading = false))
-      )
-      .subscribe({
-        next: ([produits, reconciliations]) => {
-          this.produits = produits;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          this.reconciliations = reconciliations.map((raw: any) => Reconciliation.fromRaw(raw));
-          this.chargerAnalysesEcarts();
-        },
-        error: (err) => {
-          console.error('Erreur chargement données', err);
-          this.toastr.error('Erreur lors du chargement des données');
-        }
-      });
-  }
 
-  private chargerAnalysesEcarts() {
-    const analysesMap = new Map<number, AnalyseEcart>();
+    this.analyseService.getAnalyse(
+      this.codeStructure,
+      this.currentPage,
+      this.pageSize,
+      this.searchText,
+      this.triSelectionne
+    )
+    .pipe(
+      takeUntil(this.destroy$),
+      finalize(() => this.isLoading = false)
+    )
+    .subscribe({
+      next: (response) => {
 
-    this.reconciliations.forEach(reconciliation => {
-      let existing = analysesMap.get(reconciliation.produitId);
+        console.log('Résults analyse des écarts',response)
 
-      if (existing) {
-        existing.ecartTotal += reconciliation.ecart;
-        existing.nombreReconciliations = (existing.nombreReconciliations ?? 0) + 1;
-        existing.ecartsDetail?.push({
-          date: reconciliation.dateReconciliation,
-          ecart: reconciliation.ecart,
-          corrige: false
-        });
-        existing.dernierEcart = reconciliation.dateReconciliation;
-      } else {
-        existing = new AnalyseEcart({
-          produitId: reconciliation.produitId,
-          ecartTotal: reconciliation.ecart,
-          dernierEcart: reconciliation.dateReconciliation,
-          nombreReconciliations: 1,
-          ecartsDetail: [{
-            date: reconciliation.dateReconciliation,
-            ecart: reconciliation.ecart,
-            corrige: false
-          }]
-        });
-        analysesMap.set(reconciliation.produitId, existing);
+        this.analyses = response.analyses;
+        this.statsGlobales = response.statsGlobales;
+        
+        // Pagination
+        this.totalItems = response.pagination.total;
+        this.totalPages = response.pagination.totalPages;
+        this.hasNext = response.pagination.hasNext;
+        this.hasPrev = response.pagination.hasPrev;
+      },
+      error: (err) => {
+        console.error('Erreur chargement analyses:', err);
+        this.toastr.error('Erreur lors du chargement des analyses');
       }
     });
-
-    this.analysesEcarts = Array.from(analysesMap.values());
-    this.filteredEcarts = [...this.analysesEcarts];
-  }
-
-  getNomProduitById(produitId: number): string {
-    const produit = this.produits.find(p => p.id === produitId);
-    return produit ? produit.designation : 'Produit introuvable';
-  }
-
-  get moyenneEcart(): number {
-    return this.analysesEcarts.reduce((acc, curr) => acc + (curr.moyenneEcart || 0), 0) / this.analysesEcarts.length;
   }
 
   onSearchChange(): void {
-    this.filteredEcarts = this.analysesEcarts.filter(ecart =>
-      this.getNomProduitById(ecart.produitId).toLowerCase().includes(this.searchTextEcart.toLowerCase()) ||
-      new Date(ecart.dernierEcart).toLocaleDateString().toLowerCase().includes(this.searchTextEcart.toLowerCase()) ||
-      ecart.nombreReconciliations?.toString().includes(this.searchTextEcart.toLowerCase())
-    );
-    this.currentPageEcarts = 1;
+    this.currentPage = 1;
+    this.loadData();
   }
 
-  getPaginatedEcarts() {
-    const start = (this.currentPageEcarts - 1) * this.pageSize;
-    return this.filteredEcarts.slice(start, start + this.pageSize);
-  }
-
-  getTotalPages(): number {
-    return Math.ceil(this.filteredEcarts.length / this.pageSize);
-  }
-
-  onPageChange(page: number) {
-    this.currentPageEcarts = page;
+  onPageChange(page: number): void {
+    if (page < 1 || page > this.totalPages) return;
+    this.currentPage = page;
+    this.loadData();
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onRowsPerPageChange(event: any) {
+  onPageSizeChange(event: any): void {
     this.pageSize = Number(event.target.value);
-    this.currentPageEcarts = 1;
-    this.cdr.detectChanges();
+    this.currentPage = 1;
+    this.loadData();
   }
 
-  voirDetails(analyse: AnalyseEcart) {
+  onDateChange(): void {
+    this.currentPage = 1;
+    this.loadData();
+  }
+
+  onTriChange(): void {
+    this.currentPage = 1;
+    this.loadData();
+  }
+
+  resetFilters(): void {
+    this.searchText = '';
+    this.triSelectionne = 'ecartTotal_desc';
+    this.currentPage = 1;
+    this.loadData();
+  }
+
+  voirDetails(analyse: AnalyseEcartDTO) {
     this.detailsSelectionnes = analyse.ecartsDetail || [];
     this.openDetailsModal();
+  }
+
+  getTendanceIcon(tendance: string): string {
+    switch(tendance) {
+      case '↑': return 'text-success';
+      case '↓': return 'text-danger';
+      default: return 'text-muted';
+    }
   }
 
   openDetailsModal() {
@@ -154,5 +154,24 @@ export class AnalyseEcartsComponent implements OnInit, OnDestroy {
       const modal = new (window as any).bootstrap.Modal(modalElement);
       modal.show();
     }
+  }
+
+  // Pour la pagination
+  get pagesToShow(): number[] {
+    const pages: number[] = [];
+    const maxVisiblePages = 5;
+    
+    if (this.totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= this.totalPages; i++) pages.push(i);
+    } else {
+      let start = Math.max(1, this.currentPage - 2);
+      let end = Math.min(this.totalPages, this.currentPage + 2);
+      
+      if (this.currentPage <= 3) end = Math.min(this.totalPages, maxVisiblePages);
+      if (this.currentPage >= this.totalPages - 2) start = Math.max(1, this.totalPages - maxVisiblePages + 1);
+      
+      for (let i = start; i <= end; i++) pages.push(i);
+    }
+    return pages;
   }
 }

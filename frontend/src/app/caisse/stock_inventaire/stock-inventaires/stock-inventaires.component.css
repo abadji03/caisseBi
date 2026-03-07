@@ -1,34 +1,40 @@
-/* Style général des onglets */
-.nav-tabs .nav-link {
-  border-radius: 0.5rem;
-  padding: 10px 20px;
-  font-weight: 600;
-  transition: all 0.3s ease-in-out;
-  background-color: #f8f9fa; /* Couleur de fond claire */
-  color: #6c757d; /* Couleur du texte par défaut */
-  border: 1px solid transparent;
+/* stock-dashboard.component.css */
+.card {
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
 }
 
-/* Effet au survol (hover) */
-.nav-tabs .nav-link:hover {
-  background-color: #e9ecef; /* Fond léger au survol */
-  color: black; /* Texte bleu au survol */
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
-/* Onglet actif */
-.nav-tabs .nav-link.active {
-  color: #fff; /* Texte blanc */
-  background-color: black; /* Couleur de fond bleu pour l'onglet actif */
-  border-color: black; /* Bordure bleue pour l'onglet actif */
-  box-shadow: 0 0 10px rgba(0, 123, 255, 0.4); /* Ombre portée subtile */
+.table td, .table th {
+  vertical-align: middle;
 }
 
-/* Espacement entre les onglets */
-.nav-tabs {
-  margin-bottom: 1rem; /* Espacement en dessous des onglets */
+.badge {
+  padding: 0.5em 0.75em;
+  font-size: 0.85em;
 }
 
-/* Style pour les titres des onglets (ajout de padding pour plus de lisibilité) */
-.nav-tabs .nav-link {
-  padding: 12px 20px;
+.pagination {
+  margin-bottom: 0;
+}
+
+.pagination .page-link {
+  cursor: pointer;
+  color: #010c03;
+}
+
+.pagination .page-item.active .page-link {
+  background-color: #000f04;
+  border-color: #eff8f1;
+  color: white;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: #19281c;
+  box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
 }

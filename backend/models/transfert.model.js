@@ -16,8 +16,8 @@ module.exports = (sequelize, DataTypes) => {
     agentResponsable: { type: DataTypes.INTEGER, allowNull: false },
     dateValidation: { type: DataTypes.DATE },
     agentValidation: { type: DataTypes.INTEGER },
-    mouvementSortieId: { type: DataTypes.INTEGER },
-    mouvementEntreeId: { type: DataTypes.INTEGER },
+    // mouvementSortieId: { type: DataTypes.INTEGER },
+    // mouvementEntreeId: { type: DataTypes.INTEGER },
   });
 
   return Transfert;

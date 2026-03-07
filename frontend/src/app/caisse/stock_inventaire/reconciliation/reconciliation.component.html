@@ -1,48 +1,142 @@
 <div class="table-responsive">
-  <div class="d-flex justify-content-between">
+  
+  <div class="d-flex justify-content-end align-items-center mb-3">
+    <button class="btn btn-success" (click)="openModal()">
+      <i class="bi bi-plus-circle me-1"></i> Nouvelle réconciliation
+    </button>
+</div>
+
+<!-- En haut du template, après les filtres -->
+<div class="row mb-4" *ngIf="statistiques">
+  <!-- Carte principale -->
+  <div class="col-md-3">
+    <div class="card bg-primary text-white">
+      <div class="card-body">
+        <h6>Total réconciliations</h6>
+        <h3>{{ statistiques.globales.totalReconciliations }}</h3>
+        <small>Dont {{ statistiques.globales.reconciliationsAvecCorrection }} avec correction</small>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Carte écarts -->
+  <div class="col-md-3">
+    <div class="card bg-info text-white">
+      <div class="card-body">
+        <h6>Somme des écarts</h6>
+        <h3>{{ statistiques.globales.sommeEcarts | number }}</h3>
+        <small>Moyenne: {{ statistiques.globales.moyenneEcart | number:'1.0-2' }}</small>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Carte répartition -->
+  <div class="col-md-3">
+    <div class="card bg-success text-white">
+      <div class="card-body">
+        <h6>Répartition écarts</h6>
+        <h3> {{ statistiques.globales.reconciliationsNulles }} Nuls </h3>
+         <small> {{ statistiques.globales.reconciliationsPositives }}  Positif(s)</small> :
+         <small>  {{ statistiques.globales.reconciliationsNegatives }}  Negatif(s)</small>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Carte taux correction -->
+  <div class="col-md-3">
+    <div class="card bg-warning text-white">
+      <div class="card-body">
+        <h6>Taux correction global</h6>
+        <h3>{{ statistiques?.tauxCorrectionGlobal }}%</h3>
+        <div class="progress bg-light" style="height: 5px;">
+          <div class="progress-bar bg-success" 
+               [style.width]="statistiques?.tauxCorrectionGlobal + '%'"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Graphique d'évolution mensuelle -->
+<!-- <div class="row mb-4" *ngIf="statistiques?.evolutionMensuelle?.length">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header bg-light">
+        <h6>Évolution mensuelle des écarts</h6>
+      </div>
+      <div class="card-body">
+        <div style="height: 200px;">
+        </div>
+      </div>
+    </div>
+  </div>
+</div> -->
+
+<div class="d-flex justify-content-center">
+  <h1>Détails des réconciliations</h1>
+</div>
+
+<!-- Bouton nouvelle réconciliation et contrôles de pagination -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+  
+  <div class="w-50">
     <input
       [(ngModel)]="searchTextReconciliation"
       type="text"
-      placeholder="Rechercher une réconciliation..."
-      class="form-control w-50 mb-3"
+      placeholder="Rechercher par produit, écart, note..."
+      class="form-control"
       (input)="onSearchChange()"
     />
-    <button
-      class="btn btn-success mb-3 w-auto"
-      (click)="openModal()"
-    >
-      <i class="bi bi-plus-circle me-1"></i> Nouvelle réconciliation
-    </button>
   </div>
   
-  <div class="d-flex justify-content-between align-items-center mb-2 float-end">
-    <label for="rowsPerPage" class="me-2">Afficher</label>
-    <select
-      id="rowsPerPage"
-      class="form-select w-auto me-2"
-      (change)="onRowsPerPageChange($event)"
-    >
-      <option *ngFor="let option of [5, 10, 20, 50]" [value]="option">{{ option }}</option>
-    </select>
-    <span>lignes par page</span>
-  </div>
 
+  <div class="d-flex align-items-center">
+    
+    <label for="pageSize" class="me-2">Afficher</label>
+    <select
+      id="pageSize"
+      class="form-select w-auto"
+      (change)="onPageSizeChange($event)"
+    >
+      <option [value]="5">5</option>
+      <option [value]="10" selected>10</option>
+      <option [value]="20">20</option>
+      <option [value]="50">50</option>
+    </select>
+    <span class="ms-2">lignes par page</span>
+  </div>
+</div>
   <table class="table table-bordered table-hover">
-    <thead class="table-success">
+    <thead class="table-dark">
       <tr>
         <th>Produit</th>
         <th>Stock Théorique</th>
         <th>Stock Physique</th>
         <th>Écart</th>
-        <th>Historique des écarts</th>
+        <!-- <th>Historique des écarts</th> -->
         <th>Actions</th>
       </tr>
     </thead>
     <tbody>
-      <tr *ngIf="getPaginatedReconciliations().length === 0">
-        <td colspan="6" class="text-center">Aucune réconciliation trouvée</td>
+       <!-- Loading state -->
+      <tr *ngIf="isLoading">
+        <td colspan="7" class="text-center py-4">
+          <div class="spinner-border text-success" role="status">
+            <span class="visually-hidden">Chargement...</span>
+          </div>
+          <div class="mt-2">Chargement des réconciliations...</div>
+        </td>
       </tr>
-      <tr *ngFor="let reconciliation of getPaginatedReconciliations()">
+      
+      <!-- Aucune donnée -->
+      <tr *ngIf="!isLoading && reconciliations.length === 0">
+        <td colspan="7" class="text-center py-4">
+          <i class="bi bi-inbox fs-1 d-block text-muted"></i>
+          <span class="text-muted">Aucune réconciliation trouvée</span>
+        </td>
+      </tr>
+
+      <tr *ngFor="let reconciliation of reconciliations">
         <td>{{ reconciliation.Produit?.designation }}</td>
         <td>{{ reconciliation.stockTheorique }}</td>
         <td>{{ reconciliation.stockPhysique }}</td>
@@ -54,21 +148,7 @@
         >
           {{ reconciliation.ecart }}
         </td>
-        <td class="text-center">
-          <button
-            class="btn btn-info btn-sm"
-            (click)="voirHistorique(reconciliation)"
-          >
-            <i class="bi bi-clock-history"></i>
-          </button>
-        </td>
         <td>
-          <button
-            class="btn btn-warning btn-sm me-2"
-            (click)="modifierReconciliation(reconciliation)"
-          >
-            <i class="bi bi-pencil"></i>
-          </button>
           <button
             class="btn btn-danger btn-sm"
             (click)="supprimerReconciliation(reconciliation)"
@@ -81,24 +161,62 @@
   </table>
 </div>
 
-<!-- Pagination -->
-<div class="d-flex justify-content-center align-items-center">
-  <button
-    class="btn btn-success w-auto"
-    (click)="onPageChange(currentPageReconciliation - 1)"
-    [disabled]="currentPageReconciliation === 1"
-  >
-    <i class="bi bi-arrow-left-circle"></i>
-  </button>
-  <span class="h3 mx-3">{{ currentPageReconciliation }} / {{ getTotalPages() }}</span>
-  <button
-    class="btn btn-success w-auto"
-    (click)="onPageChange(currentPageReconciliation + 1)"
-    [disabled]="currentPageReconciliation >= getTotalPages()"
-  >
-    <i class="bi bi-arrow-right-circle"></i>
-  </button>
+<!-- Pagination compacte -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-3" *ngIf="totalPages > 1">
+  <!-- Informations de pagination -->
+  <div class="text-muted mb-2 mb-md-0">
+    <small>
+      Affichage de {{ ((currentPage - 1) * pageSize) + 1 }} 
+      à {{ currentPage * pageSize > totalItems ? totalItems : currentPage * pageSize }} 
+      sur {{ totalItems }} réconciliations
+    </small>
+  </div>
+  
+  <!-- Navigation avec nombre de pages limité -->
+  <nav aria-label="Page navigation">
+    <ul class="pagination pagination-sm mb-0 flex-wrap">
+      <!-- Bouton précédent -->
+      <li class="page-item" [class.disabled]="!hasPrev">
+        <button class="page-link" (click)="onPageChange(currentPage - 1)" style="cursor: pointer;" aria-label="Précédent">
+          <i class="bi bi-chevron-left"></i>
+        </button>
+      </li>
+      
+      <!-- Première page (si loin du début) -->
+      <li class="page-item" *ngIf="currentPage > 3">
+        <button class="page-link" (click)="onPageChange(1)" style="cursor: pointer;">1</button>
+      </li>
+      <li class="page-item disabled" *ngIf="currentPage > 4">
+        <a class="page-link">...</a>
+      </li>
+      
+      <!-- Pages autour de la page courante -->
+      <li class="page-item" 
+          *ngFor="let page of pagesToShow" 
+          [class.active]="currentPage === page">
+        <button class="page-link" (click)="onPageChange(page)" style="cursor: pointer;">
+          {{ page }}
+        </button>
+      </li>
+      
+      <!-- Dernière page (si loin de la fin) -->
+      <li class="page-item disabled" *ngIf="currentPage < totalPages - 3">
+        <a class="page-link">...</a>
+      </li>
+      <li class="page-item" *ngIf="currentPage < totalPages - 2">
+        <button class="page-link" (click)="onPageChange(totalPages)" style="cursor: pointer;">{{ totalPages }}</button>
+      </li>
+      
+      <!-- Bouton suivant -->
+      <li class="page-item" [class.disabled]="!hasNext">
+        <button class="page-link" (click)="onPageChange(currentPage + 1)" style="cursor: pointer;" aria-label="Suivant">
+          <i class="bi bi-chevron-right"></i>
+        </button>
+      </li>
+    </ul>
+  </nav>
 </div>
+
 
 <!-- Modal Historique -->
 <div class="modal fade" id="historiqueModal" tabindex="-1" aria-hidden="true">

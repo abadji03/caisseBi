@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Stock } from '../modeles/entrees-sorties.model';
+import { DashboardStockResponse, Stock } from '../modeles/entrees-sorties.model';
 import { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
 
@@ -40,7 +40,31 @@ export class StockInventaireService {
     return this.http.get<Stock[]>(`${this.apiUrl}/structure/${codeStructure}`, {
       headers: this.getHeaders(),
     });
-  }
+  } 
+
+  getStocksByStructureBis(
+  codeStructure: string,
+  page = 1,
+  limit = 10,
+  search = '',
+  statut = '',
+  perissable = '',
+  alerte = '',
+  tri= ''
+): Observable<DashboardStockResponse> {
+  let params = `?page=${page}&limit=${limit}&tri=${tri}`;
+  
+  if (search) params += `&search=${encodeURIComponent(search)}`;
+  //if (magasinId) params += `&magasinId=${magasinId}`;
+  if (statut) params += `&statut=${statut}`;
+  if (perissable) params += `&perissable=${perissable}`;
+  if (alerte) params += `&alerte=${alerte}`;
+
+  return this.http.get<DashboardStockResponse>(
+    `${this.apiUrl}/structure/complet/${codeStructure}${params}`,
+    { headers: this.getHeaders() }
+  );
+}
 
   // Récupérer un stock à partir d'un produitId
   getStockByProduitId(produitId: number): Observable<Stock> {

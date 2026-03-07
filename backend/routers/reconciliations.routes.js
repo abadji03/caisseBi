@@ -17,6 +17,18 @@ router.delete('/:id',authenticateToken, ctrl.deleteReconciliation); // Suppressi
 
 router.patch('/:id/statut', authenticateToken, ctrl.updateStatut);
 
+router.get(
+  '/structure/:code_structure/analyse-ecart',
+  authenticateToken,
+  ctrl.getAnalyseEcarts
+);
+
+router.get(
+  '/structure/:code_structure/produit/:produitId',
+  authenticateToken,
+  ctrl.getAnalyseProduit
+);
+
 
 router.get('/produit/:produitId',authenticateToken, ctrl.getReconciliationsByProduit); // Par produit
 

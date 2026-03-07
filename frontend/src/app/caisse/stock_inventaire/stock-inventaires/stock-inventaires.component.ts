@@ -1,14 +1,15 @@
-import { Component, inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, inject, Input, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Stock } from '../../../modeles/entrees-sorties.model';
-import { Produits } from '../../../modeles/produit.modele';
+import { MouvementsStock, StatsGlobalesStock, Stock, StockDashboardItem } from '../../../modeles/entrees-sorties.model';
 import { FormsModule } from '@angular/forms';
 import { Magasin } from '../../../modeles/magasin.model';
-import { ProduitsService } from '../../../services/produits.service';
 import { StockInventaireService } from '../../../services/stock-inventaire.service';
-import { MaagasinsService } from '../../../services/maagasins.service';
-import { finalize, forkJoin, Subject, Subscription, takeUntil } from 'rxjs';
+import { catchError, finalize, Observable, Subject, Subscription, switchMap, takeUntil, throwError } from 'rxjs';
+import { ToastrService } from 'ngx-toastr';
 import { AuthService } from '../../../services/auth.service';
+import { MaagasinsService } from '../../../services/maagasins.service';
+import { TransfertRequest, TransfertResponse, TransfertsService } from '../../../services/transferts.service';
+import { MouvementsStockService } from '../../../services/mouvements-stock.service';
 
 @Component({
   selector: 'app-stock-inventaires',
@@ -18,388 +19,610 @@ import { AuthService } from '../../../services/auth.service';
   styleUrl: './stock-inventaires.component.css',
 })
 export class StockInventairesComponent implements OnInit, OnDestroy {
-  private destroy$ = new Subject<void>();
-  searchTerm = ''; // Recherche
-  filteredInventaire: Produits[] = [];
-  filteredQtesDisponibles: Stock[] = [];
-  filteredNiveauStock: Stock[] = [];
-  filteredAlertes: Stock[] = [];
-  //filteredMouvements: MouvementsStock[] = [];
-  filteredPerissables: Stock[] = [];
-  produitsPerissables: Produits[] = [];
-  code_structure :string|null = null;
-  alertes: Stock[] = [];
-  niveauStock: Stock[] = [];
-  qtsDisponibles: Stock[] = [];
 
+  @Input() codeStructure: string | null = null;
 
-  itemsPerPage = 5; // Nombre d'éléments par page
-  currentPageAlertes = 1;
-  currentPageInventaire = 1;
-  currentPageQtesDisponibles = 1;
-  currentPageNiveauStock = 1;
-  currentPageMouvements = 1;
-  currentPagePerissables = 1;
-
+  // Données
+  stocks: StockDashboardItem[] = [];
+  statsGlobales: StatsGlobalesStock | null = null;
   magasins: Magasin[] = [];
-  stocks: Stock[] = [];
-  //mouvementsStock: MouvementsStock[] = [];
-  produits: Produits[] = [];
   isLoading = false;
+  isAdmin = false;
+  isGerant = false;
+
+  // Pagination
+  currentPage = 1;
+  pageSize = 10;
+  totalItems = 0;
+  totalPages = 0;
+  hasNext = false;
+  hasPrev = false;
+
+  // Filtres
+  searchText = '';
+  selectedMagasin = '';
+  selectedStatut = 'tous';
+  showPerissable = 'tous';
+  showAlerte = 'tous';
+  selectedTri = 'produitDesignation_asc';
+
+  // Options pour les filtres
+  statutsOptions = [
+    { valeur: 'tous', label: 'Tous les statuts' },
+    { valeur: 'En stock', label: 'En stock' },
+    { valeur: 'À réapprovisionner', label: 'À réapprovisionner' },
+    { valeur: 'Critique', label: 'Critique' },
+    { valeur: 'En rupture', label: 'En rupture' }
+  ];
+
+  optionsTri = [
+    { valeur: 'produitDesignation_asc', label: 'Produit (A-Z)' },
+    { valeur: 'produitDesignation_desc', label: 'Produit (Z-A)' },
+    { valeur: 'quantiteDisponible_desc', label: 'Plus de stock' },
+    { valeur: 'quantiteDisponible_asc', label: 'Moins de stock' },
+    { valeur: 'valeurStock_desc', label: 'Valeur (plus élevée)' },
+    { valeur: 'joursAvantPeremption_asc', label: 'Expiration proche' }
+  ];
 
   private userSubscription!: Subscription;
 
-  private produitsService = inject(ProduitsService);
-  private stockServcice = inject(StockInventaireService);
-  private magasinService = inject(MaagasinsService);
+  // Propriétés pour le transfert
+  showFormIndex: number | null = null;
+  magasinDestinataire: number | null = null;
+  quantiteTransfert: number | null = null;
+  motifTransfert = '';
+  stockSelectionne: StockDashboardItem | null = null;
+  agentId: number | null = null;
+
+  // Propriétés pour les transferts
+  transferts: TransfertResponse[] = [];
+  transfertsFiltres: TransfertResponse[] = [];
+  isLoadingTransferts = false;
+  filtreStatutTransfert = 'tous';
+  rechercheTransfert = '';
+
+  // Pagination des transferts
+  currentPageTransferts = 1;
+  pageSizeTransferts = 10;
+  totalPagesTransferts = 1;
+  hasNextTransferts = false;
+  hasPrevTransferts = false;
+
+  // Référence à la modal
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private transfertsModal: any;
+
+  private destroy$ = new Subject<void>();
+
+  private stockService = inject(StockInventaireService);
   private authService = inject(AuthService);
+  private toastr = inject(ToastrService);
+  private magasinService = inject(MaagasinsService);
+  private transfertService = inject(TransfertsService);
+  private mouvementService = inject(MouvementsStockService);
   
 
-  ngOnInit(): void {
+  ngOnInit() {
     this.userSubscription = this.authService.currentUser.subscribe(user => {
-      //this.currentUser = user;
-      // Initialiser la variable code_structure
-      this.code_structure = user?.code_structure || null;
-      //this.magasinId = user?.magasinId || null;
-      //this.agentId = user?.id || null;
-      console.log('Code structure initialisé :', this.code_structure);
-      // Déterminer si on doit montrer le champ structure
-      //this.isStructureAdmin = this.authService.hasRole('Administrateur'); // Ou vérifiez par ID
-
-      // Récupérer l'ID de la structure de l'utilisateur connecté
-      
+      this.codeStructure = user?.code_structure || null;
+      this.agentId = user.id || null;
+      this.isAdmin = this.authService.hasRole('Administrateur');
+      this.isGerant = this.authService.hasRole('Gérant');
     });
+
     this.loadData();
+    this.chargerMagasins();
   }
 
-  ngOnDestroy(): void {
+  ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
-    if(this.userSubscription) {
+    if (this.userSubscription) {
       this.userSubscription.unsubscribe();
     }
   }
-  loadData(): void {
-      this.isLoading = true;
-      forkJoin([
-        this.magasinService.getMagasinsByStructure(this.code_structure!),
-        this.produitsService.getAllProduits(this.code_structure!),
-        //this.isGeneralAdmin ? this.structureService.getAll() : of([])
-        this.stockServcice.getStocksByStructure(this.code_structure!),
-      ])
-        .pipe(
-          takeUntil(this.destroy$),
-          finalize(() => (this.isLoading = false))
-        )
-        .subscribe({
-          next: ([magasin,produit, stock]) => {
-            //this.fournisseurs = four
-            this.produits = produit;
-            this.stocks = stock;
-            this.magasins = magasin;
-            this.filteredInventaire = [...this.produits];
-            //this.alertes = this.stocks.filter((p) => p.quantiteTotale <= p.seuilAlerte);
-            this.alertes = this.stocks.filter(p => {
-            //console.log('Test:', this.getNomProduitById(p.produitId), p.quantiteTotale, p.seuilAlerte, p.quantiteTotale <= p.seuilAlerte);
-              return Number(p.quantiteTotale) <= Number(p.seuilAlerte) || Number(p.quantiteTotale) <= Number(p.seuilReapprovisionnement) ;
-            });
 
-            //console.log(this.alertes);
-            this.produitsPerissables= this.produits.filter((p) => p.perissable === true);
-            this.qtsDisponibles = this.stocks.filter(stock => 
-                (stock.quantiteTotale - (stock.quantiteReservee || 0)) > 0
-            );
-            this.niveauStock = this.stocks.filter(stock => stock.quantiteTotale > 0);
-            this.filteredQtesDisponibles = [...this.qtsDisponibles];
-            this.filteredNiveauStock = [...this.niveauStock];
-            //this.filteredMouvements = [...this.mouvementsStock];
-            this.filteredAlertes = [...this.alertes];
-            this.filteredPerissables = [...this.getProduitsPerissables()];
-            this.updatefilteredTable('inventaire');
-            this.updatefilteredTable('qteDisponible');
-            this.updatefilteredTable('niveauStock');
-            this.updatefilteredTable('alerte');
-            this.updatefilteredTable('mouvement');
-            this.updatefilteredTable('perissable');
-          },
-          error: (err) => console.error('Erreur chargement données', err),
-        });
+  private loadData() {
+    if (!this.codeStructure) return;
+
+    this.isLoading = true;
+
+    this.stockService.getStocksByStructureBis(
+      this.codeStructure,
+      this.currentPage,
+      this.pageSize,
+      this.searchText,
+      this.selectedStatut !== 'tous' ? this.selectedStatut : '',
+      this.showPerissable !== 'tous' ? this.showPerissable : '',
+      this.showAlerte !== 'tous' ? this.showAlerte : '',
+      this.selectedTri
+    )
+    .pipe(
+      takeUntil(this.destroy$),
+      finalize(() => this.isLoading = false)
+    )
+    .subscribe({
+      next: (response) => {
+
+        console.log('Statistiques stock',response)
+
+        this.stocks = response.stocks;
+        this.statsGlobales = response.statsGlobales;
+        
+        this.totalItems = response.pagination.total;
+        this.totalPages = response.pagination.totalPages;
+        this.hasNext = response.pagination.hasNext;
+        this.hasPrev = response.pagination.hasPrev;
+      },
+      error: (err) => {
+        console.error('Erreur chargement dashboard:', err);
+        this.toastr.error('Erreur lors du chargement des données');
+      }
+    });
+  }
+
+  onFilterChange() {
+    this.currentPage = 1;
+    this.loadData();
+  }
+
+  onSearchChange() {
+    this.currentPage = 1;
+    this.loadData();
+  }
+
+  onPageChange(page: number) {
+    if (page < 1 || page > this.totalPages) return;
+    this.currentPage = page;
+    this.loadData();
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onPageSizeChange(event: any) {
+    this.pageSize = Number(event.target.value);
+    this.currentPage = 1;
+    this.loadData();
+  }
+
+  resetFilters() {
+    this.searchText = '';
+    this.selectedMagasin = '';
+    this.selectedStatut = 'tous';
+    this.showPerissable = 'tous';
+    this.showAlerte = 'tous';
+    this.selectedTri = 'produitDesignation_asc';
+    this.currentPage = 1;
+    this.loadData();
+  }
+
+  getStatutBadgeClass(statut: string): string {
+    const classes: Record<string, string> = {
+      'Critique': 'bg-danger',
+      'À réapprovisionner': 'bg-warning',
+      'En stock': 'bg-success',
+      'En rupture': 'bg-secondary'
+    };
+    return classes[statut] || 'bg-info';
+  }
+
+  getAlerteBadgeClass(niveau: string): string {
+    const classes: Record<string, string> = {
+      'Critique': 'bg-danger',
+      'Attention': 'bg-warning',
+      'Normal': 'bg-success'
+    };
+    return classes[niveau] || 'bg-info';
+  }
+
+  getJoursPeremptionClass(jours: number | null): string {
+    if (jours === null) return '';
+    if (jours < 0) return 'text-danger fw-bold';
+    if (jours <= 7) return 'text-warning fw-bold';
+    return 'text-success';
+  }
+
+  get pagesToShow(): number[] {
+    const pages: number[] = [];
+    const maxVisible = 5;
+    
+    if (this.totalPages <= maxVisible) {
+      for (let i = 1; i <= this.totalPages; i++) pages.push(i);
+    } else {
+      let start = Math.max(1, this.currentPage - 2);
+      let end = Math.min(this.totalPages, this.currentPage + 2);
+      
+      if (this.currentPage <= 3) end = Math.min(this.totalPages, maxVisible);
+      if (this.currentPage >= this.totalPages - 2) start = Math.max(1, this.totalPages - maxVisible + 1);
+      
+      for (let i = start; i <= end; i++) pages.push(i);
     }
-  // Méthodes pour afficher les informations
-  getProduitsParMagasin(magasin: number) {
-    return this.stocks.filter((p) => p.magasinId === magasin);
+    return pages;
   }
 
-  /* getProduitsPerissables() {
-    return this.produits.filter(p => p.perissable);
-  } */
-
-  getProduitsNonPerissables() {
-    return this.produits.filter((p) => !p.perissable);
+  //.................Pour les transferts................................//
+  /**
+   * Ouvre le formulaire de transfert pour un stock spécifique
+   */
+  openTransferForm(index: number, stock: StockDashboardItem): void {
+    this.showFormIndex = index;
+    this.stockSelectionne = stock;
+    this.magasinDestinataire = null;
+    this.quantiteTransfert = null;
+    this.motifTransfert = '';
   }
 
-  /* chargerInventaire(): void {
-    this.stockService.getStocks().subscribe((data) => {
-      this.stocks = data;
+  /**
+   * Annule le formulaire de transfert
+   */
+  cancelTransferForm(): void {
+    this.showFormIndex = null;
+    this.stockSelectionne = null;
+    this.magasinDestinataire = null;
+    this.quantiteTransfert = null;
+    this.motifTransfert = '';
+  }
+
+  chargerMagasins(): void {
+    this.isLoading = true;
+    this.magasinService.getMagasinsByStructure(this.codeStructure!)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (magasins) => {
+        this.isLoading = false;
+        this.magasins = magasins;
+      },
+
+      error: (err) => {
+        this.isLoading = false;
+        console.error('Erreur lors du chargement des magasins', err);
+      },
     });
   }
 
-  chargerAlertes(): void {
-    this.stockService.checkReapprovisionnement().subscribe((data) => {
-      this.alertes = data;
-    });
+  /**
+   * Récupère la liste des magasins autres que celui du stock source
+   */
+  getAutresMagasins(magasinSourceId: number): Magasin[] {
+    return this.magasins.filter(m => m.id !== magasinSourceId);
   }
 
-  chargerHistorique(): void {
-    this.stockService.getMouvements().subscribe((data) => {
-      this.mouvementsStock = data;
-    });
-  } */
+validerTransfert(transfert: TransfertResponse) {
+  if (!confirm(`Valider le transfert ${transfert.reference} ?`)) return;
 
-  // Méthodes pour gérer les alertes
-  envoyerAlerteReapprovisionnement() {
-    console.log('Alerte de réapprovisionnement envoyée');
-    // Implémentation de l'envoi d'alertes
+  if(!this.isAdmin){
+    this.toastr.error('Vous n\'êtes pas autorisé(e) à poursuivre cette action.');
+    return;
+  }
+  
+  console.log('Transfert à valider',transfert);
+  this.isLoadingTransferts = true;
+  
+  this.transfertService.validerTransfert(transfert.id!)
+  .pipe(
+    takeUntil(this.destroy$),
+    finalize(() => this.isLoadingTransferts = false)
+  )
+  .subscribe({
+    next: (response) => {
+      console.log('Transfert validé avec succès',response)
+      this.toastr.success(`Transfert ${transfert.reference} validé avec succès`);
+      this.chargerTransferts(this.currentPageTransferts);
+      this.loadData(); // Recharger les stocks
+    },
+    error: (err) => {
+      console.error('Erreur validation:', err);
+      const message = err.error?.message || err.message || 'Erreur lors de la validation';
+      this.toastr.error(message);
+    }
+  });
+}
+
+/**
+ * Gère le stock du magasin destinataire (création ou mise à jour)
+ */
+private gererStockDestination(
+  stockSource: StockDashboardItem,
+  mouvementEntree: Partial<MouvementsStock>,
+  _transfert: TransfertResponse
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+): Observable<any> {
+  
+  // Vérifier si le stock destination existe déjà
+  return this.transfertService.getStockByProduitAndMagasin(
+    stockSource.produitId, 
+    this.magasinDestinataire!
+  ).pipe(
+    switchMap((stockDestExistant) => {
+      if (stockDestExistant) {
+        console.log('Stock destination existant trouvé:', stockDestExistant);
+        
+        // Mettre à jour le stock existant
+        return this.stockService.adjustQuantiteTotale(
+          stockDestExistant.id, 
+          this.quantiteTransfert!
+        ).pipe(
+          switchMap((stockMisAJour) => {
+            console.log('Stock destination mis à jour:', stockMisAJour);
+            
+            // Mettre à jour le mouvement d'entrée avec le bon stockId
+            mouvementEntree.stockId = stockDestExistant.id;
+            
+            // Créer le mouvement d'entrée
+            return this.mouvementService.create(mouvementEntree as MouvementsStock);
+          })
+        );
+      } else {
+        console.log('Création d\'un nouveau stock pour le magasin destination');
+        
+        // Créer un nouveau stock dans le magasin destination
+        const nouveauStock: Partial<Stock> = {
+          produitId: stockSource.produitId,
+          magasinId: this.magasinDestinataire!,
+          code_structure: this.codeStructure!,
+          quantiteTotale: this.quantiteTransfert!,
+          quantiteReservee: 0,
+          seuilAlerte: 5,
+          seuilReapprovisionnement: 10,
+          statutStock: 'En stock'
+        };
+        
+        return this.stockService.createStock(nouveauStock as Stock).pipe(
+          switchMap((stockCree) => {
+            console.log('Nouveau stock créé:', stockCree);
+            
+            // Mettre à jour le mouvement d'entrée avec le bon stockId
+            mouvementEntree.stockId = stockCree.id;
+            
+            // Créer le mouvement d'entrée
+            return this.mouvementService.create(mouvementEntree as MouvementsStock);
+          })
+        );
+      }
+    }),
+    catchError(error => {
+      console.error('Erreur dans la gestion du stock destination:', error);
+      
+      // Si le stock n'existe pas (404), on crée un nouveau stock
+      if (error.status === 404) {
+        console.log('Stock destination non trouvé (404), création...');
+        
+        const nouveauStock: Partial<Stock> = {
+          produitId: stockSource.produitId,
+          magasinId: this.magasinDestinataire!,
+          code_structure: this.codeStructure!,
+          quantiteTotale: this.quantiteTransfert!,
+          quantiteReservee: 0,
+          seuilAlerte: 5,
+          seuilReapprovisionnement: 10,
+          statutStock: 'En stock'
+        };
+        
+        return this.stockService.createStock(nouveauStock as Stock).pipe(
+          switchMap((stockCree) => {
+            mouvementEntree.stockId = stockCree.id;
+            return this.mouvementService.create(mouvementEntree as MouvementsStock);
+          })
+        );
+      }
+      
+      return throwError(() => error);
+    })
+  );
+}
+
+  /**
+   * Récupère le nom d'un magasin par son ID
+   */
+  getNomMagasin(magasinId: number): string {
+    const magasin = this.magasins.find(m => m.id === magasinId);
+    return magasin ? magasin.nom : 'Magasin inconnu';
   }
 
-  // Méthodes pour gérer l'historique
-  /* ajouterMouvement(mouvement: MouvementsStock) {
-    this.mouvementsStock.push(mouvement);
-    console.log('Mouvement ajouté:', mouvement);
-  } */
 
-  getProduitsPerissables(): Stock[] {
-    return this.stocks.filter(
-      (produit) =>
-        produit.datePeremption &&
-        new Date(produit.datePeremption).getTime() < new Date().getTime() + 7 * 24 * 60 * 60 * 1000, // Moins de 7 jours
+  // Créer une demande de transfert
+creerDemandeTransfert(stock: StockDashboardItem) {
+  if (!this.magasinDestinataire || !this.quantiteTransfert) return;
+
+  if (this.quantiteTransfert > stock.quantiteDisponible) {
+      this.toastr.error('Quantité insuffisante dans le stock disponible');
+      return;
+    }
+
+    if (!this.agentId) {
+      this.toastr.error('Agent non identifié');
+      return;
+    }
+  
+  const transfertData : TransfertRequest = {
+    produitId: stock.produitId,
+    quantite: this.quantiteTransfert,
+    magasinSource: stock.magasinId,
+    magasinDestination: this.magasinDestinataire,
+    motif: this.motifTransfert || 'Transfert entre magasins',
+    agentResponsable: this.agentId!,
+    //code_structure: this.codeStructure!
+  };
+  
+  this.isLoading = true;
+  this.transfertService.createTransfert(transfertData)
+    .pipe(
+      takeUntil(this.destroy$),
+      finalize(() => this.isLoading = false)
+    )
+    .subscribe({
+      next: (transfert) => {
+        console.log('Transfer créé',transfert)
+        this.toastr.success('Demande de transfert créée avec succès');
+        this.cancelTransferForm();
+        
+        // Recharger les transferts si la modal est ouverte
+        if (this.transfertsModal && this.transfertsModal._isShown) {
+          this.chargerTransferts();
+        }
+      },
+      error: (err) => {
+        console.error('Erreur création transfert:', err);
+        this.toastr.error(err.error?.message || 'Erreur lors de la création du transfert');
+      }
+    });
+}
+
+  // Méthode pour ouvrir la modal et charger les transferts
+  openTransfertsModal() {
+    this.chargerTransferts();
+    /* if (this.transfertsModal) {
+      this.transfertsModal.show();
+    } */
+   const modalElement = document.getElementById('transfertsModal');
+    if (modalElement) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const modal = new (window as any).bootstrap.Modal(modalElement);
+      modal.show();
+    }
+  }
+
+  // Charger les transferts
+// Dans le composant, remplacer chargerTransferts()
+
+chargerTransferts(page = 1) {
+  if (!this.codeStructure) return;
+  
+  this.isLoadingTransferts = true;
+  
+  this.transfertService.getByStructure(
+    this.codeStructure,
+    page,
+    this.pageSizeTransferts,
+    this.rechercheTransfert,
+    this.filtreStatutTransfert,
+   
+  )
+  .pipe(
+    takeUntil(this.destroy$),
+    finalize(() => this.isLoadingTransferts = false)
+  )
+  .subscribe({
+    next: (response) => {
+      console.log('Transferts chargés',response)
+      this.transferts = response.transferts;
+      this.totalPagesTransferts = response.pagination.total;
+      this.totalPagesTransferts = response.pagination.totalPages;
+      this.currentPageTransferts = response.pagination.page;
+      this.hasNextTransferts = response.pagination.hasNext;
+      this.hasPrevTransferts = response.pagination.hasPrev;
+      
+      // Mettre à jour la liste filtrée (si on veut garder la logique existante)
+      this.transfertsFiltres = this.transferts;
+    },
+    error: (err) => {
+      console.error('Erreur chargement transferts:', err);
+      this.toastr.error('Erreur lors du chargement des transferts');
+    }
+  });
+}
+
+// Méthode pour gérer le changement de page
+pageTransfertsChange(page: number) {
+  if (page < 1 || page > this.totalPagesTransferts) return;
+  this.currentPageTransferts = page;
+  this.chargerTransferts(page);
+}
+
+// Méthode pour appliquer les filtres
+appliquerFiltresTransferts() {
+  this.currentPageTransferts = 1;
+  this.chargerTransferts(1);
+}
+
+// Remplacer filtrerTransferts() par cette méthode
+filtrerTransferts() {
+  this.currentPageTransferts = 1;
+  this.chargerTransferts(1);
+}
+/* // Filtrer les transferts
+filtrerTransferts() {
+  let resultats = this.transferts;
+  
+  // Filtre par statut
+  if (this.filtreStatutTransfert !== 'tous') {
+    resultats = resultats.filter(t => t.statut === this.filtreStatutTransfert);
+  }
+  
+  // Filtre par recherche
+  if (this.rechercheTransfert) {
+    const search = this.rechercheTransfert.toLowerCase();
+    resultats = resultats.filter(t => 
+      t.reference.toLowerCase().includes(search)// ||
+      //this.getNomProduitById(t.produitId)?.toLowerCase().includes(search)
     );
   }
+  
+  // Pagination
+  const debut = (this.currentPageTransferts - 1) * this.pageSizeTransferts;
+  this.totalPagesTransferts = Math.ceil(resultats.length / this.pageSizeTransferts);
+  this.transfertsFiltres = resultats.slice(debut, debut + this.pageSizeTransferts);
+}
+ */
+  // Refuser un transfert
+  refuserTransfert(transfert: TransfertResponse) {
+    if (!confirm(`Refuser le transfert ${transfert.reference} ?`)) return;
 
-  // Méthode pour obtenir le nom du produit à partir de l'id
-  getNomProduitById(id: number): string | null {
-    const produit = this.produits.find((p) => p.id === id);
-    return produit ? produit.designation : null; // On retourne `null` si le produit n'est pas trouvé
-  }
-
-  // Méthode pour mettre à jour les recettes, les dépenses, les paiement et les catégories
-  updatefilteredTable(objet: string): void {
-    if (objet === 'inventaire') {
-      this.filteredInventaire = this.produits.slice(
-        (this.currentPageInventaire - 1) * 10,
-        this.currentPageInventaire * 10,
-      );
-    } else if (objet === 'qteDisponible') {
-      this.filteredQtesDisponibles = this.qtsDisponibles.slice(
-        (this.currentPageQtesDisponibles - 1) * 10,
-        this.currentPageQtesDisponibles * 10,
-      );
-    } else if (objet === 'niveauStock') {
-      this.filteredNiveauStock = this.niveauStock.slice(
-        (this.currentPageNiveauStock - 1) * 10,
-        this.currentPageNiveauStock * 10,
-      );
-    } else if (objet === 'alerte') {
-      this.filteredAlertes = this.alertes.slice(
-        (this.currentPageAlertes - 1) * 10,
-        this.currentPageAlertes * 10,
-      );
-    } /* else if (objet === 'mouvement') {
-      this.filteredMouvements = this.mouvementsStock.slice(
-        (this.currentPageMouvements - 1) * 10,
-        this.currentPageMouvements * 10,
-      );
-    } */ else if (objet === 'perissable') {
-      this.filteredPerissables = this.getProduitsPerissables().slice(
-        (this.currentPagePerissables - 1) * 10,
-        this.currentPagePerissables * 10,
-      );
+    if(!this.isAdmin){
+      this.toastr.error('Vous n\'êtes pas autorisé(e) à poursuivre cette action.');
+      return;
     }
+    
+    this.isLoadingTransferts = true;
+    
+    // Appel API pour refuser (à implémenter dans le backend)
+    this.transfertService.refuserTransfert(transfert.id!)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.isLoadingTransferts = false)
+      )
+      .subscribe({
+        next: () => {
+          this.toastr.success('Transfert refusé');
+          this.chargerTransferts();
+        },
+        error: (err) => {
+          console.error('Erreur refus:', err);
+          this.toastr.error('Erreur lors du refus');
+        }
+      }); 
   }
 
-  // Gestion de la recherche
-  onSearchChange(objet: string): void {
-    if (objet === 'inventaire' || objet === 'qteDisponible' || objet === 'niveauStock') {
-      if (objet === 'inventaire') {
-        this.filteredInventaire = this.produits.filter(
-          (produit) =>
-            produit.designation.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-            this.getNomMagasinByProduitId(produit.id!, this.stocks, this.magasins)
-              .toLowerCase()
-              .includes(this.searchTerm.toLowerCase()) ||
-            this.getQteById(produit.id!, this.stocks)
-              .toString()
-              .toLowerCase()
-              .includes(this.searchTerm.toLowerCase()),
-          // produit.magasinId?.toString().toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-          // produit.quantite?.toString().includes(this.searchTerm)
-          //new Date(depense.date).toLocaleDateString().includes(this.searchTerm) // Filtrer par date
-        );
-        this.currentPageInventaire = 1; // Réinitialiser à la première page après recherche
-      }
-      if (objet === 'niveauStock') {
-        this.filteredNiveauStock = this.niveauStock.filter(
-          (produit) =>
-            this.getNomProduitById(produit.id)?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-            this.getNomMagasinByProduitId(produit.id!, this.stocks, this.magasins)
-              .toLowerCase()
-              .includes(this.searchTerm.toLowerCase()) ||
-            this.getQteById(produit.id!, this.stocks)
-              .toString()
-              .toLowerCase()
-              .includes(this.searchTerm.toLowerCase()),
-          /* produit.magasinId?.toString().toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-          produit.quantite?.toString().includes(this.searchTerm) ||
-          produit.seuilAlerte?.toString().includes(this.searchTerm) */
-          //new Date(depense.date).toLocaleDateString().includes(this.searchTerm) // Filtrer par date
-        );
-        this.currentPageNiveauStock = 1;
-      }
-
-      if (objet === 'qteDisponible') {
-        this.filteredQtesDisponibles = this.qtsDisponibles.filter(
-          (produit) =>
-            this.getNomProduitById(produit.id)?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-            this.getQteDisponibleById(produit.id!, this.stocks)
-              .toString()
-              .toLowerCase()
-              .includes(this.searchTerm.toLowerCase()),
-          // produit.quantiteDisponible?.toString().includes(this.searchTerm)
-          //new Date(depense.date).toLocaleDateString().includes(this.searchTerm) // Filtrer par date
-        );
-        this.currentPageQtesDisponibles = 1;
-      }
-    } else if (objet === 'alerte') {
-      this.filteredAlertes = this.alertes.filter(
-        (alerte) =>
-          this.getNomProduitById(alerte.produitId)
-            ?.toLowerCase()
-            .includes(this.searchTerm.toLowerCase()) ||
-          alerte.quantiteDisponible.toString().includes(this.searchTerm) ||
-          alerte.seuilAlerte.toString().includes(this.searchTerm),
-        //new Date(recette.date).toLocaleDateString().includes(this.searchTerm)
-      );
-      this.currentPageAlertes = 1;
-    } /* else if (objet === 'mouvement') {
-      this.filteredMouvements = this.mouvementsStock.filter(
-        (mvt) =>
-          this.getNomProduitById(mvt.produitId)
-            ?.toLowerCase()
-            .includes(this.searchTerm.toLowerCase()) ||
-          mvt.typeMouvement.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-          mvt.quantite.toString().includes(this.searchTerm) ||
-          new Date(mvt.dateMouvement).toLocaleDateString().includes(this.searchTerm),
-      );
-      this.currentPageMouvements = 1;
-    } */ else if (objet === 'perissable') {
-      this.filteredPerissables = this.getProduitsPerissables().filter(
-        (perissable) =>
-          this.getNomProduitById(perissable.produitId)
-            ?.toLowerCase()
-            .includes(this.searchTerm.toLowerCase()) ||
-          perissable.quantiteTotale
-            .toString()
-            .toLowerCase()
-            .includes(this.searchTerm.toLowerCase()),
-        //new Date(perissable.datePeremption).toLocaleDateString().includes(this.searchTerm)
-      );
-      this.currentPagePerissables = 1;
-    }
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setItemsPerPage(event: any) {
-    this.itemsPerPage = +event.target.value;
-    this.currentPageAlertes = 1;
-    this.currentPageInventaire = 1;
-    this.currentPageQtesDisponibles = 1;
-    this.currentPageNiveauStock = 1;
-    this.currentPageMouvements = 1;
-    this.currentPagePerissables = 1;
-
-    //this.cdr.detectChanges(); // Forcer la mise à jour de la vue
-  }
-
-  // Méthodes de pagination
-  get getPaginatedInventaire() {
-    return this.paginate(this.filteredInventaire, this.currentPageInventaire, this.itemsPerPage);
-  }
-
-  get getPaginatedQtesDisponibles() {
-    return this.paginate(
-      this.filteredQtesDisponibles,
-      this.currentPageQtesDisponibles,
-      this.itemsPerPage,
-    );
-  }
-
-  get getPaginatedAlertes() {
-    return this.paginate(this.filteredAlertes, this.currentPageAlertes, this.itemsPerPage);
-  }
-
-  /* get getPaginatedMouvements() {
-    return this.paginate(this.filteredMouvements, this.currentPageMouvements, this.itemsPerPage);
+  // Pagination des transferts
+ /*  pageTransfertsChange(page: number) {
+    this.currentPageTransferts = page;
+    this.filtrerTransferts();
   } */
-  get getPaginatedNiveauStock() {
-    return this.paginate(this.filteredNiveauStock, this.currentPageNiveauStock, this.itemsPerPage);
-  }
 
-  get getPaginatedPerissables() {
-    return this.paginate(this.filteredPerissables, this.currentPagePerissables, this.itemsPerPage);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  paginate(data: any[], currentPage: number, itemsPerPage: number) {
-    const start = (currentPage - 1) * itemsPerPage;
-    return data.slice(start, start + itemsPerPage);
-  }
-
-  onPageChange(page: number, instanceObj: string): void {
-    if (instanceObj === 'inventaire') {
-      this.currentPageInventaire = page;
-    } else if (instanceObj === 'qteDisponible') {
-      this.currentPageQtesDisponibles = page;
-    } else if (instanceObj === 'niveauStock') {
-      this.currentPageNiveauStock = page;
-    } else if (instanceObj === 'alerte') {
-      this.currentPageAlertes = page;
-    } else if (instanceObj === 'mouvement') {
-      this.currentPageMouvements = page;
-    } else if (instanceObj === 'perissable') {
-      this.currentPagePerissables = page;
+  get pagesTransferts(): number[] {
+    const pages = [];
+    const maxVisible = 5;
+    let start = Math.max(1, this.currentPageTransferts - 2);
+    const end = Math.min(this.totalPagesTransferts, start + maxVisible - 1);
+    
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
     }
-    console.log(`Changement de page ${instanceObj} -> Page actuelle :`, page);
-  }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getTotalPages(list: any[]): number {
-    return Math.ceil(list.length / this.itemsPerPage);
-  }
-
-  getQteById(produitId: number, stocks: Stock[]): number {
-    const produit = stocks.find((p) => p.produitId === produitId);
-    return produit ? produit.quantiteTotale : 0;
-  }
-
-  getQteDisponibleById(produitId: number, stocks: Stock[]): number {
-    const produit = stocks.find((p) => p.produitId === produitId);
-    // return produit ? produit.quantiteDisponible : 0;
-    return produit ? produit.quantiteTotale-produit.quantiteReservee : 0;
-  }
-
-  getMagasinById(magasinId: number, stocks: Stock[]): number {
-    const stock = stocks.find((p) => p.magasinId === magasinId);
-    return stock ? stock.magasinId : 0; // Renvoie l'id du magasin ou 0 si aucun stock trouvé
-  }
-  getNomMagasinByProduitId(produitId: number, stocks: Stock[], magasins: Magasin[]): string {
-    // Trouver le stock correspondant au produitId
-    const stock = stocks.find((s) => s.produitId === produitId);
-
-    // Si un stock est trouvé, utiliser magasinId pour chercher le nom du magasin
-    if (stock) {
-      const magasin = magasins.find((m) => m.id === stock.magasinId);
-      return magasin ? magasin.nom : 'Magasin introuvable'; // Retourner le nom du magasin ou un message d'erreur
+    
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
     }
-
-    return 'Produit non trouvé'; // Si aucun stock pour le produit
+    return pages;
   }
+
+  // Méthodes utilitaires
+  getNomMagasinById(magasinId: number): string {
+    const magasin = this.magasins.find(m => m.id === magasinId);
+    return magasin ? magasin.nom : 'Magasin inconnu';
+  }
+
+  getAgentNomById(agentId: number): string {
+    // À implémenter selon votre gestion des utilisateurs
+    return `Agent ${agentId}`;
+  }
+
 }

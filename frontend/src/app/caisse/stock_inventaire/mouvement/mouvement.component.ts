@@ -1,6 +1,6 @@
-import { ChangeDetectorRef, Component, inject, Input, OnDestroy, OnInit } from '@angular/core';
+import { Component, inject, Input, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MouvementsStock, Stock } from '../../../modeles/entrees-sorties.model';
+import { MouvementsStock, StatistiquesMouvement, Stock } from '../../../modeles/entrees-sorties.model';
 import { Produits } from '../../../modeles/produit.modele';
 import { finalize, forkJoin, Subject, takeUntil } from 'rxjs';
 import { ProduitsService } from '../../../services/produits.service';
@@ -24,9 +24,7 @@ export class MouvementComponent implements OnInit, OnDestroy {
 
   mouvementForm!: FormGroup;
   mouvements: MouvementsStock[] = [];
-  filteredMouvements: MouvementsStock[] = [];
   searchTextMouvement = '';
-  currentPageMouvement = 1;
   isLoading = false;
   isEditing = false;
   currentMouvement: MouvementsStock | null = null;
@@ -37,14 +35,14 @@ export class MouvementComponent implements OnInit, OnDestroy {
   totalPages = 0;
   hasNext = false;
   hasPrev = false;
+
+  statistiques:StatistiquesMouvement|null = null;
   
   // Filtres
   selectedTypeMouvement = 'tous';
   
-  
   // Loading state pour la pagination
   isLoadingMore = false;
-
 
   produits: Produits[] = [];
   stock: Stock[] = [];
@@ -54,7 +52,6 @@ export class MouvementComponent implements OnInit, OnDestroy {
   idStockPoduct = 0;
 
   private destroy$ = new Subject<void>();
-  private cdr = inject(ChangeDetectorRef);
   private fb = inject(FormBuilder);
   private produitsService = inject(ProduitsService);
   private stockService = inject(StockInventaireService);
@@ -90,38 +87,56 @@ export class MouvementComponent implements OnInit, OnDestroy {
 
   private loadData() {
     this.isLoading = true;
-    forkJoin([
-      this.produitsService.getAllProduits(this.codeStructure!),
-      this.stockService.getStocksByStructure(this.codeStructure!),
-      this.mouvementsStockService.getByStructure(
+    this.mouvementsStockService.getByStructure(
       this.codeStructure!,
       this.currentPage,
       this.pageSize,
       this.searchTextMouvement,
       this.selectedTypeMouvement,
       )
-    ])
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => (this.isLoading = false))
       )
       .subscribe({
-        next: ([produits, stocks, response]) => {
-          this.produits = produits;
-          this.stock = stocks;
-          this.mouvements = response.mouvements;
-          this.filteredMouvements = response.mouvements; // Plus besoin de filtrer côté client
+        next: (response) => {
+          console.log('Statistique mvt',response)
+          this.mouvements = response.items;
           this.totalItems = response.pagination.total;
           this.totalPages = response.pagination.totalPages;
           this.hasNext = response.pagination.hasNext;
           this.hasPrev = response.pagination.hasPrev;
-          this.filteredProduits = [...produits];
+          this.statistiques = response.statistiquesMvt;
+          
+
+          this.loadProduitsEtStocks()
         },
         error: (err) => {
           console.error('Erreur chargement données', err);
           this.toastr.error('Erreur lors du chargement des données');
         }
       });
+  }
+
+
+  // Nouvelle méthode pour charger produits et stocks
+  private loadProduitsEtStocks() {
+    forkJoin([
+      this.produitsService.getAllProduits(this.codeStructure!),
+      this.stockService.getStocksByStructure(this.codeStructure!)
+    ])
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: ([produits, stocks]) => {
+        this.produits = produits;
+        this.stock = stocks;
+        this.filteredProduits = [...produits];
+        console.log('Produits et stocks chargés');
+      },
+      error: (err) => {
+        console.error('Erreur chargement produits/stocks', err);
+      }
+    });
   }
 
   filterProduits(): void {
@@ -131,17 +146,37 @@ export class MouvementComponent implements OnInit, OnDestroy {
     );
   }
 
-  /* selectProduit(prod: Produits): void {
-    this.selectedProduct = prod;
-    this.searchInput = prod.designation;
-    this.filteredProduits = [];
+  get pagesToShow(): number[] {
+    const pages: number[] = [];
+    const maxVisiblePages = 5; // Nombre maximum de pages visibles
     
-    const stk = this.stock.find(stoc => stoc.produitId === this.selectedProduct?.id);
-    if (stk) this.idStockPoduct = stk.id;
-
-    this.mouvementForm.patchValue({ uniteStock: prod.unite });
-    this.updatePrixUnitaire(this.mouvementForm.get('typeMouvement')!.value);
-  } */
+    if (this.totalPages <= maxVisiblePages) {
+      // Afficher toutes les pages si moins de 5
+      for (let i = 1; i <= this.totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Calculer les pages à afficher autour de la page courante
+      let start = Math.max(1, this.currentPage - 2);
+      let end = Math.min(this.totalPages, this.currentPage + 2);
+      
+      // Ajuster si on est au début
+      if (this.currentPage <= 3) {
+        end = Math.min(this.totalPages, maxVisiblePages);
+      }
+      
+      // Ajuster si on est à la fin
+      if (this.currentPage >= this.totalPages - 2) {
+        start = Math.max(1, this.totalPages - maxVisiblePages + 1);
+      }
+      
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+    }
+    
+    return pages;
+  }
 
   selectProduit(prod: Produits): void {
     console.log('Produit sélectionné:', prod);
@@ -163,6 +198,7 @@ export class MouvementComponent implements OnInit, OnDestroy {
     
     this.updatePrixUnitaire(this.mouvementForm.get('typeMouvement')!.value);
   }
+  
   private updatePrixUnitaire(type: 'Entrée' | 'Sortie' | null) {
     if (!this.selectedProduct || !type) {
       this.mouvementForm.patchValue({ prixUnitaire: null });
@@ -176,26 +212,12 @@ export class MouvementComponent implements OnInit, OnDestroy {
     this.mouvementForm.patchValue({ prixUnitaire: prix });
   }
 
-  /* onSearchChange(): void {
-    this.filteredMouvements = this.mouvements.filter(mvt =>
-      mvt.ref.toLowerCase().includes(this.searchTextMouvement.toLowerCase()) ||
-      this.getNomProduitById(mvt.produitId).toLowerCase().includes(this.searchTextMouvement.toLowerCase()) ||
-      mvt.typeMouvement.toLowerCase().includes(this.searchTextMouvement.toLowerCase()) ||
-      mvt.quantite?.toString().includes(this.searchTextMouvement.toLowerCase()) ||
-      new Date(mvt.dateMouvement).toLocaleDateString().toLowerCase().includes(this.searchTextMouvement.toLowerCase())
-    );
-    this.currentPageMouvement = 1;
-  } */
 
   onSearchChange(): void {
     this.currentPage = 1; // Revenir à la première page
     this.loadData();
   }
 
-  /* getNomProduitById(produitId: number): string {
-    const produit = this.produits.find(p => p.id === produitId);
-    return produit ? produit.designation : 'Produit introuvable';
-  } */
 
   getNomProduitById(produitId: number | null | undefined): string {
     if (!produitId) {
@@ -217,32 +239,13 @@ export class MouvementComponent implements OnInit, OnDestroy {
     return produit ? produit.unite : 'Produit introuvable';
   }
 
-  getPaginatedMouvements() {
-    const start = (this.currentPageMouvement - 1) * this.pageSize;
-    return this.filteredMouvements.slice(start, start + this.pageSize);
-  }
-
-  getTotalPages(): number {
-    return Math.ceil(this.filteredMouvements.length / this.pageSize);
-  }
-
-  // onPageChange(page: number) {
-  //   this.currentPageMouvement = page;
-  // }
-
   onPageChange(page: number): void {
     if (page < 1 || page > this.totalPages) return;
     
     this.currentPage = page;
     this.loadData();
   }
-  // Méthode pour réinitialiser les filtres
-  resetFilters(): void {
-    this.searchTextMouvement = '';
-    this.selectedTypeMouvement = 'tous';
-    this.currentPage = 1;
-    this.loadData();
-  }
+  
   onTypeMouvementChange(): void {
       this.currentPage = 1;
       this.loadData();
@@ -252,72 +255,45 @@ export class MouvementComponent implements OnInit, OnDestroy {
     this.pageSize = Number(event.target.value);
     this.currentPage = 1;
     this.loadData();
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onRowsPerPageChange(event: any) {
-    this.pageSize = Number(event.target.value);
-    this.currentPageMouvement = 1;
-    this.cdr.detectChanges();
-  }
-
-  /* modifierMouvement(mouvement: MouvementsStock) {
-    this.isEditing = true;
-    this.currentMouvement = mouvement;
-    this.searchInput = this.getNomProduitById(mouvement.produitId);
-    
-    const produit = this.produits.find(p => p.id === mouvement.produitId);
-    if (produit) {
-      this.selectedProduct = produit;
-      const stk = this.stock.find(s => s.produitId === produit.id);
-      if (stk) this.idStockPoduct = stk.id;
-    }
-
-    this.mouvementForm.patchValue({
-      ...mouvement,
-      uniteStock: this.getUniteProduitById(mouvement.produitId)
-    });
-
-    this.openModal();
-  } */
+  }  
 
   modifierMouvement(mouvement: MouvementsStock) {
-  console.log('=== MODIFICATION MOUVEMENT ===');
-  console.log('Mouvement à modifier:', mouvement);
-  
-  this.isEditing = true;
-  this.currentMouvement = mouvement;
-  
-  // Récupérer le produit correspondant
-  const produit = this.produits.find(p => p.id === mouvement.produitId);
-  console.log('Produit trouvé:', produit);
-  
-  if (produit) {
-    this.selectedProduct = produit;
-    this.searchInput = produit.designation; // Pour l'affichage
+    console.log('=== MODIFICATION MOUVEMENT ===');
+    console.log('Mouvement à modifier:', mouvement);
     
-    // Récupérer le stock pour ce produit
-    const stk = this.stock.find(s => s.produitId === produit.id);
-    if (stk) {
-      this.idStockPoduct = stk.id;
-      console.log('Stock trouvé:', stk);
+    this.isEditing = true;
+    this.currentMouvement = mouvement;
+    
+    // Récupérer le produit correspondant
+    const produit = this.produits.find(p => p.id === mouvement.produitId);
+    console.log('Produit trouvé:', produit);
+    
+    if (produit) {
+      this.selectedProduct = produit;
+      this.searchInput = produit.designation; // Pour l'affichage
+      
+      // Récupérer le stock pour ce produit
+      const stk = this.stock.find(s => s.produitId === produit.id);
+      if (stk) {
+        this.idStockPoduct = stk.id;
+        console.log('Stock trouvé:', stk);
+      }
     }
+    
+    // Remplir le formulaire avec les données du mouvement
+    this.mouvementForm.patchValue({
+      produitId: mouvement.produitId,
+      uniteStock: this.getUniteProduitById(mouvement.produitId),
+      quantite: mouvement.quantite,
+      typeMouvement: mouvement.typeMouvement,
+      description: mouvement.description,
+      prixUnitaire: mouvement.prixUnitaire
+    });
+    
+    console.log('Formulaire après patch:', this.mouvementForm.value);
+    
+    this.openModal();
   }
-  
-  // Remplir le formulaire avec les données du mouvement
-  this.mouvementForm.patchValue({
-    produitId: mouvement.produitId,
-    uniteStock: this.getUniteProduitById(mouvement.produitId),
-    quantite: mouvement.quantite,
-    typeMouvement: mouvement.typeMouvement,
-    description: mouvement.description,
-    prixUnitaire: mouvement.prixUnitaire
-  });
-  
-  console.log('Formulaire après patch:', this.mouvementForm.value);
-  
-  this.openModal();
-}
 
   supprimerMouvement(mouvement: MouvementsStock) {
     if (confirm('Êtes-vous sûr de vouloir supprimer ce mouvement ?')) {

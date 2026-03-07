@@ -10,7 +10,7 @@ router.put('/:id',authenticateToken, upload.single('image'), produitCtrl.updateP
 router.delete('/:id',authenticateToken, produitCtrl.deleteProduit);
 router.get('/structure/:code_structure',authenticateToken, produitCtrl.getProduitsByStructure);
 router.get('/:id', authenticateToken, produitCtrl.getProduitById);
-router.get('/', authenticateToken, produitCtrl.getAllProduits);
+//router.get('/', authenticateToken, produitCtrl.getAllProduits);
 router.patch('/:id/statut', authenticateToken, produitCtrl.updateStatusProduit);
 router.patch('/:id/tauxTVA', authenticateToken, produitCtrl.updateTauxTVAProduit);
 router.patch('/:id/image', authenticateToken, upload.single('image'), produitCtrl.updateImageProduit);

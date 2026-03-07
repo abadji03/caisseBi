@@ -1,5 +1,10 @@
 const db = require('../models');
 const Transfert = db.Transfert;
+const Stock = db.Stock;
+const { Op } = db.Sequelize;
+const { safeNumber } = require('./bonComplet/statutManager')
+
+
 
 exports.createTransfert = async (req, res) => {
   try {
@@ -8,8 +13,8 @@ exports.createTransfert = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
+
     const {
-      code_structure,
       produitId,
       quantite,
       magasinSource,
@@ -17,6 +22,8 @@ exports.createTransfert = async (req, res) => {
       motif,
       agentResponsable,
     } = req.body;
+
+    const code_structure = authUser.code_structure;
 
     const reference = `TRF-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
@@ -38,29 +45,185 @@ exports.createTransfert = async (req, res) => {
 };
 
 exports.validerTransfert = async (req, res) => {
+  const transaction = await db.sequelize.transaction();
+  
   try {
     const authUser = req.user;
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
+
     const { id } = req.params;
-    const { agentValidation, mouvementSortieId, mouvementEntreeId } = req.body;
+    const agentValidation = authUser.id;
 
-    const transfert = await Transfert.findByPk(id);
-    if (!transfert) return res.status(404).json({ message: 'Transfert introuvable' });
+    // Récupérer le transfert avec les associations
+    const transfert = await Transfert.findByPk(id, {
+      include: [db.Produit]
+    });
+    
+    if (!transfert) {
+      return res.status(404).json({ message: 'Transfert introuvable' });
+    }
 
+    if (transfert.statut !== 'En attente') {
+      return res.status(400).json({ message: 'Ce transfert a déjà été traité' });
+    }
+
+    // 1. Vérifier le stock source
+    let stockSource = await Stock.findOne({
+      where: { 
+        produitId: transfert.produitId, 
+        magasinId: transfert.magasinSource,
+        code_structure: transfert.code_structure 
+      }
+    });
+
+    if (!stockSource) {
+      await transaction.rollback();
+      return res.status(404).json({ message: 'Stock source non trouvé' });
+    }
+
+    const quantiteDisponible = safeNumber(stockSource.quantiteTotale )- (safeNumber(stockSource.quantiteReservee) || 0);
+    
+    if (quantiteDisponible < safeNumber(transfert.quantite)) {
+      await transaction.rollback();
+      return res.status(400).json({ message: 'Stock source insuffisant' });
+    }
+
+    // 2. Vérifier/créer le stock destination
+    let stockDestination = await Stock.findOne({
+      where: { 
+        produitId: transfert.produitId, 
+        magasinId: transfert.magasinDestination,
+        code_structure: transfert.code_structure 
+      }
+    });
+
+    // 3. Mettre à jour les stocks
+    // Sortie du magasin source
+    await stockSource.update({
+      quantiteTotale: safeNumber(stockSource.quantiteTotale) - safeNumber(transfert.quantite),
+      dateDerniereMiseAJour: new Date()
+    }, { transaction });
+
+    // Entrée dans le magasin destination
+    if (stockDestination) {
+      await stockDestination.update({
+        quantiteTotale: safeNumber(stockDestination.quantiteTotale) + safeNumber(transfert.quantite),
+        dateDerniereMiseAJour: new Date()
+      }, { transaction });
+    } else {
+      // Créer un nouveau stock avec les seuils par défaut
+      //const produit = await db.Produit.findByPk(transfert.produitId);
+      stockDestination = await Stock.create({
+        produitId: transfert.produitId,
+        magasinId: transfert.magasinDestination,
+        code_structure: transfert.code_structure,
+        quantiteTotale: transfert.quantite,
+        quantiteReservee: 0,
+        seuilAlerte: 5,
+        seuilReapprovisionnement: 10,
+        datePeremption:stockSource.datePeremption,
+        prixVenteUnitaire : stockSource.prixVenteUnitaire,
+        dernierPrixAchat:stockSource.dernierPrixAchat,
+        stockSecurite:5,
+        statutStock: 'En stock'
+      }, { transaction });
+    }
+
+    // 4. Créer les mouvements de stock
+    const reference = `MVT-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+    // Mouvement de sortie
+    const mouvementSortie = await db.MouvementStock.create({
+      produitId: transfert.produitId,
+      stockId: stockSource.id,
+      typeMouvement: 'Sortie',
+      quantite: transfert.quantite,
+      prixUnitaire: stockSource.dernierPrixAchat,
+      description: `Transfert vers magasin ${transfert.magasinDestination} - Ref: ${transfert.reference}`,
+      code_structure: transfert.code_structure,
+      magasinId: transfert.magasinSource,
+      acteurId: agentValidation,
+      ref: `${reference}-S`,
+      dateMouvement: new Date(),
+      transfertId: transfert.id
+    }, { transaction });
+
+    // Mouvement d'entrée
+    const mouvementEntree = await db.MouvementStock.create({
+      produitId: transfert.produitId,
+      stockId: stockDestination.id,
+      typeMouvement: 'Entrée',
+      prixUnitaire: stockSource.dernierPrixAchat,
+      quantite: transfert.quantite,
+      description: `Transfert depuis magasin ${transfert.magasinSource} - Ref: ${transfert.reference}`,
+      code_structure: transfert.code_structure,
+      magasinId: transfert.magasinDestination,
+      acteurId: agentValidation,
+      ref: `${reference}-E`,
+      dateMouvement: new Date(),
+      transfertId: transfert.id
+    }, { transaction });
+
+    // 5. Mettre à jour le transfert
     transfert.statut = 'Validé';
     transfert.dateValidation = new Date();
     transfert.agentValidation = agentValidation;
-    transfert.mouvementSortieId = mouvementSortieId;
-    transfert.mouvementEntreeId = mouvementEntreeId;
+    //transfert.mouvementSortieId = mouvementSortie.id;
+    //transfert.mouvementEntreeId = mouvementEntree.id;
+
+    await transfert.save({ transaction });
+
+    await transaction.commit();
+
+    res.json({
+      message: 'Transfert validé avec succès',
+      transfert,
+      mouvements: {
+        sortie: mouvementSortie,
+        entree: mouvementEntree
+      }
+    });
+
+  } catch (err) {
+    await transaction.rollback();
+    console.error('Erreur validation transfert:', err);
+    res.status(500).json({ message: 'Erreur lors de la validation', error: err.message });
+  }
+};
+
+// Ajouter la méthode pour refuser un transfert
+exports.refuserTransfert = async (req, res) => {
+  try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
+    const { id } = req.params;
+    const agentValidation = authUser.id;
+
+    const transfert = await Transfert.findByPk(id);
+    if (!transfert) {
+      return res.status(404).json({ message: 'Transfert introuvable' });
+    }
+
+    if (transfert.statut !== 'En attente') {
+      return res.status(400).json({ message: 'Ce transfert a déjà été traité' });
+    }
+
+    transfert.statut = 'Refusé';
+    transfert.dateValidation = new Date();
+    transfert.agentValidation = agentValidation;
 
     await transfert.save();
 
-    res.json(transfert);
+    res.json({ message: 'Transfert refusé', transfert });
   } catch (err) {
-    res.status(500).json({ message: 'Erreur lors de la validation du transfert', error: err });
+    res.status(500).json({ message: 'Erreur lors du refus', error: err.message });
   }
 };
 
@@ -71,13 +234,169 @@ exports.listerParStructure = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-    const transferts = await Transfert.findAll({
-      where: { code_structure: req.params.code_structure },
-      order: [['dateTransfert', 'DESC']],
-      include: [db.Produit, db.Magasin],
+
+    const { code_structure } = req.params;
+    
+    // Paramètres de pagination et filtres
+    const { 
+      page = 1, 
+      limit = 10, 
+      search = '',
+      statut = '',
+      /* magasinId = '',
+      dateDebut = '',
+      dateFin = '' */
+    } = req.query;
+
+    // Vérification des droits d'accès
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({ message: "Accès interdit" });
+    }
+
+    // Vérifier le rôle
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+
+    if (!isAdminStructure && !isGerant) {
+      return res.status(403).json({ message: "Accès interdit : rôle insuffisant" });
+    }
+
+    // Construction de la clause WHERE
+    let whereClause = {
+      code_structure: code_structure
+    };
+
+    // 🔹 Si gérant : ne voir que les transferts de son magasin
+    if (!isAdminStructure && isGerant) {
+      if (!authUser.magasinId) {
+        return res.status(400).json({ message: "Gérant non associé à un magasin" });
+      }
+      
+      // Le gérant voit les transferts où son magasin est impliqué
+      whereClause[Op.or] = [
+        { magasinSource: authUser.magasinId },
+        { magasinDestination: authUser.magasinId }
+      ];
+    }
+
+    // Filtre par statut
+    if (statut && statut !== 'tous') {
+      whereClause.statut = statut;
+    }
+
+    // Recherche textuelle
+    if (search) {
+        whereClause[Op.or] = [
+          { reference: { [Op.like]: `%${search}%` } },
+          { '$Produit.designation$': { [Op.like]: `%${search}%` } }
+        ];
+    }
+
+    // Pagination
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const limitInt = parseInt(limit);
+
+    // Compter le nombre total pour la pagination
+    const count = await Transfert.count({
+      where: whereClause,
+      include: [
+        { 
+          model: db.Produit, 
+          where: search ? {
+            designation: { [Op.like]: `%${search}%` }
+          } : undefined,
+          required: !!search
+        }
+      ],
+      distinct: true
     });
-    res.json(transferts);
+
+    // Récupérer les transferts avec pagination
+    const transferts = await Transfert.findAll({
+      where: whereClause,
+      include: [
+        { 
+          model: db.Produit, 
+          attributes: ['id', 'designation', 'unite']
+        },
+        { 
+          model: db.Magasin, 
+          as: 'MagasinSource',
+          attributes: ['id', 'nom']
+        },
+        { 
+          model: db.Magasin, 
+          as: 'MagasinDestination',
+          attributes: ['id', 'nom']
+        }, 
+        {
+          model: db.Users,
+          as: 'Responsable',
+          attributes: ['id', 'nom']
+        },
+        {
+          model: db.Users,
+          as: 'Validateur',
+          attributes: ['id', 'nom']
+        }
+      ],
+      order: [['dateTransfert', 'DESC']],
+      offset,
+      limit: limitInt,
+      distinct: true
+    });
+
+    // Calcul du nombre total de pages
+    const totalPages = Math.ceil(count / limitInt);
+
+    console.log(`📦 Transferts: ${count} trouvés, page ${page}/${totalPages}`);
+
+    // Réponse avec pagination
+    res.json({
+      transferts,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        totalPages,
+        limit: limitInt,
+        hasNext: parseInt(page) < totalPages,
+        hasPrev: parseInt(page) > 1
+      }
+    });
+
   } catch (err) {
-    res.status(500).json({ message: 'Erreur lors de la récupération', error: err });
+    console.error('Erreur récupération transferts:', err);
+    res.status(500).json({ 
+      message: 'Erreur lors de la récupération des transferts', 
+      error: err.message 
+    });
+  }
+};
+
+// Récupérer un stock par produit et magasin
+exports.getStockByProduitAndMagasin = async (req, res) => {
+  try {
+    const authUser = req.user;
+    const { produitId, magasinId } = req.params;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
+    const stock = await Stock.findOne({
+      where: { 
+        produitId, 
+        magasinId,
+        code_structure: authUser.code_structure 
+      }
+    });
+
+    if (!stock) {
+      return res.status(404).json({ message: 'Stock non trouvé' });
+    }
+
+    res.json(stock);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur', error: error.message });
   }
 };

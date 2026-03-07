@@ -2,7 +2,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { AuthService } from './auth.service';
 import { Observable } from 'rxjs';
-import { Reconciliation } from '../modeles/entrees-sorties.model';
+import { PaginatedAnalyseResponse, PaginatedResponse, Reconciliation } from '../modeles/entrees-sorties.model';
 
 @Injectable({
   providedIn: 'root',
@@ -29,11 +29,31 @@ export class ReconciliationService {
   }
 
   /** Récupérer les réconciliations d'une structure */
-  getByStructure(codeStructure: string): Observable<Reconciliation[]> {
+  /* getByStructure(codeStructure: string): Observable<Reconciliation[]> {
     return this.http.get<Reconciliation[]>(`${this.apiUrl}/structure/${codeStructure}`, {
       headers: this.getHeaders(),
     });
+  } */
+
+  getByStructure(
+  codeStructure: string, 
+  page = 1, 
+  limit= 10, 
+  search = '',
+): Observable<PaginatedResponse<Reconciliation>> {
+  
+  // Construire les paramètres de requête
+  let params = `?page=${page}&limit=${limit}`;
+  
+  if (search) {
+    params += `&search=${encodeURIComponent(search)}`;
   }
+
+  return this.http.get<PaginatedResponse<Reconciliation>>(
+    `${this.apiUrl}/structure/${codeStructure}${params}`, 
+    { headers: this.getHeaders() }
+  );
+}
 
   /** Récupérer les réconciliations d'un produit */
   getByProduit(produitId: number): Observable<Reconciliation[]> {
@@ -59,6 +79,33 @@ export class ReconciliationService {
     return this.http.delete<Reconciliation>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
   }
 
+    getAnalyse(
+    codeStructure: string,
+    page= 1,
+    limit= 10,
+    search= '',
+    tri?:string
+  ): Observable<PaginatedAnalyseResponse> {
+    let params = `?page=${page}&limit=${limit}&tri=${tri}`;
+    
+    if (search) params += `&search=${encodeURIComponent(search)}`;
+
+    return this.http.get<PaginatedAnalyseResponse>(
+      `${this.apiUrl}/structure/${codeStructure}/analyse-ecart${params}`,
+      { headers: this.getHeaders() }
+    );
+  }
+
+  getAnalyseProduit(
+    codeStructure: string,
+    produitId: number
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ): Observable<any> {
+    return this.http.get(
+      `${this.apiUrl}/structure/${codeStructure}/produit/${produitId}`,
+      { headers: this.getHeaders() }
+    );
+  }
   /*.....................................................................................*/
 
   /** Créer un historique */
