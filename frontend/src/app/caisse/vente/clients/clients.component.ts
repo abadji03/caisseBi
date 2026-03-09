@@ -1758,7 +1758,11 @@ private uploadFichierSepare(fichier: File, bonId: number, resultBon: any): void 
   loadDataProduits(): void {
       this.isLoading = true;
       forkJoin([
-        this.produitsServices.getAllProduits(this.code_structure!),
+        this.produitsServices.getAllProduits(
+          this.code_structure!,
+          1,
+          10000
+        ),
         this.stockService.getStocksByStructure(this.code_structure!),
       ])
         .pipe(
@@ -1768,7 +1772,7 @@ private uploadFichierSepare(fichier: File, bonId: number, resultBon: any): void 
         .subscribe({
           next: ([produit, stock]) => {
             //this.fournisseurs = four
-            this.produits = produit;
+            this.produits = produit.items;
             this.stocks = stock;
             this.filteredProducts = this.produits;
             console.log('Produits chargés', this.produits);

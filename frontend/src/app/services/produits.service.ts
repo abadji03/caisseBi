@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { CategorieProduits, Produits } from '../modeles/produit.modele';
 import { AuthService } from './auth.service';
+import { PaginatedResponse } from '../modeles/entrees-sorties.model';
 
 @Injectable({
   providedIn: 'root',
@@ -34,12 +35,82 @@ export class ProduitsService {
  */
 
   //Obtenir tous les produits d'une structure
-  getAllProduits(code_structure: string): Observable<Produits[]> {
+  /* getAllProduits(code_structure: string): Observable<Produits[]> {
     return this.http.get<Produits[]>(`${this.apiUrl}/produits/structure/${code_structure}`, {
       headers: this.getHeaders(),
     });
+  } */
+
+getAllProduits(
+  codeStructure: string,
+  page = 1,
+  limit = 10,
+  search = '',
+  categorieId = '',
+  statut = ''
+): Observable<PaginatedResponse<Produits>> {
+  
+  let params = `?page=${page}&limit=${limit}`;
+  
+  if (search) {
+    params += `&search=${encodeURIComponent(search)}`;
+  }
+  
+  if (categorieId) {
+    params += `&categorieId=${categorieId}`;
+  }
+  
+  if (statut !== '') {
+    params += `&statut=${statut}`;
   }
 
+  return this.http.get<PaginatedResponse<Produits>>(
+    `${this.apiUrl}/produits/structure/${codeStructure}${params}`, 
+    { headers: this.getHeaders() }
+  );
+}
+
+ // Exporter les produits vers Excel
+  exportToExcel(
+    codeStructure: string,
+    categorieId?: string,
+    statut?: string,
+    search?: string
+  ): Observable<Blob> {
+    const params = new URLSearchParams();
+    
+    if (categorieId) params.append('categorieId', categorieId);
+    if (statut) params.append('statut', statut);
+    if (search) params.append('search', search);
+
+    const url = `${this.apiUrl}/produits/export/excel/structure/${codeStructure}?${params.toString()}`;
+    
+    return this.http.get(url, {
+      headers: this.getHeaders(),
+      responseType: 'blob'
+    });
+  }
+
+  // Dans produits.service.ts
+exportToPDF(
+  codeStructure: string,
+  categorieId?: string,
+  statut?: string,
+  search?: string
+): Observable<Blob> {
+  const params = new URLSearchParams();
+  
+  if (categorieId) params.append('categorieId', categorieId);
+  if (statut) params.append('statut', statut);
+  if (search) params.append('search', search);
+
+  const url = `${this.apiUrl}/produits/export-pdf/structure/${codeStructure}?${params.toString()}`;
+  
+  return this.http.get(url, {
+    headers: this.getHeaders(),
+    responseType: 'blob'
+  });
+}
   //Obtenir tous les catégories de produits d'une structure
   getAllCategoriesProduits(code_structure: string): Observable<CategorieProduits[]> {
     return this.http.get<CategorieProduits[]>(

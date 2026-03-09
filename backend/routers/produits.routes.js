@@ -16,4 +16,18 @@ router.patch('/:id/tauxTVA', authenticateToken, produitCtrl.updateTauxTVAProduit
 router.patch('/:id/image', authenticateToken, upload.single('image'), produitCtrl.updateImageProduit);
 router.put('/:id/code-barre', authenticateToken, produitCtrl.updateCodeBarreProduit);
 
+// Route pour exporter les produits vers Excel
+router.get(
+  '/export/excel/structure/:code_structure',
+  authenticateToken,
+  produitCtrl.exportProduitsToExcel
+);
+
+// Route pour exporter vers pdf
+router.get(
+  '/export-pdf/structure/:code_structure',
+  authenticateToken,
+  produitCtrl.exportProduitsToPDF
+);
+
 module.exports = router;

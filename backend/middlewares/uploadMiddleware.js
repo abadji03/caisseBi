@@ -1,6 +1,14 @@
 // middlewares/uploadMiddleware.js
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
+
+// S'assurer que le dossier uploads/temp existe
+const tempDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(tempDir)) {
+  fs.mkdirSync(tempDir, { recursive: true });
+}
+
 
 // Configuration du stockage
 const storage = multer.diskStorage({

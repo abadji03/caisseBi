@@ -138,9 +138,9 @@ export class ReconciliationComponent implements OnInit, OnDestroy {
     .pipe(takeUntil(this.destroy$))
     .subscribe({
       next: ([produits, stocks]) => {
-        this.produits = produits;
+        this.produits = produits.items ;
         this.stock = stocks;
-        this.filteredProduits = [...produits];
+        this.filteredProduits = [...produits.items];
         console.log('Produits et stocks chargés');
       },
       error: (err) => {

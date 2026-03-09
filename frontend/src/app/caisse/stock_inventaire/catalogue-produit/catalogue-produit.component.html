@@ -8,11 +8,11 @@
     <div [ngClass]="{ 'col-md-12': !isRowSelected, 'col-md-10': isRowSelected }">
       <div class="d-flex justify-content-between mb-2">
         <div class="w-auto mb-3">
-          <button
+          <!-- <button
             class="btn btn-info w-auto me-1"
             data-bs-toggle="tooltip"
             title="Exporter les produits"
-            (click)="onAction('Exporter')"
+            (click)="downloadExcel()"
           >
             <i class="bi bi-box-arrow-up-right me-2"></i>
           </button>
@@ -31,6 +31,12 @@
             (click)="onAction('Rafraîchir')"
           >
             <i class="bi bi-arrow-clockwise me-2"></i>
+          </button> -->
+          <button class="btn btn-outline-success me-2" (click)="downloadExcel()" [disabled]="isLoading">
+            <i class="bi bi-file-excel me-2"></i>Excel
+          </button>
+          <button class="btn btn-outline-danger" (click)="downloadPDF()" [disabled]="isLoading">
+            <i class="bi bi-file-pdf me-2"></i>PDF
           </button>
         </div>
         <div class="">
@@ -111,11 +117,82 @@
                     </div>
             </div> -->
 
-      <div class="d-flex justify-content-center">
+    <div class="d-flex justify-content-center">
         <h1>Liste des produits</h1>
+    </div>
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Rechercher un produit..."
+            [(ngModel)]="searchTerm"
+            (input)="onSearchChange()"
+          />
+        </div>
       </div>
+      
+      <div class="col-md-3">
+        <select 
+          class="form-select" 
+          [(ngModel)]="selectedCategorieId" 
+          (change)="onCategorieChange()"
+        >
+          <option value="">Toutes les catégories</option>
+          <option *ngFor="let cat of categories" [value]="cat.id">
+            {{ cat.nom }}
+          </option>
+        </select>
+      </div>
+      
+      <div class="col-md-2">
+        <select 
+          class="form-select" 
+          [(ngModel)]="selectedStatut" 
+          (change)="onStatutChange()"
+        >
+          <option *ngFor="let opt of statutOptions" [value]="opt.valeur">
+            {{ opt.label }}
+          </option>
+        </select>
+      </div>
+      
+      <div class="col-md-3">
+        <button class="btn btn-outline-secondary w-100" (click)="resetFilters()">
+          <i class="bi bi-eraser me-2"></i>Réinitialiser
+        </button>
+      </div>
+    </div>
+
+    <!-- Contrôles de pagination -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <span class="text-muted" *ngIf="!isLoading">
+          Total: {{ totalItems }} produit(s)
+        </span>
+        <span *ngIf="isLoading" class="text-muted">
+          <i class="bi bi-arrow-repeat spin"></i> Chargement...
+        </span>
+      </div>
+      
+      <div class="d-flex align-items-center">
+        <label for="itemsPerPage" class="me-2">Afficher</label>
+        <select
+          id="itemsPerPage"
+          class="form-select w-auto"
+          (change)="onRowsPerPageChange($event)"
+        >
+          <option [value]="10" selected>10</option>
+          <option [value]="20">20</option>
+          <option [value]="50">50</option>
+        </select>
+        <span>lignes par page</span>
+      </div>
+    </div>
       <!-- Barre de recherche et filtres -->
-      <div class="d-flex justify-content-between mb-3">
+      <!-- <div class="d-flex justify-content-between mb-3">
         <div class="input-group w-50">
           <span class="input-group-text"><i class="bi bi-search"></i></span>
           <input
@@ -137,18 +214,18 @@
             <option value="20">20 éléments/page</option>
           </select>
         </div>
-      </div>
+      </div> -->
 
       <!-- Tableau des produits -->
       <div class="table-responsive">
         <table class="table table-bordered table-hover">
-          <thead class="table-success">
+          <thead class="table-dark">
             <tr>
               <!-- Colonne pour les cases à cocher -->
-              <th class="petit-colonne">
+              <!-- <th class="petit-colonne">
                 <input type="checkbox" id="checkAll" (click)="selectAllProd()" />
                 <label for="checkAll"></label>
-              </th>
+              </th> -->
               <!-- Colonne ID existante -->
               <th class="petit-colonne">ID</th>
 
@@ -170,15 +247,27 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngIf="paginatedProducts.length === 0">
-              <td colspan="13" class="text-center">Aucun produit trouvé</td>
+            <!-- Loading state -->
+            <tr *ngIf="isLoading">
+              <td colspan="13" class="text-center py-4">
+                <div class="spinner-border text-success" role="status">
+                  <span class="visually-hidden">Chargement...</span>
+                </div>
+              </td>
             </tr>
-            <tr *ngFor="let produit of paginatedProducts" (click)="onRowSelect(produit)">
+            <!-- Aucune donnée -->
+            <tr *ngIf="!isLoading && prods.length === 0">
+              <td colspan="13" class="text-center py-4">
+                <i class="bi bi-inbox fs-1 d-block text-muted"></i>
+                <span class="text-muted">Aucun produit trouvé</span>
+              </td>
+            </tr>
+            <tr *ngFor="let produit of prods" (click)="onRowSelect(produit)">
               <!-- Case à cocher pour chaque produit -->
-              <td class="petit-colonne">
+              <!-- <td class="petit-colonne">
                 <input type="checkbox" id="check" name="checkCase" (click)="verifyCheckedCase()" />
                 <label for="check"></label>
-              </td>
+              </td> -->
 
               <!-- ID -->
               <td class="petit-colonne">{{ produit.id }}</td>
@@ -186,7 +275,7 @@
               <!-- Image du produit ou icône si pas d'image -->
               <td>
                 <ng-container *ngIf="produit.image; else noImage">
-                  <img [src]="produit.image" alt="Image produit" width="50" height="50" />
+                  <img [src]="produit.image" alt="Image produit" width="50" height="50" loading="lazy" />
                 </ng-container>
                 <ng-template #noImage>
                   <i class="bi bi-camera-video-off" style="font-size: 24px"></i>
@@ -194,16 +283,16 @@
               </td>
 
               <!-- Autres informations sur le produit -->
-              <td>{{ getNomCategorieById(produit.categorieId) }}</td>
+              <td>{{ produit.CategoriesProduit?.nom }}</td>
               <td>{{ produit.designation }}</td>
-              <td>{{ getNomFournisseurById(produit.fournisseurId!) }}</td>
-              <td>{{ getQteById(produit.id) }}</td>
+              <td>{{ produit.Fournisseur?.nomComplet  }}</td>
+              <td>{{ getQteById(produit) }}</td>
               <!-- <td>{{ 0 }} à corriger</td> -->
               <td>{{ produit.unite }}</td>
               <td>{{ produit.prixAchatUnitaire }}</td>
               <td>{{ produit.prixVenteUnitaire }}</td>
-              <td>{{ produit.dateCreation | date: 'short' }}</td>
-              <td>{{ getNomUserById(produit.agentId!) }}</td>
+              <td>{{ produit.dateCreation | date: 'dd/MM/yyyy' }}</td>
+              <td>{{ produit.user?.['nom']}}</td>
               <td>{{ produit.description }}</td>
             </tr>
           </tbody>
@@ -216,7 +305,7 @@
             <span class="h3">{{ currentPage }}</span>
             <button class="w-auto btn btn-success" (click)="onPageChange(currentPage + 1)" [disabled]="currentPage * itemsPerPage >= filteredProducts.length"><i class="bi bi-arrow-right-circle fs-3"></i></button>
         </div> -->
-      <div class="d-flex justify-content-between align-items-center">
+      <!-- <div class="d-flex justify-content-between align-items-center">
         <div>
           Affichage de {{ (currentPage - 1) * itemsPerPage + 1 }} à
           {{ min(currentPage * itemsPerPage, filteredProducts.length) }}
@@ -230,7 +319,6 @@
           >
             <i class="bi bi-arrow-left-circle"></i>
           </button>
-          <!-- <span class="h3">{{ currentPageFournisseur }} / {{ getTotalPages(filteredFournisseurs) }}</span> -->
           <span class="h3">{{ currentPage }} </span>
           <button
             class="btn btn-success"
@@ -240,6 +328,61 @@
             <i class="bi bi-arrow-right-circle"></i>
           </button>
         </div>
+      </div> -->
+      <!-- Pagination compacte -->
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-3" *ngIf="totalPages > 1">
+        <div class="text-muted mb-2 mb-md-0">
+          <small>
+            Affichage de {{ ((currentPage - 1) * itemsPerPage) + 1 }} 
+            à {{ currentPage * itemsPerPage > totalItems ? totalItems : currentPage * itemsPerPage }} 
+            sur {{ totalItems }} produits
+          </small>
+        </div>
+        
+        <nav aria-label="Page navigation">
+          <ul class="pagination pagination-sm mb-0 flex-wrap">
+            <!-- Bouton précédent -->
+            <li class="page-item" [class.disabled]="!hasPrev">
+              <button class="page-link" (click)="onPageChange(currentPage - 1)" style="cursor: pointer;">
+                <i class="bi bi-chevron-left"></i>
+              </button>
+            </li>
+            
+            <!-- Première page -->
+            <li class="page-item" *ngIf="currentPage > 3">
+              <button class="page-link" (click)="onPageChange(1)" style="cursor: pointer;">1</button>
+            </li>
+            <li class="page-item disabled" *ngIf="currentPage > 4">
+              <a class="page-link">...</a>
+            </li>
+            
+            <!-- Pages autour de la page courante -->
+            <li class="page-item" 
+                *ngFor="let page of pagesToShow" 
+                [class.active]="currentPage === page">
+              <button class="page-link" (click)="onPageChange(page)" style="cursor: pointer;">
+                {{ page }}
+              </button>
+            </li>
+            
+            <!-- Dernière page -->
+            <li class="page-item disabled" *ngIf="currentPage < totalPages - 3">
+              <a class="page-link">...</a>
+            </li>
+            <li class="page-item" *ngIf="currentPage < totalPages - 2">
+              <button class="page-link" (click)="onPageChange(totalPages)" style="cursor: pointer;">
+                {{ totalPages }}
+              </button>
+            </li>
+            
+            <!-- Bouton suivant -->
+            <li class="page-item" [class.disabled]="!hasNext">
+              <button class="page-link" (click)="onPageChange(currentPage + 1)" style="cursor: pointer;">
+                <i class="bi bi-chevron-right"></i>
+              </button>
+            </li>
+          </ul>
+        </nav>
       </div>
       <!-- <div class="d-flex justify-content-center">
           <ul class="pagination">
@@ -790,12 +933,12 @@
                       </button>
 
                       <!-- Bouton Supprimer -->
-                      <button
+                      <!-- <button
                         class="btn btn-sm btn-danger"
                         (click)="deleteCategorie(categorie.id!)"
                       >
                         <i class="bi bi-trash"></i>
-                      </button>
+                      </button> -->
                     </div>
                   </td>
                 </ng-container>

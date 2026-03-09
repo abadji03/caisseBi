@@ -84,6 +84,7 @@ exports.getCategoriesByStructure = async (req, res) => {
 };
 
 exports.updateStatutCategorie = async (req, res) => {
+  const transaction = await db.sequelize.transaction();
   try {
     const authUser = req.user;
 
@@ -100,6 +101,20 @@ exports.updateStatutCategorie = async (req, res) => {
     }
 
     await categorie.update({ statut });
+
+    // 2️⃣ Mise à jour des utilisateurs du magasin
+    await db.Produit.update(
+      { statut:statut },
+      {
+        where: {
+          categorieId : categorie.id
+        },
+        transaction
+      }
+    );
+
+    await transaction.commit();
+
     res.json({ message: 'Statut mis à jour avec succès', categorie });
   } catch (error) {
     res.status(500).json({ message: 'Erreur mise à jour du statut', error });

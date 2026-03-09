@@ -895,7 +895,7 @@ private finaliserEnregistrement(result: any, avecFichier: boolean): void {
         .subscribe({
           next: ([produit, stock]) => {
             //this.fournisseurs = four
-            this.produits = produit;
+            this.produits = produit.items;
             this.stocks = stock;
             this.filteredProducts = this.produits;
             console.log('Produits chargés', this.produits);

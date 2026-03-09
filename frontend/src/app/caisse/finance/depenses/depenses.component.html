@@ -1,0 +1,266 @@
+<!-- app/components/finance/depenses/depenses.component.html -->
+<div>
+  <!-- Bouton Nouvelle dépense -->
+  <div class="d-flex justify-content-end">
+    <button class="btn btn-success mb-3" (click)="toggleForm()">
+      {{ showForm ? 'Masquer le formulaire' : 'Nouvelle dépense' }}
+    </button>
+  </div>
+
+  <!-- Formulaire d'ajout/modification -->
+  <div *ngIf="showForm" class="card mb-4">
+    <div class="card-header d-flex justify-content-center">
+      <h5 class="card-title mb-0">
+        <i class="bi bi-cash-coin me-2"></i>
+        {{ selectedDepense ? 'Modifier la Dépense' : 'Nouvelle Dépense' }}
+      </h5>
+    </div>
+    <div class="card-body">
+      <form [formGroup]="depenseForm" (ngSubmit)="onSubmit()">
+        <div class="row">
+          <!-- Catégorie -->
+          <div class="col-md-6 mb-3">
+            <label for="categoryId" class="form-label">
+              Catégorie <span class="text-danger">*</span>
+            </label>
+            <select 
+              class="form-control" 
+              id="categoryId" 
+              formControlName="categoryId"
+              [class.is-invalid]="depenseForm.get('categoryId')?.touched && depenseForm.get('categoryId')?.invalid">
+              <option value="">Sélectionner une catégorie</option>
+              <option *ngFor="let cat of categories" [value]="cat.id">
+                {{ cat.name }}
+              </option>
+            </select>
+            <div *ngIf="depenseForm.get('categoryId')?.touched && depenseForm.get('categoryId')?.invalid" 
+                 class="invalid-feedback">
+              La catégorie est obligatoire
+            </div>
+          </div>
+
+          <!-- Date -->
+          <div class="col-md-6 mb-3">
+            <label for="date" class="form-label">
+              Date <span class="text-danger">*</span>
+            </label>
+            <input
+              type="date"
+              class="form-control"
+              id="date"
+              formControlName="date"
+              [class.is-invalid]="depenseForm.get('date')?.touched && depenseForm.get('date')?.invalid">
+            <div *ngIf="depenseForm.get('date')?.touched && depenseForm.get('date')?.invalid" 
+                 class="invalid-feedback">
+              La date est obligatoire
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <!-- Montant -->
+          <div class="col-md-6 mb-3">
+            <label for="montant" class="form-label">
+              Montant (F CFA) <span class="text-danger">*</span>
+            </label>
+            <input
+              type="number"
+              class="form-control"
+              id="montant"
+              formControlName="montant"
+              min="1"
+              step="100"
+              [class.is-invalid]="depenseForm.get('montant')?.touched && depenseForm.get('montant')?.invalid">
+            <div *ngIf="depenseForm.get('montant')?.touched && depenseForm.get('montant')?.invalid" 
+                 class="invalid-feedback">
+              <div *ngIf="depenseForm.get('montant')?.errors?.['required']">
+                Le montant est obligatoire
+              </div>
+              <div *ngIf="depenseForm.get('montant')?.errors?.['min']">
+                Le montant doit être supérieur à 0
+              </div>
+            </div>
+          </div>
+
+          <!-- Mode de paiement -->
+          <div class="col-md-6 mb-3">
+            <label for="paymentMode" class="form-label">
+              Mode de paiement <span class="text-danger">*</span>
+            </label>
+            <select
+              class="form-control"
+              id="paymentMode"
+              formControlName="paymentMode"
+              [class.is-invalid]="depenseForm.get('paymentMode')?.touched && depenseForm.get('paymentMode')?.invalid">
+              <option value="Espèce">Espèce</option>
+              <option value="Carte">Carte</option>
+              <option value="Mobile Money">Mobile Money</option>
+              <option value="Virement">Virement</option>
+              <option value="Chèque">Chèque</option>
+            </select>
+            <div *ngIf="depenseForm.get('paymentMode')?.touched && depenseForm.get('paymentMode')?.invalid" 
+                 class="invalid-feedback">
+              Le mode de paiement est obligatoire
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <!-- Type de dépense -->
+          <div class="col-md-6 mb-3">
+            <label for="type" class="form-label">
+              Type de dépense
+            </label>
+            <select class="form-control" id="type" formControlName="type">
+              <option value="STANDARD">Standard</option>
+              <option value="STOCK">Approvisionnement en Stock</option>
+              <option value="FRAIS">Frais de fonctionnement</option>
+              <option value="INVESTISSEMENT">Investissement</option>
+            </select>
+          </div>
+
+          <!-- Pièce justificative -->
+          <div class="col-md-6 mb-3">
+            <label for="receipt" class="form-label">
+              Pièce justificative (optionnel)
+            </label>
+            <input
+              type="file"
+              class="form-control"
+              id="receipt"
+              (change)="onFileSelected($event)"
+              accept=".pdf,.jpg,.jpeg,.png">
+            <small class="text-muted">
+              Formats acceptés: PDF, JPG, PNG (max 5MB)
+            </small>
+            <div *ngIf="selectedFile" class="mt-2">
+              <span class="badge bg-info">
+                <i class="bi bi-file-earmark me-1"></i>
+                {{ selectedFile.name }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="mb-3">
+          <label for="description" class="form-label">
+            Description (optionnel)
+          </label>
+          <textarea
+            class="form-control"
+            id="description"
+            formControlName="description"
+            rows="3"
+            placeholder="Détails de la dépense..."></textarea>
+        </div>
+
+        <!-- Boutons -->
+        <div class="d-flex justify-content-end gap-2">
+          <button
+            type="submit"
+            class="btn btn-success"
+            [disabled]="depenseForm.invalid">
+            <i class="bi" [ngClass]="selectedDepense ? 'bi-check-circle' : 'bi-plus-circle'"></i>
+            {{ selectedDepense ? 'Modifier' : 'Enregistrer' }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            (click)="toggleForm()">
+            Annuler
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Barre de recherche -->
+  <div class="d-flex justify-content-between mb-2">
+    <input
+      type="text"
+      class="form-control w-50"
+      placeholder="Rechercher par date, catégorie, montant..."
+      [(ngModel)]="searchTerm"
+      (input)="onSearchChange()"
+    />
+    <select class="form-select w-auto" (change)="setItemsPerPage($event)">
+      <option [value]="5">5 lignes</option>
+      <option [value]="10">10 lignes</option>
+      <option [value]="20">20 lignes</option>
+    </select>
+  </div>
+
+  <!-- Tableau des dépenses -->
+  <div class="table-responsive">
+    <div class="d-flex justify-content-center">
+      <h4 class="mt-4">Historique des Dépenses</h4>
+    </div>
+    <table class="table table-striped">
+      <thead class="table-success">
+        <tr>
+          <th>Date</th>
+          <th>Catégorie</th>
+          <th>Montant</th>
+          <th>Mode de Paiement</th>
+          <th>Type</th>
+          <th>Responsable</th>
+          <th>Magasin</th>
+          <th>Pièce jointe</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="paginatedDepenses.length === 0">
+          <td colspan="10" class="text-center">Aucune dépense trouvée</td>
+        </tr>
+        <tr *ngFor="let dep of paginatedDepenses">
+          <td>{{ dep.date | date: 'dd/MM/yyyy' }}</td>
+          <td>{{ getCategoryName(dep.categoryId) }}</td>
+          <td>{{ dep.montant }} F CFA</td>
+          <td>{{ dep.paymentMode }}</td>
+          <td>{{ dep.type }}</td>
+          <td>{{ dep.user?.nom }}</td>
+          <td>{{ dep.magasin?.nom || 'N/A' }}</td>
+          <td>
+            <span *ngIf="dep.receipt; else noReceipt">
+              <a [href]="dep.receipt" target="_blank" rel="noopener noreferrer">
+                Voir la pièce
+              </a>
+            </span>
+            <ng-template #noReceipt>
+              <span class="text-muted">Non assigné</span>
+            </ng-template>
+          </td>
+          <td>{{ dep.statutDepense }}</td>
+          <td>
+            <button class="btn btn-warning btn-sm me-2" (click)="toggleForm(dep)">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-danger btn-sm" (click)="deleteDepense(dep)">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="d-flex justify-content-center align-items-center">
+    <button
+      class="btn btn-success"
+      (click)="onPageChange(currentPage - 1)"
+      [disabled]="currentPage === 1">
+      <i class="bi bi-arrow-left-circle"></i>
+    </button>
+    <span class="h3 mx-3">{{ currentPage }} / {{ totalPages }}</span>
+    <button
+      class="btn btn-success"
+      (click)="onPageChange(currentPage + 1)"
+      [disabled]="currentPage >= totalPages">
+      <i class="bi bi-arrow-right-circle"></i>
+    </button>
+  </div>
+</div>

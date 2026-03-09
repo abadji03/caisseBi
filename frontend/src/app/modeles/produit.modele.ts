@@ -1,3 +1,7 @@
+import { User } from "@sentry/angular";
+import { Stock } from "./entrees-sorties.model";
+import { Fournisseur } from "./fournisseur.model";
+
 export class Produit {
   id: number;
   sku: string;
@@ -137,6 +141,10 @@ export class Produits {
   public statut?: boolean; // Dernier prix d'achat connu
   public tauxTVA = 0; // TVA par produit
   categorie?: CategorieProduits; // Catégorie du produit
+  Fournisseur?:Fournisseur;
+  CategoriesProduit?:CategorieProduits;
+  Stocks?: Stock[];
+  user?:User;
 
 
   constructor(data?: Partial<Produits>) {

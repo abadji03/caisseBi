@@ -17,9 +17,6 @@ import { finalize, forkJoin, Subject, Subscription, takeUntil } from 'rxjs';
 import { Fournisseur } from '../../../modeles/fournisseur.model';
 import { StockInventaireService } from '../../../services/stock-inventaire.service';
 import { UserService } from '../../../services/user.service';
-import { User } from '../../../modeles/user.model';
-import { Stock } from '../../../modeles/entrees-sorties.model';
-import { normalize } from '../../../utils/string-utils';
 import { AuthService } from '../../../services/auth.service';
 
 @Component({
@@ -31,8 +28,8 @@ import { AuthService } from '../../../services/auth.service';
 })
 export class CatalogueProduitComponent implements OnInit, OnDestroy {
   prods: Produits[] = []; // Liste de prods
-  users: User[] = [];
-  stock: Stock[] = [];
+  //users: User[] = [];
+  //stock: Stock[] = [];
   code_structure : string | null = null;
   agentId : number | null = null;
   magasinId : number | null = null;
@@ -44,11 +41,28 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
   searchForm!: FormGroup; // Formulaire de recherche
   categorieForm!: FormGroup; // Formulaire d'ajout de catégorie
   isActionsEnabled = false; // Indicateur pour activer les actions
-  currentPage = 1; // Page courante pour la pagination
-  itemsPerPage = 5; // Nombre d'items par page
   isRowSelected = false; // Indique si une ligne est sélectionnée
   ajoutCategorie = false;
   searchTerm = '';
+
+  currentPage = 1;
+  itemsPerPage = 10;
+  totalItems = 0;
+  totalPages = 0;
+  hasNext = false;
+  hasPrev = false;
+  
+  // Filtres
+  selectedCategorieId = '';
+  selectedStatut = '';
+  
+  // Options de filtre
+  statutOptions = [
+    { valeur: '', label: 'Tous les statut' },
+    { valeur: 'true', label: 'Actifs' },
+    { valeur: 'false', label: 'Inactifs' }
+  ];
+
 
   errorMessage = '';
   categories: CategorieProduits[] = [];
@@ -58,6 +72,8 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
 
   barcodeGenerated = false;
   impressionBarcode = false;
+
+  isAdmin = false;
 
   actionType = 'ajouter';
   searchText = ''; // Texte de recherche
@@ -87,16 +103,6 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
 
   imageChanged = false; // <- À ajouter tout en haut de ton composant
 
-  // Listes des familles, fournisseurs et magasins
-  familles: string[] = ['Electroménager', 'Électronique', 'Vêtements', 'Jouets', 'Alimentation'];
-  fournisseurs: string[] = [
-    'Fournisseur A',
-    'Fournisseur B',
-    'Fournisseur C',
-    'Fournisseur D',
-    'Fournisseur E',
-  ];
-  magasins: string[] = ['Magasin 1', 'Magasin 2', 'Magasin 3', 'Magasin 4']; // Liste des magasins
   selectedImage: File | null = null;
 
   private destroy$ = new Subject<void>();
@@ -118,17 +124,21 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
       this.code_structure = user?.code_structure || null;
       this.magasinId = user?.magasinId || null;
       this.agentId = user?.id || null;
+      this.isAdmin = this.authService.hasRole('Administrateur');
       console.log('Code structure initialisé :', this.code_structure);
       // Déterminer si on doit montrer le champ structure
       //this.isStructureAdmin = this.authService.hasRole('Administrateur'); // Ou vérifiez par ID
 
       // Récupérer l'ID de la structure de l'utilisateur connecté
+      if (this.code_structure) {
+      this.loadData();
+    }
       
     });
-    this.loadData();
+    //this.loadData();
     this.iniFormulaire();
-    this.loadCategories();
-    this.loadFournisseurs();
+    //this.loadCategories();
+    //this.loadFournisseurs();
     // Charger les prods fictifs
     //this.prods = this.loadMockData();
     // Initialiser filteredProducts avec tous les produits
@@ -300,20 +310,8 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Gestion de la recherche
-  /*  onSearchChange(): void {
-    this.filteredProducts = this.prods.filter(prod =>
-      prod.designation.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-      this.getNomCategorieById(prod.categorieId)?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-      this.getNomUserById(prod.agentId!)?.toString().toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-      prod.unite!.toLowerCase().includes(this.searchTerm.toLowerCase())
-      //fournisseur.montantAPayer?.toString().toLowerCase().includes(this.searchQuery.toLowerCase())
-    );
-      this.currentPage = 1;
-
-  } */
-
-  onSearchChange(): void {
+  
+  /* onSearchChange(): void {
     const search = normalize(this.searchTerm);
 
     this.filteredProducts = this.prods.filter(
@@ -325,7 +323,7 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
     );
 
     this.currentPage = 1;
-  }
+  } */
 
   min(a: number, b: number): number {
     return Math.min(a, b);
@@ -362,8 +360,7 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
     return this.filteredProducts.slice(start, start + this.itemsPerPage);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onRowsPerPageChange(event: any) {
+  /* onRowsPerPageChange(event: any) {
     this.itemsPerPage = Number(event.target.value);
 
     // Réinitialiser les pages à 1 pour éviter un problème d'affichage
@@ -375,7 +372,7 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
   onPageChange(page: number): void {
     this.currentPage = page;
   }
-
+ */
   // Actions sur le Produits sélectionné (par exemple: ajouter, modifier, etc.)
   onAction(action: string): void {
     // Si l'action est "ajouter", on réinitialise actionType à "ajouter"
@@ -565,51 +562,47 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
   }
   loadCategories(): void {
     //onst code_structure = this.authService.getUserStructure();
-    this.isLoading = true;
     this.produitsServices.getAllCategoriesProduits(this.code_structure!)
     .pipe(takeUntil(this.destroy$))
     .subscribe({
       next: (data) => {
-        this.isLoading = false;
         this.categories = data;
         // Mettre à jour les options de famille avec les catégories réelles
         //this.familles = data.map(c => c.nom_categorie);
       },
       error: (err) => {
-        this.isLoading = false;
         //this.toastr.error('Erreur lors du chargement des catégories');
         console.error(err);
       },
     });
   }
 
-  loadFournisseurs(): void {
+  /* loadFournisseurs(): void {
     //onst code_structure = this.authService.getUserStructure();
-    this.isLoading = true;
     this.fournisseurService.getFournisseursByStructure(this.code_structure!)
     .pipe(takeUntil(this.destroy$))
     .subscribe({
       next: (data) => {
-        this.isLoading = false;
         this.fournisseur = data;
         // Mettre à jour les options de famille avec les catégories réelles
         //this.familles = data.map(c => c.nom_categorie);
       },
       error: (err) => {
-        this.isLoading = false;
         //this.toastr.error('Erreur lors du chargement des catégories');
         console.error(err);
       },
     });
-  }
+  } */
 
-  loadData(): void {
+  /* loadData(): void {
     this.isLoading = true;
     forkJoin([
       this.userService.getByStructure(this.code_structure!),
       this.produitsServices.getAllProduits(this.code_structure!),
       //this.isGeneralAdmin ? this.structureService.getAll() : of([])
-      this.stockService.getStocksByStructure(this.code_structure!),
+      this.stockService.getStocksByStructure(
+        this.code_structure!
+      ),
     ])
       .pipe(
         takeUntil(this.destroy$),
@@ -619,11 +612,150 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
         next: ([users, produits, stocks]) => {
           this.users = users;
           this.stock = stocks;
-          this.prods = produits;
+          this.prods = produits.items;
           this.filteredProducts = [...this.prods];
         },
         error: (err) => console.error('Erreur chargement données', err),
       });
+  } */
+
+  loadData(): void {
+    if (!this.code_structure) return;
+    
+    this.isLoading = true;
+    
+    // D'abord charger les fournisseurs et catégories
+    forkJoin({
+      fournisseurs: this.fournisseurService.getFournisseursByStructure(this.code_structure!),
+      categories: this.produitsServices.getAllCategoriesProduits(this.code_structure!)
+    })
+    .pipe(
+      takeUntil(this.destroy$)
+    )
+    .subscribe({
+      next: (results) => {
+        this.fournisseur = results.fournisseurs;
+        this.categories = results.categories;
+        
+        // Ensuite charger les produits paginés
+        this.loadProduits();
+      },
+      error: (err) => {
+        console.error('Erreur chargement données de base', err);
+        this.toastr.error('Erreur lors du chargement des données');
+        this.isLoading = false;
+      }
+    });
+  }
+
+  private loadProduits(): void {
+    this.produitsServices.getAllProduits(
+      this.code_structure!,
+      this.currentPage,
+      this.itemsPerPage,
+      this.searchTerm,
+      this.selectedCategorieId,
+      this.selectedStatut
+    )
+    .pipe(
+      takeUntil(this.destroy$),
+      finalize(() => this.isLoading = false)
+    )
+    .subscribe({
+      next: (response) => {
+        console.log('Liste des produits chargés',response);
+        this.prods = response.items;
+    
+        // Mettre à jour la pagination
+        this.totalItems = response.pagination.total;
+        this.totalPages = response.pagination.totalPages;
+        this.hasNext = response.pagination.hasNext;
+        this.hasPrev = response.pagination.hasPrev;
+        
+        // Charger les données auxiliaires (users et stock)
+        //this.loadAuxiliaryData();
+      },
+      error: (err) => {
+        console.error('Erreur chargement produits', err);
+        this.toastr.error('Erreur lors du chargement des produits');
+      }
+    });
+  }
+
+  // Nouvelle méthode pour charger les données auxiliaires
+  /* private loadAuxiliaryData(): void {
+      this.userService.getByStructure(this.code_structure!)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (users) => {
+        this.users = users;
+      },
+      error: (err) => console.error('Erreur chargement données auxiliaires', err)
+    });
+  } */
+
+  // Getter pour les pages à afficher
+get pagesToShow(): number[] {
+  const pages: number[] = [];
+  const maxVisiblePages = 5;
+  
+  if (this.totalPages <= maxVisiblePages) {
+    for (let i = 1; i <= this.totalPages; i++) pages.push(i);
+  } else {
+    let start = Math.max(1, this.currentPage - 2);
+    let end = Math.min(this.totalPages, this.currentPage + 2);
+    
+    if (this.currentPage <= 3) {
+      end = Math.min(this.totalPages, maxVisiblePages);
+    }
+    if (this.currentPage >= this.totalPages - 2) {
+      start = Math.max(1, this.totalPages - maxVisiblePages + 1);
+    }
+    
+    for (let i = start; i <= end; i++) pages.push(i);
+  }
+  return pages;
+}
+  // Modifier onSearchChange()
+  onSearchChange(): void {
+    this.currentPage = 1;
+    this.loadData();
+  }
+
+  // Modifier onPageChange()
+  onPageChange(page: number): void {
+    if (page < 1 || page > this.totalPages) return;
+    this.currentPage = page;
+    this.loadData();
+  }
+
+  // Modifier onRowsPerPageChange()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onRowsPerPageChange(event: any): void {
+    this.itemsPerPage = Number(event.target.value);
+    this.currentPage = 1;
+    this.loadData();
+  }
+
+  // Nouvelle méthode pour filtrer par catégorie
+  onCategorieChange(): void {
+    this.currentPage = 1;
+    this.loadData();
+  }
+
+  // Nouvelle méthode pour filtrer par statut
+  onStatutChange(): void {
+    this.currentPage = 1;
+    this.loadData();
+  }
+
+  // Méthode pour réinitialiser les filtres
+  resetFilters(): void {
+    this.searchTerm = '';
+    this.selectedCategorieId = '';
+    this.selectedStatut = '';
+    this.currentPage = 1;
+    this.loadData();
   }
 
   closeModal(act: string): void {
@@ -873,50 +1005,60 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
 
   toggleCategorieStatus(categorie: CategorieProduits) {
     // Implémentez la logique pour activer/désactiver
-    this.isLoading = true;
-    const newStatus = !categorie.statut;
-    this.produitsServices
-      .updateStatutCategorie(categorie.id!, newStatus)
-      .pipe(
-        takeUntil(this.destroy$),
-        finalize(() => (this.isLoading = false))
-      )
-      .subscribe({
-        next: () => {
-          this.toastr.success('Statut catégorie mis à jour avec succès');
-          this.loadCategories();
-        },
-        error: (err) => {
-          this.errorMessage =
-            err.error?.message || 'Erreur lors de la mise à jour du statut de la catégorie';
-          this.toastr.error(this.errorMessage);
-          //console.error(err);
-        },
-      });
+    if (confirm('Êtes-vous sûr de vouloir poursuivre cette action?')) {
+        this.isLoading = true;
+        const newStatus = !categorie.statut;
+        this.produitsServices
+          .updateStatutCategorie(categorie.id!, newStatus)
+          .pipe(
+            takeUntil(this.destroy$),
+            finalize(() => (this.isLoading = false))
+          )
+          .subscribe({
+            next: () => {
+              this.toastr.success('Statut catégorie mis à jour avec succès');
+              this.loadCategories();
+            },
+            error: (err) => {
+              this.errorMessage =
+                err.error?.message || 'Erreur lors de la mise à jour du statut de la catégorie';
+              this.toastr.error(this.errorMessage);
+              //console.error(err);
+            },
+          });
+    }
   }
 
   toggleProduitStatus(prod: Produits, status: boolean) {
     // Implémentez la logique pour activer/désactiver
-    this.isLoading = true;
-    this.produitsServices
-      .updateStatusProduit(prod.id, status)
-      .pipe(
-        takeUntil(this.destroy$),
-        finalize(() => (this.isLoading = false))
-      )
-      .subscribe({
-        next: () => {
-          this.toastr.success('Statut produit mis à jour avec succès');
-          this.loadData();
-          //this.isRowSelected = false;
-        },
-        error: (err) => {
-          this.errorMessage =
-            err.error?.message || 'Erreur lors de la mise à jour du statut du produit';
-          this.toastr.error(this.errorMessage, err);
-          //console.error(err);
-        },
-      });
+    if (confirm('Êtes-vous sûr de vouloir poursuivre cette action?')) {
+      const statutCat = this.categories.find(cat => cat.id === prod.categorieId);
+      if(!statutCat?.statut){
+        this.toastr.error('Impossible d\'activer le produit. Veuillez activer la catégorie d\'abord');
+        return;
+      }
+       this.isLoading = true;
+        this.produitsServices
+          .updateStatusProduit(prod.id, status)
+          .pipe(
+            takeUntil(this.destroy$),
+            finalize(() => (this.isLoading = false))
+          )
+          .subscribe({
+            next: () => {
+              this.toastr.success('Statut produit mis à jour avec succès');
+              this.loadData();
+              //this.isRowSelected = false;
+            },
+            error: (err) => {
+              this.errorMessage =
+                err.error?.message || 'Erreur lors de la mise à jour du statut du produit';
+              this.toastr.error(this.errorMessage, err);
+              //console.error(err);
+            },
+          });
+        }
+   
   }
 
   toggleProduitCodeBarre(prod: Produits, status: boolean) {
@@ -1159,18 +1301,6 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
     return url.split('/').pop() || 'image.png';
   }
 
-  /*  onFileChange(event: any): void {
-  const file = event.target.files[0];
-  if (file) {
-    this.selectedImageFile = file;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.logoPreview = reader.result as string;
-    };
-    reader.readAsDataURL(file);
-  }
-} */
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onFileChange(event: any): void {
@@ -1206,17 +1336,25 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
     return categorie ? categorie.nom : null; // On retourne `null` si la catégorie n'est pas trouvée
   }
 
-  getNomFournisseurById(id: number): string | null {
-    const fournisseur = this.fournisseur.find((p) => p.id === id);
-    return fournisseur ? fournisseur.nomComplet : null; // On retourne `null` si la catégorie n'est pas trouvée
-  }
-  getNomUserById(id: number): string | null {
+  /* getNomUserById(id: number): string | null {
     const user = this.users.find((p) => p.id === id);
     return user ? user.nom : null; // On retourne `null` si la catégorie n'est pas trouvée
-  }
-  getQteById(id: number): number | 0 {
-    const stock = this.stock.find((p) => p.produitId === id);
-    return stock ? stock.quantiteTotale : 0; // On retourne `null` si la catégorie n'est pas trouvée
+  } */
+
+  getQteById(prod: Produits): number {
+
+    if (!prod.Stocks || prod.Stocks.length === 0) {
+      return 0;
+    }
+
+    if (this.isAdmin) {
+      return prod.Stocks.reduce(
+        (sum, s) => sum + (Number(s.quantiteTotale) || 0),
+        0
+      );
+    }
+
+    return Number(prod.Stocks[0].quantiteTotale) || 0;
   }
 
   onTaxeChange(event: Event) {
@@ -1228,4 +1366,92 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
   console.log('Nombre récupéré :', this.taxe);
   this.creerOuMettreAJourTaux();
   }
+
+downloadExcel(): void {
+  if(confirm('Exporter vers Excel?')){
+    if (!this.code_structure) return;
+  
+    this.isLoading = true;
+    
+    this.produitsServices.exportToExcel(
+      this.code_structure,
+      this.selectedCategorieId,
+      this.selectedStatut,
+      this.searchTerm
+    ).subscribe({
+      next: (blob: Blob) => {
+        // Créer un lien de téléchargement
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        
+        // Nom du fichier avec la date
+        const date = new Date();
+        const dateStr = `${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2,'0')}-${date.getDate().toString().padStart(2,'0')}`;
+        link.download = `produits_${this.code_structure}_${dateStr}.xlsx`;
+        
+        // Déclencher le téléchargement
+        link.click();
+        
+        // Nettoyer
+        window.URL.revokeObjectURL(url);
+        this.isLoading = false;
+        
+        this.toastr.success('Export réussi');
+      },
+      error: (err) => {
+        console.error('Erreur export:', err);
+        this.toastr.error('Erreur lors de l\'export');
+        this.isLoading = false;
+      }
+    });
+  }
+  }
+
+  // Dans votre composant catalogue-produit.component.ts
+downloadPDF(): void {
+  if(confirm('Exporter vers PDF ?')){
+    if (!this.code_structure) {
+        this.toastr.warning('Structure non définie');
+        return;
+      }
+      
+      this.isLoading = true;
+      //this.toastr.info('Génération du PDF en cours...');
+      
+      this.produitsServices.exportToPDF(
+        this.code_structure,
+        this.selectedCategorieId,
+        this.selectedStatut,
+        this.searchTerm
+      ).subscribe({
+        next: (blob: Blob) => {
+          // Créer un lien de téléchargement
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          
+          // Nom du fichier avec la date
+          const date = new Date();
+          const dateStr = `${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2,'0')}-${date.getDate().toString().padStart(2,'0')}`;
+          link.download = `catalogue_${this.code_structure}_${dateStr}.pdf`;
+          
+          // Déclencher le téléchargement
+          link.click();
+          
+          // Nettoyer
+          window.URL.revokeObjectURL(url);
+          this.isLoading = false;
+          
+          this.toastr.success('Export PDF réussi');
+        },
+        error: (err) => {
+          console.error('Erreur export PDF:', err);
+          this.toastr.error('Erreur lors de l\'export PDF');
+          this.isLoading = false;
+        }
+      });
+    }
+  }
+  
 }

@@ -122,15 +122,15 @@ export class MouvementComponent implements OnInit, OnDestroy {
   // Nouvelle méthode pour charger produits et stocks
   private loadProduitsEtStocks() {
     forkJoin([
-      this.produitsService.getAllProduits(this.codeStructure!),
+      this.produitsService.getAllProduits(this.codeStructure!,1,10000),
       this.stockService.getStocksByStructure(this.codeStructure!)
     ])
     .pipe(takeUntil(this.destroy$))
     .subscribe({
       next: ([produits, stocks]) => {
-        this.produits = produits;
+        this.produits = produits.items;
         this.stock = stocks;
-        this.filteredProduits = [...produits];
+        this.filteredProduits = [...produits.items];
         console.log('Produits et stocks chargés');
       },
       error: (err) => {

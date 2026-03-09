@@ -996,7 +996,10 @@ private creerNouveauBrouillon(): void {
   loadDataProduits(): void {
         this.isLoading = true;
         forkJoin([
-          this.produitsServices.getAllProduits(this.code_structure!),
+          this.produitsServices.getAllProduits(
+            this.code_structure!,
+            1,
+            10000),
           this.stockService.getStocksByStructure(this.code_structure!),
           this.clientsService.getClientsByStructure(this.code_structure!)  
         ])
@@ -1007,7 +1010,7 @@ private creerNouveauBrouillon(): void {
           .subscribe({
             next: ([produit, stock, clients]) => {
               //this.fournisseurs = four
-              this.produits = produit;
+              this.produits = produit.items;
               this.stocks = stock;
               this.clients = clients;
               this.filteredProducts = this.produits;

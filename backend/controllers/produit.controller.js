@@ -3,6 +3,12 @@ const Produit = db.Produit;
 const Stock = db.Stock;
 const fs = require('fs');
 const path = require('path');
+const { Op } = db.Sequelize;
+const sharp = require('sharp');
+const ExcelJS = require('exceljs');
+const { safeNumber } = require('./bonComplet/statutManager');
+const PDFDocument = require('pdfkit');
+
 
 const BASE_URL = 'http://localhost:5000/uploads/'; //url de l'emplacement des fichier à stocker
 
@@ -14,31 +20,83 @@ exports.createProduit = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
+    
     const produitData = req.body;
 
-    // Vérification : produit déjà existant ?
-    const { codeBarre } = produitData;
-    if (codeBarre !== '') {
-      const existingProduit = await Produit.findOne({ where: { codeBarre } });
-
-      if (existingProduit) {
-        return res.status(400).json({ message: 'Un produit avec ce code barre existe déjà.' });
+   const existingProduit = await Produit.findOne({
+      where: {
+        designation: produitData.designation,
+        categorieId: produitData.categorieId,
+        code_structure: produitData.code_structure
       }
-    }
-
-    // Traitement de l'image (comme pour 'logo')
-    let image = null;
-    if (req.file) {
-      image = BASE_URL + req.file.filename;
-    }
-
-    // Création du produit avec image (si présente)
-    const produit = await Produit.create({
-      ...produitData,
-      image,
     });
 
-    return res.status(201).json(produit);
+    if (existingProduit) {
+        return res.status(400).json({ message: 'Un produit avec ce code barre existe déjà.' });
+      }
+    // Traitement de l'image
+    let image = null;
+    let tempFilePath = null;
+    
+    if (req.file) {
+      try {
+        const inputPath = req.file.path;
+        tempFilePath = inputPath;
+        const filename = "prod-" + Date.now() + ".jpg";
+        const outputPath = path.join("uploads", filename);
+
+        console.log('Traitement de l\'image:', inputPath, '->', outputPath);
+
+        // compression et redimensionnement
+        await sharp(inputPath)
+          .resize(300, 300, { fit: "cover" })
+          .jpeg({ quality: 80 })
+          .toFile(outputPath);
+
+        image = BASE_URL + filename;
+
+        // Créer le produit avec l'image
+        const produit = await Produit.create({
+          ...produitData,
+          image,
+        });
+
+        // Nettoyer le fichier temporaire après la création réussie
+        setTimeout(() => {
+          try {
+            if (fs.existsSync(inputPath)) {
+              fs.unlinkSync(inputPath);
+              console.log('Fichier temporaire supprimé:', inputPath);
+            }
+          } catch (cleanupError) {
+            console.error('Erreur lors du nettoyage:', cleanupError);
+          }
+        }, 1000);
+
+        return res.status(201).json(produit);
+
+      } catch (imageError) {
+        console.error('Erreur lors du traitement de l\'image:', imageError);
+        
+        // Nettoyer le fichier temporaire en cas d'erreur
+        if (tempFilePath && fs.existsSync(tempFilePath)) {
+          try {
+            fs.unlinkSync(tempFilePath);
+          } catch (cleanupError) {
+            console.error('Erreur lors du nettoyage:', cleanupError);
+          }
+        }
+        
+        return res.status(500).json({ 
+          message: 'Erreur lors du traitement de l\'image', 
+          error: imageError.message 
+        });
+      }
+    } else {
+      // Pas d'image, créer le produit sans image
+      const produit = await Produit.create(produitData);
+      return res.status(201).json(produit);
+    }
   } catch (error) {
     console.error('Erreur lors de la création du produit :', error);
     return res.status(500).json({
@@ -59,38 +117,90 @@ exports.updateProduit = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
+    
     const produit = await Produit.findByPk(req.params.id);
     if (!produit) {
       return res.status(404).json({ message: 'Produit non trouvé' });
     }
 
     const updatedData = { ...req.body };
+    
+    // Sauvegarder l'ancienne image pour la supprimer plus tard
+    const oldImagePath = produit.image ? path.join('uploads', path.basename(produit.image)) : null;
 
-    // Si une nouvelle image est envoyée
+    // Traitement de la nouvelle image si présente
     if (req.file) {
-      // Supprimer l'ancienne image si elle existe
-      if (produit.image) {
-        const oldPath = path.join('uploads', path.basename(produit.image)); // attention à ne pas concaténer l'URL complète
-        if (fs.existsSync(oldPath)) {
-          fs.unlinkSync(oldPath);
-        }
-      }
+      try {
+        const inputPath = req.file.path;
+        const filename = "prod-" + Date.now() + ".jpg";
+        const outputPath = path.join("uploads", filename);
 
-      // Mettre à jour le champ image avec la nouvelle URL
-      updatedData.image = BASE_URL + req.file.filename;
+        console.log('Traitement de la nouvelle image:', inputPath, '->', outputPath);
+
+        await sharp(inputPath)
+          .resize(300, 300, { fit: "cover" })
+          .jpeg({ quality: 80 })
+          .toFile(outputPath);
+
+        // Mettre à jour l'URL de l'image dans les données
+        updatedData.image = BASE_URL + filename;
+
+        // Mettre à jour le produit (sans supprimer l'ancienne image immédiatement)
+        await produit.update(updatedData);
+
+        // Nettoyer les fichiers après la mise à jour
+        setTimeout(() => {
+          try {
+            // Supprimer le fichier temporaire
+            if (fs.existsSync(inputPath)) {
+              fs.unlinkSync(inputPath);
+              console.log('Fichier temporaire supprimé:', inputPath);
+            }
+
+            // Supprimer l'ancienne image si elle existe et est différente
+            if (oldImagePath && fs.existsSync(oldImagePath) && oldImagePath !== outputPath) {
+              fs.unlinkSync(oldImagePath);
+              console.log('Ancienne image supprimée:', oldImagePath);
+            }
+          } catch (cleanupError) {
+            console.error('Erreur lors du nettoyage:', cleanupError);
+          }
+        }, 1000);
+
+      } catch (imageError) {
+        console.error('Erreur lors du traitement de l\'image:', imageError);
+        
+        // Nettoyer le fichier temporaire en cas d'erreur
+        if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+          try {
+            fs.unlinkSync(req.file.path);
+          } catch (cleanupError) {
+            console.error('Erreur lors du nettoyage:', cleanupError);
+          }
+        }
+        
+        return res.status(500).json({ 
+          message: 'Erreur lors du traitement de l\'image', 
+          error: imageError.message 
+        });
+      }
     } else {
-      // Sinon, conserver l'image existante
+      // Pas de nouvelle image, mettre à jour sans changer l'image
       updatedData.image = produit.image;
+      await produit.update(updatedData);
     }
 
-    await produit.update(updatedData);
     console.log('Produit mis à jour avec:', updatedData);
+    
     res.json({ message: 'Produit mis à jour', produit });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la mise à jour', error: error.message });
+    console.error('Erreur updateProduit:', error);
+    res.status(500).json({ 
+      message: 'Erreur lors de la mise à jour', 
+      error: error.message 
+    });
   }
 };
-
 //Supprimer un produit (physiquement)
 exports.deleteProduit = async (req, res) => {
   try {
@@ -130,7 +240,8 @@ exports.getProduitById = async (req, res) => {
   }
 };
 
-//Récupérer les produits par structure
+
+// Récupérer les produits par structure avec pagination
 exports.getProduitsByStructure = async (req, res) => {
   try {
     const authUser = req.user;
@@ -138,9 +249,20 @@ exports.getProduitsByStructure = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
+    
     const { code_structure } = req.params;
+    
+    // Récupération des paramètres de pagination et recherche
+    const { 
+      page = 1, 
+      limit = 10, 
+      search = '',
+      categorieId = '',
+      statut = '',
+    } = req.query;
 
-    // 🔥 Vérification : l’utilisateur doit appartenir à la structure demandée
+
+    // Vérification des droits d'accès
     if (authUser.code_structure !== code_structure) {
       return res.status(403).json({
         message: "Accès interdit : structure non autorisée"
@@ -150,25 +272,45 @@ exports.getProduitsByStructure = async (req, res) => {
     // Vérifier rôle
     const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
-     const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
+    const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
     const isEmploye = authUser.roles?.some(r => r.nom === "Employé");
 
     if (!isAdminStructure && !isGerant && !isCaissier && !isEmploye) {
-    return res.status(403).json({
-      message: "Accès interdit : rôle insuffisant"
-    });
-}
+      return res.status(403).json({
+        message: "Accès interdit : rôle insuffisant"
+      });
+    }
 
     // Clause where par défaut (structure)
     let whereClause = {
-      code_structure: code_structure
+      code_structure: code_structure,
+      //statut:true
     };
 
-     // --- INCLUDE STOCK
+    // 🔍 FILTRE DE RECHERCHE
+    if (search) {
+      whereClause[Op.or] = [
+        { designation: { [Op.like]: `%${search}%` } },
+        { description: { [Op.like]: `%${search}%` } },
+        { codeBarre: { [Op.like]: `%${search}%` } }
+      ];
+    }
+
+    // 🔍 FILTRE PAR CATÉGORIE
+    if (categorieId) {
+      whereClause.categorieId = categorieId;
+    }
+
+    // 🔍 FILTRE PAR STATUT
+    if (statut !== '') {
+      whereClause.statut = statut === 'true';
+    }
+
+    // --- INCLUDE STOCK
     let stockInclude = {
       model: Stock,
-      attributes: ["id", "magasinId","quantiteTotale", "quantiteReservee","statutStock","datePeremption"],
-      required: false // admin -> on garde même les produits sans stock
+      attributes: ["id", "magasinId", "quantiteTotale", "quantiteReservee", "statutStock", "datePeremption"],
+      required: false
     };
 
     // 🔹 Si gérant : filtrer par magasin
@@ -178,33 +320,82 @@ exports.getProduitsByStructure = async (req, res) => {
           message: "Ce gérant ou caissier ou employe n’est associé à aucun magasin"
         });
       }
-
-      //whereClause.magasinId = authUser.magasinId;
       stockInclude = {
-          ...stockInclude,
-          where: { magasinId: authUser.magasinId },
-          required: true // 🔥 important : produit doit avoir un stock dans ce magasin
-        };
+        ...stockInclude,
+        where: { magasinId: authUser.magasinId },
+        required: true
+      };
     }
-    const produits = await Produit.findAll({
+
+    const includes = [stockInclude];
+    
+    // Ajouter Fournisseur seulement si le modèle existe
+    if (db.Fournisseur) {
+      includes.push({
+        model: db.Fournisseur,
+        attributes: ["id", "nomComplet", "telephone", "email"],
+        required: false
+      });
+    }
+    if (db.CategoriesProduits) {
+      includes.push({
+        model: db.CategoriesProduits,
+        attributes: ["id", "nom"],
+        required: true
+      });
+    }
+
+    if (db.Users) {
+      includes.push({
+        model: db.Users,
+        attributes: ["id", "nom"],
+        required: true
+      });
+    }
+       
+    // Calcul de l'offset pour la pagination
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const limitInt = parseInt(limit);
+
+    // Exécution de la requête avec pagination
+    const { count, rows } = await Produit.findAndCountAll({
       where: whereClause,
-      include: [stockInclude],
+      include: includes,
       order: [['createdAt', 'DESC']],
+      offset,
+      limit: limitInt,
+      distinct: true
     });
 
     const baseUrl = `${req.protocol}://${req.get('host')}/uploads/`;
-
-    const produitsWithImageUrl = produits.map((struct) => {
-      const prod = struct.toJSON(); // Convertit Sequelize instance en objet pur
+    const produitsWithImageUrl = rows.map((struct) => {
+      const prod = struct.toJSON();
       prod.logoUrl = prod.image ? baseUrl + prod.image : null;
       return prod;
     });
 
-    res.status(200).json(produitsWithImageUrl);
+    const totalPages = Math.ceil(count / limitInt);
 
-    //res.json(produits);
+    console.log(`📦 Produits: ${count} trouvés, page ${page}/${totalPages}`);
+
+    res.status(200).json({
+      items: produitsWithImageUrl,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        totalPages: totalPages,
+        limit: limitInt,
+        hasNext: parseInt(page) < totalPages,
+        hasPrev: parseInt(page) > 1
+      }
+    });
+
   } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la récupération des produits', error });
+    console.error('Erreur getProduitsByStructure:', error);
+    res.status(500).json({ 
+      message: 'Erreur lors de la récupération des produits', 
+      error: error.message 
+    });
   }
 };
 
@@ -260,54 +451,8 @@ exports.updateTauxTVAProduit = async (req, res) => {
       .json({ message: 'Erreur lors de la mise à jour du statut', error: error.message });
   }
 };
-//Récupérer tous les produits
-/* exports.getAllProduits = async (req, res) => {
-  try {
-    const authUser = req.user;
 
-    if (!authUser) {
-      return res.status(401).json({ message: "Non authentifié" });
-    }
-    const produits = await Produit.findAll();
-    res.json(produits);
-  } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la récupération de tous les produits', error });
-  }
-}; */
-
-//Rechercher des produits par désignation ou code-barres
-/* exports.searchProduits = async (req, res) => {
-  try {
-    const keyword = req.query.q;
-    const produits = await Produit.findAll({
-      where: {
-        [db.Sequelize.Op.or]: [
-          { designation: { [db.Sequelize.Op.like]: `%${keyword}%` } },
-          { codeBarre: { [db.Sequelize.Op.like]: `%${keyword}%` } },
-        ],
-      },
-    });
-    res.json(produits);
-  } catch (error) {
-    res.status(500).json({ message: "Erreur lors de la recherche", error });
-  }
-}; */
-
-//Marquer un produit comme archivé (au lieu de suppression définitive)
-/* exports.archiveProduit = async (req, res) => {
-  try {
-    const produit = await Produit.findByPk(req.params.id);
-    if (!produit) return res.status(404).json({ message: "Produit non trouvé" });
-
-    produit.archived = true; // suppose que tu as un champ `archived` (boolean) dans le modèle
-    await produit.save();
-
-    res.json({ message: "Produit archivé avec succès", produit });
-  } catch (error) {
-    res.status(500).json({ message: "Erreur lors de l'archivage", error });
-  }
-}; */
-
+//Mettre à jour l'image du produit
 exports.updateImageProduit = async (req, res) => {
   try {
     const authUser = req.user;
@@ -315,28 +460,90 @@ exports.updateImageProduit = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
+    
     const produit = await Produit.findByPk(req.params.id);
-    if (!produit) return res.status(404).json({ message: 'Produit non trouvé' });
-
-    if (!req.file) return res.status(400).json({ message: 'Aucune image fournie' });
-
-    // Supprimer l'ancienne image si elle existe
-    if (produit.image) {
-      const oldPath = path.join('uploads', path.basename(produit.image));
-      if (fs.existsSync(oldPath)) {
-        fs.unlinkSync(oldPath);
-      }
+    if (!produit) {
+      return res.status(404).json({ message: 'Produit non trouvé' });
     }
 
-    // Mettre à jour l'image
-    const nouvelleImageUrl = BASE_URL + req.file.filename;
-    await produit.update({ image: nouvelleImageUrl });
+    if (!req.file) {
+      return res.status(400).json({ message: 'Aucune image fournie' });
+    }
 
-    res.json({ message: 'Image du produit mise à jour', produit });
+    // Sauvegarder l'ancienne image pour la supprimer plus tard
+    const oldImagePath = produit.image ? path.join('uploads', path.basename(produit.image)) : null;
+
+    try {
+      // Traiter la nouvelle image
+      const inputPath = req.file.path;
+      const filename = "prod-" + Date.now() + ".jpg";
+      const outputPath = path.join("uploads", filename);
+
+      console.log('Traitement de la nouvelle image:', inputPath, '->', outputPath);
+
+      // compression et redimensionnement
+      await sharp(inputPath)
+        .resize(300, 300, { fit: "cover" })
+        .jpeg({ quality: 80 })
+        .toFile(outputPath);
+
+      // Nouvelle URL de l'image
+      const nouvelleImageUrl = BASE_URL + filename;
+
+      // Mettre à jour l'image dans la base de données
+      await produit.update({ image: nouvelleImageUrl });
+
+      // Attendre un peu avant de supprimer l'ancienne image
+      setTimeout(() => {
+        try {
+          // Supprimer l'image temporaire uploadée
+          if (fs.existsSync(inputPath)) {
+            fs.unlinkSync(inputPath);
+            console.log('Fichier temporaire supprimé:', inputPath);
+          }
+
+          // Supprimer l'ancienne image si elle existe et est différente de la nouvelle
+          if (oldImagePath && fs.existsSync(oldImagePath) && oldImagePath !== outputPath) {
+            fs.unlinkSync(oldImagePath);
+            console.log('Ancienne image supprimée:', oldImagePath);
+          }
+        } catch (cleanupError) {
+          console.error('Erreur lors du nettoyage des fichiers:', cleanupError);
+          // Ne pas bloquer la réponse pour cette erreur
+        }
+      }, 1000); // Attendre 1 seconde
+
+      res.json({ 
+        message: 'Image du produit mise à jour', 
+        produit: {
+          ...produit.toJSON(),
+          image: nouvelleImageUrl
+        }
+      });
+
+    } catch (imageError) {
+      console.error('Erreur lors du traitement de l\'image:', imageError);
+      
+      // Nettoyer le fichier temporaire en cas d'erreur
+      if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+        try {
+          fs.unlinkSync(req.file.path);
+        } catch (cleanupError) {
+          console.error('Erreur lors du nettoyage:', cleanupError);
+        }
+      }
+      
+      return res.status(500).json({ 
+        message: 'Erreur lors du traitement de l\'image', 
+        error: imageError.message 
+      });
+    }
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Erreur lors de la mise à jour de l'image", error: error.message });
+    console.error('Erreur updateImageProduit:', error);
+    res.status(500).json({ 
+      message: "Erreur lors de la mise à jour de l'image", 
+      error: error.message 
+    });
   }
 };
 
@@ -381,5 +588,503 @@ exports.updateCodeBarreProduit = async (req, res) => {
     res
       .status(500)
       .json({ message: 'Erreur lors de la mise à jour du code-barre', error: error.message });
+  }
+};
+
+//Exporter vers excel
+
+// Exporter les produits vers Excel
+exports.exportProduitsToExcel = async (req, res) => {
+  try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
+    const { code_structure } = req.params;
+    
+    // Récupération des filtres optionnels
+    const { 
+      categorieId = '',
+      statut = '',
+      search = ''
+    } = req.query;
+
+    // Vérification des droits d'accès
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({
+        message: "Accès interdit : structure non autorisée"
+      });
+    }
+
+    // Vérifier rôle
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+    const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
+    const isEmploye = authUser.roles?.some(r => r.nom === "Employé");
+
+    if (!isAdminStructure && !isGerant && !isCaissier && !isEmploye) {
+      return res.status(403).json({
+        message: "Accès interdit : rôle insuffisant"
+      });
+    }
+
+    // Construction de la clause WHERE
+    let whereClause = {
+      code_structure: code_structure
+    };
+
+    // Filtre par statut
+    if (statut !== '') {
+      whereClause.statut = statut === 'true';
+    }
+
+    // Filtre par catégorie
+    if (categorieId) {
+      whereClause.categorieId = categorieId;
+    }
+
+    // Filtre de recherche
+    if (search) {
+      whereClause[Op.or] = [
+        { designation: { [Op.like]: `%${search}%` } },
+        { description: { [Op.like]: `%${search}%` } },
+        { codeBarre: { [Op.like]: `%${search}%` } }
+      ];
+    }
+
+    // Configuration des includes
+    const includes = [
+      {
+        model: db.Stock,
+        attributes: ["id", "magasinId", "quantiteTotale", "quantiteReservee", "statutStock", "datePeremption","seuilAlerte"],
+        required: false
+      }
+    ];
+
+    if (db.Fournisseur) {
+      includes.push({
+        model: db.Fournisseur,
+        attributes: ["id", "nomComplet", "telephone", "email"],
+        required: false
+      });
+    }
+
+    if (db.CategoriesProduits) {
+      includes.push({
+        model: db.CategoriesProduits,
+        attributes: ["id", "nom"],
+        required: false
+      });
+    }
+
+    // Récupérer tous les produits sans pagination
+    const produits = await Produit.findAll({
+      where: whereClause,
+      include: includes,
+      order: [['designation', 'ASC']]
+    });
+
+    if (!produits || produits.length === 0) {
+      return res.status(404).json({ message: "Aucun produit trouvé à exporter" });
+    }
+
+    // Créer un classeur Excel
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = authUser.nom || 'Système';
+    workbook.created = new Date();
+
+    // Ajouter une feuille de calcul
+    const worksheet = workbook.addWorksheet('Produits', {
+      properties: { tabColor: { argb: '28a745' } },
+      pageSetup: { paperSize: 9, orientation: 'landscape' }
+    });
+
+    // Définir les colonnes
+    worksheet.columns = [
+      { header: 'ID', key: 'id', width: 10 },
+      { header: 'Désignation', key: 'designation', width: 30 },
+      { header: 'Catégorie', key: 'categorie', width: 20 },
+      { header: 'Fournisseur', key: 'fournisseur', width: 25 },
+      { header: 'Code-barre', key: 'codeBarre', width: 20 },
+      { header: 'Unité', key: 'unite', width: 10 },
+      { header: 'Prix Achat', key: 'prixAchat', width: 15 },
+      { header: 'Prix Vente', key: 'prixVente', width: 15 },
+      { header: 'TVA (%)', key: 'tva', width: 10 },
+      { header: 'Stock Total', key: 'stockTotal', width: 12 },
+      { header: 'Stock Réservé', key: 'stockReserve', width: 12 },
+      { header: 'Stock Disponible', key: 'stockDisponible', width: 12 },
+      { header: 'Seuil Alerte', key: 'seuilAlerte', width: 12 },
+      { header: 'Périssable', key: 'perissable', width: 10 },
+      { header: 'Date Péremption', key: 'datePeremption', width: 15 },
+      { header: 'Statut', key: 'statut', width: 10 },
+      { header: 'Date Création', key: 'dateCreation', width: 20 },
+      { header: 'Description', key: 'description', width: 30 }
+    ];
+
+    // Styliser l'en-tête
+    worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFF' } };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: '28a745' }
+    };
+    worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Ajouter les données
+    produits.forEach(produit => {
+      const produitJSON = produit.toJSON();
+      
+      // Calculer le stock disponible
+      const stockTotal = produitJSON.Stocks?.reduce((sum, s) => sum + (safeNumber(s.quantiteTotale) || 0), 0) || 0;
+      const stockReserve = produitJSON.Stocks?.reduce((sum, s) => sum + (safeNumber(s.quantiteReservee) || 0), 0) || 0;
+      const stockDisponible = stockTotal - stockReserve;
+
+      // Récupérer la date de péremption la plus proche
+      const datePeremption = produitJSON.Stocks?.length > 0
+        ? produitJSON.Stocks
+            .filter(s => s.datePeremption)
+            .map(s => new Date(s.datePeremption))
+            .sort((a, b) => a - b)[0]
+        : null;
+
+      worksheet.addRow({
+        id: produitJSON.id,
+        designation: produitJSON.designation,
+        categorie: produitJSON.CategoriesProduit?.nom || '-',
+        fournisseur: produitJSON.Fournisseur?.nomComplet || '-',
+        codeBarre: produitJSON.codeBarre || '-',
+        unite: produitJSON.unite || '-',
+        prixAchat: produitJSON.prixAchatUnitaire || 0,
+        prixVente: produitJSON.prixVenteUnitaire || 0,
+        tva: produitJSON.tauxTVA || 0,
+        stockTotal: stockTotal,
+        stockReserve: stockReserve,
+        stockDisponible: stockDisponible,
+        seuilAlerte: produitJSON.Stocks?.[0]?.seuilAlerte || 0,
+        perissable: produitJSON.perissable ? 'Oui' : 'Non',
+        datePeremption: datePeremption ? datePeremption.toLocaleDateString('fr-FR') : '-',
+        statut: produitJSON.statut ? 'Actif' : 'Inactif',
+        dateCreation: new Date(produitJSON.dateCreation).toLocaleDateString('fr-FR'),
+        description: produitJSON.description || '-'
+      });
+    });
+
+    // Ajouter une ligne de total
+    const lastRow = worksheet.rowCount + 1;
+    worksheet.addRow({});
+    worksheet.getRow(lastRow).getCell(1).value = 'TOTAUX:';
+    worksheet.getRow(lastRow).getCell(1).font = { bold: true };
+    
+    // Calculer les totaux
+    const totalStock = produits.reduce((sum, p) => {
+      const stock = p.Stocks?.reduce((s, st) => s + (safeNumber(st.quantiteTotale )|| 0), 0) || 0;
+      return sum + stock;
+    }, 0);
+    
+    worksheet.getRow(lastRow).getCell(10).value = totalStock;
+    worksheet.getRow(lastRow).getCell(10).font = { bold: true };
+
+    // Styliser les cellules de prix
+    ['G', 'H'].forEach(col => {
+      worksheet.getColumn(col).numFmt = '#,##0.00 [$F CFA]';
+    });
+
+    // Styliser les cellules de stock
+    ['J', 'K', 'L'].forEach(col => {
+      worksheet.getColumn(col).numFmt = '#,##0';
+    });
+
+    // Ajouter des bordures à toutes les cellules
+    worksheet.eachRow({ includeEmpty: true }, (row) => {
+      row.eachCell({ includeEmpty: true }, (cell) => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
+    });
+
+    // Ajouter une feuille de résumé
+    const summarySheet = workbook.addWorksheet('Résumé');
+    summarySheet.columns = [
+      { header: 'Indicateur', key: 'indicateur', width: 30 },
+      { header: 'Valeur', key: 'valeur', width: 20 }
+    ];
+
+    // Styliser l'en-tête du résumé
+    summarySheet.getRow(1).font = { bold: true };
+    summarySheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: '17a2b8' }
+    };
+
+    // Ajouter les données du résumé
+    const totalProduits = produits.length;
+    const produitsActifs = produits.filter(p => p.statut).length;
+    const produitsInactifs = totalProduits - produitsActifs;
+    const produitsPerissables = produits.filter(p => p.perissable).length;
+    const valeurStock = produits.reduce((sum, p) => {
+      const stock = p.Stocks?.reduce((s, st) => s + (safeNumber(st.quantiteTotale) || 0), 0) || 0;
+      return sum + (stock * (safeNumber(p.prixAchatUnitaire) || 0));
+    }, 0);
+
+    summarySheet.addRows([
+      { indicateur: 'Total Produits', valeur: totalProduits },
+      { indicateur: 'Produits Actifs', valeur: produitsActifs },
+      { indicateur: 'Produits Inactifs', valeur: produitsInactifs },
+      { indicateur: 'Produits Périssables', valeur: produitsPerissables },
+      { indicateur: 'Valeur Totale du Stock', valeur: valeurStock },
+      { indicateur: 'Date d\'exportation', valeur: new Date().toLocaleString('fr-FR') },
+      { indicateur: 'Exporté par', valeur: authUser.nom || 'Utilisateur' }
+    ]);
+
+    // Styliser les valeurs monétaires dans le résumé
+    summarySheet.getCell('B6').numFmt = '#,##0.00 [$F CFA]';
+
+    // Générer le nom du fichier
+    const dateStr = new Date().toISOString().split('T')[0];
+    const filename = `Catalogue_produits_${code_structure}_${dateStr}.xlsx`;
+
+    // Configurer la réponse HTTP
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    // Écrire le fichier Excel dans la réponse
+    await workbook.xlsx.write(res);
+    res.end();
+
+  } catch (error) {
+    console.error('Erreur exportProduitsToExcel:', error);
+    res.status(500).json({ 
+      message: 'Erreur lors de l\'exportation des produits', 
+      error: error.message 
+    });
+  }
+};
+
+// Exporter les produits vers PDF
+exports.exportProduitsToPDF = async (req, res) => {
+  try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
+    const { code_structure } = req.params;
+    
+    // Récupération des filtres optionnels
+    const { 
+      categorieId = '',
+      statut = '',
+      search = ''
+    } = req.query;
+
+    // Vérification des droits d'accès
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({ message: "Accès interdit" });
+    }
+
+    // Vérifier rôle
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+    if (!isAdminStructure && !isGerant) {
+      return res.status(403).json({ message: "Rôle insuffisant" });
+    }
+
+    // Construction de la clause WHERE (identique à l'export Excel)
+    let whereClause = { code_structure };
+    
+    if (statut !== '') whereClause.statut = statut === 'true';
+    if (categorieId) whereClause.categorieId = categorieId;
+    
+    if (search) {
+      whereClause[Op.or] = [
+        { designation: { [Op.like]: `%${search}%` } },
+        { description: { [Op.like]: `%${search}%` } },
+        { codeBarre: { [Op.like]: `%${search}%` } }
+      ];
+    }
+
+    // Récupérer les produits
+    const produits = await Produit.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: db.Stock,
+          attributes: ["id", "magasinId", "quantiteTotale", "quantiteReservee"]
+        },
+        {
+          model: db.Fournisseur,
+          attributes: ["id", "nomComplet"]
+        },
+        {
+          model: db.CategoriesProduits,
+          attributes: ["id", "nom"]
+        },
+        {
+          model: db.Structure,
+          attributes: ["id", "nom_structure"]
+        }
+      ],
+      order: [['designation', 'ASC']]
+    });
+
+    // Créer le document PDF
+    const doc = new PDFDocument({
+      size: 'A4',
+      margin: 50,
+      bufferPages: true,
+      info: {
+        Title: `Catalogue Produits - ${code_structure}`,
+        Author: authUser.nom || 'Système',
+        Subject: 'Liste des produits',
+        Keywords: 'produits, catalogue, inventaire',
+        CreationDate: new Date()
+      }
+    });
+
+    // Configurer la réponse HTTP
+    const filename = `catalogue_${code_structure}_${new Date().toISOString().split('T')[0]}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    
+    // Pipe le PDF vers la réponse
+    doc.pipe(res);
+
+    // Ajouter l'en-tête du document
+    doc.fontSize(20).text('CATALOGUE DES PRODUITS', { align: 'center' });
+    doc.moveDown();
+    const structureNom = produits[0]?.Structure?.nom_structure || code_structure;
+    // Ajouter les informations de génération
+    doc.fontSize(10).text(`Généré le : ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`, { align: 'right' });
+    doc.text(`Généré par : ${authUser.nom || 'Utilisateur'}`, { align: 'right' });
+    doc.text(`Structure : ${structureNom}`, { align: 'right' });
+    doc.moveDown(2);
+
+    // Ajouter un résumé
+    doc.fontSize(14).text('RÉSUMÉ', { underline: true });
+    doc.fontSize(11);
+    doc.text(`Total produits : ${produits.length}`);
+    
+    const produitsActifs = produits.filter(p => p.statut).length;
+    doc.text(`Produits actifs : ${produitsActifs}`);
+    doc.text(`Produits inactifs : ${produits.length - produitsActifs}`);
+    
+    const stockTotal = produits.reduce((sum, p) => {
+      return sum + (p.Stocks?.reduce((s, st) => s + (safeNumber(st.quantiteTotale) || 0), 0) || 0);
+    }, 0);
+    doc.text(`Stock total : ${stockTotal} unités`);
+    
+    const valeurStock = produits.reduce((sum, p) => {
+      const stock = p.Stocks?.reduce((s, st) => s + (safeNumber(st.quantiteTotale) || 0), 0) || 0;
+      return sum + (stock * (safeNumber(p.prixAchatUnitaire) || 0));
+    }, 0);
+    doc.text(`Valeur du stock : ${valeurStock.toLocaleString('fr-FR')} F CFA`);
+    
+    doc.moveDown(2);
+
+    // Ajouter la liste des produits
+    doc.fontSize(14).text('LISTE DES PRODUITS', { underline: true });
+    doc.moveDown();
+
+    // Créer un tableau pour les produits
+    let y = doc.y;
+    
+    // En-têtes du tableau
+    const startX = 50;
+    const colWidths = [200, 80, 80, 80, 80];
+    
+    doc.fontSize(10).font('Helvetica-Bold');
+    doc.text('Produit', startX, y, { width: colWidths[0] });
+    doc.text('Catégorie', startX + colWidths[0], y, { width: colWidths[1] });
+    doc.text('Stock', startX + colWidths[0] + colWidths[1], y, { width: colWidths[2], align: 'right' });
+    doc.text('Prix Achat', startX + colWidths[0] + colWidths[1] + colWidths[2], y, { width: colWidths[3], align: 'right' });
+    doc.text('Prix Vente', startX + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3], y, { width: colWidths[4], align: 'right' });
+    
+    y += 20;
+    
+    // Ligne de séparation
+    doc.strokeColor('#cccccc')
+       .lineWidth(1)
+       .moveTo(startX, y - 5)
+       .lineTo(startX + colWidths.reduce((a, b) => a + b, 0), y - 5)
+       .stroke();
+    
+    // Données des produits
+    doc.font('Helvetica');
+    
+    produits.forEach((produit, index) => {
+      // Vérifier si on doit créer une nouvelle page
+      if (y > 700) {
+        doc.addPage();
+        y = 50;
+      }
+      
+      const stock = produit.Stocks?.reduce((s, st) => s + (safeNumber(st.quantiteTotale) || 0), 0) || 0;
+      
+      doc.fontSize(9)
+         .text((produit.designation || '').substring(0, 30), startX, y, { width: colWidths[0] });
+      doc.text(produit.CategoriesProduit?.nom || '-', startX + colWidths[0], y, { width: colWidths[1] });
+      doc.text(stock.toString(), startX + colWidths[0] + colWidths[1], y, { width: colWidths[2], align: 'right' });
+      doc.text(produit.prixAchatUnitaire?.toLocaleString('fr-FR') || '0', startX + colWidths[0] + colWidths[1] + colWidths[2], y, { width: colWidths[3], align: 'right' });
+      doc.text(produit.prixVenteUnitaire?.toLocaleString('fr-FR') || '0', startX + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3], y, { width: colWidths[4], align: 'right' });
+      
+      y += 20;
+      
+      // Ajouter le code-barre et la description en dessous pour les produits importants
+      if (produit.codeBarre || produit.description) {
+        doc.fontSize(8)
+           .fillColor('#666666')
+           .text(`Code: ${produit.codeBarre || '-'}`, startX + 10, y, { width: colWidths[0] - 10 });
+        
+        if (produit.description) {
+          doc.text(produit.description.substring(0, 50), startX + colWidths[0] + 10, y, { width: colWidths[1] + colWidths[2] + colWidths[3] + colWidths[4] - 20 });
+        }
+        
+        y += 15;
+        doc.fillColor('#000000');
+      }
+      
+      // Ligne de séparation entre les produits
+      if (index < produits.length - 1) {
+        doc.strokeColor('#eeeeee')
+           .lineWidth(0.5)
+           .moveTo(startX, y - 5)
+           .lineTo(startX + colWidths.reduce((a, b) => a + b, 0), y - 5)
+           .stroke();
+      }
+    });
+
+    // Ajouter un pied de page
+    const pages = doc.bufferedPageRange();
+    for (let i = 0; i < pages.count; i++) {
+      doc.switchToPage(i);
+      
+      // Numéro de page
+      doc.fontSize(8)
+         .fillColor('#666666')
+         .text(
+           `Page ${i + 1} / ${pages.count}`,
+           50,
+           doc.page.height - 50,
+           { align: 'center' }
+         );
+    }
+
+    // Finaliser le PDF
+    doc.end();
+
+  } catch (error) {
+    console.error('Erreur exportProduitsToPDF:', error);
+    res.status(500).json({ 
+      message: 'Erreur lors de l\'exportation PDF', 
+      error: error.message 
+    });
   }
 };

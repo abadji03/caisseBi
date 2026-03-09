@@ -1,7 +1,7 @@
 .table-responsive {
   overflow-y: auto; /* Pour activer la barre de défilement verticale */
   overflow-x: auto; /* Pour activer la barre de défilement horizontale */
-  max-height: 450px; /* Hauteur maximale pour activer la barre de défilement */
+  /*max-height: 450px;  Hauteur maximale pour activer la barre de défilement */
 }
 /* Appliquer une largeur personnalisée à la liste déroulante */
 .searchBy-select {
@@ -73,4 +73,18 @@
 /* Largeur spécifique pour certaines colonnes */
 .table .petit-colonne {
   width: 40px; /* 5% de la largeur totale */
+}
+.pagination {
+  margin-bottom: 0;
+}
+
+.pagination .page-link {
+  cursor: pointer;
+  color: #010c03;
+}
+
+.pagination .page-item.active .page-link {
+  background-color: #000f04;
+  border-color: #eff8f1;
+  color: white;
 }
