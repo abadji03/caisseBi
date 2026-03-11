@@ -1,13 +1,400 @@
-<!-- app/components/finance/depenses/depenses.component.html -->
-<div>
+<div class="depenses-container">
+  <!-- En-tête avec statistiques -->
+  <!-- Bouton pour ouvrir le modal -->
+
+  <!-- Modal des statistiques -->
+  <div class="modal fade" id="statsModal" tabindex="-1" aria-labelledby="statsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-light text-dark">
+          <h5 class="modal-title" id="statsModalLabel">
+            <i class="bi bi-pie-chart-fill me-2"></i>
+            Statistiques des dépenses
+          </h5>
+          <button type="button" class="btn-close btn-close-dark" data-bs-dismiss="modal" aria-label="Fermer"><i class="bi bi-x-lg text-dark"></i></button>
+        </div>
+        <div class="modal-body">
+          <!-- ICI VOUS COLLEREZ TOUT VOTRE CONTENU DES STATISTQUES -->
+          <div class="row mb-4">
+            <div class="col-12">
+              <div class="row mb-4" *ngIf="stats && !isLoading">
+                <!-- Première ligne : 4 cartes principales -->
+                <div class="col-md-3 mb-3">
+                  <div class="card bg-primary text-white h-100">
+                    <div class="card-body">
+                      <h6 class="card-title">Total Dépenses</h6>
+                      <h3 class="mb-2">{{ formatMontant(stats.globales.montantTotal) }}</h3>
+                      <small>{{ stats.globales.totalDepenses }} transactions</small>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                  <div class="card bg-success text-white h-100">
+                    <div class="card-body">
+                      <h6 class="card-title">Moyenne</h6>
+                      <h3 class="mb-2">{{ formatMontant(stats.globales.montantMoyen) }}</h3>
+                      <small>par transaction</small>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                  <div class="card bg-info text-white h-100">
+                    <div class="card-body">
+                      <h6 class="card-title">Maximum</h6>
+                      <h3 class="mb-2">{{ formatMontant(stats.globales.montantMax) }}</h3>
+                      <small>dépense la plus élevée</small>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                  <div class="card bg-warning text-white h-100">
+                    <div class="card-body">
+                      <h6 class="card-title">Minimum</h6>
+                      <h3 class="mb-2">{{ formatMontant(stats.globales.montantMin) }}</h3>
+                      <small>dépense la plus faible</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Deuxième ligne : Statistiques par statut -->
+              <div class="row mb-4" *ngIf="stats && !isLoading">
+                <div class="col-12">
+                  <div class="card">
+                    <div class="card-header bg-light">
+                      <h6 class="mb-0">Répartition par statut</h6>
+                    </div>
+                    <div class="card-body">
+                      <div class="row">
+                        <div class="col-md-3 mb-2">
+                          <div class="d-flex justify-content-between align-items-center p-2 border rounded">
+                            <div>
+                              <span class="badge bg-success me-2">Validées</span>
+                              <strong>{{ stats.globales.repartitionParStatut.validees }}</strong>
+                            </div>
+                            <small class="text-muted">{{ (stats.globales.repartitionParStatut.validees / stats.globales.totalDepenses * 100).toFixed(1) }}%</small>
+                          </div>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                          <div class="d-flex justify-content-between align-items-center p-2 border rounded">
+                            <div>
+                              <span class="badge bg-danger me-2">Annulées</span>
+                              <strong>{{ stats.globales.repartitionParStatut.annulees }}</strong>
+                            </div>
+                            <small class="text-muted">{{ (stats.globales.repartitionParStatut.annulees / stats.globales.totalDepenses * 100).toFixed(1) }}%</small>
+                          </div>
+                        </div>
+                        <!-- <div class="col-md-3 mb-2">
+                          <div class="d-flex justify-content-between align-items-center p-2 border rounded">
+                            <div>
+                              <span class="badge bg-info me-2">Payées</span>
+                              <strong>{{ stats.globales.repartitionParStatut.payees }}</strong>
+                            </div>
+                            <small class="text-muted">{{ (stats.globales.repartitionParStatut.payees / stats.globales.totalDepenses * 100).toFixed(1) }}%</small>
+                          </div>
+                        </div> -->
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Troisième ligne : Statistiques détaillées -->
+              <div class="row mb-4" *ngIf="stats && !isLoading">
+                <!-- Répartition par mode de paiement -->
+                <div class="col-md-6 mb-3">
+                  <div class="card h-100">
+                    <div class="card-header bg-light">
+                      <h6 class="mb-0">Répartition par mode de paiement</h6>
+                    </div>
+                    <div class="card-body">
+                      <div class="table-responsive">
+                        <table class="table table-sm">
+                          <thead>
+                            <tr>
+                              <th>Mode</th>
+                              <th class="text-end">Montant</th>
+                              <th class="text-end">%</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr *ngFor="let mode of paymentModes">
+                              <td>{{ mode }}</td>
+                              <td class="text-end">{{ formatMontant(getMontantParMode(mode)) }}</td>
+                              <td class="text-end">
+                                {{ (getMontantParMode(mode) / stats.globales.montantTotal * 100 || 0).toFixed(1) }}%
+                              </td>
+                            </tr>
+                          </tbody>
+                          <tfoot class="table-light">
+                            <tr>
+                              <th>Total</th>
+                              <th class="text-end">{{ formatMontant(stats.globales.montantTotal) }}</th>
+                              <th class="text-end">100%</th>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Répartition par type de dépense -->
+                <div class="col-md-6 mb-3">
+                  <div class="card h-100">
+                    <div class="card-header bg-light">
+                      <h6 class="mb-0">Répartition par type de dépense</h6>
+                    </div>
+                    <div class="card-body">
+                      <div class="table-responsive">
+                        <table class="table table-sm">
+                          <thead>
+                            <tr>
+                              <th>Type</th>
+                              <th class="text-end">Montant</th>
+                              <th class="text-end">%</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr *ngFor="let type of typeDepenses">
+                              <td>{{ getTypeLabel(type) }}</td>
+                              <td class="text-end">{{ formatMontant(getMontantParType(type)) }}</td>
+                              <td class="text-end">
+                                {{ (getMontantParType(type) / stats.globales.montantTotal * 100 || 0).toFixed(1) }}%
+                              </td>
+                            </tr>
+                          </tbody>
+                          <tfoot class="table-light">
+                            <tr>
+                              <th>Total</th>
+                              <th class="text-end">{{ formatMontant(stats.globales.montantTotal) }}</th>
+                              <th class="text-end">100%</th>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quatrième ligne : Top catégories et statistiques supplémentaires -->
+              <div class="row mb-4" *ngIf="stats && !isLoading">
+                <!-- Top 5 catégories -->
+                <div class="col-md-6 mb-3">
+                  <div class="card h-100">
+                    <div class="card-header bg-light">
+                      <h6 class="mb-0">Top 5 catégories de dépenses</h6>
+                    </div>
+                    <div class="card-body">
+                      <div *ngFor="let cat of stats.parCategorie" class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                          <span>
+                            <strong>{{ cat.categoryName }}</strong>
+                            <small class="text-muted ms-2">({{ cat.nombreDepenses }} opérations)</small>
+                          </span>
+                          <span class="fw-bold">{{ formatMontant(cat.montantTotal) }}</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                          <div class="progress-bar bg-success" 
+                              role="progressbar"
+                              [style.width]="(cat.montantTotal / stats.globales.montantTotal * 100) + '%'"
+                              [attr.aria-valuenow]="cat.montantTotal"
+                              aria-valuemin="0"
+                              [attr.aria-valuemax]="stats.globales.montantTotal">
+                          </div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-1">
+                          <small class="text-muted">Moyenne: {{ formatMontant(cat.montantMoyen) }}</small>
+                          <small class="text-muted">{{ (cat.montantTotal / stats.globales.montantTotal * 100).toFixed(1) }}%</small>
+                        </div>
+                      </div>
+                      <div *ngIf="stats.parCategorie.length === 0" class="text-muted text-center py-3">
+                        Aucune catégorie avec des dépenses
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Statistiques diverses -->
+                <div class="col-md-6 mb-3">
+                  <div class="card h-100">
+                    <div class="card-header bg-light">
+                      <h6 class="mb-0">Informations complémentaires</h6>
+                    </div>
+                    <div class="card-body">
+                      <!-- Évolution mensuelle -->
+                      <h6 class="mb-3">Évolution mensuelle (6 derniers mois)</h6>
+                      <div *ngFor="let mois of stats.evolutionMensuelle" class="mb-2">
+                        <div class="d-flex justify-content-between small">
+                          <span>{{ getMoisLabel(mois.mois) }}</span>
+                          <span>{{ formatMontant(mois.montantTotal) }}</span>
+                        </div>
+                        <div class="progress" style="height: 5px;">
+                          <div class="progress-bar bg-primary" 
+                              role="progressbar"
+                              [style.width]="(mois.montantTotal / getMaxMensuel() * 100) + '%'">
+                          </div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-1">
+                          <small class="text-muted">{{ mois.nombreDepenses }} opérations</small>
+                          <small class="text-muted">Moy: {{ formatMontant(mois.montantMoyen) }}</small>
+                        </div>
+                      </div>
+
+                      <hr *ngIf="stats.parJourSemaine.length > 0">
+
+                      <!-- Répartition par jour de la semaine -->
+                      <h6 class="mb-3" *ngIf="stats.parJourSemaine.length > 0">Répartition par jour</h6>
+                      <div class="row" *ngIf="stats.parJourSemaine.length > 0">
+                        <div class="col-6" *ngFor="let jour of stats.parJourSemaine">
+                          <div class="mb-2">
+                            <div class="d-flex justify-content-between small">
+                              <span>{{ getJourSemaine(jour.jourSemaine) }}</span>
+                              <span>{{ formatMontant(jour.montantTotal) }}</span>
+                            </div>
+                            <div class="progress" style="height: 4px;">
+                              <div class="progress-bar bg-secondary" 
+                                  role="progressbar"
+                                  [style.width]="(jour.montantTotal / stats.globales.montantTotal * 100) + '%'">
+                              </div>
+                            </div>
+                            <small class="text-muted">{{ jour.nombreDepenses }} op.</small>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle me-2"></i>
+            Fermer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barre de filtres -->
+  <div class="card mb-4">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <h6 class="mb-0">Filtres</h6>
+      <div>
+        <button class="btn btn-sm btn-outline-secondary me-3" (click)="resetFilters()">
+        <i class="bi bi-arrow-counterclockwise"></i> Réinitialiser les filtres
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-dark" (click)="openStatsModal()">
+        <i class="bi bi-graph-up me-2"></i>
+        Voir les statistiques
+      </button>
+  </div>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <!-- Recherche -->
+        <div class="col-md-3">
+          <label for="search" class="form-label">Recherche</label>
+          <div class="input-group">
+            <span class="input-group-text bg-white">
+              <i class="bi bi-search"></i>
+            </span>
+            <input
+              name="search"
+              type="text"
+              class="form-control"
+              placeholder="type, description..."
+              [ngModel]="filters.search"
+              (ngModelChange)="onSearchChange($event)" />
+          </div>
+        </div>
+
+        <!-- Période -->
+        <!-- <div class="col-md-2">
+          <label class="form-label">Date début</label>
+          <input type="date" class="form-control" [(ngModel)]="filters.startDate" />
+        </div>
+        
+        <div class="col-md-2">
+          <label class="form-label">Date fin</label>
+          <input type="date" class="form-control" [(ngModel)]="filters.endDate" />
+        </div> -->
+
+        <!-- Catégorie -->
+        <div class="col-md-2">
+          <label for="categorie" class="form-label">Catégorie</label>
+          <select id="categorie" class="form-select" [(ngModel)]="filters.categoryId">
+            <option value="">Toutes</option>
+            <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
+          </select>
+        </div>
+
+        <!-- Mode de paiement -->
+        <div class="col-md-3">
+          <label for="modePaiement" class="form-label">Mode de paiement</label>
+          <select id="modePaiement" class="form-select" [(ngModel)]="filters.paymentMode">
+            <option value="">Tous</option>
+            <option *ngFor="let mode of paymentModes" [value]="mode">{{ mode }}</option>
+          </select>
+        </div>
+
+        <!-- Type et Statut -->
+        <div class="col-md-2">
+          <label for="typeDepense" class="form-label">Type</label>
+          <select id="typeDepense" class="form-select" [(ngModel)]="filters.typeDepense">
+            <option value="">Tous</option>
+            <option *ngFor="let type of typeDepenses" [value]="type">{{ type }}</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label for="" class="form-label">Statut</label>
+          <select id="statut" class="form-select" [(ngModel)]="filters.statut">
+            <option value="">Tous</option>
+            <option *ngFor="let statut of statuts" [value]="statut">{{ statut }}</option>
+          </select>
+        </div>
+
+        <!-- Bouton appliquer -->
+        <div class="col-md-2 d-flex align-items-end">
+          <button class="btn btn-outline-success w-100" (click)="applyFilters()">
+            <i class="bi bi-funnel"></i> Appliquer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Bouton Nouvelle dépense -->
-  <div class="d-flex justify-content-end">
-    <button class="btn btn-success mb-3" (click)="toggleForm()">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="text-muted" *ngIf="!isLoading">
+      Total: <strong>{{ totalItems }}</strong> dépense(s)
+    </div>
+    <div class="d-flex align-items-center">
+      <span class="me-2">Afficher</span>
+      <select class="form-select w-auto" (change)="onItemsPerPageChange(+$any($event.target).value)">
+        <option [value]="5" [selected]="itemsPerPage === 5">5</option>
+        <option [value]="10" [selected]="itemsPerPage === 10">10</option>
+        <option [value]="20" [selected]="itemsPerPage === 20">20</option>
+        <option [value]="50" [selected]="itemsPerPage === 50">50</option>
+      </select>
+      <span class="ms-2">lignes</span>
+    </div>
+    <button *ngIf="!isAdmin" class="btn btn-success" (click)="toggleForm()">
+      <i class="bi" [ngClass]="showForm ? 'bi-x-circle' : 'bi-plus-circle'"></i>
       {{ showForm ? 'Masquer le formulaire' : 'Nouvelle dépense' }}
     </button>
   </div>
 
-  <!-- Formulaire d'ajout/modification -->
+  <!-- Formulaire -->
   <div *ngIf="showForm" class="card mb-4">
     <div class="card-header d-flex justify-content-center">
       <h5 class="card-title mb-0">
@@ -17,100 +404,54 @@
     </div>
     <div class="card-body">
       <form [formGroup]="depenseForm" (ngSubmit)="onSubmit()">
+        <!-- Contenu du formulaire identique à l'original -->
         <div class="row">
-          <!-- Catégorie -->
           <div class="col-md-6 mb-3">
             <label for="categoryId" class="form-label">
               Catégorie <span class="text-danger">*</span>
             </label>
-            <select 
-              class="form-control" 
-              id="categoryId" 
-              formControlName="categoryId"
+            <select class="form-control" id="categoryId" formControlName="categoryId"
               [class.is-invalid]="depenseForm.get('categoryId')?.touched && depenseForm.get('categoryId')?.invalid">
               <option value="">Sélectionner une catégorie</option>
               <option *ngFor="let cat of categories" [value]="cat.id">
                 {{ cat.name }}
               </option>
             </select>
-            <div *ngIf="depenseForm.get('categoryId')?.touched && depenseForm.get('categoryId')?.invalid" 
-                 class="invalid-feedback">
-              La catégorie est obligatoire
-            </div>
           </div>
 
-          <!-- Date -->
           <div class="col-md-6 mb-3">
-            <label for="date" class="form-label">
-              Date <span class="text-danger">*</span>
-            </label>
-            <input
-              type="date"
-              class="form-control"
-              id="date"
-              formControlName="date"
+            <label for="date" class="form-label">Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="date" formControlName="date"
               [class.is-invalid]="depenseForm.get('date')?.touched && depenseForm.get('date')?.invalid">
-            <div *ngIf="depenseForm.get('date')?.touched && depenseForm.get('date')?.invalid" 
-                 class="invalid-feedback">
-              La date est obligatoire
-            </div>
           </div>
         </div>
 
         <div class="row">
-          <!-- Montant -->
           <div class="col-md-6 mb-3">
-            <label for="montant" class="form-label">
-              Montant (F CFA) <span class="text-danger">*</span>
-            </label>
-            <input
-              type="number"
-              class="form-control"
-              id="montant"
-              formControlName="montant"
-              min="1"
-              step="100"
+            <label for="montant" class="form-label">Montant (F CFA) <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" id="montant" formControlName="montant" min="1" step="100"
               [class.is-invalid]="depenseForm.get('montant')?.touched && depenseForm.get('montant')?.invalid">
-            <div *ngIf="depenseForm.get('montant')?.touched && depenseForm.get('montant')?.invalid" 
-                 class="invalid-feedback">
-              <div *ngIf="depenseForm.get('montant')?.errors?.['required']">
-                Le montant est obligatoire
-              </div>
-              <div *ngIf="depenseForm.get('montant')?.errors?.['min']">
-                Le montant doit être supérieur à 0
-              </div>
-            </div>
           </div>
 
-          <!-- Mode de paiement -->
           <div class="col-md-6 mb-3">
-            <label for="paymentMode" class="form-label">
-              Mode de paiement <span class="text-danger">*</span>
-            </label>
-            <select
-              class="form-control"
-              id="paymentMode"
-              formControlName="paymentMode"
+            <label for="paymentMode" class="form-label">Mode de paiement <span class="text-danger">*</span></label>
+            <select class="form-control" id="paymentMode" formControlName="paymentMode"
               [class.is-invalid]="depenseForm.get('paymentMode')?.touched && depenseForm.get('paymentMode')?.invalid">
-              <option value="Espèce">Espèce</option>
+              <!-- <option value="Espèce">Espèce</option>
               <option value="Carte">Carte</option>
               <option value="Mobile Money">Mobile Money</option>
               <option value="Virement">Virement</option>
-              <option value="Chèque">Chèque</option>
+              <option value="Chèque">Chèque</option> -->
+                <option *ngFor="let mode of modesPaiement" [value]="mode.libelle">
+                {{ mode.libelle }}
+              </option>
             </select>
-            <div *ngIf="depenseForm.get('paymentMode')?.touched && depenseForm.get('paymentMode')?.invalid" 
-                 class="invalid-feedback">
-              Le mode de paiement est obligatoire
-            </div>
           </div>
         </div>
 
         <div class="row">
-          <!-- Type de dépense -->
           <div class="col-md-6 mb-3">
-            <label for="type" class="form-label">
-              Type de dépense
-            </label>
+            <label for="type" class="form-label">Type de dépense</label>
             <select class="form-control" id="type" formControlName="type">
               <option value="STANDARD">Standard</option>
               <option value="STOCK">Approvisionnement en Stock</option>
@@ -119,84 +460,57 @@
             </select>
           </div>
 
-          <!-- Pièce justificative -->
           <div class="col-md-6 mb-3">
-            <label for="receipt" class="form-label">
-              Pièce justificative (optionnel)
-            </label>
-            <input
-              type="file"
-              class="form-control"
-              id="receipt"
-              (change)="onFileSelected($event)"
+            <label for="receipt" class="form-label">Pièce justificative (optionnel)</label>
+            <input type="file" class="form-control" id="receipt" (change)="onFileSelected($event)"
               accept=".pdf,.jpg,.jpeg,.png">
-            <small class="text-muted">
-              Formats acceptés: PDF, JPG, PNG (max 5MB)
-            </small>
-            <div *ngIf="selectedFile" class="mt-2">
-              <span class="badge bg-info">
-                <i class="bi bi-file-earmark me-1"></i>
-                {{ selectedFile.name }}
-              </span>
-            </div>
           </div>
         </div>
 
-        <!-- Description -->
         <div class="mb-3">
-          <label for="description" class="form-label">
-            Description (optionnel)
-          </label>
-          <textarea
-            class="form-control"
-            id="description"
-            formControlName="description"
-            rows="3"
+          <label for="description" class="form-label">Description (optionnel)</label>
+          <textarea class="form-control" id="description" formControlName="description" rows="3"
             placeholder="Détails de la dépense..."></textarea>
         </div>
 
-        <!-- Boutons -->
         <div class="d-flex justify-content-end gap-2">
-          <button
-            type="submit"
-            class="btn btn-success"
-            [disabled]="depenseForm.invalid">
-            <i class="bi" [ngClass]="selectedDepense ? 'bi-check-circle' : 'bi-plus-circle'"></i>
+          <button type="submit" class="btn btn-outline-success" [disabled]="depenseForm.invalid || isLoading">
+            <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
             {{ selectedDepense ? 'Modifier' : 'Enregistrer' }}
           </button>
-          <button
-            type="button"
-            class="btn btn-outline-secondary"
-            (click)="toggleForm()">
+          <button type="button" class="btn btn-outline-secondary" (click)="cancelForm()" [disabled]="isLoading">
             Annuler
           </button>
         </div>
       </form>
     </div>
   </div>
+<!-- Indicateur de chargement -->
+  <div *ngIf="isLoading" class="text-center my-5">
+    <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+    <p class="mt-2 text-muted">Chargement des dépenses...</p>
+  </div>
 
-  <!-- Barre de recherche -->
-  <div class="d-flex justify-content-between mb-2">
-    <input
-      type="text"
-      class="form-control w-50"
-      placeholder="Rechercher par date, catégorie, montant..."
-      [(ngModel)]="searchTerm"
-      (input)="onSearchChange()"
-    />
+  <!-- Recherche et pagination -->
+  <!-- <div class="d-flex justify-content-between mb-2">
+    <input type="text" class="form-control w-50" placeholder="Rechercher par date, catégorie, montant..."
+      [(ngModel)]="searchTerm" (input)="onSearchChange()" />
     <select class="form-select w-auto" (change)="setItemsPerPage($event)">
       <option [value]="5">5 lignes</option>
       <option [value]="10">10 lignes</option>
       <option [value]="20">20 lignes</option>
     </select>
-  </div>
+  </div> -->
 
+  <!-- Message d'erreur -->
+  <!-- <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div> -->
+
+  <!-- Tableau -->
   <!-- Tableau des dépenses -->
-  <div class="table-responsive">
-    <div class="d-flex justify-content-center">
-      <h4 class="mt-4">Historique des Dépenses</h4>
-    </div>
-    <table class="table table-striped">
+  <div *ngIf="!isLoading" class="table-responsive">
+    <table class="table table-striped table-hover">
       <thead class="table-success">
         <tr>
           <th>Date</th>
@@ -204,63 +518,99 @@
           <th>Montant</th>
           <th>Mode de Paiement</th>
           <th>Type</th>
-          <th>Responsable</th>
+          <th>Agent responsable</th>
           <th>Magasin</th>
-          <th>Pièce jointe</th>
+          <th>Pièce</th>
           <th>Statut</th>
-          <th>Actions</th>
+          <th *ngIf="!isAdmin">Actions</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngIf="paginatedDepenses.length === 0">
-          <td colspan="10" class="text-center">Aucune dépense trouvée</td>
+        <tr *ngIf="depenses.length === 0">
+          <td colspan="10" class="text-center py-5">
+            <i class="bi bi-inbox display-1 text-muted"></i>
+            <p class="mt-3 text-muted">Aucune dépense trouvée</p>
+          </td>
         </tr>
-        <tr *ngFor="let dep of paginatedDepenses">
-          <td>{{ dep.date | date: 'dd/MM/yyyy' }}</td>
-          <td>{{ getCategoryName(dep.categoryId) }}</td>
-          <td>{{ dep.montant }} F CFA</td>
+        <tr *ngFor="let dep of depenses">
+          <td>{{ dep.date | date:'dd/MM/yyyy' }}</td>
+          <td>
+            <span class="badge bg-info text-white">
+              {{ dep.Categorie?.name }}
+            </span>
+          </td>
+          <td class="fw-bold">{{ formatMontant(dep.montant) }}</td>
           <td>{{ dep.paymentMode }}</td>
           <td>{{ dep.type }}</td>
-          <td>{{ dep.user?.nom }}</td>
-          <td>{{ dep.magasin?.nom || 'N/A' }}</td>
-          <td>
+          <td>{{ dep.user?.nom || 'N/A' }}</td>
+          <td>{{ dep.Magasin?.nom || 'N/A' }}</td>
+          <td class="text-center">
             <span *ngIf="dep.receipt; else noReceipt">
-              <a [href]="dep.receipt" target="_blank" rel="noopener noreferrer">
-                Voir la pièce
+              <a [href]="dep.receipt" target="_blank" class="btn btn-sm btn-outline-info" title="Voir la pièce jointe">
+                <i class="bi bi-file-earmark-text"></i>
               </a>
             </span>
             <ng-template #noReceipt>
-              <span class="text-muted">Non assigné</span>
+              <span class="text-muted" title="Aucune pièce jointe">
+                <i class="bi bi-file-earmark-x"></i>
+              </span>
             </ng-template>
           </td>
-          <td>{{ dep.statutDepense }}</td>
           <td>
-            <button class="btn btn-warning btn-sm me-2" (click)="toggleForm(dep)">
-              <i class="bi bi-pencil"></i>
-            </button>
-            <button class="btn btn-danger btn-sm" (click)="deleteDepense(dep)">
-              <i class="bi bi-trash"></i>
-            </button>
+            <span class="badge" [ngClass]="getStatutBadgeClass(dep.statutDepense)">
+              {{ dep.statutDepense }}
+            </span>
+          </td>
+          <td *ngIf="!isAdmin">
+            <div class="btn-group" role="group">
+              <button class="btn btn-warning btn-sm" (click)="toggleForm(dep)" title="Modifier">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="btn btn-danger btn-sm" (click)="deleteDepense(dep)" title="Supprimer">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
           </td>
         </tr>
       </tbody>
     </table>
   </div>
 
+
   <!-- Pagination -->
-  <div class="d-flex justify-content-center align-items-center">
-    <button
-      class="btn btn-success"
-      (click)="onPageChange(currentPage - 1)"
-      [disabled]="currentPage === 1">
+  <!-- <div class="d-flex justify-content-center align-items-center" *ngIf="filteredDepenses.length > 0">
+    <button class="btn btn-success" (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 1">
       <i class="bi bi-arrow-left-circle"></i>
     </button>
     <span class="h3 mx-3">{{ currentPage }} / {{ totalPages }}</span>
-    <button
-      class="btn btn-success"
-      (click)="onPageChange(currentPage + 1)"
-      [disabled]="currentPage >= totalPages">
+    <button class="btn btn-success" (click)="onPageChange(currentPage + 1)" [disabled]="currentPage >= totalPages">
       <i class="bi bi-arrow-right-circle"></i>
     </button>
+  </div> -->
+  <div *ngIf="!isLoading && depenses.length > 0" class="d-flex justify-content-between align-items-center mt-4">
+
+    <div class="text-muted">
+      Affichage {{ (currentPage - 1) * itemsPerPage + 1 }} 
+      à {{ Math.min(currentPage * itemsPerPage, totalItems) }} 
+      sur {{ totalItems }}
+    </div>
+
+    <div class="d-flex align-items-center gap-2">
+      <button class="btn btn-outline-success btn-sm" 
+              (click)="onPageChange(currentPage - 1)" 
+              [disabled]="!hasPrev">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+      
+      <span class="fw-bold mx-2">
+        Page {{ currentPage }} / {{ totalPages }}
+      </span>
+      
+      <button class="btn btn-outline-success btn-sm" 
+              (click)="onPageChange(currentPage + 1)" 
+              [disabled]="!hasNext">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
   </div>
 </div>

@@ -10,4 +10,5 @@ router.get('/magasin/:magasinId', ctrl.getAllByMagasin);
 router.delete('/:id',authenticateToken, ctrl.deleteDepense);
 router.put('/:id',authenticateToken,upload.single('receipt'), ctrl.updateDepense);
 router.get('/structure/:code_structure', authenticateToken, ctrl.getAllByStructure);
+router.get('/structure/bis/:code_structure', authenticateToken, ctrl.getAllByStructureBis);
 module.exports = router;

@@ -292,6 +292,7 @@ exports.getStocksByStructureBis = async (req, res) => {
     res.status(500).json({ message: 'Erreur', error: error.message });
   }
 };
+
 // 4. Récupérer le stock d'un produit (très demandé)
 exports.getStockByProduitId = async (req, res) => {
   try {

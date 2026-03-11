@@ -1,1 +1,143 @@
-<p>categorie-depense-recette works!</p>
+<div class="categories-container">
+  <div class="row">
+    <div [ngClass]="{ 'col-md-12': !showForm, 'col-md-9': showForm }">
+      <!-- Bouton Nouvelle catégorie -->
+      <div *ngIf="!showForm" class="d-flex justify-content-end mb-3">
+        <button class="btn btn-success btn-sm" (click)="toggleForm()">
+          <i class="bi bi-plus-circle text-white me-2"></i>Nouvelle catégorie
+        </button>
+      </div>
+
+      <!-- Recherche et pagination -->
+      <div class="d-flex justify-content-between mb-2">
+        <input type="text" class="form-control w-50" placeholder="Rechercher par nom, type..."
+          [(ngModel)]="searchTerm" (input)="onSearchChange()" />
+        <select class="form-select w-auto" (change)="setItemsPerPage($event)">
+          <option [value]="5">5 lignes</option>
+          <option [value]="10">10 lignes</option>
+          <option [value]="20">20 lignes</option>
+        </select>
+      </div>
+
+      <!-- Message d'erreur -->
+      <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
+
+      <!-- Tableau -->
+      <div class="table-responsive">
+        <div class="d-flex justify-content-center">
+          <h4 class="mt-4">Liste des catégories</h4>
+        </div>
+        <table class="table table-bordered">
+          <thead class="table-success">
+            <tr>
+              <th>Nom</th>
+              <th>Type</th>
+              <th>État</th>
+              <th>Description</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="filteredCategories.length === 0">
+              <td colspan="5" class="text-center py-4">
+                <i class="bi bi-inbox display-6 text-muted"></i>
+                <p class="mt-2">Aucune catégorie trouvée</p>
+                <button class="btn btn-outline-primary btn-sm" (click)="toggleForm()">
+                  <i class="bi bi-plus-circle me-2"></i>Créer une catégorie
+                </button>
+              </td>
+            </tr>
+            <tr *ngFor="let cat of paginatedCategories">
+              <td>{{ cat.name }}</td>
+              <td>{{ cat.type }}</td>
+              <td>
+                <span class="badge bg-success" *ngIf="cat.isActive">Active</span>
+                <span class="badge bg-danger" *ngIf="!cat.isActive">Inactive</span>
+              </td>
+              <td>{{ cat.description || '-' }}</td>
+              <td>
+                <button class="btn btn-warning btn-sm me-2" (click)="toggleForm(cat)">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-danger btn-sm me-2" (click)="deleteCategory(cat)">
+                  <i class="bi bi-trash"></i>
+                </button>
+                <button class="btn btn-info btn-sm" (click)="toggleActiveStatus(cat)">
+                  <i class="bi" [ngClass]="cat.isActive ? 'bi-x-circle-fill' : 'bi-check-circle-fill'"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="d-flex justify-content-center align-items-center" *ngIf="filteredCategories.length > 0">
+        <button class="btn btn-success" (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 1">
+          <i class="bi bi-arrow-left-circle"></i>
+        </button>
+        <span class="h3 mx-3">{{ currentPage }} / {{ totalPages }}</span>
+        <button class="btn btn-success" (click)="onPageChange(currentPage + 1)" [disabled]="currentPage >= totalPages">
+          <i class="bi bi-arrow-right-circle"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Formulaire -->
+    <div *ngIf="showForm" class="col-md-3">
+      <div class="card">
+        <div class="card-header bg-success text-white">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+              {{ selectedCategory ? 'Modifier catégorie' : 'Nouvelle catégorie' }}
+            </h5>
+            <button class="btn btn-sm btn-light" (click)="closeForm()">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="categoryForm" (ngSubmit)="onSubmit()">
+            <div class="mb-3">
+              <label for="name" class="form-label">Nom <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="name" formControlName="name"
+                [class.is-invalid]="categoryForm.get('name')?.touched && categoryForm.get('name')?.invalid">
+              <div *ngIf="categoryForm.get('name')?.touched && categoryForm.get('name')?.invalid" class="invalid-feedback">
+                Le nom est obligatoire (min 3 caractères)
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="type" class="form-label">Type <span class="text-danger">*</span></label>
+              <select class="form-control" id="type" formControlName="type"
+                [class.is-invalid]="categoryForm.get('type')?.touched && categoryForm.get('type')?.invalid">
+                <option value="DEPENSE">Dépense</option>
+                <option value="RECETTE">Recette</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="description" class="form-label">Description</label>
+              <textarea class="form-control" id="description" formControlName="description" rows="3"></textarea>
+            </div>
+
+            <div class="mb-3 form-check form-switch">
+              <input type="checkbox" class="form-check-input" id="isActive" formControlName="isActive">
+              <label class="form-check-label" for="isActive">Catégorie active</label>
+            </div>
+
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-outline-success" [disabled]="categoryForm.invalid || isLoading">
+                <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+                {{ selectedCategory ? 'Mettre à jour' : 'Enregistrer' }}
+              </button>
+              <button type="button" class="btn btn-outline-secondary" (click)="closeForm()" [disabled]="isLoading">
+                Annuler
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
