@@ -1,9 +1,85 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { NGXLogger } from 'ngx-logger';
 import { catchError, Observable, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 import { Recette } from '../modeles/finance.model';
+
+export interface RecettesResponse {
+  items: Recette[];
+  pagination: {
+    total: number;
+    page: number;
+    totalPages: number;
+    limit: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+  statistiques: {
+    globales: {
+      totalRecettes: number;
+      montantTotal: number;
+      montantMoyen: number;
+      montantMax: number;
+      montantMin: number;
+      repartitionParMode: {
+        espece: number;
+        carte: number;
+        orangeMoney: number;
+        wave: number;
+        virement: number;
+        cheque: number;
+        autre: number;
+      };
+      repartitionParStatut: {
+        validees: number;
+        annulees: number;
+      };
+      tauxPieceJointe: number;
+      nbAvecPieceJointe: number;
+    };
+    parCategorie: {
+      categoryId: number;
+      categoryName: string;
+      categoryType: string;
+      nombreRecettes: number;
+      montantTotal: number;
+      montantMoyen: number;
+    }[];
+    evolutionMensuelle: {
+      mois: string;
+      nombreRecettes: number;
+      montantTotal: number;
+      montantMoyen: number;
+    }[];
+    parJourSemaine: {
+      jourSemaine: number;
+      nombreRecettes: number;
+      montantTotal: number;
+      montantMoyen: number;
+    }[];
+  };
+  filtres: {
+    search: string | null;
+    //startDate: string | null;
+    //endDate: string | null;
+    categoryId: string | null;
+    paymentMode: string | null;
+    statut: string | null;
+  };
+}
+
+export interface RecettesFilter {
+  page?: number;
+  limit?: number;
+  search?: string;
+  startDate?: string;
+  endDate?: string;
+  categoryId?: string;
+  paymentMode?: string;
+  statut?: string;
+}
+
 
 @Injectable({
   providedIn: 'root'
@@ -54,6 +130,35 @@ export class RecettesService {
         headers: this.getHeaders(),
       })
       .pipe(catchError(this.handleError));
+  }
+
+
+    /** 📌 1. Récupération par structure avec pagination et filtres */
+  getByStructureBis(code_structure: string, filter: RecettesFilter = {}): Observable<RecettesResponse> {
+    let params = new HttpParams();
+    
+    // Pagination
+    if (filter.page) params = params.set('page', filter.page.toString());
+    if (filter.limit) params = params.set('limit', filter.limit.toString());
+    
+    // Recherche
+    if (filter.search) params = params.set('search', filter.search);
+    
+    // Filtres de période
+    //if (filter.startDate) params = params.set('startDate', filter.startDate);
+    //if (filter.endDate) params = params.set('endDate', filter.endDate);
+    
+    // Filtres spécifiques
+    if (filter.categoryId) params = params.set('categoryId', filter.categoryId);
+    if (filter.paymentMode) params = params.set('paymentMode', filter.paymentMode);
+    if (filter.statut) params = params.set('statut', filter.statut);
+
+    return this.http
+      .get<RecettesResponse>(`${this.apiUrl}/structure/bis/${code_structure}`, {
+        headers: this.getHeaders(),
+        params: params
+      })
+      .pipe(catchError((error) => this.handleError('getByStructureBis', error)));
   }
 
    /**Récupération par paiementId */

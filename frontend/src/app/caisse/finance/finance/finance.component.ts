@@ -12,6 +12,7 @@ import { AuthService } from '../../../services/auth.service';
 import { DepensesComponent } from '../depenses/depenses.component';
 import { RecettesComponent } from '../recettes/recettes.component';
 import { CategorieDepenseRecetteComponent } from '../categorie-depense-recette/categorie-depense-recette.component';
+import { ModePaiement } from '../../../modeles/paiement.model';
 
 @Component({
   selector: 'app-finance',
@@ -31,6 +32,19 @@ export class FinanceComponent implements OnInit,OnDestroy {
   
   // Données partagées
   categories: Categorie[] = [];
+  categoriesDepense: Categorie[] = [];
+  categoriesRecette: Categorie[] = [];
+
+  modesPaiement: ModePaiement[] = [
+            new ModePaiement({ libelle: 'Espèce' }),
+            new ModePaiement({ libelle: 'Carte' }),
+            new ModePaiement({ libelle: 'Virement' }),
+             new ModePaiement({ libelle: 'Wave' }),
+            new ModePaiement({ libelle: 'Orange Money' }),
+            new ModePaiement({ libelle: 'Chèque' }),
+            new ModePaiement({ libelle: 'Autre' }),
+            
+          ];
   
   // États globaux
   isLoading = false;
@@ -92,6 +106,16 @@ export class FinanceComponent implements OnInit,OnDestroy {
       .subscribe({
         next: (categories) => {
           this.categories = categories;
+
+          // Séparation selon le type
+          this.categoriesDepense = categories.filter(
+            cat => cat.type === 'DEPENSE'
+          );
+
+          this.categoriesRecette = categories.filter(
+            cat => cat.type === 'RECETTE'
+          );
+          
           console.log('Catégories chargées:', categories.length);
         },
         error: (err) => {

@@ -49,11 +49,12 @@
     <!-- Onglet Dépenses -->
     <div *ngIf="activeTab === 'depenses'" class="tab-pane active">
       <app-depenses
-        [categories]="categories"
+        [categories]="categoriesDepense"
         [code_structure]="code_structure"
         [magasinId]="magasinId"
         [agentId]="agentId"
         [isAdmin]="isAdmin"
+        [modesPaiement]="modesPaiement"
         (categoryAction)="onCategoryAction($event)"
         (depenseAction)="onDepenseAction($event)"
         (refreshCategories)="refreshCategories()"
@@ -63,10 +64,12 @@
     <!-- Onglet Recettes -->
     <div *ngIf="activeTab === 'recettes'" class="tab-pane active">
       <app-recettes
-        [categories]="categories"
+        [categories]="categoriesRecette"
         [code_structure]="code_structure"
         [magasinId]="magasinId"
         [agentId]="agentId"
+        [isAdmin]="isAdmin"
+        [modesPaiement]="modesPaiement"
         (categoryAction)="onCategoryAction($event)"
         (recetteAction)="onRecetteAction($event)"
         (refreshCategories)="refreshCategories()"

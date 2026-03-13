@@ -24,6 +24,8 @@ export class DepensesComponent implements OnInit, OnDestroy {
   @Input() magasinId: number | null = null;
   @Input() agentId: number | null = null;
   @Input() isAdmin = false;
+  @Input() modesPaiement : ModePaiement [] = [];
+
 
   @Output() categoryAction = new EventEmitter<{ action: string; category: Categorie }>();
   @Output() depenseAction = new EventEmitter<{ action: string; depense: Depense }>();
@@ -66,17 +68,6 @@ export class DepensesComponent implements OnInit, OnDestroy {
   isLoading = false;
   isLoadingStats = false;
   errorMessage = '';
-
-  modesPaiement: ModePaiement[] = [
-          new ModePaiement({ libelle: 'Espèce' }),
-          new ModePaiement({ libelle: 'Carte' }),
-          new ModePaiement({ libelle: 'Virement' }),
-           new ModePaiement({ libelle: 'Wave' }),
-          new ModePaiement({ libelle: 'Orange Money' }),
-          new ModePaiement({ libelle: 'Chèque' }),
-          new ModePaiement({ libelle: 'Autre' }),
-          
-        ];
 
   // Options pour les selects
   paymentModes = ['Espèce', 'Carte', 'Orange Money','Wave', 'Virement', 'Chèque','Autre'];
@@ -498,6 +489,37 @@ getMontantParMode(mode: string): number {
     }
   }
 
+  get pagesToShow(): number[] {
+    const pages: number[] = [];
+    const maxVisiblePages = 5; // Nombre maximum de pages visibles
+    
+    if (this.totalPages <= maxVisiblePages) {
+      // Afficher toutes les pages si moins de 5
+      for (let i = 1; i <= this.totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Calculer les pages à afficher autour de la page courante
+      let start = Math.max(1, this.currentPage - 2);
+      let end = Math.min(this.totalPages, this.currentPage + 2);
+      
+      // Ajuster si on est au début
+      if (this.currentPage <= 3) {
+        end = Math.min(this.totalPages, maxVisiblePages);
+      }
+      
+      // Ajuster si on est à la fin
+      if (this.currentPage >= this.totalPages - 2) {
+        start = Math.max(1, this.totalPages - maxVisiblePages + 1);
+      }
+      
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+    }
+    
+    return pages;
+  }
    /**
    * Formater le montant
    */

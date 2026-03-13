@@ -168,3 +168,41 @@
   transform: scale(1.1);
   box-shadow: 0 6px 15px rgba(0,0,0,0.3);
 }
+
+/* Styles pour la pagination */
+.pagination {
+  margin-bottom: 0;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.pagination .page-link {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  border-radius: 4px;
+  color: black;
+}
+
+.pagination .page-item.active .page-link {
+  background-color: #010d04;
+  border-color: #eef6f0;
+  color: white;
+}
+
+.pagination .page-item.disabled .page-link {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .pagination .page-link {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.75rem;
+  }
+  
+  .btn-sm {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.75rem;
+  }
+}

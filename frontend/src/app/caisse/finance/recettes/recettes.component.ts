@@ -1,11 +1,15 @@
 import { Component, EventEmitter, inject, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { Categorie, Recette } from '../../../modeles/finance.model';
-import { User } from '../../../modeles/user.model';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { finalize, Subject, takeUntil } from 'rxjs';
-import { RecettesService } from '../../../services/recettes.service';
+import { debounceTime, distinctUntilChanged, finalize, Subject, takeUntil } from 'rxjs';
+import { RecettesFilter, RecettesResponse, RecettesService } from '../../../services/recettes.service';
 import { ToastrService } from 'ngx-toastr';
 import { CommonModule } from '@angular/common';
+import { ModePaiement } from '../../../modeles/paiement.model';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+declare let bootstrap: any; // En haut du fichier
+
 
 @Component({
   selector: 'app-recettes',
@@ -20,15 +24,36 @@ export class RecettesComponent implements OnInit, OnDestroy {
   @Input() code_structure: string | null = null;
   @Input() magasinId: number | null = null;
   @Input() agentId: number | null = null;
-  @Input() currentUser: User | null = null;
+  @Input() isAdmin = false;
+  @Input() modesPaiement : ModePaiement [] = [];
 
   @Output() categoryAction = new EventEmitter<{ action: string; category: Categorie }>();
   @Output() recetteAction = new EventEmitter<{ action: string; recette: Recette }>();
   @Output() refreshCategories = new EventEmitter<void>();
 
-  // Données
+   // Données
   recettes: Recette[] = [];
-  filteredRecettes: Recette[] = [];
+  
+  // Statistiques
+  stats: RecettesResponse['statistiques'] | null = null;
+  
+  // Pagination
+  currentPage = 1;
+  itemsPerPage = 10;
+  totalItems = 0;
+  totalPages = 0;
+  hasNext = false;
+  hasPrev = false;
+
+  // Filtres
+  filters: RecettesFilter = {
+    page: 1,
+    limit: 10,
+    search: '',
+    categoryId: '',
+    paymentMode: '',
+    statut: ''
+  };
 
   // États du formulaire
   showForm = false;
@@ -38,25 +63,39 @@ export class RecettesComponent implements OnInit, OnDestroy {
   // Formulaire
   recetteForm!: FormGroup;
 
-  // Pagination et recherche
-  searchTerm = '';
-  itemsPerPage = 5;
-  currentPage = 1;
-
   // États
   isLoading = false;
   errorMessage = '';
+
+  // Options pour les selects
+  paymentModes = ['Espèce', 'Carte', 'Mobile Money', 'Virement', 'Chèque'];
+  statuts = ['validé', 'annulé'];
 
   private destroy$ = new Subject<void>();
   private fb = inject(FormBuilder);
   private recetteService = inject(RecettesService);
   private toastr = inject(ToastrService);
+  private searchSubject = new Subject<string>();
+
+  // Pour le template
+  Math = Math;
 
   ngOnInit(): void {
     this.initForm();
+
     if (this.code_structure) {
       this.loadRecettes();
     }
+    // Debounce pour la recherche
+    this.searchSubject.pipe(
+      debounceTime(500),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(searchTerm => {
+      this.filters.search = searchTerm;
+      this.filters.page = 1;
+      this.loadRecettes();
+    });
   }
 
   ngOnDestroy(): void {
@@ -80,7 +119,7 @@ export class RecettesComponent implements OnInit, OnDestroy {
   /**
    * Charger les recettes
    */
-  loadRecettes(): void {
+  /* loadRecettes(): void {
     if (!this.code_structure) return;
 
     this.isLoading = true;
@@ -106,7 +145,89 @@ export class RecettesComponent implements OnInit, OnDestroy {
         }
       });
   }
+ */
 
+  loadRecettes(): void {
+    if (!this.code_structure) {
+      console.error('code_structure est null');
+      return;
+    }
+
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    const filters: RecettesFilter = {
+      page: this.filters.page,
+      limit: this.itemsPerPage,
+      search: this.filters.search || undefined,
+      categoryId: this.filters.categoryId || undefined,
+      paymentMode: this.filters.paymentMode || undefined,
+      statut: this.filters.statut || undefined
+    };
+
+    console.log('Chargement des recettes avec filtres:', filters);
+
+    this.recetteService.getByStructureBis(this.code_structure, filters)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.isLoading = false)
+      )
+      .subscribe({
+        next: (response: RecettesResponse) => {
+          console.log('✅ Réponse API reçue:', response);
+          this.recettes = response.items;
+          this.stats = response.statistiques;
+          
+          // Mise à jour de la pagination
+          this.totalItems = response.pagination.total;
+          this.currentPage = response.pagination.page;
+          this.totalPages = response.pagination.totalPages;
+          this.hasNext = response.pagination.hasNext;
+          this.hasPrev = response.pagination.hasPrev;
+          
+          console.log('Recettes chargées:', response.items.length);
+          console.log('Stats chargées:', this.stats);
+        },
+        error: (err) => {
+          console.error('❌ Erreur API complète:', err);
+          this.errorMessage = err.error?.message || 'Erreur lors du chargement des recettes';
+          this.toastr.error(this.errorMessage);
+        }
+      });
+  }
+
+  /**
+   * Appliquer les filtres
+   */
+  applyFilters(): void {
+    this.filters.page = 1;
+    this.loadRecettes();
+  }
+
+  /**
+   * Réinitialiser les filtres
+   */
+  resetFilters(): void {
+    this.filters = {
+      page: 1,
+      limit: this.itemsPerPage,
+      search: '',
+      categoryId: '',
+      paymentMode: '',
+      statut: ''
+    };
+    this.loadRecettes();
+  }
+
+  // Méthode pour ouvrir le modal
+  openStatsModal(): void {
+    const modalElement = document.getElementById('statsModal');
+    this.loadRecettes();
+    if (modalElement) {
+      const modal = new bootstrap.Modal(modalElement);
+      modal.show();
+    }
+  }
   /**
    * Réagir aux changements de catégories
    */
@@ -117,7 +238,7 @@ export class RecettesComponent implements OnInit, OnDestroy {
   /**
    * Gestionnaire de recherche
    */
-  onSearchChange(): void {
+  /* onSearchChange(): void {
     if (!this.searchTerm) {
       this.filteredRecettes = [...this.recettes];
     } else {
@@ -132,7 +253,43 @@ export class RecettesComponent implements OnInit, OnDestroy {
     }
     this.currentPage = 1;
   }
+ */
+  
+  onSearchChange(searchTerm: string): void {
+    this.searchSubject.next(searchTerm);
+  }
 
+  get pagesToShow(): number[] {
+    const pages: number[] = [];
+    const maxVisiblePages = 5; // Nombre maximum de pages visibles
+    
+    if (this.totalPages <= maxVisiblePages) {
+      // Afficher toutes les pages si moins de 5
+      for (let i = 1; i <= this.totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Calculer les pages à afficher autour de la page courante
+      let start = Math.max(1, this.currentPage - 2);
+      let end = Math.min(this.totalPages, this.currentPage + 2);
+      
+      // Ajuster si on est au début
+      if (this.currentPage <= 3) {
+        end = Math.min(this.totalPages, maxVisiblePages);
+      }
+      
+      // Ajuster si on est à la fin
+      if (this.currentPage >= this.totalPages - 2) {
+        start = Math.max(1, this.totalPages - maxVisiblePages + 1);
+      }
+      
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+    }
+    
+    return pages;
+  }
   /**
    * Gestionnaire de fichier
    */
@@ -176,7 +333,7 @@ export class RecettesComponent implements OnInit, OnDestroy {
       const fileInput = document.getElementById('recetteReceipt') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
     }
-  }
+  } 
 
   /**
    * Annuler le formulaire
@@ -246,7 +403,10 @@ export class RecettesComponent implements OnInit, OnDestroy {
    */
   private createRecette(formData: FormData): void {
     this.recetteService.createRecette(formData)
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.isLoading = false)
+    )
       .subscribe({
         next: (newRecette) => {
           this.toastr.success('Recette enregistrée avec succès');
@@ -258,9 +418,9 @@ export class RecettesComponent implements OnInit, OnDestroy {
           console.error('Détails de l\'erreur:', err);
           this.toastr.error(err.error?.message || 'Erreur lors de l\'enregistrement de la recette');
         },
-        complete: () => {
+        /* complete: () => {
           this.isLoading = false;
-        }
+        } */
       });
   }
 
@@ -269,7 +429,10 @@ export class RecettesComponent implements OnInit, OnDestroy {
    */
   private updateRecette(formData: FormData): void {
     this.recetteService.updateRecette(this.selectedRecette!.id!, formData)
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.isLoading = false)
+      )
       .subscribe({
         next: (updatedRecette) => {
           this.toastr.success('Recette modifiée avec succès');
@@ -290,7 +453,7 @@ export class RecettesComponent implements OnInit, OnDestroy {
   /**
    * Supprimer une recette
    */
-  deleteRecette(recette: Recette): void {
+ /*  deleteRecette(recette: Recette): void {
     if (!recette.id) return;
 
     const dateFormatee = new Date(recette.date).toLocaleDateString('fr-FR');
@@ -314,7 +477,33 @@ export class RecettesComponent implements OnInit, OnDestroy {
           this.isLoading = false;
         }
       });
+  } */
+
+  deleteRecette(recette: Recette): void {
+    if (!recette.id) return;
+
+    if (!confirm(`Voulez-vous vraiment supprimer cette recette ?`)) return;
+
+    this.isLoading = true;
+    this.recetteService.deleteRecette(recette.id)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.isLoading = false)
+      )
+      .subscribe({
+        next: () => {
+          this.toastr.success('Recette supprimée avec succès');
+          this.loadRecettes();
+          this.recetteAction.emit({ action: 'deleted', recette });
+        },
+        error: (err) => {
+          this.toastr.error('Erreur lors de la suppression');
+          console.error(err);
+        },
+        //complete: () => this.isLoading = false
+      });
   }
+
 
   /**
    * Obtenir le nom de la catégorie
@@ -322,6 +511,32 @@ export class RecettesComponent implements OnInit, OnDestroy {
   getCategoryName(categoryId: number): string {
     const category = this.categories.find(c => c.id === categoryId);
     return category ? category.name : 'Non défini';
+  }
+
+   /**
+   * Obtenir le montant par mode de paiement
+   */
+  getMontantParMode(mode: string): number {
+    if (!this.stats || !this.stats.globales.repartitionParMode) return 0;
+    
+    const modeMap: Record<string, string> = {
+      'espèce': 'espece',
+      'carte': 'carte',
+      'orange money': 'orangeMoney',
+      'Wave': 'wave',
+      'virement': 'virement',
+      'chèque': 'cheque',
+      'Autre': 'autre',
+    };
+    
+    const key = modeMap[mode.toLowerCase()];
+    const repartition = this.stats.globales.repartitionParMode;
+    
+    if (key && key in repartition) {
+      return repartition[key as keyof typeof repartition] || 0;
+    }
+    
+    return 0;
   }
 
   /**
@@ -339,27 +554,114 @@ export class RecettesComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Formater le montant
+   */
+  formatMontant(montant: number): string {
+    return new Intl.NumberFormat('fr-FR', { 
+      minimumFractionDigits: 0, 
+      maximumFractionDigits: 0 
+    }).format(montant) + ' F CFA';
+  }
+
+  /**
+   * Obtenir le nom du jour de la semaine
+   */
+  getJourSemaine(jour: number): string {
+    const jours = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+    return jours[jour - 1] || 'Inconnu';
+  }
+
+  /**
+   * Obtenir le libellé du mois
+   */
+  getMoisLabel(mois: string): string {
+    const [annee, moisNum] = mois.split('-');
+    const date = new Date(parseInt(annee), parseInt(moisNum) - 1);
+    return date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  }
+
+  /**
+   * Obtenir le maximum mensuel pour l'échelle des graphiques
+   */
+  getMaxMensuel(): number {
+    if (!this.stats?.evolutionMensuelle || this.stats.evolutionMensuelle.length === 0) {
+      return 1;
+    }
+    return Math.max(...this.stats.evolutionMensuelle.map(m => m.montantTotal));
+  }
+
+   getStatistiquesRecettes() {
+    if (!this.stats) return [];
+    
+    return [
+      { 
+        titre: 'Total Recettes', 
+        valeur: this.formatMontant(this.stats.globales.montantTotal),
+        sousTitre: `${this.stats.globales.totalRecettes} transactions`,
+        couleur: 'bg-primary',
+        icone: 'bi-cash-stack'
+      },
+      { 
+        titre: 'Moyenne', 
+        valeur: this.formatMontant(this.stats.globales.montantMoyen),
+        sousTitre: 'par transaction',
+        couleur: 'bg-success',
+        icone: 'bi-graph-up-arrow'
+      },
+      { 
+        titre: 'Maximum', 
+        valeur: this.formatMontant(this.stats.globales.montantMax),
+        sousTitre: 'recette la plus élevée',
+        couleur: 'bg-info',
+        icone: 'bi-arrow-up-circle'
+      },
+      { 
+        titre: 'Minimum', 
+        valeur: this.formatMontant(this.stats.globales.montantMin),
+        sousTitre: 'recette la plus faible',
+        couleur: 'bg-warning',
+        icone: 'bi-arrow-down-circle'
+      }
+    ];
+  }
+  /**
    * Pagination - Obtenir les éléments de la page courante
    */
-  get paginatedRecettes() {
+  /* get paginatedRecettes() {
     const start = (this.currentPage - 1) * this.itemsPerPage;
     return this.filteredRecettes.slice(start, start + this.itemsPerPage);
-  }
+  } */
 
   /**
    * Pagination - Obtenir le nombre total de pages
    */
-  get totalPages(): number {
+  /* get totalPages(): number {
     return Math.ceil(this.filteredRecettes.length / this.itemsPerPage);
-  }
+  } */
 
   /**
    * Pagination - Changer de page
    */
-  onPageChange(page: number): void {
+  /* onPageChange(page: number): void {
     if (page >= 1 && page <= this.totalPages) {
       this.currentPage = page;
     }
+  } */
+  onPageChange(page: number): void {
+      if (page >= 1 && page <= this.totalPages) {
+        this.filters.page = page;
+        this.loadRecettes();
+      }
+    }
+
+  /**
+   * Changer le nombre d'éléments par page
+   */
+  onItemsPerPageChange(limit: number): void {
+    this.itemsPerPage = limit;
+    this.filters.limit = limit;
+    this.filters.page = 1;
+    this.loadRecettes();
   }
 
   /**

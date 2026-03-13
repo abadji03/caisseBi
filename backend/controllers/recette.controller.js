@@ -7,6 +7,9 @@ const fs = require('fs');
 const path = require('path');
 const BASE_URL = 'http://localhost:5000/uploads/';
 
+const { Op, fn, col, literal } = require('sequelize');
+
+
 
 exports.createRecette = async (req, res) => {
   try {
@@ -51,30 +54,7 @@ exports.createRecette = async (req, res) => {
   }
 };
 
-/* exports.getByStructure = async (req, res) => {
-  try {
-    const { code_structure } = req.params;
 
-    const recettes = await Recette.findAll({
-      where: { code_structure },
-      include: [
-        {
-          model: Magasin
-        },
-        {
-          model: Categorie
-        },
-        {model: User, attributes: ['id', 'nom', 'email'] }
-      ],
-      order: [['createdAt', 'DESC']],
-    });
-
-    res.json(recettes);
-  } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la récupération', error });
-  }
-};
- */
 exports.getByStructure = async (req, res) => {
   try {
     const authUser = req.user;
@@ -139,6 +119,343 @@ exports.getByStructure = async (req, res) => {
   }
 };
 
+// Récupérer toutes les recettes d'une structure avec pagination et statistiques
+exports.getByStructureBis = async (req, res) => {
+  try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
+    const { code_structure } = req.params;
+    
+    // Récupération des paramètres de pagination, recherche et filtres
+    const { 
+      page = 1, 
+      limit = 10, 
+      search = '',
+      //startDate = '',
+      //endDate = '',
+      categoryId = '',
+      paymentMode = '',
+      statut = ''
+    } = req.query;
+
+    // 🔥 Vérification : l’utilisateur doit appartenir à la structure demandée
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({
+        message: "Accès interdit : structure non autorisée"
+      });
+    }
+
+    // Vérifier rôle
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+
+    if (!isAdminStructure && !isGerant) {
+      return res.status(403).json({
+        message: "Accès interdit : rôle insuffisant"
+      });
+    }
+
+    // Clause where par défaut (structure)
+    let whereClause = {
+      code_structure: code_structure
+    };
+
+    // 🔹 Si gérant : filtrer par magasin
+    if (!isAdminStructure && isGerant) {
+      if (!authUser.magasinId) {
+        return res.status(400).json({
+          message: "Ce gérant n’est associé à aucun magasin"
+        });
+      }
+      whereClause.magasinId = authUser.magasinId;
+    }
+
+    // 🔍 FILTRE DE RECHERCHE TEXTUELLE
+    if (search) {
+      whereClause[Op.or] = [
+        //{ '$Categorie.name$': { [Op.like]: `%${search}%` } },
+        { description: { [Op.like]: `%${search}%` } },
+        { paymentMode: { [Op.like]: `%${search}%` } }
+      ];
+      
+      // Recherche par montant (si search est un nombre)
+      if (!isNaN(search)) {
+        whereClause[Op.or].push({ montant: { [Op.eq]: parseFloat(search) } });
+      }
+
+      // Recherche par date
+      const datePattern = /^\d{1,2}\/\d{1,2}\/\d{4}$/;
+      if (datePattern.test(search)) {
+        const [day, month, year] = search.split('/');
+        const searchDate = new Date(`${year}-${month}-${day}`);
+        if (!isNaN(searchDate)) {
+          whereClause[Op.or].push(
+            literal(`DATE(date) = '${year}-${month}-${day}'`)
+          );
+        }
+      }
+    }
+
+    // 📅 FILTRE PAR PÉRIODE
+    /* if (startDate && endDate) {
+      whereClause.date = {
+        [Op.between]: [new Date(startDate), new Date(endDate)]
+      };
+    } else if (startDate) {
+      whereClause.date = { [Op.gte]: new Date(startDate) };
+    } else if (endDate) {
+      whereClause.date = { [Op.lte]: new Date(endDate) };
+    }
+ */
+    // 🏷️ FILTRE PAR CATÉGORIE
+    if (categoryId) {
+      whereClause.categoryId = categoryId;
+    }
+
+    // 💳 FILTRE PAR MODE DE PAIEMENT
+    if (paymentMode) {
+      whereClause.paymentMode = paymentMode;
+    }
+
+    // ✅ FILTRE PAR STATUT
+    if (statut) {
+      whereClause.statutRecette = statut;
+    }
+
+    // 📊 STATISTIQUES GLOBALES
+    const statsGlobales = await Recette.findAll({
+      where: whereClause,
+      attributes: [
+        [fn('COUNT', col('Recette.id')), 'totalRecettes'],
+        [fn('SUM', col('Recette.montant')), 'montantTotal'],
+        [fn('AVG', col('Recette.montant')), 'montantMoyen'],
+        [fn('MAX', col('Recette.montant')), 'montantMax'],
+        [fn('MIN', col('Recette.montant')), 'montantMin'],
+        
+        // Statistiques par mode de paiement
+        [
+          literal(`SUM(CASE WHEN paymentMode = 'Espèce' THEN montant ELSE 0 END)`),
+          'totalEspece'
+        ],
+        [
+          literal(`SUM(CASE WHEN paymentMode = 'Carte' THEN montant ELSE 0 END)`),
+          'totalCarte'
+        ],
+        [
+          literal(`SUM(CASE WHEN paymentMode = 'Orange Money' THEN montant ELSE 0 END)`),
+          'totalOrangeeMoney'
+        ],
+        [
+          literal(`SUM(CASE WHEN paymentMode = 'Wave' THEN montant ELSE 0 END)`),
+          'totalWave'
+        ],
+        [
+          literal(`SUM(CASE WHEN paymentMode = 'Virement' THEN montant ELSE 0 END)`),
+          'totalVirement'
+        ],
+        [
+          literal(`SUM(CASE WHEN paymentMode = 'Chèque' THEN montant ELSE 0 END)`),
+          'totalCheque'
+        ],
+        [
+          literal(`SUM(CASE WHEN paymentMode = 'Autre' THEN montant ELSE 0 END)`),
+          'totalAutre'
+        ],
+
+        // Statistiques par statut
+        [
+          literal(`COUNT(CASE WHEN statutRecette = 'validé' THEN 1 END)`),
+          'nbValidees'
+        ],
+        [
+          literal(`COUNT(CASE WHEN statutRecette = 'annulé' THEN 1 END)`),
+          'nbAnnulees'
+        ],
+
+        // Pourcentage avec pièce jointe
+        [
+          literal(`SUM(CASE WHEN receipt IS NOT NULL AND receipt != '' THEN 1 ELSE 0 END)`),
+          'nbAvecPieceJointe'
+        ]
+      ],
+      raw: true,
+      subQuery: false
+    });
+
+    // 📈 STATISTIQUES PAR CATÉGORIE
+    const statsParCategorie = await Recette.findAll({
+      where: whereClause,
+      attributes: [
+        'categoryId',
+        [fn('COUNT', col('Recette.id')), 'nombreRecettes'],
+        [fn('SUM', col('Recette.montant')), 'montantTotal'],
+        [fn('AVG', col('Recette.montant')), 'montantMoyen']
+      ],
+      include: [
+        {
+          model: Categorie,
+          attributes: ['name', 'type']
+        }
+      ],
+      group: ['categoryId', 'Categorie.id', 'Categorie.name', 'Categorie.type'],
+      order: [[literal('montantTotal'), 'DESC']],
+      limit: 5,
+      raw: true,
+      subQuery: false
+    });
+
+    // 📅 STATISTIQUES MENSUELLES (6 derniers mois)
+    const statsParMois = await Recette.findAll({
+      where: whereClause,
+      attributes: [
+        [fn('DATE_FORMAT', col('date'), '%Y-%m'), 'mois'],
+        [fn('COUNT', col('id')), 'nombreRecettes'],
+        [fn('SUM', col('montant')), 'montantTotal'],
+        [fn('AVG', col('montant')), 'montantMoyen']
+      ],
+      group: [literal("DATE_FORMAT(date, '%Y-%m')")],
+      order: [[literal("DATE_FORMAT(date, '%Y-%m')"), 'DESC']],
+      limit: 6,
+      raw: true
+    });
+
+    // 📊 STATISTIQUES PAR JOUR DE LA SEMAINE
+    const statsParJour = await Recette.findAll({
+      where: whereClause,
+      attributes: [
+        [fn('DAYOFWEEK', col('date')), 'jourSemaine'],
+        [fn('COUNT', col('id')), 'nombreRecettes'],
+        [fn('SUM', col('montant')), 'montantTotal'],
+        [fn('AVG', col('montant')), 'montantMoyen']
+      ],
+      group: [fn('DAYOFWEEK', col('date'))],
+      order: [[fn('DAYOFWEEK', col('date')), 'ASC']],
+      raw: true
+    });
+
+    // Calcul de l'offset pour la pagination
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const limitInt = parseInt(limit);
+
+    // Exécution de la requête avec pagination
+    const { count, rows } = await Recette.findAndCountAll({
+      where: whereClause,
+      include: [
+        { model: Magasin, attributes: ["id", "nom", "telephone", "email"] },
+        { model: Categorie, attributes: ["id", "name", "type"] },
+        { model: User, attributes: ["id", "nom", "email"] }
+      ],
+      order: [["date", "DESC"]],
+      offset,
+      limit: limitInt,
+      distinct: true,
+      subQuery: false
+    });
+
+    // Calcul du nombre total de pages
+    const totalPages = Math.ceil(count / limitInt);
+
+    console.log(`📦 Recettes: ${count} trouvées, page ${page}/${totalPages}`);
+
+    // Formater les statistiques
+    const statistiques = {
+      globales: statsGlobales[0] ? {
+        totalRecettes: parseInt(statsGlobales[0].totalRecettes) || 0,
+        montantTotal: parseFloat(statsGlobales[0].montantTotal) || 0,
+        montantMoyen: parseFloat(statsGlobales[0].montantMoyen) || 0,
+        montantMax: parseFloat(statsGlobales[0].montantMax) || 0,
+        montantMin: parseFloat(statsGlobales[0].montantMin) || 0,
+        
+        repartitionParMode: {
+          espece: parseFloat(statsGlobales[0].totalEspece) || 0,
+          carte: parseFloat(statsGlobales[0].totalCarte) || 0,
+          orangeMoney: parseFloat(statsGlobales[0].totalMobileMoney) || 0,
+          wave: parseFloat(statsGlobales[0].totalWave) || 0,
+          virement: parseFloat(statsGlobales[0].totalVirement) || 0,
+          cheque: parseFloat(statsGlobales[0].totalCheque) || 0,
+          autre: parseFloat(statsGlobales[0].totalAutre) || 0
+        },
+        
+        repartitionParStatut: {
+          validees: parseInt(statsGlobales[0].nbValidees) || 0,
+          annulees: parseInt(statsGlobales[0].nbAnnulees) || 0
+        },
+        
+        tauxPieceJointe: statsGlobales[0].totalRecettes > 0 
+          ? ((parseInt(statsGlobales[0].nbAvecPieceJointe) / parseInt(statsGlobales[0].totalRecettes)) * 100).toFixed(2)
+          : 0,
+        nbAvecPieceJointe: parseInt(statsGlobales[0].nbAvecPieceJointe) || 0
+      } : {
+        totalRecettes: 0,
+        montantTotal: 0,
+        montantMoyen: 0,
+        montantMax: 0,
+        montantMin: 0,
+        repartitionParMode: {
+          espece: 0, carte: 0, orangeMoney: 0, wave:0, virement: 0, cheque: 0,autre:0
+        },
+        repartitionParStatut: {
+          validees: 0, annulees: 0
+        },
+        tauxPieceJointe: 0,
+        nbAvecPieceJointe: 0
+      },
+      parCategorie: statsParCategorie.map(item => ({
+        categoryId: item.categoryId,
+        categoryName: item['Categorie.name'],
+        categoryType: item['Categorie.type'],
+        nombreRecettes: parseInt(item.nombreRecettes),
+        montantTotal: parseFloat(item.montantTotal),
+        montantMoyen: parseFloat(item.montantMoyen)
+      })),
+      evolutionMensuelle: statsParMois.map(item => ({
+        mois: item.mois,
+        nombreRecettes: parseInt(item.nombreRecettes),
+        montantTotal: parseFloat(item.montantTotal),
+        montantMoyen: parseFloat(item.montantMoyen)
+      })),
+      parJourSemaine: statsParJour.map(item => ({
+        jourSemaine: parseInt(item.jourSemaine),
+        nombreRecettes: parseInt(item.nombreRecettes),
+        montantTotal: parseFloat(item.montantTotal),
+        montantMoyen: parseFloat(item.montantMoyen)
+      }))
+    };
+
+    // Réponse avec pagination et statistiques
+    res.status(200).json({
+      items: rows,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        totalPages: totalPages,
+        limit: limitInt,
+        hasNext: parseInt(page) < totalPages,
+        hasPrev: parseInt(page) > 1
+      },
+      statistiques: statistiques,
+      filtres: {
+        search: search || null,
+        //startDate: startDate || null,
+        //endDate: endDate || null,
+        categoryId: categoryId || null,
+        paymentMode: paymentMode || null,
+        statut: statut || null
+      }
+    });
+
+  } catch (error) {
+    console.error("Erreur récupération recettes:", error);
+    res.status(500).json({
+      message: "Erreur de récupération des recettes",
+      error: error.message
+    });
+  }
+};
 exports.deleteRecette = async (req, res) => {
   try {
     const authUser = req.user;

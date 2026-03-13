@@ -1,0 +1,116 @@
+.recettes-container {
+  padding: 1rem;
+}
+
+/* Cartes de statistiques */
+.card {
+  transition: transform 0.2s;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.card.bg-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.card.bg-success { background: linear-gradient(135deg, #48c774 0%, #2ecc71 100%); }
+.card.bg-info { background: linear-gradient(135deg, #36a2ef 0%, #0d6efd 100%); }
+.card.bg-warning { background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); }
+
+/* Progress bars */
+.progress {
+  background-color: #e9ecef;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  transition: width 0.3s ease;
+}
+
+/* Badges de statut */
+.badge {
+  font-size: 0.75rem;
+  padding: 0.35em 0.65em;
+}
+
+/* Modal */
+.modal-header.bg-info {
+  background: linear-gradient(135deg, #36a2ef 0%, #0d6efd 100%);
+}
+
+.modal-fullscreen {
+  padding: 0;
+}
+
+.modal-fullscreen .modal-content {
+  border: none;
+  border-radius: 0;
+}
+
+/* Animation d'ouverture/fermeture */
+.modal.fade .modal-dialog {
+  transition: transform 0.3s ease-out;
+  transform: translate(0, -50px);
+}
+
+.modal.show .modal-dialog {
+  transform: none;
+}
+
+/* Tableau */
+.table-hover tbody tr:hover {
+  background-color: rgba(40, 167, 69, 0.05);
+  cursor: pointer;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .recettes-container {
+    padding: 0.5rem;
+  }
+  
+  .pagination .page-link {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.75rem;
+  }
+  
+  .btn-sm {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.75rem;
+  }
+  .table-responsive {
+    font-size: 0.85rem;
+  }
+  
+  .btn-group .btn {
+    padding: 0.2rem 0.4rem;
+  }
+}
+
+/* Styles pour la pagination */
+.pagination {
+  margin-bottom: 0;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.pagination .page-link {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  border-radius: 4px;
+  color: black;
+}
+
+.pagination .page-item.active .page-link {
+  background-color: #010d04;
+  border-color: #eef6f0;
+  color: white;
+}
+
+.pagination .page-item.disabled .page-link {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
