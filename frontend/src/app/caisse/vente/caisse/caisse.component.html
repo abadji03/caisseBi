@@ -5,7 +5,7 @@
     <h3>
       Total de la caisse :<b>{{ totalCaisse | number:'1.2-2' }} F CFA </b>
     </h3>
-    <button class="btn btn-success" (click)="nouvelleVente()">Nouvelle Vente</button>
+    <button *ngIf="!isAdmin" class="btn btn-success" (click)="nouvelleVente()">Nouvelle Vente</button>
   </div>
 
   <!-- MODAL POUR LES INFOS CLIENT -->
@@ -204,10 +204,53 @@
 
   <!-- Transactions journalières -->
   <div class="card mb-3">
-    <div class="card-header d-flex justify-content-between align-items-center">
+    <!-- <div class="card-header d-flex justify-content-between align-items-center">
       <span>Transactions Journalières</span>
       <small class="text-muted">Nombre de transaction: {{ totalTransactions }}</small>
       <small class="text-muted">Total: {{ totalCaisse | number:'1.2-2' }} F CFA</small>
+    </div> -->
+     <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Transactions Journalières</span>
+        <div class="d-flex align-items-center gap-3">
+          <!-- Filtre par statut -->
+          <select class="form-select form-select-sm w-auto" 
+                  [(ngModel)]="filters.statut" 
+                  (change)="onStatutChange(filters.statut || 'tous')">
+            <option *ngFor="let option of statutOptions" [value]="option">
+              {{ option === 'tous' ? 'Tous les statuts' : option }}
+            </option>
+          </select>
+          
+          <small class="text-muted">Total: {{ totalCaisse | number:'1.2-2' }} F CFA</small>
+        </div>
+      </div>
+
+      <!-- Barre de recherche -->
+    <div class="card-body pb-0">
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="input-group" style="max-width: 300px;">
+          <span class="input-group-text bg-white">
+            <i class="bi bi-search"></i>
+          </span>
+          <input 
+            type="text" 
+            class="form-control" 
+            placeholder="Rechercher par type, id..."
+            [(ngModel)]="filters.search"
+            (ngModelChange)="onSearchChange($event)" />
+        </div>
+        
+        <div class="d-flex align-items-center">
+          <span class="me-2">Afficher</span>
+          <select class="form-select w-auto" (change)="onItemsPerPageChange(+$any($event.target).value)">
+            <option [value]="5" [selected]="itemsPerPage === 5">5</option>
+            <option [value]="10" [selected]="itemsPerPage === 10">10</option>
+            <option [value]="20" [selected]="itemsPerPage === 20">20</option>
+            <option [value]="50" [selected]="itemsPerPage === 50">50</option>
+          </select>
+          <span class="ms-2">lignes</span>
+        </div>
+      </div>
     </div>
     
     <div class="table-responsive">
@@ -220,10 +263,27 @@
             <th>Type</th>
             <th>Total</th>
             <th>Statut</th>
+            <th>Agent</th>
+            <th *ngIf="isAdmin">Magasin</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
+            
+          <tr *ngIf="isLoading">
+            <td colspan="7" class="text-center py-4">
+              <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+                <span class="visually-hidden">Chargement...</span>
+              </div>
+              Chargement des transactions...
+            </td>
+          </tr>
+          <tr *ngIf="!isLoading && paniers.length === 0">
+            <td colspan="7" class="text-center py-4">
+              <i class="bi bi-inbox display-4 text-muted"></i>
+              <p class="mt-2">Aucune transaction trouvée</p>
+            </td>
+          </tr>
           <tr *ngFor="let transaction of paniers">
             <td>{{ transaction.id }}</td>
             <td>{{ transaction.dateCreation | date: 'dd/MM HH:mm' }}</td>
@@ -248,22 +308,24 @@
                 {{ transaction.statut }}
               </span>
             </td>
+             <td>{{ transaction.user?.nom || 'N/A' }}</td>
+             <td *ngIf ="isAdmin">{{ transaction.Magasin?.nom || 'N/A' }}</td>
             <td>
               <div class="btn-group btn-group-sm">
                 <button class="btn btn-info" (click)="afficherDetails(transaction)" 
                         title="Détails">
                   <i class="bi bi-eye"></i>
                 </button>
-                <button *ngIf="transaction.statut !== 'annulé'" 
+                <button *ngIf="transaction.statut !== 'annulé' && !isAdmin" 
                         class="btn btn-warning" (click)="annulerPanier(transaction)"
                         title="Retourner">
                   <i class="bi bi-arrow-counterclockwise"></i>
                 </button>
-                <button class="btn btn-primary" (click)="genererTicketAvecClient(transaction)"
+                <button *ngIf="!isAdmin" class="btn btn-primary" (click)="genererTicketAvecClient(transaction)"
                         title="Ticket vente / Caisse">
                   <i class="bi bi-receipt"></i> Ticket
                 </button>
-                <button class="btn btn-success" (click)="imprimerTicket(transaction)"
+                <button *ngIf="!isAdmin" class="btn btn-success" (click)="imprimerTicket(transaction)"
                         title="Imprimer">
                   <i class="bi bi-printer"></i>
                 </button>
@@ -273,6 +335,35 @@
         </tbody>
       </table>
     </div>
+
+     <!-- Pagination -->
+  <div *ngIf="!isLoading && paniers.length > 0" class="card-footer d-flex justify-content-between align-items-center">
+    <div class="text-muted small">
+      Affichage {{ (currentPage - 1) * itemsPerPage + 1 }} 
+      à {{ Math.min(currentPage * itemsPerPage, totalItems) }} 
+      sur {{ totalItems }} transactions
+    </div>
+
+    <div class="d-flex align-items-center gap-2">
+      <button class="btn btn-outline-dark btn-sm" 
+              (click)="onPageChange(currentPage - 1)" 
+              [disabled]="!hasPrev">
+        <i class="bi bi-chevron-left"></i>
+        Précédent
+      </button>
+      
+      <span class="fw-bold mx-2">
+        Page {{ currentPage }} / {{ totalPages }}
+      </span>
+      
+      <button class="btn btn-outline-dark btn-sm" 
+              (click)="onPageChange(currentPage + 1)" 
+              [disabled]="!hasNext">
+        Suivant
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+  </div>
 
     <!-- Modal détails transaction -->
     <div
@@ -366,7 +457,7 @@
                       {{ article.totalTTC }}<small class="text-muted"> F CFA</small> 
                     </td>
                     <td *ngIf="selectedTransaction.statut ==='validé'" >
-                      <button class="btn btn-sm btn-danger" 
+                      <button *ngIf="!isAdmin" class="btn btn-sm btn-danger" 
                               (click)="retournerArticle(article)">
                         <i class="bi bi-arrow-counterclockwise"></i> 
                       </button>

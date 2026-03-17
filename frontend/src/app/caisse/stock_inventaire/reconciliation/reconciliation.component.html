@@ -1,7 +1,7 @@
 <div class="table-responsive">
   
   <div class="d-flex justify-content-end align-items-center mb-3">
-    <button class="btn btn-success" (click)="openModal()">
+    <button *ngIf="!isAdmin" class="btn btn-success" (click)="openModal()">
       <i class="bi bi-plus-circle me-1"></i> Nouvelle réconciliation
     </button>
 </div>
@@ -150,6 +150,7 @@
         </td>
         <td>
           <button
+          *ngIf="reconciliation.statut !== 'annulé' && canEditTransaction(reconciliation)"
             class="btn btn-danger btn-sm"
             (click)="supprimerReconciliation(reconciliation)"
           >

@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { catchError, Observable, tap, throwError } from 'rxjs';
 import { Bon } from '../modeles/bon.model';
@@ -8,6 +8,25 @@ const API_URL = 'http://localhost:5000/api/bons';
 const API_URL_BIS = 'http://localhost:5000/api/bons-complet'; 
 //const apiUrl = 'http://localhost:5000/api/bons';
 
+export interface BonsFilter {
+  page?: number;
+  limit?: number;
+  search?: string;
+  type?: string;
+  statut?: string;
+}
+
+export interface BonsResponse {
+  items: Bon[];
+  pagination: {
+    total: number;
+    page: number;
+    totalPages: number;
+    limit: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
 
 @Injectable({
   providedIn: 'root'
@@ -55,6 +74,48 @@ export class BonsService {
     return this.http.get<Bon[]>(`${API_URL}/structure/${code_structure}/fournisseurs`, { headers: this.getHeaders() })
       .pipe(catchError(err => this.handleError(err)));
   }
+
+  getBonsClientByStructureBis(code_structure: string, filter: BonsFilter = {}): Observable<BonsResponse> {
+    let params = new HttpParams();
+    
+    // Pagination
+    if (filter.page) params = params.set('page', filter.page.toString());
+    if (filter.limit) params = params.set('limit', filter.limit.toString());
+    
+    // Recherche
+    if (filter.search) params = params.set('search', filter.search);
+    
+    // Filtres
+    if (filter.type) params = params.set('type', filter.type);
+    if (filter.statut) params = params.set('statut', filter.statut);
+
+    return this.http.get<BonsResponse>(
+      `${API_URL}/structure/bis/${code_structure}/clients`, 
+      { 
+        headers: this.getHeaders(),
+        params: params 
+      }
+    ).pipe(catchError(err => this.handleError(err)));
+  }
+
+  getBonsFournisseursByStructureBis(code_structure: string, filter: BonsFilter = {}): Observable<BonsResponse> {
+    let params = new HttpParams();
+    
+    if (filter.page) params = params.set('page', filter.page.toString());
+    if (filter.limit) params = params.set('limit', filter.limit.toString());
+    if (filter.search) params = params.set('search', filter.search);
+    if (filter.type) params = params.set('type', filter.type);
+    if (filter.statut) params = params.set('statut', filter.statut);
+
+    return this.http.get<BonsResponse>(
+      `${API_URL}/structure/bis/${code_structure}/fournisseurs`, 
+      { 
+        headers: this.getHeaders(),
+        params: params 
+      }
+    ).pipe(catchError(err => this.handleError(err)));
+  }
+
 
   getAllBons(): Observable<Bon[]> {
     return this.http.get<Bon[]>(`${API_URL}`, { headers: this.getHeaders() })

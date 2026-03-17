@@ -24,6 +24,7 @@ router.post('/panier-complet',authenticateToken, panierCompletController.createO
 router.get('/structure/:code_structure/journalier',authenticateToken, panierController.getPaniersByStructureBis);
 router.get('/par-date/:date',authenticateToken, panierController.getPaniersParDate);
 router.get('/structure/:code_structure/magasin/:magasinId/bons/:bonId/aujourdhui',authenticateToken, panierController.getPaniersAujourdhui);
+router.get('/structure/bis/:code_structure/magasin/:magasinId/bons/:bonId/aujourdhui',authenticateToken, panierController.getPaniersAujourdhuiBis);
 
 
 module.exports = router;

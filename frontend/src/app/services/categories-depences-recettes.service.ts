@@ -1,16 +1,41 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { AuthService } from './auth.service';
 import { NGXLogger } from 'ngx-logger';
 import { catchError, Observable, throwError } from 'rxjs';
 import { Categorie } from '../modeles/finance.model';
 
+export interface CategoriesResponse {
+  items: Categorie[];
+  pagination: {
+    total: number;
+    page: number;
+    totalPages: number;
+    limit: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+  filtres: {
+    search: string | null;
+    type: string | null;
+    showInactive: boolean;
+  };
+}
+
+export interface CategoriesFilter {
+  page?: number;
+  limit?: number;
+  search?: string;
+  type?: string;
+  showInactive?: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class CategoriesDepencesRecettesService {
 
-  private apiUrl = 'http://localhost:5000/api/categories'; // À adapter
+  private apiUrl = 'http://localhost:5000/api/categories'; 
 
   private http = inject(HttpClient);
   private authService = inject(AuthService);
@@ -56,6 +81,30 @@ export class CategoriesDepencesRecettesService {
       catchError(err => this.handleError('getAllByStructure', err))
     );
   }
+
+   /** Récupérer toutes les catégories d'une structure avec pagination */
+  getAllByStructureBis(code_structure: string, filter: CategoriesFilter = {}): Observable<CategoriesResponse> {
+    let params = new HttpParams();
+    
+    // Pagination
+    if (filter.page) params = params.set('page', filter.page.toString());
+    if (filter.limit) params = params.set('limit', filter.limit.toString());
+    
+    // Recherche
+    if (filter.search) params = params.set('search', filter.search);
+    
+    // Filtres spécifiques
+    if (filter.type) params = params.set('type', filter.type);
+    if (filter.showInactive !== undefined) params = params.set('showInactive', filter.showInactive.toString());
+
+    return this.http.get<CategoriesResponse>(`${this.apiUrl}/structure/bis/${code_structure}`, {
+      headers: this.getHeaders(),
+      params: params
+    }).pipe(
+      catchError(err => this.handleError('getAllByStructure', err))
+    );
+  }
+
 
   /** Modifier une catégorie */
   updateCategorie(id: number, data: Partial<Categorie>): Observable<Categorie> {

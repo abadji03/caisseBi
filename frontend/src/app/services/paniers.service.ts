@@ -6,6 +6,34 @@ import { NGXLogger } from 'ngx-logger';
 import { catchError, Observable, throwError } from 'rxjs';
 import { Panier } from '../modeles/panier.model';
 const API_URL = 'http://localhost:5000/api/paniers'; // adapte selon ton backend
+export interface TransactionsResponse {
+  items: Panier[];
+  pagination: {
+    total: number;
+    page: number;
+    totalPages: number;
+    limit: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+  statistiques: {
+    totalGlobal: number;
+    nombreTransactions: number;
+  };
+  filtres: {
+    search: string | null;
+    statut: string | null;
+  };
+}
+
+export interface TransactionsFilter {
+  page?: number;
+  limit?: number;
+  search?: string;
+  statut?: string;
+  bonId?: number | null | '';
+  magasinId?: number;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -180,6 +208,53 @@ export class PaniersService {
       params
     }).pipe(catchError(err => this.handleError(err)));
   }
+
+   /**
+   * Récupérer les transactions du jour avec pagination et recherche
+   */
+  getPaniersAujourdhuiBis(
+    code_structure: string, 
+    magasinId?: number, 
+    bonId?: number | null | '',
+    filter: TransactionsFilter = {}
+  ): Observable<TransactionsResponse> {
+    let params = new HttpParams();
+    
+    // Pagination
+    if (filter.page) params = params.set('page', filter.page.toString());
+    if (filter.limit) params = params.set('limit', filter.limit.toString());
+    
+    // Recherche
+    if (filter.search) params = params.set('search', filter.search);
+    
+    // Filtre par statut
+    if (filter.statut) params = params.set('statut', filter.statut);
+    
+    // Paramètres existants
+    if (code_structure) {
+      params = params.set('code_structure', code_structure);
+    }
+    
+    if (magasinId) {
+      params = params.set('magasinId', magasinId.toString());
+    }
+
+    if (bonId !== undefined) {
+      if (bonId === null) {
+        params = params.set('bonId', 'null');
+      } else if (typeof bonId === 'number') {
+        params = params.set('bonId', bonId.toString());
+      }
+    }
+
+    const url = `${API_URL}/structure/bis/${code_structure}/magasin/${magasinId}/bons/${bonId}/aujourdhui`;
+    
+    return this.http.get<TransactionsResponse>(url, {
+      headers: this.getHeaders(),
+      params
+    }).pipe(catchError(err => this.handleError(err)));
+  }
+
 
   /**
    * Récupère les statistiques de vente pour une période

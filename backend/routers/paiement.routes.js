@@ -10,6 +10,12 @@ const authenticateToken = require('../middlewares/auth.middleware');
 router.post('/',authenticateToken,upload.single('fichier'), controller.create);
 router.get('/',authenticateToken, controller.findAll);
 router.get('/structure/:code_structure',authenticateToken, controller.getPaiementsByStructure);
+router.get('/structure/:code_structure/clients',authenticateToken, controller.getPaiementsClientByStructure);
+router.get('/structure/:code_structure/fournisseurs',authenticateToken, controller.getPaiementsFournisseurByStructure);
+
+router.get('/structure/bis/:code_structure/clients',authenticateToken, controller.getPaiementsClientByStructureBis);
+router.get('/structure/bis/:code_structure/fournisseurs',authenticateToken, controller.getPaiementsFournisseurByStructureBis);
+
 router.get('/:id', authenticateToken, controller.findById);
 router.put('/:id',authenticateToken,upload.single('fichier'), controller.update);
 router.delete('/:id', authenticateToken, controller.delete);    

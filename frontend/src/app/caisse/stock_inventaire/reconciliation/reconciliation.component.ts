@@ -22,6 +22,7 @@ export class ReconciliationComponent implements OnInit, OnDestroy {
   @Input() codeStructure: string | null = null;
   @Input() agentId: number | null = null;
   @Input() magasinId: number | null = null;
+  @Input() isAdmin = false;
 
   reconciliationForm!: FormGroup;
   reconciliations: Reconciliation[] = [];
@@ -296,6 +297,26 @@ modifierReconciliation(reconciliation: Reconciliation) {
   this.openModal();
 }
   
+canEditTransaction(transaction: Reconciliation): boolean {
+  
+      const today = new Date();
+      const transactionDate = new Date(transaction.dateReconciliation);
+  
+      // différence en jours
+      const diffTime = today.getTime() - transactionDate.getTime();
+      const diffDays = diffTime / (1000 * 3600 * 24);
+  
+      // délai autorisé pour l'admin
+      const ADMIN_DELAY = 30;
+  
+      if (this.isAdmin) {
+        return diffDays <= ADMIN_DELAY;
+      }
+  
+      // utilisateur normal → seulement le jour même
+      return transactionDate.toDateString() === today.toDateString();
+    }
+
 supprimerReconciliation(reconciliation: Reconciliation) {
 
   //console.log('Reconciliation à supprimer',reconciliation);
@@ -379,11 +400,17 @@ supprimerReconciliation(reconciliation: Reconciliation) {
       stockPhysique: formValue.stockPhysique,
       //ecart: ecart,
       note: formValue.note,
-      magasinId:this.magasinId!,
+      //magasinId:this.magasinId!,
       code_structure: this.codeStructure!,
-      responsable: this.agentId!,
+      //responsable: this.agentId!,
       dateReconciliation: new Date()
     });
+
+    // Ajouter magasinId seulement lors de la création
+    if (!this.isEditing && this.magasinId && this.agentId) {
+      reconciliationData.magasinId = this.magasinId;
+      reconciliationData.responsable = this.agentId;
+    }
 
     console.log('Données préparées:', reconciliationData);
 

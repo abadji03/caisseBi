@@ -8,6 +8,7 @@ router.post('/', authenticateToken, fournisseurCtrl.createFournisseur);
 router.put('/:id', authenticateToken, fournisseurCtrl.updateFournisseur);
 router.delete('/:id', authenticateToken, fournisseurCtrl.deleteFournisseur);
 router.get('/structure/:code_structure', authenticateToken, fournisseurCtrl.getFournisseursByStructure);
+router.get('/structure/bis/:code_structure', authenticateToken, fournisseurCtrl.getFournisseursByStructureBis);
 router.patch('/:id/statut', authenticateToken, fournisseurCtrl.updateFournisseurStatus);
 router.get('/:id', authenticateToken, fournisseurCtrl.getFournisseurById);
 router.get('/:code_structure/:id/bons', authenticateToken, fournisseurCtrl.getBonsWithPaniersAndProduits);

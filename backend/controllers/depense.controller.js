@@ -583,3 +583,25 @@ exports.getAllByStructureBis = async (req, res) => {
   }
 };
 
+// Mettre à jour le statut d'une recette
+exports.updateStatut = async (req, res) => {
+  try {
+    const authUser = req.user; // utilisateur connecté
+
+    if (!authUser) {
+      return res.status(401).json({ message: 'Non authentifié' });
+    }
+    const depense = await Depense.findByPk(req.params.id);
+    if (!depense) return res.status(404).json({ message: 'Dépense non trouvé' });
+
+    const { statutDepense } = req.body;
+    console.log('Statut dépense',statutDepense);
+    /* if (typeof statut !== 'boolean')
+      return res.status(400).json({ message: 'Le statut doit être un booléen' }); */
+
+    await depense.update({ statutDepense });
+    res.json(depense );
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur mise à jour du statut', error });
+  }
+};

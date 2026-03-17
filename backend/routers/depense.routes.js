@@ -11,4 +11,6 @@ router.delete('/:id',authenticateToken, ctrl.deleteDepense);
 router.put('/:id',authenticateToken,upload.single('receipt'), ctrl.updateDepense);
 router.get('/structure/:code_structure', authenticateToken, ctrl.getAllByStructure);
 router.get('/structure/bis/:code_structure', authenticateToken, ctrl.getAllByStructureBis);
+router.patch('/:id/statutDepense', authenticateToken, ctrl.updateStatut);
+
 module.exports = router;

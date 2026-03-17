@@ -10,4 +10,6 @@ router.get('/structure/bis/:code_structure', authenticateToken, ctrl.getByStruct
 router.get('/paiement/:paiementId', ctrl.findByPaiementId);
 router.delete('/:id', authenticateToken, ctrl.deleteRecette);
 router.put('/:id', authenticateToken, upload.single('receipt'), ctrl.updateRecette);
+router.patch('/:id/statutRecette', authenticateToken, ctrl.updateStatut);
+
 module.exports = router;

@@ -444,7 +444,7 @@
           <th *ngIf="isAdmin">Magasin</th>
           <th>Pièce</th>
           <th>Statut</th>
-          <th *ngIf="!isAdmin">Actions</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -483,8 +483,8 @@
               {{ rec.statutRecette }}
             </span>
           </td>
-          <td *ngIf="!isAdmin">
-            <div class="btn-group" role="group">
+          <td>
+            <div class="btn-group" role="group" *ngIf="rec.statutRecette !== 'annulé' && canEditTransaction(rec)">
               <button class="btn btn-warning btn-sm" (click)="toggleForm(rec)" title="Modifier">
                 <i class="bi bi-pencil"></i>
               </button>

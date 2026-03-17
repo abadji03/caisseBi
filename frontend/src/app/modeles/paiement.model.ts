@@ -1,5 +1,7 @@
 // paiement.model.ts
 
+import { Client } from "./clients.model";
+import { Fournisseur } from "./fournisseur.model";
 import { Magasin } from "./magasin.model";
 import { User } from "./user.model";
 
@@ -40,10 +42,14 @@ export class Paiement {
   typePaiement: 'fournisseur' | 'client' | 'autre' = 'client';
   magasinId?: number;
   user?:User;
-  magasin?:Magasin;
+  Magasin?:Magasin;
   fichier?: string;
   fichierFile?: File; // Pour gérer le fichier uploadé
   statutPaiement?: 'validé' | 'annulé' = 'validé';
+
+  Fournisseur?:Fournisseur;
+  Client?:Client;
+
 
   constructor(data?: Partial<Paiement>) {
     if (data) {

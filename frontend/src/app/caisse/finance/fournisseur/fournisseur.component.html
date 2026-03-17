@@ -1,0 +1,808 @@
+<!-- fournisseurs.component.html (simplifié) -->
+<div class="container-fluid">
+  <nav>
+    <div class="nav nav-tabs" id="nav-tab" role="tablist">
+      <button
+        class="nav-link active"
+        id="nav-fournisseur-tab"
+        data-bs-toggle="tab"
+        data-bs-target="#nav-fournisseur"
+        type="button"
+        role="tab"
+        aria-controls="nav-fournisseur"
+        aria-selected="true"
+      >
+        Accueil
+      </button>
+      <button
+        class="nav-link"
+        id="nav-bons-tab"
+        data-bs-toggle="tab"
+        data-bs-target="#nav-bons"
+        type="button"
+        role="tab"
+        aria-controls="nav-bons"
+        aria-selected="false"
+      >
+        Historique des bons
+      </button>
+      <button
+        class="nav-link"
+        id="nav-versement-tab"
+        data-bs-toggle="tab"
+        data-bs-target="#nav-versement"
+        type="button"
+        role="tab"
+        aria-controls="nav-versement"
+        aria-selected="false"
+      >
+        Historique des versements
+      </button>
+      <!-- <button
+        class="nav-link"
+        id="nav-archives-tab"
+        data-bs-toggle="tab"
+        data-bs-target="#nav-archives"
+        type="button"
+        role="tab"
+        aria-controls="nav-archives"
+        aria-selected="false"
+      >
+        Archives
+      </button> -->
+    </div>
+  </nav>
+
+  <div class="tab-content" id="nav-tabContent">
+    <!-- Onglet Accueil -->
+    <div
+      class="tab-pane fade show active"
+      id="nav-fournisseur"
+      role="tabpanel"
+      aria-labelledby="nav-fournisseur-tab"
+      tabindex="0"
+    >
+      <div class="row mt-3">
+        <!-- Partie gauche - Liste des fournisseurs -->
+        <div class="col-md-12" *ngIf="!showDetails">
+          <div class="row">
+            <div [ngClass]="{ 'col-md-12': !isRowSelected, 'col-md-10': isRowSelected }">
+              <!-- En-tête avec bouton Nouveau Fournisseur -->
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex">
+                  <button class="btn btn-info me-2">
+                    <i class="bi bi-box-arrow-up-right text-white me-2"></i>Exporter
+                  </button>
+                  <button class="btn btn-warning me-2">
+                    <i class="bi bi-pencil-square text-white me-2"></i>Modifier
+                  </button>
+                  <button class="btn btn-secondary" (click)="loadData()">
+                    <i class="bi bi-arrow-clockwise text-white me-2"></i>Rafraîchir
+                  </button>
+                </div>
+
+                <button class="btn btn-success" (click)="openModal()">
+                  <i class="bi bi-plus-circle text-white me-2"></i>Nouveau Fournisseur
+                </button>
+              </div>
+
+              <!-- Titre de la liste -->
+              <div class="d-flex justify-content-center my-3">
+                <h1 class="text-muted">Liste des Fournisseurs</h1>
+              </div>
+
+              <!-- Barre de recherche et filtres -->
+              <div class="d-flex justify-content-between mb-3">
+                <div class="d-flex gap-2">
+                  <div class="input-group" style="width: 300px;">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input
+                      type="text"
+                      class="form-control"
+                      placeholder="Rechercher un fournisseur..."
+                      [ngModel]="fournisseursFilters.search"
+                      (ngModelChange)="onFournisseursSearchChange($event)"
+                    />
+                  </div>
+                  
+                  <select class="form-select" style="width: 150px;" 
+                          [ngModel]="fournisseursFilters.statut" 
+                          (ngModelChange)="onFournisseursStatutChange($event)">
+                    <option *ngFor="let opt of fournisseurStatutOptions" [value]="opt">
+                      {{ opt === 'tous' ? 'Tous' : (opt === 'actif' ? 'Actifs' : 'Inactifs') }}
+                    </option>
+                  </select>
+                </div>
+                
+                <div>
+                  <select
+                    class="form-select"
+                    [ngModel]="fournisseursItemsPerPage"
+                    (ngModelChange)="onFournisseursRowsPerPageChange($event)"
+                  >
+                    <option [value]="5">5 éléments/page</option>
+                    <option [value]="10">10 éléments/page</option>
+                    <option [value]="20">20 éléments/page</option>
+                    <option [value]="50">50 éléments/page</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Indicateur de chargement -->
+              <div *ngIf="isLoadingFournisseur" class="text-center my-5">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Chargement...</span>
+                </div>
+                <p class="mt-2">Chargement des fournisseurs...</p>
+              </div>
+
+              <!-- Tableau des fournisseurs -->
+              <div *ngIf="!isLoadingFournisseur" class="table-responsive">
+                <table class="table table-bordered table-hover">
+                  <thead class="table-dark">
+                    <tr>
+                      <th>Nom</th>
+                      <th>Adresse</th>
+                      <th>Téléphone</th>
+                      <th>Banque</th>
+                      <th>Nº de Compte</th>
+                      <th>Montant à Payer</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngIf="fournisseurs.length === 0">
+                        <td colspan="6" class="text-center py-4">
+                          <i class="bi bi-inbox display-4 text-muted"></i>
+                          <p class="mt-2">Aucun fournisseur trouvé</p>
+                        </td>
+                      </tr>
+                    <tr *ngFor="let fournisseur of fournisseurs" (click)="onRowSelect(fournisseur)">
+                      <td>{{ fournisseur.nomComplet }}</td>
+                      <td>{{ fournisseur.adresse }}</td>
+                      <td>{{ fournisseur.telephone }}</td>
+                      <td>{{ fournisseur.banque || '-' }}</td>
+                      <td>{{ fournisseur.numeroCompte || '-' }}</td>
+                      <td [ngClass]="{'text-danger fw-bold': fournisseur?.montantAPayer! > 0}">
+                        {{ fournisseur.montantAPayer | number }} F CFA
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Pagination -->
+              <div *ngIf="!isLoadingFournisseur && fournisseurs.length > 0" class="d-flex justify-content-between align-items-center">
+                <div class="text-muted small">
+                  Affichage {{ ((fournisseursCurrentPage - 1) * fournisseursItemsPerPage) + 1 }} 
+                  à {{ Math.min(fournisseursCurrentPage * fournisseursItemsPerPage, fournisseursTotalItems) }} 
+                  sur {{ fournisseursTotalItems }} fournisseurs
+                </div>
+                <!-- <div>
+                  <button
+                    class="btn btn-success me-2"
+                    (click)="onFournisseursPageChange(fournisseursCurrentPage - 1)"
+                    [disabled]="!fournisseursHasPrev"
+                  >
+                    <i class="bi bi-arrow-left-circle"></i>
+                  </button>
+                  <span class="h5 mx-2">Page {{ fournisseursCurrentPage }} / {{ fournisseursTotalPages }}</span>
+                  <button
+                    class="btn btn-success ms-2"
+                    (click)="onFournisseursPageChange(fournisseursCurrentPage + 1)"
+                    [disabled]="!fournisseursHasNext"
+                  >
+                    <i class="bi bi-arrow-right-circle"></i>
+                  </button>
+                </div> -->
+                <div class="d-flex align-items-center gap-2">
+                  <button
+                    class="btn btn-outline-dark btn-sm"
+                    (click)="onFournisseursPageChange(fournisseursCurrentPage - 1)"
+                    [disabled]="!fournisseursHasPrev"
+                  >
+                    <i class="bi bi-chevron-left"></i> Précédent
+                  </button>
+                  
+                  <span class="fw-bold mx-2">
+                    Page {{ fournisseursCurrentPage }} / {{ fournisseursTotalPages }}
+                  </span>
+                  
+                  <button
+                    class="btn btn-outline-dark btn-sm"
+                    (click)="onFournisseursPageChange(fournisseursCurrentPage + 1)"
+                    [disabled]="!fournisseursHasNext"
+                  >
+                    Suivant <i class="bi bi-chevron-right"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Colonne droite - Actions sur fournisseur sélectionné -->
+            <div *ngIf="isRowSelected" class="col-md-2 bg-light p-3">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Actions</h5>
+                <button class="btn btn-sm btn-danger" (click)="closeActions()">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </div>
+              
+              <div class="mb-3">
+                <p class="mb-1"><strong>ID:</strong> {{ selectedFournisseur?.id }}</p>
+                <p class="mb-0"><strong>Nom:</strong> {{ selectedFournisseur?.nomComplet }}</p>
+                <p class="mb-0 mt-1">
+                  <span class="badge" [ngClass]="selectedFournisseur?.statut ? 'bg-success' : 'bg-danger'">
+                    {{ selectedFournisseur?.statut ? 'Actif' : 'Inactif' }}
+                  </span>
+                </p>
+              </div>
+
+              <div class="d-grid gap-2">
+                <!-- Bouton Activer/Désactiver toujours visible -->
+                <button 
+                  class="btn d-flex align-items-center justify-content-center"
+                  [ngClass]="selectedFournisseur?.statut ? 'btn-secondary' : 'btn-success'"
+                  (click)="onAction('statut')"
+                >
+                  <i
+                    class="me-2 bi"
+                    [ngClass]="selectedFournisseur?.statut ? 'bi-pause-circle' : 'bi-play-circle'"
+                  ></i>
+                  {{ selectedFournisseur?.statut ? 'Désactiver' : 'Activer' }}
+                </button>
+
+                <!-- Actions visibles uniquement si l'entité est active -->
+                <ng-container *ngIf="selectedFournisseur?.statut">
+                  <button class="btn btn-warning text-white" (click)="onAction('modifier')">
+                    <i class="bi bi-pencil me-2"></i>Modifier
+                  </button>
+                  <!-- <button class="btn btn-danger" (click)="onAction('supprimer')">
+                    <i class="bi bi-trash me-2"></i>Supprimer
+                  </button> -->
+                  <button class="btn btn-info text-white" (click)="onAction('operation')">
+                    <i class="bi bi-eye me-1"></i>Opérations
+                  </button>
+                </ng-container>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Partie droite - Détails des opérations du fournisseur -->
+        <div class="col-md-12" *ngIf="showDetails">
+          <!-- Bouton de retour -->
+          <div class="d-flex justify-content-start mb-3">
+            <button class="btn btn-dark d-flex align-items-center" (click)="closeDetails()">
+              <i class="bi bi-arrow-left me-2"></i>Retour à la liste
+            </button>
+          </div>
+
+          <!-- Section des opérations -->
+          <div *ngIf="showBonDetailsSection" class="mb-5">
+            <!-- En-tête avec informations fournisseur et filtres de date -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h2>Opérations de : {{ selectedFournisseur?.nomComplet }}</h2>
+              <div class="d-flex">
+                <div class="me-3">
+                  <label for="startDate" class="form-label mb-0">Du :</label>
+                  <input
+                    type="date"
+                    id="startDate"
+                    [(ngModel)]="startDate"
+                    class="form-control form-control-sm"
+                    (change)="onDateChange({startDate, endDate})"
+                  />
+                </div>
+                <div>
+                  <label for="endDate" class="form-label mb-0">Au :</label>
+                  <input
+                    type="date"
+                    id="endDate"
+                    [(ngModel)]="endDate"
+                    class="form-control form-control-sm"
+                    (change)="onDateChange({startDate, endDate})"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Affichage du montant à payer -->
+            <div class="alert" [ngClass]="selectedFournisseur?.montantAPayer && selectedFournisseur?.montantAPayer! > 0 ? 'alert-danger' : 'alert-success'">
+              <h4 class="mb-0">
+                Montant à payer : {{ selectedFournisseur?.montantAPayer | number }} F CFA
+                <span *ngIf="selectedFournisseur?.montantAPayer && selectedFournisseur?.montantAPayer! > 0" class="ms-2">
+                  (Dette envers le fournisseur)
+                </span>
+                <span *ngIf="!selectedFournisseur?.montantAPayer || selectedFournisseur?.montantAPayer! <= 0" class="ms-2">
+                  (Aucune dette)
+                </span>
+              </h4>
+            </div>
+
+            <!-- Boutons d'action Nouveau bon / Nouveau versement -->
+            <div class="d-flex justify-content-between mb-3">
+              <button class="btn btn-info" (click)="onImprimerReleve()">
+                <i class="bi bi-printer me-2"></i>Imprimer relevé
+              </button>
+              <div>
+                <button class="btn btn-success me-3" (click)="toggleBonForm()">
+                  <i class="bi bi-plus-circle me-2"></i>{{ textBoutonNewBon }}
+                </button>
+                <button 
+                  [disabled]="!selectedFournisseur || !selectedFournisseur.montantAPayer || selectedFournisseur.montantAPayer <= 0" 
+                  class="btn btn-warning" 
+                  (click)="togglePaiementForm()"
+                >
+                  <i class="bi bi-plus-circle me-2"></i>Nouveau versement
+                </button>
+              </div>
+            </div>
+
+            <!-- Formulaire d'ajout d'un Paiement -->
+            <div *ngIf="showPaiementForm" class="mt-3 mb-5">
+              <app-paiement
+                [showPaiementForm]="true"
+                [titre]="'Formulaire d\'ajout d\'un paiement fournisseur'"
+                [typeEntite]="typeEntite"
+                [resetFormPaiement]="!showPaiementForm"
+                [entiteId]="selectedFournisseur?.id"
+                [entiteNom]="selectedFournisseur?.nomComplet"
+                [showFichierField]="true"
+                (onEnregistrerPaiement)="onPaiementEnregistre($event)"
+                (onAnnulerPaiement)="onPaiementAnnule()"
+                (onReinitiliaserPaiementFor)="onPaiementAnnule()"
+              ></app-paiement>
+            </div>
+
+            <!-- Formulaire pour ajouter un nouveau bon -->
+            <div *ngIf="showBonForm" class="formBon mb-5">
+              <app-bons
+                [produitsDisponibles]="filteredProducts"
+                [typeEntite]="typeEntite"
+                [entiteId]="selectedFournisseur?.id"
+                [entiteNom]="selectedFournisseur?.nomComplet"
+                (onEnregistrerBon)="onBonEnregistre($event)"
+                [showFileField]="true"
+                [generatedNumero]="generatedNumero"
+                [resetForm]="!showBonForm"
+                (onAnnulerBon)="onBonAnnule()"
+                (onReinitialiserPanier)="resetPanierFlag = true"
+              ></app-bons>
+            </div>
+
+            <!-- Liste des opérations -->
+            <app-liste-operations
+              [operations]="filteredOperations"
+              [entiteNom]="'fournisseur'"
+              [entite]="selectedFournisseur"
+              [startDate]="startDate"
+              [endDate]="endDate"
+              (onLivrerBon)="onLivrerBon($event)"
+              (onAnnulerBon)="onAnnulerBon($event)"
+              (onRetournerBon)="onRetournerBon($event)"
+              (onFacturerBon)="onFacturerBon($event)"
+              (onImprimerBon)="onImprimerBon($event)"
+              (onGenererTicketPaiementBon)="onGenererTicketPaiementBon($event)"
+              (onGenererTicketVersement)="onGenererTicketVersement($event)"
+            ></app-liste-operations>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Onglet Historique des bons -->
+    <div class="tab-pane fade" id="nav-bons" role="tabpanel" aria-labelledby="nav-bons-tab" tabindex="0">
+      <!-- Barre de filtres pour les bons -->
+      <div class="card mb-3 mt-3">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+          <h6 class="mb-0">Filtres des bons</h6>
+          <button class="btn btn-sm btn-outline-secondary" (click)="resetBonsFilters()">
+            <i class="bi bi-arrow-counterclockwise"></i> Réinitialiser
+          </button>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <!-- Recherche -->
+            <div class="col-md-4">
+              <label for="search" class="form-label">Recherche</label>
+              <div class="input-group">
+                <span class="input-group-text bg-white">
+                  <i class="bi bi-search"></i>
+                </span>
+                <input
+                  type="text"
+                  name="search"
+                  class="form-control"
+                  placeholder="Numéro, description,..."
+                  [ngModel]="bonsFilters.search"
+                  (ngModelChange)="onBonsSearchChange($event)" />
+              </div>
+            </div>
+
+            <!-- Filtre par type -->
+            <div class="col-md-3">
+              <label for="type1" class="form-label">Type</label>
+              <select id="type1" class="form-select" [ngModel]="bonsFilters.type" (ngModelChange)="onBonsTypeChange($event)">
+                <option *ngFor="let type of bonTypeOptions" [value]="type">
+                  {{ type === 'tous' ? 'Tous les types' : type }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Filtre par statut -->
+            <div class="col-md-3">
+              <label for="statut1" class="form-label">Statut</label>
+              <select id="statut1" class="form-select" [ngModel]="bonsFilters.statut" (ngModelChange)="onBonsStatutChange($event)">
+                <option *ngFor="let statut of bonStatutOptions" [value]="statut">
+                  {{ statut === 'tous' ? 'Tous les statuts' : statut }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Nombre d'éléments par page -->
+            <div class="col-md-2">
+              <label for="nombreLignes" class="form-label">Lignes/page</label>
+              <select id="nombreLignes" class="form-select" [ngModel]="bonsItemsPerPage" (ngModelChange)="onBonsRowsPerPageChange($event)">
+                <option [value]="5">5</option>
+                <option [value]="10">10</option>
+                <option [value]="20">20</option>
+                <option [value]="50">50</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Indicateur de chargement -->
+      <div *ngIf="isLoadingBon" class="text-center my-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Chargement...</span>
+        </div>
+        <p class="mt-2">Chargement des bons...</p>
+      </div>
+
+      <!-- Liste des bons avec pagination -->
+      <app-liste-bons
+        *ngIf="!isLoadingBon"
+        [bons]="bons"
+        [entiteNom]="'Fournisseur'"
+        [currentPage]="bonsCurrentPage"
+        [totalPages]="bonsTotalPages"
+        [totalItems]="bonsTotalItems"
+        [itemsPerPage]="bonsItemsPerPage"
+        [hasPrev]="bonsHasPrev"
+        [hasNext]="bonsHasNext"
+        (onPageChange)="onBonsPageChange($event)"
+        (onLivrer)="onLivrerBon($event)"
+        (onAnnuler)="onAnnulerBon($event)"
+        (onRetourner)="onRetournerBon($event)"
+        (onFacturer)="onFacturerBon($event)"
+        (onImprimer)="onImprimerBon($event)"
+        (onGenererTicket)="onGenererTicketPaiementBon($event)"
+      ></app-liste-bons>
+    </div>
+
+    <!-- Onglet Historique des versements -->
+    <div class="tab-pane fade" id="nav-versement" role="tabpanel" aria-labelledby="nav-versement-tab" tabindex="0">
+      <!-- Barre de filtres pour les versements -->
+      <div class="card mb-3 mt-3">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+          <h6 class="mb-0">Filtres des versements</h6>
+          <button class="btn btn-sm btn-outline-secondary" (click)="resetPaiementsFilters()">
+            <i class="bi bi-arrow-counterclockwise"></i> Réinitialiser
+          </button>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <!-- Recherche -->
+            <div class="col-md-3">
+              <label for="search1" class="form-label">Recherche</label>
+              <div class="input-group">
+                <span class="input-group-text bg-white">
+                  <i class="bi bi-search"></i>
+                </span>
+                <input
+                  name="search1"
+                  type="text"
+                  class="form-control"
+                  placeholder="Description, montant..."
+                  [ngModel]="paiementsFilters.search"
+                  (ngModelChange)="onPaiementsSearchChange($event)" />
+              </div>
+            </div>
+
+            <!-- Période -->
+            <!-- <div class="col-md-2">
+              <label for="dateDebut" class="form-label">Date début</label>
+              <input type="date" name="dateDebut" class="form-control" [(ngModel)]="paiementsFilters.dateDebut" 
+                    (ngModelChange)="onPaiementsDateChange({dateDebut: $event, dateFin: paiementsFilters.dateFin})">
+            </div>
+            
+            <div class="col-md-2">
+              <label for="dateFin" class="form-label">Date fin</label>
+              <input type="date" name="dateFin" class="form-control" [(ngModel)]="paiementsFilters.dateFin"
+                    (ngModelChange)="onPaiementsDateChange({dateDebut: paiementsFilters.dateDebut, dateFin: $event})">
+            </div> -->
+
+            <!-- Filtre par mode de paiement -->
+            <div class="col-md-3">
+              <label for="modePaiement" class="form-label">Mode de paiement</label>
+              <select id="modePaiement" class="form-select" [ngModel]="paiementsFilters.methodePaiement" 
+                      (ngModelChange)="onPaiementsMethodeChange($event)">
+                <option *ngFor="let mode of methodePaiementOptions" [value]="mode">
+                  {{ mode === 'tous' ? 'Tous les modes' : mode }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Nombre d'éléments par page -->
+            <div class="col-md-2">
+              <label for="nbrLignes" class="form-label">Lignes/page</label>
+              <select id="nbrLignes" class="form-select" [ngModel]="paiementsItemsPerPage" 
+                      (ngModelChange)="onPaiementsRowsPerPageChange($event)">
+                <option [value]="5">5</option>
+                <option [value]="10">10</option>
+                <option [value]="20">20</option>
+                <option [value]="50">50</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Indicateur de chargement -->
+      <div *ngIf="isLoadingPaiement" class="text-center my-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Chargement...</span>
+        </div>
+        <p class="mt-2">Chargement des versements...</p>
+      </div>
+
+      <!-- Liste des versements avec pagination -->
+      <app-liste-versements
+        *ngIf="!isLoadingPaiement"
+        [paiements]="paiements"
+        [entiteNom]="'Fournisseur'"
+        [isAdmin]="isAdmin"
+        [currentPage]="paiementsCurrentPage"
+        [totalPages]="paiementsTotalPages"
+        [totalItems]="paiementsTotalItems"
+        [hasPrev]="paiementsHasPrev"
+        [hasNext]="paiementsHasNext"
+        [itemsPerPage]="paiementsItemsPerPage"
+        (onPageChange)="onPaiementsPageChange($event)"
+      ></app-liste-versements>
+    </div>
+
+    <!-- Onglet Archives -->
+    <!-- <div
+      class="tab-pane fade"
+      id="nav-archives"
+      role="tabpanel"
+      aria-labelledby="nav-archives-tab"
+      tabindex="0"
+    >
+      <div class="table-responsive">
+        <div class="d-flex justify-content-center mt-4">
+          <h2 class="text-warning">Liste des fournisseurs archivés</h2>
+        </div>
+        <table class="table table-bordered table-hover">
+          <thead class="table-success">
+            <tr>
+              <th>Nom</th>
+              <th>Adresse</th>
+              <th>Téléphone</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="archivedFournisseurs.length === 0">
+              <td colspan="5" class="text-center text-muted py-4">
+                <i class="bi bi-person display-4 d-block mb-2"></i>
+                Aucun fournisseur archivé
+              </td>
+            </tr>
+            <tr *ngFor="let fournisseur of archivedFournisseurs">
+              <td>{{ fournisseur.nomComplet }}</td>
+              <td>{{ fournisseur.adresse }}</td>
+              <td>{{ fournisseur.telephone }}</td>
+              <td>
+                <span class="badge bg-danger">Inactif</span>
+              </td>
+              <td>
+                <button class="btn btn-warning btn-sm" (click)="toggleStatut(fournisseur)">
+                  <i class="bi bi-check-circle-fill me-2"></i>Activer
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div> -->
+  </div>
+
+  <!-- Modal d'ajout/édition fournisseur -->
+  <div class="modal fade" [ngClass]="{ 'show d-block': showModal, 'd-none': !showModal }" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-light">
+          <h5 class="modal-title">
+            {{ isEditMode ? 'Modifier le fournisseur' : 'Ajouter un fournisseur' }}
+          </h5>
+          <button type="button" class="btn-close" (click)="closeModal()">Fermer</button>
+        </div>
+        <div class="modal-body">
+          <form [formGroup]="fournisseurForm" (ngSubmit)="onModalSubmit()">
+            <!-- Première ligne -->
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label for="nomComplet" class="form-label">Nom Complet <span class="text-danger">*</span></label>
+                <input
+                  id="nomComplet"
+                  formControlName="nomComplet"
+                  class="form-control"
+                  [ngClass]="{ 'is-invalid': f['nomComplet'].touched && f['nomComplet'].errors }"
+                />
+                <div class="invalid-feedback" *ngIf="f['nomComplet'].hasError('required')">
+                  Le nom complet est obligatoire
+                </div>
+              </div>
+
+              <div class="col-md-4 mb-3">
+                <label for="telephone" class="form-label">Téléphone <span class="text-danger">*</span></label>
+                <input
+                  id="telephone"
+                  formControlName="telephone"
+                  class="form-control"
+                  [ngClass]="{ 'is-invalid': f['telephone'].touched && f['telephone'].errors }"
+                />
+                <div class="invalid-feedback" *ngIf="f['telephone'].hasError('required')">
+                  Le téléphone est obligatoire
+                </div>
+                <div class="invalid-feedback" *ngIf="f['telephone'].hasError('pattern')">
+                  Format de téléphone invalide
+                </div>
+              </div>
+
+              <div class="col-md-4 mb-3">
+                <label for="adresse" class="form-label">Adresse <span class="text-danger">*</span></label>
+                <input
+                  id="adresse"
+                  formControlName="adresse"
+                  class="form-control"
+                  [ngClass]="{ 'is-invalid': f['adresse'].touched && f['adresse'].errors }"
+                />
+                <div class="invalid-feedback" *ngIf="f['adresse'].hasError('required')">
+                  L'adresse est obligatoire
+                </div>
+              </div>
+            </div>
+
+            <!-- Deuxième ligne -->
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                <input
+                  id="email"
+                  formControlName="email"
+                  type="email"
+                  class="form-control"
+                  [ngClass]="{ 'is-invalid': f['email'].touched && f['email'].errors }"
+                />
+                <div class="invalid-feedback" *ngIf="f['email'].hasError('required')">
+                  L'email est obligatoire
+                </div>
+                <div class="invalid-feedback" *ngIf="f['email'].hasError('email')">
+                  Format d'email invalide
+                </div>
+              </div>
+
+              <div class="col-md-4 mb-3">
+                <label for="banque" class="form-label">Banque</label>
+                <input
+                  id="banque"
+                  formControlName="banque"
+                  class="form-control"
+                />
+              </div>
+
+              <div class="col-md-4 mb-3">
+                <label for="numeroCompte" class="form-label">Numéro de Compte</label>
+                <input
+                  id="numeroCompte"
+                  formControlName="numeroCompte"
+                  class="form-control"
+                />
+              </div>
+            </div>
+
+            <!-- Troisième ligne -->
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label for="pays" class="form-label">Pays</label>
+                <input id="pays" formControlName="pays" class="form-control" />
+              </div>
+
+              <div class="col-md-4 mb-3">
+                <label for="ville" class="form-label">Ville</label>
+                <input id="ville" formControlName="ville" class="form-control" />
+              </div>
+
+              <div class="col-md-4 mb-3">
+                <label for="magasinId" class="form-label">Magasin <span class="text-danger">*</span></label>
+                <select
+                  id="magasinId"
+                  formControlName="magasinId"
+                  class="form-select"
+                  [ngClass]="{ 'is-invalid': f['magasinId'].touched && f['magasinId'].errors }"
+                >
+                  <option value="" disabled>Sélectionner un magasin</option>
+                  <option *ngFor="let magasin of magasins" [value]="magasin.id">
+                    {{ magasin.nom }}
+                  </option>
+                </select>
+                <div class="invalid-feedback" *ngIf="f['magasinId'].hasError('required')">
+                  Le magasin est obligatoire
+                </div>
+              </div>
+            </div>
+
+            <!-- Quatrième ligne -->
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="termePaiement" class="form-label">Terme de Paiement</label>
+                <input id="termePaiement" formControlName="termePaiement" class="form-control" />
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label for="termeLivraison" class="form-label">Terme de Livraison</label>
+                <input id="termeLivraison" formControlName="termeLivraison" class="form-control" />
+              </div>
+            </div>
+
+            <!-- Statut (uniquement en mode édition) -->
+            <div *ngIf="isEditMode" class="row">
+              <div class="col-md-4 mb-3">
+                <div class="form-check form-switch">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="statut"
+                    formControlName="statut"
+                  />
+                  <label class="form-check-label" for="statut">
+                    {{ fournisseurForm.get('statut')?.value ? 'Actif' : 'Inactif' }}
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Boutons -->
+            <div class="d-flex justify-content-end mt-3">
+              <button type="button" class="btn btn-secondary me-2" (click)="closeModal()">
+                Annuler
+              </button>
+              <button
+                type="submit"
+                class="btn btn-success"
+                [disabled]="fournisseurForm.invalid || isLoadingFournisseur"
+              >
+                <span *ngIf="isLoadingFournisseur" class="spinner-border spinner-border-sm me-2"></span>
+                {{ isEditMode ? 'Mettre à jour' : 'Enregistrer' }}
+              </button>
+            </div>
+
+            <!-- Message d'erreur -->
+            <div *ngIf="errorMessage" class="alert alert-danger mt-3">
+              {{ errorMessage }}
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay pour le modal -->
+  <div *ngIf="showModal" class="modal-backdrop fade show"></div>
+</div>

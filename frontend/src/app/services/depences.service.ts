@@ -186,4 +186,12 @@ export class DepencesService {
       }
     );
   }
+
+  updateStatut(id: number, statutDepense: string): Observable<Depense> {
+          return this.http.patch<Depense>(
+            `${this.apiUrl}/${id}/statutDepense`,
+            { statutDepense },
+            { headers: this.getHeaders() },
+          ).pipe(catchError(this.handleError));;
+      }
 }

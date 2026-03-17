@@ -350,7 +350,7 @@ getMontantParMode(mode: string): number {
     const depenseData = this.depenseForm.value;
 
     formData.append('code_structure', this.code_structure!);
-    formData.append('magasinId', this.magasinId!.toString());
+    //formData.append('magasinId', this.magasinId!.toString());
     formData.append('agentId', this.agentId!.toString());
     formData.append('categoryId', depenseData.categoryId);
     formData.append('montant', depenseData.montant);
@@ -358,6 +358,10 @@ getMontantParMode(mode: string): number {
     formData.append('description', depenseData.description || '');
     formData.append('type', depenseData.type);
     formData.append('date', depenseData.date);
+
+    if (!this.selectedDepense?.id && this.magasinId) {
+      formData.append('magasinId', this.magasinId.toString());
+    }
 
     if (this.selectedFile) {
       formData.append('receipt', this.selectedFile);
@@ -420,42 +424,20 @@ getMontantParMode(mode: string): number {
   /**
    * Supprimer une dépense
    */
-  /* deleteDepense(depense: Depense): void {
-    if (!depense.id) return;
-
-    if (!confirm(`Voulez-vous vraiment supprimer cette dépense ?`)) return;
-
-    this.isLoading = true;
-    this.depenseService.deleteDepense(depense.id)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: () => {
-          this.depenses = this.depenses.filter(d => d.id !== depense.id);
-          this.filteredDepenses = [...this.depenses];
-          this.toastr.success('Dépense supprimée avec succès');
-          this.depenseAction.emit({ action: 'deleted', depense });
-        },
-        error: (err) => {
-          this.toastr.error('Erreur lors de la suppression');
-          console.error(err);
-        },
-        complete: () => this.isLoading = false
-      });
-  }
- */
-
-
   deleteDepense(depense: Depense): void {
     if (!depense.id) return;
 
-    if (!confirm(`Voulez-vous vraiment supprimer cette dépense ?`)) return;
+    if (!confirm(`Voulez-vous vraiment annuler cette dépense ?`)) return;
 
     this.isLoading = true;
-    this.depenseService.deleteDepense(depense.id)
-      .pipe(takeUntil(this.destroy$))
+    this.depenseService.updateStatut(depense.id,'annulé')
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.isLoading = false)
+      )
       .subscribe({
         next: () => {
-          this.toastr.success('Dépense supprimée avec succès');
+          this.toastr.success('Dépense annulée avec succès');
           this.loadDepenses();
           this.depenseAction.emit({ action: 'deleted', depense });
         },
@@ -463,8 +445,28 @@ getMontantParMode(mode: string): number {
           this.toastr.error('Erreur lors de la suppression');
           console.error(err);
         },
-        complete: () => this.isLoading = false
+        //complete: () => this.isLoading = false
       });
+  }
+
+  canEditTransaction(transaction: Depense): boolean {
+
+    const today = new Date();
+    const transactionDate = new Date(transaction.date);
+
+    // différence en jours
+    const diffTime = today.getTime() - transactionDate.getTime();
+    const diffDays = diffTime / (1000 * 3600 * 24);
+
+    // délai autorisé pour l'admin
+    const ADMIN_DELAY = 30;
+
+    if (this.isAdmin) {
+      return diffDays <= ADMIN_DELAY;
+    }
+
+    // utilisateur normal → seulement le jour même
+    return transactionDate.toDateString() === today.toDateString();
   }
 
   /**

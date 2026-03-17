@@ -1,0 +1,147 @@
+<div class="table-responsive">
+  <div class="d-flex justify-content-center mt-4">
+    <h2>Historique des bons</h2>
+  </div>
+
+  <table class="table table-striped">
+    <thead class="table-dark">
+      <tr>
+        <th>Nº Bon</th>
+        <th>Description</th>
+        <th>Montant Total</th>
+        <th>{{ entiteNom }}</th>
+        <th>Type</th>
+        <th>Agent</th>
+        <th *ngIf="isAdmin">Magasin</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngIf="bons.length === 0">
+        <td [attr.colspan]="isAdmin ? 8 : 7" class="text-center py-4">
+          <i class="bi bi-inbox display-4 text-muted"></i>
+          <p class="mt-2">Aucun bon trouvé</p>
+        </td>
+      </tr>
+      <ng-container *ngFor="let bon of bons; let i = index">
+        <!-- Ligne principale du bon -->
+        <tr>
+          <td>{{ bon.numero }}</td>
+          <td>{{ bon.description }}</td>
+          <td>{{ bon.type ==='retour' ? (bon.montantAvoir | number) : (bon.montantTotal | number) }} F CFA</td>
+          <td>{{ bon.typeEntite === 'client'? (bon.client?.nomComplet || 'N/A') : (bon.fournisseur?.nomComplet || 'N/A')  }}</td>
+          <td>{{ bon.type }}</td>
+          <td>{{ bon.user?.['nom'] }}</td>
+          <td *ngIf="isAdmin">{{ bon.Magasin?.nom }}</td>
+          <td>
+            <button class="btn btn-info btn-sm" (click)="toggleDetails(i, bon)" title="Voir détails">
+              <i class="bi bi-eye"></i>
+            </button>
+          </td>
+        </tr>
+
+        <!-- Détails du bon -->
+        <tr *ngIf="selectedBonIndex === i">
+          <td [attr.colspan]="isAdmin ? 8 : 7">
+            <div class="p-3 bg-light rounded">
+              <div class="d-flex flex-wrap gap-3 mb-3">
+                <span class="badge bg-secondary">💰 Total produits: <strong>{{ safeNumber(bon.Panier?.totalHT) | number }} F CFA</strong></span>
+                <span class="badge bg-secondary">💰 Remise: <strong>{{ safeNumber(bon.remise) | number }} F CFA</strong></span>
+                <span class="badge bg-secondary">💰 Net à payer: <strong>{{ safeNumber(bon.resteAPayer) | number }} F CFA</strong></span>
+              </div>
+
+              <!-- Actions du bon -->
+              <div class="btn-group mb-3 flex-wrap">
+                <button class="btn btn-outline-danger btn-sm" (click)="onAnnuler.emit(bon)"
+                        *ngIf="bon.statutBon === 'validé' && bon.type ==='commande'">
+                  <i class="bi bi-x-circle"></i> Annuler
+                </button>
+                <button class="btn btn-outline-dark btn-sm" (click)="onRetourner.emit(bon)"
+                        *ngIf="canReturn(bon)">
+                  <i class="bi bi-arrow-counterclockwise"></i> Retourner
+                </button>
+                <button class="btn btn-outline-primary btn-sm" (click)="onGenererTicket.emit(bon)"
+                        *ngIf="bon.statutBon === 'validé' && (bon?.avance ?? 0) > 0">
+                  <i class="bi bi-receipt"></i> Ticket
+                </button>
+                <button class="btn btn-outline-success btn-sm" (click)="onLivrer.emit(bon)"
+                        *ngIf="bon.statutBon === 'validé' && bon.type === 'commande'">
+                  <i class="bi bi-truck"></i> Livrer
+                </button>
+                <button class="btn btn-outline-info btn-sm" (click)="onFacturer.emit(bon)"
+                        *ngIf="bon.statutBon === 'validé'">
+                  <i class="bi bi-receipt"></i> Facturer
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" (click)="onImprimer.emit(bon)">
+                  <i class="bi bi-printer"></i> Imprimer
+                </button>
+              </div>
+
+              <!-- Tableau des produits -->
+              <h6 class="mt-3 mb-2">Produits :</h6>
+              <table class="table table-sm table-bordered">
+                <thead class="table-light">
+                  <tr>
+                    <th>Produit</th>
+                    <th>Quantité</th>
+                    <th>Unité</th>
+                    <th>Prix Unitaire</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngIf="bon.Panier?.ArticlePaniers?.length === 0">
+                    <td colspan="4" class="text-center">Aucun produit associé</td>
+                  </tr>
+                  <tr *ngFor="let produit of bon.Panier?.ArticlePaniers || []">
+                    <td>{{ produit.Produit?.designation || produit.produit?.designation }}</td>
+                    <td>{{ produit.quantite }}</td>
+                    <td>{{ produit.Produit?.unite || produit.produit?.unite }}</td>
+                    <td>{{ (produit.prixUnitaire || produit.prixAchatUnitaire) | number }} F CFA</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </td>
+        </tr>
+      </ng-container>
+    </tbody>
+  </table>
+
+ <!-- Pagination -->
+  <div *ngIf="bons.length > 0" class="d-flex justify-content-between align-items-center mt-3">
+    <div class="text-muted small">
+      <!-- Utilisation de itemsPerPage -->
+      Affichage {{ ((currentPage - 1) * itemsPerPage) + 1 }} 
+      à {{ Math.min(currentPage * itemsPerPage, totalItems) }} 
+      sur {{ totalItems }} bons
+    </div>
+
+    <div class="d-flex align-items-center gap-2">
+      <button
+        class="btn btn-outline-dark btn-sm"
+        (click)="changePage(currentPage - 1)"
+        [disabled]="!hasPrev"
+      >
+        <i class="bi bi-chevron-left"></i> Précédent
+      </button>
+      
+      <span class="fw-bold mx-2">
+        Page {{ currentPage }} / {{ totalPages }}
+      </span>
+      
+      <button
+        class="btn btn-outline-dark btn-sm"
+        (click)="changePage(currentPage + 1)"
+        [disabled]="!hasNext"
+      >
+        Suivant <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Message si aucun bon -->
+  <div *ngIf="bons.length === 0" class="text-center py-4">
+    <i class="bi bi-inbox display-4 text-muted"></i>
+    <p class="mt-2">Aucun bon trouvé</p>
+  </div>
+</div>

@@ -1,8 +1,28 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { AuthService } from './auth.service';
 import { Fournisseur } from '../modeles/fournisseur.model';
-import { Observable } from 'rxjs';
+import { catchError, Observable, tap, throwError } from 'rxjs';
+import { NGXLogger } from 'ngx-logger';
+
+export interface FournisseursFilter {
+  page?: number;
+  limit?: number;
+  search?: string;
+  statut?: string;
+}
+
+export interface FournisseursResponse {
+  items: Fournisseur[];
+  pagination: {
+    total: number;
+    page: number;
+    totalPages: number;
+    limit: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
 
 @Injectable({
   providedIn: 'root',
@@ -11,6 +31,7 @@ export class FournisseursService {
   private apiUrl = 'http://localhost:5000/api/fournisseurs';
   private http = inject(HttpClient);
   private authService = inject(AuthService);
+  private logger = inject(NGXLogger);
 
   private getHeaders(): HttpHeaders {
     const token = this.authService.getToken();
@@ -64,6 +85,37 @@ export class FournisseursService {
     return this.http.get<Fournisseur[]>(`${this.apiUrl}/structure/${codeStructure}`, {
       headers: this.getHeaders(),
     });
+  }
+
+  // Récupérer les fournisseurs par structure avec pagination
+  getFournisseursByStructureBis(codeStructure: string, filter: FournisseursFilter = {}): Observable<FournisseursResponse> {
+    let params = new HttpParams();
+    
+    // Pagination
+    if (filter.page) params = params.set('page', filter.page.toString());
+    if (filter.limit) params = params.set('limit', filter.limit.toString());
+    
+    // Recherche
+    if (filter.search) params = params.set('search', filter.search);
+    
+    // Filtre par statut
+    if (filter.statut && filter.statut !== 'tous') {
+      params = params.set('statut', filter.statut);
+    }
+
+    return this.http.get<FournisseursResponse>(`${this.apiUrl}/structure/bis/${codeStructure}`, {
+      headers: this.getHeaders(),
+      params
+    }).pipe(
+      tap(response => this.logger.info(`Fournisseurs récupérés: ${response.items.length}`)),
+      catchError(err => this.handleError(err, 'Erreur lors du chargement des fournisseurs'))
+    );
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private handleError(error: any, message: string): Observable<never> {
+    this.logger.error(message, error);
+    return throwError(() => error);
   }
 
   // Recherche avancée de fournisseurs

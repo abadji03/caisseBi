@@ -21,6 +21,7 @@ export class MouvementComponent implements OnInit, OnDestroy {
   @Input() codeStructure: string | null = null;
   @Input() magasinId: number | null = null;
   @Input() agentId: number | null = null;
+  @Input() isAdmin = false;
 
   mouvementForm!: FormGroup;
   mouvements: MouvementsStock[] = [];
@@ -218,6 +219,26 @@ export class MouvementComponent implements OnInit, OnDestroy {
     this.loadData();
   }
 
+  canEditTransaction(transaction: MouvementsStock): boolean {
+  
+      const today = new Date();
+      const transactionDate = new Date(transaction.dateMouvement);
+  
+      // différence en jours
+      const diffTime = today.getTime() - transactionDate.getTime();
+      const diffDays = diffTime / (1000 * 3600 * 24);
+  
+      // délai autorisé pour l'admin
+      const ADMIN_DELAY = 30;
+  
+      if (this.isAdmin) {
+        return diffDays <= ADMIN_DELAY;
+      }
+  
+      // utilisateur normal → seulement le jour même
+      return transactionDate.toDateString() === today.toDateString();
+    }
+  
 
   getNomProduitById(produitId: number | null | undefined): string {
     if (!produitId) {
@@ -352,13 +373,19 @@ export class MouvementComponent implements OnInit, OnDestroy {
         ? this.currentMouvement.prixUnitaire 
         : Number(f.prixUnitaire),
       code_structure: this.codeStructure,
-      acteurId: this.isEditing && this.currentMouvement ? this.currentMouvement.acteurId : this.agentId,
+      //acteurId: this.isEditing && this.currentMouvement ? this.currentMouvement.acteurId : this.agentId,
       ref: this.isEditing && this.currentMouvement 
         ? this.currentMouvement.ref 
         : `MVT-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
       stockId: this.isEditing && this.currentMouvement ? this.currentMouvement.stockId : this.idStockPoduct,
-      magasinId: this.isEditing && this.currentMouvement ? this.currentMouvement.magasinId : this.magasinId,
+      //magasinId: this.isEditing && this.currentMouvement ? this.currentMouvement.magasinId : this.magasinId,
     };
+
+    // Ajouter magasinId seulement lors de la création
+      if (!this.isEditing && this.magasinId && this.agentId) {
+        payload.magasinId = this.magasinId;
+        payload.acteurId = this.agentId
+      }
 
 
     console.log('Payload préparé:', payload);

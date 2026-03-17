@@ -15,8 +15,8 @@ import { ToastrService } from 'ngx-toastr';
 import { BonBrouillonService } from '../../../services/bon-brouillon.service';
 import { ProduitsService } from '../../../services/produits.service';
 import { PdfMakerServiceService } from '../../../services/pdf-maker-service.service';
-import { PaniersService } from '../../../services/paniers.service';
-import { finalize, forkJoin, Subject, Subscription, takeUntil } from 'rxjs';
+import { PaniersService, TransactionsFilter } from '../../../services/paniers.service';
+import { debounceTime, distinctUntilChanged, finalize, forkJoin, Subject, Subscription, takeUntil } from 'rxjs';
 import { PanierComponent } from '../../../sharedComposants/panier/panier.component';
 import { StockInventaireService } from '../../../services/stock-inventaire.service';
 import { MouvementsStock, Stock } from '../../../modeles/entrees-sorties.model';
@@ -116,8 +116,33 @@ export class CaisseComponent implements OnInit, OnDestroy {
   paniers: Panier[] = [];
   selectedTransaction: Panier | null = null;
 
+  isAdmin = false;
+
   // Ajout des variables pour le modal
   private clientModal: any;
+  // Pagination
+  currentPage = 1;
+  itemsPerPage = 10;
+  totalItems = 0;
+  totalPages = 0;
+  hasNext = false;
+  hasPrev = false;
+
+  Math = Math;
+
+  // Filtres
+  filters: TransactionsFilter = {
+    page: 1,
+    limit: 10,
+    search: '',
+    statut: ''
+  };
+
+  // Options pour le filtre de statut
+  statutOptions = ['tous', 'validé', 'annulé', 'retourné'];
+
+  private searchSubject = new Subject<string>();
+
 
   private fb = inject(FormBuilder);
     //private paginationService = inject(ApplicationService);
@@ -140,6 +165,7 @@ export class CaisseComponent implements OnInit, OnDestroy {
       this.code_structure = user?.code_structure || null;
       this.magasinId = user?.magasinId || null;
       this.agentId = user?.id || null;
+      this.isAdmin = this.authService.hasRole('Administrateur');
       console.log('Données user connecté :',user, this.code_structure, this.magasinId, this.agentId );
       // Déterminer si on doit montrer le champ structure
       //this.isStructureAdmin = this.authService.hasRole('Administrateur'); // Ou vérifiez par ID
@@ -172,6 +198,17 @@ export class CaisseComponent implements OnInit, OnDestroy {
     if (modalElement) {
       this.clientModal = new (window as any).bootstrap.Modal(modalElement);
     }
+
+    // Debounce pour la recherche
+    this.searchSubject.pipe(
+      debounceTime(500),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(searchTerm => {
+      this.filters.search = searchTerm;
+      this.filters.page = 1;
+      this.loadTransactions();
+    });
   }
 
   iniForms(): void {
@@ -907,7 +944,7 @@ updateStockApresSuppressionArticle(article: ArticlePanier): void {
   }
 
   /** CHARGER LES TRANSACTIONS */
-  private loadTransactions(): void {
+  /* private loadTransactions(): void {
     console.log('Chargement des transactions de la caisse...');
     this.panierService.getPaniersAujourdhui(this.code_structure!, this.magasinId!,null)
       .pipe(takeUntil(this.destroy$))
@@ -924,7 +961,103 @@ updateStockApresSuppressionArticle(article: ArticlePanier): void {
           this.toastr.error('Erreur lors du chargement des transactions');
         }
       });
+  } */
+ loadTransactions(): void {
+    console.log('Chargement des transactions avec pagination...');
+    
+    const filter: TransactionsFilter = {
+      page: this.filters.page,
+      limit: this.itemsPerPage,
+      search: this.filters.search || undefined,
+      statut: this.filters.statut !== 'tous' ? this.filters.statut : undefined
+    };
+
+    this.panierService.getPaniersAujourdhuiBis(
+      this.code_structure!, 
+      this.magasinId!, 
+      null,
+      filter
+    )
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (response) => {
+        console.log('Résultat des transactions:', response);
+        this.paniers = response.items;
+        this.totalCaisse = response.statistiques.totalGlobal;
+        this.totalTransactions = response.statistiques.nombreTransactions;
+        
+        // Mise à jour de la pagination
+        this.totalItems = response.pagination.total;
+        this.currentPage = response.pagination.page;
+        this.totalPages = response.pagination.totalPages;
+        this.hasNext = response.pagination.hasNext;
+        this.hasPrev = response.pagination.hasPrev;
+        
+        console.log('Transactions chargées:', this.paniers);
+      },
+      error: (err) => {
+        console.error('Erreur chargement transactions:', err);
+        this.toastr.error('Erreur lors du chargement des transactions');
+      }
+    });
   }
+
+/**
+ * Appliquer les filtres
+ */
+applyFilters(): void {
+  this.filters.page = 1;
+  this.loadTransactions();
+}
+
+/**
+ * Réinitialiser les filtres
+ */
+resetFilters(): void {
+  this.filters = {
+    page: 1,
+    limit: this.itemsPerPage,
+    search: '',
+    statut: ''
+  };
+  this.loadTransactions();
+}
+
+/**
+ * Gestionnaire de recherche avec debounce
+ */
+onSearchChange(searchTerm: string): void {
+  this.searchSubject.next(searchTerm);
+}
+
+/**
+ * Changer de page
+ */
+onPageChange(page: number): void {
+  if (page >= 1 && page <= this.totalPages) {
+    this.filters.page = page;
+    this.loadTransactions();
+  }
+}
+
+/**
+ * Changer le nombre d'éléments par page
+ */
+onItemsPerPageChange(limit: number): void {
+  this.itemsPerPage = limit;
+  this.filters.limit = limit;
+  this.filters.page = 1;
+  this.loadTransactions();
+}
+
+/**
+ * Changer le filtre de statut
+ */
+onStatutChange(statut: string): void {
+  this.filters.statut = statut;
+  this.filters.page = 1;
+  this.loadTransactions();
+}
 
   //.............................................................................
 private chargerBrouillonsExistants(): void {

@@ -129,7 +129,8 @@ export class AuthService {
         children: [
           { label: 'Ventes', route: '/caisse-bi/ventes', titre: 'Ventes', sousTitre: 'Gestion des ventes' },
           { label: 'Caisse', route: '/caisse-bi/caisse', titre: 'Ventes', sousTitre: 'Gestion de la caisse' },
-          { label: 'Clients', route: '/caisse-bi/clients', titre: 'Ventes', sousTitre: 'Gestion des clients' }
+          { label: 'Clients', route: '/caisse-bi/clients', titre: 'Ventes', sousTitre: 'Gestion des clients' },
+          { label: 'Client', route: '/caisse-bi/client', titre: 'Ventes', sousTitre: 'Gestion des clients' }
         ]
       },
       {
@@ -153,6 +154,7 @@ export class AuthService {
         children: [
           { label: 'Gestion Financière', route: '/caisse-bi/finance', titre: 'Finance', sousTitre: 'Gestion financière' },
           { label: 'Fournisseurs', route: '/caisse-bi/fournisseurs', titre: 'Finance', sousTitre: 'Gestion des fournisseurs' },
+          { label: 'Fournisseur', route: '/caisse-bi/fournisseur', titre: 'Finance', sousTitre: 'Gestion des fournisseurs' },
         ]
       },
       {
@@ -200,7 +202,9 @@ export class AuthService {
         children: [
           { label: 'Ventes', route: '/caisse-bi/ventes', titre: 'Ventes', sousTitre: 'Gestion des ventes' },
           { label: 'Caisse', route: '/caisse-bi/caisse', titre: 'Ventes', sousTitre: 'Gestion de la caisse' },
-          { label: 'Clients', route: '/caisse-bi/clients', titre: 'Ventes', sousTitre: 'Gestion des clients' }
+          { label: 'Clients', route: '/caisse-bi/clients', titre: 'Ventes', sousTitre: 'Gestion des clients' },
+          { label: 'Client', route: '/caisse-bi/client', titre: 'Ventes', sousTitre: 'Gestion des clients' }
+
         ]
       },
       {
@@ -224,6 +228,7 @@ export class AuthService {
         children: [
           { label: 'Gestion Financière', route: '/caisse-bi/finance', titre: 'Finance', sousTitre: 'Gestion financière' },
           { label: 'Fournisseurs', route: '/caisse-bi/fournisseurs', titre: 'Finance', sousTitre: 'Gestion des fournisseurs' },
+          { label: 'Fournisseur', route: '/caisse-bi/fournisseur', titre: 'Finance', sousTitre: 'Gestion des fournisseurs' },
         ]
       },
       {

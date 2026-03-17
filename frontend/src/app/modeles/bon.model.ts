@@ -1,6 +1,9 @@
 import { User } from '@sentry/angular';
 import { Operation } from './operation.model';
 import { Panier } from './panier.model';
+import { Fournisseur } from './fournisseur.model';
+import { Client } from './clients.model';
+import { Magasin } from './magasin.model';
 
 export class Bon {
 
@@ -59,6 +62,10 @@ export class Bon {
   panier?: Panier;
   Panier?: Panier
   operations: Operation[] = [];
+
+  fournisseur?:Fournisseur;
+  client?:Client;
+  Magasin?:Magasin;
 
 
   constructor(data?: Partial<Bon>) {

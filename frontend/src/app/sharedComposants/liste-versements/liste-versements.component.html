@@ -1,0 +1,78 @@
+<div class="table-responsive">
+  <div class="d-flex justify-content-center mt-4">
+    <h2>Historique des versements</h2>
+  </div>
+
+  <table class="table table-striped table-hover">
+    <thead class="table-dark">
+      <tr>
+        <th>Description</th>
+        <th>Montant</th>
+        <th>Date</th>
+        <th>{{ entiteNom }}</th>
+        <th>Mode de Paiement</th>
+        <th>Agent</th>
+        <th *ngIf="isAdmin">Magasin</th>
+        <!-- <th>Actions</th> -->
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngIf="!paiements || paiements.length === 0">
+        <td [attr.colspan]="isAdmin ? 8 : 7" class="text-center py-4">
+          <i class="bi bi-inbox display-4 text-muted"></i>
+          <p class="mt-2">Aucun versement trouvé</p>
+        </td>
+      </tr>
+      <tr *ngFor="let paiement of paiements">
+        <td>{{ paiement.description || '-' }}</td>
+        <td class="fw-bold text-success">{{ paiement.montant | number }} F CFA</td>
+        <td>{{ paiement.date | date: 'dd/MM/yyyy HH:mm' }}</td>
+        <td>{{ getEntiteNom(paiement) }}</td>
+        <td>
+          <span class="badge bg-info">{{ paiement.methodePaiement }}</span>
+        </td>
+        <td>{{ paiement.user?.nom || 'N/A' }}</td>
+        <td *ngIf="isAdmin">{{ paiement.Magasin?.nom || 'N/A' }}</td>
+        <!-- <td>
+          <button class="btn btn-info btn-sm" (click)="viewDetails(paiement)" title="Voir détails">
+            <i class="bi bi-eye"></i>
+          </button>
+          <button class="btn btn-success btn-sm ms-1" (click)="imprimerTicket(paiement)" title="Imprimer ticket">
+            <i class="bi bi-receipt"></i>
+          </button>
+        </td> -->
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Pagination -->
+  <div *ngIf="paiements && paiements.length > 0" class="d-flex justify-content-between align-items-center mt-3">
+    <div class="text-muted small">
+      Affichage {{ ((currentPage - 1) * itemsPerPage) + 1 }} 
+      à {{ Math.min(currentPage * itemsPerPage, totalItems) }} 
+      sur {{ totalItems }} versements
+    </div>
+
+    <div class="d-flex align-items-center gap-2">
+      <button
+        class="btn btn-outline-dark btn-sm"
+        (click)="changePage(currentPage - 1)"
+        [disabled]="!hasPrev"
+      >
+        <i class="bi bi-chevron-left"></i> Précédent
+      </button>
+      
+      <span class="fw-bold mx-2">
+        Page {{ currentPage }} / {{ totalPages }}
+      </span>
+      
+      <button
+        class="btn btn-outline-dark btn-sm"
+        (click)="changePage(currentPage + 1)"
+        [disabled]="!hasNext"
+      >
+        Suivant <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,288 @@
+<!-- liste-operations.component.html -->
+<div class="mb-5">
+  <!-- <div class="d-flex justify-content-between mb-3">
+    <h2>Opérations du {{ entiteNom }} : {{ entite?.nomComplet }}</h2>
+    <div class="d-flex align-items-center">
+      <div class="me-3">
+        <label for="startDate">Du :</label>
+        <input
+          type="date"
+          id="startDate"
+          [ngModel]="startDate"
+          (ngModelChange)="onStartDateChange($event)"
+          class="form-control"
+        />
+      </div>
+      <div>
+        <label for="endDate">Au :</label>
+        <input
+          type="date"
+          id="endDate"
+          [ngModel]="endDate"
+          (ngModelChange)="onEndDateChange($event)"
+          class="form-control"
+        />
+      </div>
+    </div>
+  </div> -->
+
+  <!--<div>
+     <h4>Montant à verser: {{ entite?.montantAPayer || entite?.solde || 0 | number }} F CFA</h4> 
+  </div>-->
+
+  <!-- <div class="d-flex justify-content-between mb-3">
+    <button class="btn btn-info me-3" (click)="onImprimerReleve.emit()">
+      <i class="bi bi-printer me-2"></i>Imprimer relevé
+    </button>
+    <div>
+      <button class="btn btn-success me-3" (click)="onToggleBonForm.emit()">
+        <i class="bi bi-plus-circle me-2"></i>{{ showBonForm ? 'Masquer' : 'Nouveau bon' }}
+      </button>
+      <button 
+        [disabled]="!entite || !entite.montantANousPayer || entite.montantAPayer <= 0" 
+        class="btn btn-warning" 
+        (click)="onTogglePaiementForm.emit()"
+      >
+        <i class="bi bi-plus-circle me-2"></i>Nouveau versement
+      </button> 
+    </div>
+  </div> -->
+
+  <div class="table-responsive">
+    <div class="d-flex justify-content-center mt-4">
+      <h2>
+        Opérations sur la période du {{ (startDate | date: 'dd/MM/yyyy') || 'début' }} au
+        {{ (endDate | date: 'dd/MM/yyyy') || 'aujourd\'hui' }}
+      </h2>
+    </div>
+
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Type d'opération</th>
+          <th>Date et Heure</th>
+          <th>Montant payé</th>
+          <th>Agent opération</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <ng-container *ngFor="let operation of filteredOperations; let i = index">
+          <tr>
+            <td>
+              <span [ngClass]="{
+                  'badge bg-primary': operation.type === 'COMMANDE',
+                  'badge bg-success': operation.type === 'VERSEMENT',
+                  'badge bg-warning': operation.type === 'REGLEMENT',
+                  'badge bg-info': operation.type === 'LIVRAISON',
+                  'badge bg-danger': operation.type === 'RETOUR',
+                  'badge bg-secondary': operation.type === 'AVOIR'
+                }">
+                {{ operation.type }}
+              </span>
+            </td>
+            <td>{{ operation.dateOperation | date: 'dd/MM/yyyy HH:mm' }}</td>
+            <td>{{ operation.montantPaye | number }} F CFA</td>
+            <td>
+              <span *ngIf="operation.user; else noAgent">
+                {{ operation?.user?.['nom'] || 'N/A'}} 
+              </span>
+              <ng-template #noAgent>
+                <span class="text-muted">Non assigné</span>
+              </ng-template>
+            </td>
+            <td>
+              <button 
+                  class="btn btn-info btn-sm" 
+                  (click)="toggleDetails(i, operation)"
+                >
+                  <i class="bi bi-eye"></i> 
+                  {{ selectedOperationIndex === i ? 'Masquer' : 'Détails' }}
+                </button>
+            </td>
+          </tr>
+
+          <!-- Détails de l'opération -->
+          <tr *ngIf="selectedOperationIndex === i">
+            <td colspan="5">
+              <div class="p-3 bg-light rounded">
+                <!-- Affichage pour les BONS -->
+                <div *ngIf="operation.type !== 'VERSEMENT' && operation.type !== 'REGLEMENT'">
+                  <div *ngIf="operation?.Bon as bon; else noBon">
+                    <div class="row mb-3">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="me-3">
+                          Détails du bon Nº: <em>{{ bon.numero }}</em>
+                          <span class="badge ms-2" [ngClass]="{
+                            'bg-secondary': bon.statutBon === 'brouillon',
+                            'bg-success': bon.statutBon === 'validé',
+                            'bg-primary': bon.statutBon === 'livré',
+                            'bg-warning': bon.statutBon === 'retourné',
+                            'bg-danger': bon.statutBon === 'annulé',
+                            'bg-info': bon.statutBon === 'facturé',
+                            'bg-dark': bon.statutBon === 'retourné partiellement'
+                          }">
+                            {{ bon.statutBon }}
+                          </span>
+                        </h4>
+                        
+                        <!-- Actions du bon -->
+                        <div class="btn-group">
+                          <button class="btn btn-outline-danger btn-sm me-1" (click)="onAnnulerBon.emit(bon)"
+                                  *ngIf="bon.statutBon === 'validé' && bon.type ==='commande'">
+                            <i class="bi bi-x-circle"></i> Annuler
+                          </button>
+                          <button class="btn btn-outline-dark btn-sm me-1" (click)="onRetournerBon.emit(bon)"
+                                  *ngIf="canReturn(bon)">
+                            <i class="bi bi-arrow-counterclockwise"></i> Retourner
+                          </button>
+                          <button class="btn btn-outline-primary btn-sm me-1" (click)="onGenererTicketPaiementBon.emit(bon)"
+                                  *ngIf="bon.statutBon === 'validé' && (bon?.avance ?? 0) > 0">
+                            <i class="bi bi-receipt"></i> Ticket de paiement
+                          </button>
+                          <button class="btn btn-outline-success btn-sm me-1" (click)="onLivrerBon.emit(bon)"
+                                  *ngIf="bon.statutBon === 'validé' && bon.type === 'commande'">
+                            <i class="bi bi-truck"></i> Livrer
+                          </button>
+                          <button class="btn btn-outline-info btn-sm me-1" (click)="onFacturerBon.emit(bon)"
+                                  *ngIf="bon.statutBon === 'validé'">
+                            <i class="bi bi-receipt"></i> Facturer
+                          </button>
+                          <button class="btn btn-outline-secondary btn-sm" (click)="onImprimerBon.emit(bon)">
+                            <i class="bi bi-printer"></i> Imprimer
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- Totaux du bon -->
+                      <div class="row mt-3">
+                        <div class="col-md-6">
+                          <div class="card">
+                            <div class="card-body">
+                              <h6 class="card-title">Récapitulatif financier</h6>
+                              <div class="row">
+                                <div class="col-6">
+                                  <small>Total HT:</small><br>
+                                  <strong>{{ safeNumber(bon.Panier?.totalHT) | number }} F CFA</strong>
+                                </div>
+                                <div class="col-6">
+                                  <small>TVA:</small><br>
+                                  <strong>{{ safeNumber(bon.Panier?.tva) | number }} F CFA</strong>
+                                </div>
+                                <div class="col-12 mt-2">
+                                  <small>Remise:</small><br>
+                                  <strong>{{ safeNumber(bon.Panier?.remise) | number }} F CFA</strong>
+                                </div>
+                                <div class="col-6 mt-2">
+                                  <small>Total TTC:</small><br>
+                                  <strong>{{ safeNumber(bon.Panier?.totalTTC) | number }} F CFA</strong>
+                                </div>
+                                <div class="col-6 mt-2">
+                                  <small>Avance:</small><br>
+                                  <strong>{{ safeNumber(operation.montantPaye) | number }} F CFA</strong>
+                                </div>
+                                <div *ngIf="bon.fichier; else noBonFile">
+                                  <a [href]="bon.fichier" target="_blank" class="btn btn-sm btn-secondary">
+                                    <i class="bi bi-download"></i> Télécharger la pièce jointe
+                                  </a>
+                                </div>
+                                <ng-template #noBonFile>
+                                  <span class="text-muted">Aucune pièce jointe</span>
+                                </ng-template>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Tableau des produits -->
+                    <h5>Produits associés</h5>
+                    <div class="table-responsive">
+                      <table class="table table-sm table-hover">
+                        <thead>
+                          <tr>
+                            <th>Produit</th>
+                            <th>Quantité</th>
+                            <th>Prix Unitaire</th>
+                            <th>remise</th>
+                            <th>tva</th>
+                            <th>Total HT</th>
+                            <th>Total TTC</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr *ngFor="let article of bon.Panier?.ArticlePaniers || []">
+                            <td>{{ article.Produit?.designation || 'N/A' }}</td>
+                            <td>
+                              {{ article.quantite }} 
+                              <small class="text-muted">{{ article.Produit?.unite }}</small>
+                            </td>
+                            <td>{{ safeNumber(article.prixUnitaire) | number }} F CFA</td>
+                            <td>{{ article.remise }}% <small>({{ safeNumber(article.montantRemise) | number }} F CFA)</small></td>
+                            <td>{{ article.tauxTVA }}% <small>({{ safeNumber(article.montantTVA) | number }} F CFA)</small></td>
+                            <td><strong>{{ safeNumber(article.totalHT) | number }} F CFA</strong></td>
+                            <td><strong>{{ safeNumber(article.totalTTC) | number }} F CFA</strong></td>
+                          </tr>
+                          <tr *ngIf="!bon.Panier?.ArticlePaniers?.length">
+                            <td colspan="7" class="text-center text-muted">
+                              Aucun produit dans ce bon
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <ng-template #noBon>
+                    <div class="alert alert-warning">
+                      <i class="bi bi-exclamation-triangle"></i>
+                      Aucun bon associé à cette opération
+                    </div>
+                  </ng-template>
+                </div>
+
+                <!-- Affichage pour les VERSEMENTS/REGLEMENTS -->
+                <div *ngIf="operation.type === 'VERSEMENT' || operation.type === 'REGLEMENT'">
+                  <div class="row">
+                    <div class="col-md-6">
+                      <div class="card">
+                        <div class="card-body">
+                          <h5 class="card-title">Détails du paiement</h5>
+                          <p><strong>Type:</strong> {{ operation.type }}</p>
+                          <p><strong>Montant:</strong> {{ safeNumber(operation.montantPaye) | number }} F CFA</p>
+                          <p><strong>Moyen de paiement:</strong> {{ operation.moyenPaiement }}</p>
+                          <p><strong>Référence:</strong> {{ operation.numeroVersement }}</p> 
+                          <p><strong>Description:</strong> {{ operation.commentaire }}</p>
+                          <div *ngIf="operation.fichier; else noFile">
+                            <a [href]="operation.fichier" target="_blank" class="btn btn-sm btn-secondary">
+                              <i class="bi bi-download"></i> Télécharger la pièce jointe
+                            </a>
+                          </div>
+                          <ng-template #noFile>
+                            <span class="text-muted">Aucune pièce jointe</span>
+                          </ng-template>
+                          <button class="btn btn-outline-success btn-sm mt-5" (click)="onGenererTicketVersement.emit(operation)">
+                            <i class="bi bi-receipt"></i> Ticket de paiement
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </ng-container>
+
+        <!-- Message si aucune opération -->
+        <tr *ngIf="filteredOperations.length === 0">
+          <td colspan="5" class="text-center text-muted py-4">
+            <i class="bi bi-inbox display-4 d-block mb-2"></i>
+            Aucune opération trouvée pour cette période
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -529,3 +529,26 @@ exports.updateRecette = async (req, res) => {
   }
 };
 
+// Mettre à jour le statut d'une recette
+exports.updateStatut = async (req, res) => {
+  try {
+    const authUser = req.user; // utilisateur connecté
+
+    if (!authUser) {
+      return res.status(401).json({ message: 'Non authentifié' });
+    }
+    const recette = await Recette.findByPk(req.params.id);
+    if (!recette) return res.status(404).json({ message: 'Recette non trouvé' });
+
+    const { statutRecette } = req.body;
+    /* if (typeof statut !== 'boolean')
+      return res.status(400).json({ message: 'Le statut doit être un booléen' }); */
+
+    await recette.update({ statutRecette });
+    res.json(recette );
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur mise à jour du statut', error });
+  }
+};
+
+

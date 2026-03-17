@@ -37,6 +37,8 @@ import { PERMISSIONS } from './constantes/permissions.constants';
 import { generalAdminGuard } from './guards/general-admin.guard';
 import { structureGuard } from './guards/structure.guard';
 import { ParametresUsersAdminComponent } from './caisse/parametres/parametres-users-admin/parametres-users-admin.component';
+import { ClientComponent } from './caisse/vente/client/client.component';
+import { FournisseurComponent } from './caisse/finance/fournisseur/fournisseur.component';
 //import { FournisseurComponent } from './caisse/finance/fournisseur/fournisseur.component';
 /* import { LandingComponent } from './e-commerce/landing/landing.component';
 import { UserLoginComponent } from './e-commerce/user-login/user-login.component';
@@ -123,6 +125,16 @@ export const routes: Routes = [
         }
       },
       {
+        path: 'client',
+        component: ClientComponent,
+        canActivate: [roleGuard,structureGuard],
+        data: { 
+          roles: ['Administrateur Général', 'Administrateur', 'Gérant'],
+          requireStructure: true,
+          permissions: [PERMISSIONS.VIEW_CLIENTS, PERMISSIONS.MANAGE_CLIENTS]
+        }
+      },
+      {
         path: 'entrees-sorties',
         component: EntreesSortiesComponent,
         canActivate: [roleGuard, structureGuard],
@@ -165,6 +177,16 @@ export const routes: Routes = [
       {
         path: 'fournisseurs',
         component: FournisseursComponent,
+        canActivate: [roleGuard, structureGuard],
+        data: { 
+          roles: ['Administrateur Général', 'Administrateur', 'Gérant'],
+          requireStructure: true,
+          permissions: [PERMISSIONS.MANAGE_SUPPLIERS]
+        }
+      },
+      {
+        path: 'fournisseur',
+        component: FournisseurComponent,
         canActivate: [roleGuard, structureGuard],
         data: { 
           roles: ['Administrateur Général', 'Administrateur', 'Gérant'],

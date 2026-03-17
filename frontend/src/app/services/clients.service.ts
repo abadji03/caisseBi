@@ -1,10 +1,28 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Client } from '../modeles/clients.model';
-import { catchError, Observable, tap } from 'rxjs';
+import { catchError, Observable, tap, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 import { NGXLogger } from 'ngx-logger';
 
+export interface ClientsFilter {
+  page?: number;
+  limit?: number;
+  search?: string;
+  statut?: string;
+}
+
+export interface ClientsResponse {
+  items: Client[];
+  pagination: {
+    total: number;
+    page: number;
+    totalPages: number;
+    limit: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
 @Injectable({
   providedIn: 'root',
 })
@@ -37,6 +55,12 @@ export class ClientsService {
     return this.http.get<Client[]>(`${this.apiUrl}?q=${query}`,{ headers: this.getHeaders() });
   }
  */
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private handleError(error: any, message: string): Observable<never> {
+    this.logger.error(message, error);
+    return throwError(() => error);
+  }
   // Récupérer tous les clients
   getClients(): Observable<Client[]> {
 
@@ -80,6 +104,30 @@ export class ClientsService {
     });
   }
 
+   // Récupérer les clients par structure avec pagination
+  getClientsByStructureBis(codeStructure: string, filter: ClientsFilter = {}): Observable<ClientsResponse> {
+    let params = new HttpParams();
+    
+    // Pagination
+    if (filter.page) params = params.set('page', filter.page.toString());
+    if (filter.limit) params = params.set('limit', filter.limit.toString());
+    
+    // Recherche
+    if (filter.search) params = params.set('search', filter.search);
+    
+    // Filtre par statut
+    if (filter.statut && filter.statut !== 'tous') {
+      params = params.set('statut', filter.statut);
+    }
+
+    return this.http.get<ClientsResponse>(`${this.apiUrl}/structure/bis/${codeStructure}`, {
+      headers: this.getHeaders(),
+      params
+    }).pipe(
+      tap(response => this.logger.info(`Clients récupérés: ${response.items.length}`)),
+      catchError(err => this.handleError(err, 'Erreur lors du chargement des clients'))
+    );
+  }
   // Mettre à jour les infos générales du client
   updateClient(id: number, clientData: Partial<Client>): Observable<Client> {
     return this.http.put<Client>(`${this.apiUrl}/${id}`, clientData, {

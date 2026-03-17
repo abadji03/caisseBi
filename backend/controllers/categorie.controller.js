@@ -1,6 +1,6 @@
 const db = require('../models');
 const Categorie = db.Categorie;
-const { ValidationError, UniqueConstraintError } = require('sequelize');
+const { Op, ValidationError, UniqueConstraintError } = require('sequelize');
 
 
 exports.createCategorie = async (req, res) => {
@@ -80,6 +80,96 @@ exports.getAllByStructure = async (req, res) => {
     res.json(categories);
   } catch (error) {
     res.status(500).json({ message: 'Erreur de récupération', error });
+  }
+};
+
+
+// Récupérer toutes les catégories d'une structure avec pagination et recherche
+exports.getAllByStructureBis = async (req, res) => {
+  try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+    
+    const { code_structure } = req.params;
+    
+    // Récupération des paramètres de pagination et recherche
+    const { 
+      page = 1, 
+      limit = 10, 
+      search = '',
+      type = '',
+      showInactive = 'false'
+    } = req.query;
+
+    // Construction de la clause where
+    let whereClause = { 
+      code_structure: code_structure
+    };
+
+    // Filtre par statut actif/inactif
+    if (showInactive === 'false') {
+      whereClause.isActive = true;
+    }
+
+    // 🔍 FILTRE DE RECHERCHE TEXTUELLE
+    if (search) {
+      whereClause[Op.or] = [
+        { name: { [Op.like]: `%${search}%` } },
+        { description: { [Op.like]: `%${search}%` } },
+        { type: { [Op.like]: `%${search}%` } }
+      ];
+    }
+
+    // Filtre par type
+    if (type) {
+      whereClause.type = type;
+    }
+
+    // Calcul de l'offset pour la pagination
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const limitInt = parseInt(limit);
+
+    // Exécution de la requête avec pagination
+    const { count, rows } = await Categorie.findAndCountAll({
+      where: whereClause,
+      order: [['name', 'ASC']],
+      offset,
+      limit: limitInt,
+      distinct: true
+    });
+
+    // Calcul du nombre total de pages
+    const totalPages = Math.ceil(count / limitInt);
+
+    console.log(`📦 Catégories: ${count} trouvées, page ${page}/${totalPages}`);
+
+    // Réponse avec pagination
+    res.status(200).json({
+      items: rows,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        totalPages: totalPages,
+        limit: limitInt,
+        hasNext: parseInt(page) < totalPages,
+        hasPrev: parseInt(page) > 1
+      },
+      filtres: {
+        search: search || null,
+        type: type || null,
+        showInactive: showInactive === 'true'
+      }
+    });
+
+  } catch (error) {
+    console.error('Erreur récupération catégories:', error);
+    res.status(500).json({ 
+      message: 'Erreur de récupération des catégories', 
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined 
+    });
   }
 };
 

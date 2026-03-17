@@ -177,4 +177,12 @@ export class RecettesService {
       .delete(`${this.apiUrl}/${id}`, { headers: this.getHeaders() })
       .pipe(catchError(this.handleError));
   }
+
+  updateStatut(id: number, statutRecette: string): Observable<Recette> {
+        return this.http.patch<Recette>(
+          `${this.apiUrl}/${id}/statutRecette`,
+          { statutRecette },
+          { headers: this.getHeaders() },
+        ).pipe(catchError(this.handleError));;
+    }
 }

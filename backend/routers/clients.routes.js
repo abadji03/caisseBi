@@ -11,6 +11,7 @@ router.get("/structure/:code_structure", clientCtrl.getClientsByStructure); */
 
 router.get('/:id', authenticateToken, clientCtrl.getClientById);
 router.get('/structure/:code_structure', authenticateToken, clientCtrl.getClientsByStructure);
+router.get('/structure/bis/:code_structure', authenticateToken, clientCtrl.getClientsByStructureBis);
 router.post('/', authenticateToken, clientCtrl.createClient);
 router.put('/:id', authenticateToken, clientCtrl.updateClient);
 router.delete('/:id', authenticateToken, clientCtrl.deleteClient);      

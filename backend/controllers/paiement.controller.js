@@ -3,10 +3,13 @@ const db = require('../models');
 const Paiement = db.Paiement;
 const User = db.Users;
 const Magasin = db.Magasin;
+const Client = db.Client;
+const Fournisseur = db.Fournisseur;
 const fs = require('fs');
 const path = require('path');
 const operationController = require('./operation.controller');
 const { statutManager } = require('./bonComplet');
+const { Op,literal} = db.Sequelize;
 
 
 const BASE_URL = 'http://localhost:5000/uploads/';
@@ -206,6 +209,427 @@ exports.getPaiementsByStructure = async (req, res) => {
   }
 };
 
+exports.getPaiementsClientByStructure = async (req, res) => {
+  try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+    const code_structure = authUser.code_structure;
+    //const { code_structure } = req.params;
+    // 🔥 Vérification : l’utilisateur doit appartenir à la structure demandée
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({
+        message: "Accès interdit : structure non autorisée"
+      });
+    }
+
+    // Vérifier rôle
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+    const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
+
+    if (!isAdminStructure && !isGerant && !isCaissier) {
+    return res.status(403).json({
+      message: "Accès interdit : rôle insuffisant"
+    });
+}
+
+    // Clause where par défaut (structure)
+    let whereClause = {
+      code_structure: code_structure,
+      	typePaiement: 'client'
+    };
+
+    // 🔹 Si gérant : filtrer par magasin
+    if (!isAdminStructure && (isGerant || isCaissier)) {
+      if (!authUser.magasinId) {
+        return res.status(400).json({
+          message: "Ce gérant n’est associé à aucun magasin"
+        });
+      }
+
+      whereClause.magasinId = authUser.magasinId;
+    }
+    const paiements = await Paiement.findAll({
+      where: whereClause ,
+      include: [
+        { model: Magasin,attributes: ["id", "nom"] },
+        { model: User, attributes: ["id", "nom", "email"] },
+        {model: Client, attributes: ['id', 'nomComplet'] }
+      ], 
+      order: [['createdAt', 'DESC']],
+    });
+
+    const baseUrl = `${req.protocol}://${req.get('host')}/uploads/`;
+
+    const paiementsWithFichierUrl = paiements.map((paiement) => {
+      const paie = paiement.toJSON(); // Convertit Sequelize instance en objet pur
+      paie.fichierUrl = paie.fichier ? baseUrl + paie.fichier : null;
+      return paie;
+    });
+
+    res.status(200).json(paiementsWithFichierUrl);
+
+    //res.json(produits);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la récupération des paiements', error });
+  }
+};
+
+exports.getPaiementsFournisseurByStructure = async (req, res) => {
+  try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+    const code_structure = authUser.code_structure;
+    //const { code_structure } = req.params;
+    // 🔥 Vérification : l’utilisateur doit appartenir à la structure demandée
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({
+        message: "Accès interdit : structure non autorisée"
+      });
+    }
+
+    // Vérifier rôle
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+    const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
+
+    if (!isAdminStructure && !isGerant && !isCaissier) {
+    return res.status(403).json({
+      message: "Accès interdit : rôle insuffisant"
+    });
+}
+
+    // Clause where par défaut (structure)
+    let whereClause = {
+      code_structure: code_structure,
+      	typePaiement: 'fournisseur'
+    };
+
+    // 🔹 Si gérant : filtrer par magasin
+    if (!isAdminStructure && (isGerant || isCaissier)) {
+      if (!authUser.magasinId) {
+        return res.status(400).json({
+          message: "Ce gérant n’est associé à aucun magasin"
+        });
+      }
+
+      whereClause.magasinId = authUser.magasinId;
+    }
+    const paiements = await Paiement.findAll({
+      where: whereClause ,
+      include: [
+        { model: Magasin,attributes: ["id", "nom"] },
+        { model: User, attributes: ["id", "nom", "email"] },
+        {model: Fournisseur, attributes: ['id', 'nomComplet'] }
+      ], 
+      order: [['createdAt', 'DESC']],
+    });
+
+    const baseUrl = `${req.protocol}://${req.get('host')}/uploads/`;
+
+    const paiementsWithFichierUrl = paiements.map((paiement) => {
+      const paie = paiement.toJSON(); // Convertit Sequelize instance en objet pur
+      paie.fichierUrl = paie.fichier ? baseUrl + paie.fichier : null;
+      return paie;
+    });
+
+    res.status(200).json(paiementsWithFichierUrl);
+
+    //res.json(produits);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la récupération des paiements', error });
+  }
+};
+
+// Récupérer les paiements clients d'une structure avec pagination
+exports.getPaiementsClientByStructureBis = async (req, res) => {
+  try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+    const code_structure = authUser.code_structure;
+    
+    // Paramètres de pagination et recherche
+    const { 
+      page = 1, 
+      limit = 10, 
+      search = '',
+      methodePaiement = '',
+      /* dateDebut = '',
+      dateFin = '' */
+    } = req.query;
+
+    // 🔥 Vérification : l’utilisateur doit appartenir à la structure demandée
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({
+        message: "Accès interdit : structure non autorisée"
+      });
+    }
+
+    // Vérifier rôle
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+    const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
+
+    if (!isAdminStructure && !isGerant && !isCaissier) {
+      return res.status(403).json({
+        message: "Accès interdit : rôle insuffisant"
+      });
+    }
+
+    // Clause where par défaut (structure)
+    let whereClause = {
+      code_structure: code_structure,
+      typePaiement: 'client'
+    };
+
+    // 🔹 Si gérant : filtrer par magasin
+    if (!isAdminStructure && (isGerant || isCaissier)) {
+      if (!authUser.magasinId) {
+        return res.status(400).json({
+          message: "Ce gérant n’est associé à aucun magasin"
+        });
+      }
+      whereClause.magasinId = authUser.magasinId;
+    }
+
+    // 🔍 FILTRE DE RECHERCHE TEXTUELLE
+    if (search && search.trim() !== '') {
+      whereClause[Op.or] = [
+        { description: { [Op.like]: `%${search}%` } },
+        { methodePaiement: { [Op.like]: `%${search}%` } },
+        { '$Client.nomComplet$': { [Op.like]: `%${search}%` } }
+      ];
+      
+      // Recherche par montant
+      if (!isNaN(search)) {
+        whereClause[Op.or].push(
+          { montant: { [Op.eq]: parseFloat(search) } }
+        );
+      }
+
+      // Recherche par date
+      const datePattern = /^\d{1,2}\/\d{1,2}\/\d{4}$/;
+      if (datePattern.test(search)) {
+        const [day, month, year] = search.split('/');
+        const searchDate = new Date(`${year}-${month}-${day}`);
+        if (!isNaN(searchDate)) {
+          whereClause[Op.or].push(
+            literal(`DATE(date) = '${year}-${month}-${day}'`)
+          );
+        }
+      }
+    }
+
+    // 📅 FILTRE PAR PÉRIODE
+    /* if (dateDebut && dateFin) {
+      whereClause.date = {
+        [Op.between]: [new Date(dateDebut), new Date(dateFin)]
+      };
+    } else if (dateDebut) {
+      whereClause.date = { [Op.gte]: new Date(dateDebut) };
+    } else if (dateFin) {
+      whereClause.date = { [Op.lte]: new Date(dateFin) };
+    } */
+
+    // 💳 FILTRE PAR MODE DE PAIEMENT
+    if (methodePaiement && methodePaiement !== 'tous') {
+      whereClause.methodePaiement = methodePaiement;
+    }
+
+    // Calcul de l'offset pour la pagination
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const limitInt = parseInt(limit);
+
+    // Exécution de la requête avec pagination
+    const { count, rows } = await Paiement.findAndCountAll({
+      where: whereClause,
+      include: [
+        { model: Magasin, attributes: ["id", "nom"] },
+        { model: User, attributes: ["id", "nom", "email"] },
+        { model: Client, attributes: ['id', 'nomComplet'] }
+      ],
+      order: [['date', 'DESC']],
+      offset,
+      limit: limitInt,
+      distinct: true
+    });
+
+    // Calcul du nombre total de pages
+    const totalPages = Math.ceil(count / limitInt);
+
+    const baseUrl = `${req.protocol}://${req.get('host')}/uploads/`;
+
+    const paiementsWithFichierUrl = rows.map((paiement) => {
+      const paie = paiement.toJSON();
+      paie.fichierUrl = paie.fichier ? baseUrl + paie.fichier : null;
+      return paie;
+    });
+
+    console.log(`📦 Paiements: ${count} trouvés, page ${page}/${totalPages}`);
+
+    res.status(200).json({
+      items: paiementsWithFichierUrl,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        totalPages: totalPages,
+        limit: limitInt,
+        hasNext: parseInt(page) < totalPages,
+        hasPrev: parseInt(page) > 1
+      }
+    });
+
+  } catch (error) {
+    console.error("Erreur récupération paiements:", error);
+    res.status(500).json({ 
+      message: 'Erreur lors de la récupération des paiements', 
+      error: error.message 
+    });
+  }
+};
+
+// Version fournisseur avec pagination
+exports.getPaiementsFournisseurByStructureBis = async (req, res) => {
+  try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+    const code_structure = authUser.code_structure;
+    
+    // Paramètres de pagination et recherche
+    const { 
+      page = 1, 
+      limit = 10, 
+      search = '',
+      methodePaiement = '',
+      /* dateDebut = '',
+      dateFin = '' */
+    } = req.query;
+
+    // 🔥 Vérification : l’utilisateur doit appartenir à la structure demandée
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({
+        message: "Accès interdit : structure non autorisée"
+      });
+    }
+
+    // Vérifier rôle
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+    const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
+
+    if (!isAdminStructure && !isGerant && !isCaissier) {
+      return res.status(403).json({
+        message: "Accès interdit : rôle insuffisant"
+      });
+    }
+
+    // Clause where par défaut (structure)
+    let whereClause = {
+      code_structure: code_structure,
+      typePaiement: 'fournisseur'
+    };
+
+    // 🔹 Si gérant : filtrer par magasin
+    if (!isAdminStructure && (isGerant || isCaissier)) {
+      if (!authUser.magasinId) {
+        return res.status(400).json({
+          message: "Ce gérant n’est associé à aucun magasin"
+        });
+      }
+      whereClause.magasinId = authUser.magasinId;
+    }
+
+    // 🔍 FILTRE DE RECHERCHE TEXTUELLE
+    if (search && search.trim() !== '') {
+      whereClause[Op.or] = [
+        { description: { [Op.like]: `%${search}%` } },
+        { methodePaiement: { [Op.like]: `%${search}%` } },
+        { '$Fournisseur.nomComplet$': { [Op.like]: `%${search}%` } }
+      ];
+      
+      if (!isNaN(search)) {
+        whereClause[Op.or].push(
+          { montant: { [Op.eq]: parseFloat(search) } }
+        );
+      }
+    }
+
+    // 📅 FILTRE PAR PÉRIODE
+    /* if (dateDebut && dateFin) {
+      whereClause.date = {
+        [Op.between]: [new Date(dateDebut), new Date(dateFin)]
+      };
+    } else if (dateDebut) {
+      whereClause.date = { [Op.gte]: new Date(dateDebut) };
+    } else if (dateFin) {
+      whereClause.date = { [Op.lte]: new Date(dateFin) };
+    } */
+
+    // 💳 FILTRE PAR MODE DE PAIEMENT
+    if (methodePaiement && methodePaiement !== 'tous') {
+      whereClause.methodePaiement = methodePaiement;
+    }
+
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const limitInt = parseInt(limit);
+
+    const { count, rows } = await Paiement.findAndCountAll({
+      where: whereClause,
+      include: [
+        { model: Magasin, attributes: ["id", "nom"] },
+        { model: User, attributes: ["id", "nom", "email"] },
+        { model: Fournisseur, attributes: ['id', 'nomComplet'] }
+      ],
+      order: [['date', 'DESC']],
+      offset,
+      limit: limitInt,
+      distinct: true
+    });
+
+    const totalPages = Math.ceil(count / limitInt);
+
+    const baseUrl = `${req.protocol}://${req.get('host')}/uploads/`;
+
+    const paiementsWithFichierUrl = rows.map((paiement) => {
+      const paie = paiement.toJSON();
+      paie.fichierUrl = paie.fichier ? baseUrl + paie.fichier : null;
+      return paie;
+    });
+
+    console.log(`📦 Paiements fournisseurs: ${count} trouvés, page ${page}/${totalPages}`);
+
+    res.status(200).json({
+      items: paiementsWithFichierUrl,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        totalPages: totalPages,
+        limit: limitInt,
+        hasNext: parseInt(page) < totalPages,
+        hasPrev: parseInt(page) > 1
+      }
+    });
+
+  } catch (error) {
+    console.error("Erreur récupération paiements fournisseurs:", error);
+    res.status(500).json({ 
+      message: 'Erreur lors de la récupération des paiements', 
+      error: error.message 
+    });
+  }
+};
 // Récupérer les paiements d'une structure par fournisseur
 exports.getPaiementsByFournisseur = async (req, res) => {
   try {

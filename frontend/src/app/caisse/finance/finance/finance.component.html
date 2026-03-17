@@ -79,7 +79,6 @@
     <!-- Onglet Gestion des catégories -->
     <div *ngIf="activeTab === 'categories'" class="tab-pane active">
       <app-categorie-depense-recette
-        [categories]="categories"
         [code_structure]="code_structure"
         (categoryAction)="onCategoryAction($event)"
         (categoriesChange)="refreshCategories()"

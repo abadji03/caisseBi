@@ -1,0 +1,92 @@
+.categories-container {
+  padding: 1rem;
+}
+
+/* Cartes et formulaires */
+.card {
+  border: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+}
+
+.card:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.sticky-top {
+  z-index: 100;
+}
+
+/* Badges */
+.badge {
+  font-size: 0.75rem;
+  padding: 0.35em 0.65em;
+  font-weight: 500;
+}
+
+/* Tableau */
+.table-hover tbody tr:hover {
+  background-color: rgba(40, 167, 69, 0.05);
+  cursor: pointer;
+}
+
+.table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+}
+
+/* Boutons d'action */
+.btn-group .btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  border-radius: 0.25rem;
+  margin: 0 0.1rem;
+}
+
+.btn-group .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Animation du formulaire */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.col-md-3 .card {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .categories-container {
+    padding: 0.5rem;
+  }
+  
+  .d-flex.justify-content-between {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .w-50 {
+    width: 100% !important;
+  }
+  
+  .btn-group .btn {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* Indicateur de chargement */
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}

@@ -8,6 +8,9 @@ const Panier = db.Panier;
 const ArticlePanier = db.ArticlePanier;
 const Produit = db.Produit;
 const User = db.Users;
+const Fournisseur = db.Fournisseur;
+const Client = db.Client;
+const Magasin = db.Magasin;
 
 
 const BASE_URL = 'http://localhost:5000/uploads/'; //url de l'emplacement des fichier à stocker
@@ -142,11 +145,13 @@ exports.getBonsClientsByStructure = async (req, res) => {
           include: [
             {
               model: ArticlePanier,
-              include: {model: Produit} 
+              include: {model: Produit,attributes: ['id', 'designation', 'unite']} 
             }
           ],
         },
-        {model: User, attributes: ['id', 'nom', 'email'] }
+        {model: User, attributes: ['id', 'nom', 'email'] },
+        {model: Client, attributes: ['id', 'nomComplet'] },
+        {model: Magasin, attributes: ['id', 'nom'] }
       ],
       order: [['createdAt', 'DESC']],
     });
@@ -165,6 +170,294 @@ exports.getBonsClientsByStructure = async (req, res) => {
     res.status(200).json(bonsWithFichierUrl);
 
   } catch (error) {
+    res.status(500).json({ 
+      message: 'Erreur lors de la récupération des bons clients', 
+      error: error.message 
+    });
+  }
+};
+
+// Lister uniquement les bons clients d'une structure AVEC PAGINATION
+exports.getBonsClientsByStructureBis = async (req, res) => {
+  try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+    const { code_structure } = req.params;
+
+    // Paramètres de pagination et recherche
+    const { 
+      page = 1, 
+      limit = 10, 
+      search = '',
+      type = '',
+      statut = ''
+    } = req.query;
+
+    // 🔥 Vérification : l’utilisateur doit appartenir à la structure demandée
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({
+        message: "Accès interdit : structure non autorisée"
+      });
+    }
+
+    // Vérifier rôle
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+    const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
+
+    if (!isAdminStructure && !isGerant && !isCaissier) {
+      return res.status(403).json({
+        message: "Accès interdit : rôle insuffisant"
+      });
+    }
+
+    // Clause where par défaut (structure)
+    let whereClause = {
+      code_structure: code_structure,
+      typeEntite: 'client'
+    };
+
+    // 🔹 Si gérant : filtrer par magasin
+    if (!isAdminStructure && (isGerant || isCaissier)) {
+      if (!authUser.magasinId) {
+        return res.status(400).json({
+          message: "Ce gérant ou caissier n’est associé à aucun magasin"
+        });
+      }
+      whereClause.magasinId = authUser.magasinId;
+    }
+
+    // 🔍 FILTRE DE RECHERCHE
+    if (search && search.trim() !== '') {
+      whereClause[Op.or] = [
+        { numero: { [Op.like]: `%${search}%` } },
+        { description: { [Op.like]: `%${search}%` } },
+        //{ '$Client.nomComplet$': { [Op.like]: `%${search}%` } }
+      ];
+      
+      // Recherche par montant
+      if (!isNaN(search)) {
+        whereClause[Op.or].push(
+          { montantTotal: { [Op.eq]: parseFloat(search) } },
+          { avance: { [Op.eq]: parseFloat(search) } },
+          { resteAPayer: { [Op.eq]: parseFloat(search) } }
+        );
+      }
+    }
+
+    // 🔹 FILTRE PAR TYPE
+    if (type && type !== 'tous') {
+      whereClause.type = type;
+    }
+
+    // 🔹 FILTRE PAR STATUT
+    if (statut && statut !== 'tous') {
+      whereClause.statutBon = statut;
+    }
+
+    // Calcul de l'offset pour la pagination
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const limitInt = parseInt(limit);
+
+    // Exécution de la requête avec pagination
+    const { count, rows } = await Bon.findAndCountAll({
+      where: whereClause,
+      include: [
+        {
+          model: Panier,
+          include: [
+            {
+              model: ArticlePanier,
+              include: { model: Produit, attributes: ['id', 'designation', 'unite'] }
+            }
+          ],
+        },
+        { model: User, attributes: ['id', 'nom', 'email'] },
+        { model: Client, attributes: ['id', 'nomComplet'] },
+        { model: Magasin, attributes: ['id', 'nom'] }
+      ],
+      order: [['createdAt', 'DESC']],
+      offset,
+      limit: limitInt,
+      distinct: true
+    });
+
+    // Calcul du nombre total de pages
+    const totalPages = Math.ceil(count / limitInt);
+
+    const baseUrl = `${req.protocol}://${req.get('host')}/uploads/`;
+
+    const bonsWithFichierUrl = rows.map((bon) => {
+      const bn = bon.toJSON();
+      bn.fichierUrl = bn.fichier ? baseUrl + bn.fichier : null;
+      bn.client = bn.Client;
+      delete bn.Client;
+      return bn;
+    });
+
+    console.log(`📦 Bons clients: ${count} trouvés, page ${page}/${totalPages}`);
+
+    res.status(200).json({
+      items: bonsWithFichierUrl,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        totalPages: totalPages,
+        limit: limitInt,
+        hasNext: parseInt(page) < totalPages,
+        hasPrev: parseInt(page) > 1
+      }
+    });
+
+  } catch (error) {
+    console.error("Erreur récupération bons clients:", error);
+    res.status(500).json({ 
+      message: 'Erreur lors de la récupération des bons clients', 
+      error: error.message 
+    });
+  }
+};
+
+// Lister uniquement les bons clients d'une structure AVEC PAGINATION
+exports.getBonsFournisseursByStructureBis = async (req, res) => {
+  try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+    const { code_structure } = req.params;
+
+    // Paramètres de pagination et recherche
+    const { 
+      page = 1, 
+      limit = 10, 
+      search = '',
+      type = '',
+      statut = ''
+    } = req.query;
+
+    // 🔥 Vérification : l’utilisateur doit appartenir à la structure demandée
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({
+        message: "Accès interdit : structure non autorisée"
+      });
+    }
+
+    // Vérifier rôle
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+    const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
+
+    if (!isAdminStructure && !isGerant && !isCaissier) {
+      return res.status(403).json({
+        message: "Accès interdit : rôle insuffisant"
+      });
+    }
+
+    // Clause where par défaut (structure)
+    let whereClause = {
+      code_structure: code_structure,
+      typeEntite: 'fournisseur'
+    };
+
+    // 🔹 Si gérant : filtrer par magasin
+    if (!isAdminStructure && (isGerant || isCaissier)) {
+      if (!authUser.magasinId) {
+        return res.status(400).json({
+          message: "Ce gérant ou caissier n’est associé à aucun magasin"
+        });
+      }
+      whereClause.magasinId = authUser.magasinId;
+    }
+
+    // 🔍 FILTRE DE RECHERCHE
+    if (search && search.trim() !== '') {
+      whereClause[Op.or] = [
+        { numero: { [Op.like]: `%${search}%` } },
+        { description: { [Op.like]: `%${search}%` } },
+        //{ '$Client.nomComplet$': { [Op.like]: `%${search}%` } }
+      ];
+      
+      // Recherche par montant
+      if (!isNaN(search)) {
+        whereClause[Op.or].push(
+          { montantTotal: { [Op.eq]: parseFloat(search) } },
+          { avance: { [Op.eq]: parseFloat(search) } },
+          { resteAPayer: { [Op.eq]: parseFloat(search) } }
+        );
+      }
+    }
+
+    // 🔹 FILTRE PAR TYPE
+    if (type && type !== 'tous') {
+      whereClause.type = type;
+    }
+
+    // 🔹 FILTRE PAR STATUT
+    if (statut && statut !== 'tous') {
+      whereClause.statutBon = statut;
+    }
+
+    // Calcul de l'offset pour la pagination
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const limitInt = parseInt(limit);
+
+    // Exécution de la requête avec pagination
+    const { count, rows } = await Bon.findAndCountAll({
+      where: whereClause,
+      include: [
+        {
+          model: Panier,
+          include: [
+            {
+              model: ArticlePanier,
+              include: { model: Produit, attributes: ['id', 'designation', 'unite'] }
+            }
+          ],
+        },
+        { model: User, attributes: ['id', 'nom', 'email'] },
+        { model: Fournisseur, attributes: ['id', 'nomComplet'] },
+        { model: Magasin, attributes: ['id', 'nom'] }
+      ],
+      order: [['createdAt', 'DESC']],
+      offset,
+      limit: limitInt,
+      distinct: true
+    });
+
+    // Calcul du nombre total de pages
+    const totalPages = Math.ceil(count / limitInt);
+
+    const baseUrl = `${req.protocol}://${req.get('host')}/uploads/`;
+
+    const bonsWithFichierUrl = rows.map((bon) => {
+      const bn = bon.toJSON();
+      bn.fichierUrl = bn.fichier ? baseUrl + bn.fichier : null;
+      bn.fournisseur = bn.Fournisseur;
+      delete bn.Fournisseur;
+      return bn;
+    });
+
+    console.log(`📦 Bons clients: ${count} trouvés, page ${page}/${totalPages}`);
+
+    res.status(200).json({
+      items: bonsWithFichierUrl,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        totalPages: totalPages,
+        limit: limitInt,
+        hasNext: parseInt(page) < totalPages,
+        hasPrev: parseInt(page) > 1
+      }
+    });
+
+  } catch (error) {
+    console.error("Erreur récupération bons clients:", error);
     res.status(500).json({ 
       message: 'Erreur lors de la récupération des bons clients', 
       error: error.message 
@@ -223,11 +516,13 @@ exports.getBonsFournisseursByStructure = async (req, res) => {
           include: [
             {
               model: ArticlePanier,
-              include: {model: Produit} 
+              include: {model: Produit, attributes: ['id', 'designation', 'unite']} 
             }
           ],
         },
-        {model: User, attributes: ['id', 'nom', 'email'] }
+        {model: User, attributes: ['id', 'nom', 'email'] },
+        {model: Fournisseur, attributes: ['id', 'nomComplet'] },
+        {model: Magasin, attributes: ['id', 'nom'] }
       ],
       order: [['createdAt', 'DESC']],
     });

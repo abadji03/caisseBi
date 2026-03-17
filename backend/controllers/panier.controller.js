@@ -1001,4 +1001,436 @@ exports.getPaniersAujourdhui = async (req, res) => {
   }
 };
 
+// Récupérer les paniers du jour avec pagination et recherche
+/* exports.getPaniersAujourdhuiBis = async (req, res) => {
+  try {
+    const authUser = req.user;
 
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
+    const { Op } = db.Sequelize;
+    const { bonId, magasinId } = req.query;
+    
+    // Paramètres de pagination et recherche
+    const { 
+      page = 1, 
+      limit = 10, 
+      search = '',
+      statut = ''
+    } = req.query;
+
+    // 🔍 LOGS DE DÉBOGAGE
+    console.log('🔍 Paramètres reçus:', {
+      page,
+      limit,
+      search: search || '(vide)',
+      statut: statut || '(vide)',
+      bonId: bonId || '(vide)',
+      magasinId: magasinId || '(vide)'
+    });
+    // 🔥 Vérification structure (obligatoire)
+    const code_structure = authUser.code_structure;
+
+    // Date d'aujourd'hui
+    const aujourdhui = new Date();
+    const debutJournee = new Date(aujourdhui);
+    debutJournee.setHours(0, 0, 0, 0);
+
+    const finJournee = new Date(aujourdhui);
+    finJournee.setHours(23, 59, 59, 999);
+
+    // Vérifier rôle
+    const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+    const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
+    const isEmploye = authUser.roles?.some(r => r.nom === "Employé");
+
+    // ==========================
+    // 🔹 BASE WHERE
+    // ==========================
+    const whereCondition = {
+      code_structure,
+      statut: { [Op.ne]: "en_cours" },
+      dateCreation: {
+        [Op.between]: [debutJournee, finJournee],
+      },
+      [Op.or]: [
+        { typeEntite: "autre" },
+        { typeEntite: { [Op.notIn]: ["client", "fournisseur"] } },
+      ],
+    };
+
+    // ==========================
+    // 🔹 FILTRE DE RECHERCHE
+    // ==========================
+    if (search && search.trim() !== '') {
+      console.log('🔍 Recherche avec terme:', search);
+      whereCondition[Op.or] = whereCondition[Op.or] || [];
+      whereCondition[Op.or].push(
+        { id: { [Op.like]: `%${search}%` } },
+        //{ '$user.nom$': { [Op.like]: `%${search}%` } },
+        { typePanier: { [Op.like]: `%${search}%` } }
+      );
+      
+      // Recherche par montant
+      if (!isNaN(search)) {
+        whereCondition[Op.or].push(
+          { totalTTC: { [Op.eq]: parseFloat(search) } },
+          { totalHT: { [Op.eq]: parseFloat(search) } }
+        );
+      }
+    }
+
+    // ==========================
+    // 🔹 FILTRE PAR STATUT
+    // ==========================
+    if (statut && statut !== 'tous') {
+      whereCondition.statut = statut;
+    }
+
+    // ==========================
+    // 🔹 SCOPE SELON ROLE
+    // ==========================
+    if (isAdmin) {
+      // Admin -> tout structure
+      if (magasinId) {
+        whereCondition.magasinId = magasinId;
+      }
+    } 
+    else if (isGerant) {
+      // Gérant -> uniquement son magasin
+      if (!authUser.magasinId) {
+        return res.status(400).json({
+          message: "Ce gérant n’est associé à aucun magasin"
+        });
+      }
+      whereCondition.magasinId = authUser.magasinId;
+    } 
+    else if (isCaissier || isEmploye) {
+      // Caissier/Employé -> uniquement ses paniers
+      whereCondition.agentId = authUser.id;
+      if (authUser.magasinId) {
+        whereCondition.magasinId = authUser.magasinId;
+      }
+    } 
+    else {
+      return res.status(403).json({ message: "Accès interdit : rôle insuffisant" });
+    }
+
+    // ==========================
+    // 🔹 FILTRE bonId
+    // ==========================
+    if (bonId === "null" || bonId === "") {
+      whereCondition.bonId = null;
+    } else if (bonId) {
+      whereCondition.bonId = bonId;
+    }
+
+    // ==========================
+    // 🔹 CALCUL OFFSET PAGINATION
+    // ==========================
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const limitInt = parseInt(limit);
+
+    // ==========================
+    // 🔹 TOTAL GLOBAL (pour les stats)
+    // ==========================
+    const whereTotalGlobal = {
+      ...whereCondition,
+      statut: {
+        [Op.notIn]: ["annulé", "retourné", "en_cours"],
+      },
+    };
+
+    const totalGlobal = await Panier.sum("totalTTC", {
+      where: whereTotalGlobal,
+    });
+
+    // ==========================
+    // 🔹 QUERY AVEC PAGINATION
+    // ==========================
+    const { count, rows } = await Panier.findAndCountAll({
+      where: whereCondition,
+      include: [
+        {
+          model: db.Magasin,
+          attributes: ["id", "nom"],
+        },
+        {
+          model: db.Users,
+          as: 'user',
+          attributes: ["id", "nom"],
+        },
+        {
+          model: db.Paiement,
+        },
+        {
+          model: db.ArticlePanier,
+          include: [
+            {
+              model: db.Produit,
+            },
+          ],
+        },
+      ],
+      order: [["dateCreation", "DESC"]],
+      offset,
+      limit: limitInt,
+      distinct: true
+    });
+
+    // Calcul du nombre total de pages
+    const totalPages = Math.ceil(count / limitInt);
+
+    console.log(`📦 Transactions: ${count} trouvées, page ${page}/${totalPages}`);
+
+    return res.json({
+      items: rows,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        totalPages: totalPages,
+        limit: limitInt,
+        hasNext: parseInt(page) < totalPages,
+        hasPrev: parseInt(page) > 1
+      },
+      statistiques: {
+        totalGlobal: totalGlobal || 0,
+        nombreTransactions: count
+      },
+      filtres: {
+        search: search || null,
+        statut: statut || null
+      }
+    });
+  } catch (error) {
+    console.error("Erreur récupération paniers du jour:", error);
+    return res.status(500).json({
+      error: error.message,
+    });
+  }
+};
+
+ */
+exports.getPaniersAujourdhuiBis = async (req, res) => {
+  try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
+    const { Op } = db.Sequelize;
+    const { bonId, magasinId } = req.query;
+    
+    // Paramètres de pagination et recherche
+    const { 
+      page = 1, 
+      limit = 10, 
+      search = '',
+      statut = ''
+    } = req.query;
+
+    // 🔍 LOGS DE DÉBOGAGE
+    console.log('🔍 Paramètres reçus:', {
+      page,
+      limit,
+      search: search || '(vide)',
+      statut: statut || '(vide)',
+      bonId: bonId || '(vide)',
+      magasinId: magasinId || '(vide)'
+    });
+    
+    // 🔥 Vérification structure (obligatoire)
+    const code_structure = authUser.code_structure;
+
+    // Date d'aujourd'hui
+    const aujourdhui = new Date();
+    const debutJournee = new Date(aujourdhui);
+    debutJournee.setHours(0, 0, 0, 0);
+    const finJournee = new Date(aujourdhui);
+    finJournee.setHours(23, 59, 59, 999);
+
+    // Vérifier rôle
+    const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+    const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
+    const isEmploye = authUser.roles?.some(r => r.nom === "Employé");
+
+    // ==========================
+    // 🔹 BASE WHERE
+    // ==========================
+    const whereCondition = {
+      code_structure,
+      statut: { [Op.ne]: "en_cours" },
+      dateCreation: {
+        [Op.between]: [debutJournee, finJournee],
+      }
+    };
+
+    // ==========================
+    // 🔹 FILTRE DE RECHERCHE
+    // ==========================
+    if (search && search.trim() !== '') {
+      console.log('🔍 Recherche avec terme:', search);
+      
+      const orConditions = [];
+      
+      // Recherche sur les champs du panier
+      orConditions.push(
+        { id: { [Op.like]: `%${search}%` } },
+        { typePanier: { [Op.like]: `%${search}%` } }
+      );
+      
+      // Recherche par montant
+      if (!isNaN(search)) {
+        orConditions.push(
+          { totalTTC: { [Op.eq]: parseFloat(search) } },
+          { totalHT: { [Op.eq]: parseFloat(search) } }
+        );
+      }
+      
+      whereCondition[Op.or] = orConditions;
+    }
+
+    // ==========================
+    // 🔹 FILTRE PAR STATUT
+    // ==========================
+    if (statut && statut !== 'tous') {
+      whereCondition.statut = statut;
+    }
+
+    // ==========================
+    // 🔹 SCOPE SELON ROLE
+    // ==========================
+    if (isAdmin) {
+      if (magasinId) {
+        whereCondition.magasinId = magasinId;
+      }
+    } 
+    else if (isGerant) {
+      if (!authUser.magasinId) {
+        return res.status(400).json({
+          message: "Ce gérant n’est associé à aucun magasin"
+        });
+      }
+      whereCondition.magasinId = authUser.magasinId;
+    } 
+    else if (isCaissier || isEmploye) {
+      whereCondition.agentId = authUser.id;
+      if (authUser.magasinId) {
+        whereCondition.magasinId = authUser.magasinId;
+      }
+    } 
+    else {
+      return res.status(403).json({ message: "Accès interdit : rôle insuffisant" });
+    }
+
+    // ==========================
+    // 🔹 FILTRE bonId
+    // ==========================
+    if (bonId === "null" || bonId === "") {
+      whereCondition.bonId = null;
+    } else if (bonId) {
+      whereCondition.bonId = bonId;
+    }
+
+    // ==========================
+    // 🔹 CALCUL OFFSET PAGINATION
+    // ==========================
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const limitInt = parseInt(limit);
+
+    // ==========================
+    // 🔹 INCLUDE pour la recherche sur le nom d'utilisateur
+    // ==========================
+    const include = [
+      {
+        model: db.Magasin,
+        attributes: ["id", "nom"],
+      },
+      {
+        model: db.Users,
+        as: 'user',
+        attributes: ["id", "nom"],
+      },
+      {
+        model: db.Paiement,
+      },
+      {
+        model: db.ArticlePanier,
+        include: [
+          {
+            model: db.Produit,
+          },
+        ],
+      },
+    ];
+
+    // Si on a une recherche, on peut ajouter une condition sur le nom d'utilisateur
+    // Note: Pour une recherche plus avancée, il faudrait utiliser une sous-requête
+    // ou faire deux requêtes séparées
+
+    // ==========================
+    // 🔹 QUERY AVEC PAGINATION
+    // ==========================
+    console.log('📋 Where condition:', JSON.stringify(whereCondition, null, 2));
+    
+    const { count, rows } = await Panier.findAndCountAll({
+      where: whereCondition,
+      include: include,
+      order: [["dateCreation", "DESC"]],
+      offset,
+      limit: limitInt,
+      distinct: true
+    });
+
+    // ==========================
+    // 🔹 TOTAL GLOBAL (pour les stats)
+    // ==========================
+    const whereTotalGlobal = {
+      ...whereCondition,
+      statut: {
+        [Op.notIn]: ["annulé", "retourné", "en_cours"],
+      },
+    };
+    // Enlever l'Op.or pour le total global car il fausserait la somme
+    delete whereTotalGlobal[Op.or];
+
+    const totalGlobal = await Panier.sum("totalTTC", {
+      where: whereTotalGlobal,
+    });
+
+    // Calcul du nombre total de pages
+    const totalPages = Math.ceil(count / limitInt);
+
+    console.log(`📦 Transactions: ${count} trouvées, page ${page}/${totalPages}`);
+
+    return res.json({
+      items: rows,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        totalPages: totalPages,
+        limit: limitInt,
+        hasNext: parseInt(page) < totalPages,
+        hasPrev: parseInt(page) > 1
+      },
+      statistiques: {
+        totalGlobal: totalGlobal || 0,
+        nombreTransactions: count
+      },
+      filtres: {
+        search: search || null,
+        statut: statut || null
+      }
+    });
+  } catch (error) {
+    console.error("Erreur récupération paniers du jour:", error);
+    return res.status(500).json({
+      error: error.message,
+    });
+  }
+};

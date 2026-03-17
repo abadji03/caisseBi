@@ -93,7 +93,7 @@ export class MouvementsStock {
   public acteurId!: number;
   public description?: string;
   public motif?: string;
-  public statut?:boolean;
+  public statut?:string;
   public dateMouvement: Date = new Date();
   public reconciliationId?:number;
   public transfertId?:number;
@@ -361,7 +361,7 @@ export class Reconciliation {
   stockPhysique!: number;
   private _ecart!: number; // Stocke l'écart interne
   dateReconciliation!: Date;
-  statut?:boolean;
+  statut?:string;
   responsable?: number; // Personne ayant effectué la réconciliation
   note?: string; // Explication de l'écart
   historiqueEcart?: { date: Date; ecart: number; note?: string }[] = []; // Historique des écarts

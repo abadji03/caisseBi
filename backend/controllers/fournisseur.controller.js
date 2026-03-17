@@ -4,6 +4,7 @@ const Bon = db.Bon;
 const Panier = db.Panier;
 const ArticlePanier = db.ArticlePanier;
 const Produit = db.Produit;
+const {Op} = db.Sequelize;
 
 
 // Créer un nouveau fournisseur avec vérification de l'email et du téléphone
@@ -193,6 +194,122 @@ exports.getFournisseursByStructure = async (req, res) => {
     res.json(fournisseurs);
   } catch (error) {
     res.status(500).json({ message: 'Erreur récupération', error });
+  }
+};
+
+// Récupérer les fournisseurs par structure avec pagination et recherche
+exports.getFournisseursByStructureBis = async (req, res) => {
+  try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+    const { code_structure } = req.params;
+    
+    // Paramètres de pagination et recherche
+    const { 
+      page = 1, 
+      limit = 10, 
+      search = '',
+      statut = 'tous'
+    } = req.query;
+
+    // 🔥 Vérification : l’utilisateur doit appartenir à la structure demandée
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({
+        message: "Accès interdit : structure non autorisée"
+      });
+    }
+
+    // Vérifier rôle
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+
+    if (!isAdminStructure && !isGerant) {
+      return res.status(403).json({
+        message: "Accès interdit : rôle insuffisant"
+      });
+    }
+
+    // Clause where par défaut (structure)
+    let whereClause = {
+      code_structure: code_structure
+    };
+
+    // 🔹 Si gérant : filtrer par magasin
+    if (!isAdminStructure && isGerant) {
+      if (!authUser.magasinId) {
+        return res.status(400).json({
+          message: "Ce gérant n’est associé à aucun magasin"
+        });
+      }
+      whereClause.magasinId = authUser.magasinId;
+    }
+
+    // 🔍 FILTRE DE RECHERCHE TEXTUELLE
+    if (search && search.trim() !== '') {
+      whereClause[Op.or] = [
+        { nomComplet: { [Op.like]: `%${search}%` } },
+        { adresse: { [Op.like]: `%${search}%` } },
+        { telephone: { [Op.like]: `%${search}%` } },
+        { banque: { [Op.like]: `%${search}%` } },
+        { numeroCompte: { [Op.like]: `%${search}%` } },
+        { email: { [Op.like]: `%${search}%` } }
+      ];
+      
+      // Recherche par montant
+      if (!isNaN(search)) {
+        whereClause[Op.or].push(
+          { montantAPayer: { [Op.eq]: parseFloat(search) } }
+        );
+      }
+    }
+
+    // 🔹 FILTRE PAR STATUT
+    if (statut !== 'tous') {
+      whereClause.statut = statut === 'actif' ? true : false;
+    }
+
+    // Calcul de l'offset pour la pagination
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const limitInt = parseInt(limit);
+
+    // Exécution de la requête avec pagination
+    const { count, rows } = await Fournisseur.findAndCountAll({
+      where: whereClause,
+      include: [
+        { model: db.Magasin, attributes: ["id", "nom", "telephone", "email"] },
+      ],
+      order: [['nomComplet', 'ASC']],
+      offset,
+      limit: limitInt,
+      distinct: true
+    });
+
+    // Calcul du nombre total de pages
+    const totalPages = Math.ceil(count / limitInt);
+
+    console.log(`📦 Fournisseurs: ${count} trouvés, page ${page}/${totalPages}`);
+
+    res.status(200).json({
+      items: rows,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        totalPages: totalPages,
+        limit: limitInt,
+        hasNext: parseInt(page) < totalPages,
+        hasPrev: parseInt(page) > 1
+      }
+    });
+
+  } catch (error) {
+    console.error("Erreur récupération fournisseurs:", error);
+    res.status(500).json({ 
+      message: 'Erreur lors de la récupération des fournisseurs', 
+      error: error.message 
+    });
   }
 };
 

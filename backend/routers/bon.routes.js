@@ -5,14 +5,6 @@ const bonController = require('../controllers/bon.controller');
 const upload = require('../middlewares/uploadMiddleware');
 const authenticateToken = require('../middlewares/auth.middleware');
 
-
-/* router.post('/', bonController.createBon);
-router.get('/', bonController.getAllBons);
-router.get('/:id', bonController.getBonById);
-router.put('/:id', bonController.updateBon);
-router.delete('/:id', bonController.deleteBon);
- */
-
 //Créer un bon (avec fichier optionnel)
 router.post('/',authenticateToken, upload.single('fichier'), bonController.createBon);
 
@@ -24,6 +16,13 @@ router.get('/structure/:code_structure',authenticateToken, bonController.getBons
 
 //Récupérer les bons d’une structure pour les clients
 router.get('/structure/:code_structure/clients',authenticateToken, bonController.getBonsClientsByStructure);
+
+//Récupérer les bons d’une structure pour les clients
+router.get('/structure/bis/:code_structure/clients',authenticateToken, bonController.getBonsClientsByStructureBis);
+
+//Récupérer les bons d’une structure pour les fournisseurs
+router.get('/structure/bis/:code_structure/fournisseurs',authenticateToken, bonController.getBonsFournisseursByStructureBis);
+
 
 //Récupérer les bons d’une structure pour les fournisseur
 router.get('/structure/:code_structure/fournisseurs',authenticateToken, bonController.getBonsFournisseursByStructure);

@@ -378,13 +378,17 @@ export class RecettesComponent implements OnInit, OnDestroy {
 
     // Ajouter les données au FormData
     formData.append('code_structure', this.code_structure!);
-    formData.append('magasinId', this.magasinId!.toString());
+    //formData.append('magasinId', this.magasinId!.toString());
     formData.append('agentId', this.agentId!.toString());
     formData.append('categoryId', recetteData.categoryId.toString());
     formData.append('montant', recetteData.montant.toString());
     formData.append('paymentMode', recetteData.paymentMode);
     formData.append('description', recetteData.description || '');
     formData.append('date', recetteData.date);
+
+    if (!this.selectedRecette?.id && this.magasinId) {
+      formData.append('magasinId', this.magasinId.toString());
+    }
 
     // Ajouter le fichier si présent
     if (this.selectedFile) {
@@ -453,46 +457,21 @@ export class RecettesComponent implements OnInit, OnDestroy {
   /**
    * Supprimer une recette
    */
- /*  deleteRecette(recette: Recette): void {
-    if (!recette.id) return;
-
-    const dateFormatee = new Date(recette.date).toLocaleDateString('fr-FR');
-    if (!confirm(`Voulez-vous vraiment supprimer cette recette du ${dateFormatee} ?`)) return;
-
-    this.isLoading = true;
-    this.recetteService.deleteRecette(recette.id)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: () => {
-          this.recettes = this.recettes.filter(r => r.id !== recette.id);
-          this.filteredRecettes = [...this.recettes];
-          this.toastr.success('Recette supprimée avec succès');
-          this.recetteAction.emit({ action: 'deleted', recette });
-        },
-        error: (err) => {
-          console.error('Détails de l\'erreur:', err);
-          this.toastr.error(err.error?.message || 'Erreur lors de la suppression');
-        },
-        complete: () => {
-          this.isLoading = false;
-        }
-      });
-  } */
 
   deleteRecette(recette: Recette): void {
     if (!recette.id) return;
 
-    if (!confirm(`Voulez-vous vraiment supprimer cette recette ?`)) return;
+    if (!confirm(`Voulez-vous vraiment annuler cette recette ?`)) return;
 
     this.isLoading = true;
-    this.recetteService.deleteRecette(recette.id)
+    this.recetteService.updateStatut(recette.id, 'annulé')
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => this.isLoading = false)
       )
       .subscribe({
         next: () => {
-          this.toastr.success('Recette supprimée avec succès');
+          this.toastr.success('Recette annulée avec succès');
           this.loadRecettes();
           this.recetteAction.emit({ action: 'deleted', recette });
         },
@@ -504,6 +483,25 @@ export class RecettesComponent implements OnInit, OnDestroy {
       });
   }
 
+  canEditTransaction(transaction: Recette): boolean {
+
+    const today = new Date();
+    const transactionDate = new Date(transaction.date);
+
+    // différence en jours
+    const diffTime = today.getTime() - transactionDate.getTime();
+    const diffDays = diffTime / (1000 * 3600 * 24);
+
+    // délai autorisé pour l'admin
+    const ADMIN_DELAY = 30;
+
+    if (this.isAdmin) {
+      return diffDays <= ADMIN_DELAY;
+    }
+
+    // utilisateur normal → seulement le jour même
+    return transactionDate.toDateString() === today.toDateString();
+  }
 
   /**
    * Obtenir le nom de la catégorie

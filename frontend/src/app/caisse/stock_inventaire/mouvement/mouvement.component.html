@@ -1,6 +1,6 @@
 <div class="table-responsive">
 
-  <div class="d-flex justify-content-end mb-3">
+  <div *ngIf="!isAdmin" class="d-flex justify-content-end mb-3">
 
       <button class="btn btn-success" (click)="openModal()">
         <i class="bi bi-plus-circle me-1"></i> Nouveau mouvement
@@ -205,7 +205,8 @@
         <td>{{ mouvement.dateMouvement | date: 'yyyy-MM-dd à HH:mm' }}</td>
         <td> {{ mouvement.description }}</td>
         <td class="text-nowrap">
-          <button
+          <div class="btn-group" role="group" *ngIf="mouvement.statut !== 'annulé' && canEditTransaction(mouvement)">
+            <button
             class="btn btn-warning btn-sm p-1 me-1"
             (click)="modifierMouvement(mouvement)"
           >
@@ -218,6 +219,7 @@
           >
             <i class="bi bi-trash fs-6"></i>
           </button>
+          </div>
         </td>
       </tr>
     </tbody>

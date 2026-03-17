@@ -1,7 +1,6 @@
 import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
-import { User } from '../../../modeles/user.model';
 import { AuthService } from '../../../services/auth.service';
 import { MouvementComponent } from '../mouvement/mouvement.component';
 import { ReconciliationComponent } from '../reconciliation/reconciliation.component';
@@ -22,17 +21,18 @@ export class EntreesSortiesComponent implements OnInit, OnDestroy {
   code_structure: string | null = null;
   agentId: number | null = null;
   magasinId: number | null = null;
-  currentUser: User | null = null;
+  isAdmin = false;
   
   private userSubscription!: Subscription;
   private authService = inject(AuthService);
 
   ngOnInit() {
     this.userSubscription = this.authService.currentUser.subscribe(user => {
-      this.currentUser = user;
+      //this.currentUser = user;
       this.code_structure = user?.code_structure || null;
       this.magasinId = user?.magasinId || null;
       this.agentId = user?.id || null;
+      this.isAdmin = this.authService.hasRole('Administrateur');
     });
   }
 
