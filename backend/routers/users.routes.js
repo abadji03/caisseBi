@@ -12,5 +12,7 @@ router.put('/:id', authenticateToken, users.update);
 router.delete('/:id', authenticateToken, users.delete);
 router.patch('/:id/status', authenticateToken, users.updateUserStatus);
 router.get('/:code_structure/users', authenticateToken, users.findByStructure);
+router.get('/:code_structure/bis/users', authenticateToken, users.findByStructureBis);
+// Dans user.routes.js
 
 module.exports = router;

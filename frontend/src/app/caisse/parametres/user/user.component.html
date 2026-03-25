@@ -6,14 +6,58 @@
       <i class="bi bi-plus-circle me-2"></i>Nouvel utilisateur
     </button>
   </div>
+  <!-- Barre de recherche et filtres -->
+  <div class="d-flex justify-content-between mb-3">
+    <div class="d-flex gap-2">
+      <div class="input-group" style="width: 300px;">
+        <span class="input-group-text"><i class="bi bi-search"></i></span>
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Rechercher un utilisateur..."
+          [ngModel]="usersFilters.search"
+          (ngModelChange)="onUsersSearchChange($event)"
+        />
+      </div>
+      
+      <select class="form-select" style="width: 150px;" 
+              [ngModel]="usersFilters.statut" 
+              (ngModelChange)="onUsersStatutChange($event)">
+        <option *ngFor="let opt of userStatutOptions" [value]="opt">
+          {{ opt === 'tous' ? 'Tous' : (opt === 'actif' ? 'Actifs' : 'Inactifs') }}
+        </option>
+      </select>
+    </div>
+    
+    <div>
+      <select
+        class="form-select"
+        [ngModel]="usersItemsPerPage"
+        (ngModelChange)="onUsersRowsPerPageChange($event)"
+      >
+        <option [value]="5">5 éléments/page</option>
+        <option [value]="10">10 éléments/page</option>
+        <option [value]="20">20 éléments/page</option>
+        <option [value]="50">50 éléments/page</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Indicateur de chargement -->
   <div *ngIf="isLoading" class="text-center my-4">
     <div class="spinner-border text-success" role="status">
       <span class="visually-hidden">Chargement...</span>
     </div>
   </div>
-  <div class="table-responsive">
+
+  <!-- <div *ngIf="isLoading" class="text-center my-4">
+    <div class="spinner-border text-success" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+  </div> -->
+  <div *ngIf="!isLoading" class="table-responsive">
     <!-- Barre de recherche et filtres -->
-    <div class="d-flex justify-content-between mb-3">
+    <!-- <div class="d-flex justify-content-between mb-3">
       <div class="input-group w-50">
         <span class="input-group-text"><i class="bi bi-search"></i></span>
         <input
@@ -31,7 +75,7 @@
           <option value="20">20 éléments/page</option>
         </select>
       </div>
-    </div>
+    </div> -->
     <table class="table table-bordered table-hover">
       <thead class="table-dark">
         <tr>
@@ -40,13 +84,19 @@
           <th>Email</th>
           <th>Rôle</th>
           <th *ngIf="isGeneralAdmin">Structure</th>
-          <th>Magasin</th>
+          <th *ngIf="!isGeneralAdmin">Magasin</th>
           <th>Statut</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let user of getPaginatedUsers()">
+        <tr *ngIf="users.length === 0">
+          <td [attr.colspan]="isGeneralAdmin ? 7 : 6" class="text-center py-4">
+            <i class="bi bi-inbox display-4 text-muted"></i>
+            <p class="mt-2">Aucun utilisateur trouvé</p>
+          </td>
+        </tr>
+        <tr *ngFor="let user of users">
           <td>{{ user.nom }}</td>
           <!-- <td>{{ user.telephone }}</td> -->
           <td>{{ user.email }}</td>
@@ -59,7 +109,7 @@
           </td>
 
           <td *ngIf="isGeneralAdmin">{{ user.structure_id ? getNomStructure(user.structure_id) : 'Admin général' }}</td>
-          <td>{{ getNomMagasin(user.magasinId) }}</td>
+          <td *ngIf="!isGeneralAdmin">{{ getNomMagasin(user.magasinId) }}</td>
           <td>
             <span class="badge" [ngClass]="user.status ? 'bg-success' : 'bg-danger'">
               {{ user.status ? 'Actif' : 'Inactif' }}
@@ -72,7 +122,7 @@
               </button>
               <button
                 class="btn btn-sm me-2"
-                [ngClass]="user.status ? 'btn-secondary' : 'btn-success'"
+                [ngClass]="user.status ? 'btn-danger' : 'btn-success'"
                 (click)="toggleStatus(user)"
               >
                 <i
@@ -91,7 +141,7 @@
     </table>
 
     <!-- Pagination -->
-    <div class="d-flex justify-content-between align-items-center mt-3">
+    <!-- <div class="d-flex justify-content-between align-items-center mt-3">
       <div>
         Affichage de {{ (currentPage - 1) * itemsPerPage + 1 }} à
         {{ min(currentPage * itemsPerPage, filteredUsers.length) }}
@@ -114,6 +164,36 @@
             </li>
             <li class="page-item" [class.disabled]="currentPage === getTotalPages1()">
               <button class="page-link" (click)="onPageChange(currentPage + 1)">
+                <i class="bi bi-chevron-right"></i>
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div> -->
+     <div *ngIf="users.length > 0" class="d-flex justify-content-between align-items-center mt-3">
+      <div class="text-muted small">
+        Affichage {{ ((usersCurrentPage - 1) * usersItemsPerPage) + 1 }} 
+        à {{ min(usersCurrentPage * usersItemsPerPage, usersTotalItems) }} 
+        sur {{ usersTotalItems }} utilisateurs
+      </div>
+      <div>
+        <nav>
+          <ul class="pagination">
+            <li class="page-item" [class.disabled]="!usersHasPrev">
+              <button class="page-link text-dark" (click)="onUsersPageChange(usersCurrentPage - 1)">
+                <i class="bi bi-chevron-left"></i>
+              </button>
+            </li>
+            <li
+              class="page-item"
+              *ngFor="let page of getPagesArray()"
+              [class.active]="page === usersCurrentPage"
+            >
+              <button class="page-link bg-dark text-white" (click)="onUsersPageChange(page)">{{ page }}</button>
+            </li>
+            <li class="page-item" [class.disabled]="!usersHasNext">
+              <button class="page-link text-dark" (click)="onUsersPageChange(usersCurrentPage + 1)">
                 <i class="bi bi-chevron-right"></i>
               </button>
             </li>
@@ -180,7 +260,7 @@
             </select>
           </div> -->
           <!-- Champ Structure - Conditionnel selon le type d'utilisateur -->
-      <div class="col-md-6 mb-3" *ngIf="isGeneralAdmin">
+      <!-- <div class="col-md-6 mb-3" *ngIf="isGeneralAdmin">
         <label for="structure_id" class="form-label">Structure *</label>
         <select 
           class="form-control" 
@@ -195,6 +275,41 @@
         </select>
         <div *ngIf="userForm.get('structure_id')?.invalid && userForm.get('structure_id')?.touched" 
              class="text-danger">
+          La structure est requise
+        </div>
+      </div> -->
+
+      <!-- Champ Structure - Conditionnel selon le type d'utilisateur -->
+      <div class="col-md-6 mb-3" *ngIf="isGeneralAdmin">
+        <label for="structure_id" class="form-label">Structure *</label>
+        <select 
+          class="form-control" 
+          id="structure_id" 
+          formControlName="structure_id"
+          [class.is-invalid]="userForm.get('structure_id')?.invalid && userForm.get('structure_id')?.touched"
+        >
+          <option value=null>-- Sélectionner une structure --</option>
+          <!-- Si le rôle Administrateur est sélectionné, afficher uniquement les structures sans admin -->
+          <option 
+            *ngFor="let structure of structuresWithoutAdmin" 
+            [value]="structure.id"
+          >
+            {{ structure.nom_structure }}
+            <span *ngIf="selectedRoleIds.includes(adminRoleId)" class="text-muted small">
+              (sans administrateur)
+            </span>
+          </option>
+        </select>
+        
+        <!-- Message d'information -->
+        <div *ngIf="selectedRoleIds.includes(adminRoleId) && structuresWithoutAdmin.length === 0" 
+            class="text-warning small mt-1">
+          <i class="bi bi-info-circle"></i>
+          Toutes les structures ont déjà un administrateur. Vous ne pouvez pas créer un nouvel administrateur.
+        </div>
+        
+        <div *ngIf="userForm.get('structure_id')?.invalid && userForm.get('structure_id')?.touched" 
+            class="text-danger">
           La structure est requise
         </div>
       </div>
@@ -237,7 +352,7 @@
 
 
         <div class="row">
-          <div class="col-md-6 mb-3">
+          <!-- <div class="col-md-6 mb-3">
             <label for="roles" class="form-label">Rôles *</label>
             <div class="permissions-container">
               <div *ngFor="let rol of roles" class="form-check">
@@ -256,6 +371,44 @@
                     (admin général seulement)
                   </span>
                 </label>
+              </div>
+            </div>
+          </div> -->
+          <!-- Modifiez la section des rôles dans le modal -->
+          <div class="col-md-6 mb-3">
+            <label for="roles" class="form-label">Rôles *</label>
+            <div class="permissions-container">
+              <div *ngFor="let rol of roles" class="form-check">
+                <input
+                  name="roles"
+                  class="form-check-input"
+                  type="checkbox"
+                  [id]="'role-' + rol.id"
+                  [value]="rol.id"
+                  (change)="onRoleChange($event, rol.id!)"
+                  [checked]="userRoles.includes(rol.id!)"
+                  [disabled]="
+                    (userRoleType !== 'general_admin' && rol.nom === 'Administrateur') ||
+                    (userRoleType === 'secondary_admin' && rol.nom === 'Administrateur secondaire')
+                  "
+                />
+                <label class="form-check-label" [for]="'role-' + rol.id">
+                  {{ rol.nom }}
+                  <span 
+                    *ngIf="
+                      (userRoleType !== 'general_admin' && rol.nom === 'Administrateur') ||
+                      (userRoleType === 'secondary_admin' && rol.nom === 'Administrateur secondaire')
+                    " 
+                    class="text-muted small"
+                  >
+                    (non disponible)
+                  </span>
+                </label>
+              </div>
+              
+              <!-- Message si aucun rôle disponible -->
+              <div *ngIf="roles.length === 0" class="text-warning small">
+                Vous n'avez pas la permission d'assigner des rôles
               </div>
             </div>
           </div>
@@ -290,7 +443,7 @@
               >Mot de passe {{ isEditMode ? '(laisser vide pour ne pas changer)' : '*' }}</label
             >
             <input
-              type="password"
+              [type]="showPassword ? 'text' : 'password'"
               class="form-control"
               id="password"
               formControlName="password"
@@ -310,7 +463,7 @@
               {{ isEditMode ? '(laisser vide pour ne pas changer)' : '*' }}</label
             >
             <input
-              type="password"
+              [type]="showPassword ? 'text' : 'password'"
               class="form-control"
               id="confirmPassword"
               formControlName="confirmPassword"
@@ -323,6 +476,23 @@
           </div>
         </div>
 
+        <!-- Option pour afficher/masquer les deux champs en même temps -->
+        <div class="row mb-3">
+          <div class="col-12">
+            <div class="form-check">
+              <input 
+                class="form-check-input" 
+                type="checkbox" 
+                id="showAllPasswords"
+                [checked]="showPassword && showConfirmPassword"
+                (change)="toggleAllPasswordsVisibility($event)"
+              >
+              <label class="form-check-label" for="showAllPasswords">
+                <i class="bi bi-eye me-1"></i>Afficher les mots de passe
+              </label>
+            </div>
+          </div>
+        </div>
         <div class="d-grid">
           <button type="submit" class="btn btn-success">
             {{ isEditMode ? 'Modifier' : 'Enregistrer' }}

@@ -8,13 +8,13 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { UserService } from '../../../services/user.service';
+import { UserService, UsersFilter } from '../../../services/user.service';
 import { CommonModule } from '@angular/common';
 import { Structure } from '../../../modeles/structure.model';
 import { AuthService } from '../../../services/auth.service';
 import { StructureService } from '../../../services/structure.service';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { finalize, forkJoin, map, Observable, of, Subject, Subscription, takeUntil } from 'rxjs';
+import { debounceTime, distinctUntilChanged, finalize, forkJoin, map, Observable, of, Subject, Subscription, takeUntil } from 'rxjs';
 import { RolePermissionsService } from '../../../services/role-permissions.service';
 import { Role } from '../../../modeles/role-permission.model';
 import { ToastrService } from 'ngx-toastr';
@@ -40,17 +40,34 @@ export class UserComponent implements OnInit, OnDestroy {
   roles: Role[] = [];
   userRolesMap: Record<number, string[]> = {};
 
-  searchTerm = '';
-  currentPage = 1;
-  itemsPerPage = 10;
-  //roleIds: number[] = [];
-
   private destroy$ = new Subject<void>();
 
   code_structure: string | null = null;
-  currentUser: User | null = null;
   
   private userSubscription!: Subscription;
+
+  //Propriétés pour la pagination
+  usersCurrentPage = 1;
+  usersItemsPerPage = 10;
+  usersTotalItems = 0;
+  usersTotalPages = 0;
+  usersHasNext = false;
+  usersHasPrev = false;
+  
+  // Filtres pour les utilisateurs
+  usersFilters: UsersFilter = {
+    page: 1,
+    limit: 10,
+    search: '',
+    statut: 'tous'
+  };
+
+  // Options pour les filtres
+  userStatutOptions = ['tous', 'actif', 'inactif'];
+
+  private usersSearchSubject = new Subject<string>();
+
+  structuresWithoutAdmin: Structure[] = [];
 
   showStructureField = false;
   userStructures: Structure[] = [];
@@ -60,9 +77,16 @@ export class UserComponent implements OnInit, OnDestroy {
   magasins: Magasin[] = [];
   showMagasinField = false;
   isStructureAdmin = false;
+  isAdminSecondaire = false;
   selectedRoleIds: number[] = [];
   adminRoleId = 0; // ID du rôle "Administrateur de structure"
   otherRoles:number[] = []; // IDs des autres rôles (Gérant, Caissier, Employé)
+  userRoleType: 'general_admin' | 'structure_admin' | 'secondary_admin' | 'other' = 'other';
+  secondaryAdminRoleId = 0;
+
+  // Propriétés pour la visibilité des mots de passe
+  showPassword = false;
+  showConfirmPassword = false;
 
   errorMessage = '';
   private fb = inject(FormBuilder);
@@ -78,34 +102,40 @@ export class UserComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     
     this.userSubscription = this.authService.currentUser.subscribe(user => {
-      this.currentUser = user;
       // Initialiser la variable code_structure
       this.code_structure = user?.code_structure || null;
       console.log('Code structure initialisé :', this.code_structure);
       // Déterminer si on doit montrer le champ structure
       this.showStructureField = this.authService.isGeneralAdmin();
       this.isStructureAdmin = this.authService.hasRole('Administrateur'); // Ou vérifiez par ID
+      this.isAdminSecondaire = this.authService.hasRole('Administrateur secondaire');
+      // Déterminer le type d'utilisateur connecté
+      this.determineUserRoleType(user);
 
       // Récupérer l'ID de la structure de l'utilisateur connecté
       if (user?.structure_id) {
         this.currentUserStructureId = user.structure_id;
         this.selectedStructureId = user.structure_id;
       }
-      if (this.currentUserStructureId && this.isStructureAdmin) {
+      if (this.currentUserStructureId && (this.isStructureAdmin || this.isAdminSecondaire)) {
       this.loadMagasins(this.code_structure!);
     }
     });
     this.isGeneralAdmin = this.authService.isGeneralAdmin();
     this.loadData();
     this.iniForm();
-    /* this.loadUsers();
-    //if (this.authService.isGeneralAdmin()) {
-      this.loadStructures();
-    //} */
-    /* console.log(this.structures.length)
-     this.structures.forEach(str=> {
-            console.log(str.nom_structure, str.id, str.code_structure)
-         }); */
+    
+
+     // Debounce pour la recherche des utilisateurs
+    this.usersSearchSubject.pipe(
+      debounceTime(500),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(searchTerm => {
+      this.usersFilters.search = searchTerm;
+      this.usersFilters.page = 1;
+      this.loadData();
+    });
   }
 
   ngOnDestroy(): void {
@@ -119,6 +149,9 @@ export class UserComponent implements OnInit, OnDestroy {
   iniForm(): void {
     // Initialiser structure_id avec la valeur appropriée
     const initialStructureId = this.isGeneralAdmin ? null : this.currentUserStructureId;
+
+    // Initialiser selectedRoleIds à un tableau vide
+    this.selectedRoleIds = [];
 
     this.userForm = this.fb.group(
       {
@@ -137,14 +170,71 @@ export class UserComponent implements OnInit, OnDestroy {
      // Surveiller les changements de rôle pour afficher/masquer le champ magasin
     this.userForm.get('role')?.valueChanges.subscribe((roleIds: number[]) => {
       //console.log('DEBUG - rôle changé:', roleIds);
-      this.selectedRoleIds = roleIds;
+      this.selectedRoleIds = roleIds || [];
       this.updateMagasinFieldVisibility();
     });
   }
 
-/* get userRoles(): number[] {
-  return this.userForm?.get('role')?.value || [];
-} */
+loadStructuresForAdminCreation(): void {
+  if (this.isGeneralAdmin && !this.isEditMode) {
+    // Vérifier si on est en mode création d'admin
+    //const selectedRoles = this.userForm.get('role')?.value || [];
+    //const hasAdminRole = selectedRoles.includes(this.adminRoleId);
+    
+    //if (hasAdminRole) {
+      // Charger uniquement les structures sans administrateur
+      this.structureService.getStructuresWithoutAdmin()
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (structures) => {
+            this.structuresWithoutAdmin = structures;
+            console.log('Structures sans admin:', structures);
+          },
+          error: (err) => {
+            console.error('Erreur chargement structures sans admin', err);
+            this.structuresWithoutAdmin = [];
+          }
+        });
+    /* } else {
+      // Pour les autres rôles, charger toutes les structures
+      this.structuresWithoutAdmin = this.structures;
+    } */
+  }
+}
+// Nouvelle méthode pour déterminer le type d'utilisateur
+determineUserRoleType(user:User): void {
+  //const user = this.authService.currentUser;
+  if (!user) return;
+
+  const userRoles = user.roles?.map(r => r.nom) || [];
+  
+  if (userRoles.includes('Administrateur Général')) {
+    this.userRoleType = 'general_admin';
+  } else if (userRoles.includes('Administrateur')) {
+    this.userRoleType = 'structure_admin';
+  } else if (userRoles.includes('Administrateur secondaire')) {
+    this.userRoleType = 'secondary_admin';
+  } else {
+    this.userRoleType = 'other';
+  }
+}
+
+// Méthode pour basculer la visibilité d'un champ spécifique
+togglePasswordVisibility(field: 'password' | 'confirm'): void {
+  if (field === 'password') {
+    this.showPassword = !this.showPassword;
+  } else {
+    this.showConfirmPassword = !this.showConfirmPassword;
+  }
+}
+
+// Méthode pour basculer la visibilité des deux champs
+toggleAllPasswordsVisibility(event: any): void {
+  const isChecked = event.target.checked;
+  this.showPassword = isChecked;
+  this.showConfirmPassword = isChecked;
+}
+
 get userRoles(): number[] {
     const roles = this.userForm?.get('role')?.value;
     return Array.isArray(roles) ? roles : [];
@@ -198,7 +288,7 @@ customPasswordValidator(form: FormGroup) {
 }
 
  // Méthode pour mettre à jour la visibilité du champ magasin
- updateMagasinFieldVisibility(): void {
+ /* updateMagasinFieldVisibility(): void {
 
     const selectedRoles = this.selectedRoleIds || [];
     const otherRoles = this.otherRoles || [];
@@ -213,14 +303,15 @@ customPasswordValidator(form: FormGroup) {
     adminRoleId: adminRoleId,
     otherRoles: otherRoles,
     isGeneralAdmin: this.isGeneralAdmin,
-    isStructureAdmin: this.isStructureAdmin
+    isStructureAdmin: this.isStructureAdmin,
+    isAdminSecondaire:this.isAdminSecondaire
   });
     
     if (this.isGeneralAdmin) {
       // Admin général : afficher magasin seulement pour les rôles non-admin
       this.showMagasinField = hasOtherRole && !hasAdminRole;
     } 
-    else if (this.isStructureAdmin) {
+    else if (this.isStructureAdmin || this.isAdminSecondaire ) {
       // Admin de structure : afficher magasin pour tous sauf les admins
       this.showMagasinField = !hasAdminRole;
     } 
@@ -238,7 +329,56 @@ customPasswordValidator(form: FormGroup) {
       showMagasinField: this.showMagasinField,
       selectedRoleIds: selectedRoles,
       isGeneralAdmin: this.isGeneralAdmin,
+      isStructureAdmin: this.isStructureAdmin,
+      isAdminSecondaire:this.isAdminSecondaire
+    });
+  } */
+ updateMagasinFieldVisibility(): void {
+    const selectedRoles = this.selectedRoleIds || [];
+    const hasAdminRole = this.selectedRoleIds.includes(this.adminRoleId);
+    const hasSecondaryAdminRole = this.selectedRoleIds.includes(this.secondaryAdminRoleId);
+    const hasOtherRole = this.selectedRoleIds.some(id => this.otherRoles.includes(id));
+
+    console.log('Debug - updateMagasinFieldVisibility:', {
+      hasAdminRole,
+      hasSecondaryAdminRole,
+      hasOtherRole,
+      selectedRoleIds: selectedRoles,
+      adminRoleId: this.adminRoleId,
+      secondaryAdminRoleId: this.secondaryAdminRoleId,
+      otherRoles: this.otherRoles,
+      isGeneralAdmin: this.isGeneralAdmin,
       isStructureAdmin: this.isStructureAdmin
+    });
+    
+    if (this.isGeneralAdmin) {
+      // Admin général : magasin pour les rôles non-admin uniquement
+      // Les administrateurs secondaires n'ont pas de magasin
+      this.showMagasinField = hasOtherRole && !hasAdminRole && !hasSecondaryAdminRole;
+    } 
+    else if (this.isStructureAdmin) {
+      // Admin de structure : magasin pour les non-admins uniquement
+      // Les administrateurs secondaires n'ont pas de magasin
+      this.showMagasinField = !hasAdminRole && !hasSecondaryAdminRole;
+    } 
+    else if (this.isAdminSecondaire) {
+      // Admin secondaire : magasin pour les rôles non-admin uniquement (Gérant, Caissier, Employé)
+      // Les administrateurs secondaires n'ont pas de magasin
+      this.showMagasinField = hasOtherRole && !hasAdminRole && !hasSecondaryAdminRole;
+    }
+    else {
+      // Autres utilisateurs : pas de champ magasin
+      this.showMagasinField = false;
+    }
+    
+    // Si le champ n'est pas visible, réinitialiser sa valeur
+    if (!this.showMagasinField) {
+      this.userForm.patchValue({ magasinId: null });
+    }
+    
+    console.log('Visibilité champ magasin:', {
+      showMagasinField: this.showMagasinField,
+      selectedRoleIds: selectedRoles
     });
   }
 
@@ -315,23 +455,159 @@ customPasswordValidator(form: FormGroup) {
     setTimeout(() => {
       this.selectedRoleIds = this.userForm.get('role')?.value || [];
       this.updateMagasinFieldVisibility();
+
+      // Recharger les structures disponibles si le rôle Administrateur est sélectionné
+      if (this.isGeneralAdmin && this.selectedRoleIds.includes(this.adminRoleId)) {
+        this.loadStructuresForAdminCreation();
+      } else if (this.isGeneralAdmin) {
+        // Sinon, utiliser toutes les structures
+        this.structuresWithoutAdmin = this.structures;
+      }
     }, 0);
+
+    
    
   }
   
+/* loadData(): void {
+    this.isLoading = true;
+
+    const filters: UsersFilter = {
+      page: this.usersFilters.page,
+      limit: this.usersItemsPerPage,
+      search: this.usersFilters.search || undefined,
+      statut: this.usersFilters.statut
+    };
+
+    const usersObservable = this.isGeneralAdmin 
+      ? this.userService.getAllsBis(filters)
+      : (this.code_structure 
+          ? this.userService.getByStructureBis(this.code_structure, filters)
+          : of({ items: [], pagination: { total: 0, page: 1, totalPages: 1, limit: 10, hasNext: false, hasPrev: false } }));
+
+    forkJoin({
+      users: usersObservable,
+      roles: this.roleService.getAllRoles(),
+      structures: this.isGeneralAdmin 
+          ? this.structureService.getAll() 
+          : (this.currentUserStructureId 
+              ? this.structureService.getByCodeStructure(this.code_structure!).pipe(
+                  map(structure => structure ? [structure] : [])
+                )
+              : of([]))
+    })
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.isLoading = false))
+      )
+      .subscribe({
+        next: ({ users, roles, structures }) => {
+          // users contient maintenant { items, pagination }
+          this.users = users.items;
+          
+          // Mise à jour de la pagination
+          this.usersTotalItems = users.pagination.total;
+          this.usersCurrentPage = users.pagination.page;
+          this.usersTotalPages = users.pagination.totalPages;
+          this.usersHasNext = users.pagination.hasNext;
+          this.usersHasPrev = users.pagination.hasPrev;
+
+         // Filtrer les rôles selon le type d'utilisateur connecté
+          this.roles = this.filterRolesByUserType(roles);
+          this.structures = structures;
+          this.userStructures = structures;
+
+          // Identifier les IDs de rôle
+          const adminRole = this.roles.find(r =>
+            r.nom === 'Administrateur' && r.id !== undefined
+          );
+          
+          const secondaryAdminRole = this.roles.find(r =>
+            r.nom === 'Administrateur secondaire' && r.id !== undefined
+          );
+
+          const otherRoleNames = ['Gérant', 'Caissier', 'Employé'];
+
+          const otherRoles = this.roles.filter(r =>
+            otherRoleNames.some(name => r.nom === name) && r.id !== undefined
+          );
+
+          if (adminRole?.id !== undefined) {
+            this.adminRoleId = adminRole.id;
+          }
+          
+          if (secondaryAdminRole?.id !== undefined) {
+            this.secondaryAdminRoleId = secondaryAdminRole.id;
+          }
+
+          this.otherRoles = otherRoles
+            .map(r => r.id)
+            .filter((id): id is number => id !== undefined);
+
+          // Filtrer les utilisateurs affichés selon le type d'utilisateur connecté
+          if (this.userRoleType === 'secondary_admin') {
+            this.users = this.users.filter(user => 
+              !user.roles?.some(r => r.nom === 'Administrateur')
+            );
+          }
+
+          // Mapping rôles utilisateurs
+          for (const user of this.users) {
+            this.userRolesMap[user.id] =
+              user.roles?.map(role => role.nom) || [];
+          }
+        },
+        error: err => {
+          console.error('Erreur chargement données', err);
+        }
+      });
+  } */
+
   loadData(): void {
   this.isLoading = true;
 
+  const filters: UsersFilter = {
+    page: this.usersFilters.page,
+    limit: this.usersItemsPerPage,
+    search: this.usersFilters.search || undefined,
+    statut: this.usersFilters.statut
+  };
+
+  const usersObservable = this.isGeneralAdmin 
+    ? this.userService.getAllsBis(filters)
+    : (this.code_structure 
+        ? this.userService.getByStructureBis(this.code_structure, filters)
+        : of({ items: [], pagination: { total: 0, page: 1, totalPages: 1, limit: 10, hasNext: false, hasPrev: false } }));
+
+  // Récupération des structures
+  let structuresObservable: Observable<Structure[]>;
+  
+  if (this.isGeneralAdmin) {
+    // Admin général : récupère toutes les structures
+    structuresObservable = this.structureService.getAll().pipe(
+      map((response: any) => {
+        // Vérifier si la réponse a la structure { items: [...] } ou est directement un tableau
+        if (response && Array.isArray(response.items)) {
+          return response.items;
+        } else if (Array.isArray(response)) {
+          return response;
+        }
+        return [];
+      })
+    );
+  } else {
+    // Non-admin : récupère uniquement sa structure
+    structuresObservable = this.currentUserStructureId 
+      ? this.structureService.getById(this.currentUserStructureId).pipe(
+          map(structure => structure ? [structure] : [])
+        )
+      : of([]);
+  }
+
   forkJoin({
-    users: this.userService.getAlls(),          // 🔥 filtré côté backend
+    users: usersObservable,
     roles: this.roleService.getAllRoles(),
-    structures: this.isGeneralAdmin 
-        ? this.structureService.getAll() 
-        : (this.currentUserStructureId 
-            ? this.structureService.getByCodeStructure(this.code_structure!).pipe(
-                map(structure => structure ? [structure] : [])
-              )
-            : of([]))
+    structures: structuresObservable
   })
     .pipe(
       takeUntil(this.destroy$),
@@ -339,184 +615,362 @@ customPasswordValidator(form: FormGroup) {
     )
     .subscribe({
       next: ({ users, roles, structures }) => {
-        this.users = users;
-        this.roles = roles.filter(r => r.id !== 1);
-        this.structures = structures;
-        this.userStructures = structures; // Garder une copie pour l'affichage
+        // Vérifier que users est un tableau
+        this.users = Array.isArray(users) ? users : (users.items || []);
+        
+        // Vérifier que structures est un tableau
+        this.structures = Array.isArray(structures) ? structures : [];
+
+        console.log('Structures chargées:', this.structures.map(s => ({
+          id: s.id,
+          nom: s.nom_structure,
+          code_structure: s.code_structure,
+          hasCode: !!s.code_structure
+        })));
+        
+        // Mise à jour de la pagination si users a une propriété pagination
+        if (users.pagination) {
+          this.usersTotalItems = users.pagination.total;
+          this.usersCurrentPage = users.pagination.page;
+          this.usersTotalPages = users.pagination.totalPages;
+          this.usersHasNext = users.pagination.hasNext;
+          this.usersHasPrev = users.pagination.hasPrev;
+        } else {
+          // Fallback si pas de pagination
+          this.usersTotalItems = this.users.length;
+          this.usersTotalPages = Math.ceil(this.users.length / this.usersItemsPerPage);
+          this.usersHasNext = this.usersCurrentPage < this.usersTotalPages;
+          this.usersHasPrev = this.usersCurrentPage > 1;
+        }
+
+        // Filtrer les rôles selon le type d'utilisateur connecté
+        this.roles = this.filterRolesByUserType(roles);
+        this.userStructures = this.structures;
 
         // Identifier les IDs de rôle
         const adminRole = this.roles.find(r =>
-          r.nom.toLowerCase().includes('administrateur') && r.id !== undefined
+          r.nom === 'Administrateur' && r.id !== undefined
+        );
+        
+        const secondaryAdminRole = this.roles.find(r =>
+          r.nom === 'Administrateur secondaire' && r.id !== undefined
         );
 
-        const otherRoleNames = ['gérant', 'caissier', 'employé'];
-
+        const otherRoleNames = ['Gérant', 'Caissier', 'Employé'];
         const otherRoles = this.roles.filter(r =>
-          otherRoleNames.some(name => r.nom.toLowerCase().includes(name)) && r.id !== undefined
+          otherRoleNames.some(name => r.nom === name) && r.id !== undefined
         );
 
         if (adminRole?.id !== undefined) {
           this.adminRoleId = adminRole.id;
+        }
+        
+        if (secondaryAdminRole?.id !== undefined) {
+          this.secondaryAdminRoleId = secondaryAdminRole.id;
         }
 
         this.otherRoles = otherRoles
           .map(r => r.id)
           .filter((id): id is number => id !== undefined);
 
-        // Si l'utilisateur n'est pas admin général, filtrer les utilisateurs par sa structure
-        if (!this.isGeneralAdmin && this.currentUserStructureId) {
-            this.users = this.users.filter(user => 
-              user.structure_id === this.currentUserStructureId || !user.structure_id
-            );
+        // Filtrer les utilisateurs affichés selon le type d'utilisateur connecté
+        if (this.userRoleType === 'secondary_admin') {
+          this.users = this.users.filter(user => 
+            !user.roles?.some(r => r.nom === 'Administrateur')
+          );
         }
+
         // Mapping rôles utilisateurs
         for (const user of this.users) {
-          this.userRolesMap[user.id] =
-            user.roles?.map(role => role.nom) || [];
+          this.userRolesMap[user.id] = user.roles?.map(role => role.nom) || [];
         }
+        
+        console.log('Structures chargées:', this.structures.length);
+        console.log('Utilisateurs chargés:', this.users.length);
+
+        if(this.isGeneralAdmin){
+        this.loadStructuresForAdminCreation();
+      }
       },
       error: err => {
         console.error('Erreur chargement données', err);
+        this.toastr.error('Erreur lors du chargement des données');
       }
     });
 }
+  // Nouvelle méthode pour filtrer les rôles selon le type d'utilisateur
+  filterRolesByUserType(roles: Role[]): Role[] {
+    let filteredRoles = [...roles];
+    
+    switch (this.userRoleType) {
+      case 'general_admin':
+        // Admin général : ne voit que "Administrateur" et coche par défaut
+        filteredRoles = roles.filter(r => r.nom === 'Administrateur');
+        // Définir le rôle Administrateur comme sélectionné par défaut dans le formulaire
+        setTimeout(() => {
+          const adminRole = filteredRoles.find(r => r.nom === 'Administrateur');
+          if (adminRole?.id) {
+            this.userForm.patchValue({ role: [adminRole.id] });
+            this.selectedRoleIds = [adminRole.id];
+            this.updateMagasinFieldVisibility();
+          }
+        }, 100);
+        break;
+        
+      case 'structure_admin':
+        // Admin de structure : voit tous les rôles sauf "Administrateur"
+        filteredRoles = roles.filter(r => 
+          r.nom !== 'Administrateur' && r.nom !== 'Administrateur Général'
+        );
+        break;
+        
+      case 'secondary_admin':
+        // Admin secondaire : voit tous les rôles sauf "Administrateur" et "Administrateur secondaire"
+        filteredRoles = roles.filter(r => 
+          r.nom !== 'Administrateur' && 
+          r.nom !== 'Administrateur secondaire' && 
+          r.nom !== 'Administrateur Général'
+        );
+        break;
+        
+      default:
+        // Autres utilisateurs : ne voient aucun rôle (ne peuvent pas créer d'utilisateurs)
+        filteredRoles = [];
+        break;
+    }
+    
+    return filteredRoles;
+  }
 
+  // Gestionnaires pour les utilisateurs
+  onUsersPageChange(page: number): void {
+    if (page >= 1 && page <= this.usersTotalPages) {
+      this.usersFilters.page = page;
+      this.loadData();
+    }
+  }
+
+  onUsersSearchChange(searchTerm: string): void {
+    this.usersSearchSubject.next(searchTerm);
+  }
+
+  onUsersRowsPerPageChange(limit: number): void {
+    this.usersItemsPerPage = limit;
+    this.usersFilters.limit = limit;
+    this.usersFilters.page = 1;
+    this.loadData();
+  }
+
+  onUsersStatutChange(statut: string): void {
+    this.usersFilters.statut = statut;
+    this.usersFilters.page = 1;
+    this.loadData();
+  }
+
+  resetUsersFilters(): void {
+    this.usersFilters = {
+      page: 1,
+      limit: this.usersItemsPerPage,
+      search: '',
+      statut: 'tous'
+    };
+    this.loadData();
+  }
 
   openModal(content: any, user?: User): void {
+
+    // Vérifier que content est défini
+    if (!content) {
+      console.error('Référence modal non trouvée');
+      return;
+    }
   
-  console.log('DEBUG - openModal appelé', {
-    user,
-    isEditMode: !!user,
-    isGeneralAdmin: this.isGeneralAdmin,
-    isStructureAdmin: this.isStructureAdmin,
-    currentUserStructureId: this.currentUserStructureId
-  });
-  this.selectedUser = user || null;
-  this.isEditMode = !!user;
-  this.errorMessage = ''; // Réinitialiser les erreurs
-
-  // Réinitialiser le formulaire
-  this.iniForm(); // Toujours réinitialiser pour éviter les conflits
-
-  // Initialisation du formulaire
-  if (this.isEditMode && user) {
-    // Récupère les rôles de l'utilisateur
-    this.roleService.getRolesIdByUser(user.id!)
-    .pipe(takeUntil(this.destroy$))
-    .subscribe({
-      next: (userRole) => {
-        // Récupère les détails complets de l'utilisateur
-        this.userService.getById(user.id!)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: (fullUser) => {
-            // Pour un admin général, on garde la structure de l'utilisateur
-            // Pour un non-admin, on force la structure de l'utilisateur connecté
-            const structureId = this.isGeneralAdmin 
-              ? fullUser.structure_id 
-              : this.currentUserStructureId;
-
-            /* if (structureId && !this.isGeneralAdmin) {
-                this.loadMagasins(this.code_structure!);
-              } */
-            // Patch le formulaire avec toutes les données SANS le mot de passe
-            const userData = {
-              nom: fullUser.nom,
-              telephone: fullUser.telephone,
-              email: fullUser.email,
-              status: fullUser.status,
-              structure_id: structureId,
-              magasinId:fullUser.magasinId,
-              role: userRole.roleIds || [],
-              password: '', // On laisse vide
-              confirmPassword: '' // On laisse vide
-            };
-
-            this.userForm.patchValue(userData);
-            this.updateMagasinFieldVisibility();
-            // Ouvrir le modal maintenant que les données sont chargées
-            this.modalService.open(content, { size: 'lg' });
-          },
-          error: (err) => {
-            console.error('Erreur lors du chargement des détails utilisateur', err);
-            // Pour un admin général, on garde la structure de l'utilisateur
-            // Pour un non-admin, on force la structure de l'utilisateur connecté
-            const structureId = this.isGeneralAdmin 
-              ? user.structure_id 
-              : this.currentUserStructureId;
-            // Fallback si erreur
-            const fallbackData = {
-              nom: user.nom,
-              telephone: user.telephone,
-              email: user.email,
-              status: user.status,
-              structure_id: structureId,
-              magasinId:user.magasinId,
-              role: userRole.roleIds || [],
-              password: '',
-              confirmPassword: ''
-            };
-            this.userForm.patchValue(fallbackData);
-            this.updateMagasinFieldVisibility();
-            this.modalService.open(content, { size: 'lg' });
-          },
-        });
-      },
-      error: (err) => {
-        console.error('Erreur lors du chargement des rôles', err);
-        // Pour un admin général, on garde la structure de l'utilisateur
-        // Pour un non-admin, on force la structure de l'utilisateur connecté
-        const structureId = this.isGeneralAdmin 
-          ? user.structure_id 
-          : this.currentUserStructureId;
-        // Fallback si erreur de chargement des rôles
-        const fallbackData = {
-          nom: user.nom,
-          telephone: user.telephone,
-          email: user.email,
-          status: user.status,
-          magasinId:user.magasinId,
-          structure_id: structureId,
-          role: [],
-          password: '',
-          confirmPassword: ''
-        };
-        this.userForm.patchValue(fallbackData);
-        this.updateMagasinFieldVisibility();
-        this.modalService.open(content, { size: 'lg' });
-      },
+    if (user && !user.status) {
+      this.toastr.warning('Cet utilisateur est inactif. Veuillez d\'abord l\'activer.');
+      return;
+    }
+  
+    console.log('DEBUG - openModal appelé', {
+      user,
+      isEditMode: !!user,
+      isGeneralAdmin: this.isGeneralAdmin,
+      isStructureAdmin: this.isStructureAdmin,
+      isAdminSecondaire: this.isAdminSecondaire,
+      currentUserStructureId: this.currentUserStructureId
     });
-  } else {
-    // Mode création - formulaire vide
-    //console.log('DEBUG - Mode création');
-    // On peut pré-remplir la structure si l'utilisateur n'est pas admin général
-     // Pré-remplir la structure selon le type d'utilisateur
-      if (!this.isGeneralAdmin) {
-        // Pour un non-admin, assigner automatiquement sa structure
-        const structureId = this.currentUserStructureId;
-        //console.log('DEBUG - Structure ID pour non-admin:', structureId);
-        this.userForm.patchValue({ structure_id: structureId });
 
-        // Charger les magasins de la structure
-        /* if (structureId) {
-          console.log('DEBUG - Chargement magasins avec code_structure:', this.code_structure);
-          this.loadMagasins(this.code_structure!);
-        } */
-        
-        // Récupérer le nom de la structure pour l'affichage
-        if (structureId && this.structures.length > 0) {
-          const structure = this.structures.find(s => s.id === structureId);
-          if (structure) {
-            this.selectedStructureId = structureId;
-          }
-        }
+    // Vérifier si l'utilisateur a le rôle "Administrateur secondaire"
+    const hasSecondaryAdminRole = user?.roles?.some(role => 
+      role.nom === 'Administrateur secondaire' || role.id === this.secondaryAdminRoleId
+    ) || false;
 
-        // Mettre à jour la visibilité du champ magasin
+    if(this.isAdminSecondaire && hasSecondaryAdminRole){
+      this.toastr.warning('Vous n\'êtes pas autorisé à modifier cet utilisateur');
+      return;
+    }
+
+    this.selectedUser = user || null;
+    this.isEditMode = !!user;
+    this.errorMessage = ''; // Réinitialiser les erreurs
+    this.showPassword = false;
+    this.showConfirmPassword = false;
+
+    this.userForm.reset();
+    this.selectedRoleIds = [];
+
+    // Réinitialiser le formulaire
+    this.iniForm(); // Toujours réinitialiser pour éviter les conflits
+
+    // Appliquer la sélection par défaut des rôles pour l'admin général
+    /* if (this.userRoleType === 'general_admin' && !this.isEditMode) {
+      const adminRole = this.roles.find(r => r.nom === 'Administrateur');
+      if (adminRole?.id) {
+        this.userForm.patchValue({ role: [adminRole.id] });
+        this.selectedRoleIds = [adminRole.id];
         this.updateMagasinFieldVisibility();
       }
-    
-    this.modalService.open(content, { size: 'lg' });
-  }
+    } */
+
+    // Appliquer la sélection par défaut des rôles pour l'admin général
+    if (this.userRoleType === 'general_admin' && !this.isEditMode) {
+      const adminRole = this.roles.find(r => r.nom === 'Administrateur');
+      if (adminRole?.id) {
+        // Utiliser setTimeout pour éviter les conflits de détection de changements
+        setTimeout(() => {
+          this.userForm.patchValue({ 
+            role: [adminRole.id],
+            status: true 
+          });
+          this.selectedRoleIds = [adminRole.id!];
+          this.updateMagasinFieldVisibility();
+        }, 0);
+      }
+    } else if (!this.isEditMode) {
+      // Pour les autres types d'utilisateurs, status actif par défaut
+      setTimeout(() => {
+        this.userForm.patchValue({ status: true });
+      }, 0);
+    }
+
+    // Initialisation du formulaire
+    if (this.isEditMode && user) {
+      // Récupère les rôles de l'utilisateur
+      this.roleService.getRolesIdByUser(user.id!)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (userRole) => {
+          // Récupère les détails complets de l'utilisateur
+          this.userService.getById(user.id!)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
+            next: (fullUser) => {
+              // Pour un admin général, on garde la structure de l'utilisateur
+              // Pour un non-admin, on force la structure de l'utilisateur connecté
+              const structureId = this.isGeneralAdmin 
+                ? fullUser.structure_id 
+                : this.currentUserStructureId;
+
+              /* if (structureId && !this.isGeneralAdmin) {
+                  this.loadMagasins(this.code_structure!);
+                } */
+              // Patch le formulaire avec toutes les données SANS le mot de passe
+              const userData = {
+                nom: fullUser.nom,
+                telephone: fullUser.telephone,
+                email: fullUser.email,
+                status: fullUser.status,
+                structure_id: structureId,
+                magasinId:fullUser.magasinId,
+                role: userRole.roleIds || [],
+                password: '', // On laisse vide
+                confirmPassword: '' // On laisse vide
+              };
+
+              this.userForm.patchValue(userData);
+              this.updateMagasinFieldVisibility();
+              // Ouvrir le modal maintenant que les données sont chargées
+              this.modalService.open(content, { size: 'lg' });
+            },
+            error: (err) => {
+              console.error('Erreur lors du chargement des détails utilisateur', err);
+              // Pour un admin général, on garde la structure de l'utilisateur
+              // Pour un non-admin, on force la structure de l'utilisateur connecté
+              const structureId = this.isGeneralAdmin 
+                ? user.structure_id 
+                : this.currentUserStructureId;
+              // Fallback si erreur
+              const fallbackData = {
+                nom: user.nom,
+                telephone: user.telephone,
+                email: user.email,
+                status: user.status,
+                structure_id: structureId,
+                magasinId:user.magasinId,
+                role: userRole.roleIds || [],
+                password: '',
+                confirmPassword: ''
+              };
+              this.userForm.patchValue(fallbackData);
+              this.updateMagasinFieldVisibility();
+              this.modalService.open(content, { size: 'lg' });
+            },
+          });
+        },
+        error: (err) => {
+          console.error('Erreur lors du chargement des rôles', err);
+          // Pour un admin général, on garde la structure de l'utilisateur
+          // Pour un non-admin, on force la structure de l'utilisateur connecté
+          const structureId = this.isGeneralAdmin 
+            ? user.structure_id 
+            : this.currentUserStructureId;
+          // Fallback si erreur de chargement des rôles
+          const fallbackData = {
+            nom: user.nom,
+            telephone: user.telephone,
+            email: user.email,
+            status: user.status,
+            magasinId:user.magasinId,
+            structure_id: structureId,
+            role: [],
+            password: '',
+            confirmPassword: ''
+          };
+          this.userForm.patchValue(fallbackData);
+          this.updateMagasinFieldVisibility();
+          this.modalService.open(content, { size: 'lg' });
+        },
+      });
+    } else {
+      // Mode création - formulaire vide
+      //console.log('DEBUG - Mode création');
+      // On peut pré-remplir la structure si l'utilisateur n'est pas admin général
+      // Pré-remplir la structure selon le type d'utilisateur
+        if (!this.isGeneralAdmin) {
+          // Pour un non-admin, assigner automatiquement sa structure
+          const structureId = this.currentUserStructureId;
+          //console.log('DEBUG - Structure ID pour non-admin:', structureId);
+          this.userForm.patchValue({ structure_id: structureId });
+
+          // Charger les magasins de la structure
+          /* if (structureId) {
+            console.log('DEBUG - Chargement magasins avec code_structure:', this.code_structure);
+            this.loadMagasins(this.code_structure!);
+          } */
+          
+          // Récupérer le nom de la structure pour l'affichage
+          if (structureId && this.structures.length > 0) {
+            const structure = this.structures.find(s => s.id === structureId);
+            if (structure) {
+              this.selectedStructureId = structureId;
+            }
+          }
+
+          // Mettre à jour la visibilité du champ magasin
+          this.updateMagasinFieldVisibility();
+        }
+      
+      this.modalService.open(content, { size: 'lg' });
+    }
 }
 
 onSubmit(): void {
@@ -544,27 +998,50 @@ onSubmit(): void {
     // Marquer tous les champs comme touchés pour afficher les erreurs
     this.markFormGroupTouched(this.userForm);
     console.log('Le formulaire est invalide');
+    this.toastr.error('Le formulaire est invalide')
     return;
   }
 
   const userData = {
     ...this.userForm.value,
-    code_structure: this.code_structure ||null,
+    //code_structure: this.code_structure ||null,
   };
-
-    // Gestion de la structure selon le type d'utilisateur
+     // Gestion de la structure selon le type d'utilisateur
     if (!this.isGeneralAdmin) {
       // Pour un non-admin, forcer la structure de l'utilisateur connecté
       userData.structure_id = this.currentUserStructureId;
+      
+      // Récupérer le code_structure depuis la structure sélectionnée
+      if (userData.structure_id && this.structures.length > 0) {
+        const selectedStructure = this.structures.find(s => Number(s.id )=== Number(userData.structure_id));
+        if (selectedStructure && selectedStructure.code_structure) {
+          userData.code_structure = selectedStructure.code_structure;
+          console.log('code_structure depuis la structure sélectionnée Pour un non-admin',userData.code_structure)
+        }
+      }
     } else {
       // Pour un admin général, s'assurer qu'une structure est sélectionnée
       if (!userData.structure_id) {
         this.errorMessage = 'Veuillez sélectionner une structure';
         return;
       }
+    
+    // Récupérer le code_structure depuis la structure sélectionnée
+    console.log('Structure disponible',this.structures);
+    const selectedStr = this.structures.find(s => Number(s.id )=== Number(userData.structure_id));
+    console.log('valeur de structure_id ',userData.structure_id);
+    console.log('selectedStructure dans Structure disponible',selectedStr);
+    if (selectedStr && selectedStr.code_structure) {
+      userData.code_structure = selectedStr.code_structure;
+      console.log('code_structure depuis la structure sélectionnée Pour un admin ',userData.code_structure)
+    } else {
+      this.errorMessage = 'Code structure non trouvé pour la structure sélectionnée';
+      return;
     }
+  }
    // Validation du magasin selon les règles
     const hasAdminRole = this.selectedRoleIds.includes(this.adminRoleId);
+    const hasSecondaryAdminRole = this.selectedRoleIds.includes(this.secondaryAdminRoleId);
     const hasOtherRole = this.selectedRoleIds.some(id => this.otherRoles.includes(id));
 
     console.log('Debug - Validation magasin:', {
@@ -572,23 +1049,29 @@ onSubmit(): void {
       hasOtherRole,
       selectedRoleIds: this.selectedRoleIds,
       magasinId: userData.magasinId,
+      hasSecondaryAdminRole:hasSecondaryAdminRole,
       userData
     });
 
+    if (hasSecondaryAdminRole) {
+      userData.magasinId = null;
+      // Si l'utilisateur a aussi d'autres rôles, on garde seulement admin secondaire ?
+      // Vous pouvez décider de la logique ici
+    }
     if (this.isGeneralAdmin) {
       // Admin général : magasin obligatoire pour les rôles non-admin
-      if (hasOtherRole && !hasAdminRole && !userData.magasinId) {
+      if (hasOtherRole && !hasAdminRole && !hasSecondaryAdminRole && !userData.magasinId) {
         this.errorMessage = 'Veuillez sélectionner un magasin pour ce type de rôle';
         return;
       }
       // Admin général : pas de magasin pour les admins
-      if (hasAdminRole) {
+      if (hasAdminRole || hasSecondaryAdminRole) {
         userData.magasinId = null;
       }
     } 
     else if (this.isStructureAdmin) {
       // Admin de structure : magasin obligatoire pour les non-admins
-      if (!hasAdminRole && !userData.magasinId) {
+      if (!hasAdminRole && !hasSecondaryAdminRole && !userData.magasinId) {
         this.errorMessage = 'Veuillez sélectionner un magasin pour ce type de rôle';
         return;
       }
@@ -597,16 +1080,6 @@ onSubmit(): void {
         userData.magasinId = null;
       }
   }
-
-  // Ne pas envoyer les champs de mot de passe s'ils sont vides en mode édition
-  /* if (this.isEditMode) {
-    // Si les deux champs de mot de passe sont vides, on les supprime complètement
-    if (!userData.password && !userData.confirmPassword) {
-      delete userData.password;
-      delete userData.confirmPassword;
-    }
-    // Si seulement un des deux est rempli, on ne fait rien et on laisse le validateur gérer
-  } */
   
   // Supprimer toujours le champ de confirmation
   delete userData.confirmPassword;
@@ -639,8 +1112,9 @@ onSubmit(): void {
           next: () => {
             this.toastr.success('Utilisateur mis à jour avec succès');
             this.loadData();
-            this.modalService.dismissAll();
-            this.userForm.reset(); // Réinitialiser le formulaire
+            this.closeModal();
+            //this.modalService.dismissAll();
+            //this.userForm.reset(); // Réinitialiser le formulaire
           },
           error: (err) => {
             console.error('Erreur lors de la mise à jour des rôles', err);
@@ -675,23 +1149,26 @@ onSubmit(): void {
             next: () => {
               this.toastr.success('Utilisateur créé avec succès');
               this.loadData();
-              this.modalService.dismissAll();
-              this.userForm.reset(); // Réinitialiser le formulaire
+              this.closeModal();
+              //this.modalService.dismissAll();
+              //this.userForm.reset(); // Réinitialiser le formulaire
             },
             error: (err) => {
               console.error("Erreur lors de l'assignation des rôles", err);
               this.toastr.error('Erreur lors de l\'assignation des rôles');
               // On peut quand même fermer le modal car l'utilisateur est créé
               this.loadData();
-              this.modalService.dismissAll();
-              this.userForm.reset();
+              this.closeModal();
+              //this.modalService.dismissAll();
+              //this.userForm.reset();
             },
           });
         } else {
           this.toastr.success('Utilisateur créé avec succès');
           this.loadData();
-          this.modalService.dismissAll();
-          this.userForm.reset();
+          this.closeModal();
+          //this.modalService.dismissAll();
+          //this.userForm.reset();
         }
       },
       error: (err) => {
@@ -701,6 +1178,37 @@ onSubmit(): void {
       },
     });
   }
+}
+
+// Nouvelle méthode pour fermer proprement le modal
+closeModal(): void {
+  // Réinitialiser complètement le formulaire
+  this.userForm.reset();
+  this.isEditMode = false;
+  this.selectedUser = null;
+  this.selectedRoleIds = [];
+  this.errorMessage = '';
+  this.showPassword = false;
+  this.showConfirmPassword = false;
+  
+  // Réinitialiser les valeurs par défaut selon le type d'utilisateur
+  if (this.userRoleType === 'general_admin') {
+    const adminRole = this.roles.find(r => r.nom === 'Administrateur');
+    if (adminRole?.id) {
+      setTimeout(() => {
+        this.userForm.patchValue({ 
+          role: [adminRole.id],
+          status: true 
+        });
+        this.selectedRoleIds = [adminRole.id!];
+      }, 100);
+    }
+  } else {
+    this.userForm.patchValue({ status: true });
+  }
+  
+  // Fermer tous les modals
+  this.modalService.dismissAll();
 }
 // Méthode pour obtenir le nom du magasin
 getNomMagasin(magasinId: number | string | null | undefined): string {
@@ -719,32 +1227,33 @@ getNomMagasin(magasinId: number | string | null | undefined): string {
   return magasin?.nom ?? 'Non assigné';
 }
 
-// Surveiller les changements de structure pour charger les magasins
-  /* onStructureChange(): void {
-    const structureId = this.userForm.get('structure_id')?.value;
-    
-    if (structureId && this.isGeneralAdmin) {
-      this.loadMagasins(this.code_structure!);
-    }
-  } */
- canCreateUser(): boolean {
-    // Seul l'admin général peut créer un admin de structure
-    const selectedRoleIds = this.userForm?.get('role')?.value || [];
-    const hasAdminRole = selectedRoleIds.includes(this.adminRoleId);
-    
-    if (hasAdminRole && !this.isGeneralAdmin) {
-      this.errorMessage = 'Seul l\'administrateur général peut créer un administrateur de structure';
-      return false;
-    }
-    
-    // L'admin de structure peut créer d'autres utilisateurs
-    if (!this.isGeneralAdmin && !this.isStructureAdmin) {
-      this.errorMessage = 'Vous n\'avez pas la permission de créer des utilisateurs';
-      return false;
-    }
-    
-    return true;
+
+  // Modifiez la méthode canCreateUser
+canCreateUser(): boolean {
+  // Seul l'admin général peut créer un admin de structure
+  const selectedRoleIds = this.userForm?.get('role')?.value || [];
+  const hasAdminRole = selectedRoleIds.includes(this.adminRoleId);
+  const hasSecondaryAdminRole = selectedRoleIds.includes(this.secondaryAdminRoleId);
+  
+  if (hasAdminRole && this.userRoleType !== 'general_admin') {
+    this.errorMessage = 'Seul l\'administrateur général peut créer un administrateur de structure';
+    return false;
   }
+  
+  if (hasSecondaryAdminRole && !['general_admin', 'structure_admin'].includes(this.userRoleType)) {
+    this.errorMessage = 'Vous n\'avez pas la permission de créer un administrateur secondaire';
+    return false;
+  }
+  
+  // Vérifier si l'utilisateur a le droit de créer des utilisateurs
+  if (!['general_admin', 'structure_admin', 'secondary_admin'].includes(this.userRoleType)) {
+    this.errorMessage = 'Vous n\'avez pas la permission de créer des utilisateurs';
+    return false;
+  }
+  
+  return true;
+}
+
 // Méthode utilitaire pour marquer tous les champs comme touchés
 private markFormGroupTouched(formGroup: FormGroup) {
   Object.values(formGroup.controls).forEach(control => {
@@ -823,11 +1332,21 @@ private markFormGroupTouched(formGroup: FormGroup) {
     });
   }
 
-  getNomStructure(id: number): string {
+  /* getNomStructure(id: number): string {
     if (!this.structures) return '';
     const structure = this.structures.find((str) => str.id === id);
     return structure ? structure.nom_structure : '';
+  } */
+ getNomStructure(id: number): string {
+  // Vérifier que structures est un tableau
+  if (!this.structures || !Array.isArray(this.structures)) {
+    console.warn('structures n\'est pas un tableau:', this.structures);
+    return 'Chargement...';
   }
+  
+  const structure = this.structures.find((str) => str.id === id);
+  return structure ? structure.nom_structure : 'Non assigné';
+}
 
   getUserRole(user: User): Observable<string[]> {
     return this.roleService
@@ -835,69 +1354,37 @@ private markFormGroupTouched(formGroup: FormGroup) {
       .pipe(map((roles: Role[]) => roles.map((role) => role.nom)));
   }
 
+  
   toggleStatus(user: User): void {
-    const statut = !user.status;
-    this.userService.updateStatus(user.id, statut).subscribe(() => {
-      this.toastr.success('Status mis à jour avec avec succès');
-      this.loadData();
-    });
+  console.log('Liste des roles de l\'utilisateur', user.roles);
+  const action = user.status ? 'désactiver' : 'activer';
+  
+  // Vérifier si l'utilisateur a le rôle "Administrateur secondaire"
+  const hasSecondaryAdminRole = user.roles?.some(role => 
+    role.nom === 'Administrateur secondaire' || role.id === this.secondaryAdminRoleId
+  ) || false;
+  
+  if (!confirm(`Êtes-vous sûr de vouloir ${action} l'utilisateur ?`)) {
+    return;
   }
-
-  /* get filteredUsers(): User[] {
-    return this.users.filter(
-      (user) =>
-        user.nom.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        this.getNomStructure(user.id).toLowerCase().includes(this.searchTerm.toLowerCase()),
-      //magasin.adresse?.toLowerCase().includes(this.searchTerm.toLowerCase())
-    );
-  } */
-
-      get filteredUsers(): User[] {
-    let filtered = this.users.filter(
-      (user) =>
-        user.nom.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        this.getNomStructure(user.id).toLowerCase().includes(this.searchTerm.toLowerCase())
-    );
-
-    // Si l'utilisateur n'est pas admin général, filtrer par sa structure
-    if (!this.isGeneralAdmin && this.currentUserStructureId) {
-      filtered = filtered.filter(user => 
-        user.structure_id === this.currentUserStructureId || !user.structure_id
-      );
-    }
-
-    return filtered;
+  
+  if(this.isAdminSecondaire && hasSecondaryAdminRole){
+    this.toastr.warning(`Vous n'êtes pas autorisé à ${action} cet utilisateur`);
+    return;
   }
-
-  // Pagination
-  getPaginatedUsers(): User[] {
-    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
-    return this.filteredUsers.slice(startIndex, startIndex + this.itemsPerPage);
-  }
-
-  getTotalPages1(): number {
-    return Math.ceil(this.filteredUsers.length / this.itemsPerPage);
-  }
+  const statut = !user.status;
+  this.userService.updateStatus(user.id, statut).subscribe(() => {
+    this.toastr.success('Status mis à jour avec succès');
+    this.loadData();
+  });
+}
 
   min(a: number, b: number): number {
     return Math.min(a, b);
   }
-  getPages(): number[] {
-    const totalPages = this.getTotalPages1();
-    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  // Méthode pour générer le tableau des pages
+  getPagesArray(): number[] {
+    return Array.from({ length: this.usersTotalPages }, (_, i) => i + 1);
   }
 
-  setItemsPerPage(event: any): void {
-    this.itemsPerPage = Number(event.target.value);
-    this.currentPage = 1;
-  }
-
-  onSearchChange1(): void {
-    this.currentPage = 1;
-  }
-  onPageChange(page: number): void {
-    if (page >= 1 && page <= this.getTotalPages1()) {
-      this.currentPage = page;
-    }
-  }
-}
+ }

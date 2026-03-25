@@ -11,10 +11,10 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
     },
     logo: DataTypes.STRING,
-    proprietaire: {
+    /* proprietaire: {
       type: DataTypes.STRING,
       allowNull: false,
-    },
+    }, */
     nombre_magasins: DataTypes.INTEGER,
     type_structure: DataTypes.STRING,
     devise: DataTypes.STRING,

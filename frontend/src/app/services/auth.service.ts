@@ -182,6 +182,79 @@ export class AuthService {
         ]
       }
     ],
+    'Administrateur secondaire': [
+      {
+        label: 'Accueil',
+        icon: 'bi bi-house-door',
+        route: '/caisse-bi/overview',
+        titre: 'Accueil',
+        sousTitre: 'Vue d\'ensemble',
+        children: [
+          { label: 'Vue d\'ensemble', route: '/caisse-bi/overview', titre: 'Accueil', sousTitre: 'Vue d\'ensemble' },
+        ],
+      },
+      {
+        label: 'Ventes',
+        icon: 'bi-cash-stack',
+        route: '/caisse-bi/ventes',
+        titre: 'Ventes',
+        sousTitre: 'Gestion des ventes',
+        children: [
+          { label: 'Ventes', route: '/caisse-bi/ventes', titre: 'Ventes', sousTitre: 'Gestion des ventes' },
+          { label: 'Caisse', route: '/caisse-bi/caisse', titre: 'Ventes', sousTitre: 'Gestion de la caisse' },
+          { label: 'Clients', route: '/caisse-bi/clients', titre: 'Ventes', sousTitre: 'Gestion des clients' },
+          { label: 'Client', route: '/caisse-bi/client', titre: 'Ventes', sousTitre: 'Gestion des clients' }
+        ]
+      },
+      {
+        label: 'Stock & Inventaire',
+        icon: 'bi-box',
+        route: '/caisse-bi/entrees-sorties',
+        titre: 'Stock & Inventaire',
+        sousTitre: 'Gestion des entrées/sorties',
+        children: [
+          { label: 'Entrées/Sorties', route: '/caisse-bi/entrees-sorties', titre: 'Stock & Inventaire', sousTitre: 'Gestion des entrées/sorties' },
+          { label: 'Stock', route: '/caisse-bi/stock', titre: 'Stock & Inventaire', sousTitre: 'Gestion du stock' },
+          { label: 'Catalogue', route: '/caisse-bi/catalogue-produits', titre: 'Stock & Inventaire', sousTitre: 'Gestion du catalogue' },
+        ]
+      },
+      {
+        label: 'Finance',
+        icon: 'bi-wallet',
+        route: '/caisse-bi/finance',
+        titre: 'Finance',
+        sousTitre: 'Gestion financière',
+        children: [
+          { label: 'Gestion Financière', route: '/caisse-bi/finance', titre: 'Finance', sousTitre: 'Gestion financière' },
+          { label: 'Fournisseurs', route: '/caisse-bi/fournisseurs', titre: 'Finance', sousTitre: 'Gestion des fournisseurs' },
+          { label: 'Fournisseur', route: '/caisse-bi/fournisseur', titre: 'Finance', sousTitre: 'Gestion des fournisseurs' },
+        ]
+      },
+      {
+        label: 'Rapports',
+        icon: 'bi-graph-up',
+        route: '/caisse-bi/rapport-financier',
+        titre: 'Rapports',
+        sousTitre: 'Rapport financier',
+        children: [
+          { label: 'Rapport financier', route: '/caisse-bi/rapport-financier', titre: 'Rapports', sousTitre: 'Rapport financier' },
+          { label: 'Rapport vente', route: '/caisse-bi/rapport-vente', titre: 'Rapports', sousTitre: 'Rapport de vente' },
+          { label: 'Rapport stock', route: '/caisse-bi/rapport-stk', titre: 'Rapports', sousTitre: 'Rapport de stock' }
+        ]
+      },
+      {
+        label: 'Compte & Paramètres',
+        icon: 'bi-gear',
+        route: '/caisse-bi/gerant',
+        titre: 'Compte & Paramètres',
+        sousTitre: 'Gestion du personnel',
+        children: [
+          { label: 'Magasins', route: '/caisse-bi/magasins', titre: 'Compte & Paramètres', sousTitre: 'Gestion des magasins' },
+          { label: 'Personnel', route: '/caisse-bi/gerant', titre: 'Compte & Paramètres', sousTitre: 'Gestion du personnel' },
+          { label: 'Paramètres', route: '/caisse-bi/parametres', titre: 'Compte & Paramètres', sousTitre: 'Gestion des paramètres' }
+        ]
+      }
+    ],
     'Gérant': [
       {
         label: 'Accueil',
@@ -464,19 +537,23 @@ export class AuthService {
       return;
     }
     
-    if (userRoles.includes('Administrateur')) {
+    if (userRoles.includes('Administrateur') || userRoles.includes('Administrateur secondaire')) {
       console.log('Redirection vers overview pour Administrateur');
       this.router.navigate(['/caisse-bi/overview']);
-    } else if (userRoles.includes('Gérant')) {
+    }
+    else if (userRoles.includes('Gérant')) {
       console.log('Redirection vers caisse pour Gérant');
       this.router.navigate(['/caisse-bi/caisse']);
-    } else if (userRoles.includes('Caissier')) {
+    } 
+    else if (userRoles.includes('Caissier')) {
       console.log('Redirection vers caisse pour Caissier');
       this.router.navigate(['/caisse-bi/caisse']);
-    } else if (userRoles.includes('Employé')) {
+    } 
+    else if (userRoles.includes('Employé')) {
       console.log('Redirection vers overview pour Employé');
       this.router.navigate(['/caisse-bi/overview']);
-    } else {
+    } 
+    else {
       console.log('Aucun rôle reconnu, redirection vers unauthorized');
       console.log('Rôles disponibles:', userRoles);
       this.router.navigate(['/unauthorized']);
@@ -517,7 +594,7 @@ export class AuthService {
     const userRoles = user.roles.map(r => r.nom);
     console.log('Rôles pour navigation:', userRoles);
     
-    if (userRoles.includes('Administrateur')) {
+    if (userRoles.includes('Administrateur') || userRoles.includes('Administrateur secondaire')) {
       console.log('Navigation pour Administrateur');
       return this.navigationConfig['Administrateur'];
     } else if (userRoles.includes('Gérant')) {
@@ -684,17 +761,17 @@ export class AuthService {
   }
 
   debugUserInfo(): void {
-  const user = this.currentUserSubject.value;
-  const token = this.getToken();
-  
-  console.log('=== DEBUG AUTH SERVICE ===');
-  console.log('Token présent:', !!token);
-  console.log('Token valeur:', token?.substring(0, 20) + '...');
-  console.log('Utilisateur dans BehaviorSubject:', user);
-  console.log('Roles:', user?.roles?.map(r => r.nom));
-  console.log('LocalStorage user:', localStorage.getItem('user'));
-  console.log('LocalStorage token:', localStorage.getItem('token'));
-  console.log('Navigation items:', this.getNavigationItems().length);
-  console.log('=== FIN DEBUG ===');
-}
+    const user = this.currentUserSubject.value;
+    const token = this.getToken();
+    
+    console.log('=== DEBUG AUTH SERVICE ===');
+    console.log('Token présent:', !!token);
+    console.log('Token valeur:', token?.substring(0, 20) + '...');
+    console.log('Utilisateur dans BehaviorSubject:', user);
+    console.log('Roles:', user?.roles?.map(r => r.nom));
+    console.log('LocalStorage user:', localStorage.getItem('user'));
+    console.log('LocalStorage token:', localStorage.getItem('token'));
+    console.log('Navigation items:', this.getNavigationItems().length);
+    console.log('=== FIN DEBUG ===');
+  }
 }

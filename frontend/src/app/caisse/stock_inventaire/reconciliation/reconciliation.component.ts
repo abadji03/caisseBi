@@ -133,15 +133,15 @@ export class ReconciliationComponent implements OnInit, OnDestroy {
   // Nouvelle méthode pour charger produits et stocks
   private loadProduitsEtStocks() {
     forkJoin([
-      this.produitsService.getAllProduits(this.codeStructure!),
+      this.produitsService.getProduitsDisponibles(this.codeStructure!),
       this.stockService.getStocksByStructure(this.codeStructure!)
     ])
     .pipe(takeUntil(this.destroy$))
     .subscribe({
       next: ([produits, stocks]) => {
-        this.produits = produits.items ;
+        this.produits = produits ;
         this.stock = stocks;
-        this.filteredProduits = [...produits.items];
+        this.filteredProduits = [...produits];
         console.log('Produits et stocks chargés');
       },
       error: (err) => {

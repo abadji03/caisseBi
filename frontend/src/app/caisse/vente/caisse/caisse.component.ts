@@ -108,6 +108,8 @@ export class CaisseComponent implements OnInit, OnDestroy {
   currentDate = '';
   currentTime = '';
 
+  textBoutonNewVente = 'Nouvelle Vente';
+
   // Gestion du panier
   showPanierSection = false;
   panier: Panier = new Panier();
@@ -118,7 +120,10 @@ export class CaisseComponent implements OnInit, OnDestroy {
 
   isAdmin = false;
 
-  // Ajout des variables pour le modal
+  //propriété pour suivre l'état des articles d'un panier
+  private _hasArticles = false;
+
+  //variables pour le modal
   private clientModal: any;
   // Pagination
   currentPage = 1;
@@ -135,7 +140,7 @@ export class CaisseComponent implements OnInit, OnDestroy {
     page: 1,
     limit: 10,
     search: '',
-    statut: ''
+    statut: 'tous'
   };
 
   // Options pour le filtre de statut
@@ -178,6 +183,9 @@ export class CaisseComponent implements OnInit, OnDestroy {
     this.loadTransactions();
     //this.loadFakeData();
     this.loadStructureInfo();
+    this.checkBrouillonExists((exists) => {
+        this.textBoutonNewVente = exists ? 'Modifier la vente brouillon' : 'Nouvelle vente';
+      });
     // Date et heure actuelles
     const currentDateObj = new Date();
     this.currentDate = currentDateObj.toLocaleDateString();
@@ -189,7 +197,18 @@ export class CaisseComponent implements OnInit, OnDestroy {
       .subscribe(panier => {
         if (panier) {
           this.panierData = panier;
+          
+          // ✅ Mettre à jour l'état des articles
+          this.updateHasArticlesState(panier);
+          
           console.log('Panier mis à jour depuis service:', panier.id);
+          
+          // ✅ Forcer la détection de changement
+          //this.cdr.detectChanges();
+        } else {
+          // Si pas de panier, réinitialiser
+          this._hasArticles = false;
+          //this.cdr.detectChanges();
         }
       });
 
@@ -244,6 +263,93 @@ export class CaisseComponent implements OnInit, OnDestroy {
     this.toastr.success('Client ajouté avec succès');
   }
 
+  //Getter pour le template
+  get hasArticles(): boolean {
+    return this._hasArticles;
+  }
+  
+  //Méthode pour vérifier si l'onglet service doit être affiché
+  shouldShowServiceTab(): boolean {
+    // L'onglet service est affiché UNIQUEMENT si le panier est VIDE
+    const show = !this._hasArticles;
+    console.log('shouldShowServiceTab:', { hasArticles: this._hasArticles, show });
+    return show;
+  }
+
+   // ✅ Méthode pour mettre à jour l'état des articles
+  private updateHasArticlesState(panier: Panier | null): void {
+    if (!panier) {
+      this._hasArticles = false;
+      return;
+    }
+    
+    const articlesCount = (panier.articles?.length ?? 0) + (panier.ArticlePaniers?.length ?? 0);
+    const newHasArticles = articlesCount > 0;
+    
+    if (this._hasArticles !== newHasArticles) {
+      console.log('🔄 État des articles changé:', { 
+        ancien: this._hasArticles, 
+        nouveau: newHasArticles,
+        articlesCount 
+      });
+      this._hasArticles = newHasArticles;
+    }
+  }
+
+  //Gestion du panier - version améliorée
+  onPanierStatutChange(panier: Panier): void {
+    console.log('📦 Panier reçu dans caisse', panier.statut);
+    
+    // Toujours mettre à jour panierData
+    this.panierData = panier;
+    this.totalPanier = panier.totalHT || 0;
+    
+    //Mettre à jour l'état des articles
+    this.updateHasArticlesState(panier);
+    
+    // Mettre à jour l'état de validation
+    if (panier.statut === 'validé') {
+      this.panierValide = true;
+      this.showBonButtons = true;
+    } 
+    else if (panier.statut === 'en_cours') {
+      this.panierValide = false;
+      this.showBonButtons = false;
+    }
+    
+    // ✅ Forcer la détection de changement immédiatement
+    //this.cdr.detectChanges();
+  }
+
+  // ✅ Méthode appelée quand les articles changent
+  onArticlesChange(event: { count: number, panier: Panier }): void {
+    console.log('📦 Changement articles détecté:', event);
+    
+    // Mettre à jour l'état
+    const hasArticles = event.count > 0;
+    
+    if (this._hasArticles !== hasArticles) {
+      console.log('🎯 Changement d\'état articles:', { 
+        avant: this._hasArticles, 
+        après: hasArticles,
+        count: event.count 
+      });
+      
+      this._hasArticles = hasArticles;
+      this.panierData = event.panier;
+      
+      // ✅ Forcer la détection de changement immédiatement
+      //this.cdr.detectChanges();
+      
+      // ✅ Si on a des articles et qu'on était sur l'onglet service, basculer sur produits
+      if (hasArticles && this.activeTab === 'services') {
+        console.log('🔄 Bascule automatique vers onglet produits');
+        this.activeTab = 'produits';
+        //this.cdr.detectChanges();
+      }
+    }
+  }
+
   /** ASSOCIER CLIENT À TRANSACTION */
   associerClientATransaction(clientData: any) {
     if (this.selectedTransaction) {
@@ -270,6 +376,7 @@ export class CaisseComponent implements OnInit, OnDestroy {
 
   /** ENREGISTRER UN SERVICE */
   enregistrerService() {
+    if(!confirm('Confirmer la transaction?')) return;
     if (!this.serviceMontant || this.serviceMontant <= 0) {
       this.toastr.warning('Veuillez remplir la description et le montant du service');
       return;
@@ -360,6 +467,7 @@ export class CaisseComponent implements OnInit, OnDestroy {
 
   /** ENREGISTRER LA VENTE (Produits + Services) */
   enregistrerVente() {
+    if(!confirm('Confirmer la transaction ?')) return;
     if(!this.panierValide){
       this.toastr.warning('Veuillez valider le panier avant d\'enregistrer la vente');
       return;
@@ -381,7 +489,7 @@ export class CaisseComponent implements OnInit, OnDestroy {
 
   /** ANNULER LA VENTE */
   annulerVente() {
-    if (confirm('Voulez-vous vraiment annuler cette vente ?')) {
+    if (confirm('Voulez-vous vraiment annuler cette transaction ?')) {
       this.resetVente();
       this.toastr.info('Vente annulée');
     }
@@ -395,6 +503,7 @@ export class CaisseComponent implements OnInit, OnDestroy {
     this.showBonButtons = false ;
     this.panierData = null;
     this.totalServices = 0;
+    this.textBoutonNewVente = 'Nouvelle vente';
     this.clientForm.reset();
     this.serviceMontant = 0;
     this.modePaiementSelectionne = null;
@@ -422,10 +531,10 @@ nouvelleVente() {
   this.chargerBrouillonsExistants();
 }
 
-/** AFFICHER/MASQUER LE PANIER */
-togglePanier() {
-  this.showPanierSection = !this.showPanierSection;
-}
+  /** AFFICHER/MASQUER LE PANIER */
+  togglePanier() {
+    this.showPanierSection = !this.showPanierSection;
+  }
 
   /** OUVRIR LE MODAL CLIENT */
   ouvrirModalClient(transaction?: Panier) {
@@ -944,24 +1053,7 @@ updateStockApresSuppressionArticle(article: ArticlePanier): void {
   }
 
   /** CHARGER LES TRANSACTIONS */
-  /* private loadTransactions(): void {
-    console.log('Chargement des transactions de la caisse...');
-    this.panierService.getPaniersAujourdhui(this.code_structure!, this.magasinId!,null)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (result) => {
-          console.log('Résultat des transactions:', result);
-          this.paniers = result.paniers;
-          this.totalCaisse = result.totalGlobal;
-          this.totalTransactions = this.paniers.length;
-          console.log('Transactions chargées:', this.paniers);
-        },
-        error: (err) => {
-          console.error('Erreur chargement transactions:', err.error.message);
-          this.toastr.error('Erreur lors du chargement des transactions');
-        }
-      });
-  } */
+  
  loadTransactions(): void {
     console.log('Chargement des transactions avec pagination...');
     
@@ -1018,7 +1110,7 @@ resetFilters(): void {
     page: 1,
     limit: this.itemsPerPage,
     search: '',
-    statut: ''
+    statut: 'tout'
   };
   this.loadTransactions();
 }
@@ -1065,14 +1157,17 @@ private chargerBrouillonsExistants(): void {
     .pipe(takeUntil(this.destroy$))
     .subscribe({
       next: (paniersBrouillons) => {
+
+        console.log('Panier brouillon depuis le backend :', paniersBrouillons);
         const brouillonCaisse = paniersBrouillons.find(panier => 
           panier.agentId === this.agentId && 
+          panier.magasinId === this.magasinId &&
           panier.statut === 'en_cours' &&
           panier.bonId === null
         );
 
+        console.log('Panier brouillon affecté à brouillonCaisse :', brouillonCaisse);
         if (brouillonCaisse) {
-          // Mettre à jour le service AVANT de l'utiliser
           this.bonBrouillonService.setPanierBrouillon(brouillonCaisse);
           this.panierData = brouillonCaisse;
           console.log('Brouillon existant chargé:', brouillonCaisse.id);
@@ -1088,6 +1183,20 @@ private chargerBrouillonsExistants(): void {
       }
     });
 }
+checkBrouillonExists(callback: (exists: boolean) => void): void {
+    this.panierService.getPaniersBrouillon(this.code_structure!, this.magasinId!)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (paniersBrouillons) => {
+          const exists = paniersBrouillons.some(panier => panier.agentId === this.agentId);
+          callback(exists);
+        },
+        error: (err) => {
+          console.error('Erreur chargement brouillons:', err);
+          callback(false);
+        }
+      });
+  }
 private creerNouveauBrouillon(): void {
   const panierBrouillonData = {
     panier: {
@@ -1129,10 +1238,7 @@ private creerNouveauBrouillon(): void {
   loadDataProduits(): void {
         this.isLoading = true;
         forkJoin([
-          this.produitsServices.getAllProduits(
-            this.code_structure!,
-            1,
-            10000),
+          this.produitsServices.getProduitsDisponibles(this.code_structure!),
           this.stockService.getStocksByStructure(this.code_structure!),
           this.clientsService.getClientsByStructure(this.code_structure!)  
         ])
@@ -1143,7 +1249,7 @@ private creerNouveauBrouillon(): void {
           .subscribe({
             next: ([produit, stock, clients]) => {
               //this.fournisseurs = four
-              this.produits = produit.items;
+              this.produits = produit;
               this.stocks = stock;
               this.clients = clients;
               this.filteredProducts = this.produits;
@@ -1155,7 +1261,7 @@ private creerNouveauBrouillon(): void {
     }
 
   // Gestion du panier
-  onPanierStatutChange(panier: Panier): void {
+  /* onPanierStatutChange(panier: Panier): void {
     console.log('📦 Panier reçu dans bon', panier.statut);
     
     // Toujours mettre à jour panierData
@@ -1173,7 +1279,7 @@ private creerNouveauBrouillon(): void {
       this.panierValide = false;
       this.showBonButtons = false;
     }
-  }
+  } */
 
 
 onPanierAnnule(): void {

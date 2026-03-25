@@ -537,12 +537,12 @@ export class FournisseurComponent implements OnInit, OnDestroy {
 
   loadDataProduits(): void {
     forkJoin([
-      this.produitsServices.getAllProduits(this.code_structure!, 1, 10000),
+      this.produitsServices.getProduitsDisponibles(this.code_structure!),
     ])
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: ([produit]) => {
-          this.produits = produit.items;
+          this.produits = produit;
           this.filteredProducts = this.produits;
         },
         error: err => console.error('Erreur chargement produits', err)
@@ -1242,7 +1242,8 @@ export class FournisseurComponent implements OnInit, OnDestroy {
 
   // Génération de PDF
   onImprimerBon(bon: Bon): void {
-    if (!bon) return;
+    if(!confirm('Imprimer l\'opération?')) return;
+    /* if (!bon) return;
     
     const articlesFormates = (bon.Panier?.ArticlePaniers || []).map(article => ({
       ...article,
@@ -1277,11 +1278,96 @@ export class FournisseurComponent implements OnInit, OnDestroy {
       commentaire: bon.description
     };
 
-    this.pdfGenerator.generateBonFournisseur(bonData);
+    this.pdfGenerator.generateBonFournisseur(bonData); */
+    if (!bon) {
+      this.toastr.error('Aucun bon sélectionné');
+      return;
+    }
+
+    try {
+      this.isLoadingBon = true;
+      
+      console.log('Bon à imprimer:', bon);
+      console.log('Articles du bon:', bon.Panier?.ArticlePaniers);
+
+      // Valider et formater les articles avec une meilleure gestion des nombres
+      const articlesFormates = (bon.Panier?.ArticlePaniers || []).map(article => {
+        if (!article) return null;
+        
+        // Calculer les valeurs avec sécurité
+        const prixUnitaire = this.safeNumber(article.prixUnitaire || article.prixAchatUnitaire);
+        const quantite = this.safeNumber(article.quantite);
+        const total = prixUnitaire * quantite;
+
+        console.log('Article formaté:', {
+          designation: article.Produit?.designation,
+          prixUnitaire,
+          quantite,
+          total
+        });
+
+        return {
+          ...article,
+          designation: article.Produit?.designation || article.produit?.designation || 'Produit sans nom',
+          prixUnitaire: prixUnitaire,
+          quantite: quantite,
+          total: total
+        };
+      }).filter(article => article != null);
+
+      // Préparer les totaux avec sécurité
+      const sousTotal = this.safeNumber(bon.Panier?.totalHT);
+      const tauxTVA = this.safeNumber(bon.Panier?.tauxTVA);
+      const montantTVA = this.safeNumber(bon.Panier?.tva);
+      const totalTTC = this.safeNumber(bon.Panier?.totalTTC);
+
+      console.log('Totaux calculés:', { sousTotal, tauxTVA, montantTVA, totalTTC });
+
+      const bonData = {
+        numero: bon.numero || 'N/A',
+        date: bon.dateBon || new Date(),
+        fournisseur: this.selectedFournisseur ? {
+          nomComplet: this.selectedFournisseur.nomComplet || 'N/A',
+          adresse: this.selectedFournisseur.adresse || '',
+          telephone: this.selectedFournisseur.telephone || '',
+          email: this.selectedFournisseur.email || ''
+        } : { 
+          nomComplet: 'Fournisseur non spécifié', 
+          adresse: '', 
+          telephone: '', 
+          email: '' 
+        },
+        articles: articlesFormates,
+        totaux: {
+          sousTotal: sousTotal,
+          tauxTVA: tauxTVA,
+          montantTVA: montantTVA,
+          totalTTC: totalTTC,
+          // Ajouter les totaux du bon au cas où
+          totalHT: sousTotal,
+          tva: montantTVA
+        },
+        titre: ('Bon de '+( bon.type || 'Commande')).toUpperCase(),
+        dateBon:bon.dateBon,
+        typeBon:bon.type,
+        statut:bon.statutBon,
+        commentaire:bon.description
+      };
+
+      console.log('Données formatées pour le PDF du bon:', bonData);
+      this.pdfGenerator.generateBonFournisseur(bonData);
+    } 
+    catch (error) {
+      console.error('Erreur génération bon:', error);
+      this.toastr.error('Erreur lors de la génération du bon');
+    }
+    finally {
+      this.isLoadingBon = false;
+    }
   }
 
   onImprimerReleve(): void {
-    if (!this.selectedFournisseur) return;
+    /* if (!this.selectedFournisseur) return;
 
     const operationsFormatees = this.filteredOperations.map(op => ({
       date: op.dateOperation,
@@ -1308,7 +1394,63 @@ export class FournisseurComponent implements OnInit, OnDestroy {
       }
     };
 
-    this.pdfGenerator.generateReleveFournisseur(releveData);
+    this.pdfGenerator.generateReleveFournisseur(releveData); */
+
+    if(!confirm('Imprimer le relevé pour la période sélectionnée ?')) return;
+
+    if (!this.selectedFournisseur) {
+      this.toastr.error('Aucun fournisseur sélectionné');
+      return;
+    }
+
+    try {
+      this.isLoadingFournisseur = true;
+      // Debug: vérifier les données
+      console.log('Operations à imprimer:', this.filteredOperations);
+      console.log('Nombre d\'opérations:', this.filteredOperations?.length);
+
+      // Valider et formater les opérations
+      const operationsFormatees = this.filteredOperations.map(op => {
+        if (!op) return null;
+        
+        return {
+          date: op.dateOperation,
+          type: op.type || 'NON SPECIFIE',
+          reference: op.numeroVersement || op.Bon?.numero || 'N/A',
+          montant: op.montantPaye || op.Bon?.montantTotal ||0,
+          // Inclure toutes les propriétés nécessaires
+          ...op
+        };
+      }).filter(op => op != null); // Supprimer les null
+
+      const releveData = {
+        fournisseur: {
+          nomComplet: this.selectedFournisseur.nomComplet || 'N/A',
+          adresse: this.selectedFournisseur.adresse || '',
+          telephone: this.selectedFournisseur.telephone || '',
+          email: this.selectedFournisseur.email || ''
+        },
+        periode: `${this.startDate} à ${this.endDate}`,
+        operations: operationsFormatees, // Utiliser les données formatées
+        synthese: {
+          totalCommandes: this.calculerTotalCommandes(),
+          totalVersements: this.calculerTotalVersements(),
+          totalRetours : this.calculerTotalRetours(),
+          totalLivraison : this.calculerTotalLivraison(),
+          solde: this.selectedFournisseur.montantAPayer || 0
+        },
+        solde: this.selectedFournisseur.montantAPayer || 0
+      };
+
+      this.pdfGenerator.generateReleveFournisseur(releveData);
+    } 
+    catch (error) {
+      console.error('Erreur génération relevé:', error);
+      this.toastr.error('Erreur lors de la génération du relevé');
+    }
+    finally {
+      this.isLoadingFournisseur = false;
+    }
   }
 
   onGenererTicketVersement(operation: Operation): void {
@@ -1378,11 +1520,11 @@ export class FournisseurComponent implements OnInit, OnDestroy {
 
   private calculerTotalRetours(): number {
     return this.filteredOperations
-      .filter(op => op.type === 'RETOUR')
+      .filter(op => op.type === 'RETOUR' || op.Bon?.statutBon === 'retourné' || op.Bon?.statutBon === 'retourné partiellement')
       .reduce((total, op) => total + (this.safeNumber(op.Bon?.Panier?.totalTTC) || 0), 0);
   }
 
-  private calculerTotalLivraisons(): number {
+  private calculerTotalLivraison(): number {
     return this.filteredOperations
       .filter(op => op.type === 'LIVRAISON')
       .reduce((total, op) => total + (this.safeNumber(op.Bon?.Panier?.totalTTC) || 0), 0);

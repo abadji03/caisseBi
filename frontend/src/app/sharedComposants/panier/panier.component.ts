@@ -41,6 +41,8 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
   @Output() totalPanierChange = new EventEmitter<number>();
   // eslint-disable-next-line @angular-eslint/no-output-on-prefix
   @Output() onPanierStatutChange = new EventEmitter<Panier>();
+   //output pour les changements d'articles
+  @Output() articlesChange = new EventEmitter<{ count: number, panier: Panier }>();
 
 
   // Propriétés du panier
@@ -55,17 +57,6 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
   tvaRadioValue: 'article' | 'global' = 'article';
   remiseRadioValue: 'article' | 'global' = 'global';
   
-
-/*   modesPaiement: ModePaiement[] = [
-      new ModePaiement({ libelle: 'Espèce' }),
-      new ModePaiement({ libelle: 'Carte' }),
-      new ModePaiement({ libelle: 'Virement' }),
-       new ModePaiement({ libelle: 'Wave' }),
-      new ModePaiement({ libelle: 'Orange Money' }),
-      new ModePaiement({ libelle: 'Chèque' }),
-      new ModePaiement({ libelle: 'Autre' }),
-    ];
- */
   // Propriétés UI
   filteredProduits: Produits[] = [];
   searchInput = '';
@@ -92,8 +83,7 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
     this.initialiserEcouteurs();
     this.mettreAJourHeure();
     // Écouter le panier brouillon avec setTimeout pour éviter les erreurs de cycle
-    setTimeout(() => {
-      this.bonBrouillonService.panierBrouillon$
+    this.bonBrouillonService.panierBrouillon$
         .pipe(takeUntil(this.destroy$))
         .subscribe(panierData => {
           console.log('📩 Panier brouillon reçu du service:', panierData);
@@ -112,7 +102,6 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
             console.log('📭 Aucun panier brouillon');
           }
         });
-    }, 0);
   }
 
   ngOnDestroy(): void {
@@ -124,6 +113,15 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
     this.gererChangements(changes);
   }
 
+  //Méthode pour notifier le parent des changements
+  private notifyArticlesChange(): void {
+    setTimeout(() => {
+      this.articlesChange.emit({
+        count: this.panier.articles.length,
+        panier: this.panier
+      });
+    }, 0);
+  }
   // === INITIALISATION ===
 
   private initialiserPanier(): void {
@@ -198,23 +196,6 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
           this.synchroniserFormulaireVersModele();
           this.recalculerPanierComplet();
         });
-    // Écouter les changements des articles
-    /* this.panierArray.valueChanges
-      .pipe(debounceTime(100), takeUntil(this.destroy$))
-      .subscribe(() => {
-        this.recalculerTousLesArticles();
-      }); */
-
-    // Écouter le panier brouillon
-    /* this.bonBrouillonService.panierBrouillon$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(panier => {
-        this.panierBrouillon = panier;
-        if (panier) {
-          this.chargerPanierBrouillon(panier);
-          //this.panierCharge = true;
-        }
-      }); */
 
     // Écouteur pour les mises à jour d'articles avec debounce
     this.updateSubject$
@@ -237,10 +218,6 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
     if (changes['typeEntite']) {
       this.reinitialiserPanier();
     }
-
-    /* if (changes['panierData']?.currentValue && !this.isFormDisabled) {
-      if(this.panierData) this.chargerPanierExistant(this.panierData);
-    } */
 
     if (changes['tvaParArticle']) {
       this.tvaRadioValue = this.tvaParArticle ? 'article' : 'global';
@@ -457,6 +434,8 @@ this.panier = new Panier({
     } else {
       this.ajouterNouvelArticle(produit);
     }
+    //Notifier immédiatement le parent
+    this.notifyArticlesChange();
   }
 
   removeArticle(index: number): void {
@@ -464,6 +443,8 @@ this.panier = new Panier({
 
     const articleSupprime = this.panier.supprimerArticle(index);
     this.synchroniserModeleVersFormulaire();
+
+    this.notifyArticlesChange();
 
     if (articleSupprime?.id && this.panierBrouillon?.id) {
       this.supprimerArticleEnBase(articleSupprime.id);
@@ -510,6 +491,8 @@ this.panier = new Panier({
     this.panier.ajouterArticle(article);
     this.panier.calculerTotals();
     this.synchroniserModeleVersFormulaire();
+
+    this.notifyArticlesChange();
 
     if (this.panierBrouillon?.id) {
       this.ajouterArticleEnBase(article);

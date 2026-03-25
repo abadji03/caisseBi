@@ -35,11 +35,11 @@ export class ProduitsService {
  */
 
   //Obtenir tous les produits d'une structure
-  /* getAllProduits(code_structure: string): Observable<Produits[]> {
-    return this.http.get<Produits[]>(`${this.apiUrl}/produits/structure/${code_structure}`, {
+  getProduitsDisponibles(code_structure: string): Observable<Produits[]> {
+    return this.http.get<Produits[]>(`${this.apiUrl}/produits/structure/${code_structure}/produits-disponibles`, {
       headers: this.getHeaders(),
     });
-  } */
+  }
 
 getAllProduits(
   codeStructure: string,

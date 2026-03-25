@@ -684,7 +684,7 @@ private generateOperationsTable(operations: Operation[]): any {
       { text: 'Date et Heure', style: 'tableHeader' },
       { text: 'Type', style: 'tableHeader' },
       { text: 'Description', style: 'tableHeader' },
-      { text: 'Référence', style: 'tableHeader' },
+      //{ text: 'Référence', style: 'tableHeader' },
       { text: 'Montant', style: 'tableHeader' }
     ]
   ];
@@ -692,6 +692,7 @@ private generateOperationsTable(operations: Operation[]): any {
   // Ajouter les opérations avec validation
   operations.forEach(op => {
     if (op) { // Vérifier que l'opération n'est pas null/undefined
+          const montant = op.type ==='VERSEMENT'? (op.montantPaye || 0): (op.Bon?.Panier?.totalTTC || 0);
       tableBody.push([
         { 
           text: `${op.dateOperation ? 
@@ -705,10 +706,10 @@ private generateOperationsTable(operations: Operation[]): any {
           style:'normal', 
           alignment: 'left' 
         },        
-        { text: `${op.type || 'N/A'}`, style:'normal', alignment: 'center' },
-        { text: `${op.commentaire || 'N/A'}`, style:'normal', alignment: 'center' },
-        { text: `${op.numeroVersement || op?.Bon?.numero || 'N/A'}`, style:'normal', alignment: 'left' },
-        { text: `${this.safeNumber(op.montantPaye) || this.safeNumber(op.Bon?.montantTotal )||this.safeNumber(op.Bon?.Panier?.totalTTC ) || 0} F CFA`, style:'normal', alignment: 'center' }
+        { text: `${op.type || 'N/A'}`, style:'normal', alignment: 'left' },
+        { text: `${op.commentaire || 'N/A'}`, style:'normal', alignment: 'left' },
+        //{ text: `${op.numeroVersement || op?.Bon?.numero || 'N/A'}`, style:'left', alignment: 'left' },
+        { text: `${montant} F CFA`, style:'normal', alignment: 'left' }
       ]);
     }
   });
@@ -716,14 +717,14 @@ private generateOperationsTable(operations: Operation[]): any {
   // Si aucune opération valide, ajouter une ligne vide
   if (tableBody.length === 1) {
     tableBody.push([
-      { text: 'Aucune opération', colSpan: 5, alignment: 'center' },
+      { text: 'Aucune opération', colSpan: 4, alignment: 'center' },
       '', '', ''
     ]);
   }
 
   return {
     table: {
-      widths: ['*', 'auto', 'auto', 'auto','auto'],
+      widths: ['*', 'auto', 'auto', 'auto'],
       body: tableBody
     },
     layout: 'lightHorizontalLines'
@@ -731,13 +732,14 @@ private generateOperationsTable(operations: Operation[]): any {
 }
 
  
-private generateTotals(totaux: any): any {
+/* private generateTotals(totaux: any): any {
   // Sécuriser les totaux
   const safeTotaux = {
     sousTotal: this.safeNumber(totaux?.sousTotal || totaux?.totalHT),
     tauxTVA: this.safeNumber(totaux?.tauxTVA),
     montantTVA: this.safeNumber(totaux?.montantTVA || totaux?.tva),
-    totalTTC: this.safeNumber(totaux?.totalTTC)
+    totalTTC: this.safeNumber(totaux?.totalTTC),
+    avoir:this.safeNumber(totaux?.avoir)
   };
 
   console.log('Totaux sécurisés pour PDF:', safeTotaux);
@@ -757,8 +759,53 @@ private generateTotals(totaux: any): any {
         [
           { text: 'Total TTC:', style: 'total' },
           { text: `${safeTotaux.totalTTC} F CFA`, alignment: 'right', style: 'total' }
+        ],
+        [
+          { text: 'Avoir:', style: 'total' },
+          { text: `${safeTotaux.avoir} F CFA`, alignment: 'right', style: 'total' }
         ]
       ]
+    },
+    margin: [0, 20, 0, 0],
+    layout: 'noBorders'
+  };
+} */
+private generateTotals(totaux: any): any {
+  const safeTotaux = {
+    sousTotal: this.safeNumber(totaux?.sousTotal || totaux?.totalHT),
+    tauxTVA: this.safeNumber(totaux?.tauxTVA),
+    montantTVA: this.safeNumber(totaux?.montantTVA || totaux?.tva),
+    totalTTC: this.safeNumber(totaux?.totalTTC),
+    avoir: this.safeNumber(totaux?.avoir)
+  };
+
+  const body: any[] = [
+    [
+      { text: 'Sous-total HT:', style: 'bold' },
+      { text: `${safeTotaux.sousTotal} F CFA`, alignment: 'right', style: 'bold' }
+    ],
+    [
+      { text: 'TVA :', style: 'bold' },
+      { text: `${safeTotaux.montantTVA} F CFA`, alignment: 'right', style: 'bold' }
+    ],
+    [
+      { text: 'Total TTC:', style: 'total' },
+      { text: `${safeTotaux.totalTTC} F CFA`, alignment: 'right', style: 'total' }
+    ]
+  ];
+
+  // ✅ Condition ici
+  if (safeTotaux.avoir > 0) {
+    body.push([
+      { text: 'Avoir:', style: 'total' },
+      { text: `${safeTotaux.avoir} F CFA`, alignment: 'right', style: 'total' }
+    ]);
+  }
+
+  return {
+    table: {
+      widths: ['*', 'auto'],
+      body: body
     },
     margin: [0, 20, 0, 0],
     layout: 'noBorders'
@@ -1476,7 +1523,7 @@ private generateOperationsTableClient(operations: any[]): any {
     [
       { text: 'Date', style: 'tableHeader' },
       { text: 'Type', style: 'tableHeader' },
-      { text: 'Référence', style: 'tableHeader' },
+      //{ text: 'Référence', style: 'tableHeader' },
       { text: 'Description', style: 'tableHeader' },
       { text: 'Montant', style: 'tableHeader' },
       /* { text: 'Crédit', style: 'tableHeader' } */
@@ -1495,9 +1542,10 @@ private generateOperationsTableClient(operations: any[]): any {
                         minute: '2-digit'
                       }).replace(',', ' à') : 'N/A';
       const type = op.type || 'N/A';
-      const reference = op.numeroVersement || op?.Bon?.numero || op.id || 'N/A';
+      //const reference = op.numeroVersement || op?.Bon?.numero || op.id || 'N/A';
       const description = op.commentaire || op?.Bon?.description || 'Opération';
-      const montant = op.montantPaye || 0;
+      const montant = type ==='REGLEMENT'? (op.montantPaye || 0): (op.Bon?.Panier?.totalTTC || op.Bon?.montantAvoir || 0);
+      
       
       // Déterminer débit/crédit selon le type d'opération
       /* const montant = this.safeNumber(op.montantPaye) || this.safeNumber(op?.Bon?.Panier?.totalTTC) || 0;
@@ -1513,7 +1561,7 @@ private generateOperationsTableClient(operations: any[]): any {
       tableBody.push([
         { text: dateStr, style: 'normal', alignment: 'left' },
         { text: type, style: 'normal', alignment: 'left' },
-        { text: reference, style: 'normal', alignment: 'left' },
+        //{ text: reference, style: 'normal', alignment: 'left' },
         { text: description, style: 'normal', alignment: 'center' },
         { text: montant,style:'normal', alignment: 'right' }
       ]);
@@ -1523,14 +1571,14 @@ private generateOperationsTableClient(operations: any[]): any {
   // Si aucune opération valide, ajouter une ligne vide
   if (tableBody.length === 1) {
     tableBody.push([
-      { text: 'Aucune opération', colSpan: 5, alignment: 'center' },
+      { text: 'Aucune opération', colSpan: 4, alignment: 'center' },
       '', '', '', ''
     ]);
   }
 
   return {
     table: {
-      widths: ['*', 'auto', 'auto', '*', 'auto'],
+      widths: ['*', 'auto', '*', 'auto'],
       body: tableBody
     },
     layout: 'lightHorizontalLines'
@@ -1546,17 +1594,33 @@ private generateSyntheseClient(synthese: any): any {
       widths: ['*', 'auto'],
       body: [
         [
-          { text: 'Total des achats:', style: 'bold' },
+          { text: 'Total des bons de ventes:', style: 'bold' },
           { text: `${synthese.totalAchats || 0} F CFA`, alignment: 'right', style: 'bold' }
         ],
         [
           { text: 'Total des versements:', style: 'bold' },
           { text: `${synthese.totalVersements || 0} F CFA`, alignment: 'right', style: 'bold' }
         ],
-        // [
-        //   { text: 'Solde initial:', style: 'normal' },
-        //   { text: `${synthese.soldeInitial || 0} F CFA`, alignment: 'right' }
-        // ],
+        [
+         { text: 'Total des retours', style: 'bold' },
+         { text: `${synthese.totalRetours || 0} F CFA`, alignment: 'right',style: 'bold' }
+        ],
+        [
+          { text: 'Total des avoirs:', style: 'bold' },
+          { text: `${synthese.totalAvoirs || 0} F CFA`, alignment: 'right', style: 'bold' }
+        ],
+        [
+          { text: 'Total des commandes livrées:', style: 'bold' },
+          { text: `${synthese.totalCommandesLivrees || 0} F CFA`, alignment: 'right', style: 'bold' }
+        ],
+        [
+          { text: 'Total des commandes annulees:', style: 'bold' },
+          { text: `${synthese.totalCommandesAnnulees || 0} F CFA`, alignment: 'right', style: 'bold' }
+        ],
+        [
+          { text: 'Total des commandes non livrées:', style: 'bold' },
+          { text: `${synthese.totalCommandesNonlivrees || 0} F CFA`, alignment: 'right', style: 'bold' }
+        ],
         [
           { text: 'Solde:', style: 'total' },
           { text: `${synthese.nouveauSolde || 0} F CFA`, alignment: 'right', style: 'total' }
@@ -1702,7 +1766,7 @@ async generateBonClient(bonData: any): Promise<void> {
                 { text: bonData.titre, style: 'bold', margin: [0, 10, 0, 5] },
                 { text: `Nº: ${bonData.numero || 'N/A'}`, style: 'normal' },
                 { text: `Date: ${new Date(bonData.date || new Date()).toLocaleDateString()}`, style: 'normal' },
-                { text: `Date livraison prévue: ${new Date(bonData.dateLivraisonPrevue || new Date()).toLocaleDateString()}`, style: 'normal' },
+                //{ text: `Date livraison prévue: ${new Date(bonData.dateLivraisonPrevue || new Date()).toLocaleDateString()}`, style: 'normal' },
                 { text: livraisonInfo, style: 'normal' },
                 ...(bonData.statut ? [
                   { text: `Statut: ${bonData.statut}`, style: 'normal' }

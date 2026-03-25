@@ -1,6 +1,7 @@
 const db = require('../models');
 const Magasin = db.Magasin;
 const User = db.Users;
+const {Op} = db.Sequelize;
 
 // Créer un magasin
 exports.createMagasin = async (req, res) => {
@@ -78,6 +79,12 @@ exports.getMagasinsByStructure = async (req, res) => {
       return res.status(401).json({ message: "Non authentifié" });
     }
     const { code_structure } = req.params;
+
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({
+        message: "Accès interdit : structure non autorisée"
+      });
+    }
     const magasins = await Magasin.findAll(
       {
         where: { code_structure },
@@ -101,6 +108,106 @@ exports.getMagasinsByStructure = async (req, res) => {
     res.status(500).json({ message: 'Erreur lors de la récupération des magasins' });
   }
 };
+
+// Lister les magasins d'une structure avec pagination
+exports.getMagasinsByStructureBis = async (req, res) => {
+  try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+    const { code_structure } = req.params;
+    
+    // Paramètres de pagination et recherche
+    const { 
+      page = 1, 
+      limit = 10, 
+      search = '',
+      statut = ''
+    } = req.query;
+
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({
+        message: "Accès interdit : structure non autorisée"
+      });
+    }
+
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+
+    if (!isAdminStructure) {
+      return res.status(403).json({
+        message: "Accès interdit : rôle insuffisant"
+      });
+    }
+
+    // Construction de la clause where
+    const whereClause = { code_structure };
+
+    // 🔍 FILTRE DE RECHERCHE TEXTUELLE
+    if (search && search.trim() !== '') {
+      whereClause[Op.or] = [
+        { nom: { [Op.like]: `%${search}%` } },
+        { adresse: { [Op.like]: `%${search}%` } },
+        { ville: { [Op.like]: `%${search}%` } },
+        { telephone: { [Op.like]: `%${search}%` } },
+        { email: { [Op.like]: `%${search}%` } }
+      ];
+    }
+
+    // 🔹 FILTRE PAR STATUT
+    if (statut && statut !== 'tous') {
+      whereClause.statut = statut;
+    }
+
+    // Calcul de l'offset pour la pagination
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const limitInt = parseInt(limit);
+
+    const { count, rows } = await Magasin.findAndCountAll({
+      where: whereClause,
+      include: [
+        { 
+          model: db.Users,
+          attributes: ['id', 'nom'],
+          include: [{
+            model: db.role,
+            attributes: ['id', 'nom']
+          }]
+        }
+      ],
+      order: [['nom', 'ASC']],
+      offset,
+      limit: limitInt,
+      distinct: true
+    });
+
+    // Calcul du nombre total de pages
+    const totalPages = Math.ceil(count / limitInt);
+
+    console.log(`📦 Magasins: ${count} trouvés, page ${page}/${totalPages}`);
+
+    res.json({
+      items: rows,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        totalPages: totalPages,
+        limit: limitInt,
+        hasNext: parseInt(page) < totalPages,
+        hasPrev: parseInt(page) > 1
+      }
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ 
+      message: 'Erreur lors de la récupération des magasins',
+      error: error.message 
+    });
+  }
+};
+
 // Obtenir un magasin spécifique
 exports.getMagasinById = async (req, res) => {
   try {
@@ -119,29 +226,6 @@ exports.getMagasinById = async (req, res) => {
     res.status(500).json({ message: 'Erreur lors de la récupération du magasin' });
   }
 };
-// Mettre à jour le statut d’un magasin
-/* exports.updateStatutMagasin = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { statut } = req.body;
-
-    if (!['Actif', 'Inactif'].includes(statut)) {
-      return res.status(400).json({ message: "Statut invalide. Utilisez 'Actif' ou 'Inactif'" });
-    }
-
-    const magasin = await Magasin.findByPk(id);
-    if (!magasin) return res.status(404).json({ message: 'Magasin non trouvé' });
-
-    magasin.statut = statut;
-    magasin.derniereMiseAJour = new Date();
-    await magasin.save();
-
-    res.json({ message: 'Statut mis à jour', magasin });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Erreur lors de la mise à jour du statut' });
-  }
-}; */
 // Obtenir tous les magasins
 exports.getAllMagasins = async (req, res) => {
   try {

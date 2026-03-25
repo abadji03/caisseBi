@@ -16,10 +16,10 @@
   object-fit: contain;
 }
 
-.table-responsive {
+/* .table-responsive {
   max-height: 600px;
   overflow-y: auto;
-}
+} */
 
 .action-buttons .btn {
   margin-right: 5px;

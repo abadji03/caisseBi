@@ -15,7 +15,7 @@ import { ToastrService } from 'ngx-toastr';
 import { Subject, Subscription, takeUntil, forkJoin, finalize, debounceTime, distinctUntilChanged } from 'rxjs';
 import { Operation } from '../../../modeles/operation.model';
 import { Paiement, PaiementAvecFichier } from '../../../modeles/paiement.model';
-import { Panier } from '../../../modeles/panier.model';
+import { ArticlePanier, Panier } from '../../../modeles/panier.model';
 import { ApplicationService } from '../../../services/application.service';
 import { AuthService } from '../../../services/auth.service';
 import { BonBrouillonService } from '../../../services/bon-brouillon.service';
@@ -30,6 +30,7 @@ import { ProduitsService } from '../../../services/produits.service';
 import { RecettesService } from '../../../services/recettes.service';
 import { StructureService } from '../../../services/structure.service';
 import { v4 as uuidv4 } from 'uuid';
+import { BonComponent } from '../../../sharedComposants/bon/bon.component';
 
 
 @Component({
@@ -41,6 +42,7 @@ import { v4 as uuidv4 } from 'uuid';
     FormsModule, 
     PaiementComponent, 
     BonsComponent,
+    BonComponent,
     ListeBonsComponent,
     ListeVersementsComponent,
     ListeOperationsComponent],
@@ -522,12 +524,12 @@ export class ClientComponent implements OnInit,OnDestroy {
   // Chargement des données
   loadDataProduits(): void {
     forkJoin([
-      this.produitsServices.getAllProduits(this.code_structure!, 1, 10000),
+      this.produitsServices.getProduitsDisponibles(this.code_structure!),
     ])
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: ([produit]) => {
-          this.produits = produit.items;
+          this.produits = produit;
           this.filteredProducts = this.produits;
         },
         error: err => console.error('Erreur chargement produits', err)
@@ -906,10 +908,20 @@ export class ClientComponent implements OnInit,OnDestroy {
 
     event.bon.clientId = this.selectedClient.id;
     event.bon.statutBon = 'validé';
-    event.bon.id = this.bonBrouillon.id;
+    // Si c'était un brouillon, utiliser l'ID existant
+    if (this.bonBrouillon) {
+      event.bon.id = this.bonBrouillon.id;
+    } 
 
-    console.log('Donnée envoyées :',event)
-    this.enregistrerBon(event.bon, event.bon.panier!, event.fichier);
+    if (event.bon.type === 'avoir') {
+        this.enregistrerAvoir(event.bon);
+    } 
+    else {
+        this.enregistrerBon(event.bon, event.bon.panier!, event.fichier);
+      }
+
+    //console.log('Donnée envoyées :',event)
+    //this.enregistrerBon(event.bon, event.bon.panier!, event.fichier);
     this.showBonForm = false;
     this.bonBrouillonService.clearBrouillons();
   }
@@ -947,6 +959,79 @@ export class ClientComponent implements OnInit,OnDestroy {
     this.showPaiementForm = false;
   }
 
+  private enregistrerAvoir(bon: Bon): void {
+  if (!this.selectedClient) {
+    this.toastr.error('Aucun client sélectionné', 'Erreur');
+    return;
+  }
+
+  //Vérifier que les brouillons sont bien chargés
+  if (!this.bonBrouillon?.id || !this.panierBrouillon?.id) {
+    console.error('Brouillons non chargés:', {
+      bonBrouillon: this.bonBrouillon,
+      panierBrouillon: this.panierBrouillon
+    });
+    this.toastr.error('Erreur: Les données du brouillon ne sont pas chargées', 'Erreur');
+    return;
+  }
+
+  // Préparer les données pour l'API unifiée
+  const bonCompletData = {
+    bon: {
+      ...bon,
+      id: this.bonBrouillon?.id,
+      clienId: this.selectedClient.id,
+      statutBon: 'validé'
+    },
+    panier: {
+      ...this.panierBrouillon,
+      id: this.panierBrouillon.id, 
+      clientId: this.selectedClient.id,
+      statut: 'validé'
+    },
+    articles: [],
+    code_structure: this.code_structure,
+    magasinId: this.magasinId,
+    agentId: this.agentId,
+    clientId: this.selectedClient.id,
+    typeEntite:this.typeEntite,
+    paiement: undefined
+  };
+  console.log('Données de MISE À JOUR envoyées:', {
+    bonId: bonCompletData.bon.id,
+    panierId: this.panierBrouillon?.id, //ID du panier existant
+  });
+  this.isLoadingBon = true;
+
+  this.bonService.createBonComplet(bonCompletData).pipe(takeUntil(this.destroy$))
+  .subscribe({
+    next: (result) => {
+      console.log('Bon enregistré avec succès:', {
+          bonId: result.bon?.id,
+          panierId:result.panier.id
+        });
+        console.log('Id panier à supprimer', result.panier.id)
+        this.panierService.deleteOnlyPanier(result.panier.id).pipe(takeUntil(this.destroy$)).subscribe({
+          next: () => {
+            console.log('Panier brouillon supprimé avec succès après création d\'avoir');
+            this.finaliserEnregistrement(result, false);
+          },
+          error: (err) => {
+            console.error('Erreur suppression panier brouillon après création d\'avoir:', err);
+          }
+        });
+        
+
+    },
+    error: (error) => {
+      console.error('Erreur:', error);
+      this.toastr.error(error.error?.error || 'Erreur lors de l\'enregistrement', 'Erreur');
+    },
+    complete: () => {
+      this.isLoadingBon = false;
+    }
+  });
+}
   // Enregistrement d'un bon
   private enregistrerBon(bon: Bon, panier: Panier, fichier: File | null): void {
     if (!this.selectedClient) return;
@@ -1247,7 +1332,7 @@ export class ClientComponent implements OnInit,OnDestroy {
 
   // Génération de PDF
   onImprimerBon(bon: Bon): void {
-    if (!bon) return;
+    /* if (!bon) return;
     
     const articlesFormates = (bon.Panier?.ArticlePaniers || []).map(article => ({
       ...article,
@@ -1282,11 +1367,99 @@ export class ClientComponent implements OnInit,OnDestroy {
       commentaire: bon.description
     };
 
-    this.pdfGenerator.generateBonClient(bonData);
+    this.pdfGenerator.generateBonClient(bonData); */
+      if(!confirm('Imprimer l\'operation ?')) return;
+    if (!bon) {
+        this.toastr.error('Aucun bon sélectionné');
+        return;
+      }
+    
+      try {
+        this.isLoadingBon = true;
+        
+        console.log('Bon à imprimer:', bon);
+        
+        // Valider et formater les articles
+        const articlesFormates = (bon.Panier?.ArticlePaniers || []).map(article => {
+          if (!article) return null;
+          
+          return new ArticlePanier({
+            ...article,
+            produit: article.produit || article.Produit,
+            prixUnitaire: this.safeNumber(article.prixUnitaire || article.prixVenteUnitaire),
+            quantite: this.safeNumber(article.quantite),
+            montantRemise: this.safeNumber(article.montantRemise),
+            montantTVA: this.safeNumber(article.montantTVA),
+            totalHT: this.safeNumber(article.totalHT),
+            totalTTC: this.safeNumber(article.totalTTC)
+          });
+        }).filter(article => article != null);
+    
+        // Préparer les totaux
+        const totaux = {
+          sousTotal: this.safeNumber(bon.Panier?.totalHT),
+          tauxTVA: this.safeNumber(bon.Panier?.tauxTVA),
+          montantTVA: this.safeNumber(bon.Panier?.tva),
+          totalTTC: this.safeNumber(bon.Panier?.totalTTC),
+          remise: this.safeNumber(bon.remise),
+          avance: this.safeNumber(bon.avance),
+          netAPayer: this.safeNumber(bon.resteAPayer),
+          avoir:this.safeNumber(bon.montantAvoir)
+        };
+    
+        // Déterminer le type de document
+        let titre = 'BON';
+        let typeDocument = 'bon';
+        
+        if (bon.type === 'commande') {
+          titre = 'BON DE COMMANDE';
+          typeDocument = 'commande';
+        } else if (bon.type === 'vente') {
+          titre = 'BON DE VENTE';
+          typeDocument = 'vente';
+        } else if (bon.type === 'avoir') {
+          titre = 'AVOIR';
+          typeDocument = 'avoir';
+        }
+    
+        const bonData = {
+          titre: titre,
+          typeBon: typeDocument,
+          numero: bon.numero || 'N/A',
+          date: bon.dateBon || new Date(),
+          dateLivraisonPrevue: bon.dateLivraisonPrevue,
+          client: this.selectedClient ? {
+            nomComplet: this.selectedClient.nomComplet || 'N/A',
+            adresse: this.selectedClient.adresse || '',
+            telephone: this.selectedClient.telephone || '',
+            email: this.selectedClient.email || ''
+          } : { 
+            nomComplet: 'Client non spécifié', 
+            adresse: '', 
+            telephone: '', 
+            email: '' 
+          },
+          articles: articlesFormates,
+          totaux: totaux,
+          statut: bon.statutBon,
+          commentaire: bon.description
+        };
+    
+        console.log('Données formatées pour le PDF du bon:', bonData);
+        this.pdfGenerator.generateBonClient(bonData);
+      } 
+      catch (error) {
+        console.error('Erreur génération bon client:', error);
+        this.toastr.error('Erreur lors de la génération du bon');
+      }
+      finally {
+        this.isLoadingBon = false;
+      }
+    
   }
 
   onImprimerReleve(): void {
-    if (!this.selectedClient) return;
+    /* if (!this.selectedClient) return;
 
     const operationsFormatees = this.filteredOperations.map(op => ({
       date: op.dateOperation,
@@ -1311,7 +1484,67 @@ export class ClientComponent implements OnInit,OnDestroy {
       }
     };
 
-    this.pdfGenerator.generateReleveClient(releveData);
+    this.pdfGenerator.generateReleveClient(releveData); */
+
+    if(!confirm('Imprimer le relevé pour la période sélectionnée ?')) return;
+
+    if (!this.selectedClient) {
+      this.toastr.error('Aucun client sélectionné');
+      return;
+    }
+
+    try {
+      this.isLoadingClient = true;
+      
+      // Préparer les données du relevé
+      const operationsFormatees = this.filteredOperations.map(op => {
+        if (!op) return null;
+        
+        return {
+          ...op,
+          dateOperation: op.dateOperation,
+          type: op.type || 'NON SPECIFIE',
+          numeroVersement: op.numeroVersement,
+          montantPaye: this.safeNumber(op.montantPaye),
+          commentaire: op.commentaire,
+          Bon: op.Bon
+        };
+      }).filter(op => op != null);
+
+      const totaux = this.calculerTotauxOperations();
+      const releveData = {
+        client: {
+          nomComplet: this.selectedClient.nomComplet || 'N/A',
+          adresse: this.selectedClient.adresse || '',
+          telephone: this.selectedClient.telephone || '',
+          email: this.selectedClient.email || '',
+          plafond: this.safeNumber(this.selectedClient.plafond)
+        },
+        periode: `${this.startDate || 'Début'} au ${this.endDate || 'Aujourd\'hui'}`,
+        operations: operationsFormatees,
+        synthese: {
+          totalAchats: totaux.ventes,
+          totalVersements: totaux.versements,
+          totalCommandesLivrees:totaux.commandesLivrees,
+          totalCommandesAnnulees:totaux.commandesAnnulees,
+          totalCommandesNonLivrees:totaux.commandesNonLivrees,
+          totalRetours:totaux.retours,
+          totalAvoirs:totaux.avoirs,
+          //soldeInitial: this.safeNumber(this.selectedClient.solde),
+          nouveauSolde: this.safeNumber(this.selectedClient.solde)
+        },
+        solde: this.safeNumber(this.selectedClient.solde)
+      };
+
+      console.log('Données pour relevé client:', releveData);
+      this.pdfGenerator.generateReleveClient(releveData);
+      
+    } catch (error) {
+      console.error('Erreur génération relevé client:', error);
+      this.toastr.error('Erreur lors de la génération du relevé');
+    } finally {
+      this.isLoadingClient = false;
+    }
   }
 
   onGenererTicketVersement(operation: Operation): void {
@@ -1363,15 +1596,56 @@ export class ClientComponent implements OnInit,OnDestroy {
     return isNaN(num) ? 0 : num;
   }
 
-  private calculerTotalAchats(): number {
-    return this.filteredOperations
-      .filter(op => op.type === 'COMMANDE' || op.type === 'VENTE')
-      .reduce((total, op) => total + (this.safeNumber(op.Bon?.Panier?.totalTTC) || 0), 0);
+  private calculerTotauxOperations() {
+  const result = {
+    commandesLivrees: 0,
+    commandesNonLivrees: 0,
+    commandesAnnulees: 0,
+    ventes: 0,
+    retours: 0,
+    avoirs: 0,
+    versements: 0
+  };
+
+  for (const op of this.filteredOperations) {
+    const montant = this.safeNumber(op.Bon?.Panier?.totalTTC) || 0;
+
+    // COMMANDES
+    if (op.type === 'COMMANDE') {
+      if (op.Bon?.statutBon === 'livré') {
+        result.commandesLivrees += montant;
+      } else if (op.Bon?.statutBon === 'validé') {
+        result.commandesNonLivrees += montant;
+      } else if (op.Bon?.statutBon === 'annulé') {
+        result.commandesAnnulees += montant;
+      }
+    }
+
+    // VENTES
+    else if (op.type === 'VENTE') {
+      result.ventes += montant;
+    }
+
+    // RETOURS
+    else if (
+      op.type === 'RETOUR' ||
+      op.Bon?.statutBon === 'retourné' ||
+      op.Bon?.statutBon === 'retourné partiellement'
+    ) {
+      result.retours += montant;
+    }
+
+    // AVOIRS
+    else if (op.type === 'AVOIR') {
+      result.avoirs += montant;
+    }
+
+    // VERSEMENTS
+    else if (op.type === 'REGLEMENT') {
+      result.versements += this.safeNumber(op.montantPaye) || 0;
+    }
   }
 
-  private calculerTotalVersements(): number {
-    return this.filteredOperations
-      .filter(op => op.type === 'VERSEMENT' || op.type === 'REGLEMENT')
-      .reduce((total, op) => total + (this.safeNumber(op.montantPaye) || 0), 0);
-  }
+  return result;
+}
 }

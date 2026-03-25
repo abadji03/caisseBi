@@ -20,7 +20,7 @@ import { RapportStockService } from '../../../services/rapport-stock.service';
 import { RapportsFinanciersService } from '../../../services/rapports-financiers.service';
 import { MaagasinsService } from '../../../services/maagasins.service';
 import { ToastrService } from 'ngx-toastr';
-import { finalize, forkJoin, Subject, takeUntil } from 'rxjs';
+import { finalize, forkJoin, Subject, Subscription, takeUntil } from 'rxjs';
 import { DonneesFinancieresDashboard, DonneesStockDashboard, DonneesVentesDashboard } from '../../../modeles/kpiCaisse.model';
 
 // Enregistrer les éléments nécessaires dans Chart.js
@@ -91,12 +91,14 @@ export class OverviewComponent implements OnInit, OnDestroy {
   isPrinting = false;
   isAdmin = false;
 
+  private userSubscription!: Subscription;
+
   constructor() {
     Chart.register(...registerables);
   }
 
   ngOnInit(): void {
-    this.authService.currentUser.pipe(takeUntil(this.destroy$)).subscribe(user => {
+    this.userSubscription = this.authService.currentUser.pipe(takeUntil(this.destroy$)).subscribe(user => {
       this.currentUser = user;
       this.code_structure = user?.code_structure || null;
       this.isAdmin = this.authService.hasRole('Administrateur');
@@ -116,6 +118,9 @@ export class OverviewComponent implements OnInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
     this.detruireGraphiques();
+    if (this.userSubscription) {
+      this.userSubscription.unsubscribe();
+    }
   }
 
   private detruireGraphiques(): void {

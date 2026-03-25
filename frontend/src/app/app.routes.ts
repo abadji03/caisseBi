@@ -90,7 +90,7 @@ export const routes: Routes = [
         component: OverviewComponent,
         canActivate: [roleGuard, structureGuard],
         data: { 
-          roles: ['Administrateur Général', 'Administrateur', 'Gérant', 'Caissier', 'Employé'],
+          roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant', 'Caissier', 'Employé'],
           requireStructure: true 
         }
       },
@@ -99,7 +99,7 @@ export const routes: Routes = [
         component: VentesComponent,
         canActivate: [roleGuard,structureGuard],
         data: { 
-          roles: ['Administrateur Général', 'Administrateur', 'Gérant', 'Caissier'],
+          roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant', 'Caissier'],
           requireStructure: true,
           permissions: [PERMISSIONS.VIEW_SALES, PERMISSIONS.EDIT_SALES,PERMISSIONS.MANAGE_SALES]
         }
@@ -109,7 +109,7 @@ export const routes: Routes = [
         component: CaisseComponent,
         canActivate: [roleGuard,structureGuard],
         data: { 
-          roles: ['Administrateur Général', 'Administrateur', 'Gérant', 'Caissier'],
+          roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant', 'Caissier'],
           requireStructure: true,
           permissions: [PERMISSIONS.ACCESS_CASHIER]
         }
@@ -119,7 +119,7 @@ export const routes: Routes = [
         component: ClientsComponent,
         canActivate: [roleGuard,structureGuard],
         data: { 
-          roles: ['Administrateur Général', 'Administrateur', 'Gérant'],
+          roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant'],
           requireStructure: true,
           permissions: [PERMISSIONS.VIEW_CLIENTS, PERMISSIONS.MANAGE_CLIENTS]
         }
@@ -129,7 +129,7 @@ export const routes: Routes = [
         component: ClientComponent,
         canActivate: [roleGuard,structureGuard],
         data: { 
-          roles: ['Administrateur Général', 'Administrateur', 'Gérant'],
+          roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant'],
           requireStructure: true,
           permissions: [PERMISSIONS.VIEW_CLIENTS, PERMISSIONS.MANAGE_CLIENTS]
         }
@@ -139,7 +139,7 @@ export const routes: Routes = [
         component: EntreesSortiesComponent,
         canActivate: [roleGuard, structureGuard],
         data: { 
-          roles: ['Administrateur Général', 'Administrateur', 'Gérant'],
+          roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant'],
           requireStructure: true,
           permissions: [PERMISSIONS.MANAGE_STOCK]
         }
@@ -149,7 +149,7 @@ export const routes: Routes = [
         component: StockInventairesComponent,
         canActivate: [roleGuard, structureGuard],
         data: { 
-          roles: ['Administrateur Général', 'Administrateur', 'Gérant'],
+          roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant'],
           requireStructure: true,
           permissions: [PERMISSIONS.VIEW_STOCK]
         }
@@ -159,7 +159,7 @@ export const routes: Routes = [
         component: CatalogueProduitComponent,
         canActivate: [roleGuard, structureGuard],
         data: { 
-          roles: ['Administrateur Général', 'Administrateur', 'Gérant'],
+          roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant'],
           requireStructure: true,
           permissions: [PERMISSIONS.MANAGE_PRODUCTS, PERMISSIONS.VIEW_PRODUCTS]
         }
@@ -169,7 +169,7 @@ export const routes: Routes = [
         component: FinanceComponent,
         canActivate: [roleGuard, structureGuard],
         data: { 
-          roles: ['Administrateur Général', 'Administrateur', 'Gérant'],
+          roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant'],
           requireStructure: true,
           permissions: [PERMISSIONS.MANAGE_FINANCE, PERMISSIONS.EDIT_FINANCE, PERMISSIONS.VIEW_FINANCE,]
         }
@@ -179,7 +179,7 @@ export const routes: Routes = [
         component: FournisseursComponent,
         canActivate: [roleGuard, structureGuard],
         data: { 
-          roles: ['Administrateur Général', 'Administrateur', 'Gérant'],
+          roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant'],
           requireStructure: true,
           permissions: [PERMISSIONS.MANAGE_SUPPLIERS]
         }
@@ -189,7 +189,7 @@ export const routes: Routes = [
         component: FournisseurComponent,
         canActivate: [roleGuard, structureGuard],
         data: { 
-          roles: ['Administrateur Général', 'Administrateur', 'Gérant'],
+          roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant'],
           requireStructure: true,
           permissions: [PERMISSIONS.MANAGE_SUPPLIERS]
         }
@@ -199,7 +199,7 @@ export const routes: Routes = [
         component: RapportsFinanciersComponent,
         canActivate: [roleGuard, structureGuard],
         data: { 
-          roles: ['Administrateur Général', 'Administrateur', 'Gérant'],
+          roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant'],
           requireStructure: true,
           permissions: [PERMISSIONS.VIEW_REPORTS]
         }
@@ -209,7 +209,7 @@ export const routes: Routes = [
         component: RapportsVentesComponent,
         canActivate: [roleGuard, structureGuard],
         data: { 
-          roles: ['Administrateur Général', 'Administrateur', 'Gérant'],
+          roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant'],
           requireStructure: true,
           permissions: [PERMISSIONS.VIEW_REPORTS]
         }
@@ -219,7 +219,7 @@ export const routes: Routes = [
         component: RapportsStocksComponent,
         canActivate: [roleGuard, structureGuard],
         data: { 
-          roles: ['Administrateur Général', 'Administrateur', 'Gérant'],
+          roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant'],
           requireStructure: true,
           permissions: [PERMISSIONS.VIEW_REPORTS]
         }
@@ -229,7 +229,7 @@ export const routes: Routes = [
         component: MagazinComponent,
         canActivate: [roleGuard, structureGuard],
         data: { 
-          roles: ['Administrateur Général', 'Administrateur'],
+          roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire'],
           requireStructure: true,
           permissions: [PERMISSIONS.MANAGE_STORES]
         }
@@ -239,7 +239,7 @@ export const routes: Routes = [
         component: GerantComponent,
         canActivate: [roleGuard, structureGuard],
         data: { 
-          roles: ['Administrateur Général', 'Administrateur'],
+          roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire'],
           requireStructure: true,
           permissions: [PERMISSIONS.MANAGE_USERS]
         }
@@ -249,7 +249,7 @@ export const routes: Routes = [
         component: ParametresComponent,
         canActivate: [roleGuard],
         data: { 
-          roles: ['Administrateur'],
+          roles: ['Administrateur','Administrateur secondaire'],
           permissions: [PERMISSIONS.MANAGE_SETTINGS]
         }
       },

@@ -78,13 +78,34 @@ export class ListeOperationsComponent implements OnInit, OnChanges {
     this.onViewOperationDetails.emit({index, operation});
   }
 
-  canReturn(bon: Bon): boolean {
+  /* canReturn(bon: Bon): boolean {
     if (!bon) return false;
     const statut = String(bon.statutBon ?? '').trim().toLowerCase();
     const type = String(bon.type ?? '').trim().toLowerCase();
     const avanceNum = Number(bon.avance ?? 0);
     return statut === 'validé' && type === 'livraison' && avanceNum === 0;
-  }
+  } */
+
+  canReturn(bon: Bon): boolean {
+  if (!bon) return false;
+
+  const statut = String(bon.statutBon ?? '').trim().toLowerCase();
+  const type = String(bon.type ?? '').trim().toLowerCase();
+
+  const avanceRaw = bon?.avance ?? 0;
+  const avanceStr = String(avanceRaw).trim().replace(',', '.');
+  const avanceNum = isNaN(Number(avanceStr)) ? 0 : Number(avanceStr);
+
+  if (avanceNum > 0) return false;
+
+  const conditions = [
+    { type: 'vente', statut: 'validé' },
+    { type: 'commande', statut: 'livré' },
+    { type: 'livraison', statut: 'validé' }
+  ];
+
+  return conditions.some(c => c.type === type && c.statut === statut);
+}
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   safeNumber(value: any): number {

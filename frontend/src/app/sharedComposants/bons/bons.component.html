@@ -182,7 +182,7 @@
 
       <!-- Composant Panier -->
       <app-panier
-        *ngIf="bonForm.get('type')?.value !== 'avoir'"
+        [hidden]="bonForm.get('type')?.value === 'avoir'"
         [produitsDisponibles]="produitsDisponibles"
         [showPanierSection]="showPanier"
         [titre]="'Panier du bon'"

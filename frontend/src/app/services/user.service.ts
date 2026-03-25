@@ -1,8 +1,28 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { catchError, Observable, tap, throwError } from 'rxjs';
 import { User } from '../modeles/user.model';
 import { AuthService } from './auth.service';
+import { NGXLogger } from 'ngx-logger';
+
+export interface UsersFilter {
+  page?: number;
+  limit?: number;
+  search?: string;
+  statut?: string;
+}
+
+export interface UsersResponse {
+  items: User[];
+  pagination: {
+    total: number;
+    page: number;
+    totalPages: number;
+    limit: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
 
 @Injectable({
   providedIn: 'root',
@@ -11,6 +31,7 @@ export class UserService {
   private apiUrl = 'http://localhost:5000/api/users';
   private http = inject(HttpClient);
   private authService = inject(AuthService);
+  private logger = inject(NGXLogger);
 
   private getHeaders(): HttpHeaders {
     const token = this.authService.getToken();
@@ -20,19 +41,36 @@ export class UserService {
     });
   }
 
+   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   private handleError(error: any, message: string): Observable<never> {
+    this.logger.error(message, error);
+    return throwError(() => error);
+  }
   
   // Récupère tous les utilisateurs (filtrés par structure si nécessaire)
-  getAll(): Observable<User[]> {
-    //const structureId = this.authService.getUserStructureId();
-    const url = ''/* this.authService.isGeneralAdmin()
-      ? this.apiUrl
-      : `${this.apiUrl}?structure_id=${structureId}`; */
-
-    return this.http.get<User[]>(url, { headers: this.getHeaders() });
-  }
 
   getAlls(): Observable<User[]> {
     return this.http.get<User[]>(`${this.apiUrl}`, { headers: this.getHeaders() });
+  }
+
+  // Récupérer tous les utilisateurs avec pagination
+  getAllsBis(filter: UsersFilter = {}): Observable<UsersResponse> {
+    let params = new HttpParams();
+    
+    if (filter.page) params = params.set('page', filter.page.toString());
+    if (filter.limit) params = params.set('limit', filter.limit.toString());
+    if (filter.search) params = params.set('search', filter.search);
+    if (filter.statut && filter.statut !== 'tous') {
+      params = params.set('statut', filter.statut);
+    }
+
+    return this.http.get<UsersResponse>(this.apiUrl, {
+      headers: this.getHeaders(),
+      params
+    }).pipe(
+      tap(response => this.logger.info(`Utilisateurs récupérés: ${response.items.length}`)),
+      catchError(err => this.handleError(err, 'Erreur lors du chargement des utilisateurs'))
+    );
   }
 
   // Récupère un utilisateur par son ID
@@ -96,6 +134,32 @@ export class UserService {
       headers: this.getHeaders(),
     });
   }
+
+   // Récupère les utilisateurs par structure avec pagination
+  getByStructureBis(code_structure: string, filter: UsersFilter = {}): Observable<UsersResponse> {
+    let params = new HttpParams();
+    
+    // Pagination
+    if (filter.page) params = params.set('page', filter.page.toString());
+    if (filter.limit) params = params.set('limit', filter.limit.toString());
+    
+    // Recherche
+    if (filter.search) params = params.set('search', filter.search);
+    
+    // Filtre par statut
+    if (filter.statut && filter.statut !== 'tous') {
+      params = params.set('statut', filter.statut);
+    }
+
+    return this.http.get<UsersResponse>(`${this.apiUrl}/${code_structure}/bis/users`, {
+      headers: this.getHeaders(),
+      params
+    }).pipe(
+      tap(response => this.logger.info(`Utilisateurs récupérés: ${response.items.length}`)),
+      catchError(err => this.handleError(err, 'Erreur lors du chargement des utilisateurs'))
+    );
+  }
+
 
   // Vérifie si un email est déjà utilisé
   checkEmailAvailability(email: string): Observable<{ available: boolean }> {

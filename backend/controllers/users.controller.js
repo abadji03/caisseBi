@@ -37,15 +37,22 @@ exports.create = async (req, res) => {
   }
 };
 
-// Récupérer tous les utilisateurs
-
+// Récupérer tous les utilisateurs avec pagination
 exports.findAll = async (req, res) => {
   try {
-    const authUser = req.user; // utilisateur connecté
+    const authUser = req.user;
 
     if (!authUser) {
       return res.status(401).json({ message: 'Non authentifié' });
     }
+
+    // Paramètres de pagination et recherche
+    const { 
+      page = 1, 
+      limit = 10, 
+      search = '',
+      statut = 'tous'
+    } = req.query;
 
     // Déterminer si c'est un admin général
     const isGeneralAdmin =
@@ -57,34 +64,70 @@ exports.findAll = async (req, res) => {
     let roleWhere = {};
 
     if (isGeneralAdmin) {
-      // 🔹 Admin général → uniquement les admins des structures
       whereClause = {
-        structure_id: { [Op.ne]: null } // utilisateur rattaché à une structure
+        structure_id: { [Op.ne]: null }
       };
       roleWhere = {
-        nom: 'Administrateur' // uniquement rôle Administrateur (pas Gérant, etc.)
+        nom: 'Administrateur'
       };
     } else {
-      // 🔹 Admin de structure → tous les utilisateurs de SA structure
       whereClause = {
         structure_id: authUser.structure_id
       };
     }
 
-    const users = await User.findAll({
+    // 🔍 FILTRE DE RECHERCHE TEXTUELLE
+    if (search && search.trim() !== '') {
+      whereClause[Op.or] = [
+        { nom: { [Op.like]: `%${search}%` } },
+        { email: { [Op.like]: `%${search}%` } },
+        { telephone: { [Op.like]: `%${search}%` } }
+      ];
+    }
+
+    // 🔹 FILTRE PAR STATUT
+    if (statut !== 'tous') {
+      whereClause.status = statut === 'actif' ? true : false;
+    }
+
+    // Calcul de l'offset pour la pagination
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const limitInt = parseInt(limit);
+
+    // Exécution de la requête avec pagination
+    const { count, rows } = await User.findAndCountAll({
       where: whereClause,
       order: [['createdAt', 'DESC']],
       include: [
         {
           model: Role,
           attributes: ['id', 'nom'],
-          where: isGeneralAdmin ? roleWhere : undefined, // filtrer par rôle si admin général
-          required: isGeneralAdmin // fait un INNER JOIN si on filtre par rôle
+          where: isGeneralAdmin ? roleWhere : undefined,
+          required: isGeneralAdmin
         }
-      ]
+      ],
+      offset,
+      limit: limitInt,
+      distinct: true
     });
 
-    res.json(users);
+    // Calcul du nombre total de pages
+    const totalPages = Math.ceil(count / limitInt);
+
+    console.log(`📦 Utilisateurs: ${count} trouvés, page ${page}/${totalPages}`);
+
+    res.status(200).json({
+      items: rows,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        totalPages: totalPages,
+        limit: limitInt,
+        hasNext: parseInt(page) < totalPages,
+        hasPrev: parseInt(page) > 1
+      }
+    });
+
   } catch (error) {
     console.error('Erreur récupération utilisateurs:', error);
     res.status(500).json({ message: error.message });
@@ -111,38 +154,6 @@ exports.findOne = async (req, res) => {
 };
 
 // Mettre à jour un utilisateur
-/* exports.update = async (req, res) => {
-  try {
-    const authUser = req.user; // utilisateur connecté
-
-    if (!authUser) {
-      return res.status(401).json({ message: 'Non authentifié' });
-    }
-    let data = req.body;
-
-    console.log('Données reçues pour mise à jour:', data); // Debug: voir les données reçues
-
-    // Vérifie si un nouveau mot de passe est fourni
-    if (data.password) {
-      const salt = await bcrypt.genSalt(10);
-      data.password = await bcrypt.hash(data.password, salt);
-    }
-
-    const [updated] = await User.update(data, {
-      where: { id: req.params.id },
-    });
-
-    if (updated) {
-      const updatedUser = await User.findByPk(req.params.id);
-      res.json(updatedUser);
-    } else {
-      res.status(404).json({ message: 'Utilisateur non trouvé' });
-    }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-}; */
-
 exports.update = async (req, res) => {
   try {
     console.log('=== DÉBUT UPDATE UTILISATEUR ===');
@@ -242,6 +253,12 @@ exports.findByStructure = async (req, res) => {
     }
     const { code_structure } = req.params;
 
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({
+        message: "Accès interdit : structure non autorisée"
+      });
+    } 
+
     const users = await User.findAll({
       where: { code_structure },
       include: [
@@ -255,6 +272,91 @@ exports.findByStructure = async (req, res) => {
 
     res.json(users);
   } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Récupérer les utilisateurs par code_structure avec pagination
+exports.findByStructureBis = async (req, res) => {
+  try {
+    const authUser = req.user; // utilisateur connecté
+
+    if (!authUser) {
+      return res.status(401).json({ message: 'Non authentifié' });
+    }
+    const { code_structure } = req.params;
+    
+    // Paramètres de pagination et recherche
+    const { 
+      page = 1, 
+      limit = 10, 
+      search = '',
+      statut = 'tous'
+    } = req.query;
+
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({
+        message: "Accès interdit : structure non autorisée"
+      });
+    }
+
+    // Construction de la clause WHERE
+    let whereClause = { code_structure };
+
+    // 🔍 FILTRE DE RECHERCHE TEXTUELLE
+    if (search && search.trim() !== '') {
+      whereClause[Op.or] = [
+        { nom: { [Op.like]: `%${search}%` } },
+        { email: { [Op.like]: `%${search}%` } },
+        { telephone: { [Op.like]: `%${search}%` } },
+        //{ '$Roles.nom$': { [Op.like]: `%${search}%` } }
+      ];
+    }
+
+    // 🔹 FILTRE PAR STATUT
+    if (statut !== 'tous') {
+      whereClause.status = statut === 'actif' ? true : false;
+    }
+
+    // Calcul de l'offset pour la pagination
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const limitInt = parseInt(limit);
+
+    // Exécution de la requête avec pagination
+    const { count, rows } = await User.findAndCountAll({
+      where: whereClause,
+      include: [
+        {
+          model: Role,
+          attributes: ['id', 'nom'],
+          through: { attributes: [] }
+        },
+      ],
+      distinct: true,
+      offset,
+      limit: limitInt,
+      order: [['createdAt', 'DESC']],
+    });
+
+    // Calcul du nombre total de pages
+    const totalPages = Math.ceil(count / limitInt);
+
+    console.log(`📦 Utilisateurs: ${count} trouvés, page ${page}/${totalPages}`);
+
+    res.status(200).json({
+      items: rows,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        totalPages: totalPages,
+        limit: limitInt,
+        hasNext: parseInt(page) < totalPages,
+        hasPrev: parseInt(page) > 1
+      }
+    });
+
+  } catch (error) {
+    console.error("Erreur récupération utilisateurs:", error);
     res.status(500).json({ message: error.message });
   }
 };

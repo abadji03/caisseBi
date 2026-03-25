@@ -66,14 +66,12 @@ export class BonsComponent implements OnChanges,OnInit {
   bonRemiseParArticle = false;
   // Formulaires
   bonForm!: FormGroup;
-  informationsForm!: FormGroup;
   //logistiqueForm!: FormGroup;
 
   // Variables générales
   currentDate: string = new Date().toLocaleDateString();
   currentTime: string = new Date().toLocaleTimeString();
   //typeBon = '';
-  panierDisabled = false;
   totalPanier = 0;
   showBonButtons = false;
 
@@ -261,14 +259,14 @@ setActiveTab(tab: 'informations' | 'articles'): void {
     if (tab === 'articles' && this.panierData) {
       // On s'assure que le panier est correctement restauré
       this.showPanier = true;
-      this.cdr.detectChanges();
+      //this.cdr.detectChanges();
       
       // Forcer une mise à jour du composant panier
-      setTimeout(() => {
+      /* setTimeout(() => {
         // Ré-émettre les données du panier pour le composant enfant
         this.panierData = new Panier({ ...this.panierData });;
         this.cdr.detectChanges();
-      }, 0);
+      }, 0); */
     }
     
     if (tab === 'articles') {
@@ -291,15 +289,7 @@ setActiveTab(tab: 'informations' | 'articles'): void {
         return true;
     }
   }
-  // Getter pour déterminer si on peut revenir à l'onglet précédent
-  get canGoToPreviousTab(): boolean {
-    // eslint-disable-next-line @typescript-eslint/array-type
-    const tabs: Array<'informations' | 'articles'> = 
-      ['informations', 'articles'];
-    
-    const currentIndex = tabs.indexOf(this.activeTab);
-    return currentIndex > 0;
-  }
+
 
   // Navigation entre tabs
   nextTab(): void {
@@ -321,18 +311,6 @@ setActiveTab(tab: 'informations' | 'articles'): void {
     }
   }
 
-  previousTab(): void {
-    // eslint-disable-next-line @typescript-eslint/array-type
-    const tabs: Array<'informations' | 'articles'> = 
-      ['informations', 'articles'];
-    
-    const currentIndex = tabs.indexOf(this.activeTab);
-    if (currentIndex > 0) {
-      //this.activeTab = tabs[currentIndex - 1];
-      const previousTab = tabs[currentIndex - 1];
-      this.activeTab = previousTab;
-    }
-  }
 
   // Validation de l'onglet actuel
   private validateCurrentTab(): boolean {
@@ -377,10 +355,6 @@ setActiveTab(tab: 'informations' | 'articles'): void {
       const hasArticles = this.panierData && (this.panierData.articles.length ?? 0) > 0;
       const montantAvoir = this.bonForm.get('montantAvoir')?.value || 0;
       
-      /* if (!hasArticles && montantAvoir <= 0) {
-        //this.toastr.error('Pour un retour, veuillez ajouter des articles ou spécifier un montant d\'avoir', 'Erreur de validation');
-        return false;
-      } */
       // Pour les retours : soit des articles, soit un montant d'avoir
       if (this.typeBon === 'retour' && !hasArticles && montantAvoir <= 0) {
         this.toastr.error('Pour un retour, veuillez ajouter des articles ou spécifier un montant d\'avoir', 'Erreur de validation');
@@ -503,42 +477,12 @@ setActiveTab(tab: 'informations' | 'articles'): void {
 
   }
 
-    // Méthodes pour gérer les changements de mode
-  onTVAModeChange(mode: 'article' | 'global'): void {
-    const tvaParArticle = mode === 'article';
-    this.bonForm.patchValue({ tvaParArticle });
-    this.bonTvaParArticle = tvaParArticle;
-    
-    // Si on passe en mode global et que TVA est incluse, activer le champ taux TVA global
-    if (!tvaParArticle && this.bonForm.get('inclureTVA')?.value) {
-      this.bonForm.get('tauxTVAGlobal')?.enable();
-    } else if (tvaParArticle) {
-      this.bonForm.get('tauxTVAGlobal')?.disable();
-    }
-  }
-
-  onRemiseModeChange(mode: 'article' | 'global'): void {
-    const remiseParArticle = mode === 'article';
-    this.bonForm.patchValue({ remiseParArticle });
-    this.bonRemiseParArticle = remiseParArticle;
-    
-    // Si on passe en mode global, activer le champ remise globale
-    if (!remiseParArticle) {
-      this.bonForm.get('remiseGlobale')?.enable();
-    } else {
-      this.bonForm.get('remiseGlobale')?.disable();
-    }
-  }
-
   private resetTabAccessibility(): void {
     this.accessibleTabs = {
       informations: true,
       articles: false,
     };
     
-    /* if (this.activeTab !== 'informations') {
-      this.activeTab = 'informations';
-    } */
   }
 
   // Calcul des totaux amélioré
@@ -560,11 +504,7 @@ setActiveTab(tab: 'informations' | 'articles'): void {
   }
 
   get montantHT(): number {
-  
-    // Pour les retours, pas de calcul HT
-    // if (this.typeBon === 'retour') {
-    //   return 0;
-    // }
+
     
     const montantHT = this.panierData?.totalHT || 0;
     
@@ -575,11 +515,7 @@ setActiveTab(tab: 'informations' | 'articles'): void {
   
   let montantRemise = 0;
   
-  /* if (this.typeBon === 'retour') {
-    this.debugLog('get montantRemise - Retour', { montantRemise: 0 });
-    return 0;
-  } */
-  
+
   // Vérifier d'abord la remise du panier
   if (this.panierData?.remise !== undefined) {
     montantRemise = this.panierData.remise;
@@ -611,14 +547,8 @@ setActiveTab(tab: 'informations' | 'articles'): void {
   }
 
   get totalTTC(): number {
-     // Pour les retours, pas de total TTC
-    /* if (this.typeBon === 'retour') {
-      return 0;
-    } */
-    // Utiliser le total TTC du panier si disponible
-      //return this.panierData?.totalTTC || 0;
-       const totalTTC = this.panierData?.totalTTC || 0;
-      return totalTTC;
+    const totalTTC = this.panierData?.totalTTC || 0;
+  return totalTTC;
   }
 
   // Ajouter un getter pour le taux TVA du panier
@@ -855,7 +785,8 @@ onPanierEnregistre(panier: Panier): void {
   console.log('📦 Panier reçu dans bon', panier.statut);
   
   // Toujours mettre à jour panierData
-  this.panierData = panier;
+  //this.panierData = panier;
+  this.panierData = new Panier({ ...panier });
   this.totalPanier = panier.totalHT || 0;
   
   // Mettre à jour l'état de validation
@@ -907,76 +838,76 @@ onPanierModifie(panier: Panier): void {
 }
 
 
-  updateTime(): void {
-    setInterval(() => {
-      this.currentTime = new Date().toLocaleTimeString();
-    }, 1000);
+updateTime(): void {
+  setInterval(() => {
+    this.currentTime = new Date().toLocaleTimeString();
+  }, 1000);
+}
+
+reinitialiserFormulaire(): void {
+  // Réinitialiser les formulaires
+  this.bonForm.reset({
+    type: 'commande',
+    description: '',
+    referenceExterne: '',
+    numeroBonOrigine: '',
+    motifsRetour: '',
+    montantAvoir: 0,
+    avance: 0,
+    methodePaiement: '',
+    conditionsPaiement: '30 jours fin de mois',
+    delaiPaiement: 30,
+    tauxTVA: 18,
+    dateLivraisonPrevue: '',
+    pointLivraison: '',
+    transporteur: ''
+  });
+
+  // Réinitialiser les variables
+  this.fichierSelectionne = null;
+  //this.typeBon = 'commande';
+  //this.generatedNumero = this.generateNumero();
+  this.erreurs = [];
+  this.modeMontant = 'panier';
+  this.panierValide = false; 
+  this.panierData = null;
+  this.showBonButtons = false;
+  this.activeTab = 'informations';
+  this.resetPanierTrigger = !this.resetPanierTrigger;
+
+  this.resetTabAccessibility();
+
+  // Réinitialiser l'input file
+  const fileInput = document.getElementById('fichierPaiement') as HTMLInputElement;
+  if (fileInput) fileInput.value = '';
+
+  // Émettre l'événement pour réinitialiser le panier
+  this.onReinitialiserPanier.emit();
+  this.bonBrouillon = null;
+}
+
+annulerBon(): void {
+const confirmAnnulation = confirm('Annuler l\'enregistrement du bon?');
+if (confirmAnnulation) {
+  if (this.bonBrouillon) {
+    this.bonService.supprimerBonComplet(this.bonBrouillon.id!)
+      .subscribe({
+        next: () => {
+          this.toastr.success('Brouillon supprimé');
+          this.reinitialiserFormulaire();
+          this.bonBrouillonService.clearBrouillons();
+          this.onAnnulerBon.emit();
+        },
+        error: (err) => {
+          console.error('Erreur suppression brouillon:', err);
+          this.toastr.error('Erreur lors de la suppression du brouillon');
+        }
+      });
+  } else {
+    this.reinitialiserFormulaire();
+    this.onAnnulerBon.emit();
   }
-
-  reinitialiserFormulaire(): void {
-    // Réinitialiser les formulaires
-    this.bonForm.reset({
-      type: 'commande',
-      description: '',
-      referenceExterne: '',
-      numeroBonOrigine: '',
-      motifsRetour: '',
-      montantAvoir: 0,
-      avance: 0,
-      methodePaiement: '',
-      conditionsPaiement: '30 jours fin de mois',
-      delaiPaiement: 30,
-      tauxTVA: 18,
-      dateLivraisonPrevue: '',
-      pointLivraison: '',
-      transporteur: ''
-    });
-
-    // Réinitialiser les variables
-    this.fichierSelectionne = null;
-    //this.typeBon = 'commande';
-    //this.generatedNumero = this.generateNumero();
-    this.erreurs = [];
-    this.modeMontant = 'panier';
-    this.panierValide = false; 
-    this.panierData = null;
-    this.showBonButtons = false;
-    this.activeTab = 'informations';
-    this.resetPanierTrigger = !this.resetPanierTrigger;
-
-    this.resetTabAccessibility();
-
-    // Réinitialiser l'input file
-    const fileInput = document.getElementById('fichierPaiement') as HTMLInputElement;
-    if (fileInput) fileInput.value = '';
-
-    // Émettre l'événement pour réinitialiser le panier
-    this.onReinitialiserPanier.emit();
-    this.bonBrouillon = null;
-  }
-
-  annulerBon(): void {
-    const confirmAnnulation = confirm('Annuler l\'enregistrement du bon?');
-    if (confirmAnnulation) {
-      if (this.bonBrouillon) {
-        this.bonService.supprimerBonComplet(this.bonBrouillon.id!)
-          .subscribe({
-            next: () => {
-              this.toastr.success('Brouillon supprimé');
-              this.reinitialiserFormulaire();
-              this.bonBrouillonService.clearBrouillons();
-              this.onAnnulerBon.emit();
-            },
-            error: (err) => {
-              console.error('Erreur suppression brouillon:', err);
-              this.toastr.error('Erreur lors de la suppression du brouillon');
-            }
-          });
-      } else {
-        this.reinitialiserFormulaire();
-        this.onAnnulerBon.emit();
-      }
-    }
-  }
+}
+}
 
 }

@@ -1,7 +1,9 @@
 // controllers/structure.controller.js
 const db = require('../models');
 const Structure = db.Structure;
+const { Op } = require('sequelize');
 const User = db.Users;
+const Role = db.role;
 const fs = require('fs');
 const path = require('path');
 
@@ -127,6 +129,89 @@ exports.getAllStructures = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Erreur lors de la récupération des structures.' });
+  }
+}; 
+
+// Récupérer toutes les structures avec pagination et recherche
+exports.getAllStructuresBis = async (req, res) => {
+  try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
+    // Paramètres de pagination et recherche
+    const { 
+      page = 1, 
+      limit = 10, 
+      search = '',
+      statut = 'tous'
+    } = req.query;
+
+    // Clause where pour la recherche
+    const whereClause = {};
+
+    // 🔍 FILTRE DE RECHERCHE TEXTUELLE
+    if (search && search.trim() !== '') {
+      whereClause[Op.or] = [
+        { nom_structure: { [Op.like]: `%${search}%` } },
+        { type_structure: { [Op.like]: `%${search}%` } },
+        { email: { [Op.like]: `%${search}%` } },
+        { telephone: { [Op.like]: `%${search}%` } },
+        { adresse: { [Op.like]: `%${search}%` } }
+      ];
+    }
+
+    // 🔹 FILTRE PAR STATUT
+    if (statut !== 'tous') {
+      whereClause.estActive = statut === 'actif';
+    }
+
+    // Calcul de l'offset pour la pagination
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const limitInt = parseInt(limit);
+
+    // Exécution de la requête avec pagination
+    const { count, rows } = await Structure.findAndCountAll({
+      where: whereClause,
+      order: [['nom_structure', 'ASC']],
+      offset,
+      limit: limitInt,
+      distinct: true
+    });
+
+    // Calcul du nombre total de pages
+    const totalPages = Math.ceil(count / limitInt);
+
+    const baseUrl = `${req.protocol}://${req.get('host')}/uploads/`;
+
+    const structuresWithLogoUrl = rows.map((struct) => {
+      const structure = struct.toJSON();
+      structure.logoUrl = structure.logo ? baseUrl + structure.logo : null;
+      return structure;
+    });
+
+    console.log(`📦 Structures: ${count} trouvées, page ${page}/${totalPages}`);
+
+    res.status(200).json({
+      items: structuresWithLogoUrl,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        totalPages: totalPages,
+        limit: limitInt,
+        hasNext: parseInt(page) < totalPages,
+        hasPrev: parseInt(page) > 1
+      }
+    });
+
+  } catch (err) {
+    console.error('Erreur récupération structures:', err);
+    res.status(500).json({ 
+      message: 'Erreur lors de la récupération des structures.',
+      error: err.message 
+    });
   }
 };
 
@@ -285,5 +370,69 @@ exports.updateStructureStatus = async (req, res) => {
     res.status(500).json({
       message: 'Erreur lors de la mise à jour du statut de la structure'
     });
+  }
+};
+
+exports.getStructuresWithoutAdmin = async (req, res) => {
+  try {
+    const authUser = req.user;
+    
+    if (!authUser) {
+      return res.status(401).json({ message: 'Non authentifié' });
+    }
+    
+    // Vérifier que l'utilisateur est admin général
+    const isGeneralAdmin = authUser.roles?.some(r => r.nom === 'Administrateur Général');
+    if (!isGeneralAdmin) {
+      return res.status(403).json({ message: 'Accès non autorisé' });
+    }
+    
+    // Récupérer le rôle "Administrateur"
+    const adminRole = await Role.findOne({ 
+      where: { nom: 'Administrateur' } 
+    });
+    
+    if (!adminRole) {
+      return res.status(500).json({ message: 'Rôle Administrateur non trouvé' });
+    }
+    
+    // Récupérer les IDs des structures qui ont déjà un administrateur
+    // Un administrateur est un utilisateur qui a le rôle "Administrateur"
+    const usersWithAdminRole = await User.findAll({
+      include: [{
+        model: Role,
+        where: { id: adminRole.id },
+        through: { attributes: [] },
+        required: true // S'assurer que l'utilisateur a bien ce rôle
+      }],
+      attributes: ['structure_id'],
+      where: {
+        structure_id: { [Op.ne]: null }, // structure_id non null
+        code_structure: { [Op.ne]: null } // code_structure non null aussi
+      },
+      raw: true // Pour obtenir des objets simples
+    });
+    
+    // Extraire les IDs des structures
+    const structureIdsWithAdmin = usersWithAdminRole
+      .map(user => user.structure_id)
+      .filter(id => id !== null && id !== undefined);
+    
+    console.log('Structures avec admin déjà existant:', structureIdsWithAdmin);
+    
+    // Récupérer toutes les structures
+    const allStructures = await Structure.findAll({
+      where: {
+        id: { [Op.notIn]: structureIdsWithAdmin } // Exclure celles qui ont déjà un admin
+      }
+    });
+    
+    console.log('Structures sans admin trouvées:', allStructures.length);
+    
+    res.status(200).json(allStructures);
+    
+  } catch (error) {
+    console.error('Erreur récupération structures sans admin:', error);
+    res.status(500).json({ message: error.message });
   }
 };

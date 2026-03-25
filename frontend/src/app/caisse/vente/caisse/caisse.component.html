@@ -5,7 +5,7 @@
     <h3>
       Total de la caisse :<b>{{ totalCaisse | number:'1.2-2' }} F CFA </b>
     </h3>
-    <button *ngIf="!isAdmin" class="btn btn-success" (click)="nouvelleVente()">Nouvelle Vente</button>
+    <button *ngIf="!isAdmin" class="btn btn-success" (click)="nouvelleVente()">{{textBoutonNewVente}}</button>
   </div>
 
   <!-- MODAL POUR LES INFOS CLIENT -->
@@ -78,7 +78,7 @@
           <button class="nav-link" [class.active]="activeTab === 'produits'" 
              (click)="activeTab = 'produits'">Produits</button>
         </li>
-        <li class="nav-item">
+        <li class="nav-item" *ngIf="shouldShowServiceTab()">
           <button class="nav-link" [class.active]="activeTab === 'services'" 
              (click)="activeTab = 'services'">Services et autres</button>
         </li>
@@ -114,6 +114,7 @@
             (onPanierStatutChange)="onPanierStatutChange($event)" 
             (onAnnuler)="onPanierAnnule()"
             (totalPanierChange)="onTotalPanierChange($event)"
+            (articlesChange)="onArticlesChange($event)"
           ></app-panier>
         </div>
         
@@ -257,7 +258,7 @@
       <table class="table table-hover mb-0">
         <thead>
           <tr>
-            <th>ID</th>
+            <!-- <th>ID</th> -->
             <th>Date/Heure</th>
             <!-- <th>Client</th> -->
             <th>Type</th>
@@ -285,7 +286,7 @@
             </td>
           </tr>
           <tr *ngFor="let transaction of paniers">
-            <td>{{ transaction.id }}</td>
+            <!-- <td>{{ transaction.id }}</td> -->
             <td>{{ transaction.dateCreation | date: 'dd/MM HH:mm' }}</td>
             <!-- <td>
               <span *ngIf="transaction.clientId; else sansClient">
@@ -312,20 +313,20 @@
              <td *ngIf ="isAdmin">{{ transaction.Magasin?.nom || 'N/A' }}</td>
             <td>
               <div class="btn-group btn-group-sm">
-                <button class="btn btn-info" (click)="afficherDetails(transaction)" 
+                <button class="btn btn-info me-1" (click)="afficherDetails(transaction)" 
                         title="Détails">
                   <i class="bi bi-eye"></i>
                 </button>
                 <button *ngIf="transaction.statut !== 'annulé' && !isAdmin" 
-                        class="btn btn-warning" (click)="annulerPanier(transaction)"
+                        class="btn btn-danger me-1" (click)="annulerPanier(transaction)"
                         title="Retourner">
                   <i class="bi bi-arrow-counterclockwise"></i>
                 </button>
-                <button *ngIf="!isAdmin" class="btn btn-primary" (click)="genererTicketAvecClient(transaction)"
+                <button *ngIf="!isAdmin" class="btn btn-primary me-1" (click)="genererTicketAvecClient(transaction)"
                         title="Ticket vente / Caisse">
                   <i class="bi bi-receipt"></i> Ticket
                 </button>
-                <button *ngIf="!isAdmin" class="btn btn-success" (click)="imprimerTicket(transaction)"
+                <button *ngIf="!isAdmin" class="btn btn-secondary me-1" (click)="imprimerTicket(transaction)"
                         title="Imprimer">
                   <i class="bi bi-printer"></i>
                 </button>

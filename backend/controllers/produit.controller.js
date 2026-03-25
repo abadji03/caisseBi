@@ -3,7 +3,7 @@ const Produit = db.Produit;
 const Stock = db.Stock;
 const fs = require('fs');
 const path = require('path');
-const { Op } = db.Sequelize;
+const { Op,literal } = db.Sequelize;
 const sharp = require('sharp');
 const ExcelJS = require('exceljs');
 const { safeNumber } = require('./bonComplet/statutManager');
@@ -271,11 +271,12 @@ exports.getProduitsByStructure = async (req, res) => {
 
     // Vérifier rôle
     const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructureSecondaire = authUser.roles?.some(r => r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
     const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
     const isEmploye = authUser.roles?.some(r => r.nom === "Employé");
 
-    if (!isAdminStructure && !isGerant && !isCaissier && !isEmploye) {
+    if (!isAdminStructure && !isAdminStructureSecondaire && !isGerant && !isCaissier && !isEmploye) {
       return res.status(403).json({
         message: "Accès interdit : rôle insuffisant"
       });
@@ -314,7 +315,7 @@ exports.getProduitsByStructure = async (req, res) => {
     };
 
     // 🔹 Si gérant : filtrer par magasin
-    if (!isAdminStructure && (isGerant || isCaissier || isEmploye)) {
+    if ((!isAdminStructure ||!isAdminStructureSecondaire) && (isGerant || isCaissier || isEmploye)) {
       if (!authUser.magasinId) {
         return res.status(400).json({
           message: "Ce gérant ou caissier ou employe n’est associé à aucun magasin"
@@ -395,6 +396,107 @@ exports.getProduitsByStructure = async (req, res) => {
     res.status(500).json({ 
       message: 'Erreur lors de la récupération des produits', 
       error: error.message 
+    });
+  }
+};
+
+// Récupérer les produits avec stock disponible réel > 0
+exports.getProduitsDisponibles = async (req, res) => {
+  try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
+    const { code_structure } = req.params;
+
+    // Vérification structure
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({
+        message: "Accès interdit : structure non autorisée"
+      });
+    }
+
+    // Vérifier si admin
+    const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructureSecondaire = authUser.roles?.some(r => r.nom === "Administrateur secondaire");
+    // --- WHERE PRODUIT
+    const whereProduit = {
+      code_structure: code_structure,
+      statut: true
+    };
+
+    // --- INCLUDE STOCK avec STOCK RÉEL
+    let stockWhere = {
+      [Op.and]: [
+        literal(`quantiteTotale - quantiteReservee > 0`)
+      ]
+    };
+
+    // 🔹 Si non admin → filtrer par magasin
+    if (!isAdmin || !isAdminStructureSecondaire) {
+      if (!authUser.magasinId) {
+        return res.status(400).json({
+          message: "Utilisateur non associé à un magasin"
+        });
+      }
+
+      stockWhere.magasinId = authUser.magasinId;
+    }
+
+    const produits = await Produit.findAll({
+      where: whereProduit,
+      include: [
+        {
+          model: Stock,
+          attributes: [
+            "id",
+            "magasinId",
+            "quantiteTotale",
+            "quantiteReservee",
+            //champ calculé utile côté front
+            [
+              literal(`quantiteTotale - quantiteReservee`),
+              "quantiteDisponible"
+            ]
+          ],
+          where: stockWhere,
+          required: true
+        },
+        {
+          model: db.CategoriesProduits,
+          attributes: ["id", "nom"],
+          required: false
+        },
+        {
+          model: db.Fournisseur,
+          attributes: ["id", "nomComplet"],
+          required: false
+        }
+      ],
+      order: [["createdAt", "DESC"]],
+      distinct: true
+    });
+
+    // --- IMAGE URL
+    const baseUrl = `${req.protocol}://${req.get('host')}/uploads/`;
+
+    const result = produits.map(p => {
+      const prod = p.toJSON();
+      prod.logoUrl = prod.image ? baseUrl + prod.image : null;
+      return prod;
+    });
+
+    console.log(`📦 Produits disponibles (stock réel): ${result.length}`);
+
+    return res.status(200).json(result);
+
+  } catch (error) {
+    console.error("Erreur getProduitsDisponibles:", error);
+    return res.status(500).json({
+      message: "Erreur lors de la récupération des produits",
+      error: error.message
     });
   }
 };

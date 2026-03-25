@@ -747,6 +747,19 @@ exports.getPaniersBrouillons = async (req, res) => {
       return res.status(401).json({ message: "Non authentifié" });
     }
     const { code_structure,magasinId } = req.params;
+
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({
+        message: "Accès interdit : structure non autorisée"
+      });
+    }
+
+    /* if (authUser.magasinId !== magasinId) {
+      return res.status(403).json({
+        message: "Action interdite : utilisateur non autorisée"
+      });
+    } */
+    
     const paniers = await db.Panier.findAll({
       where: { 
         code_structure, 
@@ -754,7 +767,17 @@ exports.getPaniersBrouillons = async (req, res) => {
         statut: 'en_cours',
         typeEntite: 'autre'
       },
-      include: [db.Panier]
+      include: [
+        {
+          model: db.ArticlePanier,
+          include: [
+            {
+              model: db.Produit,attributes:['id','designation','unite']
+            },
+          ],
+        },
+
+      ]
     });
     res.json(paniers);
   } catch (error) {

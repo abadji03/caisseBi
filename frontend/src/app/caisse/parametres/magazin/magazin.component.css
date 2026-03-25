@@ -34,4 +34,5 @@
 /* Style pour les titres des onglets (ajout de padding pour plus de lisibilité) */
 .nav-tabs .nav-link {
   padding: 12px 20px;
+  background-color: black;
 }

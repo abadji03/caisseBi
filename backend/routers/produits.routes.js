@@ -9,6 +9,7 @@ router.post('/',authenticateToken, upload.single('image'), produitCtrl.createPro
 router.put('/:id',authenticateToken, upload.single('image'), produitCtrl.updateProduit);
 router.delete('/:id',authenticateToken, produitCtrl.deleteProduit);
 router.get('/structure/:code_structure',authenticateToken, produitCtrl.getProduitsByStructure);
+router.get('/structure/:code_structure/produits-disponibles',authenticateToken, produitCtrl.getProduitsDisponibles);
 router.get('/:id', authenticateToken, produitCtrl.getProduitById);
 //router.get('/', authenticateToken, produitCtrl.getAllProduits);
 router.patch('/:id/statut', authenticateToken, produitCtrl.updateStatusProduit);

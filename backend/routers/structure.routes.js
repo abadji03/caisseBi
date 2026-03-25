@@ -17,9 +17,11 @@ router.delete('/:id',authenticateToken, structureController.deleteStructure);
 
 // GET: Récupération d'une et de plusieurs structures
 router.get('/',authenticateToken, structureController.getAllStructures);
+router.get('/bis',authenticateToken, structureController.getAllStructuresBis);
 router.get('/:id',authenticateToken, structureController.getStructureById);
 router.get('/code/:code_structure',authenticateToken, structureController.getStructureByCodeStructure);
 
+router.get('/structures/without-admin',authenticateToken, structureController.getStructuresWithoutAdmin);
 // PATCH: Mise à jour du statut uniquement
 router.patch('/:id/status',authenticateToken, structureController.updateStructureStatus);
 
