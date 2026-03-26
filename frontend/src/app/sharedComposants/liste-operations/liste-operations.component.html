@@ -126,7 +126,7 @@
                             {{ bon.statutBon }}
                           </span>
                         </h4>
-                        <small *ngIf="bon.type ==='avoir' || bon.type ==='retour' || bon.statutBon ==='retourné partiellement'" >  {{bon.type ==='avoir' ? 'Montant avoir':'Montant retour'}} : {{ bon.montantAvoir }} F CFA</small>
+                        <small *ngIf="bon.type ==='avoir' || bon.statutBon ==='retourné partiellement'" >  {{bon.type ==='avoir' ? 'Montant avoir':'Montant retour'}} : {{bon.type ==='avoir' ? bon.montantAvoir +' F CFA': 'Voir bon retour correspondant'}}</small>
                         <!-- Actions du bon -->
                         <div class="btn-group">
                           <button class="btn btn-outline-danger btn-sm me-1" (click)="onAnnulerBon.emit(bon)"

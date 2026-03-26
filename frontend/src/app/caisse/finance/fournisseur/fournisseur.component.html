@@ -356,18 +356,17 @@
 
             <!-- Formulaire pour ajouter un nouveau bon -->
             <div *ngIf="showBonForm" class="formBon mb-5">
-              <app-bons
+              <app-bon
                 [produitsDisponibles]="filteredProducts"
                 [typeEntite]="typeEntite"
                 [entiteId]="selectedFournisseur?.id"
-                [entiteNom]="selectedFournisseur?.nomComplet"
                 (onEnregistrerBon)="onBonEnregistre($event)"
                 [showFileField]="true"
                 [generatedNumero]="generatedNumero"
                 [resetForm]="!showBonForm"
                 (onAnnulerBon)="onBonAnnule()"
                 (onReinitialiserPanier)="resetPanierFlag = true"
-              ></app-bons>
+              ></app-bon>
             </div>
 
             <!-- Liste des opérations -->

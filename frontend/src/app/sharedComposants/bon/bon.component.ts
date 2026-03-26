@@ -92,6 +92,10 @@ export class BonComponent implements OnChanges, OnInit {
     return this.bonForm?.get('type')?.value ?? '';
   }
 
+  get isRetourEtPasAvoir(): boolean {
+  return this.typeBon === 'retour' || this.typeBon === 'avoir';
+}
+
   get isRetourOuAvoir(): boolean {
     return this.typeBon === 'retour' || this.typeBon === 'avoir';
   }
@@ -129,17 +133,24 @@ export class BonComponent implements OnChanges, OnInit {
   }
 
   get canEnregistrer(): boolean {
-    // Validation des informations du bon
-    if (!this.bonForm?.valid) return false;
-    
-    // Validation du panier selon le type
-    if (!this.isRetourOuAvoir && !this.isPanierValid) return false;
-    
-    // Validation des erreurs
-    if (this.erreurs.length > 0) return false;
-    
-    return true;
+  // Validation des informations du bon
+  if (!this.bonForm?.valid) return false;
+  
+  // Validation du panier selon le type
+  if (this.typeBon === 'retour' && !this.isPanierValid) return false;
+  if (this.typeBon !== 'retour' && this.typeBon !== 'avoir' && !this.isPanierValid) return false;
+  
+  // Validation du montant pour l'avoir
+  if (this.typeBon === 'avoir') {
+    const montantAvoir = this.bonForm.get('montantAvoir')?.value;
+    if (!montantAvoir || montantAvoir <= 0) return false;
   }
+  
+  // Validation des erreurs
+  if (this.erreurs.length > 0) return false;
+  
+  return true;
+}
 
   // ==================== SERVICES ====================
   private fb = inject(FormBuilder);
@@ -263,19 +274,29 @@ export class BonComponent implements OnChanges, OnInit {
       this.bonForm.get('numeroBonOrigine')?.setValidators([Validators.required]);
       this.bonForm.get('motifsRetour')?.setValidators([Validators.required, Validators.minLength(10)]);
       this.bonForm.patchValue({ avance: 0 });
+      // Afficher le panier pour les retours
+      this.showPanierSection = true;
+    } else if (this.typeBon === 'avoir') {
+      // Pour l'avoir, on masque le panier
+      this.showPanierSection = false;
+      this.isPanierValid = false;
+      this.bonForm.patchValue({ avance: 0 });
+      // Ajouter un validateur pour le montant de l'avoir
+      this.bonForm.get('montantAvoir')?.setValidators([Validators.required, Validators.min(0.01)]);
     } else {
       this.bonForm.get('numeroBonOrigine')?.clearValidators();
       this.bonForm.get('motifsRetour')?.clearValidators();
+      this.bonForm.get('montantAvoir')?.clearValidators();
     }
     
     this.bonForm.get('numeroBonOrigine')?.updateValueAndValidity();
     this.bonForm.get('motifsRetour')?.updateValueAndValidity();
+    this.bonForm.get('montantAvoir')?.updateValueAndValidity();
     
     this.updateFileUploadVisibility();
     this.updateLogistiqueFieldsVisibility();
     this.validateForm();
   }
-
   // ==================== VISIBILITÉ DES SECTIONS ====================
   private updateFileUploadVisibility(): void {
     this.showFileUpload = this.showFileField && !this.isRetourOuAvoir;
@@ -321,70 +342,85 @@ export class BonComponent implements OnChanges, OnInit {
 
   // ==================== PRÉPARATION DES DONNÉES ====================
   prepareBonData(): { bon: Bon, fichier: File | null } {
-    const formValue = this.bonForm.value;
-    
-    const baseData = {
-      numero: this.generateNumero(),
-      type: formValue.type,
-      description: formValue.description,
-      referenceExterne: formValue.referenceExterne,
-      typeEntite: this.typeEntite,
-      statutBon: 'validé' as const,
-      dateBon: new Date(),
-      panier: this.panierData || undefined,
-      conditionsPaiement: formValue.conditionsPaiement,
-      delaiPaiement: formValue.delaiPaiement
-    };
+  const formValue = this.bonForm.value;
+  
+  const baseData = {
+    numero: this.generateNumero(),
+    type: formValue.type,
+    description: formValue.description,
+    referenceExterne: formValue.referenceExterne,
+    typeEntite: this.typeEntite,
+    statutBon: 'validé' as const,
+    dateBon: new Date(),
+    panier: this.panierData || undefined,
+    conditionsPaiement: formValue.conditionsPaiement,
+    delaiPaiement: formValue.delaiPaiement
+  };
 
-    // Pour les retours et avoirs
-    if (this.isRetourOuAvoir) {
-      const bonRetour = new Bon({
-        ...baseData,
-        numeroBonOrigine: formValue.numeroBonOrigine,
-        motifsRetour: formValue.motifsRetour,
-        montantAvoir: this.totalTTC || formValue.montantAvoir,
-        montantTotal: 0,
-        remise: 0,
-        avance: 0,
-        netAPayer: 0,
-        resteAPayer: 0,
-      });
-
-      if (formValue.dateLivraisonPrevue) {
-        bonRetour.dateLivraisonPrevue = new Date(formValue.dateLivraisonPrevue);
-      }
-      bonRetour.pointLivraison = formValue.pointLivraison;
-      bonRetour.transporteur = formValue.transporteur;
-
-      return { bon: bonRetour, fichier: this.fichierSelectionne };
-    }
-
-    // Pour les autres types
-    const bonStandard = new Bon({
+  // Pour les avoirs
+  if (this.typeBon === 'avoir') {
+    const bonAvoir = new Bon({
       ...baseData,
-      montantTotal: this.totalTTC,
+      montantAvoir: formValue.montantAvoir || 0,
+      montantTotal: 0,
+      remise: 0,
+      avance: 0,
+      netAPayer: 0,
+      resteAPayer: 0,
+    });
+
+    return { bon: bonAvoir, fichier: this.fichierSelectionne };
+  }
+
+  // Pour les retours
+  if (this.typeBon === 'retour') {
+    const bonRetour = new Bon({
+      ...baseData,
+      numeroBonOrigine: formValue.numeroBonOrigine,
+      motifsRetour: formValue.motifsRetour,
       montantAvoir: 0,
+      montantTotal: this.totalTTC,
       remise: this.montantRemise,
-      avance: formValue.avance || 0,
-      methodePaiement: formValue.methodePaiement,
+      avance: 0,
       netAPayer: this.totalTTC,
-      resteAPayer: this.resteAPayer,
+      resteAPayer: this.totalTTC,
     });
 
     if (formValue.dateLivraisonPrevue) {
-      bonStandard.dateLivraisonPrevue = new Date(formValue.dateLivraisonPrevue);
+      bonRetour.dateLivraisonPrevue = new Date(formValue.dateLivraisonPrevue);
     }
-    bonStandard.pointLivraison = formValue.pointLivraison;
-    bonStandard.transporteur = formValue.transporteur;
+    bonRetour.pointLivraison = formValue.pointLivraison;
+    bonRetour.transporteur = formValue.transporteur;
 
-    if (this.typeEntite === 'client' && this.entiteId) {
-      bonStandard.clientId = this.entiteId;
-    } else if (this.typeEntite === 'fournisseur' && this.entiteId) {
-      bonStandard.fournisseurId = this.entiteId;
-    }
-
-    return { bon: bonStandard, fichier: this.fichierSelectionne };
+    return { bon: bonRetour, fichier: this.fichierSelectionne };
   }
+
+  // Pour les autres types (commande, livraison, vente)
+  const bonStandard = new Bon({
+    ...baseData,
+    montantTotal: this.totalTTC,
+    montantAvoir: 0,
+    remise: this.montantRemise,
+    avance: formValue.avance || 0,
+    methodePaiement: formValue.methodePaiement,
+    netAPayer: this.totalTTC,
+    resteAPayer: this.resteAPayer,
+  });
+
+  if (formValue.dateLivraisonPrevue) {
+    bonStandard.dateLivraisonPrevue = new Date(formValue.dateLivraisonPrevue);
+  }
+  bonStandard.pointLivraison = formValue.pointLivraison;
+  bonStandard.transporteur = formValue.transporteur;
+
+  if (this.typeEntite === 'client' && this.entiteId) {
+    bonStandard.clientId = this.entiteId;
+  } else if (this.typeEntite === 'fournisseur' && this.entiteId) {
+    bonStandard.fournisseurId = this.entiteId;
+  }
+
+  return { bon: bonStandard, fichier: this.fichierSelectionne };
+}
 
   // ==================== SOUMISSION ====================
   submitBon(): void {
@@ -402,6 +438,8 @@ export class BonComponent implements OnChanges, OnInit {
     if (this.bonBrouillon?.id) {
       bon.id = this.bonBrouillon.id;
     }
+    
+    console.log('Données bon envoyées au parents',bon);
     
     this.onEnregistrerBon.emit({ bon, fichier });
     

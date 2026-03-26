@@ -41,7 +41,6 @@ import { BonComponent } from '../../../sharedComposants/bon/bon.component';
     ReactiveFormsModule, 
     FormsModule, 
     PaiementComponent, 
-    BonsComponent,
     BonComponent,
     ListeBonsComponent,
     ListeVersementsComponent,
@@ -879,33 +878,39 @@ export class ClientComponent implements OnInit,OnDestroy {
 
   // Gestion des événements des composants enfants
   onBonEnregistre(event: BonAvecFichier): void {
+
+    if(!confirm('Confirmer la transaction ?')) return;
+
     if (!this.selectedClient || !this.bonBrouillon || !this.panierBrouillon) {
       this.toastr.error('Données manquantes pour l\'enregistrement');
       return;
     }
 
     // Vérification du plafond pour les clients
-      if (this.selectedClient) {
-        const nouveauSoldeApresBon = (this.selectedClient.solde || 0) + (event.bon.montantTotal || 0);
-        const plafond = this.selectedClient.plafond || 0;
-        
-        console.log('Vérification plafond:', {
-          soldeActuel: this.selectedClient.solde,
-          montantBon: event.bon.montantTotal,
-          nouveauSolde: nouveauSoldeApresBon,
-          plafond: plafond
-        });
+    if (this.selectedClient) {
+      const nouveauSoldeApresBon = (this.safeNumber(this.selectedClient.solde) || 0) + (this.safeNumber(event.bon.montantTotal) || 0);
+      const plafond = this.safeNumber(this.selectedClient.plafond )|| 0;
 
-        if (nouveauSoldeApresBon > plafond) {
-          this.toastr.error(
-            `Ce bon dépasse le plafond autorisé. Solde actuel: ${this.formatMontant(this.selectedClient.solde || 0)}, ` +
-            `Montant du bon: ${this.formatMontant(event.bon.montantTotal || 0)}, ` +
-            `Plafond: ${this.formatMontant(plafond)}`
-          );
-          return;
-        }
+      console.log('Valeurs nouveauSoldeApresBon et plafond :', nouveauSoldeApresBon,plafond)
+      
+      console.log('Vérification plafond:', {
+        soldeActuel: this.selectedClient.solde,
+        montantBon: event.bon.montantTotal,
+        nouveauSolde: nouveauSoldeApresBon,
+        plafond: plafond
+      });
+
+      if (nouveauSoldeApresBon > plafond) {
+        this.toastr.error(
+          `Ce bon dépasse le plafond autorisé. Solde actuel: ${this.formatMontant(this.selectedClient.solde || 0)}, ` +
+          `Montant du bon: ${this.formatMontant(event.bon.montantTotal || 0)}, ` +
+          `Plafond: ${this.formatMontant(plafond)}`
+        );
+        return;
       }
+    }
 
+    console.log('Données bon à enregistrer',event.bon)
     event.bon.clientId = this.selectedClient.id;
     event.bon.statutBon = 'validé';
     // Si c'était un brouillon, utiliser l'ID existant
@@ -923,7 +928,7 @@ export class ClientComponent implements OnInit,OnDestroy {
     //console.log('Donnée envoyées :',event)
     //this.enregistrerBon(event.bon, event.bon.panier!, event.fichier);
     this.showBonForm = false;
-    this.bonBrouillonService.clearBrouillons();
+    this.bonBrouillonService.clearBrouillons(); 
   }
 
   // Méthode utilitaire pour formater les montants
@@ -1041,7 +1046,7 @@ export class ClientComponent implements OnInit,OnDestroy {
       panier: { id: this.panierBrouillon?.id, ...panier, clientId: this.selectedClient.id, statut: 'validé' },
       articles: panier.articles.map(article => ({
         id: article.id,
-        produitId: article.produit?.id,
+        produitId: article.produitId ?? article.produit?.id ?? article.Produit?.id,
         quantite: article.quantite,
         prixUnitaire: article.prixUnitaire,
         prixVenteUnitaire: article.prixVenteUnitaire,
@@ -1063,6 +1068,8 @@ export class ClientComponent implements OnInit,OnDestroy {
         typePaiement: 'client'
       } : undefined
     };
+
+    console.log('Données bon complet :',bonCompletData, fichier);
 
     this.isLoadingBon = true;
     this.bonService.createBonComplet(bonCompletData)

@@ -41,19 +41,19 @@
           </div>
         </div>
         
-        <!-- Référence externe -->
-        <div class="col-md-4 mb-3" *ngIf="!isRetourOuAvoir">
+        <!-- Référence externe (masqué pour retours et avoirs) -->
+        <div class="col-md-4 mb-3" *ngIf="bonForm.get('type')?.value !== 'retour'">
           <label for="referenceExterne" class="form-label">Référence externe</label>
           <input id="referenceExterne" type="text" class="form-control" 
                  formControlName="referenceExterne" 
                  placeholder="Référence fournisseur/client">
         </div>
         
-        <!-- Description -->
-        <div class="col-md-4 mb-3" *ngIf="!isRetourOuAvoir">
+        <!-- Description (masqué pour retours et avoirs) -->
+        <div class="col-md-4 mb-3" *ngIf="bonForm.get('type')?.value !== 'retour'">
           <label for="description" class="form-label">Description</label>
           <textarea id="description" class="form-control" formControlName="description" 
-                    rows="1" placeholder="Description du bon"></textarea>
+                    rows="1" placeholder="Description"></textarea>
         </div>
       </div>
 
@@ -143,7 +143,7 @@
         <i class="bi bi-cart me-2"></i>Articles
       </h5>
       <button type="button" class="btn btn-sm btn-outline-primary" 
-              (click)="togglePanier()" [disabled]="isRetourOuAvoir">
+              (click)="togglePanier()" [disabled]="typeBon === 'avoir'">
         <i [class]="showPanierSection ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
         {{ showPanierSection ? 'Masquer' : 'Afficher' }} le panier
       </button>
@@ -151,10 +151,10 @@
     
     <div class="card-body">
       <!-- Message pour retours/avoirs -->
-      <div *ngIf="isRetourOuAvoir" class="alert alert-info">
+      <div *ngIf="typeBon === 'retour' || typeBon === 'avoir'" class="alert alert-info">
         <i class="bi bi-info-circle me-2"></i>
-        Pour un {{ typeBon === 'retour' ? 'retour' : 'avoir' }}, vous pouvez soit ajouter des articles, 
-        soit spécifier un montant dans le champ "Montant de l'avoir".
+        Pour un {{ typeBon === 'retour' ? 'retour' : 'avoir' }}, 
+        {{ typeBon === 'retour' ? 'vous pouvez ajouter des articles' : 'veuillez renseigner le montant de l\'avoir ci-dessous' }}.
       </div>
       
       <!-- Montant pour avoir -->
@@ -166,8 +166,8 @@
         </div>
       </div>
       
-      <!-- Composant Panier -->
-      <div *ngIf="!isRetourOuAvoir">
+      <!-- Composant Panier (affiché pour commandes, livraisons, ventes et retours) -->
+      <div *ngIf="typeBon !== 'avoir'">
         <div *ngIf="showPanierSection">
           <app-panier
             [produitsDisponibles]="produitsDisponibles"
@@ -200,7 +200,7 @@
   </div>
 
   <!-- ==================== SECTION RÉCAPITULATIF ==================== -->
-  <div *ngIf="showResumeSection || isRetourOuAvoir" class="card mb-3">
+  <div *ngIf="showResumeSection || typeBon === 'avoir'" class="card mb-3">
     <div class="card-header bg-light">
       <h5 class="mb-0">
         <i class="bi bi-calculator me-2"></i>Récapitulatif financier
@@ -208,30 +208,37 @@
     </div>
     <div class="card-body">
       <div class="row">
-        <!-- Total TTC -->
-        <div class="col-md-3 mb-3">
+        <!-- Total TTC (affiché pour tous sauf avoirs) -->
+        <div *ngIf="typeBon !== 'avoir'" class="col-md-3 mb-3">
           <label for="totalTTC" class="form-label fw-bold">Total TTC</label>
           <div class="form-control bg-light">{{ totalTTC | number:'1.2-2' }} F CFA</div>
           <small class="text-muted">Montant total à payer</small>
         </div>
         
+        <!-- Montant de l'avoir -->
+        <div *ngIf="typeBon === 'avoir'" class="col-md-3 mb-3">
+          <label for="montantAvoir" class="form-label fw-bold">Montant de l'avoir</label>
+          <div class="form-control bg-light">{{ bonForm.get('montantAvoir')?.value || 0 | number:'1.2-2' }} F CFA</div>
+          <small class="text-muted">Montant crédité</small>
+        </div>
+        
         <!-- Remise -->
-        <div *ngIf="!isRetourOuAvoir && montantRemise > 0" class="col-md-3 mb-3">
+        <div *ngIf="typeBon !== 'avoir' && montantRemise > 0" class="col-md-3 mb-3">
           <label for="remise" class="form-label fw-bold">Remise</label>
           <div class="form-control bg-light">{{ montantRemise | number:'1.2-2' }} F CFA</div>
           <small class="text-muted">Appliquée sur le panier</small>
         </div>
         
         <!-- TVA -->
-        <div *ngIf="!isRetourOuAvoir && montantTVA > 0" class="col-md-3 mb-3">
+        <div *ngIf="typeBon !== 'avoir' && montantTVA > 0" class="col-md-3 mb-3">
           <label for="tva" class="form-label fw-bold">TVA</label>
           <div class="form-control bg-light">{{ montantTVA | number:'1.2-2' }} F CFA</div>
           <small class="text-muted">Taxe sur la valeur ajoutée</small>
         </div>
       </div>
       
-      <!-- Avance et reste à payer (hors retour) -->
-      <div *ngIf="!isRetourOuAvoir" class="row mt-3">
+      <!-- Avance et reste à payer (uniquement pour livraison et vente) -->
+      <div *ngIf="typeBon === 'livraison' || typeBon === 'vente'" class="row mt-3">
         <div class="col-md-4 mb-3">
           <label for="avance" class="form-label">Avance (F CFA)</label>
           <input type="number" class="form-control" formControlName="avance" 
@@ -258,8 +265,8 @@
         </div>
       </div>
       
-      <!-- Conditions de paiement -->
-      <div *ngIf="isCommande || isVente" class="row mt-3">
+      <!-- Conditions de paiement (pour commandes et ventes) -->
+      <div *ngIf="typeBon === 'commande' || typeBon === 'vente'" class="row mt-3">
         <div class="col-md-6 mb-3">
           <label for="conditionsPaiement" class="form-label">Conditions de paiement</label>
           <select id="conditionsPaiement" class="form-select" formControlName="conditionsPaiement">

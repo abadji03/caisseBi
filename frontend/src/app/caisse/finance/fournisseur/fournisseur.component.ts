@@ -31,6 +31,7 @@ import { ListeVersementsComponent } from '../../../sharedComposants/liste-versem
 import { PaiementComponent } from '../../../sharedComposants/paiement/paiement.component';
 
 import { v4 as uuidv4 } from 'uuid';
+import { BonComponent } from '../../../sharedComposants/bon/bon.component';
 
 @Component({
   selector: 'app-fournisseur',
@@ -40,7 +41,7 @@ import { v4 as uuidv4 } from 'uuid';
     ReactiveFormsModule, 
     FormsModule, 
     PaiementComponent, 
-    BonsComponent,
+    BonComponent,
     ListeBonsComponent,
     ListeVersementsComponent,
     ListeOperationsComponent

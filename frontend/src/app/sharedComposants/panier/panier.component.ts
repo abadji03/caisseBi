@@ -344,9 +344,13 @@ this.panier = new Panier({
   console.log('Articles à charger:', articlesACharger.length);
   
   articlesACharger.forEach((article, index) => {
-    console.log(`Article ${index}:`, {
+    console.log(`Article à ajouter au formulaire ${index}:`, {
       id: article.id,
       produit: article.produit?.designation,
+      Produit: article.Produit?.designation,
+      produitId:article.produitId,
+      produitIdBis: article.produit?.id,
+      produitIdTer: article.Produit?.id,
       quantite: article.quantite,
       prixUnitaire: article.prixUnitaire
     });
@@ -566,13 +570,13 @@ this.panier = new Panier({
     }
     const articleGroup = this.fb.group({
       id: [article.id],
-      produitId: [article.produitId, Validators.required],
+      produitId: [article.produitId || article.Produit?.id, Validators.required],
       produit: [{ value: article.produit?.designation ||article.Produit?.designation || '', disabled: true }],
       uniteStock: [{ value: article.produit?.unite || article.Produit?.unite || '', disabled: true }],
       quantite: [article.quantite, [Validators.required, Validators.min(1)]],
       prixUnitaire: [article.prixUnitaire, [Validators.required, Validators.min(0)]],
-      prixAchatUnitaire: [article.prixAchatUnitaire],
-      prixVenteUnitaire: [article.prixVenteUnitaire],
+      prixAchatUnitaire: [article.prixAchatUnitaire || article.Produit?.prixAchatUnitaire  || article.produit?.prixAchatUnitaire],
+      prixVenteUnitaire: [article.prixVenteUnitaire || article.Produit?.prixVenteUnitaire  || article.produit?.prixVenteUnitaire],
       tauxTVA: [article.tauxTVA || 0, [Validators.min(0), Validators.max(100)]],
       remise: [article.remise || 0, [Validators.min(0), Validators.max(100)]],
       totalHT: [{ value: article.totalHT || 0, disabled: true }],
@@ -738,6 +742,8 @@ this.panier = new Panier({
 
 
     this.panier.calculerTotals(); // dernier calcul propre
+
+    console.log('Panier à enregistrer',this.panier);
 
     this.ispanierValid = true;
     this.isFormDisabled = true;
