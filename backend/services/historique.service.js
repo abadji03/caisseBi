@@ -1,0 +1,68 @@
+const db = require('../models');
+
+class HistoriqueService {
+  /**
+   * Enregistre une connexion utilisateur
+   * @param {number} userId - ID de l'utilisateur
+   * @param {string} ip - Adresse IP
+   */
+  static async enregistrerConnexion(userId, ip) {
+    try {
+      await db.HistoriqueConnexions.create({
+        userId: userId,
+        ip: ip,
+        date: new Date()
+      });
+      console.log(`✅ Connexion enregistrée pour l'utilisateur ${userId} depuis ${ip}`);
+    } catch (error) {
+      console.error('Erreur lors de l\'enregistrement de la connexion:', error);
+    }
+  }
+
+  /**
+   * Enregistre une action utilisateur
+   * @param {number} userId - ID de l'utilisateur
+   * @param {string} action - Description de l'action
+   * @param {string} ip - Adresse IP (optionnel)
+   * @param {object} details - Détails supplémentaires (optionnel)
+   */
+  static async enregistrerAction(userId, action, ip = null, details = null) {
+    try {
+      await db.HistoriqueActionsUtilisateur.create({
+        userId: userId,
+        action: action,
+        ip: ip,
+        details: details,
+        date: new Date()
+      });
+      console.log(`✅ Action enregistrée pour l'utilisateur ${userId}: ${action}`);
+    } catch (error) {
+      console.error('Erreur lors de l\'enregistrement de l\'action:', error);
+    }
+  }
+
+  /**
+   * Récupère l'IP du client depuis la requête
+   * @param {object} req - Requête Express
+   * @returns {string} - Adresse IP
+   */
+  static getClientIp(req) {
+    let ip = req.headers['x-forwarded-for'] ||
+            req.connection.remoteAddress ||
+            req.socket.remoteAddress ||
+            req.ip;
+
+    if (ip) {
+      ip = ip.split(',')[0].trim();
+
+      // Nettoyage IPv6 mapped IPv4
+      if (ip.startsWith('::ffff:')) {
+        ip = ip.substring(7);
+      }
+    }
+
+    return ip || 'unknown';
+  }
+}
+
+module.exports = HistoriqueService;

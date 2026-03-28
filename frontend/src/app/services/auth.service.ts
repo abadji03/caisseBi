@@ -1,7 +1,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { BehaviorSubject, catchError, Observable, switchMap, tap, throwError } from 'rxjs';
+import { BehaviorSubject, catchError, finalize, Observable, switchMap, tap, throwError } from 'rxjs';
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { NavigationItem, User } from '../modeles/user.model';
 import { NGXLogger } from 'ngx-logger';
@@ -560,12 +560,39 @@ export class AuthService {
     }
   }
 
-  logout(): void {
+  /* logout(): void {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     this.currentUserSubject.next({} as User);
     this.router.navigate(['/login']);
+  } */
+
+  logout(): void {
+  const token = localStorage.getItem('token');
+
+  if (!token) {
+    this.clearSession();
+    return;
   }
+
+  this.http.post('http://localhost:5000/api/auth/deconnexion', {}, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }).pipe(
+    finalize(() => this.clearSession())
+  ).subscribe({
+    next: () => console.log('✅ Déconnexion serveur OK'),
+    error: err => console.error('❌ Erreur serveur:', err)
+  });
+}
+
+private clearSession(): void {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  this.currentUserSubject.next({} as User);
+  this.router.navigate(['/login']);
+}
 
   getToken(): string | null {
     return localStorage.getItem('token');

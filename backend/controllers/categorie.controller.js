@@ -70,10 +70,22 @@ exports.getAllByStructure = async (req, res) => {
     }
     const { code_structure } = req.params;
     const categories = await Categorie.findAll({
-      where: { 
+      /* where: { 
         code_structure,
         isActive: true
-       },
+       }, */
+      where: {
+        [Op.and]: [
+          {
+            [Op.or]: [
+              { code_structure: code_structure }, // 🔹 spécifique
+              { code_structure: null },           // 🔹 global
+              { code_structure: '' }              // 🔹 global vide
+            ]
+          },
+          { isActive: true }
+        ]
+      },
       order: [['createdAt', 'DESC']],
     });
 
@@ -105,10 +117,17 @@ exports.getAllByStructureBis = async (req, res) => {
     } = req.query;
 
     // Construction de la clause where
-    let whereClause = { 
+    /* let whereClause = { 
       code_structure: code_structure
-    };
+    }; */
 
+    let whereClause = {
+      [Op.or]: [
+        { code_structure: code_structure },
+        { code_structure: null },
+        { code_structure: '' }
+      ]
+    };
     // Filtre par statut actif/inactif
     if (showInactive === 'false') {
       whereClause.isActive = true;

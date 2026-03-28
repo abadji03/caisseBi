@@ -3,12 +3,15 @@ const Transfert = db.Transfert;
 const Stock = db.Stock;
 const { Op } = db.Sequelize;
 const { safeNumber } = require('./bonComplet/statutManager')
+const HistoriqueService = require('../services/historique.service');
+
 
 
 
 exports.createTransfert = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -24,8 +27,12 @@ exports.createTransfert = async (req, res) => {
     } = req.body;
 
     const code_structure = authUser.code_structure;
-
     const reference = `TRF-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+    // Récupérer les informations du produit et des magasins pour l'historique
+    const produit = await db.Produit.findByPk(produitId);
+    const magasinSrc = await db.Magasin.findByPk(magasinSource);
+    const magasinDest = await db.Magasin.findByPk(magasinDestination);
 
     const transfert = await Transfert.create({
       code_structure,
@@ -38,6 +45,23 @@ exports.createTransfert = async (req, res) => {
       reference,
     });
 
+    // ENREGISTRER L'HISTORIQUE
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Création d'un transfert: ${reference} - ${produit?.designation || 'Produit'} (${quantite}) de ${magasinSrc?.nom || magasinSource} vers ${magasinDest?.nom || magasinDestination}`,
+      clientIp,
+      {
+        action: 'CREATE_TRANSFERT',
+        transfertId: transfert.id,
+        reference: reference,
+        produitId: produitId,
+        quantite: quantite,
+        magasinSource: magasinSource,
+        magasinDestination: magasinDestination,
+        motif: motif,
+        agentResponsable: agentResponsable
+      }
+    );
     res.status(201).json(transfert);
   } catch (err) {
     res.status(500).json({ message: 'Erreur lors de la création du transfert', error: err });
@@ -49,6 +73,7 @@ exports.validerTransfert = async (req, res) => {
   
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -59,7 +84,11 @@ exports.validerTransfert = async (req, res) => {
 
     // Récupérer le transfert avec les associations
     const transfert = await Transfert.findByPk(id, {
-      include: [db.Produit]
+      include: [
+        { model: db.Produit },
+        { model: db.Magasin, as: 'MagasinSource' },
+        { model: db.Magasin, as: 'MagasinDestination' }
+      ]
     });
     
     if (!transfert) {
@@ -100,6 +129,10 @@ exports.validerTransfert = async (req, res) => {
       }
     });
 
+    // Sauvegarder les anciennes quantités pour l'historique
+    const ancienneQuantiteSource = safeNumber(stockSource.quantiteTotale);
+    const ancienneQuantiteDestination = stockDestination ? safeNumber(stockDestination.quantiteTotale) : 0;
+
     // 3. Mettre à jour les stocks
     // Sortie du magasin source
     await stockSource.update({
@@ -107,8 +140,12 @@ exports.validerTransfert = async (req, res) => {
       dateDerniereMiseAJour: new Date()
     }, { transaction });
 
+
     // Entrée dans le magasin destination
+    // Entrée dans le magasin destination
+    let nouvelleQuantiteDestination;
     if (stockDestination) {
+      nouvelleQuantiteDestination = safeNumber(stockDestination.quantiteTotale) + safeNumber(transfert.quantite);
       await stockDestination.update({
         quantiteTotale: safeNumber(stockDestination.quantiteTotale) + safeNumber(transfert.quantite),
         dateDerniereMiseAJour: new Date()
@@ -178,6 +215,35 @@ exports.validerTransfert = async (req, res) => {
 
     await transaction.commit();
 
+    // ENREGISTRER L'HISTORIQUE DE VALIDATION
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Validation du transfert: ${transfert.reference} - ${transfert.Produit?.designation || 'Produit'} (${transfert.quantite}) de ${transfert.MagasinSource?.nom || transfert.magasinSource} vers ${transfert.MagasinDestination?.nom || transfert.magasinDestination}`,
+      clientIp,
+      {
+        action: 'VALIDATE_TRANSFERT',
+        transfertId: transfert.id,
+        reference: transfert.reference,
+        produitId: transfert.produitId,
+        produitNom: transfert.Produit?.designation,
+        quantite: transfert.quantite,
+        magasinSource: transfert.magasinSource,
+        magasinSourceNom: transfert.MagasinSource?.nom,
+        magasinDestination: transfert.magasinDestination,
+        magasinDestinationNom: transfert.MagasinDestination?.nom,
+        stockSource: {
+          ancienneQuantite: ancienneQuantiteSource,
+          nouvelleQuantite: safeNumber(stockSource.quantiteTotale)
+        },
+        stockDestination: {
+          ancienneQuantite: ancienneQuantiteDestination,
+          nouvelleQuantite: nouvelleQuantiteDestination
+        },
+        mouvementSortieId: mouvementSortie.id,
+        mouvementEntreeId: mouvementEntree.id
+      }
+    );
+
     res.json({
       message: 'Transfert validé avec succès',
       transfert,
@@ -198,6 +264,7 @@ exports.validerTransfert = async (req, res) => {
 exports.refuserTransfert = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -206,7 +273,14 @@ exports.refuserTransfert = async (req, res) => {
     const { id } = req.params;
     const agentValidation = authUser.id;
 
-    const transfert = await Transfert.findByPk(id);
+    const transfert = await Transfert.findByPk(id, {
+      include: [
+        { model: db.Produit },
+        { model: db.Magasin, as: 'MagasinSource' },
+        { model: db.Magasin, as: 'MagasinDestination' }
+      ]
+    });
+
     if (!transfert) {
       return res.status(404).json({ message: 'Transfert introuvable' });
     }
@@ -215,11 +289,33 @@ exports.refuserTransfert = async (req, res) => {
       return res.status(400).json({ message: 'Ce transfert a déjà été traité' });
     }
 
+    const ancienStatut = transfert.statut;
     transfert.statut = 'Refusé';
     transfert.dateValidation = new Date();
     transfert.agentValidation = agentValidation;
 
     await transfert.save();
+    // ENREGISTRER L'HISTORIQUE DE REFUS
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Refus du transfert: ${transfert.reference} - ${transfert.Produit?.designation || 'Produit'} (${transfert.quantite}) de ${transfert.MagasinSource?.nom || transfert.magasinSource} vers ${transfert.MagasinDestination?.nom || transfert.magasinDestination}`,
+      clientIp,
+      {
+        action: 'REJECT_TRANSFERT',
+        transfertId: transfert.id,
+        reference: transfert.reference,
+        produitId: transfert.produitId,
+        produitNom: transfert.Produit?.designation,
+        quantite: transfert.quantite,
+        magasinSource: transfert.magasinSource,
+        magasinSourceNom: transfert.MagasinSource?.nom,
+        magasinDestination: transfert.magasinDestination,
+        magasinDestinationNom: transfert.MagasinDestination?.nom,
+        ancienStatut: ancienStatut,
+        //motifRefus: motifRefus || 'Non spécifié'
+      }
+    );
+
 
     res.json({ message: 'Transfert refusé', transfert });
   } catch (err) {

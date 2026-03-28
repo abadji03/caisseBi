@@ -3,11 +3,14 @@ const bcrypt = require('bcrypt');
 const User = db.Users;
 const Role = db.role;
 const { Op } = require('sequelize'); // ✅ Op maintenant disponible
-// Créer un nouvel utilisateur
+const HistoriqueService = require('../services/historique.service');
 
+
+// Créer un nouvel utilisateur
 exports.create = async (req, res) => {
   try {
     const authUser = req.user; // utilisateur connecté
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: 'Non authentifié' });
@@ -28,6 +31,18 @@ exports.create = async (req, res) => {
     }
 
     const user = await User.create(data);
+
+    // ENREGISTRER L'HISTORIQUE
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Création d'un nouvel utilisateur: ${user.email} (ID: ${user.id})`,
+      clientIp,
+      { 
+        action: 'CREATE_USER',
+        targetUserId: user.id,
+        userData: { email: user.email, nom: user.nom, role: user.role }
+      }
+    );
     res.status(201).json(user);
   } catch (error) {
     console.error(error);
@@ -162,11 +177,19 @@ exports.update = async (req, res) => {
     console.log('Mot de passe reçu:', req.body.password ? 'OUI' : 'NON');
     
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
+
     if (!authUser) {
       console.log('ERROR: Non authentifié');
       return res.status(401).json({ message: 'Non authentifié' });
     }
     
+    // Récupérer l'utilisateur avant modification pour comparer
+    const oldUser = await User.findByPk(req.params.id);
+    if (!oldUser) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+
     let data = req.body;
 
     // Vérifie si un nouveau mot de passe est fourni
@@ -195,6 +218,23 @@ exports.update = async (req, res) => {
         attributes: ['id', 'email', 'password', 'nom'] // Inclure password pour vérifier
       });
       
+      // ENREGISTRER L'HISTORIQUE AVEC LES CHANGEMENTS
+      const changes = {};
+      if (oldUser.nom !== updatedUser.nom) changes.nom = { old: oldUser.nom, new: updatedUser.nom };
+      if (oldUser.email !== updatedUser.email) changes.email = { old: oldUser.email, new: updatedUser.email };
+      if (oldUser.role !== updatedUser.role) changes.role = { old: oldUser.role, new: updatedUser.role };
+      if (data.password) changes.password = 'modifié';
+      
+      await HistoriqueService.enregistrerAction(
+        authUser.id,
+        `Mise à jour de l'utilisateur: ${updatedUser.email} (ID: ${updatedUser.id})`,
+        clientIp,
+        { 
+          action: 'UPDATE_USER',
+          targetUserId: updatedUser.id,
+          changes: changes
+        }
+      );
       console.log('Utilisateur après update:');
       console.log('- ID:', updatedUser.id);
       console.log('- Email:', updatedUser.email);
@@ -226,14 +266,35 @@ exports.update = async (req, res) => {
 exports.delete = async (req, res) => {
   try {
     const authUser = req.user; // utilisateur connecté
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: 'Non authentifié' });
+    }
+    // Récupérer l'utilisateur avant suppression
+    const userToDelete = await User.findByPk(req.params.id);
+    if (!userToDelete) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
     }
     const deleted = await User.destroy({
       where: { id: req.params.id },
     });
     if (deleted) {
+       // ENREGISTRER L'HISTORIQUE DE SUPPRESSION
+      await HistoriqueService.enregistrerAction(
+        authUser.id,
+        `Suppression de l'utilisateur: ${userToDelete.email} (ID: ${userToDelete.id})`,
+        clientIp,
+        { 
+          action: 'DELETE_USER',
+          deletedUser: { 
+            id: userToDelete.id, 
+            email: userToDelete.email, 
+            nom: userToDelete.nom,
+            role: userToDelete.role
+          }
+        }
+      );
       res.json({ message: 'Utilisateur supprimé' });
     } else {
       res.status(404).json({ message: 'Utilisateur non trouvé' });
@@ -365,6 +426,7 @@ exports.findByStructureBis = async (req, res) => {
 exports.updateUserStatus = async (req, res) => {
   try {
     const authUser = req.user; // utilisateur connecté
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: 'Non authentifié' });
@@ -376,7 +438,22 @@ exports.updateUserStatus = async (req, res) => {
     if (typeof status !== 'boolean')
       return res.status(400).json({ message: 'Le statut doit être un booléen' });
 
+    //await user.update({ status });
+    const oldStatus = user.status;
     await user.update({ status });
+    
+    // ENREGISTRER L'HISTORIQUE
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Changement de statut de l'utilisateur ${user.email}: ${oldStatus ? 'actif' : 'inactif'} → ${status ? 'actif' : 'inactif'}`,
+      clientIp,
+      { 
+        action: 'UPDATE_USER_STATUS',
+        targetUserId: user.id,
+        oldStatus: oldStatus,
+        newStatus: status
+      }
+    );
     res.json({ message: 'Statut mis à jour avec succés', user });
   } catch (error) {
     res.status(500).json({ message: 'Erreur mise à jour du statut', error });

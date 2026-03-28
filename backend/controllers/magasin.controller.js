@@ -2,11 +2,14 @@ const db = require('../models');
 const Magasin = db.Magasin;
 const User = db.Users;
 const {Op} = db.Sequelize;
+const HistoriqueService = require('../services/historique.service');
+
 
 // Créer un magasin
 exports.createMagasin = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -23,6 +26,13 @@ exports.createMagasin = async (req, res) => {
     }
 
     const magasin = await Magasin.create(data);
+    // Enregistrement de l'action
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Création du magasin: ${magasin.nom} (ID: ${magasin.id})`,
+      clientIp,
+      { action: 'CREATE_MAGASIN', magasinId: magasin.id }
+    );
     res.status(201).json(magasin);
   } catch (error) {
     console.error(error);
@@ -34,6 +44,7 @@ exports.createMagasin = async (req, res) => {
 exports.updateMagasin = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -42,7 +53,23 @@ exports.updateMagasin = async (req, res) => {
     const magasin = await Magasin.findByPk(id);
     if (!magasin) return res.status(404).json({ message: 'Magasin non trouvé' });
 
+    const oldData = { nom: magasin.nom, adresse: magasin.adresse };
     await magasin.update(req.body);
+
+    //Eneregistrer l'action
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Modification du magasin: ${magasin.nom} (ID: ${magasin.id})`,
+      clientIp,
+      { 
+        action: 'UPDATE_MAGASIN', 
+        magasinId: magasin.id,
+        changes: {
+          nom: oldData.nom !== magasin.nom ? { old: oldData.nom, new: magasin.nom } : undefined,
+          adresse: oldData.adresse !== magasin.adresse ? { old: oldData.adresse, new: magasin.adresse } : undefined
+        }
+      }
+    );
     res.json({ message: 'Magasin mis à jour', magasin });
   } catch (error) {
     console.error(error);
@@ -54,6 +81,7 @@ exports.updateMagasin = async (req, res) => {
 exports.deleteMagasin = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -63,6 +91,21 @@ exports.deleteMagasin = async (req, res) => {
     if (!magasin) return res.status(404).json({ message: 'Magasin non trouvé' });
 
     await magasin.destroy();
+    const deletedMagasin = {id:magasin.id, nom: magasin.nom, adresse: magasin.adresse };
+    // ENREGISTRER L'HISTORIQUE DE SUPPRESSION
+      await HistoriqueService.enregistrerAction(
+        authUser.id,
+        `Suppression du magasin: ${deletedMagasin.nom} (Adresse: ${deletedMagasin.adresse})`,
+        clientIp,
+        { 
+          action: 'DELETE_MAGASIN',
+          deletedMagasin: {
+            id:deletedMagasin.id,
+            nom: deletedMagasin.nom,
+            adresse: deletedMagasin.adresse
+          }
+        }
+      );
     res.json({ message: 'Magasin supprimé' });
   } catch (error) {
     console.error(error);
@@ -244,7 +287,6 @@ exports.getAllMagasins = async (req, res) => {
   }
 };
 
-//Mettre àjour le status de la structure
 
 // Mettre à jour le statut d’un magasin
 exports.updateStatutMagasin = async (req, res) => {
@@ -252,6 +294,7 @@ exports.updateStatutMagasin = async (req, res) => {
 
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -266,9 +309,15 @@ exports.updateStatutMagasin = async (req, res) => {
       return res.status(404).json({ message: 'Magasin non trouvé' });
     }
 
+    const ancienStatut = magasin.statut;
     // 1️⃣ Mise à jour du magasin
     await magasin.update({ statut }, { transaction });
 
+    // Compter les utilisateurs avant mise à jour
+    const nbUtilisateurs = await User.count({
+      where: { magasinId: magasin.id },
+      transaction
+    });
     // 2️⃣ Mise à jour des utilisateurs du magasin
     await User.update(
       { status:statut },
@@ -280,6 +329,20 @@ exports.updateStatutMagasin = async (req, res) => {
       }
     );
 
+     // Enregistrement de l'historique
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Modification du statut du magasin "${magasin.nom}" (${ancienStatut ? 'Actif' : 'Inactif'} → ${statut ? 'Actif' : 'Inactif'}) - ${nbUtilisateurs} utilisateur(s) impacté(s)`,
+      clientIp,
+      {
+        action: 'UPDATE_MAGASIN_STATUS',
+        magasinId: magasin.id,
+        magasinNom: magasin.nom,
+        ancienStatut: ancienStatut,
+        nouveauStatut: statut,
+        utilisateursImpactes: nbUtilisateurs
+      }
+    );
     await transaction.commit();
 
     res.status(200).json({

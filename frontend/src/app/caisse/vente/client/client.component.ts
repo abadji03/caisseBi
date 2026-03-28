@@ -1644,7 +1644,7 @@ export class ClientComponent implements OnInit,OnDestroy {
 
     // AVOIRS
     else if (op.type === 'AVOIR') {
-      result.avoirs += montant;
+      result.avoirs += this.safeNumber(op.Bon?.montantAvoir ?? 0);
     }
 
     // VERSEMENTS

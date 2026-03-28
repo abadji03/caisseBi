@@ -34,7 +34,7 @@ module.exports = (sequelize, DataTypes) => {
     termeLivraison: DataTypes.STRING,
     pays: DataTypes.STRING,
     ville: DataTypes.STRING,
-    magasinId: DataTypes.INTEGER,
+    //magasinId: DataTypes.INTEGER,
   });
 
   return Fournisseur;

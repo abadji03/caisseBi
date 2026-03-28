@@ -6,6 +6,7 @@ const User = db.Users;
 const Role = db.role;
 const fs = require('fs');
 const path = require('path');
+const HistoriqueService = require('../services/historique.service');
 
 //Fonction utilitaire pour générer un code unique basé sur le nom
 function generateCodeStructure(nom) {
@@ -23,6 +24,7 @@ const BASE_URL = 'http://localhost:5000/uploads/';
 exports.createStructure = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req); // Récupérer l'IP
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -99,6 +101,23 @@ exports.createStructure = async (req, res) => {
       logo,
     });
 
+    // ENREGISTRER L'HISTORIQUE DE CRÉATION DE STRUCTURE
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Création de la structure: ${nom_structure} (Code: ${code_structure})`,
+      clientIp,
+      {
+        action: 'CREATE_STRUCTURE',
+        structureId: structure.id,
+        structureData: {
+          nom_structure,
+          code_structure,
+          type_structure,
+          email,
+          telephone
+        }
+      }
+    );
     res.status(201).json(structure);
   } catch (err) {
     console.error(err);
@@ -267,6 +286,7 @@ exports.getStructureByCodeStructure = async (req, res) => {
 exports.updateStructure = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -275,6 +295,16 @@ exports.updateStructure = async (req, res) => {
     const structure = await Structure.findByPk(id); // Cherche la structure par son ID
 
     if (!structure) return res.status(404).json({ message: 'Structure non trouvée' });
+
+    // Sauvegarder les anciennes données pour l'historique
+    const oldData = {
+      nom_structure: structure.nom_structure,
+      type_structure: structure.type_structure,
+      email: structure.email,
+      telephone: structure.telephone,
+      adresse: structure.adresse,
+      estActive: structure.estActive
+    };
 
     // Si nouveau logo, supprimer l'ancien
     if (req.file && structure.logo) {
@@ -287,6 +317,38 @@ exports.updateStructure = async (req, res) => {
 
     await structure.update(updatedData); // Mise à jour dans la base
 
+     // Analyser les changements
+    const changes = {};
+    if (oldData.nom_structure !== structure.nom_structure) {
+      changes.nom_structure = { old: oldData.nom_structure, new: structure.nom_structure };
+    }
+    if (oldData.type_structure !== structure.type_structure) {
+      changes.type_structure = { old: oldData.type_structure, new: structure.type_structure };
+    }
+    if (oldData.email !== structure.email) {
+      changes.email = { old: oldData.email, new: structure.email };
+    }
+    if (oldData.telephone !== structure.telephone) {
+      changes.telephone = { old: oldData.telephone, new: structure.telephone };
+    }
+    if (oldData.adresse !== structure.adresse) {
+      changes.adresse = { old: oldData.adresse, new: structure.adresse };
+    }
+    if (req.file) changes.logo = 'modifié';
+
+    // ENREGISTRER L'HISTORIQUE DE MODIFICATION
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Modification de la structure: ${structure.nom_structure} (Code: ${structure.code_structure})`,
+      clientIp,
+      {
+        action: 'UPDATE_STRUCTURE',
+        structureId: structure.id,
+        changes: changes
+      }
+    );
+
+
     res.json({ message: 'Structure mise à jour', structure });
   } catch (err) {
     console.error(err);
@@ -298,6 +360,7 @@ exports.updateStructure = async (req, res) => {
 exports.deleteStructure = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -307,6 +370,15 @@ exports.deleteStructure = async (req, res) => {
 
     if (!structure) return res.status(404).json({ message: 'Structure non trouvée' });
 
+    // Sauvegarder les données avant suppression
+    const structureData = {
+      id: structure.id,
+      nom_structure: structure.nom_structure,
+      code_structure: structure.code_structure,
+      type_structure: structure.type_structure,
+      email: structure.email
+    };
+
     // Supprimer le logo associé
     if (structure.logo) {
       const filePath = path.join('uploads', structure.logo);
@@ -314,6 +386,17 @@ exports.deleteStructure = async (req, res) => {
     }
 
     await structure.destroy(); // Supprime la structure de la base
+
+    // ENREGISTRER L'HISTORIQUE DE SUPPRESSION
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Suppression de la structure: ${structureData.nom_structure} (Code: ${structureData.code_structure})`,
+      clientIp,
+      {
+        action: 'DELETE_STRUCTURE',
+        deletedStructure: structureData
+      }
+    );
 
     res.json({ message: 'Structure supprimée' });
   } catch (err) {
@@ -328,6 +411,7 @@ exports.updateStructureStatus = async (req, res) => {
 
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -342,11 +426,13 @@ exports.updateStructureStatus = async (req, res) => {
       return res.status(404).json({ message: 'Structure non trouvée' });
     }
 
+    const oldStatus = structure.estActive;
+
     // 1️⃣ Mise à jour du statut de la structure
     await structure.update({ estActive }, { transaction });
 
     // 2️⃣ Mise à jour des utilisateurs liés à la structure
-    await User.update(
+    const usersUpdated = await User.update(
       { status: estActive },
       {
         where: {
@@ -359,6 +445,19 @@ exports.updateStructureStatus = async (req, res) => {
 
     await transaction.commit();
 
+     // ENREGISTRER L'HISTORIQUE DE CHANGEMENT DE STATUT
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Changement de statut de la structure: ${structure.nom_structure} (Code: ${structure.code_structure}) - ${oldStatus ? 'Actif' : 'Inactif'} → ${estActive ? 'Actif' : 'Inactif'}`,
+      clientIp,
+      {
+        action: 'UPDATE_STRUCTURE_STATUS',
+        structureId: structure.id,
+        oldStatus: oldStatus,
+        newStatus: estActive,
+        usersAffected: usersUpdated[0] // Nombre d'utilisateurs mis à jour
+      }
+    );
     res.status(200).json({
       message: 'Statut de la structure et des utilisateurs mis à jour avec succès',
       structure

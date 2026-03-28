@@ -125,13 +125,13 @@
               <td>{{ cat.description || '-' }}</td>
               <td>
                 <div class="btn-group" role="group">
-                  <button class="btn btn-warning btn-sm" (click)="toggleForm(cat)" title="Modifier">
+                  <button [hidden]="cat.code_structure ===null || cat.code_structure ===''" class="btn btn-warning btn-sm" (click)="toggleForm(cat)" title="Modifier">
                     <i class="bi bi-pencil"></i>
                   </button>
                   <!-- <button class="btn btn-danger btn-sm" (click)="deleteCategory(cat)" title="Supprimer">
                     <i class="bi bi-trash"></i>
                   </button> -->
-                  <button class="btn btn-info btn-sm" (click)="toggleActiveStatus(cat)" 
+                  <button [hidden]="cat.code_structure ===null || cat.code_structure ===''" class="btn btn-info btn-sm" (click)="toggleActiveStatus(cat)" 
                           [attr.title]="cat.isActive ? 'Désactiver' : 'Activer'">
                     <i class="bi" [ngClass]="cat.isActive ? 'bi-pause-circle' : 'bi-play-circle'"></i>
                   </button>

@@ -46,6 +46,7 @@ app.use(
   require('./routers/historiqueActionsUtilisateur.routes')
 );
 app.use('/api/historiques-connexions', require('./routers/historiqueConnexions.routes'));
+app.use('/api/historiques-connexions-actions', require('./routers/historiqueConnexionAction.routes'));
 app.use('/api/bons', require('./routers/bon.routes'));
 app.use('/api/paniers', require('./routers/panier.routes'));
 app.use('/api/articles-panier', require('./routers/articlePanier.routes'));

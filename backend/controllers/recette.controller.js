@@ -5,6 +5,7 @@ const User = db.Users;
 const Categorie = db.Categorie;
 const fs = require('fs');
 const path = require('path');
+const HistoriqueService = require('../services/historique.service');
 const BASE_URL = 'http://localhost:5000/uploads/';
 
 const { Op, fn, col, literal } = require('sequelize');
@@ -14,6 +15,7 @@ const { Op, fn, col, literal } = require('sequelize');
 exports.createRecette = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req); // Récupérer l'IP
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -47,6 +49,23 @@ exports.createRecette = async (req, res) => {
       code_structure,
       date,
     });
+
+        // ENREGISTRER L'HISTORIQUE DE CRÉATION
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Création d'une recette: ${montant} FCFA (${paymentMode})`,
+      clientIp,
+      { 
+        action: 'CREATE_RECETTE',
+        recetteId: recette.id,
+        montant: montant,
+        paymentMode: paymentMode,
+        categoryId: categoryId,
+        magasinId: magasinId,
+        code_structure: code_structure,
+        hasReceipt: !!receipt
+      }
+    );
 
     res.status(201).json(recette);
   } catch (error) {
@@ -459,14 +478,48 @@ exports.getByStructureBis = async (req, res) => {
 exports.deleteRecette = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
     const { id } = req.params;
 
+    // Récupérer la recette avant suppression
+    const recette = await Recette.findByPk(id);
+    if (!recette) {
+      return res.status(404).json({ message: 'Recette non trouvée' });
+    }
+
+    // Supprimer le fichier associé si existant
+    if (recette.receipt) {
+      const oldPath = path.join('uploads', path.basename(recette.receipt));
+      if (fs.existsSync(oldPath)) {
+        fs.unlinkSync(oldPath);
+      }
+    }
     const deleted = await Recette.destroy({ where: { id } });
-    if (!deleted) return res.status(404).json({ message: 'Recette non trouvée' });
+    if (deleted) {
+      // ENREGISTRER L'HISTORIQUE DE SUPPRESSION
+      await HistoriqueService.enregistrerAction(
+        authUser.id,
+        `Suppression de la recette #${id}: ${recette.montant} FCFA`,
+        clientIp,
+        { 
+          action: 'DELETE_RECETTE',
+          recetteId: id,
+          recetteData: {
+            montant: recette.montant,
+            paymentMode: recette.paymentMode,
+            description: recette.description,
+            date: recette.date,
+            magasinId: recette.magasinId,
+            code_structure: recette.code_structure
+          }
+        }
+      );
+    }
+    //if (!deleted) return res.status(404).json({ message: 'Recette non trouvée' });
 
     res.json({ message: 'Recette supprimée' });
   } catch (error) {
@@ -491,6 +544,7 @@ exports.findByPaiementId = async(req, res) => {
 exports.updateRecette = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -504,25 +558,54 @@ exports.updateRecette = async (req, res) => {
       return res.status(404).json({ message: 'Recette non trouvée' });
     }
 
-    const updatedData = { ...req.body }
-    // Si un nouveau fichier est envoyé
-        if (req.file) {
-          // Supprimer l'ancien fichier si il existe
-          if (recette.receipt) {
-            const oldPath = path.join('uploads', path.basename(recette.receipt)); // attention à ne pas concaténer l'URL complète
-            if (fs.existsSync(oldPath)) {
-              fs.unlinkSync(oldPath);
-            }
-          }
-    
-          // Mettre à jour le champ fichier avec la nouvelle URL
-          updatedData.receipt = BASE_URL + req.file.filename;
-        } else {
-          // Sinon, conserver le fichier existant
-          updatedData.receipt = recette.receipt;
-        }
-        await recette.update(updatedData);
+    // Sauvegarder l'ancien état pour l'historique
+    const oldState = {
+      montant: recette.montant,
+      paymentMode: recette.paymentMode,
+      description: recette.description,
+      categoryId: recette.categoryId,
+      statutRecette: recette.statutRecette
+    };
 
+  const updatedData = { ...req.body }
+  // Si un nouveau fichier est envoyé
+  if (req.file) {
+    // Supprimer l'ancien fichier si il existe
+    if (recette.receipt) {
+      const oldPath = path.join('uploads', path.basename(recette.receipt)); // attention à ne pas concaténer l'URL complète
+      if (fs.existsSync(oldPath)) {
+        fs.unlinkSync(oldPath);
+      }
+    }
+
+    // Mettre à jour le champ fichier avec la nouvelle URL
+    updatedData.receipt = BASE_URL + req.file.filename;
+  } else {
+    // Sinon, conserver le fichier existant
+    updatedData.receipt = recette.receipt;
+  }
+  await recette.update(updatedData);
+
+  // ENREGISTRER L'HISTORIQUE DE MODIFICATION
+    const changes = {};
+    if (oldState.montant !== recette.montant) changes.montant = { old: oldState.montant, new: recette.montant };
+    if (oldState.paymentMode !== recette.paymentMode) changes.paymentMode = { old: oldState.paymentMode, new: recette.paymentMode };
+    if (oldState.description !== recette.description) changes.description = { old: oldState.description, new: recette.description };
+    if (oldState.categoryId !== recette.categoryId) changes.categoryId = { old: oldState.categoryId, new: recette.categoryId };
+    if (oldState.statutRecette !== recette.statutRecette) changes.statutRecette = { old: oldState.statutRecette, new: recette.statutRecette };
+    if (req.file) changes.receipt = 'modifié';
+
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Modification de la recette #${id}`,
+      clientIp,
+      { 
+        action: 'UPDATE_RECETTE',
+        recetteId: id,
+        changes: changes,
+        hasFileChange: !!req.file
+      }
+    );
     res.json(recette);
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la mise à jour', error });
@@ -533,6 +616,7 @@ exports.updateRecette = async (req, res) => {
 exports.updateStatut = async (req, res) => {
   try {
     const authUser = req.user; // utilisateur connecté
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: 'Non authentifié' });
@@ -541,10 +625,26 @@ exports.updateStatut = async (req, res) => {
     if (!recette) return res.status(404).json({ message: 'Recette non trouvé' });
 
     const { statutRecette } = req.body;
+
+    const oldStatut = recette.statutRecette;
     /* if (typeof statut !== 'boolean')
       return res.status(400).json({ message: 'Le statut doit être un booléen' }); */
 
     await recette.update({ statutRecette });
+
+    // ENREGISTRER L'HISTORIQUE DE CHANGEMENT DE STATUT
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Changement de statut de la recette #${recette.id}: ${oldStatut} → ${statutRecette}`,
+      clientIp,
+      { 
+        action: 'UPDATE_RECETTE_STATUS',
+        recetteId: recette.id,
+        montant: recette.montant,
+        oldStatut: oldStatut,
+        newStatut: statutRecette
+      }
+    );
     res.json(recette );
   } catch (error) {
     res.status(500).json({ message: 'Erreur mise à jour du statut', error });

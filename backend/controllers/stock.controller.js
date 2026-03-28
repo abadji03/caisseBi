@@ -1,6 +1,8 @@
 const db = require('../models');
 const Stock = db.Stock;
 const { safeNumber } = require('./bonComplet/statutManager')
+const HistoriqueService = require('../services/historique.service');
+
 //const Produit = db.Produit;  // (si tu as besoin d'inclure les produits dans les requêtes)
 
 // Fonction utilitaire de calcul du statut
@@ -20,6 +22,7 @@ function calculerStatut(stock) {
 exports.createStock = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -32,6 +35,28 @@ exports.createStock = async (req, res) => {
       statutStock,
     });
 
+    // Récupérer les infos du produit pour l'historique
+    const produit = await db.Produit.findByPk(stock.produitId);
+    const magasin = await db.Magasin.findByPk(stock.magasinId);
+    // ENREGISTRER L'HISTORIQUE DE CRÉATION
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Création d'un stock pour le produit: ${produit?.designation || 'ID: ' + stock.produitId} (Stock ID: ${stock.id})`,
+      clientIp,
+      { 
+        action: 'CREATE_STOCK',
+        stockId: stock.id,
+        produitId: stock.produitId,
+        produitDesignation: produit?.designation,
+        magasinId: stock.magasinId,
+        magasinNom: magasin?.nom,
+        quantiteTotale: stock.quantiteTotale,
+        seuilAlerte: stock.seuilAlerte,
+        seuilReapprovisionnement: stock.seuilReapprovisionnement,
+        datePeremption: stock.datePeremption,
+        statutStock: stock.statutStock
+      }
+    );
     res.status(201).json(stock);
   } catch (error) {
     res.status(500).json({ message: 'Erreur création stock', error });
@@ -42,12 +67,23 @@ exports.createStock = async (req, res) => {
 exports.updateStock = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
     const stock = await Stock.findByPk(req.params.id);
     if (!stock) return res.status(404).json({ message: 'Stock non trouvé' });
+
+    // Sauvegarder l'ancien état pour l'historique
+    const ancienEtat = {
+      quantiteTotale: stock.quantiteTotale,
+      quantiteReservee: stock.quantiteReservee,
+      seuilAlerte: stock.seuilAlerte,
+      seuilReapprovisionnement: stock.seuilReapprovisionnement,
+      datePeremption: stock.datePeremption,
+      statutStock: stock.statutStock
+    };
 
     // On met à jour les valeurs
     await stock.update(req.body);
@@ -56,6 +92,46 @@ exports.updateStock = async (req, res) => {
     const statutStock = calculerStatut(stock);
 
     await stock.update({ statutStock });
+
+    // Récupérer les infos du produit
+    const produit = await db.Produit.findByPk(stock.produitId);
+    
+    // Préparer les changements pour l'historique
+    const changes = {};
+    if (ancienEtat.quantiteTotale !== stock.quantiteTotale) {
+      changes.quantiteTotale = { old: ancienEtat.quantiteTotale, new: stock.quantiteTotale };
+    }
+    if (ancienEtat.quantiteReservee !== stock.quantiteReservee) {
+      changes.quantiteReservee = { old: ancienEtat.quantiteReservee, new: stock.quantiteReservee };
+    }
+    if (ancienEtat.seuilAlerte !== stock.seuilAlerte) {
+      changes.seuilAlerte = { old: ancienEtat.seuilAlerte, new: stock.seuilAlerte };
+    }
+    if (ancienEtat.seuilReapprovisionnement !== stock.seuilReapprovisionnement) {
+      changes.seuilReapprovisionnement = { old: ancienEtat.seuilReapprovisionnement, new: stock.seuilReapprovisionnement };
+    }
+    if (ancienEtat.datePeremption !== stock.datePeremption) {
+      changes.datePeremption = { old: ancienEtat.datePeremption, new: stock.datePeremption };
+    }
+    if (ancienEtat.statutStock !== stock.statutStock) {
+      changes.statutStock = { old: ancienEtat.statutStock, new: stock.statutStock };
+    }
+
+    // ENREGISTRER L'HISTORIQUE DE MISE À JOUR
+    if (Object.keys(changes).length > 0) {
+      await HistoriqueService.enregistrerAction(
+        authUser.id,
+        `Mise à jour du stock pour le produit: ${produit?.designation || 'ID: ' + stock.produitId} (Stock ID: ${stock.id})`,
+        clientIp,
+        { 
+          action: 'UPDATE_STOCK',
+          stockId: stock.id,
+          produitId: stock.produitId,
+          produitDesignation: produit?.designation,
+          changes: changes
+        }
+      );
+    }
 
     res.json({ message: 'Stock mis à jour', stock });
   } catch (error) {
@@ -316,12 +392,40 @@ exports.getStockByProduitId = async (req, res) => {
 exports.deleteStock = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
     const stock = await Stock.findByPk(req.params.id);
     if (!stock) return res.status(404).json({ message: 'Stock non trouvé' });
+
+    // Récupérer les infos avant suppression
+    const produit = await db.Produit.findByPk(stock.produitId);
+    const magasin = await db.Magasin.findByPk(stock.magasinId);
+    
+    // Sauvegarder les infos pour l'historique
+    const stockInfo = {
+      id: stock.id,
+      produitId: stock.produitId,
+      produitDesignation: produit?.designation,
+      magasinId: stock.magasinId,
+      magasinNom: magasin?.nom,
+      quantiteTotale: stock.quantiteTotale,
+      quantiteReservee: stock.quantiteReservee,
+      statutStock: stock.statutStock
+    };
+
+    // ENREGISTRER L'HISTORIQUE DE SUPPRESSION
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Suppression du stock pour le produit: ${produit?.designation || 'ID: ' + stock.produitId} (Stock ID: ${stock.id})`,
+      clientIp,
+      { 
+        action: 'DELETE_STOCK',
+        deletedStock: stockInfo
+      }
+    );
 
     await stock.destroy();
     res.json({ message: 'Stock supprimé' });
@@ -334,6 +438,7 @@ exports.deleteStock = async (req, res) => {
 exports.adjustQuantiteTotale = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -346,6 +451,7 @@ exports.adjustQuantiteTotale = async (req, res) => {
     const stock = await Stock.findByPk(req.params.id);
     if (!stock) return res.status(404).json({ message: 'Stock non trouvé' });
 
+    const ancienneQuantite = parseFloat(stock.quantiteTotale);
     const nouvelleQuantite = parseFloat(stock.quantiteTotale) + variation;
     if (nouvelleQuantite < 0) {
       return res.status(400).json({ message: 'La quantité totale ne peut pas être négative' });
@@ -363,6 +469,27 @@ exports.adjustQuantiteTotale = async (req, res) => {
       dateDerniereMiseAJour: new Date()
     });
 
+    // ENREGISTRER L'HISTORIQUE D'AJUSTEMENT DE QUANTITÉ
+    const typeVariation = variation > 0 ? 'Augmentation' : 'Diminution';
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `${typeVariation} de quantité pour le produit: ${stock.Produit?.designation || 'ID: ' + stock.produitId} (${Math.abs(variation)} unités)`,
+      clientIp,
+      { 
+        action: 'ADJUST_STOCK_QUANTITY',
+        stockId: stock.id,
+        produitId: stock.produitId,
+        produitDesignation: stock.Produit?.designation,
+        variation: variation,
+        ancienneQuantite: ancienneQuantite,
+        nouvelleQuantite: nouvelleQuantite,
+        ancienStatut: stock.statutStock,
+        nouveauStatut: nouveauStatut,
+        //raison: raison,
+        magasinId: stock.magasinId,
+        magasinNom: stock.Magasin?.nom
+      }
+    );
     res.json({ message: 'Quantité totale ajustée avec succès', stock });
   } catch (error) {
     res.status(500).json({ message: 'Erreur ajustement quantité totale', error });
@@ -372,6 +499,7 @@ exports.adjustQuantiteTotale = async (req, res) => {
 exports.adjustQuantiteReservee = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -384,12 +512,43 @@ exports.adjustQuantiteReservee = async (req, res) => {
     const stock = await Stock.findByPk(req.params.id);
     if (!stock) return res.status(404).json({ message: 'Stock non trouvé' });
 
+    const ancienneReserve = parseFloat(stock.quantiteReservee || 0);
     const nouvelleReserve = parseFloat(stock.quantiteReservee || 0) + variation;
+
     if (nouvelleReserve < 0) {
       return res.status(400).json({ message: 'La quantité réservée ne peut pas être négative' });
     }
+    // Vérifier que la quantité réservée ne dépasse pas la quantité totale disponible
+    const quantiteDisponible = parseFloat(stock.quantiteTotale) - ancienneReserve;
+    if (variation > 0 && variation > quantiteDisponible) {
+      return res.status(400).json({ 
+        message: 'Impossible de réserver plus que la quantité disponible',
+        quantiteDisponible: quantiteDisponible,
+        demandeReservation: variation
+      });
+    }
 
     await stock.update({ quantiteReservee: nouvelleReserve });
+
+    // ENREGISTRER L'HISTORIQUE D'AJUSTEMENT DE RÉSERVATION
+    const typeVariation = variation > 0 ? 'Réservation' : 'Libération de réservation';
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `${typeVariation} de ${Math.abs(variation)} unités pour le produit: ${stock.Produit?.designation || 'ID: ' + stock.produitId}`,
+      clientIp,
+      { 
+        action: 'ADJUST_RESERVED_QUANTITY',
+        stockId: stock.id,
+        produitId: stock.produitId,
+        produitDesignation: stock.Produit?.designation,
+        variation: variation,
+        ancienneQuantiteReservee: ancienneReserve,
+        nouvelleQuantiteReservee: nouvelleReserve,
+        //raison: raison,
+        magasinId: stock.magasinId,
+        magasinNom: stock.Magasin?.nom
+      }
+    );
 
     res.json({ message: 'Quantité réservée ajustée avec succès', stock });
   } catch (error) {

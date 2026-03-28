@@ -68,6 +68,10 @@ db.permission = require('./permission.model')(sequelize, Sequelize);
 db.role = require('./role.model')(sequelize, Sequelize);
 db.HistoriqueStatut = require('./historiqueStatut.model')(sequelize, Sequelize);
 
+//db.MagasinFournisseur = require('./magasinFournisseur.model')(sequelize, Sequelize);
+//db.MagasinClient = require('./magasinClient.model')(sequelize, Sequelize);
+
+
 
 /* Définition des relations entre les modèles */
 
@@ -136,12 +140,12 @@ db.Fournisseur.belongsTo(db.Structure, {
   targetKey: 'code_structure',
 });
 // Magasin a plusieurs fournisseurs
-db.Magasin.hasMany(db.Fournisseur, {
+/* db.Magasin.hasMany(db.Fournisseur, {
   foreignKey: 'magasinId',
 });
 db.Fournisseur.belongsTo(db.Magasin, {
   foreignKey: 'magasinId',
-});
+}); */
 
 //Relations Structure, Clients et Magasins
 // Structure a plusieurs clients
@@ -155,12 +159,12 @@ db.Client.belongsTo(db.Structure, {
 });
 
 // Magasin a plusieurs clients
-db.Magasin.hasMany(db.Client, {
+/* db.Magasin.hasMany(db.Client, {
   foreignKey: 'magasinId',
 });
 db.Client.belongsTo(db.Magasin, {
   foreignKey: 'magasinId',
-});
+}); */
 
 //Relation entre Structure, stock et produit
 // Produit → Stock
@@ -390,6 +394,32 @@ db.Paiement.belongsTo(db.Panier, { foreignKey: 'panierId' });
 db.Magasin.hasMany(db.Paiement, { foreignKey: 'magasinId' });
 db.Paiement.belongsTo(db.Magasin, { foreignKey: 'magasinId' });
 
+// Associations Many-to-Many entre Magasin et Client via table de liaison
+/* db.Magasin.belongsToMany(db.Client, {
+  through: db.MagasinClient,
+  foreignKey: 'magasinId',
+  otherKey: 'clientId',
+});
+
+db.Client.belongsToMany(db.Magasin, {
+  through: db.MagasinClient,
+  foreignKey: 'clientId',
+  otherKey: 'magasinId',
+});
+
+// Associations Many-to-Many entre Magasin et Fournisseur via table de liaison
+db.Magasin.belongsToMany(db.Fournisseur, {
+  through: db.MagasinFournisseur,
+  foreignKey: 'magasinId',
+  otherKey: 'fournisseurId',
+});
+
+db.Fournisseur.belongsToMany(db.Magasin, {
+  through: db.MagasinFournisseur,
+  foreignKey: 'fournisseurId',
+  otherKey: 'magasinId',
+}); */
+
 db.Users.hasMany(db.Paiement, { foreignKey: 'agentId' });
 db.Paiement.belongsTo(db.Users, { foreignKey: 'agentId' });
 
@@ -424,5 +454,7 @@ db.HistoriqueStatut.belongsTo(db.Users, {
   foreignKey: 'agentId',
   as: 'users'
 });
+
+
 //Exportation de l’objet `db` contenant Sequelize, la connexion, et tous les modèles
 module.exports = db;

@@ -9,5 +9,7 @@ const authenticateToken = require('../middlewares/auth.middleware');
 router.post('/connexion', authController.connexion);
 // Route pour récupérer l'utilisateur connecté
 router.get('/me', authenticateToken, authController.getMe);
+// Route de déconnexion
+router.post('/deconnexion', authenticateToken, authController.deconnexion);
 
 module.exports = router;

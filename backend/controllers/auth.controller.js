@@ -1,8 +1,9 @@
-// controllers/auth.controller.js
 const db = require('../models');
 const User = db.Users;
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const HistoriqueService = require('../services/historique.service'); 
+
 
 // Secret JWT
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -11,14 +12,24 @@ const JWT_SECRET = process.env.JWT_SECRET;
 exports.connexion = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const clientIp = HistoriqueService.getClientIp(req); // Récupérer l'IP
 
     console.log('=== DEBUG CONNEXION ===');
     console.log('Email tenté:', email);
+    console.log('IP:', clientIp);
     console.log('Mot de passe fourni:', password);
+
     // Vérifier si l'utilisateur existe
     const user = await User.findOne({ where: { email } });
     if (!user) {
       console.log('DEBUG: Utilisateur non trouvé');
+      // Enregistrer une tentative de connexion échouée (optionnel)
+      await HistoriqueService.enregistrerAction(
+        null, 
+        `Tentative de connexion échouée - email: ${email}`, 
+        clientIp,
+        { success: false, reason: 'user_not_found' }
+      );
       return res.status(404).json({ message: 'Utilisateur introuvable' });
     }
     console.log('DEBUG: Utilisateur trouvé');
@@ -38,10 +49,28 @@ exports.connexion = async (req, res) => {
       const testHash = await bcrypt.hash(password, 10);
       console.log('DEBUG: Hash du mot de passe fourni:', testHash.substring(0, 30));
       console.log('DEBUG: Correspondance avec hash stocké?', testHash === user.password);
+
+      await HistoriqueService.enregistrerAction(
+        user.id,
+        `Tentative de connexion échouée - mot de passe incorrect`,
+        clientIp,
+        { success: false, reason: 'invalid_password' }
+      );
       return res.status(401).json({ message: 'Mot de passe incorrect' });
       
     }
     console.log('DEBUG: Connexion réussie');
+
+    // ENREGISTRER L'HISTORIQUE DE CONNEXION
+    await HistoriqueService.enregistrerConnexion(user.id, clientIp);
+    
+    // ENREGISTRER L'ACTION DE CONNEXION
+    await HistoriqueService.enregistrerAction(
+      user.id,
+      `Connexion réussie`,
+      clientIp,
+      { success: true, timestamp: new Date() }
+    );
     // Générer un token JWT
     const token = jwt.sign(
       {
@@ -124,6 +153,26 @@ exports.getMe = async (req, res) => {
       isGeneralAdmin: !user.structure_id, // Ajouter ce flag
 
     });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Déconnexion utilisateur (optionnel)
+exports.deconnexion = async (req, res) => {
+  try {
+    const clientIp = HistoriqueService.getClientIp(req);
+    
+    if (req.user) {
+      await HistoriqueService.enregistrerAction(
+        req.user.id,
+        `Déconnexion`,
+        clientIp,
+        { timestamp: new Date() }
+      );
+    }
+    
+    res.json({ message: 'Déconnexion réussie' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

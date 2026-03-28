@@ -4,11 +4,13 @@ const MouvementStock = db.MouvementStock;
 const Produit = db.Produit; // Assure-toi que l'association a été définie (Reconciliation.belongsTo(Produit))
 const { Op,fn,col,literal } = db.Sequelize;
 const { safeNumber } = require('./bonComplet/statutManager')
+const HistoriqueService = require('../services/historique.service'); 
 
 //Créer une réconciliation
 exports.createReconciliation = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -17,6 +19,10 @@ exports.createReconciliation = async (req, res) => {
       req.body;
 
     const ecart = parseFloat(stockPhysique) - parseFloat(stockTheorique);
+    // Récupérer les informations du produit pour l'historique
+    const produit = await Produit.findByPk(produitId, {
+      attributes: ['designation', 'code_structure']
+    });
 
     const reconciliation = await Reconciliation.create({
       code_structure,
@@ -29,6 +35,23 @@ exports.createReconciliation = async (req, res) => {
       magasinId
     });
 
+    // ENREGISTRER L'HISTORIQUE
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Création d'une réconciliation pour le produit ${produit?.designation || 'ID: ' + produitId} (Écart: ${ecart > 0 ? '+' : ''}${ecart.toFixed(2)})`,
+      clientIp,
+      {
+        action: 'CREATE_RECONCILIATION',
+        reconciliationId: reconciliation.id,
+        produitId: produitId,
+        produitDesignation: produit?.designation,
+        stockTheorique: stockTheorique,
+        stockPhysique: stockPhysique,
+        ecart: ecart,
+        magasinId: magasinId,
+        code_structure: code_structure
+      }
+    );
     res.status(201).json(reconciliation);
   } catch (err) {
     res.status(500).json({ message: 'Erreur lors de la réconciliation', error: err.message });
@@ -563,6 +586,7 @@ exports.getReconciliationById = async (req, res) => {
 exports.updateReconciliation = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -574,6 +598,15 @@ exports.updateReconciliation = async (req, res) => {
       return res.status(404).json({ message: 'Réconciliation non trouvée' });
     }
 
+    // Sauvegarder les anciennes valeurs
+    const anciennesValeurs = {
+      stockTheorique: reconciliation.stockTheorique,
+      stockPhysique: reconciliation.stockPhysique,
+      ecart: reconciliation.ecart,
+      responsable: reconciliation.responsable,
+      note: reconciliation.note
+    };
+
     const ecart = parseFloat(stockPhysique) - parseFloat(stockTheorique);
 
     await reconciliation.update({
@@ -584,6 +617,36 @@ exports.updateReconciliation = async (req, res) => {
       note,
     });
 
+     // ENREGISTRER L'HISTORIQUE
+    const modifications = [];
+    if (anciennesValeurs.stockTheorique !== stockTheorique) {
+      modifications.push(`stock théorique: ${anciennesValeurs.stockTheorique} → ${stockTheorique}`);
+    }
+    if (anciennesValeurs.stockPhysique !== stockPhysique) {
+      modifications.push(`stock physique: ${anciennesValeurs.stockPhysique} → ${stockPhysique}`);
+    }
+    if (anciennesValeurs.responsable !== responsable) {
+      modifications.push(`responsable: ${anciennesValeurs.responsable} → ${responsable}`);
+    }
+
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Mise à jour de la réconciliation #${reconciliation.id} pour le produit ${reconciliation.Produit?.designation || 'ID: ' + reconciliation.produitId} - Modifications: ${modifications.join(', ') || 'Aucune modification majeure'}`,
+      clientIp,
+      {
+        action: 'UPDATE_RECONCILIATION',
+        reconciliationId: reconciliation.id,
+        produitId: reconciliation.produitId,
+        anciennesValeurs: anciennesValeurs,
+        nouvellesValeurs: {
+          stockTheorique,
+          stockPhysique,
+          ecart: ecart,
+          responsable,
+          note
+        }
+      }
+    );
     res.json(reconciliation);
   } catch (err) {
     res.status(500).json({ message: 'Erreur mise à jour', error: err.message });
@@ -594,6 +657,7 @@ exports.updateReconciliation = async (req, res) => {
 exports.deleteReconciliation = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -603,7 +667,36 @@ exports.deleteReconciliation = async (req, res) => {
       return res.status(404).json({ message: 'Réconciliation non trouvée' });
     }
 
+    // Vérifier s'il y a des mouvements de stock associés
+    const mouvementsAssocies = await MouvementStock.count({
+      where: { reconciliationId: reconciliation.id }
+    });
+
+    const produitDesignation = reconciliation.Produit?.designation || 'ID: ' + reconciliation.produitId;
+
     await reconciliation.destroy();
+     // ENREGISTRER L'HISTORIQUE
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Suppression de la réconciliation #${reconciliation.id} pour le produit ${produitDesignation} (Écart: ${reconciliation.ecart > 0 ? '+' : ''}${reconciliation.ecart})${mouvementsAssocies > 0 ? ` - Attention: ${mouvementsAssocies} mouvement(s) de stock associé(s) supprimé(s)` : ''}`,
+      clientIp,
+      {
+        action: 'DELETE_RECONCILIATION',
+        reconciliationId: reconciliation.id,
+        produitId: reconciliation.produitId,
+        produitDesignation: produitDesignation,
+        ecart: reconciliation.ecart,
+        mouvementsAssocies: mouvementsAssocies,
+        dataSupprimee: {
+          stockTheorique: reconciliation.stockTheorique,
+          stockPhysique: reconciliation.stockPhysique,
+          dateReconciliation: reconciliation.dateReconciliation,
+          responsable: reconciliation.responsable,
+          note: reconciliation.note
+        }
+      }
+    );
+
     res.json({ message: 'Réconciliation supprimée avec succès' });
   } catch (err) {
     res.status(500).json({ message: 'Erreur suppression', error: err.message });
@@ -634,6 +727,7 @@ exports.getReconciliationsByProduit = async (req, res) => {
 exports.updateStatut = async (req, res) => {
   try {
     const authUser = req.user; // utilisateur connecté
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: 'Non authentifié' });
@@ -642,10 +736,25 @@ exports.updateStatut = async (req, res) => {
     if (!reconciliation) return res.status(404).json({ message: 'Reconciliation non trouvé' });
 
     const { statut } = req.body;
+    const ancienStatut = reconciliation.statut;
     /* if (typeof statut !== 'boolean')
       return res.status(400).json({ message: 'Le statut doit être un booléen' }); */
 
     await reconciliation.update({ statut });
+
+     // ENREGISTRER L'HISTORIQUE
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Changement de statut de la réconciliation #${reconciliation.id} pour le produit ${reconciliation.Produit?.designation || 'ID: ' + reconciliation.produitId}: ${ancienStatut} → ${statut}`,
+      clientIp,
+      {
+        action: 'UPDATE_RECONCILIATION_STATUS',
+        reconciliationId: reconciliation.id,
+        produitId: reconciliation.produitId,
+        ancienStatut: ancienStatut,
+        nouveauStatut: statut
+      }
+    );
     res.json(reconciliation );
   } catch (error) {
     res.status(500).json({ message: 'Erreur mise à jour du statut', error });

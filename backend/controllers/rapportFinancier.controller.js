@@ -3,6 +3,7 @@ const FonctionsUtilitaires = require('./utils/fonctionsUtilitaires');
 const { Op, fn, col } = db.Sequelize;
 const utilitaireRapport  = require('./utils/rapportFinancierUtilitaire');
 const ExcelJS = require('exceljs');
+const HistoriqueService = require('../services/historique.service'); 
 
 
 
@@ -1253,6 +1254,8 @@ exports.getDonneesComparatives = async (req, res) => {
 exports.genererRapportPDF = async (req, res) => {
     try {
         const authUser = req.user;
+        const clientIp = HistoriqueService.getClientIp(req);
+
         if (!authUser) {
             return res.status(401).json({ message: "Non authentifié" });
         }
@@ -1418,6 +1421,27 @@ exports.genererRapportPDF = async (req, res) => {
 
         // Génération du PDF avec Puppeteer
         const pdf = await utilitaireRapport.generatePDF(html);
+
+        // Enregistrement de l'action dans l'historique
+        await HistoriqueService.enregistrerAction(
+            authUser.id,
+            `Génération d'un rapport financier PDF`,
+            clientIp,
+            {
+                action: 'EXPORT_PDF_FINANCIER',
+                params: {
+                    magasinId: magasinIdFinal,
+                    agentId: agentId ? parseInt(agentId) : null,
+                    periode,
+                    dateReference,
+                    fromDate,
+                    toDate,
+                    code_structure
+                },
+                periodeAffichage,
+                timestamp: new Date()
+            }
+        );
 
         // Envoi du PDF
         res.setHeader('Content-Type', 'application/pdf');
@@ -1883,6 +1907,8 @@ exports.getDonneesComparativesData = async (filters) => {
 exports.exportRapportExcel = async (req, res) => {
     try {
         const authUser = req.user;
+        const clientIp = HistoriqueService.getClientIp(req);
+
         if (!authUser) {
             return res.status(401).json({ message: "Non authentifié" });
         }
@@ -2374,6 +2400,34 @@ exports.exportRapportExcel = async (req, res) => {
             });
         });
 
+        const exportParams = {
+            magasinId: magasinIdFinal,
+            agentId: agentId ? parseInt(agentId) : null,
+            periode,
+            dateReference,
+            fromDate,
+            toDate,
+            code_structure,
+            periodeAffichage,
+            nombreLignesDepenses: depensesDetaillees?.depenses?.length || 0,
+            nombreLignesRecettes: recettesDetaillees?.recettes?.length || 0
+        };
+
+        await HistoriqueService.enregistrerAction(
+            authUser.id,
+            `Export du rapport financier Excel - Période: ${periodeAffichage}`,
+            clientIp,
+            {
+                action: 'EXPORT_EXCEL_FINANCIER',
+                params: exportParams,
+                indicateurs: {
+                    chiffreAffaires: indicateursFinanciers.chiffreAffaires,
+                    beneficeNet: indicateursFinanciers.beneficeNet,
+                    totalDepenses: indicateursFinanciers.totalDepenses
+                },
+                timestamp: new Date()
+            }
+        );
         // Génération du buffer
         const buffer = await workbook.xlsx.writeBuffer();
 
@@ -2384,6 +2438,20 @@ exports.exportRapportExcel = async (req, res) => {
 
     } catch (error) {
         console.error('❌ Erreur export Excel financier:', error);
+        // Enregistrement de l'erreur dans l'historique
+        if (req.user) {
+            await HistoriqueService.enregistrerAction(
+                req.user.id,
+                `Échec d'export du rapport financier Excel: ${error.message}`,
+                HistoriqueService.getClientIp(req),
+                {
+                    action: 'EXPORT_EXCEL_FINANCIER_ERROR',
+                    error: error.message,
+                    stack: error.stack,
+                    params: req.query
+                }
+            );
+        }
         res.status(500).json({ 
             error: 'Erreur lors de l\'export Excel',
             details: error.message 

@@ -8,6 +8,8 @@ const sharp = require('sharp');
 const ExcelJS = require('exceljs');
 const { safeNumber } = require('./bonComplet/statutManager');
 const PDFDocument = require('pdfkit');
+const HistoriqueService = require('../services/historique.service');
+const ActionMessagesService = require('../services/actionMessages.service');
 
 
 const BASE_URL = 'http://localhost:5000/uploads/'; //url de l'emplacement des fichier à stocker
@@ -16,6 +18,7 @@ const BASE_URL = 'http://localhost:5000/uploads/'; //url de l'emplacement des fi
 exports.createProduit = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -61,6 +64,23 @@ exports.createProduit = async (req, res) => {
           image,
         });
 
+        // ENREGISTRER L'HISTORIQUE DE CRÉATION
+        await HistoriqueService.enregistrerAction(
+          authUser.id,
+          ActionMessagesService.getCreateProductMessage(produit),
+          clientIp,
+          {
+            action: 'CREATE_PRODUCT',
+            targetId: produit.id,
+            productData: {
+              designation: produit.designation,
+              prixVente: produit.prixVenteUnitaire,
+              prixAchat: produit.prixAchatUnitaire,
+              categorieId: produit.categorieId,
+              code_structure: produit.code_structure
+            }
+          }
+        );
         // Nettoyer le fichier temporaire après la création réussie
         setTimeout(() => {
           try {
@@ -113,6 +133,7 @@ exports.updateProduit = async (req, res) => {
 
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -123,7 +144,32 @@ exports.updateProduit = async (req, res) => {
       return res.status(404).json({ message: 'Produit non trouvé' });
     }
 
+    // Sauvegarder l'ancien état pour comparer
+    const oldProduit = produit.toJSON();
     const updatedData = { ...req.body };
+
+    // Suivre les changements
+    const changes = {};
+
+    // Comparer les champs importants
+    if (oldProduit.designation !== updatedData.designation && updatedData.designation) {
+      changes.designation = { old: oldProduit.designation, new: updatedData.designation };
+    }
+    if (oldProduit.prixVenteUnitaire !== parseFloat(updatedData.prixVenteUnitaire) && updatedData.prixVenteUnitaire) {
+      changes.prixVenteUnitaire = { old: oldProduit.prixVenteUnitaire, new: parseFloat(updatedData.prixVenteUnitaire) };
+    }
+    if (oldProduit.prixAchatUnitaire !== parseFloat(updatedData.prixAchatUnitaire) && updatedData.prixAchatUnitaire) {
+      changes.prixAchatUnitaire = { old: oldProduit.prixAchatUnitaire, new: parseFloat(updatedData.prixAchatUnitaire) };
+    }
+    if (oldProduit.tauxTVA !== parseFloat(updatedData.tauxTVA) && updatedData.tauxTVA) {
+      changes.tauxTVA = { old: oldProduit.tauxTVA, new: parseFloat(updatedData.tauxTVA) };
+    }
+    if (oldProduit.categorieId !== updatedData.categorieId && updatedData.categorieId) {
+      changes.categorieId = { old: oldProduit.categorieId, new: updatedData.categorieId };
+    }
+    if (oldProduit.description !== updatedData.description && updatedData.description) {
+      changes.description = { old: oldProduit.description, new: updatedData.description };
+    }
     
     // Sauvegarder l'ancienne image pour la supprimer plus tard
     const oldImagePath = produit.image ? path.join('uploads', path.basename(produit.image)) : null;
@@ -144,9 +190,23 @@ exports.updateProduit = async (req, res) => {
 
         // Mettre à jour l'URL de l'image dans les données
         updatedData.image = BASE_URL + filename;
+        changes.image = { old: oldProduit.image, new: updatedData.image };
 
         // Mettre à jour le produit (sans supprimer l'ancienne image immédiatement)
         await produit.update(updatedData);
+
+        // ENREGISTRER L'HISTORIQUE DE MISE À JOUR
+        await HistoriqueService.enregistrerAction(
+          authUser.id,
+          ActionMessagesService.getUpdateProductMessage(oldProduit, produit, changes),
+          clientIp,
+          {
+            action: 'UPDATE_PRODUCT',
+            targetId: produit.id,
+            changes: changes,
+            hasImageChange: true
+          }
+        );
 
         // Nettoyer les fichiers après la mise à jour
         setTimeout(() => {
@@ -188,6 +248,19 @@ exports.updateProduit = async (req, res) => {
       // Pas de nouvelle image, mettre à jour sans changer l'image
       updatedData.image = produit.image;
       await produit.update(updatedData);
+
+      // ENREGISTRER L'HISTORIQUE DE MISE À JOUR (sans changement d'image)
+      await HistoriqueService.enregistrerAction(
+        authUser.id,
+        ActionMessagesService.getUpdateProductMessage(oldProduit, produit, changes),
+        clientIp,
+        {
+          action: 'UPDATE_PRODUCT',
+          targetId: produit.id,
+          changes: changes,
+          hasImageChange: false
+        }
+      );
     }
 
     console.log('Produit mis à jour avec:', updatedData);
@@ -205,6 +278,7 @@ exports.updateProduit = async (req, res) => {
 exports.deleteProduit = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -212,7 +286,43 @@ exports.deleteProduit = async (req, res) => {
     const produit = await Produit.findByPk(req.params.id);
     if (!produit) return res.status(404).json({ message: 'Produit non trouvé' });
 
+    // Sauvegarder les données avant suppression
+    const produitData = produit.toJSON();
+
     await produit.destroy();
+
+        // ENREGISTRER L'HISTORIQUE DE SUPPRESSION
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      ActionMessagesService.getDeleteProductMessage(produitData),
+      clientIp,
+      {
+        action: 'DELETE_PRODUCT',
+        targetId: produitData.id,
+        deletedProduct: {
+          designation: produitData.designation,
+          codeBarre: produitData.codeBarre,
+          prixVente: produitData.prixVenteUnitaire,
+          categorieId: produitData.categorieId
+        }
+      }
+    );
+
+    // Supprimer l'image si elle existe
+    if (produitData.image) {
+      const imagePath = path.join('uploads', path.basename(produitData.image));
+      setTimeout(() => {
+        try {
+          if (fs.existsSync(imagePath)) {
+            fs.unlinkSync(imagePath);
+            console.log('Image du produit supprimée:', imagePath);
+          }
+        } catch (err) {
+          console.error('Erreur suppression image:', err);
+        }
+      }, 1000);
+    }
+
     res.json({ message: 'Produit supprimé' });
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la suppression', error });
@@ -505,6 +615,7 @@ exports.getProduitsDisponibles = async (req, res) => {
 exports.updateStatusProduit = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -519,7 +630,21 @@ exports.updateStatusProduit = async (req, res) => {
       return res.status(400).json({ message: 'Le statut doit être un booléen.' });
     }
 
+    const oldStatut = produit.statut;
     await produit.update({ statut });
+
+    // ENREGISTRER L'HISTORIQUE DE CHANGEMENT DE STATUT
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      ActionMessagesService.getStatusChangeMessage(produit, oldStatut, statut),
+      clientIp,
+      {
+        action: 'UPDATE_PRODUCT_STATUS',
+        targetId: produit.id,
+        oldStatus: oldStatut,
+        newStatus: statut
+      }
+    );
 
     res.json({ message: 'Statut du produit mis à jour', produit });
   } catch (error) {
@@ -532,6 +657,7 @@ exports.updateStatusProduit = async (req, res) => {
 exports.updateTauxTVAProduit = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -544,7 +670,21 @@ exports.updateTauxTVAProduit = async (req, res) => {
       return res.status(400).json({ message: 'Le taux de TVA doit être un nombre positif.' });
     }
 
+    const oldTauxTVA = produit.tauxTVA;
     await produit.update({ tauxTVA });
+
+    // ENREGISTRER L'HISTORIQUE DE CHANGEMENT DE TVA
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      ActionMessagesService.getTVAChangeMessage(produit, oldTauxTVA, tauxTVA),
+      clientIp,
+      {
+        action: 'UPDATE_PRODUCT_TVA',
+        targetId: produit.id,
+        oldTVA: oldTauxTVA,
+        newTVA: tauxTVA
+      }
+    );
 
     res.json({ message: 'Statut du produit mis à jour', produit });
   } catch (error) {
@@ -558,6 +698,7 @@ exports.updateTauxTVAProduit = async (req, res) => {
 exports.updateImageProduit = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -574,7 +715,7 @@ exports.updateImageProduit = async (req, res) => {
 
     // Sauvegarder l'ancienne image pour la supprimer plus tard
     const oldImagePath = produit.image ? path.join('uploads', path.basename(produit.image)) : null;
-
+    const oldImageUrl = produit.image;
     try {
       // Traiter la nouvelle image
       const inputPath = req.file.path;
@@ -594,6 +735,18 @@ exports.updateImageProduit = async (req, res) => {
 
       // Mettre à jour l'image dans la base de données
       await produit.update({ image: nouvelleImageUrl });
+       // ENREGISTRER L'HISTORIQUE DE CHANGEMENT D'IMAGE
+      await HistoriqueService.enregistrerAction(
+        authUser.id,
+        `Mise à jour de l'image du produit: ${produit.designation} (ID: ${produit.id})`,
+        clientIp,
+        {
+          action: 'UPDATE_PRODUCT_IMAGE',
+          targetId: produit.id,
+          oldImage: oldImageUrl,
+          newImage: nouvelleImageUrl
+        }
+      );
 
       // Attendre un peu avant de supprimer l'ancienne image
       setTimeout(() => {
@@ -653,6 +806,7 @@ exports.updateImageProduit = async (req, res) => {
 exports.updateCodeBarreProduit = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -682,8 +836,23 @@ exports.updateCodeBarreProduit = async (req, res) => {
         .json({ message: 'Ce code-barre est déjà utilisé par un autre produit.' });
     }
 
+    const oldCodeBarre = produit.codeBarre;
+
     // Mise à jour du code-barre
     await produit.update({ codeBarre });
+
+    // ENREGISTRER L'HISTORIQUE DE CHANGEMENT DE CODE-BARRE
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      ActionMessagesService.getCodeBarreChangeMessage(produit, oldCodeBarre, codeBarre),
+      clientIp,
+      {
+        action: 'UPDATE_PRODUCT_BARCODE',
+        targetId: produit.id,
+        oldBarcode: oldCodeBarre,
+        newBarcode: codeBarre
+      }
+    );
 
     res.json({ message: 'Code-barre mis à jour avec succès', produit });
   } catch (error) {
@@ -699,6 +868,7 @@ exports.updateCodeBarreProduit = async (req, res) => {
 exports.exportProduitsToExcel = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -731,6 +901,19 @@ exports.exportProduitsToExcel = async (req, res) => {
         message: "Accès interdit : rôle insuffisant"
       });
     }
+
+    // AVANT d'envoyer la réponse, enregistrer l'historique
+    const filters = { categorieId, statut, search };
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      ActionMessagesService.getExportExcelMessage(authUser, code_structure, filters),
+      clientIp,
+      {
+        action: 'EXPORT_PRODUCTS_EXCEL',
+        structureCode: code_structure,
+        filters: filters
+      }
+    );
 
     // Construction de la clause WHERE
     let whereClause = {
@@ -973,6 +1156,7 @@ exports.exportProduitsToExcel = async (req, res) => {
 exports.exportProduitsToPDF = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -999,6 +1183,18 @@ exports.exportProduitsToPDF = async (req, res) => {
       return res.status(403).json({ message: "Rôle insuffisant" });
     }
 
+     // ENREGISTRER L'HISTORIQUE D'EXPORT PDF
+    const filters = { categorieId, statut, search };
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      ActionMessagesService.getExportPDFMessage(authUser, code_structure, filters),
+      clientIp,
+      {
+        action: 'EXPORT_PRODUCTS_PDF',
+        structureCode: code_structure,
+        filters: filters
+      }
+    );
     // Construction de la clause WHERE (identique à l'export Excel)
     let whereClause = { code_structure };
     

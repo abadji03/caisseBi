@@ -3,6 +3,7 @@ const utilitaireRapport  = require('./utils/rapportStockUtilitaire');
 const db = require('../models');
 // Importer ExcelJS
 const ExcelJS = require('exceljs');
+const HistoriqueService = require('../services/historique.service');
 
 
 
@@ -486,7 +487,7 @@ exports.exportDonneesStocks = async (req, res) => {
         if (!authUser) {
             return res.status(401).json({ message: "Non authentifié" });
         }
-
+        const clientIp = HistoriqueService.getClientIp(req);
         const {
             magasinId,
             periode,
@@ -533,6 +534,26 @@ exports.exportDonneesStocks = async (req, res) => {
             utilitaireRapport.calculerMouvementsPeriode({ ...filters, limit: 10000 })
         ]);
 
+        // ✅ ENREGISTRER L'HISTORIQUE
+        await HistoriqueService.enregistrerAction(
+            authUser.id,
+            `Export données stocks - ${magasinIdFinal ? `Magasin ID: ${magasinIdFinal}` : 'Tous magasins'} - Format: ${format}`,
+            clientIp,
+            {
+                action: 'EXPORT_STOCK_DATA',
+                filters: {
+                    magasinId: magasinIdFinal,
+                    periode,
+                    fromDate,
+                    toDate,
+                    format
+                },
+                counts: {
+                    produits: statsProduits.statsProduits?.length || 0,
+                    mouvements: mouvements.mouvements?.length || 0
+                }
+            }
+        );
         const exportData = {
             indicateurs,
             produits: statsProduits.statsProduits,
@@ -567,7 +588,7 @@ exports.genererRapportStockPDF = async (req, res) => {
         if (!authUser) {
             return res.status(401).json({ message: "Non authentifié" });
         }
-
+        const clientIp = HistoriqueService.getClientIp(req);
         // Récupération des paramètres
         const {
             magasinId,
@@ -706,6 +727,24 @@ exports.genererRapportStockPDF = async (req, res) => {
         // Génération du PDF
         const pdf = await utilitaireRapport.generatePDF(html);
 
+        // ✅ ENREGISTRER L'HISTORIQUE AVANT GÉNÉRATION
+        await HistoriqueService.enregistrerAction(
+            authUser.id,
+            `Génération PDF rapport stock - ${magasinIdFinal ? `Magasin ID: ${magasinIdFinal}` : 'Tous magasins'}`,
+            clientIp,
+            {
+                action: 'GENERATE_STOCK_PDF',
+                filters: {
+                    magasinId: magasinIdFinal,
+                    periode,
+                    fromDate,
+                    toDate,
+                    categorie,
+                    statut
+                }
+            }
+        );
+
         // Envoi du PDF
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename=rapport-stock-${Date.now()}.pdf`);
@@ -730,6 +769,8 @@ exports.exportRapportStockExcel = async (req, res) => {
         if (!authUser) {
             return res.status(401).json({ message: "Non authentifié" });
         }
+
+        const clientIp = HistoriqueService.getClientIp(req);
 
         // Récupération des paramètres
         const {
@@ -1200,6 +1241,24 @@ exports.exportRapportStockExcel = async (req, res) => {
 
         // Génération du buffer
         const buffer = await workbook.xlsx.writeBuffer();
+
+        // ✅ ENREGISTRER L'HISTORIQUE AVANT EXPORT
+        await HistoriqueService.enregistrerAction(
+            authUser.id,
+            `Export Excel rapport stock - ${magasinIdFinal ? `Magasin ID: ${magasinIdFinal}` : 'Tous magasins'}`,
+            clientIp,
+            {
+                action: 'EXPORT_STOCK_EXCEL',
+                filters: {
+                    magasinId: magasinIdFinal,
+                    periode,
+                    fromDate,
+                    toDate,
+                    categorie,
+                    statut
+                }
+            }
+        );
 
         // Envoi du fichier
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

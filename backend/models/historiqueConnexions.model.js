@@ -3,6 +3,7 @@ module.exports = (sequelize, DataTypes) => {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     date: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
     ip: { type: DataTypes.STRING(50), allowNull: false },
+    userId: { type: DataTypes.INTEGER, allowNull: false },
   });
 
   return HistoriqueConnexions;

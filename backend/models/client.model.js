@@ -38,7 +38,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
-    magasinId: DataTypes.INTEGER,
+    //magasinId: DataTypes.INTEGER,
   });
 
   return Client;

@@ -89,7 +89,7 @@
       </div>
 
       <!-- Champs logistiques -->
-      <div *ngIf="showLogistiqueFields" class="row">
+      <div *ngIf="showLogistiqueFields && bonForm.get('type')?.value === 'commande'" class="row">
         <div class="col-md-4 mb-3">
           <label for="dateLivraisonPrevue" class="form-label">Date de livraison prévue</label>
           <input id="dateLivraisonPrevue" type="date" class="form-control" 
@@ -142,7 +142,7 @@
       <h5 class="mb-0">
         <i class="bi bi-cart me-2"></i>Articles
       </h5>
-      <button type="button" class="btn btn-sm btn-outline-primary" 
+      <button type="button" class="btn btn-sm btn-dark" 
               (click)="togglePanier()" [disabled]="typeBon === 'avoir'">
         <i [class]="showPanierSection ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
         {{ showPanierSection ? 'Masquer' : 'Afficher' }} le panier
@@ -190,7 +190,7 @@
         </div>
         
         <div *ngIf="!showPanierSection" class="text-center py-3">
-          <button class="btn btn-outline-primary" (click)="togglePanier()">
+          <button class="btn btn-outline-dark" (click)="togglePanier()">
             <i class="bi bi-cart-plus me-2"></i>
             Ajouter des articles au panier
           </button>
