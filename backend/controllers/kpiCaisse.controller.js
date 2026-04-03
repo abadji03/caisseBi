@@ -6,6 +6,7 @@ const Panier = db.Panier;
 const { Op, fn, col } = db.Sequelize;
 // Import ExcelJS
 const ExcelJS = require('exceljs');
+const HistoriqueService = require('../services/historique.service');
 
 
 //..................................... API pour KPI journaliers................................
@@ -2288,6 +2289,8 @@ exports.getOptionsComparaison = async (req, res) => {
 exports.genererRapportPDF = async (req, res) => {
     try {
         const authUser = req.user;
+        const clientIp = HistoriqueService.getClientIp(req); // Récupérer l'IP
+
         if (!authUser) {
             return res.status(401).json({ message: "Non authentifié" });
         }
@@ -2592,6 +2595,45 @@ exports.genererRapportPDF = async (req, res) => {
         // Génération du PDF avec Puppeteer
         const pdf = await generatePDF(html);
 
+        // ENREGISTRER L'HISTORIQUE DE L'EXPORTATION PDF
+        const periodeText = formatPeriodeAffichage(debut, fin, periode);
+        const magasinText = magasinNom || (magasinIdFinal ? `Magasin ID: ${magasinIdFinal}` : 'Tous les magasins');
+        const vendeurText = vendeurNom || (agentId ? `Vendeur ID: ${agentId}` : 'Tous les vendeurs');
+        
+        const exportDetails = {
+            type: 'EXPORT_PDF',
+            periode: periodeText,
+            dateDebut: debut,
+            dateFin: fin,
+            magasinId: magasinIdFinal,
+            magasinNom: magasinText,
+            agentId: agentId,
+            agentNom: vendeurText,
+            parametres: {
+                periode,
+                dateReference,
+                fromDate,
+                toDate,
+                magasinId,
+                agentId,
+                comparaisonType: req.query.comparaisonType,
+                comparaisonElement1: req.query.comparaisonElement1,
+                comparaisonElement2: req.query.comparaisonElement2
+            },
+            stats: {
+                totalVentes,
+                chiffreAffairesTTC,
+                ticketMoyen
+            }
+        };
+
+        await HistoriqueService.enregistrerAction(
+            authUser.id,
+            `Export PDF du rapport de vente - ${periodeText} - ${magasinText}`,
+            clientIp,
+            exportDetails
+        );
+
         // Envoi du PDF
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename=rapport-vente-${Date.now()}.pdf`);
@@ -2599,6 +2641,19 @@ exports.genererRapportPDF = async (req, res) => {
 
     } catch (error) {
         console.error('❌ Erreur génération PDF:', error);
+        // Enregistrer l'erreur dans l'historique
+        if (req.user) {
+            await HistoriqueService.enregistrerAction(
+                req.user.id,
+                `Erreur lors de la génération du PDF du rapport de vente`,
+                HistoriqueService.getClientIp(req),
+                {
+                    type: 'PDF_ERROR',
+                    error: error.message,
+                    stack: error.stack
+                }
+            );
+        }
         res.status(500).json({ 
             error: 'Erreur lors de la génération du PDF',
             details: error.message 
@@ -2796,6 +2851,8 @@ exports.testRapportHTML = async (req, res) => {
 exports.exportRapportExcel = async (req, res) => {
     try {
         const authUser = req.user;
+        const clientIp = HistoriqueService.getClientIp(req); // Récupérer l'IP
+
         if (!authUser) {
             return res.status(401).json({ message: "Non authentifié" });
         }
@@ -3203,6 +3260,44 @@ exports.exportRapportExcel = async (req, res) => {
 
         // Génération du buffer
         const buffer = await workbook.xlsx.writeBuffer();
+
+        // ENREGISTRER L'HISTORIQUE DE L'EXPORTATION
+        const periodeText = formatPeriodeAffichage(debut, fin, periode);
+        const magasinText = magasin ? magasin.nom : (magasinIdFinal ? `Magasin ID: ${magasinIdFinal}` : 'Tous les magasins');
+        const vendeurText = vendeur ? vendeur.nom : (agentId ? `Vendeur ID: ${agentId}` : 'Tous les vendeurs');
+        
+        // Préparer les détails de l'export
+        const exportDetails = {
+            type: 'EXPORT_EXCEL',
+            periode: periodeText,
+            dateDebut: debut,
+            dateFin: fin,
+            magasinId: magasinIdFinal,
+            magasinNom: magasinText,
+            agentId: agentId,
+            agentNom: vendeurText,
+            parametres: {
+                periode,
+                dateReference,
+                fromDate,
+                toDate,
+                magasinId,
+                agentId
+            },
+            stats: {
+                totalVentes,
+                chiffreAffairesTTC,
+                ticketMoyen,
+                nombreLignes: ventesDetail.length
+            }
+        };
+
+        await HistoriqueService.enregistrerAction(
+            authUser.id,
+            `Export Excel du rapport de vente - ${periodeText} - ${magasinText}`,
+            clientIp,
+            exportDetails
+        );
 
         // Envoi du fichier
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

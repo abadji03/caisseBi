@@ -13,4 +13,5 @@ router.patch('/:id/statut', authenticateToken, fournisseurCtrl.updateFournisseur
 router.get('/:id', authenticateToken, fournisseurCtrl.getFournisseurById);
 router.get('/:code_structure/:id/bons', authenticateToken, fournisseurCtrl.getBonsWithPaniersAndProduits);
 
+router.get('/export/excel',authenticateToken, fournisseurCtrl.exportFournisseursExcel);
 module.exports = router;

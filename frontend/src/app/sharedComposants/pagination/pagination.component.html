@@ -1,0 +1,48 @@
+<nav *ngIf="totalPages > 1" class="mt-4" aria-label="Pagination">
+      <ul class="pagination justify-content-center">
+        <!-- Bouton Précédent -->
+        <li class="page-item" [class.disabled]="currentPage === 1">
+          <button class="page-link" (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 1">
+            <i class="fas fa-chevron-left"></i> Précédent
+          </button>
+        </li>
+        
+        <!-- Première page -->
+        <li class="page-item" *ngIf="showFirst" [class.active]="currentPage === 1">
+          <button class="page-link" (click)="onPageChange(1)">1</button>
+        </li>
+        
+        <!-- Points de suspension (début) -->
+        <li class="page-item disabled" *ngIf="showStartDots">
+          <span class="page-link">...</span>
+        </li>
+        
+        <!-- Pages intermédiaires -->
+        <li class="page-item" *ngFor="let page of visiblePages" [class.active]="currentPage === page">
+          <button class="page-link" (click)="onPageChange(page)">{{ page }}</button>
+        </li>
+        
+        <!-- Points de suspension (fin) -->
+        <li class="page-item disabled" *ngIf="showEndDots">
+          <span class="page-link">...</span>
+        </li>
+        
+        <!-- Dernière page -->
+        <li class="page-item" *ngIf="showLast" [class.active]="currentPage === totalPages">
+          <button class="page-link" (click)="onPageChange(totalPages)">{{ totalPages }}</button>
+        </li>
+        
+        <!-- Bouton Suivant -->
+        <li class="page-item" [class.disabled]="currentPage === totalPages">
+          <button class="page-link" (click)="onPageChange(currentPage + 1)" [disabled]="currentPage === totalPages">
+            Suivant <i class="fas fa-chevron-right"></i>
+          </button>
+        </li>
+      </ul>
+    </nav>
+    
+    <!-- Info pagination -->
+    <div *ngIf="totalPages > 1" class="text-center text-muted mt-2 small">
+      Page {{ currentPage }} sur {{ totalPages }}
+      <span *ngIf="totalItems"> ({{ totalItems }} éléments au total)</span>
+    </div>

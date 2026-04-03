@@ -1,0 +1,71 @@
+<div class="d-flex flex-wrap justify-content-between align-items-center mt-4 gap-3">
+      <!-- Sélecteur de limite -->
+      <div class="d-flex align-items-center gap-2">
+        <label for="affichage" class="text-muted small mb-0">Afficher :</label>
+        <select id="affichage" class="form-select form-select-sm" style="width: auto;" [(ngModel)]="limit" (change)="onLimitChange()">
+          <option [value]="10">10</option>
+          <option [value]="20">20</option>
+          <option [value]="50">50</option>
+          <option [value]="100">100</option>
+        </select>
+      </div>
+      
+      <!-- Informations -->
+      <div class="text-muted small">
+        Affichage de <strong>{{ startItem }}</strong> à <strong>{{ endItem }}</strong> sur <strong>{{ totalItems }}</strong> éléments
+      </div>
+      
+      <!-- Boutons de navigation -->
+      <div class="btn-group">
+        <button 
+          class="btn btn-outline-primary btn-sm" 
+          (click)="onPageChange(1)"
+          [disabled]="currentPage === 1"
+        >
+          <i class="fas fa-angle-double-left"></i>
+        </button>
+        
+        <button 
+          class="btn btn-outline-primary btn-sm" 
+          (click)="onPageChange(currentPage - 1)"
+          [disabled]="currentPage === 1"
+        >
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        
+        <button class="btn btn-outline-secondary btn-sm disabled">
+          {{ currentPage }} / {{ totalPages }}
+        </button>
+        
+        <button 
+          class="btn btn-outline-primary btn-sm" 
+          (click)="onPageChange(currentPage + 1)"
+          [disabled]="currentPage === totalPages"
+        >
+          <i class="fas fa-chevron-right"></i>
+        </button>
+        
+        <button 
+          class="btn btn-outline-primary btn-sm" 
+          (click)="onPageChange(totalPages)"
+          [disabled]="currentPage === totalPages"
+        >
+          <i class="fas fa-angle-double-right"></i>
+        </button>
+      </div>
+      
+      <!-- Aller à une page -->
+      <div class="d-flex align-items-center gap-2">
+        <label for="allera" class="text-muted small mb-0">Aller à :</label>
+        <input 
+          name="allera"
+          type="number" 
+          class="form-control form-control-sm" 
+          style="width: 70px;"
+          [ngModel]="currentPage"
+          (ngModelChange)="goToPage($event)"
+          [min]="1"
+          [max]="totalPages"
+        >
+      </div>
+    </div>

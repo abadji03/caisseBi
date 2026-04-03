@@ -5,15 +5,35 @@ const Panier = db.Panier;
 const ArticlePanier = db.ArticlePanier;
 const fs = require('fs');
 const path = require('path');
+const HistoriqueService = require('../services/historique.service');
 
 exports.createPanier = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
     const panier = await Panier.create(req.body);
+
+     // Enregistrement de l'action
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Création d'un nouveau panier (ID: ${panier.id})`,
+      clientIp,
+      { 
+        action: 'CREATE_PANIER',
+        panierId: panier.id,
+        panierData: {
+          totalHT: panier.totalHT,
+          totalTTC: panier.totalTTC,
+          statut: panier.statut,
+          magasinId: panier.magasinId,
+          code_structure: panier.code_structure
+        }
+      }
+    );
     return res.status(201).json(panier);
   } catch (error) {
     console.error('Erreur création panier:', error);
@@ -140,16 +160,42 @@ exports.getPanierById = async (req, res) => {
 exports.updatePanier = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
+
+    // Récupérer l'ancien panier pour comparer
+    const oldPanier = await Panier.findByPk(req.params.id);
+    if (!oldPanier) {
+      return res.status(404).json({ message: 'Panier non trouvé' });
+    }
+
     req.body.dateMiseAJour = new Date(); // maj auto de la date
     const [updated] = await Panier.update(req.body, {
       where: { id: req.params.id },
     });
     if (!updated) return res.status(404).json({ message: 'Panier non trouvé' });
     const panier = await Panier.findByPk(req.params.id);
+
+    // Préparer les changements
+    const changes = {};
+    if (oldPanier.totalHT !== panier.totalHT) changes.totalHT = { old: oldPanier.totalHT, new: panier.totalHT };
+    if (oldPanier.totalTTC !== panier.totalTTC) changes.totalTTC = { old: oldPanier.totalTTC, new: panier.totalTTC };
+    if (oldPanier.statut !== panier.statut) changes.statut = { old: oldPanier.statut, new: panier.statut };
+    
+    // Enregistrement de l'action
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Mise à jour du panier (ID: ${panier.id})`,
+      clientIp,
+      { 
+        action: 'UPDATE_PANIER',
+        panierId: panier.id,
+        changes: changes
+      }
+    );
     return res.json(panier);
   } catch (error) {
     console.error('Erreur update panier:', error);
@@ -160,14 +206,37 @@ exports.updatePanier = async (req, res) => {
 exports.deleteOnlyPanier = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
     const { id } = req.params;
 
+    // Récupérer le panier avant suppression
+    const panier = await Panier.findByPk(id);
+    if (!panier) {
+      return res.status(404).json({ message: 'Panier non trouvé' });
+    }
+
     const deleted = await Panier.destroy({ where: { id } });
     if (!deleted) return res.status(404).json({ message: 'Panier non trouvée' });
+
+     // Enregistrement de l'action
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Suppression du panier (ID: ${id})`,
+      clientIp,
+      { 
+        action: 'DELETE_PANIER_ONLY',
+        panierId: id,
+        panierData: {
+          totalHT: panier.totalHT,
+          totalTTC: panier.totalTTC,
+          statut: panier.statut
+        }
+      }
+    );
 
     res.json({ message: 'Panier supprimée' });
   } catch (error) {
@@ -179,6 +248,7 @@ exports.deletePanier = async (req, res) => {
   const transaction = await db.sequelize.transaction();
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -204,6 +274,16 @@ exports.deletePanier = async (req, res) => {
       await transaction.rollback();
       return res.status(404).json({ message: 'Panier non trouvé' });
     }
+
+    // Sauvegarder les informations pour l'historique
+    const panierData = {
+      id: panier.id,
+      totalHT: panier.totalHT,
+      totalTTC: panier.totalTTC,
+      statut: panier.statut,
+      articlesCount: panier.ArticlePaniers?.length || 0,
+      hasBon: !!panier.Bon
+    };
 
     // Supprimer en cascade dans l'ordre
     // 1. Supprimer les articles du panier
@@ -252,6 +332,19 @@ exports.deletePanier = async (req, res) => {
     }
 
     await transaction.commit();
+
+    // Enregistrement de l'action
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Suppression complète du panier (ID: ${panierId}) avec ses articles et son bon associé`,
+      clientIp,
+      { 
+        action: 'DELETE_PANIER_CASCADE',
+        panierId: panierId,
+        panierData: panierData
+      }
+    );
+
     return res.status(200).json({ message: 'Panier, articles et bon associé supprimés avec succès' });
     
   } catch (error) {
@@ -264,6 +357,7 @@ exports.deletePanier = async (req, res) => {
 exports.updateStatutPanier = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -272,9 +366,23 @@ exports.updateStatutPanier = async (req, res) => {
     const panier = await Panier.findByPk(req.params.id);
     if (!panier) return res.status(404).json({ message: 'Panier non trouvé' });
 
+     const oldStatut = panier.statut;
     panier.statut = statut;
     panier.dateMiseAJour = new Date();
     await panier.save();
+
+    // Enregistrement de l'action
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Changement de statut du panier (ID: ${panier.id}) : ${oldStatut} → ${statut}`,
+      clientIp,
+      { 
+        action: 'UPDATE_PANIER_STATUS',
+        panierId: panier.id,
+        oldStatut: oldStatut,
+        newStatut: statut
+      }
+    );
 
     return res.json(panier);
   } catch (error) {
@@ -287,6 +395,7 @@ exports.updateStatutPanier = async (req, res) => {
 exports.updateTotauxPanier = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -295,12 +404,34 @@ exports.updateTotauxPanier = async (req, res) => {
     const panier = await Panier.findByPk(req.params.id);
     if (!panier) return res.status(404).json({ message: 'Panier non trouvé' });
 
+    const oldTotaux = {
+      totalHT: panier.totalHT,
+      tva: panier.tva,
+      totalTTC: panier.totalTTC
+    };
+
     panier.totalHT = parseFloat(totalHT);
     panier.tva = parseFloat(tva);
     panier.totalTTC = panier.totalHT + panier.tva;
     panier.dateMiseAJour = new Date();
 
     await panier.save();
+     // Enregistrement de l'action
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Mise à jour des totaux du panier (ID: ${panier.id})`,
+      clientIp,
+      { 
+        action: 'UPDATE_PANIER_TOTALS',
+        panierId: panier.id,
+        oldTotals: oldTotaux,
+        newTotals: {
+          totalHT: panier.totalHT,
+          tva: panier.tva,
+          totalTTC: panier.totalTTC
+        }
+      }
+    );
     return res.json(panier);
   } catch (error) {
     console.error('Erreur update totaux panier:', error);
@@ -311,6 +442,7 @@ exports.updateTotauxPanier = async (req, res) => {
 exports.updateDetailsVisible = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -319,9 +451,23 @@ exports.updateDetailsVisible = async (req, res) => {
     const panier = await Panier.findByPk(req.params.id);
     if (!panier) return res.status(404).json({ message: 'Panier non trouvé' });
 
+    const oldVisible = panier.detailsVisible;
     panier.detailsVisible = visible;
     panier.dateMiseAJour = new Date();
     await panier.save();
+
+     // Enregistrement de l'action
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Modification de la visibilité des détails du panier (ID: ${panier.id}) : ${oldVisible} → ${visible}`,
+      clientIp,
+      { 
+        action: 'UPDATE_PANIER_VISIBILITY',
+        panierId: panier.id,
+        oldVisibility: oldVisible,
+        newVisibility: visible
+      }
+    );
 
     return res.json(panier);
   } catch (error) {
@@ -333,12 +479,20 @@ exports.updateDetailsVisible = async (req, res) => {
 exports.resetPanier = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
     const panier = await Panier.findByPk(req.params.id);
     if (!panier) return res.status(404).json({ message: 'Panier non trouvé' });
+
+    const oldValues = {
+      totalHT: panier.totalHT,
+      tva: panier.tva,
+      totalTTC: panier.totalTTC,
+      statut: panier.statut
+    };
 
     panier.totalHT = 0;
     panier.tva = 0;
@@ -347,6 +501,25 @@ exports.resetPanier = async (req, res) => {
     panier.dateMiseAJour = new Date();
 
     await panier.save();
+
+    // Enregistrement de l'action
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Réinitialisation du panier (ID: ${panier.id})`,
+      clientIp,
+      { 
+        action: 'RESET_PANIER',
+        panierId: panier.id,
+        oldValues: oldValues,
+        newValues: {
+          totalHT: 0,
+          tva: 0,
+          totalTTC: 0,
+          statut: 'EN_COURS'
+        }
+      }
+    );
+    
     return res.json(panier);
   } catch (error) {
     console.error('Erreur reset panier:', error);

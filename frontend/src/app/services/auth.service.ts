@@ -97,15 +97,15 @@ export class AuthService {
           { 
             label: 'Structures', 
             route: '/caisse-bi/admin-general/structure', 
-            titre: 'Administration', 
+            titre: 'Administration générale', 
             sousTitre: 'Gestion des structures' 
           },
-         /*  { 
-            label: 'Utilisateurs', 
-            route: '/caisse-bi/parametres', // Créez cette route si nécessaire
-            titre: 'Administration', 
-            sousTitre: 'Configuration générale' 
-          }  */
+         { 
+            label: 'Historique des actions', 
+            route: '/caisse-bi/historique-actions', // Créez cette route si nécessaire
+            titre: 'Administration générale', 
+            sousTitre: 'Historiques des actions des utilisateurs' 
+          }  
         ]
       }
     ],
@@ -178,7 +178,8 @@ export class AuthService {
         children: [
           { label: 'Magasins', route: '/caisse-bi/magasins', titre: 'Compte & Paramètres', sousTitre: 'Gestion des magasins' },
           { label: 'Personnel', route: '/caisse-bi/gerant', titre: 'Compte & Paramètres', sousTitre: 'Gestion du personnel' },
-          { label: 'Paramètres', route: '/caisse-bi/parametres', titre: 'Compte & Paramètres', sousTitre: 'Gestion des paramètres' }
+          { label: 'Paramètres', route: '/caisse-bi/parametres', titre: 'Compte & Paramètres', sousTitre: 'Gestion des paramètres' },
+          { label: 'Actions utilisateurs', route: '/caisse-bi/historique-actions', titre: 'Compte & Paramètres', sousTitre: 'Historiques des actions des utilisateurs' }
         ]
       }
     ],
@@ -251,7 +252,7 @@ export class AuthService {
         children: [
           { label: 'Magasins', route: '/caisse-bi/magasins', titre: 'Compte & Paramètres', sousTitre: 'Gestion des magasins' },
           { label: 'Personnel', route: '/caisse-bi/gerant', titre: 'Compte & Paramètres', sousTitre: 'Gestion du personnel' },
-          { label: 'Paramètres', route: '/caisse-bi/parametres', titre: 'Compte & Paramètres', sousTitre: 'Gestion des paramètres' }
+          { label: 'Paramètres', route: '/caisse-bi/parametres', titre: 'Compte & Paramètres', sousTitre: 'Gestion des paramètres' },
         ]
       }
     ],

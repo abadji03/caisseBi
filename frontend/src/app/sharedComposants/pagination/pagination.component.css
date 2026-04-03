@@ -1,0 +1,22 @@
+.pagination {
+      gap: 5px;
+    }
+    .page-item .page-link {
+      cursor: pointer;
+      min-width: 40px;
+      text-align: center;
+    }
+    .page-item.active .page-link {
+      background-color: #0d6efd;
+      border-color: #0d6efd;
+      color: white;
+    }
+    .page-item.disabled .page-link {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    .page-item:not(.disabled):not(.active) .page-link:hover {
+      background-color: #e9ecef;
+      transform: translateY(-1px);
+      transition: all 0.2s;
+    }

@@ -10,4 +10,6 @@ router.get('/:id', authenticateToken, categorieCtrl.getCategoriesById);
 router.get('/structure/:code_structure', authenticateToken, categorieCtrl.getCategoriesByStructure);
 router.patch('/:id/statut', authenticateToken, categorieCtrl.updateStatutCategorie);
 
+router.get('/export/excel',authenticateToken, categorieCtrl.exportCategoriesExcel);
+
 module.exports = router;

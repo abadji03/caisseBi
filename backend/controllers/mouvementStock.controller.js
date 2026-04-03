@@ -1,6 +1,7 @@
 const db = require('../models');
 const MouvementStock = db.MouvementStock;
 const { Op,fn,col,literal} = db.Sequelize;
+const HistoriqueService = require('../services/historique.service');
 
 
 //Créer un mouvement de stock
@@ -8,11 +9,30 @@ exports.createMouvementStock = async (req, res) => {
   console.log(req.body);
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
     const mouvement = await MouvementStock.create(req.body);
+
+    // ENREGISTRER L'HISTORIQUE
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Création d'un mouvement de stock - Réf: ${mouvement.ref || mouvement.id} - Type: ${mouvement.typeMouvement} - Quantité: ${mouvement.quantite}`,
+      clientIp,
+      {
+        action: 'CREATE_MOUVEMENT_STOCK',
+        mouvementId: mouvement.id,
+        details: {
+          typeMouvement: mouvement.typeMouvement,
+          quantite: mouvement.quantite,
+          produitId: mouvement.produitId,
+          magasinId: mouvement.magasinId,
+          ref: mouvement.ref
+        }
+      }
+    );
     res.status(201).json({ message: 'Mouvement créé avec succès', mouvement });
   } catch (error) {
     console.error(error);
@@ -63,6 +83,7 @@ exports.getMouvementStockById = async (req, res) => {
 exports.updateMouvementStock = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -72,7 +93,37 @@ exports.updateMouvementStock = async (req, res) => {
       return res.status(404).json({ message: 'Mouvement non trouvé' });
     }
 
+    // Sauvegarder l'ancien état pour l'historique
+    const oldData = {
+      typeMouvement: mouvement.typeMouvement,
+      quantite: mouvement.quantite,
+      statut: mouvement.statut,
+      description: mouvement.description
+    };
+
     await mouvement.update(req.body);
+
+    // ENREGISTRER L'HISTORIQUE AVEC LES CHANGEMENTS
+    const changes = {};
+    if (oldData.typeMouvement !== mouvement.typeMouvement) 
+      changes.typeMouvement = { old: oldData.typeMouvement, new: mouvement.typeMouvement };
+    if (oldData.quantite !== mouvement.quantite) 
+      changes.quantite = { old: oldData.quantite, new: mouvement.quantite };
+    if (oldData.statut !== mouvement.statut) 
+      changes.statut = { old: oldData.statut, new: mouvement.statut };
+    if (oldData.description !== mouvement.description) 
+      changes.description = { old: oldData.description, new: mouvement.description };
+    
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Mise à jour du mouvement de stock - ID: ${mouvement.id} - Réf: ${mouvement.ref || 'N/A'}`,
+      clientIp,
+      {
+        action: 'UPDATE_MOUVEMENT_STOCK',
+        mouvementId: mouvement.id,
+        changes: changes
+      }
+    );
     res.status(200).json({ message: 'Mouvement mis à jour', mouvement });
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la mise à jour', error: error.message });
@@ -83,6 +134,7 @@ exports.updateMouvementStock = async (req, res) => {
 exports.deleteMouvementStock = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -92,7 +144,28 @@ exports.deleteMouvementStock = async (req, res) => {
       return res.status(404).json({ message: 'Mouvement non trouvé' });
     }
 
+    // Sauvegarder les infos avant suppression
+    const mouvementInfo = {
+      id: mouvement.id,
+      ref: mouvement.ref,
+      typeMouvement: mouvement.typeMouvement,
+      quantite: mouvement.quantite,
+      produitId: mouvement.produitId,
+      magasinId: mouvement.magasinId
+    };
+
     await mouvement.destroy();
+
+    // ENREGISTRER L'HISTORIQUE DE SUPPRESSION
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Suppression du mouvement de stock - ID: ${mouvementInfo.id} - Réf: ${mouvementInfo.ref || 'N/A'} - Type: ${mouvementInfo.typeMouvement}`,
+      clientIp,
+      {
+        action: 'DELETE_MOUVEMENT_STOCK',
+        deletedMouvement: mouvementInfo
+      }
+    );
     res.status(200).json({ message: 'Mouvement supprimé' });
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la suppression', error: error.message });
@@ -408,6 +481,7 @@ exports.getMouvementsByStructure = async (req, res) => {
 exports.updateStatut = async (req, res) => {
   try {
     const authUser = req.user; // utilisateur connecté
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: 'Non authentifié' });
@@ -415,11 +489,25 @@ exports.updateStatut = async (req, res) => {
     const mvt = await MouvementStock.findByPk(req.params.id);
     if (!mvt) return res.status(404).json({ message: 'Mouvement non trouvé' });
 
+    const oldStatut = mvt.statut;
     const { statut } = req.body;
     /* if (typeof statut !== 'boolean')
       return res.status(400).json({ message: 'Le statut doit être un booléen' }); */
 
     await mvt.update({ statut });
+
+    // ENREGISTRER L'HISTORIQUE
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Mise à jour du statut du mouvement ${mvt.id} (Réf: ${mvt.ref || 'N/A'}) : ${oldStatut} → ${statut}`,
+      clientIp,
+      {
+        action: 'UPDATE_MOUVEMENT_STATUT',
+        mouvementId: mvt.id,
+        oldStatut: oldStatut,
+        newStatut: statut
+      }
+    );
     res.json(mvt);
   } catch (error) {
     res.status(500).json({ message: 'Erreur mise à jour du statut', error });

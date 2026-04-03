@@ -10,6 +10,7 @@ const path = require('path');
 const operationController = require('./operation.controller');
 const { statutManager } = require('./bonComplet');
 const { Op,literal} = db.Sequelize;
+const HistoriqueService = require('../services/historique.service');
 
 
 const BASE_URL = 'http://localhost:5000/uploads/';
@@ -18,6 +19,7 @@ exports.create = async (req, res) => {
   const transaction = await db.sequelize.transaction();
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -39,10 +41,36 @@ exports.create = async (req, res) => {
 
     // Mettre à jour le fournisseur ou le client selon le type de paiement
 
-    if(paiement.typePaiement === 'fournisseur') await statutManager.mettreAJourFournisseurApresVersement(paiement, paiement.fournisseurId, transaction);
-    if(paiement.typePaiement === 'client') await statutManager.mettreAJourClientApresRegelement(paiement, paiement.clientId, transaction);
-    
+    //if(paiement.typePaiement === 'fournisseur') await statutManager.mettreAJourFournisseurApresVersement(paiement, paiement.fournisseurId, transaction);
+    //if(paiement.typePaiement === 'client') await statutManager.mettreAJourClientApresRegelement(paiement, paiement.clientId, transaction);
+    let cible = '';
+    if (paiement.typePaiement === 'fournisseur') {
+      await statutManager.mettreAJourFournisseurApresVersement(paiement, paiement.fournisseurId, transaction);
+      cible = `fournisseur ID: ${paiement.fournisseurId}`;
+    }
+    if (paiement.typePaiement === 'client') {
+      await statutManager.mettreAJourClientApresRegelement(paiement, paiement.clientId, transaction);
+      cible = `client ID: ${paiement.clientId}`;
+    }
     await transaction.commit();
+
+      // ENREGISTRER L'HISTORIQUE
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Création d'un paiement: ${paiement.montant} FCFA - ${paiement.typePaiement} (${cible})`,
+      clientIp,
+      {
+        action: 'CREATE_PAIEMENT',
+        paiementId: paiement.id,
+        montant: paiement.montant,
+        typePaiement: paiement.typePaiement,
+        methodePaiement: paiement.methodePaiement,
+        magasinId: paiement.magasinId,
+        fournisseurId: paiement.fournisseurId,
+        clientId: paiement.clientId,
+        description: paiement.description
+      }
+    );
 
     res.status(201).json(paiement);
   } catch (error) {
@@ -90,6 +118,7 @@ exports.findById = async (req, res) => {
 exports.update = async (req, res) => {
 try {
   const authUser = req.user;
+  const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -98,6 +127,14 @@ try {
   if (!paiement) {
     return res.status(404).json({ message: 'Paiement non trouvé' });
   }
+  // Sauvegarder les anciennes valeurs pour l'historique
+  const oldValues = {
+    montant: paiement.montant,
+    methodePaiement: paiement.methodePaiement,
+    description: paiement.description,
+    typePaiement: paiement.typePaiement,
+    fichier: paiement.fichier
+  };
   const updatedData = { ...req.body };
   
       // Si un nouveau fichier est envoyé
@@ -118,6 +155,26 @@ try {
       }
   
       await paiement.update(updatedData);
+
+      // Préparer les changements pour l'historique
+      const changes = {};
+      if (oldValues.montant !== paiement.montant) changes.montant = { old: oldValues.montant, new: paiement.montant };
+      if (oldValues.methodePaiement !== paiement.methodePaiement) changes.methodePaiement = { old: oldValues.methodePaiement, new: paiement.methodePaiement };
+      if (oldValues.description !== paiement.description) changes.description = { old: oldValues.description, new: paiement.description };
+      if (oldValues.typePaiement !== paiement.typePaiement) changes.typePaiement = { old: oldValues.typePaiement, new: paiement.typePaiement };
+      if (req.file) changes.fichier = 'modifié';
+      
+      // ENREGISTRER L'HISTORIQUE
+      await HistoriqueService.enregistrerAction(
+        authUser.id,
+        `Mise à jour du paiement #${paiement.id} - ${paiement.montant} FCFA`,
+        clientIp,
+        {
+          action: 'UPDATE_PAIEMENT',
+          paiementId: paiement.id,
+          changes: changes
+        }
+      );
       console.log('Paiement mis à jour avec:', updatedData);
       res.json({ message: 'Paiement mis à jour', paiement });
     } catch (error) {
@@ -128,15 +185,44 @@ try {
 exports.delete = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
+
+    // Récupérer le paiement avant suppression
+    const paiement = await Paiement.findByPk(req.params.id);
+    if (!paiement) {
+      return res.status(404).json({ message: 'Paiement non trouvé' });
+    }
+
     const deleted = await Paiement.destroy({
       where: { id: req.params.id },
     });
-    if (!deleted) return res.status(404).json({ message: 'Paiement non trouvé' });
-    res.status(204).send();
+    //if (!deleted) return res.status(404).json({ message: 'Paiement non trouvé' });
+    //res.status(204).send();
+    if (deleted) {
+      // ENREGISTRER L'HISTORIQUE
+      await HistoriqueService.enregistrerAction(
+        authUser.id,
+        `Suppression du paiement #${paiement.id} - ${paiement.montant} FCFA (${paiement.typePaiement})`,
+        clientIp,
+        {
+          action: 'DELETE_PAIEMENT',
+          paiementId: paiement.id,
+          deletedData: {
+            montant: paiement.montant,
+            typePaiement: paiement.typePaiement,
+            methodePaiement: paiement.methodePaiement,
+            date: paiement.date,
+            fournisseurId: paiement.fournisseurId,
+            clientId: paiement.clientId
+          }
+        }
+      );
+      res.status(204).send();
+    }
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

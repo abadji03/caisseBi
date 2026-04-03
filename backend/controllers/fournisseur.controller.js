@@ -5,12 +5,14 @@ const Panier = db.Panier;
 const ArticlePanier = db.ArticlePanier;
 const Produit = db.Produit;
 const {Op} = db.Sequelize;
+const HistoriqueService = require('../services/historique.service');
 
 
 // Créer un nouveau fournisseur avec vérification de l'email et du téléphone
 exports.createFournisseur = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -39,8 +41,41 @@ exports.createFournisseur = async (req, res) => {
 
     // Si aucun fournisseur existant n'est trouvé, créer le nouveau fournisseur
     const fournisseur = await Fournisseur.create(req.body);
+
+    // ENREGISTRER L'HISTORIQUE
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Création d'un nouveau fournisseur: ${fournisseur.nomComplet || fournisseur.nom || fournisseur.email}`,
+      clientIp,
+      {
+        action: 'CREATE_FOURNISSEUR',
+        fournisseurId: fournisseur.id,
+        fournisseurData: {
+          nomComplet: fournisseur.nomComplet,
+          email: fournisseur.email,
+          telephone: fournisseur.telephone,
+          code_structure: fournisseur.code_structure,
+          magasinId: fournisseur.magasinId
+        }
+      }
+    );
+
     res.status(201).json(fournisseur);
   } catch (error) {
+
+    // Enregistrer l'erreur dans l'historique
+    if (req.user) {
+      await HistoriqueService.enregistrerAction(
+        req.user.id,
+        `Erreur lors de la création d'un fournisseur`,
+        HistoriqueService.getClientIp(req),
+        {
+          action: 'ERROR_CREATE_FOURNISSEUR',
+          error: error.message,
+          data: req.body
+        }
+      );
+    }
     res.status(500).json({
       message: 'Erreur lors de la création du fournisseur' + error,
       error: error.message,
@@ -87,6 +122,7 @@ exports.getFournisseurById = async (req, res) => {
 exports.updateFournisseur = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -94,9 +130,52 @@ exports.updateFournisseur = async (req, res) => {
     const fournisseur = await Fournisseur.findByPk(req.params.id);
     if (!fournisseur) return res.status(404).json({ message: 'Fournisseur non trouvé' });
 
+    // Récupérer les anciennes valeurs pour comparer
+    const oldValues = {
+      nomComplet: fournisseur.nomComplet,
+      email: fournisseur.email,
+      telephone: fournisseur.telephone,
+      adresse: fournisseur.adresse,
+      statut: fournisseur.statut
+    };
+
     await fournisseur.update(req.body);
+
+    // Identifier les changements
+    const changes = {};
+    if (oldValues.nomComplet !== fournisseur.nomComplet) changes.nomComplet = { old: oldValues.nomComplet, new: fournisseur.nomComplet };
+    if (oldValues.email !== fournisseur.email) changes.email = { old: oldValues.email, new: fournisseur.email };
+    if (oldValues.telephone !== fournisseur.telephone) changes.telephone = { old: oldValues.telephone, new: fournisseur.telephone };
+    if (oldValues.adresse !== fournisseur.adresse) changes.adresse = { old: oldValues.adresse, new: fournisseur.adresse };
+    if (oldValues.statut !== fournisseur.statut) changes.statut = { old: oldValues.statut, new: fournisseur.statut };
+    
+    // ENREGISTRER L'HISTORIQUE
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Mise à jour du fournisseur: ${fournisseur.nomComplet || fournisseur.email}`,
+      clientIp,
+      {
+        action: 'UPDATE_FOURNISSEUR',
+        fournisseurId: fournisseur.id,
+        changes: changes,
+        updatedData: req.body
+      }
+    );
     res.json({ message: 'Fournisseur mis à jour', fournisseur });
   } catch (error) {
+    // Enregistrer l'erreur
+    if (req.user) {
+      await HistoriqueService.enregistrerAction(
+        req.user.id,
+        `Erreur lors de la mise à jour du fournisseur ID: ${req.params.id}`,
+        HistoriqueService.getClientIp(req),
+        {
+          action: 'ERROR_UPDATE_FOURNISSEUR',
+          fournisseurId: req.params.id,
+          error: error.message
+        }
+      );
+    }
     res.status(500).json({ message: 'Erreur mise à jour', error });
   }
 };
@@ -106,6 +185,7 @@ exports.updateFournisseur = async (req, res) => {
 exports.updateFournisseurStatus = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -117,9 +197,37 @@ exports.updateFournisseurStatus = async (req, res) => {
     if (typeof statut !== 'boolean')
       return res.status(400).json({ message: 'Le statut doit être un booléen' });
 
+    const oldStatut = fournisseur.statut;
     await fournisseur.update({ statut });
+
+    // ENREGISTRER L'HISTORIQUE
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Changement de statut du fournisseur ${fournisseur.nomComplet || fournisseur.email}: ${oldStatut ? 'actif' : 'inactif'} → ${statut ? 'actif' : 'inactif'}`,
+      clientIp,
+      {
+        action: 'UPDATE_FOURNISSEUR_STATUS',
+        fournisseurId: fournisseur.id,
+        oldStatut: oldStatut,
+        newStatut: statut
+      }
+    );
+
     res.json({ message: 'Statut du fournisseur mis à jour', fournisseur });
   } catch (error) {
+    // Enregistrer l'erreur
+    if (req.user) {
+      await HistoriqueService.enregistrerAction(
+        req.user.id,
+        `Erreur lors du changement de statut du fournisseur ID: ${req.params.id}`,
+        HistoriqueService.getClientIp(req),
+        {
+          action: 'ERROR_UPDATE_FOURNISSEUR_STATUS',
+          fournisseurId: req.params.id,
+          error: error.message
+        }
+      );
+    }
     res.status(500).json({ message: 'Erreur mise à jour du statut', error });
   }
 };
@@ -128,6 +236,7 @@ exports.updateFournisseurStatus = async (req, res) => {
 exports.deleteFournisseur = async (req, res) => {
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -135,9 +244,41 @@ exports.deleteFournisseur = async (req, res) => {
     const fournisseur = await Fournisseur.findByPk(req.params.id);
     if (!fournisseur) return res.status(404).json({ message: 'Fournisseur non trouvé' });
 
+    // Sauvegarder les infos avant suppression
+    const fournisseurInfo = {
+      id: fournisseur.id,
+      nomComplet: fournisseur.nomComplet,
+      email: fournisseur.email,
+      telephone: fournisseur.telephone,
+      code_structure: fournisseur.code_structure
+    };
+
+     // ENREGISTRER L'HISTORIQUE
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Suppression du fournisseur: ${fournisseurInfo.nomComplet || fournisseurInfo.email}`,
+      clientIp,
+      {
+        action: 'DELETE_FOURNISSEUR',
+        fournisseurInfo: fournisseurInfo
+      }
+    );
     await fournisseur.destroy();
     res.json({ message: 'Fournisseur supprimé' });
   } catch (error) {
+    // Enregistrer l'erreur
+    if (req.user) {
+      await HistoriqueService.enregistrerAction(
+        req.user.id,
+        `Erreur lors de la suppression du fournisseur ID: ${req.params.id}`,
+        HistoriqueService.getClientIp(req),
+        {
+          action: 'ERROR_DELETE_FOURNISSEUR',
+          fournisseurId: req.params.id,
+          error: error.message
+        }
+      );
+    }
     res.status(500).json({ message: 'Erreur suppression', error });
   }
 };
@@ -416,5 +557,146 @@ exports.getBonsWithPaniersAndProduits = async (req, res) => {
     res.json(fournisseur);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+// NOUVEAU : Exporter les fournisseurs vers Excel
+exports.exportFournisseursExcel = async (req, res) => {
+  try {
+    const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
+    const ExcelJS = require('exceljs');
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
+    const { code_structure, magasinId, search, statut } = req.query;
+    
+    // Construction de la clause WHERE
+    let whereClause = {};
+    
+    if (code_structure) {
+      whereClause.code_structure = code_structure;
+    }
+    
+    if (magasinId) {
+      whereClause.magasinId = parseInt(magasinId);
+    }
+    
+    if (search && search.trim() !== '') {
+      whereClause[Op.or] = [
+        { nomComplet: { [Op.like]: `%${search}%` } },
+        { email: { [Op.like]: `%${search}%` } },
+        { telephone: { [Op.like]: `%${search}%` } },
+        { adresse: { [Op.like]: `%${search}%` } }
+      ];
+    }
+    
+    if (statut && statut !== 'tous') {
+      whereClause.statut = statut === 'actif' ? true : false;
+    }
+    
+    const fournisseurs = await Fournisseur.findAll({
+      where: whereClause,
+      include: [
+        { model: db.Magasin, attributes: ["id", "nom"] }
+      ],
+      order: [['nomComplet', 'ASC']]
+    });
+    
+    // Création du workbook Excel
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = authUser.nom || 'Application';
+    workbook.created = new Date();
+    
+    const sheet = workbook.addWorksheet('Fournisseurs');
+    
+    // Styles
+    const headerStyle = {
+      font: { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 },
+      fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D6EFD' } },
+      alignment: { vertical: 'middle', horizontal: 'center' },
+      border: {
+        top: { style: 'thin' }, bottom: { style: 'thin' },
+        left: { style: 'thin' }, right: { style: 'thin' }
+      }
+    };
+    
+    // En-têtes
+    const headers = [
+      'ID', 'Nom complet', 'Email', 'Téléphone', 'Adresse', 
+      'Banque', 'N° Compte', 'Montant à payer', 'Statut', 
+      'Magasin', 'Date création'
+    ];
+    
+    sheet.addRow(headers).eachCell(cell => {
+      cell.style = headerStyle;
+    });
+    
+    // Remplir les données
+    fournisseurs.forEach(fournisseur => {
+      sheet.addRow([
+        fournisseur.id,
+        fournisseur.nomComplet || '-',
+        fournisseur.email || '-',
+        fournisseur.telephone || '-',
+        fournisseur.adresse || '-',
+        fournisseur.banque || '-',
+        fournisseur.numeroCompte || '-',
+        fournisseur.montantAPayer ? `${fournisseur.montantAPayer.toLocaleString('fr-FR')} F CFA` : '0 F CFA',
+        fournisseur.statut ? 'Actif' : 'Inactif',
+        fournisseur.Magasin?.nom || '-',
+        fournisseur.createdAt ? new Date(fournisseur.createdAt).toLocaleDateString('fr-FR') : '-'
+      ]);
+    });
+    
+    // Ajuster les largeurs
+    sheet.columns.forEach(column => {
+      let maxLength = 10;
+      column.eachCell({ includeEmpty: true }, cell => {
+        const cellValue = cell.value ? cell.value.toString() : '';
+        maxLength = Math.max(maxLength, cellValue.length);
+      });
+      column.width = Math.min(maxLength + 2, 50);
+    });
+    
+    // ENREGISTRER L'HISTORIQUE
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Export Excel de ${fournisseurs.length} fournisseurs`,
+      clientIp,
+      {
+        action: 'EXPORT_FOURNISSEURS_EXCEL',
+        nombreFournisseurs: fournisseurs.length,
+        filtres: { code_structure, magasinId, search, statut }
+      }
+    );
+    
+    // Générer et envoyer le fichier
+    const buffer = await workbook.xlsx.writeBuffer();
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=fournisseurs-${Date.now()}.xlsx`);
+    res.send(buffer);
+    
+  } catch (error) {
+    console.error('❌ Erreur export Excel fournisseurs:', error);
+    
+    if (req.user) {
+      await HistoriqueService.enregistrerAction(
+        req.user.id,
+        `Erreur lors de l'export Excel des fournisseurs`,
+        HistoriqueService.getClientIp(req),
+        {
+          action: 'ERROR_EXPORT_FOURNISSEURS',
+          error: error.message
+        }
+      );
+    }
+    
+    res.status(500).json({ 
+      message: 'Erreur lors de l\'export Excel',
+      error: error.message 
+    });
   }
 };

@@ -11,5 +11,6 @@ router.use(authenticateToken);
 router.get('/connexions/user/:userId', historiqueController.getConnexionsByUser);
 router.get('/actions/user/:userId', historiqueController.getActionsByUser);
 router.get('/actions/recent', historiqueController.getAllRecentActions);
+router.get('/stats', historiqueController.getHistoriqueStats); 
 
 module.exports = router;

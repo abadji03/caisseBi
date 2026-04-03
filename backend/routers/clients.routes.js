@@ -21,4 +21,6 @@ router.patch('/:id/solde', authenticateToken, clientCtrl.updateClientSolde);
 router.patch('/:id/plafond', authenticateToken, clientCtrl.updateClientPlafond);
 router.patch('/:id/montant-a-payer', authenticateToken, clientCtrl.updateMontantANousPayer);
 
+router.get('/export/excel',authenticateToken, clientCtrl.exportClientsExcel);
+
 module.exports = router;

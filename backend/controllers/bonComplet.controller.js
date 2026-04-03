@@ -1,5 +1,6 @@
 const db = require('../models');
 const operationController = require('./operation.controller');
+const HistoriqueService = require('../services/historique.service'); 
 
 const {
   stockManager,
@@ -14,6 +15,7 @@ exports.createBonComplet = async (req, res) => {
   
   try {
     const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -45,6 +47,7 @@ exports.createBonComplet = async (req, res) => {
     let nouveauBon;
     let nouveauPanier;
     let articlesCrees;
+    let isUpdate = false;
 
     // LOGIQUE MÉTIER AMÉLIORÉE
     console.log(`Création bon - Type: ${bon.type}, Entité: ${typeEntite}, Statut: ${bon.statutBon}`);
@@ -55,6 +58,11 @@ exports.createBonComplet = async (req, res) => {
 
     //Vérifier si le bon existe
     if (bon.id) {
+      isUpdate = true;
+      
+      // Récupérer l'ancien bon pour comparer
+      const ancienBon = await db.Bon.findByPk(bon.id, { transaction })
+
       // Mise à jour statut / informations existantes
       nouveauBon = await db.Bon.findByPk(bon.id, { transaction });
       if (!nouveauBon) {
@@ -64,8 +72,37 @@ exports.createBonComplet = async (req, res) => {
 
       // Préparer les données et mettre à jour le bon
       const bonData = await statutManager.preparerDonneesBon(bon, typeEntite, clientId, fournisseurId);
+      
+      // Sauvegarder l'ancien statut
+      const ancienStatut = nouveauBon.statutBon;
+
       // Mettre à jour le bon
       await nouveauBon.update({...bonData, agentId,code_structure,magasinId}, { transaction });
+
+      // ENREGISTRER L'HISTORIQUE POUR MISE À JOUR
+      const changes = {};
+      if (ancienBon.statutBon !== nouveauBon.statutBon) {
+        changes.statutBon = { old: ancienBon.statutBon, new: nouveauBon.statutBon };
+      }
+      if (ancienBon.montantTotal !== nouveauBon.montantTotal) {
+        changes.montantTotal = { old: ancienBon.montantTotal, new: nouveauBon.montantTotal };
+      }
+      
+      await HistoriqueService.enregistrerAction(
+        authUser.id,
+        `Mise à jour du bon ${nouveauBon.numero} (${typeEntite}) - Nouveau statut: ${nouveauBon.statutBon}`,
+        clientIp,
+        {
+          action: 'UPDATE_BON',
+          bonId: nouveauBon.id,
+          bonNumero: nouveauBon.numero,
+          typeEntite,
+          typeBon: bon.type,
+          changes,
+          ancienStatut,
+          nouveauStatut: nouveauBon.statutBon
+        }
+      );
 
       // Mettre à jour le panier associé
       nouveauPanier = await db.Panier.findOne({ where: { bonId: nouveauBon.id }, transaction });
@@ -160,6 +197,23 @@ exports.createBonComplet = async (req, res) => {
         transaction
       );
 
+      // ENREGISTRER L'HISTORIQUE POUR CRÉATION
+      await HistoriqueService.enregistrerAction(
+        authUser.id,
+        `Création du bon ${nouveauBon.numero} (${typeEntite}) - Type: ${bon.type} - Statut: ${nouveauBon.statutBon}`,
+        clientIp,
+        {
+          action: 'CREATE_BON',
+          bonId: nouveauBon.id,
+          bonNumero: nouveauBon.numero,
+          typeEntite,
+          typeBon: bon.type,
+          statut: nouveauBon.statutBon,
+          montantTotal: nouveauBon.montantTotal,
+          clientId,
+          fournisseurId
+        }
+      );
        
     }
 
@@ -201,14 +255,27 @@ exports.createBonComplet = async (req, res) => {
       }, 
       { transaction });
     
+      // ENREGISTRER L'HISTORIQUE POUR PAIEMENT
+      await HistoriqueService.enregistrerAction(
+        authUser.id,
+        `Création d'un paiement d'avance de ${nouveauBon.avance} FCFA pour le bon ${nouveauBon.numero}`,
+        clientIp,
+        {
+          action: 'CREATE_PAIEMENT_AVANCE',
+          bonId: nouveauBon.id,
+          bonNumero: nouveauBon.numero,
+          montant: nouveauBon.avance,
+          typeEntite
+        }
+      );
       // CAS 1: BONS FOURNISSEURS
-    if (typeEntite === 'fournisseur') {
-      await statutManager.mettreAJourFournisseurApresVersement(paiementCree,fournisseurId, transaction);
-    }
-    // CAS 2: BONS CLIENTS
-    else if (typeEntite === 'client') {
-      await statutManager.mettreAJourClientApresRegelement(paiementCree,clientId, transaction);
-    } 
+      if (typeEntite === 'fournisseur') {
+        await statutManager.mettreAJourFournisseurApresVersement(paiementCree,fournisseurId, transaction);
+      }
+      // CAS 2: BONS CLIENTS
+      else if (typeEntite === 'client') {
+        await statutManager.mettreAJourClientApresRegelement(paiementCree,clientId, transaction);
+      } 
     }
 
     // Créer ou mettre à jour l'opération associée
@@ -270,6 +337,21 @@ exports.createBonComplet = async (req, res) => {
     // Valider transaction
     await transaction.commit();
 
+    // ENREGISTRER L'HISTORIQUE FINAL DE SUCCÈS
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      isUpdate ? `Bon ${nouveauBon.numero} mis à jour avec succès` : `Bon ${nouveauBon.numero} créé avec succès`,
+      clientIp,
+      {
+        action: isUpdate ? 'UPDATE_BON_SUCCESS' : 'CREATE_BON_SUCCESS',
+        bonId: nouveauBon.id,
+        bonNumero: nouveauBon.numero,
+        typeEntite,
+        typeBon: bon.type,
+        statut: nouveauBon.statutBon
+      }
+    );
+
     res.status(201).json({
       message: 'Bon créé avec succès',
       bon: nouveauBon,
@@ -283,6 +365,21 @@ exports.createBonComplet = async (req, res) => {
     await transaction.rollback();
     console.error('Erreur création bon complet:', error);
     //res.status(500).json({ error: 'Erreur lors de la création du bon', details: error.message });
+    // ENREGISTRER L'HISTORIQUE D'ERREUR
+    if (req.user) {
+      await HistoriqueService.enregistrerAction(
+        req.user.id,
+        `Erreur lors de la ${req.body.bon?.id ? 'mise à jour' : 'création'} du bon`,
+        HistoriqueService.getClientIp(req),
+        {
+          action: 'ERROR_BON_OPERATION',
+          error: error.message,
+          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+          bonData: req.body.bon
+        }
+      );
+    }
+
     res.status(500).json({ 
       error: 'Erreur lors de la création/modification du bon', 
       details: error.message,
@@ -309,10 +406,25 @@ exports.traiterBonFournisseur = async (bon, articles, magasinId, agentId, code_s
         
         // Réservation pour préparation réception
         await reservationService.gererReservationsStock(articles, bon, magasinId, agentId, code_structure, transaction);
+      
+        // Historique
+        await HistoriqueService.enregistrerAction(
+          agentId,
+          `Commande fournisseur ${bon.numero} validée - Réservation de stock effectuée`,
+          null,
+          { action: 'FOURNISSEUR_COMMANDE_VALIDEE', bonId: bon.id, articles: articles.length }
+        );
       }
       if (['annulé'].includes(statut)) {
         // Réservation pour préparation réception
         await reservationService.gererReservationsStock(articles, bon, magasinId, agentId, code_structure, transaction);
+        
+        await HistoriqueService.enregistrerAction(
+          agentId,
+          `Commande fournisseur ${bon.numero} annulée - Réservations libérées`,
+          null,
+          { action: 'FOURNISSEUR_COMMANDE_ANNULEE', bonId: bon.id }
+        );
       }
       break;
 
@@ -334,6 +446,13 @@ exports.traiterBonFournisseur = async (bon, articles, magasinId, agentId, code_s
 
         // Mise à jour du fournisseur
         await statutManager.mettreAJourEntite(bon, 'fournisseur', null, bon.fournisseurId, transaction);
+      
+        await HistoriqueService.enregistrerAction(
+          agentId,
+          `Livraison fournisseur ${bon.numero} - Entrée en stock de ${articles.reduce((sum, a) => sum + a.quantite, 0)} articles`,
+          null,
+          { action: 'FOURNISSEUR_LIVRAISON_VALIDEE', bonId: bon.id, articlesCount: articles.length }
+        );
       }
       if (['retourné'].includes(statut)) {
         // Créer un bon de retour automatique
@@ -348,6 +467,13 @@ exports.traiterBonFournisseur = async (bon, articles, magasinId, agentId, code_s
         
         // Mise à jour du fournisseur (création d'avoir)
         await statutManager.mettreAJourEntite(bon, 'fournisseur',null, bon.fournisseurId, transaction);
+      
+        await HistoriqueService.enregistrerAction(
+          agentId,
+          `Retour livraison fournisseur ${bon.numero} - Sortie de stock`,
+          null,
+          { action: 'FOURNISSEUR_LIVRAISON_RETOURNEE', bonId: bon.id }
+        );
       }
       break;
 
@@ -366,6 +492,13 @@ exports.traiterBonFournisseur = async (bon, articles, magasinId, agentId, code_s
 
         // Ajustement du fournisseur
         await statutManager.mettreAJourEntite(bon, 'fournisseur', null, bon.fournisseurId, transaction);
+      
+        await HistoriqueService.enregistrerAction(
+          agentId,
+          `Retour fournisseur ${bon.numero} traité - Stock ajusté`,
+          null,
+          { action: 'FOURNISSEUR_RETOUR_VALIDE', bonId: bon.id }
+        );
       }
       break;
 
@@ -403,6 +536,12 @@ exports.traiterBonClient = async (bon, articles, magasinId, agentId, code_struct
         
         // Mise à jour du client (création de la dette)
         //await statutManager.mettreAJourEntite(bon, 'client', bon.clientId, null, transaction);
+        await HistoriqueService.enregistrerAction(
+          agentId,
+          `Commande client ${bon.numero} validée - Stock réservé`,
+          null,
+          { action: 'CLIENT_COMMANDE_VALIDEE', bonId: bon.id, articles: articles.length }
+        );
       }
 
       // LIVRAISON/RÉALISATION: Impact physique sur le stock
@@ -420,6 +559,13 @@ exports.traiterBonClient = async (bon, articles, magasinId, agentId, code_struct
         await bon.update({ dateLivraisonReelle: new Date() }, { transaction });
         // Mise à jour du client
         await statutManager.mettreAJourEntite(bon, 'client', bon.clientId, null, transaction);
+
+        await HistoriqueService.enregistrerAction(
+          agentId,
+          `Commande client ${bon.numero} livrée - Stock sorti`,
+          null,
+          { action: 'CLIENT_COMMANDE_LIVREE', bonId: bon.id }
+        );
       }
       if (['retourné'].includes(statut)) {
         // Créer un bon de retour automatique
@@ -434,6 +580,13 @@ exports.traiterBonClient = async (bon, articles, magasinId, agentId, code_struct
         
         // Mise à jour du client (création d'avoir)
         await statutManager.mettreAJourEntite(bon, 'client', bon.clientId, null, transaction);
+      
+        await HistoriqueService.enregistrerAction(
+          agentId,
+          `Commande client ${bon.numero} retournée - Stock réintégré`,
+          null,
+          { action: 'CLIENT_COMMANDE_RETOURNEE', bonId: bon.id }
+        );
       }
       
       if (['annulé'].includes(statut)) {
@@ -443,6 +596,13 @@ exports.traiterBonClient = async (bon, articles, magasinId, agentId, code_struct
         // Annuler la dette
         //const bonAnnule = { ...bon, montantTotal: Math.abs(bon.montantTotal) };
         //await statutManager.mettreAJourEntite(bonAnnule, 'client', bon.clientId, null, transaction);
+      
+        await HistoriqueService.enregistrerAction(
+          agentId,
+          `Commande client ${bon.numero} annulée - Réservations libérées`,
+          null,
+          { action: 'CLIENT_COMMANDE_ANNULEE', bonId: bon.id }
+        );
       }
       break;
 
@@ -463,6 +623,13 @@ exports.traiterBonClient = async (bon, articles, magasinId, agentId, code_struct
             mouvementService.traiterMouvementStock(article, bon, magasinId, agentId, code_structure, transaction)
           )
         );
+
+        await HistoriqueService.enregistrerAction(
+          agentId,
+          `Vente client ${bon.numero} validée - Stock sorti`,
+          null,
+          { action: 'CLIENT_VENTE_VALIDEE', bonId: bon.id, montant: bon.montantTotal }
+        );
       }
        if (['retourné'].includes(statut)) {
         // Créer un bon de retour automatique
@@ -477,6 +644,13 @@ exports.traiterBonClient = async (bon, articles, magasinId, agentId, code_struct
         
         // Mise à jour du client (création d'avoir)
         await statutManager.mettreAJourEntite(bon, 'client', bon.clientId, null, transaction);
+      
+        await HistoriqueService.enregistrerAction(
+          agentId,
+          `Vente client ${bon.numero} retournée - Stock réintégré`,
+          null,
+          { action: 'CLIENT_VENTE_RETOURNEE', bonId: bon.id }
+        );
       }
    
       break;
@@ -492,6 +666,13 @@ exports.traiterBonClient = async (bon, articles, magasinId, agentId, code_struct
         );
 
         await statutManager.mettreAJourEntite(bon, 'client', bon.clientId, null, transaction);
+      
+        await HistoriqueService.enregistrerAction(
+          agentId,
+          `Retour client ${bon.numero} validé - Stock réintégré`,
+          null,
+          { action: 'CLIENT_RETOUR_VALIDE', bonId: bon.id }
+        );
       }
       
       break;
@@ -546,6 +727,22 @@ exports.mettreAJourBonOrigineRetour = async (bonRetour, agentId, code_structure,
     transaction
   );
   
+  // ENREGISTRER L'HISTORIQUE
+  await HistoriqueService.enregistrerAction(
+    agentId,
+    `Bon d'origine ${bonOrigine.numero} marqué comme "retourné partiellement" suite au retour ${bonRetour.numero}`,
+    null,
+    {
+      action: 'BON_ORIGINE_RETOURNE',
+      bonOrigineId: bonOrigine.id,
+      bonOrigineNumero: bonOrigine.numero,
+      bonRetourId: bonRetour.id,
+      bonRetourNumero: bonRetour.numero,
+      ancienStatut,
+      nouveauStatut: 'retourné partiellement'
+    }
+  );
+
   // Mettre à jour l'opération associée
   const operationOrigine = await db.Operation.findOne({
     where: { bonId: bonOrigine.id },
@@ -649,6 +846,22 @@ exports.creerBonRetour = async (bonOrigine, articles, magasinId, agentId, code_s
 
   // Créer l'opération pour le retour
   await require('./operation.controller').createFromBon(bonRetour, transaction);
+
+  // ENREGISTRER L'HISTORIQUE
+  await HistoriqueService.enregistrerAction(
+    agentId,
+    `Création automatique du bon de retour ${bonRetour.numero} pour le bon ${bonOrigine.numero}`,
+    null,
+    {
+      action: 'CREATION_BON_RETOUR_AUTO',
+      bonRetourId: bonRetour.id,
+      bonRetourNumero: bonRetour.numero,
+      bonOrigineId: bonOrigine.id,
+      bonOrigineNumero: bonOrigine.numero,
+      articlesCount: articlesRetour.length
+    }
+  );
+
 
   console.log(`📋 Bon de retour créé: ${bonRetour.numero}`);
   

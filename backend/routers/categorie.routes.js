@@ -9,4 +9,6 @@ router.get('/structure/bis/:code_structure',authenticateToken, ctrl.getAllByStru
 router.put('/:id', authenticateToken, ctrl.updateCategorie);
 router.patch('/toggle/:id', authenticateToken, ctrl.toggleActive);
 router.delete('/:id', authenticateToken, ctrl.deleteCategorie);
+
+router.get('/export/excel',authenticateToken, ctrl.exportCategoriesExcel);
 module.exports = router;

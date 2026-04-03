@@ -13,4 +13,6 @@ router.get('/structure/:code_structure', authenticateToken, ctrl.getAllByStructu
 router.get('/structure/bis/:code_structure', authenticateToken, ctrl.getAllByStructureBis);
 router.patch('/:id/statutDepense', authenticateToken, ctrl.updateStatut);
 
+router.get('/export/excel',authenticateToken, ctrl.exportDepensesExcel);
+
 module.exports = router;
