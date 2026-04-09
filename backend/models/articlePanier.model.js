@@ -1,7 +1,13 @@
 // models/articlePanier.js
+const SequenceService = require('../services/sequence.service');
+
 module.exports = (sequelize, DataTypes) => {
   const ArticlePanier = sequelize.define('ArticlePanier', {
     code_structure: { type: DataTypes.STRING, allowNull: false },
+    numeroE: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
     quantite: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
@@ -48,6 +54,24 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: 0,
     },
 
+  },{
+    // Pas de tableName - utilise 'Magasin' comme nom de table
+    // freezeTableName: true est déjà dans la config globale
+    timestamps: true,
+    underscored: true, // Convertit automatiquement camelCase en snake_case
+    hooks: {
+      beforeCreate: async (articlePanier, options) => {
+        const { sequelize, Sequence } = require('../models');
+        const numero = await SequenceService.getNextNumero(
+          sequelize,
+          Sequence,
+          articlePanier.code_structure, 
+          'articlePanier',
+          options.transaction
+        );
+        articlePanier.numeroE = numero;
+      }
+    }
   });
 
 

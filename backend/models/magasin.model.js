@@ -1,3 +1,5 @@
+const SequenceService = require('../services/sequence.service');
+
 module.exports = (sequelize, DataTypes) => {
   const Magasin = sequelize.define('Magasin', {
     id: {
@@ -7,6 +9,10 @@ module.exports = (sequelize, DataTypes) => {
     },
     code_structure: {
       type: DataTypes.STRING,
+      allowNull: false,
+    },
+    numeroE: {
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
     nom: {
@@ -25,6 +31,25 @@ module.exports = (sequelize, DataTypes) => {
     derniereMiseAJour: {
       type: DataTypes.DATE,
     },
+  },
+  {
+    // Pas de tableName - utilise 'Magasin' comme nom de table
+    // freezeTableName: true est déjà dans la config globale
+    timestamps: true,
+    underscored: true, // Convertit automatiquement camelCase en snake_case
+    hooks: {
+      beforeCreate: async (magasin, options) => {
+        const { sequelize, Sequence } = require('../models');
+        const numero = await SequenceService.getNextNumero(
+          sequelize,
+          Sequence,
+          magasin.code_structure, 
+          'magasin',
+          options.transaction
+        );
+        magasin.numeroE = numero;
+      }
+    }
   });
 
   return Magasin;

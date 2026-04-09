@@ -1,7 +1,13 @@
 // models/panier.js
+const SequenceService = require('../services/sequence.service');
+
 module.exports = (sequelize, DataTypes) => {
   const Panier = sequelize.define('Panier', {
     code_structure: { type: DataTypes.STRING, allowNull: false },
+    numeroE: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
     totalHT: {
       type: DataTypes.DECIMAL(12, 2),
       defaultValue: 0,
@@ -51,6 +57,25 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+  },
+  {
+    // Pas de tableName - utilise 'Magasin' comme nom de table
+    // freezeTableName: true est déjà dans la config globale
+    timestamps: true,
+    underscored: true, // Convertit automatiquement camelCase en snake_case
+    hooks: {
+      beforeCreate: async (panier, options) => {
+        const { sequelize, Sequence } = require('../models');
+        const numero = await SequenceService.getNextNumero(
+          sequelize,
+          Sequence,
+          panier.code_structure, 
+          'panier',
+          options.transaction
+        );
+        panier.numeroE = numero;
+      }
+    }
   });
 
   /* Panier.associate = models => {

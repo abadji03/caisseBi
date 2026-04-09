@@ -1,4 +1,6 @@
-// models/historiqueStatut.js
+// models/historiqueStatut.
+const SequenceService = require('../services/sequence.service');
+
 module.exports = (sequelize, DataTypes) => {
   const HistoriqueStatut = sequelize.define('HistoriqueStatut', {
     id: {
@@ -30,6 +32,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
+    numeroE: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
     dateChangement: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW
@@ -37,6 +43,25 @@ module.exports = (sequelize, DataTypes) => {
   },{
     tableName: 'historique_statuts',
     timestamps: true
+  },
+  {
+    // Pas de tableName - utilise 'Magasin' comme nom de table
+    // freezeTableName: true est déjà dans la config globale
+    timestamps: true,
+    underscored: true, // Convertit automatiquement camelCase en snake_case
+    hooks: {
+      beforeCreate: async (historiqueStatut, options) => {
+        const { sequelize, Sequence } = require('../models');
+        const numero = await SequenceService.getNextNumero(
+          sequelize,
+          Sequence,
+          historiqueStatut.code_structure, 
+          'historiqueStatut',
+          options.transaction
+        );
+        historiqueStatut.numeroE = numero;
+      }
+    }
   });
 
   /* HistoriqueStatut.associate = (models) => {

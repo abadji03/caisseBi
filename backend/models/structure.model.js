@@ -46,9 +46,15 @@ module.exports = (sequelize, DataTypes) => {
     description: DataTypes.TEXT,
     code_structure: {
       type: DataTypes.STRING(36),
-      //unique: true,
+      unique: true,
       allowNull: false,
     },
+  },
+  {
+    // Pas de tableName - utilise 'Magasin' comme nom de table
+    // freezeTableName: true est déjà dans la config globale
+    timestamps: true,
+    underscored: true, // Convertit automatiquement camelCase en snake_case
   });
   return Structure;
 };

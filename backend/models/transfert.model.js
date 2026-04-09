@@ -1,3 +1,5 @@
+const SequenceService = require('../services/sequence.service');
+
 module.exports = (sequelize, DataTypes) => {
   const Transfert = sequelize.define('Transfert', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -12,12 +14,35 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.ENUM('En attente', 'Validé', 'Refusé'),
       defaultValue: 'En attente',
     },
+    numeroE: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
     motif: { type: DataTypes.TEXT },
     agentResponsable: { type: DataTypes.INTEGER, allowNull: false },
     dateValidation: { type: DataTypes.DATE },
     agentValidation: { type: DataTypes.INTEGER },
     // mouvementSortieId: { type: DataTypes.INTEGER },
     // mouvementEntreeId: { type: DataTypes.INTEGER },
+  },
+  {
+    // Pas de tableName - utilise 'Magasin' comme nom de table
+    // freezeTableName: true est déjà dans la config globale
+    timestamps: true,
+    underscored: true, // Convertit automatiquement camelCase en snake_case
+    hooks: {
+      beforeCreate: async (transfert, options) => {
+        const { sequelize, Sequence } = require('../models');
+        const numero = await SequenceService.getNextNumero(
+          sequelize,
+          Sequence,
+          transfert.code_structure, 
+          'transfert',
+          options.transaction
+        );
+        transfert.numeroE = numero;
+      }
+    }
   });
 
   return Transfert;

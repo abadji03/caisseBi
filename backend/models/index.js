@@ -23,12 +23,12 @@ db.Users = require('./user.model')(sequelize, Sequelize);
 db.Magasin = require('./magasin.model')(sequelize, Sequelize);
 //Chargement et initialisation du modèle Produits
 db.Produit = require('./produit.model')(sequelize, Sequelize);
+//Chargement et initialisation du modèle Client
+db.Client = require('./client.model')(sequelize, Sequelize);
 //Chargement et initialisation du modèle Fournisseurs
 db.Fournisseur = require('./fournisseur.model')(sequelize, Sequelize);
 //Chargement et initialisation du modèle CategorieProduit
 db.CategoriesProduits = require('./categorieProduit.model')(sequelize, Sequelize);
-//Chargement et initialisation du modèle Client
-db.Client = require('./client.model')(sequelize, Sequelize);
 //Chargement et initialisation du modèle Stocks
 db.Stock = require('./stock.model')(sequelize, Sequelize);
 //Chargement et initialisation du modèle Mouvement_stock
@@ -68,8 +68,8 @@ db.permission = require('./permission.model')(sequelize, Sequelize);
 db.role = require('./role.model')(sequelize, Sequelize);
 db.HistoriqueStatut = require('./historiqueStatut.model')(sequelize, Sequelize);
 
-//db.MagasinFournisseur = require('./magasinFournisseur.model')(sequelize, Sequelize);
-//db.MagasinClient = require('./magasinClient.model')(sequelize, Sequelize);
+db.MagasinFournisseur = require('./magasinFournisseur.model')(sequelize, Sequelize);
+db.MagasinClient = require('./magasinClient.model')(sequelize, Sequelize);
 
 
 
@@ -395,7 +395,7 @@ db.Magasin.hasMany(db.Paiement, { foreignKey: 'magasinId' });
 db.Paiement.belongsTo(db.Magasin, { foreignKey: 'magasinId' });
 
 // Associations Many-to-Many entre Magasin et Client via table de liaison
-/* db.Magasin.belongsToMany(db.Client, {
+db.Magasin.belongsToMany(db.Client, {
   through: db.MagasinClient,
   foreignKey: 'magasinId',
   otherKey: 'clientId',
@@ -418,7 +418,17 @@ db.Fournisseur.belongsToMany(db.Magasin, {
   through: db.MagasinFournisseur,
   foreignKey: 'fournisseurId',
   otherKey: 'magasinId',
-}); */
+});
+
+/* db.MagasinClient.associate = (db) => {
+  db.MagasinClient.belongsTo(db.Magasin, { foreignKey: 'magasinId' });
+  db.MagasinClient.belongsTo(db.Client, { foreignKey: 'clientId' });
+};
+
+db.MagasinFournisseur.associate = (db) => {
+  db.MagasinFournisseur.belongsTo(db.Magasin, { foreignKey: 'magasinId' });
+  db.MagasinFournisseur.belongsTo(db.Fournisseur, { foreignKey: 'fournisseurId' });
+}; */
 
 db.Users.hasMany(db.Paiement, { foreignKey: 'agentId' });
 db.Paiement.belongsTo(db.Users, { foreignKey: 'agentId' });

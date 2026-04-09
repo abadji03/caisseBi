@@ -7,11 +7,15 @@ export interface HistoriqueConnexion {
   date: Date;
   ip: string;
   userId: number;
-  User?: {
+  user?: {
     id: number;
     nom: string;
     email: string;
     code_structure: string;
+    structure:{
+      id:number,
+      nom_structure:string
+    };
   };
 }
 
@@ -23,11 +27,15 @@ export interface HistoriqueAction {
   userId: number;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   details?: any;
-  User?: {
+  user?: {
     id: number;
     nom: string;
     email: string;
     code_structure: string;
+    structure:{
+      id:number,
+      nom_structure:string
+    };
   };
   actionType?: string;
   actionCategory?: string;

@@ -4,7 +4,7 @@
           <div class="card">
             <div class="card-header">
               <h3 class="card-title">
-                <i class="fas fa-history me-2"></i>
+                <i class="bi bi-clock-history me-2"></i>
                 {{ isAdminGeneral ? 'Historique général du système' : 'Historique de la structure' }}
               </h3>
               <div class="card-tools">
@@ -14,14 +14,14 @@
                     [class.active]="activeTab === 'actions'"
                     (click)="setActiveTab('actions')"
                   >
-                    <i class="fas fa-list"></i> Actions
+                    <i class="bi bi-list"></i> Actions
                   </button>
                   <button 
                     class="btn btn-outline-info btn-sm"
                     [class.active]="activeTab === 'connexions'"
                     (click)="setActiveTab('connexions')"
                   >
-                    <i class="fas fa-sign-in-alt"></i> Connexions
+                    <i class="bi bi-box-arrow-in-right"></i> Connexions
                   </button>
                   <button 
                     *ngIf="isAdminGeneral"
@@ -29,7 +29,7 @@
                     [class.active]="activeTab === 'stats'"
                     (click)="setActiveTab('stats')"
                   >
-                    <i class="fas fa-chart-bar"></i> Statistiques
+                    <i class="bi bi-bar-chart"></i> Statistiques
                   </button>
                 </div>
               </div>
@@ -100,8 +100,8 @@
                       <tr *ngFor="let action of actions">
                         <td>{{ action.readableDate || (action.date | date:'dd/MM/yyyy HH:mm:ss') }}</td>
                         <td>
-                          <strong>{{ action.User?.nom }}</strong><br>
-                          <small class="text-muted">{{ action.User?.email }}</small>
+                          <strong>{{ action.user?.nom }}</strong><br>
+                          <small class="text-muted">{{ action.user?.email }}</small>
                         </td>
                         <td>
                           <span class="badge" [ngClass]="getActionBadgeClass(action.actionCategory || 'bg-secondary')">
@@ -110,7 +110,7 @@
                           <div class="mt-1 small">{{ action.action }}</div>
                         </td>
                         <td>{{ action.ip || '-' }}</td>
-                        <td *ngIf="isAdminGeneral">{{ action.User?.code_structure || 'Général' }}</td>
+                        <td *ngIf="isAdminGeneral">{{ action.user?.structure?.nom_structure || 'Général' }}</td>
                         <td>
                           <button 
                             *ngIf="action.details"
@@ -162,11 +162,11 @@
                       <tr *ngFor="let connexion of connexions">
                         <td>{{ connexion.date | date:'dd/MM/yyyy HH:mm:ss' }}</td>
                         <td>
-                          <strong>{{ connexion.User?.nom }}</strong><br>
-                          <small class="text-muted">{{ connexion.User?.email }}</small>
+                          <strong>{{ connexion.user?.nom }}</strong><br>
+                          <small class="text-muted">{{ connexion.user?.email }}</small>
                         </td>
                         <td>{{ connexion.ip }}</td>
-                        <td *ngIf="isAdminGeneral">{{ connexion.User?.code_structure || 'Général' }}</td>
+                        <td *ngIf="isAdminGeneral">{{ connexion.user?.structure?.nom_structure || 'Général' }}</td>
                       </tr>
                       <tr *ngIf="connexions.length === 0">
                         <td [attr.colspan]="isAdminGeneral ? 4 : 3" class="text-center">
@@ -183,6 +183,15 @@
                   [totalPages]="totalPages"
                   (pageChange)="onPageChange($event)"
                 ></app-pagination> -->
+
+                <app-pagination-advanced
+                [currentPage]="currentPage"
+                [totalPages]="totalPages"
+                [totalItems]="totalItems"
+                [limit]="limit"
+                (pageChange)="onPageChange($event)"
+                (limitChange)="onLimitChange($event)"
+                ></app-pagination-advanced>
               </div>
               
               <!-- Stats Tab (Admin Général uniquement) -->
@@ -190,28 +199,36 @@
                 <div class="row">
                   <div class="col-md-3">
                     <div class="info-box">
-                      <span class="info-box-icon bg-info"><i class="fas fa-sign-in-alt"></i></span>
+                      <span class="info-box-icon bg-info"><i class="bi bi-box-arrow-in-right"></i></span>
                       <div class="info-box-content">
-                        <span class="info-box-text">Total connexions</span>
+                        <span class="info-box-text">Total connexions : </span>
                         <span class="info-box-number">{{ stats.totalConnexions }}</span>
                       </div>
                     </div>
                   </div>
                   <div class="col-md-3">
                     <div class="info-box">
-                      <span class="info-box-icon bg-success"><i class="fas fa-tasks"></i></span>
+                      <span class="info-box-icon bg-success"><i class="bi bi-list-check"></i></span>
                       <div class="info-box-content">
-                        <span class="info-box-text">Total actions</span>
+                        <span class="info-box-text">Total actions : </span>
                         <span class="info-box-number">{{ stats.totalActions }}</span>
                       </div>
                     </div>
                   </div>
                 </div>
                 
-                <div class="row mt-4">
+                <!-- <div class="row mt-4">
                   <div class="col-md-6">
                     <h5>Répartition par type d'action</h5>
                     <canvas id="actionsChart"></canvas>
+                  </div>
+                </div> -->
+                <div class="row mt-4">
+                  <div class="col-md-12">
+                    <h5>Répartition par type d'action</h5>
+                    <div class="chart-container" style="position: relative; height: 400px; width: 100%;">
+                      <canvas #actionsChartCanvas id="actionsChart"></canvas>
+                    </div>
                   </div>
                 </div>
               </div>

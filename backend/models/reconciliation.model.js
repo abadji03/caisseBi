@@ -1,3 +1,5 @@
+const SequenceService = require('../services/sequence.service');
+
 module.exports = (sequelize, DataTypes) => {
   const Reconciliation = sequelize.define('Reconciliation', {
     id: {
@@ -7,6 +9,10 @@ module.exports = (sequelize, DataTypes) => {
     },
     code_structure: {
       type: DataTypes.STRING,
+      allowNull: false,
+    },
+    numeroE: {
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
     produitId: {
@@ -34,7 +40,7 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: DataTypes.NOW,
     },
     responsable: {
-      type: DataTypes.STRING,
+      type: DataTypes.INTEGER,
     },
     note: {
       type: DataTypes.TEXT,
@@ -43,6 +49,25 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.ENUM('validé', 'annulé'),
       defaultValue: 'validé',
     },
+  },
+  {
+    // Pas de tableName - utilise 'Magasin' comme nom de table
+    // freezeTableName: true est déjà dans la config globale
+    timestamps: true,
+    underscored: true, // Convertit automatiquement camelCase en snake_case
+    hooks: {
+      beforeCreate: async (reconciliation, options) => {
+        const { sequelize, Sequence } = require('../models');
+        const numero = await SequenceService.getNextNumero(
+          sequelize,
+          Sequence,
+          reconciliation.code_structure, 
+          'reconciliation',
+          options.transaction
+        );
+        reconciliation.numeroE = numero;
+      }
+    }
   });
 
   return Reconciliation;

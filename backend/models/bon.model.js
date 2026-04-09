@@ -1,4 +1,6 @@
 // models/bon.js
+const SequenceService = require('../services/sequence.service');
+
 module.exports = (sequelize, DataTypes) => {
   const Bon = sequelize.define('Bon', {
     // --- Identification ---
@@ -8,6 +10,10 @@ module.exports = (sequelize, DataTypes) => {
       autoIncrement: true
     },
 
+    numeroE: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
     code_structure: {
       type: DataTypes.STRING,
       allowNull: false
@@ -181,6 +187,25 @@ module.exports = (sequelize, DataTypes) => {
     agentId: {
       type: DataTypes.INTEGER,
       allowNull: true
+    }
+  },
+  {
+    // Pas de tableName - utilise 'Magasin' comme nom de table
+    // freezeTableName: true est déjà dans la config globale
+    timestamps: true,
+    underscored: true, // Convertit automatiquement camelCase en snake_case
+    hooks: {
+      beforeCreate: async (bon, options) => {
+        const { sequelize, Sequence } = require('../models');
+        const numero = await SequenceService.getNextNumero(
+          sequelize,
+          Sequence,
+          bon.code_structure, 
+          'bon',
+          options.transaction
+        );
+        bon.numeroE = numero;
+      }
     }
   });
 

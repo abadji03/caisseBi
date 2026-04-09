@@ -1,3 +1,5 @@
+const SequenceService = require('../services/sequence.service');
+
 module.exports = (sequelize, DataTypes) => {
   const MouvementStock = sequelize.define('MouvementStock', {
     id: {
@@ -7,6 +9,10 @@ module.exports = (sequelize, DataTypes) => {
     },
     code_structure: {
       type: DataTypes.STRING(36),
+      allowNull: false,
+    },
+    numeroE: {
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
     ref: {
@@ -62,6 +68,25 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
+  },
+  {
+    // Pas de tableName - utilise 'Magasin' comme nom de table
+    // freezeTableName: true est déjà dans la config globale
+    timestamps: true,
+    underscored: true, // Convertit automatiquement camelCase en snake_case
+    hooks: {
+      beforeCreate: async (mouvementStock, options) => {
+        const { sequelize, Sequence } = require('../models');
+        const numero = await SequenceService.getNextNumero(
+          sequelize,
+          Sequence,
+          mouvementStock.code_structure, 
+          'mouvementSock',
+          options.transaction
+        );
+        mouvementStock.numeroE = numero;
+      }
+    }
   });
 
   return MouvementStock;

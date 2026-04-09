@@ -46,7 +46,7 @@ class HistoriqueService {
    * @param {object} req - Requête Express
    * @returns {string} - Adresse IP
    */
-  static getClientIp(req) {
+  /* static getClientIp(req) {
     let ip = req.headers['x-forwarded-for'] ||
             req.connection.remoteAddress ||
             req.socket.remoteAddress ||
@@ -62,7 +62,31 @@ class HistoriqueService {
     }
 
     return ip || 'unknown';
+  } */
+
+  static getClientIp(req) {
+  let ip =
+    req.headers['x-forwarded-for'] ||
+    req.connection?.remoteAddress ||
+    req.socket?.remoteAddress ||
+    req.ip;
+
+  if (ip) {
+    ip = ip.split(',')[0].trim();
+
+    // Nettoyage IPv6 mapped IPv4
+    if (ip.startsWith('::ffff:')) {
+      ip = ip.substring(7);
+    }
+
+    // 👉 Cas localhost IPv6
+    if (ip === '::1') {
+      ip = '127.0.0.1';
+    }
   }
+
+  return ip || 'unknown';
+}
 }
 
 module.exports = HistoriqueService;

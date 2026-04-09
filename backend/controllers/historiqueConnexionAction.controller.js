@@ -14,7 +14,7 @@ exports.getConnexionsByUser = async (req, res) => {
     }
     
     const { userId } = req.params;
-    const { page = 1, limit = 20, structureId, dateDebut, dateFin } = req.query;
+    const { page = 1, limit = 10, structureId, dateDebut, dateFin } = req.query;
     
     const offset = (page - 1) * limit;
     
@@ -83,7 +83,8 @@ exports.getConnexionsByUser = async (req, res) => {
       include: [
         {
           model: db.Users,
-          attributes: ['id', 'nom', 'email', 'code_structure', 'magasinId']
+          attributes: ['id', 'nom', 'email', 'code_structure', 'magasinId'],
+          include:{model: db.Structure, attributes:['id','nom_structure']}
         }
       ]
     });
@@ -123,7 +124,7 @@ exports.getActionsByUser = async (req, res) => {
     const { userId } = req.params;
     const { 
       page = 1, 
-      limit = 20, 
+      limit = 10, 
       actionType,
       structureId,
       dateDebut,
@@ -191,7 +192,7 @@ exports.getActionsByUser = async (req, res) => {
         'DELETE': ['Suppression', 'delete', 'DELETE'],
         'EXPORT': ['Export', 'export', 'EXPORT'],
         'LOGIN': ['Connexion', 'login', 'LOGIN'],
-        'STATUS': ['statut', 'status', 'STATUS']
+        'STATUS': ['statut', 'status', 'STATUS','STATUT']
       };
       
       const patterns = categoryPatterns[actionCategory];
@@ -221,7 +222,8 @@ exports.getActionsByUser = async (req, res) => {
       include: [
         {
           model: db.Users,
-          attributes: ['id', 'nom', 'email', 'code_structure', 'magasinId']
+          attributes: ['id', 'nom', 'email', 'code_structure', 'magasinId'],
+          include:{model: db.Structure, attributes:['id','nom_structure']}
         }
       ]
     });
@@ -328,7 +330,8 @@ exports.getAllRecentActions = async (req, res) => {
       include: [
         {
           model: db.Users,
-          attributes: ['id', 'nom', 'email', 'code_structure', 'magasinId']
+          attributes: ['id', 'nom', 'email', 'code_structure', 'magasinId'],
+          include:{model: db.Structure, attributes:['id','nom_structure']}
         }
       ]
     });

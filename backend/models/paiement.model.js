@@ -1,7 +1,13 @@
 // models/paiement.js
+const SequenceService = require('../services/sequence.service');
+
 module.exports = (sequelize, DataTypes) => {
   const Paiement = sequelize.define('Paiement', {
     code_structure: { type: DataTypes.STRING, allowNull: false },
+    numeroE: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
     numero: {
       type: DataTypes.STRING(30),
     },
@@ -58,6 +64,25 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: 'validé',
     },
     fichier: DataTypes.TEXT,
+  },
+  {
+    // Pas de tableName - utilise 'Magasin' comme nom de table
+    // freezeTableName: true est déjà dans la config globale
+    timestamps: true,
+    underscored: true, // Convertit automatiquement camelCase en snake_case
+    hooks: {
+      beforeCreate: async (paiement, options) => {
+        const { sequelize, Sequence } = require('../models');
+        const numero = await SequenceService.getNextNumero(
+          sequelize,
+          Sequence,
+          paiement.code_structure, 
+          'paiement',
+          options.transaction
+        );
+        paiement.numeroE = numero;
+      }
+    }
   });
 
   /* Paiement.associate = models => {

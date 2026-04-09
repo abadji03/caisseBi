@@ -18,19 +18,19 @@
       <!-- Boutons de navigation -->
       <div class="btn-group">
         <button 
-          class="btn btn-outline-primary btn-sm" 
+          class="btn btn-outline-dark btn-sm" 
           (click)="onPageChange(1)"
           [disabled]="currentPage === 1"
         >
-          <i class="fas fa-angle-double-left"></i>
+          <i class="bi bi-chevron-double-left"></i>
         </button>
         
         <button 
-          class="btn btn-outline-primary btn-sm" 
+          class="btn btn-outline-dark btn-sm" 
           (click)="onPageChange(currentPage - 1)"
           [disabled]="currentPage === 1"
         >
-          <i class="fas fa-chevron-left"></i>
+          <i class="bi bi-chevron-left"></i>
         </button>
         
         <button class="btn btn-outline-secondary btn-sm disabled">
@@ -38,19 +38,19 @@
         </button>
         
         <button 
-          class="btn btn-outline-primary btn-sm" 
+          class="btn btn-outline-dark btn-sm" 
           (click)="onPageChange(currentPage + 1)"
           [disabled]="currentPage === totalPages"
         >
-          <i class="fas fa-chevron-right"></i>
+          <i class="bi bi-chevron-right"></i>
         </button>
         
         <button 
-          class="btn btn-outline-primary btn-sm" 
+          class="btn btn-outline-dark btn-sm" 
           (click)="onPageChange(totalPages)"
           [disabled]="currentPage === totalPages"
         >
-          <i class="fas fa-angle-double-right"></i>
+          <i class="bi bi-chevron-double-right"></i>
         </button>
       </div>
       

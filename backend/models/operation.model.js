@@ -1,7 +1,13 @@
 // models/operation.js
+const SequenceService = require('../services/sequence.service');
+
 module.exports = (sequelize, DataTypes) => {
   const Operation = sequelize.define('Operation', {
     code_structure: { type: DataTypes.STRING(50), allowNull: false },
+    numeroE: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
     type: {
       type: DataTypes.ENUM(
         'COMMANDE',
@@ -44,6 +50,25 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: DataTypes.NOW,
     },
     commentaire: DataTypes.TEXT,
+  },
+  {
+    // Pas de tableName - utilise 'Magasin' comme nom de table
+    // freezeTableName: true est déjà dans la config globale
+    timestamps: true,
+    underscored: true, // Convertit automatiquement camelCase en snake_case
+    hooks: {
+      beforeCreate: async (operation, options) => {
+        const { sequelize, Sequence } = require('../models');
+        const numero = await SequenceService.getNextNumero(
+          sequelize,
+          Sequence,
+          operation.code_structure, 
+          'operation',
+          options.transaction
+        );
+        operation.numeroE = numero;
+      }
+    }
   });
 
   /* Operation.associate = models => {

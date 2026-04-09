@@ -15,10 +15,56 @@ app.set('views', path.join(__dirname, 'views'));
 
 // Connexion à la base de données
 const db = require('./models');
-db.sequelize
+/* db.sequelize
   .sync({ alter: true })
   .then(() => console.log('Connexion réussie à la base de données.'))
-  .catch((error) => console.error('Erreur de connexion DB :', error));
+  .catch((error) => console.error('Erreur de connexion DB :', error)); */
+
+// Fonction pour réinitialiser complètement la base de données
+/* const resetAndSyncDatabase = async () => {
+  try {
+    console.log('🔄 Début de la réinitialisation de la base de données...');
+    
+    // Désactiver les contraintes de clés étrangères
+    await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
+    
+    // Supprimer toutes les tables
+    await db.sequelize.drop();
+    console.log('✅ Toutes les tables ont été supprimées');
+    
+    // Réactiver les contraintes
+    await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
+    
+    // Recréer toutes les tables
+    await db.sequelize.sync({ force: true });
+    console.log('✅ Toutes les tables ont été recréées avec succès');
+    
+    // Vous pouvez ajouter ici des données initiales si nécessaire
+    // await seedInitialData();
+    
+  } catch (error) {
+    console.error('❌ Erreur lors de la réinitialisation :', error);
+  }
+}; */
+
+// Fonction pour synchroniser normalement (sans suppression)
+const syncDatabase = async () => {
+  try {
+    console.log('🔄 Synchronisation de la base de données...');
+    await db.sequelize.sync({ alter: true });
+    console.log('✅ Connexion réussie à la base de données.');
+  } catch (error) {
+    console.error('❌ Erreur de connexion DB :', error);
+  }
+};
+
+// Choisissez le mode :
+// Mode 1: Réinitialisation complète (supprime et recrée tout)
+//resetAndSyncDatabase();
+
+// Mode 2: Synchronisation normale (préserve les données)
+syncDatabase();
+
 
 //Ensuite les body parsers (après routes avec upload)
 app.use(express.json({ limit: '10mb' }));
