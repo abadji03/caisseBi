@@ -2,7 +2,7 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { AuthService } from './auth.service';
 import { NGXLogger } from 'ngx-logger';
-import { catchError, Observable, throwError } from 'rxjs';
+import { catchError, Observable, of, throwError } from 'rxjs';
 import { Categorie } from '../modeles/finance.model';
 
 export interface CategoriesResponse {
@@ -135,4 +135,22 @@ export class CategoriesDepencesRecettesService {
     );
   }
 
+
+/** Récupérer une catégorie par son code métier */
+getCategorieByCode(code: string, code_structure: string): Observable<Categorie | null> {
+  const params = new HttpParams().set('code_structure', code_structure);
+  
+  return this.http.get<Categorie>(`${this.apiUrl}/code/${code}`, {
+    headers: this.getHeaders(),
+    params: params
+  }).pipe(
+    catchError(err => {
+      if (err.status === 404) {
+        console.warn(`Catégorie avec code ${code} non trouvée`);
+        return of(null);
+      }
+      return this.handleError('getCategorieByCode', err);
+    })
+  );
+}
 }

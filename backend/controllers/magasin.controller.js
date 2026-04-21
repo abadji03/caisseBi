@@ -176,7 +176,7 @@ exports.getMagasinsByStructureBis = async (req, res) => {
       });
     }
 
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
 
     if (!isAdminStructure) {
       return res.status(403).json({

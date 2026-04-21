@@ -106,7 +106,7 @@ export class StockInventairesComponent implements OnInit, OnDestroy {
     this.userSubscription = this.authService.currentUser.subscribe(user => {
       this.codeStructure = user?.code_structure || null;
       this.agentId = user.id || null;
-      this.isAdmin = this.authService.hasRole('Administrateur');
+      this.isAdmin = this.authService.hasRole('Administrateur') || this.authService.hasRole('Administrateur secondaire');
       this.isGerant = this.authService.hasRole('Gérant');
     });
 

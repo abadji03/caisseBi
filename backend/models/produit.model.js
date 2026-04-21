@@ -1,4 +1,4 @@
-const SequenceService = require('../services/sequence.service');
+//const SequenceService = require('../services/sequence.service');
 
 module.exports = (sequelize, DataTypes) => {
   const Produit = sequelize.define('Produit', {
@@ -10,6 +10,7 @@ module.exports = (sequelize, DataTypes) => {
     code_structure: {
       type: DataTypes.STRING(36),
       allowNull: false,
+      //unique: true
     },
     numeroE: {
       type: DataTypes.INTEGER,
@@ -61,7 +62,7 @@ module.exports = (sequelize, DataTypes) => {
     // freezeTableName: true est déjà dans la config globale
     timestamps: true,
     underscored: true, // Convertit automatiquement camelCase en snake_case
-    hooks: {
+    /* hooks: {
       beforeCreate: async (produit, options) => {
         const { sequelize, Sequence } = require('../models');
         const numero = await SequenceService.getNextNumero(
@@ -72,6 +73,44 @@ module.exports = (sequelize, DataTypes) => {
           options.transaction
         );
         produit.numeroE = numero;
+      }
+    } */
+
+    hooks: {
+      beforeValidate: async (produit, options) => {
+        console.log('🔍 beforeValidate hook called', produit.code_structure);
+        
+        // Définir numeroE avant la validation
+        if (!produit.numeroE) {
+          try {
+            const ProduitsModel = sequelize.models.Produit;
+            if (ProduitsModel) {
+              const count = await ProduitsModel.count({
+                where: { code_structure: produit.code_structure },
+                transaction: options.transaction
+              });
+              produit.numeroE = count + 1;
+              console.log(`✅ Generated numeroE in beforeValidate: ${produit.numeroE}`);
+            } else {
+              produit.numeroE = 1;
+            }
+          } catch (error) {
+            console.error('❌ Hook error:', error);
+            produit.numeroE = 1;
+          }
+        }
+      },
+      beforeCreate: async (produit, options) => {
+        console.log('🎯 beforeCreate hook STARTED', produit.numeroE);
+        // Vérifier et régénérer si nécessaire
+        if (!produit.numeroE) {
+          const produitsModel = sequelize.models.Produit;
+          const count = await produitsModel.count({
+            where: { code_structure: produit.code_structure },
+            transaction: options.transaction
+          });
+          produit.numeroE = count + 1;
+        }
       }
     }
   });

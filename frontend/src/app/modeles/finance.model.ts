@@ -51,6 +51,7 @@ export class Categorie {
   type: 'DEPENSE' | 'RECETTE' = 'DEPENSE';
   isActive = true;
   code_structure?: string;
+  code?:string;
 
   constructor(data?: Partial<Categorie>) {
     Object.assign(this, data);

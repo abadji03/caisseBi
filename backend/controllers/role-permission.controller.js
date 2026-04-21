@@ -3,19 +3,6 @@ const Role = db.role;
 const Permission = db.permission;
 const HistoriqueService = require('../services/historique.service');
 
-/* exports.assignPermissionsToRole = async (req, res) => {
-  try {
-    const role = await Role.findByPk(req.params.roleId);
-    if (!role) return res.status(404).json({ message: 'Rôle non trouvé' });
-
-    const permissions = await Permission.findAll({ where: { id: req.body.permissionIds } });
-    await role.setPermissions(permissions);
-
-    res.json({ message: 'Permissions assignées au rôle' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-}; */
 
 exports.assignPermissionsToRole = async (req, res) => {
   try {
@@ -97,20 +84,6 @@ exports.getRolePermissions = async (req, res) => {
 };
 
 // Remplace les permissions existantes par de nouvelles
-/* exports.updateRolePermissions = async (req, res) => {
-  try {
-    const role = await Role.findByPk(req.params.roleId);
-    if (!role) return res.status(404).json({ message: 'Rôle non trouvé' });
-
-    const permissions = await Permission.findAll({ where: { id: req.body.permissionIds } });
-    await role.setPermissions(permissions); // Remplace les anciennes permissions
-
-    res.json({ message: 'Permissions mises à jour pour le rôle.' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-}; */
-
 exports.updateRolePermissions = async (req, res) => {
   try {
     const authUser = req.user;
@@ -162,18 +135,6 @@ exports.updateRolePermissions = async (req, res) => {
 
 
 // Supprime une ou plusieurs permissions d’un rôle sans toucher aux autres
-/* exports.removeRolePermissions = async (req, res) => {
-  try {
-    const role = await Role.findByPk(req.params.roleId);
-    if (!role) return res.status(404).json({ message: 'Rôle non trouvé' });
-
-    await role.removePermissions(req.body.permissionIds);
-
-    res.json({ message: 'Permissions supprimées du rôle.' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-}; */
 
 exports.removeRolePermissions = async (req, res) => {
   try {
@@ -252,35 +213,6 @@ exports.getRolePermissions = async (req, res) => {
     res.status(500).json({ message: 'Erreur serveur', error });
   }
 };
-
-/**
- * POST /api/roles/:id/permissions
- * body: { permissionIds: [1,2,3] }
- */
-/* exports.setRolePermissions = async (req, res) => {
-  try {
-    const { permissionIds } = req.body;
-
-    const role = await Role.findByPk(req.params.id);
-    if (!role) {
-      return res.status(404).json({ message: 'Rôle non trouvé' });
-    }
-
-    const permissions = await Permission.findAll({
-      where: { id: permissionIds }
-    });
-
-    await role.setPermissions(permissions);
-
-    res.json({
-      message: 'Permissions mises à jour avec succès',
-      role: role.nom,
-      permissions
-    });
-  } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur', error });
-  }
-}; */
 
 exports.setRolePermissions = async (req, res) => {
   try {

@@ -356,6 +356,7 @@ export class RecettesComponent implements OnInit, OnDestroy {
    * Soumettre le formulaire
    */
   onSubmit(): void {
+    if(!confirm('Confirmer votre action ?')) return;
     if (this.recetteForm.invalid) {
       this.recetteForm.markAllAsTouched();
       

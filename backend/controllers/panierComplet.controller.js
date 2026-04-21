@@ -412,8 +412,8 @@ class PanierCompletController {
       );
 
       // 2. Traiter les mouvements de stock
-      const mouvements = [];
-      for (const article of articles) {
+      //const mouvements = [];
+      /* for (const article of articles) {
         const mouvement = await mouvementService.traiterMouvementStockBis(
           article, 
           panier, 
@@ -422,8 +422,22 @@ class PanierCompletController {
           code_structure, 
           transaction
         );
-        mouvements.push(mouvement);
-      }
+        //mouvements.push(mouvement);
+      } */
+
+      await Promise.all(
+      articles.map(async (article) => {
+
+        await mouvementService.traiterMouvementStockBis(
+          article, 
+          panier, 
+          magasinId, 
+          agentId, 
+          code_structure, 
+          transaction
+        );
+      })
+    );
 
       console.log(`✅ Panier ${panier.id} validé - Stock mis à jour`);
 
@@ -439,11 +453,11 @@ class PanierCompletController {
             quantite: a.quantite,
             prix: a.prixUnitaire
           })),
-          mouvements: mouvements.map(m => ({
+          /* mouvements: mouvements.map(m => ({
             produitId: m.produitId,
             quantite: m.quantite,
             type: m.type
-          }))
+          })) */
         }
       };
     } catch (error) {
@@ -522,7 +536,7 @@ class PanierCompletController {
 
     try {
       // Traiter les mouvements de stock (entrée pour retour client, sortie pour retour fournisseur)
-      const mouvements = [];
+      /* const mouvements = [];
       for (const article of articles) {
         const mouvement = await mouvementService.traiterMouvementStockBis(
           article, 
@@ -533,7 +547,20 @@ class PanierCompletController {
           transaction
         );
         mouvements.push(mouvement);
-      }
+      } */
+
+      await Promise.all(
+        articles.map(async (article) => {
+          await mouvementService.traiterMouvementStockBis(
+            article, 
+            panier, 
+            magasinId, 
+            agentId, 
+            code_structure, 
+            transaction
+          );
+        })
+      );
 
       console.log(`✅ Panier ${panier.id} retourné - Stock ajusté`);
 
@@ -547,11 +574,11 @@ class PanierCompletController {
             quantite: a.quantite,
             motif: a.motifRetour || 'non spécifié'
           })),
-          mouvements: mouvements.map(m => ({
+          /* mouvements: mouvements.map(m => ({
             produitId: m.produitId,
             quantite: m.quantite,
             type: m.type
-          }))
+          })) */
         }
       };
     } catch (error) {
@@ -576,7 +603,7 @@ class PanierCompletController {
     console.log(`🚫 Traitement panier annulé - Type: ${panier.typeEntite}`);
 
     try {
-      const mouvements = [];
+      /* const mouvements = [];
       for (const article of articles) {
         const mouvement = await mouvementService.traiterMouvementStockBis(
           article, 
@@ -587,7 +614,20 @@ class PanierCompletController {
           transaction
         );
         mouvements.push(mouvement);
-      }
+      } */
+
+      await Promise.all(
+        articles.map(async (article) => {
+          await mouvementService.traiterMouvementStockBis(
+            article, 
+            panier, 
+            magasinId, 
+            agentId, 
+            code_structure, 
+            transaction
+          );
+        })
+      );
 
       console.log(`✅ Panier ${panier.id} annulé - Impact annulé`);
 

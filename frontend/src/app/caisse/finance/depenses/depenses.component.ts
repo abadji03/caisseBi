@@ -338,6 +338,7 @@ getMontantParMode(mode: string): number {
    * Soumettre le formulaire
    */
   onSubmit(): void {
+    if(!confirm('Confirmer votre action ?')) return;
     if (this.depenseForm.invalid) {
       this.depenseForm.markAllAsTouched();
       this.toastr.warning('Veuillez remplir correctement le formulaire');

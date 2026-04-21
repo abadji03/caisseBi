@@ -1,4 +1,4 @@
-const SequenceService = require('../services/sequence.service');
+//const SequenceService = require('../services/sequence.service');
 
 module.exports = (sequelize, DataTypes) => {
   const Categorie = sequelize.define('Categorie', {
@@ -9,6 +9,13 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
     },
     name: { type: DataTypes.STRING(100), allowNull: false },
+    code: { // Nouveau champ
+      type: DataTypes.STRING(50),
+      allowNull: false,
+      //unique: true,
+      defaultValue: 'AUTRE',
+      //comment: 'Code métier ex: PAIEMENT_CLIENT, ACHAT_STOCK, FRAIS_GENERAUX'
+    },
     description: { type: DataTypes.TEXT },
     type: {
       type: DataTypes.ENUM('DEPENSE', 'RECETTE'),
@@ -21,7 +28,7 @@ module.exports = (sequelize, DataTypes) => {
     // freezeTableName: true est déjà dans la config globale
     timestamps: true,
     underscored: true, // Convertit automatiquement camelCase en snake_case
-    hooks: {
+    /* hooks: {
       beforeCreate: async (categorie, options) => {
         const { sequelize, Sequence } = require('../models');
         const numero = await SequenceService.getNextNumero(
@@ -32,6 +39,44 @@ module.exports = (sequelize, DataTypes) => {
           options.transaction
         );
         categorie.numeroE = numero;
+      }
+    } */
+
+     hooks: {
+      beforeValidate: async (categorieProduits, options) => {
+        console.log('🔍 beforeValidate hook called', categorieProduits.code_structure);
+        
+        // Définir numeroE avant la validation
+        if (!categorieProduits.numeroE) {
+          try {
+            const ClientsModel = sequelize.models.Categorie;
+            if (ClientsModel) {
+              const count = await ClientsModel.count({
+                where: { code_structure: categorieProduits.code_structure },
+                transaction: options.transaction
+              });
+              categorieProduits.numeroE = count + 1;
+              console.log(`✅ Generated numeroE in beforeValidate: ${categorieProduits.numeroE}`);
+            } else {
+              categorieProduits.numeroE = 1;
+            }
+          } catch (error) {
+            console.error('❌ Hook error:', error);
+            categorieProduits.numeroE = 1;
+          }
+        }
+      },
+      beforeCreate: async (categorieProduit, options) => {
+        console.log('🎯 beforeCreate hook STARTED', categorieProduit.numeroE);
+        // Vérifier et régénérer si nécessaire
+        if (!categorieProduit.numeroE) {
+          const clientsModel = sequelize.models.Categorie;
+          const count = await clientsModel.count({
+            where: { code_structure: categorieProduit.code_structure },
+            transaction: options.transaction
+          });
+          categorieProduit.numeroE = count + 1;
+        }
       }
     }
   });

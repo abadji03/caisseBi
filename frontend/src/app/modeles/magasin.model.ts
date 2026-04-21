@@ -25,6 +25,19 @@ export class Magasin {
   transferts?: Transfert[];
   stock: Stock[] = []; // Référence au stock du magasin
 
+  // Propriétés pour les relations many-to-many
+  MagasinFournisseur?: {
+    solde: number;
+    createdAt?: Date;
+    updatedAt?: Date;
+  };
+  
+  MagasinClient?: {
+    solde: number;
+    createdAt?: Date;
+    updatedAt?: Date;
+  };
+
   // Constructeur avec initialisation dynamique
   constructor(data?: Partial<Magasin>) {
     Object.assign(this, {

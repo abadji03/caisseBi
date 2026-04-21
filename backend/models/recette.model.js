@@ -1,4 +1,4 @@
-const SequenceService = require('../services/sequence.service');
+//const SequenceService = require('../services/sequence.service');
 
 module.exports = (sequelize, DataTypes) => {
   const Recette = sequelize.define('Recette', {
@@ -21,7 +21,7 @@ module.exports = (sequelize, DataTypes) => {
     // freezeTableName: true est déjà dans la config globale
     timestamps: true,
     underscored: true, // Convertit automatiquement camelCase en snake_case
-    hooks: {
+    /* hooks: {
       beforeCreate: async (recette, options) => {
         const { sequelize, Sequence } = require('../models');
         const numero = await SequenceService.getNextNumero(
@@ -32,6 +32,43 @@ module.exports = (sequelize, DataTypes) => {
           options.transaction
         );
         recette.numeroE = numero;
+      }
+    } */
+   hooks: {
+      beforeValidate: async (recette, options) => {
+        console.log('🔍 beforeValidate hook called', recette.code_structure);
+        
+        // Définir numeroE avant la validation
+        if (!recette.numeroE) {
+          try {
+            const RecettesModel = sequelize.models.Recette;
+            if (RecettesModel) {
+              const count = await RecettesModel.count({
+                where: { code_structure: recette.code_structure },
+                transaction: options.transaction
+              });
+              recette.numeroE = count + 1;
+              console.log(`✅ Generated numeroE in beforeValidate: ${recette.numeroE}`);
+            } else {
+              recette.numeroE = 1;
+            }
+          } catch (error) {
+            console.error('❌ Hook error:', error);
+            recette.numeroE = 1;
+          }
+        }
+      },
+      beforeCreate: async (recette, options) => {
+        console.log('🎯 beforeCreate hook STARTED', recette.numeroE);
+        // Vérifier et régénérer si nécessaire
+        if (!recette.numeroE) {
+          const recettesModel = sequelize.models.Recette;
+          const count = await recettesModel.count({
+            where: { code_structure: recette.code_structure },
+            transaction: options.transaction
+          });
+          recette.numeroE = count + 1;
+        }
       }
     }
   });

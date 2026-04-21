@@ -9,7 +9,7 @@ const HistoriqueService = require('../services/historique.service');
 
 
 // Créer un nouveau fournisseur avec vérification de l'email et du téléphone
-exports.createFournisseur = async (req, res) => {
+/* exports.createFournisseur = async (req, res) => {
   try {
     const authUser = req.user;
     const clientIp = HistoriqueService.getClientIp(req);
@@ -81,6 +81,106 @@ exports.createFournisseur = async (req, res) => {
       error: error.message,
     });
   }
+}; */
+// Créer un nouveau fournisseur avec association aux magasins
+exports.createFournisseur = async (req, res) => {
+  try {
+    const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
+    const { magasinIds, ...fournisseurData } = req.body; // Extraire les magasins
+
+    console.log('Données magasins et fournisseurs reçues : ', fournisseurData,magasinIds);
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
+    const { email, telephone } = fournisseurData;
+
+    // Vérifier si un fournisseur existe déjà avec cet email ou ce téléphone
+    const existingFournisseur = await Fournisseur.findOne({
+      where: {
+        [Op.or]: [{ email: email }, { telephone: telephone }],
+      },
+    });
+
+    if (existingFournisseur) {
+      let message = '';
+      if (existingFournisseur.email === email && existingFournisseur.telephone === telephone) {
+        message = 'Un fournisseur existe déjà avec cet email et ce numéro de téléphone';
+      } else if (existingFournisseur.email === email) {
+        message = 'Un fournisseur existe déjà avec cet email';
+      } else {
+        message = 'Un fournisseur existe déjà avec ce numéro de téléphone';
+      }
+      return res.status(400).json({ message });
+    }
+
+    console.log('Avant création fournisseur');
+    // Créer le fournisseur
+    const fournisseur = await Fournisseur.create(fournisseurData);
+
+    console.log('Fournisseur créé:', fournisseur.id);
+
+    // Associer les magasins si fournis
+    if (magasinIds && magasinIds.length > 0) {
+      await fournisseur.setMagasins(magasinIds);
+      
+      // Optionnel: Initialiser les soldes dans la table de liaison
+      /* for (const magasinId of magasinIds) {
+        await db.MagasinFournisseur.create({
+          magasinId: magasinId,
+          fournisseurId: fournisseur.id,
+          solde: 0
+        });
+      } */
+    }
+
+    // ENREGISTRER L'HISTORIQUE
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Création d'un nouveau fournisseur: ${fournisseur.nomComplet || fournisseur.email}`,
+      clientIp,
+      {
+        action: 'CREATE_FOURNISSEUR',
+        fournisseurId: fournisseur.id,
+        fournisseurData: {
+          nomComplet: fournisseur.nomComplet,
+          email: fournisseur.email,
+          telephone: fournisseur.telephone,
+          code_structure: fournisseur.code_structure,
+          magasins: magasinIds
+        }
+      }
+    );
+
+    // Recharger avec les associations
+    const fournisseurAvecMagasins = await Fournisseur.findByPk(fournisseur.id, {
+      include: [{ model: db.Magasin, through: { attributes: ['solde'] } }]
+    });
+
+    res.status(201).json(fournisseurAvecMagasins);
+  } catch (error) {
+    console.error('ERREUR COMPLETE:', error);
+    if (req.user) {
+      await HistoriqueService.enregistrerAction(
+        req.user.id,
+        `Erreur lors de la création d'un fournisseur`,
+        HistoriqueService.getClientIp(req),
+        {
+          action: 'ERROR_CREATE_FOURNISSEUR',
+          error: error.message,
+          data: req.body
+        }
+      );
+    }
+   res.status(500).json({
+      message: 'Erreur lors de la création du fournisseur',
+      error: error.message,
+      stack: error.stack,
+      details: error.errors // 🔥 important pour Sequelize
+    });
+  }
 };
 
 // Récupérer tous les fournisseurs
@@ -108,18 +208,65 @@ exports.getFournisseurById = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-    const fournisseur = await Fournisseur.findByPk(req.params.id);
+    const fournisseur = await Fournisseur.findByPk(req.params.id, {
+      include: [
+        { 
+          model: db.Magasin,
+          through: { attributes: ['solde'] },
+          attributes: ["id", "nom", "telephone", "email"]
+        }
+      ]
+    });
     if (!fournisseur) {
       return res.status(404).json({ message: 'Fournisseur non trouvé' });
     }
-    res.json(fournisseur);
+
+    // Calculer le montant total à payer
+    const fournisseurJson = fournisseur.toJSON();
+    fournisseurJson.montantAPayer = fournisseurJson.magasins?.reduce((total, magasin) => {
+      return total + (magasin.MagasinFournisseur?.solde || 0);
+    }, 0) || 0;
+    res.json(fournisseurJson);
   } catch (error) {
     res.status(500).json({ message: 'Erreur récupération du fournisseur', error });
   }
 };
 
+exports.getFournisseurWithMagasins = async (req, res) => {
+  try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+    
+    const fournisseur = await Fournisseur.findByPk(req.params.id, {
+      include: [{ 
+        model: db.Magasin, 
+        through: { attributes: ['solde'] },
+        attributes: ["id", "nom", "telephone", "email", "adresse"]
+      }]
+    });
+    
+    if (!fournisseur) return res.status(404).json({ message: 'Fournisseur non trouvé' });
+
+    // Ajouter les soldes par magasin
+    const fournisseurJson = fournisseur.toJSON();
+    if (fournisseurJson.Magasins) {
+      fournisseurJson.Magasins.forEach(magasin => {
+        magasin.solde = magasin.MagasinFournisseur?.solde || 0;
+      });
+    }
+
+    res.json(fournisseurJson);
+  } catch (error) {
+    console.error('Erreur getFournisseurWithMagasins:', error);
+    res.status(500).json({ message: 'Erreur récupération', error: error.message });
+  }
+};
+
 // Mettre à jour un fournisseur
-exports.updateFournisseur = async (req, res) => {
+/* exports.updateFournisseur = async (req, res) => {
   try {
     const authUser = req.user;
     const clientIp = HistoriqueService.getClientIp(req);
@@ -178,8 +325,150 @@ exports.updateFournisseur = async (req, res) => {
     }
     res.status(500).json({ message: 'Erreur mise à jour', error });
   }
+}; */
+
+// Mettre à jour un fournisseur
+exports.updateFournisseur = async (req, res) => {
+  try {
+    const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
+    const { magasinIds, ...updateData } = req.body;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+    
+    const fournisseur = await Fournisseur.findByPk(req.params.id);
+    if (!fournisseur) return res.status(404).json({ message: 'Fournisseur non trouvé' });
+
+    // Récupérer les anciennes valeurs
+    const oldValues = {
+      nomComplet: fournisseur.nomComplet,
+      email: fournisseur.email,
+      telephone: fournisseur.telephone,
+      adresse: fournisseur.adresse,
+      statut: fournisseur.statut
+    };
+
+    // Mettre à jour le fournisseur
+    await fournisseur.update(updateData);
+
+    // Mettre à jour les associations de magasins si fournies
+    let magasinChanges = null;
+    if (magasinIds && Array.isArray(magasinIds)) {
+      const oldMagasins = await fournisseur.getMagasins();
+      const oldMagasinIds = oldMagasins.map(m => m.id);
+      magasinChanges = {
+        old: oldMagasinIds,
+        new: magasinIds,
+        added: magasinIds.filter(id => !oldMagasinIds.includes(id)),
+        removed: oldMagasinIds.filter(id => !magasinIds.includes(id))
+      };
+      await fournisseur.setMagasins(magasinIds);
+    }
+
+    // Identifier les changements
+    const changes = {};
+    if (oldValues.nomComplet !== fournisseur.nomComplet) changes.nomComplet = { old: oldValues.nomComplet, new: fournisseur.nomComplet };
+    if (oldValues.email !== fournisseur.email) changes.email = { old: oldValues.email, new: fournisseur.email };
+    if (oldValues.telephone !== fournisseur.telephone) changes.telephone = { old: oldValues.telephone, new: fournisseur.telephone };
+    if (oldValues.adresse !== fournisseur.adresse) changes.adresse = { old: oldValues.adresse, new: fournisseur.adresse };
+    if (oldValues.statut !== fournisseur.statut) changes.statut = { old: oldValues.statut, new: fournisseur.statut };
+    if (magasinChanges) changes.magasins = magasinChanges;
+    
+    // ENREGISTRER L'HISTORIQUE
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Mise à jour du fournisseur: ${fournisseur.nomComplet || fournisseur.email}`,
+      clientIp,
+      {
+        action: 'UPDATE_FOURNISSEUR',
+        fournisseurId: fournisseur.id,
+        changes: changes,
+        updatedData: updateData
+      }
+    );
+
+    // Recharger avec les magasins
+    const fournisseurMisAJour = await Fournisseur.findByPk(fournisseur.id, {
+      include: [{ model: db.Magasin, as: 'magasins', through: { attributes: ['solde'] } }]
+    });
+
+    res.json({ message: 'Fournisseur mis à jour', fournisseur: fournisseurMisAJour });
+  } catch (error) {
+    if (req.user) {
+      await HistoriqueService.enregistrerAction(
+        req.user.id,
+        `Erreur lors de la mise à jour du fournisseur ID: ${req.params.id}`,
+        HistoriqueService.getClientIp(req),
+        {
+          action: 'ERROR_UPDATE_FOURNISSEUR',
+          fournisseurId: req.params.id,
+          error: error.message
+        }
+      );
+    }
+    res.status(500).json({ message: 'Erreur mise à jour', error: error.message });
+  }
 };
 
+
+// Mettre à jour le solde d'un fournisseur pour un magasin spécifique
+exports.updateFournisseurSoldeByMagasin = async (req, res) => {
+  try {
+    const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
+    const { fournisseurId, magasinId } = req.params;
+    const { solde } = req.body;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
+    // Vérifier si la relation existe
+    const relation = await db.MagasinFournisseur.findOne({
+      where: {
+        fournisseurId: fournisseurId,
+        magasinId: magasinId
+      }
+    });
+
+    if (!relation) {
+      return res.status(404).json({ 
+        message: 'Ce fournisseur n\'est pas associé à ce magasin' 
+      });
+    }
+
+    const oldSolde = relation.solde;
+    await relation.update({ solde });
+
+    // ENREGISTRER L'HISTORIQUE
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Mise à jour du solde fournisseur pour le magasin ${magasinId}`,
+      clientIp,
+      {
+        action: 'UPDATE_FOURNISSEUR_SOLDE',
+        fournisseurId: fournisseurId,
+        magasinId: magasinId,
+        oldSolde: oldSolde,
+        newSolde: solde
+      }
+    );
+
+    res.json({ 
+      message: 'Solde mis à jour avec succès', 
+      magasinId, 
+      fournisseurId, 
+      solde 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      message: 'Erreur lors de la mise à jour du solde', 
+      error: error.message 
+    });
+  }
+};
 
 // Mettre à jour uniquement le statut d'un fournisseur
 exports.updateFournisseurStatus = async (req, res) => {
@@ -283,7 +572,7 @@ exports.deleteFournisseur = async (req, res) => {
   }
 };
 
-// Récupérer les fournisseurs par structure
+
 exports.getFournisseursByStructure = async (req, res) => {
   try {
     const authUser = req.user;
@@ -293,7 +582,7 @@ exports.getFournisseursByStructure = async (req, res) => {
     }
     const { code_structure } = req.params;
 
-    // 🔥 Vérification : l’utilisateur doit appartenir à la structure demandée
+    // Vérification : l'utilisateur doit appartenir à la structure demandée
     if (authUser.code_structure !== code_structure) {
       return res.status(403).json({
         message: "Accès interdit : structure non autorisée"
@@ -301,40 +590,61 @@ exports.getFournisseursByStructure = async (req, res) => {
     }
 
     // Vérifier rôle
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
 
     if (!isAdminStructure && !isGerant) {
-    return res.status(403).json({
-      message: "Accès interdit : rôle insuffisant"
-    });
-}
+      return res.status(403).json({
+        message: "Accès interdit : rôle insuffisant"
+      });
+    }
 
-    // Clause where par défaut (structure)
-    let whereClause = {
-      code_structure: code_structure
-    };
+    let whereClause = { code_structure: code_structure };
+    let includeConfig = [
+      { 
+        model: db.Magasin,
+        through: { attributes: ['solde'] },
+        attributes: ["id", "nom", "telephone", "email"]
+      }
+    ];
 
-    // 🔹 Si gérant : filtrer par magasin
+    // Si gérant : filtrer par son magasin
     if (!isAdminStructure && isGerant) {
       if (!authUser.magasinId) {
         return res.status(400).json({
-          message: "Ce gérant n’est associé à aucun magasin"
+          message: "Ce gérant n'est associé à aucun magasin"
         });
       }
-
-      whereClause.magasinId = authUser.magasinId;
+      includeConfig[0].where = { id: authUser.magasinId };
+      includeConfig[0].required = true;
     }
+
     const fournisseurs = await Fournisseur.findAll({
       where: whereClause,
-      include: [
-        { model: db.Magasin,attributes: ["id", "nom","telephone", "email"] },
-      ], 
-      order: [['createdAt', 'DESC']],
+      include: includeConfig,
+      order: [['created_at', 'DESC']]
     });
-    res.json(fournisseurs);
+
+    // Transformer les résultats
+    const fournisseursAvecMontant = fournisseurs.map(fournisseur => {
+      const fournisseurJson = fournisseur.toJSON();
+      
+      if (!isAdminStructure && isGerant && authUser.magasinId) {
+        const magasinAssocie = fournisseurJson.magasins?.find(m => m.id === authUser.magasinId);
+        fournisseurJson.montantAPayer = magasinAssocie?.MagasinFournisseur?.solde || 0;
+      } else {
+        fournisseurJson.montantAPayer = fournisseurJson.magasins?.reduce((total, magasin) => {
+          return total + (magasin.MagasinFournisseur?.solde || 0);
+        }, 0) || 0;
+      }
+      
+      return fournisseurJson;
+    });
+
+    res.json(fournisseursAvecMontant);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur récupération', error });
+    console.error("Erreur récupération fournisseurs:", error);
+    res.status(500).json({ message: 'Erreur récupération', error: error.message });
   }
 };
 
@@ -356,7 +666,7 @@ exports.getFournisseursByStructureBis = async (req, res) => {
       statut = 'tous'
     } = req.query;
 
-    // 🔥 Vérification : l’utilisateur doit appartenir à la structure demandée
+    // Vérification : l'utilisateur doit appartenir à la structure demandée
     if (authUser.code_structure !== code_structure) {
       return res.status(403).json({
         message: "Accès interdit : structure non autorisée"
@@ -364,7 +674,7 @@ exports.getFournisseursByStructureBis = async (req, res) => {
     }
 
     // Vérifier rôle
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
 
     if (!isAdminStructure && !isGerant) {
@@ -373,19 +683,30 @@ exports.getFournisseursByStructureBis = async (req, res) => {
       });
     }
 
-    // Clause where par défaut (structure)
+    // Clause where par défaut (structure) - PAS de magasinId ici
     let whereClause = {
       code_structure: code_structure
     };
 
-    // 🔹 Si gérant : filtrer par magasin
+    // Configuration de l'include pour les magasins
+    let includeConfig = [
+      { 
+        model: db.Magasin,
+        through: { attributes: ['solde'] },
+        attributes: ["id", "nom", "telephone", "email"]
+      }
+    ];
+
+    // 🔹 Si gérant : filtrer par son magasin via la table de liaison
     if (!isAdminStructure && isGerant) {
       if (!authUser.magasinId) {
         return res.status(400).json({
-          message: "Ce gérant n’est associé à aucun magasin"
+          message: "Ce gérant n'est associé à aucun magasin"
         });
       }
-      whereClause.magasinId = authUser.magasinId;
+      // Filtrer via la table de liaison - ne montrer que les fournisseurs associés à ce magasin
+      includeConfig[0].where = { id: authUser.magasinId };
+      includeConfig[0].required = true; // INNER JOIN pour ne garder que ceux avec ce magasin
     }
 
     // 🔍 FILTRE DE RECHERCHE TEXTUELLE
@@ -398,13 +719,6 @@ exports.getFournisseursByStructureBis = async (req, res) => {
         { numeroCompte: { [Op.like]: `%${search}%` } },
         { email: { [Op.like]: `%${search}%` } }
       ];
-      
-      // Recherche par montant
-      if (!isNaN(search)) {
-        whereClause[Op.or].push(
-          { montantAPayer: { [Op.eq]: parseFloat(search) } }
-        );
-      }
     }
 
     // 🔹 FILTRE PAR STATUT
@@ -419,22 +733,38 @@ exports.getFournisseursByStructureBis = async (req, res) => {
     // Exécution de la requête avec pagination
     const { count, rows } = await Fournisseur.findAndCountAll({
       where: whereClause,
-      include: [
-        { model: db.Magasin, attributes: ["id", "nom", "telephone", "email"] },
-      ],
-      order: [['nomComplet', 'ASC']],
+      include: includeConfig,
+      order: [['nom_complet', 'ASC']],
       offset,
       limit: limitInt,
       distinct: true
     });
 
-    // Calcul du nombre total de pages
+    // Transformer les résultats pour inclure le montantAPayer par magasin si nécessaire
+    const rowsAvecMontant = rows.map(fournisseur => {
+      const fournisseurJson = fournisseur.toJSON();
+      
+      // Si l'utilisateur est gérant, montrer le montant pour son magasin spécifique
+      if (!isAdminStructure && isGerant && authUser.magasinId) {
+        const magasinAssocie = fournisseurJson.magasins?.find(m => m.id === authUser.magasinId);
+        fournisseurJson.montantAPayer = magasinAssocie?.MagasinFournisseur?.solde || 0;
+      } 
+      // Si admin, calculer le total de tous les magasins
+      else {
+        fournisseurJson.montantAPayer = fournisseurJson.magasins?.reduce((total, magasin) => {
+          return total + (magasin.MagasinFournisseur?.solde || 0);
+        }, 0) || 0;
+      }
+      
+      return fournisseurJson;
+    });
+
     const totalPages = Math.ceil(count / limitInt);
 
     console.log(`📦 Fournisseurs: ${count} trouvés, page ${page}/${totalPages}`);
 
     res.status(200).json({
-      items: rows,
+      items: rowsAvecMontant,
       pagination: {
         total: count,
         page: parseInt(page),

@@ -270,7 +270,7 @@ exports.getAvoirs = async (req, res) => {
 
     const result = await db.Bon.findAll({
       attributes: [
-        [fn('SUM', col('montantAvoir')), 'montantAvoir'],
+        [fn('SUM', col('montant_avoir')), 'montantAvoir'],
         [fn('COUNT', col('id')), 'nombreAvoirs']
       ],
       where: whereBon,
@@ -558,8 +558,8 @@ exports.getCAParJour = async (req, res) => {
        ============================ */
     const caVenduParJour = await db.Panier.findAll({
       attributes: [
-        [fn('DATE', col('Bon.dateBon')), 'date'],
-        [fn('SUM', col('Panier.totalTTC')), 'total'],
+        [fn('DATE', col('Bon.date_bon')), 'date'],
+        [fn('SUM', col('Panier.total_t_t_c')), 'total'],
         [fn('COUNT', col('Panier.id')), 'nombrePaniers']
       ],
       include: [{
@@ -578,8 +578,8 @@ exports.getCAParJour = async (req, res) => {
           ...(agentId && { agentId })
         }
       }],
-      group: [fn('DATE', col('Bon.dateBon'))],
-      order: [[fn('DATE', col('Bon.dateBon')), 'ASC']],
+      group: [fn('DATE', col('Bon.date_bon'))],
+      order: [[fn('DATE', col('Bon.date_bon')), 'ASC']],
       raw: true
     });
 
@@ -699,8 +699,8 @@ exports.compareMagasinVsStructure = async (req, res) => {
     const whereMagasin = kpiUtilitaires.buildWhereCondition({ periode, dateReference, code_structure, magasinId });
 
     const [caStructure, caMagasin] = await Promise.all([
-      Panier.sum('totalTTC', { where: whereStructure }),
-      Panier.sum('totalTTC', { where: whereMagasin })
+      Panier.sum('total_t_t_c', { where: whereStructure }),
+      Panier.sum('total_t_t_c', { where: whereMagasin })
     ]);
 
     const partMagasin = caStructure && caStructure > 0
@@ -746,9 +746,9 @@ exports.getStatsStructureParMagasin = async (req, res) => {
     const stats = await Panier.findAll({
       attributes: [
         'magasinId',
-        [fn('SUM', col('Panier.totalTTC')), 'totalCA'],
+        [fn('SUM', col('Panier.total_t_t_c')), 'totalCA'],
         [fn('COUNT', col('Panier.id')), 'nombrePaniers'],
-        [fn('AVG', col('Panier.totalTTC')), 'ticketMoyen']
+        [fn('AVG', col('Panier.total_t_t_c')), 'ticketMoyen']
       ],
       where: {
         code_structure,
@@ -762,7 +762,7 @@ exports.getStatsStructureParMagasin = async (req, res) => {
         attributes: ['id', 'nom'],
         required: true // Assure que seulement les magasins avec des ventes sont inclus
       }],
-      order: [[fn('SUM', col('totalTTC')), 'DESC']]
+      order: [[fn('SUM', col('total_t_t_c')), 'DESC']]
     });
 
     res.json({
@@ -1258,7 +1258,7 @@ exports.getToutesStatistiquesSpeciales = async (req, res) => {
 
         const result = await db.Bon.findAll({
           attributes: [
-            [fn('SUM', col('montantAvoir')), 'montantAvoir'],
+            [fn('SUM', col('montant_avoir')), 'montantAvoir'],
             [fn('COUNT', col('id')), 'nombreAvoirs']
           ],
           where: whereBon
@@ -1373,7 +1373,7 @@ exports.getStatistiquesCommandes = async (req, res) => {
     if (bonIdsValidees.length > 0) {
       const paniersValidees = await Panier.findAll({
         attributes: [
-          [fn('SUM', col('totalTTC')), 'totalMontant'],
+          [fn('SUM', col('total_t_t_c')), 'totalMontant'],
           [fn('COUNT', col('id')), 'nombrePaniers']
         ],
         where: {
@@ -1745,7 +1745,7 @@ exports.getRapportVente = async (req, res) => {
                             ]
                         }
                     ],
-                    order: [['dateCreation', 'DESC']],
+                    order: [['date_creation', 'DESC']],
                     offset,
                     limit: parseInt(limit),
                     distinct: true
@@ -1950,7 +1950,7 @@ exports.getDetailsVendeur = async (req, res) => {
         const ventesVendeur = await db.Panier.findAll({
             attributes: [
                 'id',
-                'dateCreation',
+                'date_creation',
                 'totalTTC',
                 'totalHT',
                 'clientId',
@@ -1982,7 +1982,7 @@ exports.getDetailsVendeur = async (req, res) => {
                     required: false
                 }
             ],
-            order: [['dateCreation', 'DESC']],
+            order: [['date_creation', 'DESC']],
             limit: 20 // Limiter aux 20 dernières ventes
         });
 
@@ -2473,7 +2473,7 @@ exports.genererRapportPDF = async (req, res) => {
                             required: false
                         }
                     ],
-                    order: [['dateCreation', 'DESC']],
+                    order: [['date_creation', 'DESC']],
                     limit: 50
                 });
 
@@ -3016,7 +3016,7 @@ exports.exportRapportExcel = async (req, res) => {
                             ]
                         }
                     ],
-                    order: [['dateCreation', 'DESC']]
+                    order: [['date_creation', 'DESC']]
                 });
 
                 const clients = await db.Client.findAll({

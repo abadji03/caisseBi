@@ -246,7 +246,7 @@ exports.getPaiementsByStructure = async (req, res) => {
     }
 
     // Vérifier rôle
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
 
     if (!isAdminStructure && !isGerant) {
@@ -312,7 +312,7 @@ exports.getPaiementsClientByStructure = async (req, res) => {
     }
 
     // Vérifier rôle
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
     const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
 
@@ -381,7 +381,7 @@ exports.getPaiementsFournisseurByStructure = async (req, res) => {
     }
 
     // Vérifier rôle
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur"|| r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
     const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
 
@@ -461,7 +461,7 @@ exports.getPaiementsClientByStructureBis = async (req, res) => {
     }
 
     // Vérifier rôle
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
     const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
 
@@ -611,7 +611,7 @@ exports.getPaiementsFournisseurByStructureBis = async (req, res) => {
     }
 
     // Vérifier rôle
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
     const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
 

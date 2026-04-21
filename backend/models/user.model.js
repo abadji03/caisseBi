@@ -1,4 +1,4 @@
-const SequenceService = require('../services/sequence.service');
+//const SequenceService = require('../services/sequence.service');
 
 module.exports = (sequelize, DataTypes) => {
   // Définition du modèle users
@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
     telephone: DataTypes.STRING,
     email: {
       type: DataTypes.STRING(50),
-      //unique: true,
+      //unique:'email' ,
       allowNull: false,
     },
     password: DataTypes.STRING(200),
@@ -41,6 +41,7 @@ module.exports = (sequelize, DataTypes) => {
     numeroE: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      //defaultValue: 0
     },
     magasinId: {
       type: DataTypes.INTEGER,
@@ -57,16 +58,40 @@ module.exports = (sequelize, DataTypes) => {
     timestamps: true,
     underscored: true, // Convertit automatiquement camelCase en snake_case
     hooks: {
+      beforeValidate: async (user, options) => {
+        console.log('🔍 beforeValidate hook called', user.code_structure);
+        
+        // Définir numeroE avant la validation
+        if (!user.numeroE) {
+          try {
+            const UsersModel = sequelize.models.users;
+            if (UsersModel) {
+              const count = await UsersModel.count({
+                where: { code_structure: user.code_structure },
+                transaction: options.transaction
+              });
+              user.numeroE = count + 1;
+              console.log(`✅ Generated numeroE in beforeValidate: ${user.numeroE}`);
+            } else {
+              user.numeroE = 1;
+            }
+          } catch (error) {
+            console.error('❌ Hook error:', error);
+            user.numeroE = 1;
+          }
+        }
+      },
       beforeCreate: async (user, options) => {
-        const { sequelize, Sequence } = require('../models');
-        const numero = await SequenceService.getNextNumero(
-          sequelize,
-          Sequence,
-          user.code_structure, 
-          'user',
-          options.transaction
-        );
-        user.numeroE = numero;
+        console.log('🎯 beforeCreate hook STARTED', user.numeroE);
+        // Vérifier et régénérer si nécessaire
+        if (!user.numeroE) {
+          const UsersModel = sequelize.models.users;
+          const count = await UsersModel.count({
+            where: { code_structure: user.code_structure },
+            transaction: options.transaction
+          });
+          user.numeroE = count + 1;
+        }
       }
     }
   });

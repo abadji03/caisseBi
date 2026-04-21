@@ -16,7 +16,6 @@ import { Subject, Subscription, takeUntil, forkJoin, finalize, debounceTime, dis
 import { Operation } from '../../../modeles/operation.model';
 import { Paiement, PaiementAvecFichier } from '../../../modeles/paiement.model';
 import { ArticlePanier, Panier } from '../../../modeles/panier.model';
-import { ApplicationService } from '../../../services/application.service';
 import { AuthService } from '../../../services/auth.service';
 import { BonBrouillonService } from '../../../services/bon-brouillon.service';
 import { BonsFilter, BonsService } from '../../../services/bons.service';
@@ -31,6 +30,7 @@ import { RecettesService } from '../../../services/recettes.service';
 import { StructureService } from '../../../services/structure.service';
 import { v4 as uuidv4 } from 'uuid';
 import { BonComponent } from '../../../sharedComposants/bon/bon.component';
+import { CategoriesDepencesRecettesService } from '../../../services/categories-depences-recettes.service';
 
 
 @Component({
@@ -78,6 +78,11 @@ export class ClientComponent implements OnInit,OnDestroy {
   isRowSelected = false;
   showDetails = false;
   showBonDetailsSection = false;
+
+  selectedMagasinId: number | null = null;
+  magasinSoldes = new Map<number, number>();
+
+  displayedMagasins: Magasin[] = [];
 
   // Formulaires
   clientForm!: FormGroup;
@@ -182,9 +187,10 @@ export class ClientComponent implements OnInit,OnDestroy {
   private destroy$ = new Subject<void>();
   private userSubscription!: Subscription;
 
+  private categorieCache = new Map<string, number>();
+
   // Services injectés
   private fb = inject(FormBuilder);
-  private paginationService = inject(ApplicationService);
   private cdr = inject(ChangeDetectorRef);
   private magasinService = inject(MaagasinsService);
   private clientService = inject(ClientsService);
@@ -199,6 +205,7 @@ export class ClientComponent implements OnInit,OnDestroy {
   private pdfGenerator = inject(PdfMakerServiceService);
   private structureService = inject(StructureService);
   private recetteService = inject(RecettesService);
+  private categoriesService = inject(CategoriesDepencesRecettesService);
 
   Math = Math;
 
@@ -208,8 +215,11 @@ export class ClientComponent implements OnInit,OnDestroy {
       this.code_structure = user?.code_structure || null;
       this.magasinId = user?.magasinId || null;
       this.agentId = user?.id || null;
-      this.isAdmin = this.authService.hasRole('Administrateur')
+      this.isAdmin = this.authService.hasRole('Administrateur') || this.authService.hasRole('Administrateur secondaire');
       
+      if (!this.isAdmin && this.magasinId) {
+        this.selectedMagasinId = this.magasinId;
+      }
       if (this.code_structure) {
         this.loadClientsWithPagination();
         this.loadDataProduits();
@@ -269,17 +279,20 @@ export class ClientComponent implements OnInit,OnDestroy {
   }
   // Initialisation du formulaire
   initForm(): void {
+    const initialMagasinIds : number[] = this.magasinId? [this.magasinId]:[];
+  
     this.clientForm = this.fb.group({
       code_structure: [this.code_structure],
-      magasinId: [this.magasinId],
+      //magasinId: [this.magasinId],
       nomComplet: ['', Validators.required],
       email: ['', [Validators.email]],
       telephone: ['', [Validators.required, Validators.pattern('^[0-9]{9,12}$')]],
       adresse: ['', Validators.required],
-      solde: [0],
+      //solde: [0],
       plafond: [0, Validators.required],
       estEmploye: ['non', Validators.required],
       statut: [true],
+      magasinIds: [initialMagasinIds, Validators.required] // Changé: sélection multiple au lieu de magasinId simple
     });
   }
 
@@ -299,7 +312,23 @@ export class ClientComponent implements OnInit,OnDestroy {
       .pipe(takeUntil(this.destroy$), finalize(() => this.isLoadingClient = false))
       .subscribe({
         next: (response) => {
-          this.clients = response.items; //.filter(c => c.statut === true);          
+          this.clients = response.items; //.filter(c => c.statut === true); 
+
+          console.log('Client chargés : ',this.clients);
+          
+           // Initialiser les soldes par magasin pour chaque client
+            this.clients.forEach(client => {
+              if (client.Magasins && client.Magasins.length > 0) {
+                client.Magasins.forEach(magasin => {
+                  if (magasin.MagasinClient) {
+                    this.magasinSoldes.set(
+                      magasin.id!, 
+                      magasin.MagasinClient.solde
+                    );
+                  }
+                });
+              }
+            });
           // Mise à jour de la pagination
           this.clientsTotalItems = response.pagination.total;
           this.clientsCurrentPage = response.pagination.page;
@@ -351,6 +380,18 @@ export class ClientComponent implements OnInit,OnDestroy {
     this.loadClientsWithPagination();
   }
 
+
+  private mettreAJourSoldeClientDansMap(client: Client): void {
+  if (client.Magasins && client.Magasins.length > 0) {
+    client.Magasins.forEach(magasin => {
+      if (magasin.MagasinClient) {
+        console.log(`Mise à jour du solde pour magasin ${magasin.id}: ${magasin.MagasinClient.solde}`);
+        this.magasinSoldes.set(magasin.id!, magasin.MagasinClient.solde);
+      }
+    });
+  }
+}
+
   // Modifiez la méthode loadData() pour utiliser la nouvelle méthode
   loadData(): void {
     
@@ -360,6 +401,14 @@ export class ClientComponent implements OnInit,OnDestroy {
       .subscribe({
         next: (mgs) => {
           this.magasins = mgs;
+          // Filtrer les magasins à afficher
+          if (!this.isAdmin && this.magasinId) {
+            // Non-admin: afficher uniquement son magasin
+            this.displayedMagasins = mgs.filter(m => m.id === this.magasinId);
+          } else {
+            // Admin: afficher tous les magasins
+            this.displayedMagasins = mgs;
+          }
         },
         error: err => console.error('Erreur chargement magasins', err)
       });
@@ -562,6 +611,81 @@ export class ClientComponent implements OnInit,OnDestroy {
       });
   }
 
+  // Nouvelle méthode pour obtenir le solde total du client
+  getSoldeTotal(client: Client): number {
+    if (!client.Magasins) return 0;
+    return client.Magasins.reduce((total, magasin) => {
+      return total + (this.safeNumber(magasin.MagasinClient?.solde) || 0);
+    }, 0);
+  }
+
+  // Obtenir le solde actuel en fonction du magasin sélectionné
+  /* getSoldeActuel(): number {
+    if (!this.selectedClient) return 0;
+    
+    if (this.selectedMagasinId) {
+      console.log('Client slectionné : ',this.selectedClient)
+      const magasin = this.selectedClient.Magasins?.find(m => m.id === this.selectedMagasinId);
+      return magasin?.MagasinClient?.solde || 0;
+    }
+    return this.getSoldeTotal(this.selectedClient);
+  } */
+
+  getSoldeActuel(): number {
+    if (!this.selectedClient) return 0;
+    
+    // Pour les non-admins, utiliser automatiquement leur magasin
+    const magasinIdAAfficher = this.selectedMagasinId ?? this.magasinId;
+    
+    if (magasinIdAAfficher) {
+      console.log('Recherche solde pour magasin:', magasinIdAAfficher);
+      console.log('Magasins du client:', this.selectedClient.Magasins);
+      
+      const magasin = this.selectedClient.Magasins?.find(m => m.id === magasinIdAAfficher);
+      const solde = magasin?.MagasinClient?.solde || 0;
+      console.log('Solde trouvé:', solde);
+      return solde;
+    }
+    
+    // Admin: retourner le solde total
+    return this.getSoldeTotal(this.selectedClient);
+  }
+
+  // Obtenir le nom du magasin sélectionné
+  /* getNomMagasinSelectionne(): string {
+    if (!this.selectedMagasinId || !this.selectedClient?.Magasins) return 'tous les magasins';
+    const magasin = this.selectedClient.Magasins.find(m => m.id === this.selectedMagasinId);
+    return magasin?.nom || 'ce magasin';
+  } */
+
+  // Obtenir le nom du magasin sélectionné
+getNomMagasinSelectionne(): string {
+  // Pour les non-admins, utiliser automatiquement leur magasin
+  const magasinIdAAfficher = this.selectedMagasinId ?? this.magasinId;
+  
+  if (!magasinIdAAfficher || !this.selectedClient?.Magasins) return 'tous les magasins';
+  
+  const magasin = this.selectedClient.Magasins.find(m => m.id === magasinIdAAfficher);
+  return magasin?.nom || 'ce magasin';
+}
+
+  // Gérer le changement de magasin
+  /* onMagasinChange(magasinId: number | null): void {
+    this.selectedMagasinId = magasinId;
+    this.loadOperations(); // Recharger les opérations filtrées par magasin
+  } */
+
+  // Gérer le changement de magasin
+  onMagasinChange(magasinId: number | null): void {
+    // Si l'utilisateur n'est pas admin, ne pas permettre le changement
+    if (!this.isAdmin) {
+      console.log('Non-admin: changement de magasin non autorisé');
+      return;
+    }
+    this.selectedMagasinId = magasinId;
+    this.loadOperations();
+  }
+
   private loadStructureInfo(): void {
     this.structureService.getByCodeStructure(this.code_structure!)
       .pipe(takeUntil(this.destroy$))
@@ -611,12 +735,21 @@ export class ClientComponent implements OnInit,OnDestroy {
 
     if (!this.selectedClient) return;
 
+    if (!this.isAdmin && this.magasinId) {
+      // Pour un gérant/caissier, sélectionner automatiquement son magasin
+      this.selectedMagasinId = this.magasinId;
+    } else {
+      // Pour admin, on peut laisser null (tous les magasins)
+      this.selectedMagasinId = null;
+    }
+
     const today = new Date();
     this.startDate = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
     this.endDate = today.toISOString().split('T')[0];
     
     this.loadOperations();
   }
+
 
   closeDetails(): void {
     this.showDetails = false;
@@ -627,16 +760,22 @@ export class ClientComponent implements OnInit,OnDestroy {
 
   // Gestion du modal
   openModal(client?: Client): void {
+    this.errorMessage = '';
     if (client) {
       this.isEditMode = true;
-      this.clientForm.patchValue(client);
+      //this.clientForm.patchValue(client);
+      this.clientForm.patchValue({
+      ...client,
+      magasinIds: this.magasinId ? [this.magasinId] : (client.Magasins?.map(m => m.id) || [])
+    });
     } else {
       this.isEditMode = false;
       this.clientForm.reset({
         code_structure: this.code_structure,
         statut: true,
-        solde: 0,
-        magasinId: this.magasinId
+        //solde: 0,
+        //magasinId: this.magasinId
+        magasinIds: this.magasinId ? [this.magasinId] : []
       });
     }
     this.showModal = true;
@@ -644,6 +783,7 @@ export class ClientComponent implements OnInit,OnDestroy {
 
   closeModal(): void {
     this.showModal = false;
+    this.errorMessage = '';
   }
 
   onModalSubmit(): void {
@@ -661,10 +801,37 @@ export class ClientComponent implements OnInit,OnDestroy {
   }
 
   // CRUD Clients
-  createClient(clientData: Partial<Client>): void {
+  /* createClient(clientData: Partial<Client>): void {
+
+    const magasinIds = this.clientForm.get('magasinIds')?.value;
+
     this.isLoadingClient = true;
-    this.clientService.ajouterClient(clientData as Client)
+    this.clientService.ajouterClient(clientData as Client,magasinIds)
       .pipe(takeUntil(this.destroy$), finalize(() => this.isLoadingClient = false))
+      .subscribe({
+        next: () => {
+          this.toastr.success('Client créé avec succès');
+          this.closeModal();
+          this.loadClientsWithPagination();
+        },
+        error: (err) => {
+          this.errorMessage = err.error?.message || 'Erreur lors de la création';
+          this.toastr.error(this.errorMessage);
+        }
+      });
+  } */
+
+  createClient(clientData: Partial<Client>): void {
+    const magasinIds = this.clientForm.get('magasinIds')?.value;
+
+    this.isLoadingClient = true;
+    
+    // Choisir le service selon le rôle
+    const serviceCall = this.isAdmin 
+      ? this.clientService.ajouterClient(clientData as Client, magasinIds)
+      : this.clientService.ajouterClientBis(clientData as Client, magasinIds);
+    
+    serviceCall.pipe(takeUntil(this.destroy$), finalize(() => this.isLoadingClient = false))
       .subscribe({
         next: () => {
           this.toastr.success('Client créé avec succès');
@@ -679,8 +846,10 @@ export class ClientComponent implements OnInit,OnDestroy {
   }
 
   updateClient(id: number, updateData: Partial<Client>): void {
+    const magasinIds = this.clientForm.get('magasinIds')?.value;
+
     this.isLoadingClient = true;
-    this.clientService.updateClient(id, updateData)
+    this.clientService.updateClient(id, updateData,magasinIds)
       .pipe(takeUntil(this.destroy$), finalize(() => this.isLoadingClient = false))
       .subscribe({
         next: () => {
@@ -838,7 +1007,7 @@ export class ClientComponent implements OnInit,OnDestroy {
       typeEntite: this.typeEntite
     };
 
-    this.bonService.creerBonBrouillon(bonBrouillonData)
+    this.bonService.createBonComplet(bonBrouillonData)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (result) => {
@@ -888,13 +1057,13 @@ export class ClientComponent implements OnInit,OnDestroy {
 
     // Vérification du plafond pour les clients
     if (this.selectedClient) {
-      const nouveauSoldeApresBon = (this.safeNumber(this.selectedClient.solde) || 0) + (this.safeNumber(event.bon.montantTotal) || 0);
+      const nouveauSoldeApresBon = (this.safeNumber(this.getSoldeActuel) || 0) + (this.safeNumber(event.bon.montantTotal) || 0);
       const plafond = this.safeNumber(this.selectedClient.plafond )|| 0;
 
       console.log('Valeurs nouveauSoldeApresBon et plafond :', nouveauSoldeApresBon,plafond)
       
       console.log('Vérification plafond:', {
-        soldeActuel: this.selectedClient.solde,
+        soldeActuel: this.getSoldeActuel,
         montantBon: event.bon.montantTotal,
         nouveauSolde: nouveauSoldeApresBon,
         plafond: plafond
@@ -902,7 +1071,7 @@ export class ClientComponent implements OnInit,OnDestroy {
 
       if (nouveauSoldeApresBon > plafond) {
         this.toastr.error(
-          `Ce bon dépasse le plafond autorisé. Solde actuel: ${this.formatMontant(this.selectedClient.solde || 0)}, ` +
+          `Ce bon dépasse le plafond autorisé. Solde actuel: ${this.formatMontant(this.getSoldeActuel() || 0)}, ` +
           `Montant du bon: ${this.formatMontant(event.bon.montantTotal || 0)}, ` +
           `Plafond: ${this.formatMontant(plafond)}`
         );
@@ -949,7 +1118,7 @@ export class ClientComponent implements OnInit,OnDestroy {
       return;
     }
 
-    if (event.paiement.montant <= 0 || this.selectedClient.solde! - event.paiement.montant < 0) {
+    if (event.paiement.montant <= 0 || this.getSoldeActuel() - event.paiement.montant < 0) {
       this.toastr.error('Montant invalide ou dépasse la dette');
       return;
     }
@@ -1119,15 +1288,43 @@ export class ClientComponent implements OnInit,OnDestroy {
   private finaliserEnregistrement(_result: any, _avecFichier: boolean): void {
     this.toastr.success('Bon enregistré avec succès!', 'Succès');
     this.rafraichirDonneesImmediatement();
+    // Recharger également la liste des bons
+    this.loadBonsAvecPagination();
+  
+    // Recharger les paiements si nécessaire
+    this.loadPaiementsAvecPagination();
     this.bonBrouillonService.clearBrouillons();
+
     this.bonBrouillon = null;
     this.panierBrouillon = null;
     this.reinitialiserEtMasquerFormulaires();
     this.isLoadingBon = false;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private createRecette(paiement: any): void {
+  private async getCategoryId(code: string): Promise<number | null> {
+  // Vérifier le cache
+  if (this.categorieCache.has(code)) {
+    return this.categorieCache.get(code)!;
+  }
+
+  // Requête API
+  return new Promise((resolve) => {
+    this.categoriesService.getCategorieByCode(code, this.code_structure!)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (categorie) => {
+          if (categorie) {
+            this.categorieCache.set(code, categorie.id!);
+            resolve(categorie.id!);
+          } else {
+            resolve(null);
+          }
+        },
+        error: () => resolve(null)
+      });
+  });
+}
+  /* private createRecette(paiement: any): void {
     const recette = {
       montant: paiement.montant,
       date: paiement.date,
@@ -1153,7 +1350,43 @@ export class ClientComponent implements OnInit,OnDestroy {
       .subscribe({
         error: (err) => console.error('Erreur création recette:', err)
       });
-  }
+  } */
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private createRecette(paiement: any): void {
+  this.getCategoryId('PAIEMENT_CLIENT').then(categoryId => {
+    if (!categoryId) {
+      console.error('Catégorie non trouvée');
+      return;
+    }
+
+    const recette = {
+      montant: paiement.montant,
+      date: paiement.date,
+      paiementId: paiement.id,
+      statutRecette: 'valide',
+      description: `Paiement client ID: ${this.selectedClient?.id} - Paiement ID: ${paiement.numero}`,
+      code_structure: this.code_structure,
+      magasinId: this.magasinId,
+      agentId: this.agentId,
+      categoryId: categoryId,
+      paymentMode: paiement.methodePaiement
+    };
+
+    const formData = new FormData();
+    Object.entries(recette).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    this.recetteService.createRecette(formData)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        error: (err) => console.error('Erreur création recette:', err)
+      });
+  });
+}
 
   // Enregistrement d'un paiement
   private enregistrerPaiement(paiement: Paiement, fichier: File | null): void {
@@ -1198,21 +1431,85 @@ export class ClientComponent implements OnInit,OnDestroy {
 
   private rafraichirDonneesImmediatement(): void {
     if (!this.selectedClient) return;
+
+    console.log('=== RAFRAÎCHISSEMENT IMMÉDIAT ===');
+
     this.loadOperations();
+
+    //this.rafraichirDonneesClient();
+
+    // Attendre un peu pour que le serveur ait fini de traiter
     this.rafraichirDonneesClient();
+    this.loadBonsAvecPagination();
+    this.loadPaiementsAvecPagination();
+  }
+
+  // Ajoutez cette méthode
+  getCurrentSolde(): number {
+    if (!this.selectedClient) return 0;
+    
+    if (this.selectedMagasinId) {
+      // Priorité au Map mis à jour
+      const soldeDuMap = this.magasinSoldes.get(this.selectedMagasinId);
+      if (soldeDuMap !== undefined) {
+        return soldeDuMap;
+      }
+      
+      // Fallback sur le client
+      const magasin = this.selectedClient.Magasins?.find(m => m.id === this.selectedMagasinId);
+      return magasin?.MagasinClient?.solde || 0;
+    }
+    
+    return this.getSoldeTotal(this.selectedClient);
   }
 
   private rafraichirDonneesClient(): void {
     if (!this.selectedClient) return;
 
-    this.clientService.getClientById(this.selectedClient.id!)
+    console.log('=== RAFRAÎCHISSEMENT CLIENT ===');
+    console.log('Client avant mise à jour:', this.selectedClient.nomComplet);
+    console.log('Soldes avant:', Array.from(this.magasinSoldes.entries()));
+
+    // Sauvegarder le magasin actuel
+    const magasinActuel = this.selectedMagasinId;
+
+    this.clientService.getClientWithMagasins(this.selectedClient.id!)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (clientMisAJour) => {
+          console.log('Client après mise à jour reçu:', clientMisAJour);
+          console.log('Magasins du client:', clientMisAJour.Magasins?.map(m => ({
+            id: m.id,
+            nom: m.nom,
+            solde: m.MagasinClient?.solde
+          })));
+
           const index = this.clients.findIndex(c => c.id === clientMisAJour.id);
           if (index !== -1) this.clients[index] = clientMisAJour;
+
+          this.mettreAJourSoldeClientDansMap(clientMisAJour);
+
           this.selectedClient = clientMisAJour;
-          this.filteredClients = [...this.clients];
+          this.filteredClients = [...this.clients]; 
+
+          // Restaurer le magasin sélectionné
+          if (!this.isAdmin && this.magasinId) {
+            this.selectedMagasinId = this.magasinId;
+          } else if (magasinActuel) {
+            this.selectedMagasinId = magasinActuel;
+          }
+          
+          // Mettre à jour le Map des soldes
+          if (clientMisAJour.Magasins) {
+            clientMisAJour.Magasins.forEach(magasin => {
+              if (magasin.MagasinClient) {
+                this.magasinSoldes.set(magasin.id!, magasin.MagasinClient.solde);
+              }
+            });
+          }
+          console.log('Soldes après mise à jour:', Array.from(this.magasinSoldes.entries()));
+          console.log('Nouveau solde actuel:', this.getSoldeActuel());
+
           this.cdr.detectChanges();
         },
         error: (err) => console.error('Erreur rafraîchissement client:', err)
@@ -1538,9 +1835,9 @@ export class ClientComponent implements OnInit,OnDestroy {
           totalRetours:totaux.retours,
           totalAvoirs:totaux.avoirs,
           //soldeInitial: this.safeNumber(this.selectedClient.solde),
-          nouveauSolde: this.safeNumber(this.selectedClient.solde)
+          nouveauSolde: this.safeNumber(this.getSoldeActuel())
         },
-        solde: this.safeNumber(this.selectedClient.solde)
+        //solde: this.safeNumber(this.selectedClient.solde)
       };
 
       console.log('Données pour relevé client:', releveData);
@@ -1565,8 +1862,8 @@ export class ClientComponent implements OnInit,OnDestroy {
       numeroReference: operation.numeroVersement,
       moyenPaiement: operation.moyenPaiement,
       montantVerse: this.safeNumber(operation.montantPaye),
-      soldePrecedent: this.safeNumber(this.selectedClient?.solde) + this.safeNumber(operation.montantPaye),
-      nouveauSolde: this.safeNumber(this.selectedClient?.solde),
+      soldePrecedent: this.safeNumber(this.getSoldeTotal(this.selectedClient!)) + this.safeNumber(operation.montantPaye),
+      nouveauSolde: this.safeNumber(this.getSoldeTotal(this.selectedClient!)),
       description: operation.commentaire,
       type: operation.type === 'VERSEMENT' ? 'Versement' : 'Règlement',
       agent: operation.user?.['nom']

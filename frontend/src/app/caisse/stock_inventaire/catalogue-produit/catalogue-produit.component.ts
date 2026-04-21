@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { CategorieProduits, Produits } from '../../../modeles/produit.modele';
 import {
   FormBuilder,
@@ -16,8 +16,10 @@ import { FournisseursService } from '../../../services/fournisseurs.service';
 import { finalize, forkJoin, Subject, Subscription, takeUntil } from 'rxjs';
 import { Fournisseur } from '../../../modeles/fournisseur.model';
 import { StockInventaireService } from '../../../services/stock-inventaire.service';
-import { UserService } from '../../../services/user.service';
+//import { UserService } from '../../../services/user.service';
 import { AuthService } from '../../../services/auth.service';
+import { Magasin } from '../../../modeles/magasin.model';
+import { MaagasinsService } from '../../../services/maagasins.service';
 
 @Component({
   selector: 'app-catalogue-produit',
@@ -45,6 +47,8 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
   ajoutCategorie = false;
   searchTerm = '';
 
+  showStockModal = false;
+
   currentPage = 1;
   itemsPerPage = 10;
   totalItems = 0;
@@ -63,6 +67,7 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
     { valeur: 'false', label: 'Inactifs' }
   ];
 
+  isStockFormReady = false;
 
   errorMessage = '';
   categories: CategorieProduits[] = [];
@@ -79,6 +84,7 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
   searchText = ''; // Texte de recherche
   searchBy = 'designation'; // Critère de recherche
   fournisseur: Fournisseur[] = [];
+  
 
   produitForm!: FormGroup;
   stockForm!: FormGroup;
@@ -103,6 +109,8 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
 
   imageChanged = false; // <- À ajouter tout en haut de ton composant
 
+  magasins: Magasin[] = [];
+
   selectedImage: File | null = null;
 
   private destroy$ = new Subject<void>();
@@ -112,10 +120,11 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
   private produitsServices = inject(ProduitsService);
   private toastr = inject(ToastrService);
   private fournisseurService = inject(FournisseursService);
-  private userService = inject(UserService);
+  //private userService = inject(UserService);
   private stockService = inject(StockInventaireService);
-  private cdr = inject(ChangeDetectorRef);
+  //private cdr = inject(ChangeDetectorRef);
   private authService = inject(AuthService);
+  private magasinService = inject(MaagasinsService);
 
   ngOnInit(): void {
     this.userSubscription = this.authService.currentUser.subscribe(user => {
@@ -124,15 +133,16 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
       this.code_structure = user?.code_structure || null;
       this.magasinId = user?.magasinId || null;
       this.agentId = user?.id || null;
-      this.isAdmin = this.authService.hasRole('Administrateur');
+      this.isAdmin = this.authService.hasRole('Administrateur') || this.authService.hasRole('Administrateur secondaire');
       console.log('Code structure initialisé :', this.code_structure);
       // Déterminer si on doit montrer le champ structure
       //this.isStructureAdmin = this.authService.hasRole('Administrateur'); // Ou vérifiez par ID
 
       // Récupérer l'ID de la structure de l'utilisateur connecté
       if (this.code_structure) {
-      this.loadData();
-    }
+        this.loadData();
+        this.loadMagasinsData();
+      }
       
     });
     //this.loadData();
@@ -150,6 +160,21 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
     if(this.userSubscription) {
       this.userSubscription.unsubscribe();
     }
+  }
+
+  // Ajoutez cette méthode pour initialiser le formulaire de stock
+  initStockForm(): void {
+    this.stockForm = this.fb.group({
+      magasinId: [this.getDefaultMagasinId(), Validators.required],
+      quantiteTotale: ['', [Validators.required, Validators.min(0.01)]],
+      seuilAlerte: [5, [Validators.min(0)]],
+      seuilReapprovisionnement: [10, [Validators.min(0)]],
+      stockSecurite: [5, [Validators.min(0)]],
+      datePeremption: [null],
+      prixAchatUnitaire: [{ value: '', disabled: true }],
+      prixVenteUnitaire: [{ value: '', disabled: true }]
+    });
+    this.isStockFormReady = true;
   }
 
   iniFormulaire(): void {
@@ -187,7 +212,7 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
     });
   }
 
-  initStockForm() {
+  /* initStockForm() {
     this.stockForm = this.fb.group({
       magasinId: [this.magasinId],
       quantiteTotale: ['', [Validators.required, Validators.min(0)]],
@@ -196,11 +221,110 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
       stockSecurite: [5],
       datePeremption: [null],
     });
-  }
+  } */
 
   // Getter pour accéder facilement aux contrôles
   get f() {
     return this.produitForm.controls;
+  }
+
+  // Méthode pour obtenir l'ID du magasin par défaut
+  getDefaultMagasinId(): number | null {
+    if (this.isAdmin) {
+      return null; // L'admin doit choisir
+    }
+    return this.magasinId; // Le gérant a son magasin associé
+  }
+
+  // Méthode pour ouvrir le modal de stock initial
+  openStockModal(produit: Produits): void {
+  this.selectedProduits = produit;
+  this.initStockForm(); // Initialiser le formulaire
+  
+  // Pré-remplir les prix si disponibles
+  if (produit.prixAchatUnitaire) {
+    this.stockForm.patchValue({
+      prixAchatUnitaire: produit.prixAchatUnitaire,
+      prixVenteUnitaire: produit.prixVenteUnitaire
+    });
+  }
+  
+  this.showStockModal = true;
+  // Attendre un tick pour que le formulaire soit bien initialisé avant d'ouvrir le modal
+  setTimeout(() => {
+    const modalElement = document.getElementById('stockInitialModal');
+    if (modalElement) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const modal = new (window as any).bootstrap.Modal(modalElement);
+      modal.show();
+    }
+  }, 0);
+}
+
+// Modifiez la méthode closeStockModal
+closeStockModal(): void {
+  this.showStockModal = false;
+  this.selectedProduits = null;
+  if (this.stockForm) {
+    this.stockForm.reset();
+  }
+  this.isStockFormReady = true;
+  const modalElement = document.getElementById('stockInitialModal');
+  if (modalElement) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const modalInstance = (window as any).bootstrap.Modal.getInstance(modalElement);
+    if (modalInstance) {
+      modalInstance.hide();
+    } else {
+      // Si pas d'instance, on ferme manuellement
+      modalElement.classList.remove('show');
+      modalElement.style.display = 'none';
+      document.body.classList.remove('modal-open');
+      const backdrop = document.querySelector('.modal-backdrop');
+      if (backdrop) backdrop.remove();
+    }
+  }
+  
+}
+  // Méthode pour enregistrer le stock initial
+  saveStockInitial(): void {
+    if (this.stockForm.invalid) {
+      this.toastr.warning('Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+
+    const stockData = {
+      ...this.stockForm.value,
+      code_structure: this.code_structure,
+      produitId: this.selectedProduits?.id,
+      dernierPrixAchat: this.selectedProduits?.prixAchatUnitaire,
+      prixVenteUnitaire: this.selectedProduits?.prixVenteUnitaire,
+      agentId: this.agentId
+    };
+
+    // Supprimer les champs désactivés du formulaire
+    delete stockData.prixAchatUnitaire;
+    delete stockData.prixVenteUnitaire;
+
+    this.isLoading = true;
+    this.stockService.createStock(stockData)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.isLoading = false)
+      )
+      .subscribe({
+        next: () => {
+          this.toastr.success('Stock initial enregistré avec succès');
+          this.closeStockModal();
+          this.loadData(); // Recharger les données
+          this.closeActions(); // Fermer le panneau d'actions
+        },
+        error: (err) => {
+          const message = err.error?.message || 'Erreur lors de l\'enregistrement du stock';
+          this.toastr.error(message);
+          console.error('Erreur stock:', err);
+        }
+      });
   }
 
   verifyCheckedCase() {
@@ -360,26 +484,20 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
     return this.filteredProducts.slice(start, start + this.itemsPerPage);
   }
 
-  /* onRowsPerPageChange(event: any) {
-    this.itemsPerPage = Number(event.target.value);
-
-    // Réinitialiser les pages à 1 pour éviter un problème d'affichage
-    this.currentPage = 1;
-
-    this.cdr.detectChanges(); // Forcer la mise à jour de la vue
-  }
-  // Gérer le changement de page
-  onPageChange(page: number): void {
-    this.currentPage = page;
-  }
- */
+ 
   // Actions sur le Produits sélectionné (par exemple: ajouter, modifier, etc.)
   onAction(action: string): void {
     // Si l'action est "ajouter", on réinitialise actionType à "ajouter"
     if (action === 'ajouter') {
       this.actionType = 'ajouter';
       this.selectedProduits = null; // S'assurer qu'aucun produit n'est sélectionné
-    } else {
+    }
+    else if (action === 'stock-initial' && this.selectedProduits) {
+      // Ouvrir le modal de stock initial
+      this.openStockModal(this.selectedProduits);
+      return;
+    }
+    else {
       this.actionType = action; // On garde l'action sélectionnée
     }
     if (this.selectedProduits) {
@@ -618,6 +736,21 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
         error: (err) => console.error('Erreur chargement données', err),
       });
   } */
+
+
+  loadMagasinsData(): void {
+    
+    // Charger les magasins séparément car ils n'ont pas besoin de pagination
+    this.magasinService.getMagasinsByStructure(this.code_structure!)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (mgs) => {
+          this.magasins = mgs;
+          
+        },
+        error: err => console.error('Erreur chargement magasins', err)
+      });
+  }
 
   loadData(): void {
     if (!this.code_structure) return;
@@ -1199,7 +1332,7 @@ get pagesToShow(): number[] {
     });
   }
 
-  onSubmitWithStock() {
+  /* onSubmitWithStock() {
     if (this.produitForm.invalid || (this.stockForm && this.stockForm.invalid)) {
       this.toastr.error('Veuillez remplir tous les champs requis.');
       return;
@@ -1285,12 +1418,81 @@ get pagesToShow(): number[] {
       });
     }
   }
+ */
 
+onSubmitWithStock() {
+  if (this.produitForm.invalid) {
+    this.toastr.error('Veuillez remplir tous les champs requis.');
+    return;
+  }
+
+  const produitData = this.produitForm.value;
+  const formData = new FormData();
+
+  // Ajouter les champs du formulaire produit
+  Object.keys(produitData).forEach((key) => {
+    const value = produitData[key];
+    if (value !== null && value !== undefined) {
+      formData.append(key, String(value));
+    }
+  });
+
+  // Champs additionnels nécessaires
+  formData.append('code_structure', this.code_structure!);
+  formData.append('agentId', String(this.agentId));
+
+  // Ajouter l'image sélectionnée (si présente)
+  if (this.imageChanged && this.selectedImageFile) {
+    formData.append('image', this.selectedImageFile);
+  }
+
+  if (this.actionType === 'ajouter') {
+    // Appel au service pour créer le produit
+    this.produitsServices.createProduit(formData)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (newProduit) => {
+          this.toastr.success('Produit ajouté avec succès');
+          this.loadData();
+          this.resetForms();
+          this.closeModal(this.actionType);
+          
+          // Proposer d'ajouter du stock immédiatement
+          if (confirm('Souhaitez-vous ajouter du stock pour ce produit ?')) {
+            this.openStockModal(newProduit);
+          }
+        },
+        error: (err) => {
+          const message = err.error?.message || 'Erreur lors de la création du produit.';
+          console.error('Erreur création produit :', err);
+          this.toastr.error(message);
+        },
+      });
+  } else if (this.actionType === 'modifier' && this.selectedProduits) {
+    this.produitsServices.updateProduit(this.selectedProduits?.id, formData)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.toastr.success('Produit mis à jour avec succès');
+          this.loadData();
+          this.resetForms();
+          this.isRowSelected = false;
+          this.closeModal(this.actionType);
+        },
+        error: (err) => {
+          const message = err.error?.message || 'Erreur lors de la mise à jour du produit.';
+          this.toastr.error(message);
+        },
+      });
+  }
+}
   handleProduitAction() {
     if (this.actionType === 'ajouter') {
       // Affiche le formulaire de stock
-      this.showStockSection = true;
-      this.initStockForm();
+      //this.showStockSection = true;
+      //this.initStockForm();
+      // Envoyer directement le produit sans stock
+      this.onSubmitWithStock();
     } else if (this.actionType === 'modifier') {
       // Envoie directement la mise à jour du produit
       this.onSubmitWithStock(); // Elle gère déjà le cas modifier

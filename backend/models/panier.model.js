@@ -1,5 +1,5 @@
 // models/panier.js
-const SequenceService = require('../services/sequence.service');
+//const SequenceService = require('../services/sequence.service');
 
 module.exports = (sequelize, DataTypes) => {
   const Panier = sequelize.define('Panier', {
@@ -63,7 +63,7 @@ module.exports = (sequelize, DataTypes) => {
     // freezeTableName: true est déjà dans la config globale
     timestamps: true,
     underscored: true, // Convertit automatiquement camelCase en snake_case
-    hooks: {
+    /* hooks: {
       beforeCreate: async (panier, options) => {
         const { sequelize, Sequence } = require('../models');
         const numero = await SequenceService.getNextNumero(
@@ -75,6 +75,45 @@ module.exports = (sequelize, DataTypes) => {
         );
         panier.numeroE = numero;
       }
+    } */
+
+
+    hooks: {
+      beforeValidate: async (panier, options) => {
+        console.log('🔍 beforeValidate hook called', panier.code_structure);
+        
+        // Définir numeroE avant la validation
+        if (!panier.numeroE) {
+          try {
+            const paniersModel = sequelize.models.Panier;
+            if (paniersModel) {
+              const count = await paniersModel.count({
+                where: { code_structure: panier.code_structure },
+                transaction: options.transaction
+              });
+              panier.numeroE = count + 1;
+              console.log(`✅ Generated numeroE in beforeValidate: ${panier.numeroE}`);
+            } else {
+              panier.numeroE = 1;
+            }
+          } catch (error) {
+            console.error('❌ Hook error:', error);
+            panier.numeroE = 1;
+          }
+        }
+      },
+      beforeCreate: async (panier, options) => {
+        console.log('🎯 beforeCreate hook STARTED', panier.numeroE);
+        // Vérifier et régénérer si nécessaire
+        if (!panier.numeroE) {
+          const paniersModel = sequelize.models.Panier;
+          const count = await paniersModel.count({
+            where: { code_structure: panier.code_structure },
+            transaction: options.transaction
+          });
+          panier.numeroE = count + 1;
+        }
+      }
     }
   });
 
@@ -82,7 +121,7 @@ module.exports = (sequelize, DataTypes) => {
     Panier.belongsTo(models.Client, { foreignKey: 'clientId' });
     Panier.belongsTo(models.Bon, { foreignKey: 'bonId' });
     Panier.belongsTo(models.Magasin, { foreignKey: 'magasinId', allowNull: false });
-    Panier.belongsTo(models.User, { foreignKey: 'agentId', allowNull: false });
+    Panier.belongsTo(models.panier, { foreignKey: 'agentId', allowNull: false });
   }; */
 
   return Panier;

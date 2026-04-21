@@ -401,7 +401,7 @@ exports.findAll = async (req, res) => {
     const operations = await Operation.findAndCountAll({
       where,
       include,
-      order: [['dateOperation', 'DESC']],
+      order: [['date_operation', 'DESC']],
       limit: parseInt(limit),
       offset: offset,
       distinct: true // Important pour count avec includes
@@ -428,7 +428,16 @@ exports.findByFournisseur = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-    const { code_structure, fournisseurId } = req.params;
+
+    const code_structure = authUser.code_structure;
+    // 🔥 Vérification : l’utilisateur doit appartenir à la structure demandée
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({
+        message: "Accès interdit : structure non autorisée"
+      });
+    }
+
+    const { fournisseurId } = req.params;
     const { dateDebut, dateFin, type, statut } = req.query;
 
     console.log('Requête opérations fournisseur:', {
@@ -440,34 +449,76 @@ exports.findByFournisseur = async (req, res) => {
       statut
     });
 
-    const where = {
-      code_structure,
-      fournisseurId: parseInt(fournisseurId)
+    // Vérifier rôle
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
+    const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+    const isCaissier = authUser.roles?.some(r => r.nom === "Caissier" || r.nom === "Employé");
+
+    if (!isAdminStructure && !isGerant && !isCaissier) {
+        return res.status(403).json({
+          message: "Accès interdit : rôle insuffisant"
+        });
+    }
+    
+    // Clause where par défaut (structure)
+    let whereClause = {
+      code_structure: code_structure,
+      fournisseurId: parseInt(fournisseurId),
+      statut: { [Op.ne]: 'BROUILLON' }
     };
+
+    if (isAdminStructure) {
+      // Admin -> tout structure
+      //Aucune filtre
+    } 
+    else if (isGerant) {
+      // Gérant -> uniquement son magasin
+      if (!authUser.magasinId) {
+        return res.status(400).json({
+          message: "Ce gérant n’est associé à aucun magasin"
+        });
+      }
+      whereClause.magasinId = authUser.magasinId;
+    } 
+    else if (isCaissier) {
+      // Caissier/Employé -> uniquement ses paniers
+      whereClause.agentId = authUser.id;
+      if (authUser.magasinId) {
+        whereClause.magasinId = authUser.magasinId;
+      }
+    } 
+    else {
+      return res.status(403).json({ message: "Accès interdit : rôle insuffisant" });
+    }
+    /* const where = {
+      code_structure,
+      fournisseurId: parseInt(fournisseurId),
+      statut: { [Op.ne]: 'BROUILLON' }
+    }; */
 
     // Filtre par date
     if (dateDebut || dateFin) {
-      where.dateOperation = {};
+      whereClause.dateOperation = {};
       if (dateDebut) {
         const debutDate = new Date(dateDebut);
-        where.dateOperation[Op.gte] = debutDate;
+        whereClause.dateOperation[Op.gte] = debutDate;
         console.log('Date début:', dateDebut, '->', debutDate.toISOString());
       }
       if (dateFin) {
         const dateFinObj = new Date(dateFin);
         dateFinObj.setHours(23, 59, 59, 999);
-        where.dateOperation[Op.lte] = dateFinObj;
+        whereClause.dateOperation[Op.lte] = dateFinObj;
         console.log('Date fin:', dateFin, '->', dateFinObj.toISOString());
       }
     }
-    console.log('Conditions date:', where.dateOperation);
-    if (type) where.type = type;
-    if (statut) where.statut = statut;
+    console.log('Conditions date:', whereClause.dateOperation);
+    if (type) whereClause.type = type;
+    if (statut) whereClause.statut = statut;
 
-    console.log('🔍 Requête Sequelize WHERE:', JSON.stringify(where, null, 2));
+    console.log('🔍 Requête Sequelize WHERE:', JSON.stringify(whereClause, null, 2));
 
     const operations = await Operation.findAll({
-      where,
+      where : whereClause,
       include: [
         { model: db.Bon, include: {model:db.Panier,include: [{
               model: db.ArticlePanier,
@@ -498,32 +549,82 @@ exports.findByClient = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-    const { code_structure, clientId } = req.params;
+    const code_structure = authUser.code_structure;
+    // 🔥 Vérification : l’utilisateur doit appartenir à la structure demandée
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({
+        message: "Accès interdit : structure non autorisée"
+      });
+    }
+
+    const { clientId } = req.params;
     const { dateDebut, dateFin, type, statut } = req.query;
 
-    const where = {
-      code_structure,
-      clientId: parseInt(clientId)
+    // Vérifier rôle
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
+    const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+    const isCaissier = authUser.roles?.some(r => r.nom === "Caissier" || r.nom === "Employé");
+
+    if (!isAdminStructure && !isGerant && !isCaissier) {
+        return res.status(403).json({
+          message: "Accès interdit : rôle insuffisant"
+        });
+    }
+    
+    // Clause where par défaut (structure)
+    let whereClause = {
+      code_structure: code_structure,
+      clientId: parseInt(clientId),
+      statut: { [Op.ne]: 'BROUILLON' }
     };
+
+    if (isAdminStructure) {
+      // Admin -> tout structure
+      //Aucune filtre
+    } 
+    else if (isGerant) {
+      // Gérant -> uniquement son magasin
+      if (!authUser.magasinId) {
+        return res.status(400).json({
+          message: "Ce gérant n’est associé à aucun magasin"
+        });
+      }
+      whereClause.magasinId = authUser.magasinId;
+    } 
+    else if (isCaissier) {
+      // Caissier/Employé -> uniquement ses paniers
+      whereClause.agentId = authUser.id;
+      if (authUser.magasinId) {
+        whereClause.magasinId = authUser.magasinId;
+      }
+    } 
+    else {
+      return res.status(403).json({ message: "Accès interdit : rôle insuffisant" });
+    }
+    /* const where = {
+      code_structure,
+      clientId: parseInt(clientId),
+      statut: { [Op.ne]: 'BROUILLON' }
+    }; */
 
     // Filtre par date
     if (dateDebut || dateFin) {
-      where.dateOperation = {};
+      whereClause.dateOperation = {};
       if (dateDebut) {
-        where.dateOperation[Op.gte] = new Date(dateDebut);
+        whereClause.dateOperation[Op.gte] = new Date(dateDebut);
       }
       if (dateFin) {
         const dateFinObj = new Date(dateFin);
         dateFinObj.setHours(23, 59, 59, 999);
-        where.dateOperation[Op.lte] = dateFinObj;
+        whereClause.dateOperation[Op.lte] = dateFinObj;
       }
     }
 
-    if (type) where.type = type;
-    if (statut) where.statut = statut;
+    if (type) whereClause.type = type;
+    if (statut) whereClause.statut = statut;
 
     const operations = await Operation.findAll({
-      where,
+      where: whereClause,
       include: [
         { model: db.Bon, include: {model:db.Panier,include: [{
               model: db.ArticlePanier,
@@ -535,7 +636,7 @@ exports.findByClient = async (req, res) => {
         { model: db.Paiement },
         { model: db.Users }
       ],
-      order: [['dateOperation', 'DESC']]
+      order: [['date_operation', 'DESC']]
     });
 
     res.json(operations);
@@ -663,7 +764,7 @@ exports.getStats = async (req, res) => {
         'type',
         [db.sequelize.fn('COUNT', db.sequelize.col('id')), 'count'],
         [db.sequelize.fn('SUM', db.sequelize.col('montant')), 'totalMontant'],
-        [db.sequelize.fn('SUM', db.sequelize.col('montantPaye')), 'totalPaye']
+        [db.sequelize.fn('SUM', db.sequelize.col('montant_paye')), 'totalPaye']
       ],
       group: ['type']
     });

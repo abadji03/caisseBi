@@ -420,6 +420,17 @@
         <!-- <button class="btn btn-warning d-flex align-items-center text-white fw-bold" data-bs-toggle="tooltip" title="Mettre le produit en archive" (click)="onAction('archiver')"><i class="bi bi-archive me-2"></i>Archiver</button> -->
         <!-- <button class="btn btn-success d-flex align-items-center" data-bs-toggle="tooltip" title="Ajouter de nouvelles entrées pour le produit" (click)="onAction('entree')"><mat-icon>arrow_downward</mat-icon>Entrée</button>
           <button class="btn btn-danger d-flex align-items-center" data-bs-toggle="tooltip" title="Ajouter de nouvelles sorties pour le produit" (click)="onAction('sortie')"><mat-icon>arrow_upward </mat-icon>Sortie</button> -->
+        <!-- Ajoutez ce bouton dans la div btn-group-vertical -->
+        <button
+          *ngIf="getQteById(selectedProduits!) === 0"
+          class="btn btn-dark d-flex align-items-center text-white fw-bold"
+          data-bs-toggle="tooltip"
+          title="Ajouter un stock initial pour ce produit"
+          (click)="onAction('stock-initial')"
+        >
+          <i class="bi bi-box-seam me-2"></i>Stock initial
+        </button>
+
         <button
           *ngIf="selectedProduits?.codeBarre === '' || selectedProduits?.codeBarre === null"
           class="btn btn-primary d-flex align-items-center"
@@ -747,123 +758,11 @@
                 class="bi me-2"
                 [ngClass]="actionType === 'ajouter' ? 'bi-box-seam' : 'bi-save'"
               ></i>
-              {{ getButtonLabel() }}
+              <!-- {{ getButtonLabel() }} -->
+                Ajouter le produit
             </button>
           </div>
         </form>
-
-        <div *ngIf="showStockSection">
-          <h5 class="mb-4 border-bottom pb-2">Informations sur le stock initial</h5>
-
-          <form [formGroup]="stockForm" (ngSubmit)="onSubmitWithStock()">
-            <div class="row mb-3">
-              <!-- Magasin -->
-              <!-- <div class="col-md-6">
-                  <label class="form-label">Magasin <span class="text-danger">*</span></label>
-                  <select class="form-select" formControlName="magasinId"
-                          [ngClass]="{'is-invalid': stockForm.get('magasinId')?.invalid && (stockForm.get('magasinId')?.dirty || stockForm.get('magasinId')?.touched)}">
-                    <option value="">Sélectionner un magasin</option>
-                    <option *ngFor="let magasin of magasins" [value]="magasin.id">{{ magasin.nom }}</option>
-                  </select>
-                  <div *ngIf="stockForm.get('magasinId')?.invalid && (stockForm.get('magasinId')?.dirty || stockForm.get('magasinId')?.touched)" class="invalid-feedback">
-                    Le magasin est obligatoire
-                  </div>
-                </div> -->
-
-              <!-- Quantité totale -->
-              <div class="col-md-12">
-                <label for="qteInitial" class="form-label"
-                  >Quantité initiale <span class="text-danger">*</span></label
-                >
-                <input
-                  name="qteInitial"
-                  type="number"
-                  step="0.01"
-                  class="form-control"
-                  formControlName="quantiteTotale"
-                  [ngClass]="{
-                    'is-invalid':
-                      stockForm.get('quantiteTotale')?.invalid &&
-                      (stockForm.get('quantiteTotale')?.dirty ||
-                        stockForm.get('quantiteTotale')?.touched),
-                  }"
-                />
-                <div
-                  *ngIf="
-                    stockForm.get('quantiteTotale')?.invalid &&
-                    (stockForm.get('quantiteTotale')?.dirty ||
-                      stockForm.get('quantiteTotale')?.touched)
-                  "
-                  class="invalid-feedback"
-                >
-                  <div *ngIf="stockForm.get('quantiteTotale')?.errors?.['required']">
-                    La quantité est obligatoire
-                  </div>
-                  <div *ngIf="stockForm.get('quantiteTotale')?.errors?.['min']">
-                    La quantité doit être positive
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <!-- Seuils -->
-              <div class="col-md-4">
-                <label for="seuilAlerte" class="form-label">Seuil d'alerte</label>
-                <input
-                  name="seuilAlerte"
-                  type="number"
-                  step="0.01"
-                  class="form-control"
-                  formControlName="seuilAlerte"
-                />
-              </div>
-              <div class="col-md-4">
-                <label for="seuilReapprovisionnement" class="form-label"
-                  >Seuil de réapprovisionnement</label
-                >
-                <input
-                  name="seuilReapprovisionnement"
-                  type="number"
-                  step="0.01"
-                  class="form-control"
-                  formControlName="seuilReapprovisionnement"
-                />
-              </div>
-              <div class="col-md-4">
-                <label for="stockSecurite" class="form-label">Stock de sécurité</label>
-                <input
-                  name="stockSecurite"
-                  type="number"
-                  step="0.01"
-                  class="form-control"
-                  formControlName="stockSecurite"
-                />
-              </div>
-            </div>
-
-            <!-- Date péremption si produit périssable -->
-            <div class="mb-3" *ngIf="produitForm.get('perissable')?.value === 'true'">
-              <label for="datePeremption" class="form-label">Date de péremption</label>
-              <input
-                type="date"
-                name="datePeremption"
-                class="form-control"
-                formControlName="datePeremption"
-              />
-            </div>
-
-            <!-- Boutons -->
-            <div class="d-flex justify-content-between mt-4">
-              <button type="button" class="btn btn-secondary" (click)="showStockSection = false">
-                <i class="bi bi-arrow-left me-2"></i> Retour
-              </button>
-              <button type="submit" class="btn btn-success" [disabled]="stockForm.invalid">
-                <i class="bi bi-save me-2"></i> Enregistrer avec Stock
-              </button>
-            </div>
-          </form>
-        </div>
       </div>
     </div>
   </div>
@@ -1066,6 +965,172 @@
         >
           Enregistrer
         </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal pour l'enregistrement du stock initial -->
+<div class="modal fade" id="stockInitialModal" tabindex="-1" aria-labelledby="stockInitialModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="stockInitialModalLabel">
+          <i class="bi bi-box-seam me-2"></i>
+          Enregistrement du stock initial - {{ selectedProduits?.designation }}
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" (click)="closeStockModal()"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Afficher un spinner pendant l'initialisation -->
+        <div *ngIf="!isStockFormReady" class="text-center py-4">
+          <div class="spinner-border text-success" role="status">
+            <span class="visually-hidden">Chargement...</span>
+          </div>
+        </div>
+
+        <!-- Formulaire de stock - affiché uniquement quand il est prêt -->
+        <form *ngIf="isStockFormReady && stockForm" [formGroup]="stockForm" (ngSubmit)="saveStockInitial()">
+          <!-- Informations produit -->
+          <div class="alert alert-info">
+            <strong>Produit:</strong> {{ selectedProduits?.designation }}<br>
+            <strong>Prix d'achat:</strong> {{ selectedProduits?.prixAchatUnitaire }} F CFA<br>
+            <strong>Prix de vente:</strong> {{ selectedProduits?.prixVenteUnitaire}} F CFA
+          </div>
+
+          <div class="row mb-3">
+            <!-- Magasin - conditionnel selon le rôle -->
+            <div class="col-md-12" *ngIf="isAdmin; else magasinAuto">
+              <label for="magasinId" class="form-label">
+                Magasin <span class="text-danger">*</span>
+              </label>
+              <select 
+                class="form-select" 
+                id="magasinId" 
+                formControlName="magasinId"
+                [ngClass]="{'is-invalid': stockForm.get('magasinId')?.invalid && stockForm.get('magasinId')?.touched}"
+              >
+                <option value="">Sélectionner un magasin</option>
+                <option *ngFor="let magasin of magasins" [value]="magasin.id">
+                  {{ magasin.nom }}
+                </option>
+              </select>
+              <div class="invalid-feedback" *ngIf="stockForm.get('magasinId')?.invalid && stockForm.get('magasinId')?.touched">
+                Le magasin est obligatoire
+              </div>
+            </div>
+            
+            <ng-template #magasinAuto>
+              <div class="col-md-12">
+                <label for="magasin" class="form-label">Magasin</label>
+                <input name="magasin" type="text" class="form-control" [value]="magasinId" disabled>
+                <small class="text-muted">Magasin associé à votre compte</small>
+              </div>
+            </ng-template>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-12">
+              <label for="quantiteTotale" class="form-label">
+                Quantité initiale <span class="text-danger">*</span>
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                class="form-control"
+                id="quantiteTotale"
+                formControlName="quantiteTotale"
+                [ngClass]="{'is-invalid': stockForm.get('quantiteTotale')?.invalid && stockForm.get('quantiteTotale')?.touched}"
+                placeholder="Entrez la quantité initiale"
+              >
+              <div class="invalid-feedback" *ngIf="stockForm.get('quantiteTotale')?.invalid && stockForm.get('quantiteTotale')?.touched">
+                <div *ngIf="stockForm.get('quantiteTotale')?.errors?.['required']">La quantité est obligatoire</div>
+                <div *ngIf="stockForm.get('quantiteTotale')?.errors?.['min']">La quantité doit être positive</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label for="seuilAlerte" class="form-label">Seuil d'alerte</label>
+              <input
+                type="number"
+                step="0.01"
+                class="form-control"
+                id="seuilAlerte"
+                formControlName="seuilAlerte"
+                placeholder="Seuil d'alerte"
+              >
+              <small class="text-muted">En dessous de ce seuil, une alerte sera déclenchée</small>
+            </div>
+            <div class="col-md-4">
+              <label for="seuilReapprovisionnement" class="form-label">Seuil réapprovisionnement</label>
+              <input
+                type="number"
+                step="0.01"
+                class="form-control"
+                id="seuilReapprovisionnement"
+                formControlName="seuilReapprovisionnement"
+                placeholder="Seuil réapprovisionnement"
+              >
+              <small class="text-muted">Quantité recommandée pour le réapprovisionnement</small>
+            </div>
+            <div class="col-md-4">
+              <label for="stockSecurite" class="form-label">Stock de sécurité</label>
+              <input
+                type="number"
+                step="0.01"
+                class="form-control"
+                id="stockSecurite"
+                formControlName="stockSecurite"
+                placeholder="Stock de sécurité"
+              >
+              <small class="text-muted">Stock minimum à maintenir</small>
+            </div>
+          </div>
+
+          <div class="mb-3" *ngIf="selectedProduits?.perissable">
+            <label for="datePeremption" class="form-label">Date de péremption</label>
+            <input
+              type="date"
+              class="form-control"
+              id="datePeremption"
+              formControlName="datePeremption"
+            >
+            <small class="text-muted">Optionnel - À renseigner pour les produits périssables</small>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="achat" class="form-label">Prix d'achat unitaire</label>
+              <input
+                name="achat"
+                type="text"
+                class="form-control"
+                formControlName="prixAchatUnitaire"
+              >
+            </div>
+            <div class="col-md-6">
+              <label for="unitaire" class="form-label">Prix de vente unitaire</label>
+              <input
+                name="unitaire"
+                type="text"
+                class="form-control"
+                formControlName="prixVenteUnitaire"
+              >
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2 mt-4">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" (click)="closeStockModal()">
+              <i class="bi bi-x-circle me-2"></i>Annuler
+            </button>
+            <button type="submit" class="btn btn-success" [disabled]="stockForm.invalid || isLoading">
+              <i class="bi bi-save me-2"></i>
+              {{ isLoading ? 'Enregistrement...' : 'Enregistrer le stock' }}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

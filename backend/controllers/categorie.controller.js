@@ -96,6 +96,42 @@ exports.createCategorie = async (req, res) => {
   }
 };
 
+
+// controllers/categorie.controller.js - Ajouter cette méthode
+
+// Récupérer une catégorie par son code métier
+exports.getByCode = async (req, res) => {
+  try {
+    const authUser = req.user;
+    const { code } = req.params;
+    const { code_structure } = req.query;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
+    const categorie = await Categorie.findOne({
+      where: {
+        code: code,
+        [Op.or]: [
+          { code_structure: code_structure },
+          { code_structure: null },
+          { code_structure: '' }
+        ]
+      }
+    });
+
+    if (!categorie) {
+      return res.status(404).json({ message: `Catégorie avec le code '${code}' non trouvée` });
+    }
+
+    res.json(categorie);
+  } catch (error) {
+    console.error('Erreur récupération catégorie par code:', error);
+    res.status(500).json({ message: 'Erreur lors de la récupération', error: error.message });
+  }
+};
+
 exports.getAllByStructure = async (req, res) => {
   try {
     const authUser = req.user;

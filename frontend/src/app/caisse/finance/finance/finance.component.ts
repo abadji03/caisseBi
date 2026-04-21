@@ -70,7 +70,7 @@ export class FinanceComponent implements OnInit,OnDestroy {
       this.code_structure = user?.code_structure || null;
       this.magasinId = user?.magasinId || null;
       this.agentId = user?.id || null;
-      this.isAdmin = this.authService.hasRole('Administrateur');
+      this.isAdmin = this.authService.hasRole('Administrateur') || this.authService.hasRole('Administrateur secondaire');
       
       // Charger les catégories après avoir l'utilisateur
       if (this.code_structure) {

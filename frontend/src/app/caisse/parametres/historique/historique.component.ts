@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { AfterViewInit, Component, ElementRef, inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, inject, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { HistoriqueAction, HistoriqueConnexion, HistoriqueService } from '../../../services/historique.service';
 import { ToastrService } from 'ngx-toastr';
 import { finalize, Subject, takeUntil } from 'rxjs';
-import { AuthService } from '../../../services/auth.service';
+//import { AuthService } from '../../../services/auth.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PaginationAdvancedComponent } from '../../../sharedComposants/pagination-advanced/pagination-advanced.component';
@@ -20,9 +20,13 @@ import Chart from 'chart.js/auto';
 })
 export class HistoriqueComponent implements OnInit,OnDestroy,AfterViewInit  {
 
+  @Input() isAdminGeneral = false;
+  @Input() isAdminStructure = false;
+  @Input() code_structure : string|null = null;
+
   private destroy$ = new Subject<void>();
   private historiqueService = inject(HistoriqueService);
-  private authService = inject(AuthService);
+  //private authService = inject(AuthService);
   private toastr = inject(ToastrService);
   private userService = inject(UserService);
   private structureService = inject(StructureService);
@@ -55,11 +59,7 @@ export class HistoriqueComponent implements OnInit,OnDestroy,AfterViewInit  {
   totalItems = 0;
   
   // Utilisateur courant
-  currentUser: any;
-  isAdminGeneral = false;
-  isAdminStructure = false;
-
-  code_structure : string|null = null;
+  //currentUser: any;
 
   actionsChart: Chart | null = null;
   private chartInitialized = false;
@@ -68,17 +68,22 @@ export class HistoriqueComponent implements OnInit,OnDestroy,AfterViewInit  {
   selectedActionDetails: any = null;
   
   ngOnInit(): void {
-    this.authService.currentUser.subscribe(user => {
-      this.currentUser = user;
+    /* this.authService.currentUser.subscribe(user => {
       this.isAdminGeneral = this.authService.hasRole('Administrateur Général');
-      this.isAdminStructure = this.authService.hasRole('Administrateur') && !this.isAdminGeneral;
+      this.isAdminStructure = (this.authService.hasRole('Administrateur') || this.authService.hasRole('Administrateur secondaire')) && !this.isAdminGeneral;
       
       this.loadUsers();
       if (this.isAdminGeneral) {
         this.loadStructures();
       }
       this.loadData();
-    });
+    }); */
+
+    this.loadUsers();
+    if (this.isAdminGeneral) {
+      this.loadStructures();
+    }
+    this.loadData();
   }
   
   ngAfterViewInit(): void {

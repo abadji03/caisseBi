@@ -57,7 +57,7 @@ exports.getPaniersByStructure = async (req, res) => {
       return res.status(403).json({ message: "Accès interdit : structure non autorisée" });
     }
 
-    const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
     const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
     const isEmploye = authUser.roles?.some(r => r.nom === "Employé");
@@ -695,7 +695,7 @@ exports.getPaniersParDate = async (req, res) => {
     finJournee.setHours(23, 59, 59, 999);
 
     // Vérifier rôle
-    const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
     const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
     const isEmploye = authUser.roles?.some(r => r.nom === "Employé");
@@ -810,7 +810,7 @@ exports.getPaniersByStructureBis = async (req, res) => {
       return res.status(403).json({ message: "Accès interdit : structure non autorisée" });
     }
 
-    const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
     const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
     const isEmploye = authUser.roles?.some(r => r.nom === "Employé");
@@ -899,7 +899,7 @@ exports.getPaniersByStructureBis = async (req, res) => {
           model: db.Users, attributes: ['id', 'nom'],
         }
       ],
-      order: [['dateCreation', 'DESC']],
+      order: [['date_creation', 'DESC']],
     });
     
     return res.json(paniers);
@@ -1077,7 +1077,7 @@ exports.getPaniersAujourdhui = async (req, res) => {
     finJournee.setHours(23, 59, 59, 999);
 
     // Vérifier rôle
-    const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
     const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
     const isEmploye = authUser.roles?.some(r => r.nom === "Employé");
@@ -1167,7 +1167,7 @@ exports.getPaniersAujourdhui = async (req, res) => {
           ],
         },
       ],
-      order: [["dateCreation", "DESC"]],
+      order: [["date_creation", "DESC"]],
     });
 
     // ==========================
@@ -1450,7 +1450,7 @@ exports.getPaniersAujourdhuiBis = async (req, res) => {
     finJournee.setHours(23, 59, 59, 999);
 
     // Vérifier rôle
-    const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
     const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
     const isEmploye = authUser.roles?.some(r => r.nom === "Employé");

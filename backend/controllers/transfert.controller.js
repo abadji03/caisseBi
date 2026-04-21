@@ -350,7 +350,7 @@ exports.listerParStructure = async (req, res) => {
     }
 
     // Vérifier le rôle
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur"|| r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
 
     if (!isAdminStructure && !isGerant) {

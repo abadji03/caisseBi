@@ -14,14 +14,14 @@ import { CaisseComponent } from './caisse/vente/caisse/caisse.component';
 //import { EspaceVendeursComponent } from './caisse/acces_accueil/espace-vendeurs/espace-vendeurs.component';
 import { OverviewComponent } from './caisse/acces_accueil/overview/overview.component';
 import { VentesComponent } from './caisse/vente/ventes/ventes.component';
-import { FournisseursComponent } from './caisse/finance/fournisseurs/fournisseurs.component';
-import { ClientsComponent } from './caisse/vente/clients/clients.component';
+//import { FournisseursComponent } from './caisse/finance/fournisseurs/fournisseurs.component';
+//import { ClientsComponent } from './caisse/vente/clients/clients.component';
 import { RapportsFinanciersComponent } from './caisse/rapports/rapports-financiers/rapports-financiers.component';
 import { ParametresComponent } from './caisse/parametres/parametres/parametres.component';
 import { EntreesSortiesComponent } from './caisse/stock_inventaire/entrees-sorties/entrees-sorties.component';
 import { StockInventairesComponent } from './caisse/stock_inventaire/stock-inventaires/stock-inventaires.component';
 import { MagazinComponent } from './caisse/parametres/magazin/magazin.component';
-import { GerantComponent } from './caisse/parametres/gerant/gerant.component';
+//import { GerantComponent } from './caisse/parametres/gerant/gerant.component';
 import { CatalogueProduitComponent } from './caisse/stock_inventaire/catalogue-produit/catalogue-produit.component';
 import { FinanceComponent } from './caisse/finance/finance/finance.component';
 import { RapportsVentesComponent } from './caisse/rapports/rapports-ventes/rapports-ventes.component';
@@ -115,7 +115,7 @@ export const routes: Routes = [
           permissions: [PERMISSIONS.ACCESS_CASHIER]
         }
       },
-      {
+      /* {
         path: 'clients',
         component: ClientsComponent,
         canActivate: [roleGuard,structureGuard],
@@ -124,7 +124,7 @@ export const routes: Routes = [
           requireStructure: true,
           permissions: [PERMISSIONS.VIEW_CLIENTS, PERMISSIONS.MANAGE_CLIENTS]
         }
-      },
+      }, */
       {
         path: 'client',
         component: ClientComponent,
@@ -175,7 +175,7 @@ export const routes: Routes = [
           permissions: [PERMISSIONS.MANAGE_FINANCE, PERMISSIONS.EDIT_FINANCE, PERMISSIONS.VIEW_FINANCE,]
         }
       },
-      {
+      /* {
         path: 'fournisseurs',
         component: FournisseursComponent,
         canActivate: [roleGuard, structureGuard],
@@ -184,7 +184,7 @@ export const routes: Routes = [
           requireStructure: true,
           permissions: [PERMISSIONS.MANAGE_SUPPLIERS]
         }
-      },
+      }, */
       {
         path: 'fournisseur',
         component: FournisseurComponent,
@@ -194,7 +194,7 @@ export const routes: Routes = [
           requireStructure: true,
           permissions: [PERMISSIONS.MANAGE_SUPPLIERS]
         }
-      },
+      }, 
       {
         path: 'rapport-financier',
         component: RapportsFinanciersComponent,
@@ -235,7 +235,7 @@ export const routes: Routes = [
           permissions: [PERMISSIONS.MANAGE_STORES]
         }
       },
-      {
+      /* {
         path: 'gerant',
         component: GerantComponent,
         canActivate: [roleGuard, structureGuard],
@@ -244,7 +244,7 @@ export const routes: Routes = [
           requireStructure: true,
           permissions: [PERMISSIONS.MANAGE_USERS]
         }
-      },
+      }, */
       {
         path: 'parametres',
         component: ParametresComponent,

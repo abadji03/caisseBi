@@ -18,15 +18,6 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DECIMAL(12, 2),
       defaultValue: 0,
     },
-    /* datePremierAchat: DataTypes.DATE,
-    estFidele: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-    },
-    estActif: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: true,
-    } */
   },
   {
     // Pas de tableName - utilise 'Magasin' comme nom de table

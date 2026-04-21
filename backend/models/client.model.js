@@ -1,4 +1,4 @@
-const SequenceService = require('../services/sequence.service');
+//const SequenceService = require('../services/sequence.service');
 
 module.exports = (sequelize, DataTypes) => {
   const Client = sequelize.define('Client', {
@@ -30,10 +30,10 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: DataTypes.NOW,
     },
     dateMiseAJour: DataTypes.DATE,
-    /* solde: {
+    solde_total: {
       type: DataTypes.DECIMAL(12, 2),
       defaultValue: 0,
-    }, */
+    },
     estEmploye: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
@@ -44,14 +44,14 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
-    magasinId: DataTypes.INTEGER,
+    //magasinId: DataTypes.INTEGER,
   },
   {
     // Pas de tableName - utilise 'Magasin' comme nom de table
     // freezeTableName: true est déjà dans la config globale
     timestamps: true,
     underscored: true, // Convertit automatiquement camelCase en snake_case
-    hooks: {
+    /* hooks: {
       beforeCreate: async (client, options) => {
         const { sequelize, Sequence } = require('../models');
         const numero = await SequenceService.getNextNumero(
@@ -62,6 +62,44 @@ module.exports = (sequelize, DataTypes) => {
           options.transaction
         );
         client.numeroE = numero;
+      }
+    } */
+
+     hooks: {
+      beforeValidate: async (client, options) => {
+        console.log('🔍 beforeValidate hook called', client.code_structure);
+        
+        // Définir numeroE avant la validation
+        if (!client.numeroE) {
+          try {
+            const ClientsModel = sequelize.models.Client;
+            if (ClientsModel) {
+              const count = await ClientsModel.count({
+                where: { code_structure: client.code_structure },
+                transaction: options.transaction
+              });
+              client.numeroE = count + 1;
+              console.log(`✅ Generated numeroE in beforeValidate: ${client.numeroE}`);
+            } else {
+              client.numeroE = 1;
+            }
+          } catch (error) {
+            console.error('❌ Hook error:', error);
+            client.numeroE = 1;
+          }
+        }
+      },
+      beforeCreate: async (client, options) => {
+        console.log('🎯 beforeCreate hook STARTED', client.numeroE);
+        // Vérifier et régénérer si nécessaire
+        if (!client.numeroE) {
+          const clientsModel = sequelize.models.Client;
+          const count = await clientsModel.count({
+            where: { code_structure: client.code_structure },
+            transaction: options.transaction
+          });
+          client.numeroE = count + 1;
+        }
       }
     }
   });

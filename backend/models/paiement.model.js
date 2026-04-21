@@ -1,5 +1,5 @@
 // models/paiement.js
-const SequenceService = require('../services/sequence.service');
+//const SequenceService = require('../services/sequence.service');
 
 module.exports = (sequelize, DataTypes) => {
   const Paiement = sequelize.define('Paiement', {
@@ -64,13 +64,17 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: 'validé',
     },
     fichier: DataTypes.TEXT,
+    factureId: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    }
   },
   {
     // Pas de tableName - utilise 'Magasin' comme nom de table
     // freezeTableName: true est déjà dans la config globale
     timestamps: true,
     underscored: true, // Convertit automatiquement camelCase en snake_case
-    hooks: {
+    /* hooks: {
       beforeCreate: async (paiement, options) => {
         const { sequelize, Sequence } = require('../models');
         const numero = await SequenceService.getNextNumero(
@@ -81,6 +85,44 @@ module.exports = (sequelize, DataTypes) => {
           options.transaction
         );
         paiement.numeroE = numero;
+      }
+    } */
+
+    hooks: {
+      beforeValidate: async (paiement, options) => {
+        console.log('🔍 beforeValidate hook called', paiement.code_structure);
+        
+        // Définir numeroE avant la validation
+        if (!paiement.numeroE) {
+          try {
+            const PaiementsModel = sequelize.models.Paiement;
+            if (PaiementsModel) {
+              const count = await PaiementsModel.count({
+                where: { code_structure: paiement.code_structure },
+                transaction: options.transaction
+              });
+              paiement.numeroE = count + 1;
+              console.log(`✅ Generated numeroE in beforeValidate: ${paiement.numeroE}`);
+            } else {
+              paiement.numeroE = 1;
+            }
+          } catch (error) {
+            console.error('❌ Hook error:', error);
+            paiement.numeroE = 1;
+          }
+        }
+      },
+      beforeCreate: async (paiement, options) => {
+        console.log('🎯 beforeCreate hook STARTED', paiement.numeroE);
+        // Vérifier et régénérer si nécessaire
+        if (!paiement.numeroE) {
+          const paiementsModel = sequelize.models.Paiement;
+          const count = await paiementsModel.count({
+            where: { code_structure: paiement.code_structure },
+            transaction: options.transaction
+          });
+          paiement.numeroE = count + 1;
+        }
       }
     }
   });

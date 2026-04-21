@@ -109,7 +109,7 @@ exports.getBonsClientsByStructure = async (req, res) => {
     }
 
     // Vérifier rôle
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
     const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
 
@@ -204,7 +204,7 @@ exports.getBonsClientsByStructureBis = async (req, res) => {
     }
 
     // Vérifier rôle
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur"|| r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
     const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
 
@@ -348,7 +348,7 @@ exports.getBonsFournisseursByStructureBis = async (req, res) => {
     }
 
     // Vérifier rôle
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructure = authUser.roles?.some(r => (r.nom === "Administrateur" || r.nom === "Administrateur secondaire" ) );
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
     const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
 
@@ -483,7 +483,7 @@ exports.getBonsFournisseursByStructure = async (req, res) => {
     }
 
     // Vérifier rôle
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
 
     if (!isAdminStructure && !isGerant) {
@@ -917,7 +917,7 @@ exports.getBonsByFournisseur = async (req, res) => {
       ]
         
       ,
-      order: [['createdAt', 'DESC']],
+      order: [['created_at', 'DESC']],
     });
 
     res.status(200).json(bons);
@@ -962,7 +962,7 @@ exports.getBonsByClient = async (req, res) => {
         {model: User, attributes: ['id', 'nom', 'email'] }
       ]
       ,
-      order: [['createdAt', 'DESC']],
+      order: [['created_at', 'DESC']],
     });
 
     res.status(200).json(bons);

@@ -81,7 +81,7 @@
                   </button>
                 </div>
 
-                <button class="btn btn-success" (click)="openModal()">
+                <button *ngIf="!isAdmin" class="btn btn-success" (click)="openModal()">
                   <i class="bi bi-plus-circle text-white me-2"></i>Nouveau Client
                 </button>
               </div>
@@ -160,8 +160,11 @@
                       <td>{{ client.adresse }}</td>
                       <td>{{ client.telephone }}</td>
                       <td>{{ client.plafond | number }} F CFA</td>
-                      <td [ngClass]="{'text-danger fw-bold': client.solde > 0}">
+                      <!-- <td [ngClass]="{'text-danger fw-bold': client.solde > 0}">
                         {{ client.solde | number }} F CFA
+                      </td> -->
+                      <td [ngClass]="{'text-danger fw-bold': getSoldeTotal(client) > 0}">
+                        {{ getSoldeTotal(client) | number }} F CFA
                       </td>
                     </tr>
                   </tbody>
@@ -288,7 +291,7 @@
             </div>
 
             <!-- Affichage du solde -->
-            <div class="alert" [ngClass]="selectedClient?.solde && selectedClient?.solde! > 0 ? 'alert-danger' : 'alert-success'">
+            <!-- <div class="alert" [ngClass]="selectedClient?.solde && selectedClient?.solde! > 0 ? 'alert-danger' : 'alert-success'">
               <h4 class="mb-0">
                 Solde actuel : {{ selectedClient?.solde | number }} F CFA
                 <span *ngIf="selectedClient?.solde && selectedClient?.solde! > 0" class="ms-2">
@@ -298,19 +301,74 @@
                   (Aucune dette)
                 </span>
               </h4>
+            </div> -->
+
+            <!-- Pour les admins : Affichage de tous les soldes par magasin -->
+            <div *ngIf="isAdmin &&  selectedClient?.Magasins?.length" class="row mb-3">
+              <div class="col-md-12">
+                <div class="card">
+                  <div class="card-header bg-light">
+                    <h5 class="mb-0">Soldes par magasin</h5>
+                  </div>
+                  <div class="card-body">
+                    <div class="row">
+                      <div *ngFor="let magasin of selectedClient?.Magasins" class="col-md-4 mb-2">
+                        <div class="card" [ngClass]="(magasin.MagasinClient?.solde || 0) > 0 ? 'border-danger' : 'border-success'">
+                          <div class="card-body p-2">
+                            <h6 class="card-title mb-1">{{ magasin.nom }}</h6>
+                            <p class="card-text mb-0" [ngClass]="(magasin.MagasinClient?.solde || 0) > 0 ? 'text-danger' : 'text-success'">
+                              <strong>{{ (magasin.MagasinClient?.solde || 0) | number }} F CFA</strong>
+                            </p>
+                            <small class="text-muted">
+                              {{ (magasin.MagasinClient?.solde || 0) > 0 ? 'Dette client' : 'Solde créditeur' }}
+                            </small>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
+
+            <!-- Pour les non-admins : Affichage simplifié -->
+            <!-- <div *ngIf="!isAdmin && selectedClient?.Magasins" class="row mb-3">
+              <div class="col-md-4">
+                <div class="alert" [ngClass]="getSoldeActuel() > 0 ? 'alert-danger' : 'alert-success'">
+                  <h5 class="mb-0">
+                    <span class="form-label fw-bold">Magasin : </span> {{ getNomMagasinSelectionne() }}<br>
+                    <span class="form-label fw-bold">Solde : </span> {{ getSoldeActuel() | number }} F CFA
+                  </h5>
+                </div>
+              </div>
+            </div> -->
+
+
+            <!-- Affichage du solde -->
+            <div *ngIf="!isAdmin && selectedClient?.Magasins"  class="alert" [ngClass]="getSoldeActuel() > 0 ? 'alert-danger' : 'alert-success'">
+              <h4 class="mb-0">
+                Solde actuel : {{ getSoldeActuel() | number }} F CFA
+                <span *ngIf="getSoldeActuel() > 0" class="ms-2">
+                  (Montant à nous payer pour {{ getNomMagasinSelectionne() }})
+                </span>
+                <span *ngIf="getSoldeActuel() <= 0" class="ms-2">
+                  (Aucune dette pour {{ getNomMagasinSelectionne() }})
+                </span>
+              </h4>
+            </div> 
+
 
             <!-- Boutons d'action Nouveau bon / Nouveau versement -->
             <div class="d-flex justify-content-between mb-3">
               <button class="btn btn-info" (click)="onImprimerReleve()">
                 <i class="bi bi-printer me-2"></i>Imprimer relevé
               </button>
-              <div>
+              <div *ngIf="!isAdmin">
                 <button class="btn btn-success me-3" (click)="toggleBonForm()">
                   <i class="bi bi-plus-circle me-2"></i>{{ textBoutonNewBon }}
                 </button>
                 <button 
-                  [disabled]="!selectedClient || !selectedClient.solde || selectedClient.solde <= 0" 
+                  [disabled]="!selectedClient  || getSoldeActuel() <= 0" 
                   class="btn btn-warning" 
                   (click)="togglePaiementForm()"
                 >
@@ -701,14 +759,10 @@
                   L'adresse est obligatoire
                 </div>
               </div>
-              <div class="col-md-6 mb-3">
+              <!-- <div class="col-md-6 mb-3">
                 <label for="solde" class="form-label">Solde initial</label>
                 <input type="number" class="form-control" id="solde" formControlName="solde" />
-              </div>
-            </div>
-
-            <!-- Plafond et EstEmployé -->
-            <div class="row">
+              </div> -->
               <div class="col-md-6 mb-3">
                 <label for="plafond" class="form-label">Plafond <span class="text-danger">*</span></label>
                 <input
@@ -725,6 +779,11 @@
                   Le plafond est obligatoire
                 </div>
               </div>
+            </div>
+
+            <!-- Plafond et EstEmployé -->
+            <div class="row">
+              
               <div class="col-md-6 mb-3">
                 <label for="estEmploye" class="form-label">Est employé ? <span class="text-danger">*</span></label>
                 <select
@@ -743,6 +802,26 @@
                   Ce champ est obligatoire
                 </div>
               </div>
+
+              <div class="col-md-6 mb-3">
+                <label for="magasinIds" class="form-label">Magasin(s) <span class="text-danger">*</span></label>
+                <select
+                  id="magasinIds"
+                  formControlName="magasinIds"
+                  multiple
+                  class="form-select"
+                  size="3"
+                  [ngClass]="{ 'is-invalid': clientForm.get('magasinIds')?.touched && clientForm.get('magasinIds')?.errors }"
+                >
+                  <option *ngFor="let magasin of displayedMagasins" [value]="magasin.id">
+                    {{ magasin.nom }}
+                  </option>
+                </select>
+                <small class="text-muted">Maintenez Ctrl (ou Cmd) pour sélectionner plusieurs magasins</small>
+                <div class="invalid-feedback" *ngIf="clientForm.get('magasinIds')?.hasError('required')">
+                  Au moins un magasin est obligatoire
+                </div>
+              </div>
             </div>
 
             <!-- Statut (uniquement en mode édition) -->
@@ -759,6 +838,8 @@
                 </label>
               </div>
             </div>
+
+            <!-- Ajouter la sélection multiple des magasins -->
 
             <!-- Boutons -->
             <div class="d-flex justify-content-end mt-3">

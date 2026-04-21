@@ -85,7 +85,7 @@ exports.getAnalyseEcarts = async (req, res) => {
     }
 
     // Vérifier rôle
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
 
     if (!isAdminStructure && !isGerant) {
@@ -119,7 +119,7 @@ exports.getAnalyseEcarts = async (req, res) => {
           required: false
         }
       ],
-      order: [['dateReconciliation', 'DESC']]
+      order: [['date_reconciliation', 'DESC']]
     });
 
     // Grouper par produit et calculer les statistiques
@@ -361,7 +361,7 @@ exports.getReconciliationsByStructure = async (req, res) => {
     }
 
     // Vérifier rôle
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur"|| r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
 
     if (!isAdminStructure && !isGerant) {
@@ -425,8 +425,8 @@ exports.getReconciliationsByStructure = async (req, res) => {
           literal(`SUM(
             CASE 
               WHEN EXISTS (
-                SELECT 1 FROM MouvementStocks ms 
-                WHERE ms.reconciliationId = Reconciliation.id
+                SELECT 1 FROM MouvementStock ms 
+                WHERE ms.reconciliation_id = Reconciliation.id
               ) 
               THEN 1 ELSE 0 
             END
@@ -449,7 +449,7 @@ exports.getReconciliationsByStructure = async (req, res) => {
     const topProduitsParEcart = await Reconciliation.findAll({
       where: whereClause,
       attributes: [
-        'produitId',
+        'produit_id',
         [fn('SUM', col('Reconciliation.ecart')), 'ecartTotal'],
         [fn('COUNT', col('Reconciliation.id')), 'nombreReconciliations'],
         [fn('AVG', col('Reconciliation.ecart')), 'moyenneEcart']
@@ -460,7 +460,7 @@ exports.getReconciliationsByStructure = async (req, res) => {
           attributes: ['designation', 'unite']
         }
       ],
-      group: ['produitId', 'Produit.id', 'Produit.designation', 'Produit.unite'],
+      group: ['produit_id', 'Produit.id', 'Produit.designation', 'Produit.unite'],
       order: [[literal('ABS(ecartTotal)'), 'DESC']],
       limit: 5,
       raw: true,
@@ -471,13 +471,13 @@ exports.getReconciliationsByStructure = async (req, res) => {
     const statsParMois = await Reconciliation.findAll({
       where: whereClause,
       attributes: [
-        [fn('DATE_FORMAT', col('dateReconciliation'), '%Y-%m'), 'mois'],
+        [fn('DATE_FORMAT', col('date_reconciliation'), '%Y-%m'), 'mois'],
         [fn('COUNT', col('id')), 'nombreReconciliations'],
         [fn('SUM', col('ecart')), 'sommeEcarts'],
         [fn('AVG', col('ecart')), 'moyenneEcart']
       ],
-      group: [literal("DATE_FORMAT(dateReconciliation, '%Y-%m')")],
-      order: [[literal("DATE_FORMAT(dateReconciliation, '%Y-%m')"), 'DESC']],
+      group: [literal("DATE_FORMAT(date_reconciliation, '%Y-%m')")],
+      order: [[literal("DATE_FORMAT(date_reconciliation, '%Y-%m')"), 'DESC']],
       limit: 6,
       raw: true
     });
@@ -503,7 +503,7 @@ exports.getReconciliationsByStructure = async (req, res) => {
           attributes: ['id', 'produitId', 'typeMouvement', 'quantite'] 
         }
       ],
-      order: [['dateReconciliation', 'DESC']],
+      order: [['date_reconciliation', 'DESC']],
       offset,
       limit: limitInt,
       distinct: true,

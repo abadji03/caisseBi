@@ -129,7 +129,7 @@ class StatutManager {
   /**
    * Mettre à jour client
    */
-  async mettreAJourClient(bon, clientId, transaction) {
+  /* async mettreAJourClient(bon, clientId, transaction) {
     const client = await db.Client.findByPk(clientId, { transaction });
     if (!client) return;
 
@@ -220,11 +220,11 @@ class StatutManager {
       operation: operation
     });
   }
-
+ */
   /**
    * Mettre à jour fournisseur
    */
-  async mettreAJourFournisseur(bon, fournisseurId, transaction) {
+  /* async mettreAJourFournisseur(bon, fournisseurId, transaction) {
     const fournisseur = await db.Fournisseur.findByPk(fournisseurId, { transaction });
     if (!fournisseur) return;
 
@@ -295,7 +295,326 @@ class StatutManager {
       operation: operation
     });
   }
+ */
 
+  // statutManager.js - Modifications principales
+
+/**
+ * Mettre à jour client - Version avec gestion par magasin
+ */
+async mettreAJourClient(bon, clientId, transaction) {
+  // Récupérer le client avec ses magasins
+  const client = await db.Client.findByPk(clientId, { 
+    transaction,
+    include: [{ model: db.Magasin }]
+  });
+  if (!client) return;
+
+  // Utiliser le magasinId du bon (important pour la nouvelle architecture)
+  const magasinId = bon.magasinId;
+  if (!magasinId) {
+    console.warn(`⚠️ Pas de magasinId sur le bon ${bon.id}, impossible de mettre à jour le solde`);
+    return;
+  }
+
+  // Récupérer la relation client-magasin
+  const relationClientMagasin = await db.MagasinClient.findOne({
+    where: { clientId, magasinId },
+    transaction
+  });
+
+  if (!relationClientMagasin) {
+    console.warn(`⚠️ Relation client-magasin non trouvée pour client ${clientId} et magasin ${magasinId}`);
+    return;
+  }
+
+  const montant = this.safeNumber(bon.netAPayer) || this.safeNumber(bon.montantTotal) || this.safeNumber(bon.montantAvoir);
+  const soldeActuel = this.safeNumber(relationClientMagasin.solde);
+
+  console.log('🔢 Mise à jour client par magasin - Calculs:', {
+    montant,
+    soldeActuel,
+    magasinId,
+    typeBon: bon.type,
+    netAPayer: bon.netAPayer,
+    montantTotal: bon.montantTotal,
+  });
+
+  let nouveauSolde = soldeActuel;
+  let operation = '';
+
+  // LOGIQUE MÉTIER AMÉLIORÉE
+  if (bon.statutBon === 'annulé') {
+    nouveauSolde = soldeActuel - montant;
+    operation = 'annulation';
+  }
+  else if (bon.type === 'retour' || bon.type === 'avoir') {
+    if (bon.statutBon === 'validé') {
+      nouveauSolde = soldeActuel - montant;
+      operation = 'retour (avoir)';
+    } else if (bon.statutBon === 'annulé') {
+      nouveauSolde = soldeActuel + montant;
+      operation = 'annulation retour';
+    }
+  } 
+  else if (bon.type === 'vente') {
+    if (bon.statutBon === 'validé') {
+      nouveauSolde = soldeActuel + montant;
+      operation = 'vente validée';
+    }
+    else if (bon.statutBon === 'retourné') {
+      nouveauSolde = soldeActuel - montant;
+      operation = 'retour sur vente';
+    }
+  }
+  else if (bon.type === 'commande') {
+    if (bon.statutBon === 'validé') {
+      nouveauSolde = soldeActuel;
+      operation = 'commande validée - pas d\'impact';
+    }
+    else if (bon.statutBon === 'livré') {
+      nouveauSolde = soldeActuel + montant;
+      operation = 'commande livrée';
+    }
+    else if (bon.statutBon === 'retourné') {
+      nouveauSolde = soldeActuel - montant;
+      operation = 'retour sur commande';
+    }
+  }
+  
+  // Appliquer la mise à jour sur la relation
+  await relationClientMagasin.update({
+    solde: nouveauSolde
+  }, { transaction });
+
+  // Mettre à jour le solde total du client (optionnel - pour compatibilité)
+  // Calculer la somme de tous les soldes par magasin
+  const tousSoldes = await db.MagasinClient.sum('solde', {
+    where: { clientId },
+    transaction
+  });
+
+  await client.update({
+    solde: tousSoldes,
+    dateMiseAJour: new Date()
+  }, { transaction });
+
+  console.log('✅ Client mis à jour:', {
+    ancienSoldeParMagasin: soldeActuel,
+    nouveauSoldeParMagasin: nouveauSolde,
+    soldeTotalClient: tousSoldes,
+    variation: nouveauSolde - soldeActuel,
+    operation: operation,
+    magasinId
+  });
+}
+
+/**
+ * Mettre à jour fournisseur - Version avec gestion par magasin
+ */
+async mettreAJourFournisseur(bon, fournisseurId, transaction) {
+  // Récupérer le fournisseur avec ses magasins
+  const fournisseur = await db.Fournisseur.findByPk(fournisseurId, { 
+    transaction,
+    include: [{ model: db.Magasin }]
+  });
+  if (!fournisseur) return;
+
+  // Utiliser le magasinId du bon
+  const magasinId = bon.magasinId;
+  if (!magasinId) {
+    console.warn(`⚠️ Pas de magasinId sur le bon ${bon.id}, impossible de mettre à jour le solde`);
+    return;
+  }
+
+  // Récupérer la relation fournisseur-magasin
+  const relationFournisseurMagasin = await db.MagasinFournisseur.findOne({
+    where: { fournisseurId, magasinId },
+    transaction
+  });
+
+  if (!relationFournisseurMagasin) {
+    console.warn(`⚠️ Relation fournisseur-magasin non trouvée pour fournisseur ${fournisseurId} et magasin ${magasinId}`);
+    return;
+  }
+
+  const montant = this.safeNumber(bon.netAPayer) || this.safeNumber(bon.montantTotal) || this.safeNumber(bon.montantAvoir);
+  const soldeActuel = this.safeNumber(relationFournisseurMagasin.solde);
+
+  console.log('🔢 Mise à jour fournisseur par magasin - Calculs:', {
+    montant,
+    soldeActuel,
+    magasinId,
+    typeBon: bon.type,
+  });
+
+  let nouveauSolde = soldeActuel;
+  let operation = '';
+
+  if (bon.type === 'livraison') {
+    if (bon.statutBon === 'validé') {
+      nouveauSolde = soldeActuel + montant;
+      operation = 'livraison validée';
+    }
+    else if (bon.statutBon === 'annulé') {
+      nouveauSolde = soldeActuel - montant;
+      operation = 'annulation livraison';
+    }
+    else if (bon.statutBon === 'retourné') {
+      nouveauSolde = soldeActuel - montant;
+      operation = 'retour livraison';
+    }
+  }
+  else if (bon.type === 'retour' || bon.type === 'avoir') {
+    if (bon.statutBon === 'validé') {
+      nouveauSolde = soldeActuel - montant;
+      operation = 'retour fournisseur';
+    }
+    else if (bon.statutBon === 'annulé') {
+      nouveauSolde = soldeActuel + montant;
+      operation = 'annulation retour fournisseur';
+    }
+  }
+  
+  // S'assurer que le montant n'est pas négatif
+  nouveauSolde = Math.max(0, nouveauSolde);
+  
+  await relationFournisseurMagasin.update({
+    solde: nouveauSolde
+  }, { transaction });
+
+  // Mettre à jour le montant total à payer du fournisseur (optionnel)
+  const tousSoldes = await db.MagasinFournisseur.sum('solde', {
+    where: { fournisseurId },
+    transaction
+  });
+
+  await fournisseur.update({
+    montantAPayer: tousSoldes,
+    dateMiseAJour: new Date()
+  }, { transaction });
+
+  console.log('✅ Fournisseur mis à jour:', {
+    ancienSoldeParMagasin: soldeActuel,
+    nouveauSoldeParMagasin: nouveauSolde,
+    soldeTotalFournisseur: tousSoldes,
+    variation: nouveauSolde - soldeActuel,
+    operation: operation,
+    magasinId
+  });
+}
+
+/**
+ * Mettre à jour client après règlement - Version par magasin
+ */
+async mettreAJourClientApresRegelement(paiement, clientId, transaction) {
+  // Récupérer la relation client-magasin
+  const magasinId = paiement.magasinId;
+  if (!magasinId) {
+    console.warn(`⚠️ Pas de magasinId sur le paiement, impossible de mettre à jour`);
+    return;
+  }
+
+  const relationClientMagasin = await db.MagasinClient.findOne({
+    where: { clientId, magasinId },
+    transaction
+  });
+
+  if (!relationClientMagasin) {
+    console.warn(`⚠️ Relation client-magasin non trouvée pour client ${clientId} et magasin ${magasinId}`);
+    return;
+  }
+
+  const montant = this.safeNumber(paiement.montant) || 0;
+  const soldeActuel = this.safeNumber(relationClientMagasin.solde);
+  
+  // Paiement = diminution de la dette
+  const nouveauSolde = soldeActuel - montant;
+  
+  if (nouveauSolde < 0) {
+    console.warn(`Attention: Le solde du client (${clientId}) devient négatif après le paiement.`);
+  }
+  
+  await relationClientMagasin.update({
+    solde: nouveauSolde
+  }, { transaction });
+
+  // Mettre à jour le solde total du client
+  const client = await db.Client.findByPk(clientId, { transaction });
+  if (client) {
+    const tousSoldes = await db.MagasinClient.sum('solde', {
+      where: { clientId },
+      transaction
+    });
+    await client.update({
+      solde: tousSoldes,
+      dateMiseAJour: new Date()
+    }, { transaction });
+  }
+
+  console.log('✅ Client - Règlement traité par magasin:', {
+    ancienSoldeParMagasin: soldeActuel,
+    montantPaye: montant,
+    nouveauSoldeParMagasin: nouveauSolde,
+    magasinId
+  });
+}
+
+/**
+ * Mettre à jour fournisseur après versement - Version par magasin
+ */
+async mettreAJourFournisseurApresVersement(paiement, fournisseurId, transaction) {
+  // Récupérer la relation fournisseur-magasin
+  const magasinId = paiement.magasinId;
+  if (!magasinId) {
+    console.warn(`⚠️ Pas de magasinId sur le paiement, impossible de mettre à jour`);
+    return;
+  }
+
+  const relationFournisseurMagasin = await db.MagasinFournisseur.findOne({
+    where: { fournisseurId, magasinId },
+    transaction
+  });
+
+  if (!relationFournisseurMagasin) {
+    console.warn(`⚠️ Relation fournisseur-magasin non trouvée pour fournisseur ${fournisseurId} et magasin ${magasinId}`);
+    return;
+  }
+
+  const montant = this.safeNumber(paiement.montant) || 0;
+  const soldeActuel = this.safeNumber(relationFournisseurMagasin.solde);
+
+  // Paiement = diminution de la dette
+  const nouveauSolde = soldeActuel - montant;
+  
+  if (nouveauSolde < 0) {
+    console.warn(`Attention: Le solde du fournisseur (${fournisseurId}) devient négatif après le versement.`);
+  }
+  
+  await relationFournisseurMagasin.update({
+    solde: nouveauSolde
+  }, { transaction });
+
+  // Mettre à jour le montant total du fournisseur
+  const fournisseur = await db.Fournisseur.findByPk(fournisseurId, { transaction });
+  if (fournisseur) {
+    const tousSoldes = await db.MagasinFournisseur.sum('solde', {
+      where: { fournisseurId },
+      transaction
+    });
+    await fournisseur.update({
+      montantAPayer: tousSoldes,
+      dateMiseAJour: new Date()
+    }, { transaction });
+  }
+
+  console.log('✅ Fournisseur - Versement traité par magasin:', {
+    ancienSoldeParMagasin: soldeActuel,
+    montantPaye: montant,
+    nouveauSoldeParMagasin: nouveauSolde,
+    magasinId
+  });
+}
   /**
    * Créer l'historique des changements de statut du bon
    */
@@ -314,7 +633,7 @@ class StatutManager {
   /**
    * Mettre à jour client
    */
-  async mettreAJourClientApresRegelement(paiement, clientId, transaction) {
+  /* async mettreAJourClientApresRegelement(paiement, clientId, transaction) {
     const client = await db.Client.findByPk(clientId, { transaction });
     if (!client) return;
 
@@ -349,12 +668,12 @@ class StatutManager {
     });
     
     
-  }
+  } */
 
   /**
    * Mettre à jour fournisseur
    */
-  async mettreAJourFournisseurApresVersement(paiement, fournisseurId, transaction) {
+  /* async mettreAJourFournisseurApresVersement(paiement, fournisseurId, transaction) {
     const fournisseur = await db.Fournisseur.findByPk(fournisseurId, { transaction });
     if (!fournisseur) return;
 
@@ -388,7 +707,7 @@ class StatutManager {
     });
   
   }
-
+ */
 
   /**
    * Méthode utilitaire pour debugger les types de données

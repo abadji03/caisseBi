@@ -24,18 +24,20 @@ exports.createProduit = async (req, res) => {
       return res.status(401).json({ message: "Non authentifié" });
     }
     
-    const produitData = req.body;
+  const produitData = req.body;
+
+  console.log('Données produit reçues : ',produitData)
 
    const existingProduit = await Produit.findOne({
       where: {
         designation: produitData.designation,
         categorieId: produitData.categorieId,
-        code_structure: produitData.code_structure
+        //code_structure: produitData.code_structure
       }
     });
 
     if (existingProduit) {
-        return res.status(400).json({ message: 'Un produit avec ce code barre existe déjà.' });
+        return res.status(400).json({ message: 'Un produit avec ces caractéristiques existe déjà.' });
       }
     // Traitement de l'image
     let image = null;
@@ -380,13 +382,13 @@ exports.getProduitsByStructure = async (req, res) => {
     }
 
     // Vérifier rôle
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
-    const isAdminStructureSecondaire = authUser.roles?.some(r => r.nom === "Administrateur secondaire");
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
+    //const isAdminStructureSecondaire = authUser.roles?.some(r => r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
     const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
     const isEmploye = authUser.roles?.some(r => r.nom === "Employé");
 
-    if (!isAdminStructure && !isAdminStructureSecondaire && !isGerant && !isCaissier && !isEmploye) {
+    if (!isAdminStructure && !isGerant && !isCaissier && !isEmploye) {
       return res.status(403).json({
         message: "Accès interdit : rôle insuffisant"
       });
@@ -425,7 +427,7 @@ exports.getProduitsByStructure = async (req, res) => {
     };
 
     // 🔹 Si gérant : filtrer par magasin
-    if ((!isAdminStructure ||!isAdminStructureSecondaire) && (isGerant || isCaissier || isEmploye)) {
+    if (!isAdminStructure && (isGerant || isCaissier || isEmploye)) {
       if (!authUser.magasinId) {
         return res.status(400).json({
           message: "Ce gérant ou caissier ou employe n’est associé à aucun magasin"
@@ -434,7 +436,7 @@ exports.getProduitsByStructure = async (req, res) => {
       stockInclude = {
         ...stockInclude,
         where: { magasinId: authUser.magasinId },
-        required: true
+        required: false
       };
     }
 
@@ -529,8 +531,8 @@ exports.getProduitsDisponibles = async (req, res) => {
     }
 
     // Vérifier si admin
-    const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
-    const isAdminStructureSecondaire = authUser.roles?.some(r => r.nom === "Administrateur secondaire");
+    const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
+    //const isAdminStructureSecondaire = authUser.roles?.some(r => r.nom === "Administrateur secondaire");
     // --- WHERE PRODUIT
     const whereProduit = {
       code_structure: code_structure,
@@ -540,12 +542,12 @@ exports.getProduitsDisponibles = async (req, res) => {
     // --- INCLUDE STOCK avec STOCK RÉEL
     let stockWhere = {
       [Op.and]: [
-        literal(`quantiteTotale - quantiteReservee > 0`)
+        literal(`quantite_totale - quantite_reservee > 0`)
       ]
     };
 
     // 🔹 Si non admin → filtrer par magasin
-    if (!isAdmin || !isAdminStructureSecondaire) {
+    if (!isAdmin) {
       if (!authUser.magasinId) {
         return res.status(400).json({
           message: "Utilisateur non associé à un magasin"
@@ -567,7 +569,7 @@ exports.getProduitsDisponibles = async (req, res) => {
             "quantiteReservee",
             //champ calculé utile côté front
             [
-              literal(`quantiteTotale - quantiteReservee`),
+              literal(`quantite_totale - quantite_reservee`),
               "quantiteDisponible"
             ]
           ],
@@ -891,7 +893,7 @@ exports.exportProduitsToExcel = async (req, res) => {
     }
 
     // Vérifier rôle
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
     const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
     const isEmploye = authUser.roles?.some(r => r.nom === "Employé");
@@ -1177,7 +1179,7 @@ exports.exportProduitsToPDF = async (req, res) => {
     }
 
     // Vérifier rôle
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
     if (!isAdminStructure && !isGerant) {
       return res.status(403).json({ message: "Rôle insuffisant" });

@@ -258,7 +258,7 @@ exports.getMouvementsByStructure = async (req, res) => {
     }
 
     // Vérifier rôle
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
 
     if (!isAdminStructure && !isGerant) {
@@ -311,23 +311,23 @@ exports.getMouvementsByStructure = async (req, res) => {
         [fn('SUM', col('quantite')), 'quantiteTotale'],
         [fn('AVG', col('quantite')), 'quantiteMoyenne'],
         [
-          literal(`SUM(CASE WHEN typeMouvement = 'Entrée' THEN quantite ELSE 0 END)`), 
+          literal(`SUM(CASE WHEN type_mouvement = 'Entrée' THEN quantite ELSE 0 END)`), 
           'totalEntrees'
         ],
         [
-          literal(`SUM(CASE WHEN typeMouvement = 'Sortie' THEN quantite ELSE 0 END)`), 
+          literal(`SUM(CASE WHEN type_mouvement = 'Sortie' THEN quantite ELSE 0 END)`), 
           'totalSorties'
         ],
         [
-          literal(`COUNT(CASE WHEN typeMouvement = 'Entrée' THEN 1 END)`), 
+          literal(`COUNT(CASE WHEN type_mouvement = 'Entrée' THEN 1 END)`), 
           'nombreEntrees'
         ],
         [
-          literal(`COUNT(CASE WHEN typeMouvement = 'Sortie' THEN 1 END)`), 
+          literal(`COUNT(CASE WHEN type_mouvement = 'Sortie' THEN 1 END)`), 
           'nombreSorties'
         ],
         [
-          literal(`COUNT(DISTINCT produitId)`), 
+          literal(`COUNT(DISTINCT produit_id)`), 
           'produitsConcernes'
         ]
       ],
@@ -338,15 +338,15 @@ exports.getMouvementsByStructure = async (req, res) => {
     const topProduits = await MouvementStock.findAll({
       where: whereClause,
       attributes: [
-        'produitId',
+        'produit_id',
         [fn('COUNT', col('MouvementStock.id')), 'nombreMouvements'],
         [fn('SUM', col('MouvementStock.quantite')), 'quantiteTotale'],
         [
-          literal(`SUM(CASE WHEN typeMouvement = 'Entrée' THEN quantite ELSE 0 END)`), 
+          literal(`SUM(CASE WHEN type_mouvement = 'Entrée' THEN quantite ELSE 0 END)`), 
           'entrees'
         ],
         [
-          literal(`SUM(CASE WHEN typeMouvement = 'Sortie' THEN quantite ELSE 0 END)`), 
+          literal(`SUM(CASE WHEN type_mouvement = 'Sortie' THEN quantite ELSE 0 END)`), 
           'sorties'
         ]
       ],
@@ -356,7 +356,7 @@ exports.getMouvementsByStructure = async (req, res) => {
           attributes: ['designation', 'unite']
         }
       ],
-      group: ['produitId', 'Produit.id', 'Produit.designation', 'Produit.unite'],
+      group: ['produit_id', 'Produit.id', 'Produit.designation', 'Produit.unite'],
       order: [[literal('nombreMouvements'), 'DESC']],
       limit: 5,
       raw: true,
@@ -373,24 +373,24 @@ exports.getMouvementsByStructure = async (req, res) => {
       },
       attributes: [
         [
-          fn('DATE_FORMAT', col('MouvementStock.dateMouvement'), '%Y-%m-%d'),
+          fn('DATE_FORMAT', col('MouvementStock.date_mouvement'), '%Y-%m-%d'),
           'date'
         ],
         [fn('COUNT', col('MouvementStock.id')), 'nombreMouvements'],
         [
-          literal(`SUM(CASE WHEN typeMouvement = 'Entrée' THEN quantite ELSE 0 END)`),
+          literal(`SUM(CASE WHEN type_mouvement = 'Entrée' THEN quantite ELSE 0 END)`),
           'entrees'
         ],
         [
-          literal(`SUM(CASE WHEN typeMouvement = 'Sortie' THEN quantite ELSE 0 END)`),
+          literal(`SUM(CASE WHEN type_mouvement = 'Sortie' THEN quantite ELSE 0 END)`),
           'sorties'
         ]
       ],
       group: [
-        fn('DATE_FORMAT', col('MouvementStock.dateMouvement'), '%Y-%m-%d')
+        fn('DATE_FORMAT', col('MouvementStock.date_mouvement'), '%Y-%m-%d')
       ],
       order: [
-        [fn('DATE_FORMAT', col('MouvementStock.dateMouvement'), '%Y-%m-%d'), 'DESC']
+        [fn('DATE_FORMAT', col('MouvementStock.date_mouvement'), '%Y-%m-%d'), 'DESC']
       ],
       raw: true
     });
@@ -403,7 +403,7 @@ exports.getMouvementsByStructure = async (req, res) => {
         [fn('COUNT', col('id')), 'nombre'],
         [fn('SUM', col('quantite')), 'quantite']
       ],
-      group: ['typeMouvement'],
+      group: ['type_mouvement'],
       raw: true
     });
     // Calcul de l'offset pour la pagination
@@ -427,7 +427,7 @@ exports.getMouvementsByStructure = async (req, res) => {
           attributes: ["id", "designation", "unite"]
         }
       ],
-      order: [['dateMouvement', 'DESC']],
+      order: [['date_mouvement', 'DESC']],
       offset,
       limit: limitInt,
       distinct: true

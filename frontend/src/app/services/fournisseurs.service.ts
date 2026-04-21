@@ -41,8 +41,12 @@ export class FournisseursService {
   }
 
   // Créer un fournisseur
-  createFournisseur(fournisseur: Fournisseur): Observable<Fournisseur> {
-    return this.http.post<Fournisseur>(`${this.apiUrl}`, fournisseur, {
+  createFournisseur(fournisseur: Fournisseur,magasinIds?: number[]): Observable<Fournisseur> {
+    const data = {
+      ...fournisseur,
+      magasinIds: magasinIds || []
+    };
+    return this.http.post<Fournisseur>(`${this.apiUrl}`, data, {
       headers: this.getHeaders(),
     });
   }
@@ -58,8 +62,12 @@ export class FournisseursService {
   }
 
   // Mettre à jour un fournisseur
-  updateFournisseur(id: number, updateData: Partial<Fournisseur>): Observable<Fournisseur> {
-    return this.http.put<Fournisseur>(`${this.apiUrl}/${id}`, updateData, {
+  updateFournisseur(id: number, updateData: Partial<Fournisseur>,magasinIds?: number[]): Observable<Fournisseur> {
+    const data = {
+      ...updateData,
+      magasinIds: magasinIds
+    };
+    return this.http.put<Fournisseur>(`${this.apiUrl}/${id}`, data, {
       headers: this.getHeaders(),
     });
   }
@@ -112,6 +120,18 @@ export class FournisseursService {
     );
   }
 
+  getFournisseurWithMagasins(id: number): Observable<Fournisseur> {
+      return this.http.get<Fournisseur>(`${this.apiUrl}/${id}/with-magasins`);
+    }
+  // Mettre à jour le solde pour un magasin spécifique
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  updateFournisseurSoldeByMagasin(fournisseurId: number, magasinId: number, solde: number): Observable<any> {
+    return this.http.patch(
+      `${this.apiUrl}/${fournisseurId}/magasins/${magasinId}/solde`,
+      { solde },
+      { headers: this.getHeaders() }
+    );
+  }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private handleError(error: any, message: string): Observable<never> {
     this.logger.error(message, error);

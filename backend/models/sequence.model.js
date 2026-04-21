@@ -22,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
     engine: 'InnoDB',
     indexes: [
         {
-        unique: true,
+        //unique: true,
         fields: ['code_structure', 'entite']
         }
     ]

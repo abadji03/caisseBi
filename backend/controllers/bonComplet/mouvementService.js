@@ -65,7 +65,7 @@ class MouvementService {
       return;
     }
     const stock = await stockManager.trouverOuCreerStock(
-      article.produitId || article.produit?.id,
+      article.produitId? article.produitId : article.produit?.id || article.Produit?.id, //article.produitId || article.produit?.id,
       magasinId,
       code_structure,
       transaction
@@ -94,7 +94,7 @@ class MouvementService {
       }
     
     const stock = await stockManager.trouverOuCreerStock(
-      article.produitId || article.produit?.id,
+      article.produitId? article.produitId : article.produit?.id || article.Produit?.id,
       magasinId,
       code_structure,
       transaction

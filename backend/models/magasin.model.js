@@ -1,4 +1,4 @@
-const SequenceService = require('../services/sequence.service');
+//const SequenceService = require('../services/sequence.service');
 
 module.exports = (sequelize, DataTypes) => {
   const Magasin = sequelize.define('Magasin', {
@@ -37,7 +37,7 @@ module.exports = (sequelize, DataTypes) => {
     // freezeTableName: true est déjà dans la config globale
     timestamps: true,
     underscored: true, // Convertit automatiquement camelCase en snake_case
-    hooks: {
+    /* hooks: {
       beforeCreate: async (magasin, options) => {
         const { sequelize, Sequence } = require('../models');
         const numero = await SequenceService.getNextNumero(
@@ -48,6 +48,44 @@ module.exports = (sequelize, DataTypes) => {
           options.transaction
         );
         magasin.numeroE = numero;
+      }
+    } */
+
+    hooks: {
+      beforeValidate: async (magasin, options) => {
+        console.log('🔍 beforeValidate hook called', magasin.code_structure);
+        
+        // Définir numeroE avant la validation
+        if (!magasin.numeroE) {
+          try {
+            const magasinsModel = sequelize.models.Magasin;
+            if (magasinsModel) {
+              const count = await magasinsModel.count({
+                where: { code_structure: magasin.code_structure },
+                transaction: options.transaction
+              });
+              magasin.numeroE = count + 1;
+              console.log(`✅ Generated numeroE in beforeValidate: ${magasin.numeroE}`);
+            } else {
+              magasin.numeroE = 1;
+            }
+          } catch (error) {
+            console.error('❌ Hook error:', error);
+            magasin.numeroE = 1;
+          }
+        }
+      },
+      beforeCreate: async (magasin, options) => {
+        console.log('🎯 beforeCreate hook STARTED', magasin.numeroE);
+        // Vérifier et régénérer si nécessaire
+        if (!magasin.numeroE) {
+          const magasinsModel = sequelize.models.Magasin;
+          const count = await magasinsModel.count({
+            where: { code_structure: magasin.code_structure },
+            transaction: options.transaction
+          });
+          magasin.numeroE = count + 1;
+        }
       }
     }
   });

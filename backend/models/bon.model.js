@@ -1,5 +1,5 @@
 // models/bon.js
-const SequenceService = require('../services/sequence.service');
+//const SequenceService = require('../services/sequence.service');
 
 module.exports = (sequelize, DataTypes) => {
   const Bon = sequelize.define('Bon', {
@@ -194,7 +194,7 @@ module.exports = (sequelize, DataTypes) => {
     // freezeTableName: true est déjà dans la config globale
     timestamps: true,
     underscored: true, // Convertit automatiquement camelCase en snake_case
-    hooks: {
+    /* hooks: {
       beforeCreate: async (bon, options) => {
         const { sequelize, Sequence } = require('../models');
         const numero = await SequenceService.getNextNumero(
@@ -205,6 +205,43 @@ module.exports = (sequelize, DataTypes) => {
           options.transaction
         );
         bon.numeroE = numero;
+      }
+    } */
+    hooks: {
+      beforeValidate: async (bon, options) => {
+        console.log('🔍 beforeValidate hook called', bon.code_structure);
+        
+        // Définir numeroE avant la validation
+        if (!bon.numeroE) {
+          try {
+            const BonsModel = sequelize.models.Bon;
+            if (BonsModel) {
+              const count = await BonsModel.count({
+                where: { code_structure: bon.code_structure },
+                transaction: options.transaction
+              });
+              bon.numeroE = count + 1;
+              console.log(`✅ Generated numeroE in beforeValidate: ${bon.numeroE}`);
+            } else {
+              bon.numeroE = 1;
+            }
+          } catch (error) {
+            console.error('❌ Hook error:', error);
+            bon.numeroE = 1;
+          }
+        }
+      },
+      beforeCreate: async (bon, options) => {
+        console.log('🎯 beforeCreate hook STARTED', bon.numeroE);
+        // Vérifier et régénérer si nécessaire
+        if (!bon.numeroE) {
+          const BonsModel = sequelize.models.Bon;
+          const count = await BonsModel.count({
+            where: { code_structure: bon.code_structure },
+            transaction: options.transaction
+          });
+          bon.numeroE = count + 1;
+        }
       }
     }
   });

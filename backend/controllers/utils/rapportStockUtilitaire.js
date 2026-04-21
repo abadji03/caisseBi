@@ -958,7 +958,7 @@ const calculerMouvementsPeriode = async (filters) => {
                 attributes: ['id', 'nom']
             }
         ],
-        order: [['dateMouvement', 'DESC']],
+        order: [['date_mouvement', 'DESC']],
         offset,
         limit: parseInt(limit),
         distinct: true
@@ -1021,26 +1021,26 @@ const calculerStatsGraphiques = async (filters) => {
 
     const mouvements = await db.MouvementStock.findAll({
         attributes: [
-            [fn('DATE', col('dateMouvement')), 'date'],
+            [fn('DATE', col('date_mouvement')), 'date'],
             //[fn('SUM', fn('IF', col('typeMouvement'), 'Entrée', col('quantite'), 0)), 'entrees'],
             //[fn('SUM', fn('IF', col('typeMouvement'), 'Sortie', col('quantite'), 0)), 'sorties']
             [
                 fn('SUM',
-                    db.Sequelize.literal(`CASE WHEN typeMouvement = 'Entrée' THEN quantite ELSE 0 END`)
+                    db.Sequelize.literal(`CASE WHEN type_mouvement = 'Entrée' THEN quantite ELSE 0 END`)
                 ),
                 'entrees'
             ],
 
             [
                 fn('SUM',
-                    db.Sequelize.literal(`CASE WHEN typeMouvement = 'Sortie' THEN quantite ELSE 0 END`)
+                    db.Sequelize.literal(`CASE WHEN type_mouvement = 'Sortie' THEN quantite ELSE 0 END`)
                 ),
                 'sorties'
             ]
         ],
         where: whereMouvement,
-        group: [fn('DATE', col('dateMouvement'))],
-        order: [[fn('DATE', col('dateMouvement')), 'ASC']],
+        group: [fn('DATE', col('date_mouvement'))],
+        order: [[fn('DATE', col('date_mouvement')), 'ASC']],
         raw: true
     });
 
@@ -1093,7 +1093,7 @@ const calculerStatsGraphiques = async (filters) => {
             'produitId',
             'Produit.id',
             'Produit.designation',
-            'Produit.categorieId',
+            'Produit.categorie_id',
             'Produit->CategoriesProduit.id',
             'Produit->CategoriesProduit.nom'
         ],
@@ -1234,7 +1234,7 @@ const calculerProduitsSpecifiques = async (filters) => {
             //[fn('SUM', fn('IF', col('typeMouvement'), 'Sortie', col('quantite'), 0)), 'totalSorties']
             [
                 fn('SUM',
-                    db.Sequelize.literal(`CASE WHEN typeMouvement = 'Sortie' THEN quantite ELSE 0 END`)
+                    db.Sequelize.literal(`CASE WHEN type_mouvement = 'Sortie' THEN quantite ELSE 0 END`)
                 ),
                 'totalSorties'
             ]

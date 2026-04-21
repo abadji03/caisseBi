@@ -4,7 +4,6 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const setupSwagger = require('./swagger');
 
-
 dotenv.config();
 
 const app = express();
@@ -15,6 +14,8 @@ app.set('views', path.join(__dirname, 'views'));
 
 // Connexion à la base de données
 const db = require('./models');
+//const initAdmin = require('./controllers/initAdmin'); 
+
 /* db.sequelize
   .sync({ alter: true })
   .then(() => console.log('Connexion réussie à la base de données.'))
@@ -52,7 +53,10 @@ const syncDatabase = async () => {
   try {
     console.log('🔄 Synchronisation de la base de données...');
     await db.sequelize.sync({ alter: true });
+    //await db.sequelize.sync();
     console.log('✅ Connexion réussie à la base de données.');
+    // ✅ IMPORTANT : créer admin après sync
+    //await initAdmin();
   } catch (error) {
     console.error('❌ Erreur de connexion DB :', error);
   }

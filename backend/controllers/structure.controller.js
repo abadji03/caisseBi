@@ -6,16 +6,51 @@ const User = db.Users;
 const Role = db.role;
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const HistoriqueService = require('../services/historique.service');
 
 //Fonction utilitaire pour générer un code unique basé sur le nom
-function generateCodeStructure(nom) {
+/* function generateCodeStructure(nom) {
   const sanitized = nom
     .trim()
     .toUpperCase()
     .replace(/[^A-Z0-9]/g, ''); // Garde lettres et chiffres
   const shortCode = Math.random().toString(36).substring(2, 6).toUpperCase(); // 4 caractères
   return `${sanitized.slice(0, 12)}-${shortCode}`; // Limite à 8 lettres du nom
+} */
+
+  function generateCodeStructure(nom) {
+    const cleanName = nom
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '')
+      .slice(0, 6);
+
+    const uniquePart = crypto
+      .createHash('sha256')
+      .update(`${nom}-${Date.now()}-${Math.random()}`)
+      .digest('hex')
+      .substring(0, 8)
+      .toUpperCase();
+
+    return `${cleanName}-${uniquePart}`;
+  }
+
+  async function safeGenerateCodeStructure(nom, Structure) {
+  let code;
+  let exists = true;
+
+  while (exists) {
+    code = generateCodeStructure(nom);
+
+    const found = await Structure.findOne({
+      where: { code_structure: code }
+    });
+
+    exists = !!found;
+  }
+
+  return code;
 }
 
 const BASE_URL = 'http://localhost:5000/uploads/';
@@ -70,7 +105,8 @@ exports.createStructure = async (req, res) => {
 
     //const logo = req.file ? req.file.filename : null;
 
-    const code_structure = generateCodeStructure(nom_structure); // On génère le code
+    //const code_structure = generateCodeStructure(nom_structure); // On génère le code
+    const code_structure = await safeGenerateCodeStructure(nom_structure, Structure);
 
     const structure = await Structure.create({
       code_structure, //Ajout dans la base

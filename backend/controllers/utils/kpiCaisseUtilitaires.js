@@ -279,7 +279,7 @@ const getVentesCreditData = async ({ code_structure, periode, dateReference, mag
   if (bonIds.length > 0) {
     const paniersCredit = await Panier.findAll({
       attributes: [
-        [fn('SUM', col('totalTTC')), 'totalMontant'],
+        [fn('SUM', col('total_t_t_c')), 'totalMontant'],
         [fn('COUNT', col('id')), 'nombrePaniers']
       ],
       where: {
@@ -470,7 +470,7 @@ const getVentesCaisseAnnuleesData = async ({ code_structure, periode, dateRefere
     const statsPaniers = await Panier.findAll({
       attributes: [
         'statut',
-        [fn('SUM', col('Panier.totalTTC')), 'totalMontant'],
+        [fn('SUM', col('Panier.total_t_t_c')), 'totalMontant'],
         [fn('COUNT', col('Panier.id')), 'nombrePaniers']
       ],
       where: wherePanier,
@@ -555,9 +555,9 @@ const getTopProduits = async ({ code_structure, debut, fin, magasinId, agentId, 
         attributes: [
             'produitId',
             [fn('SUM', col('ArticlePanier.quantite')), 'quantite'],
-            [fn('SUM', col('ArticlePanier.totalTTC')), 'ca'],
-            [fn('SUM', col('ArticlePanier.montantRemise')), 'totalRemise'],
-            [fn('COUNT', col('ArticlePanier.panierId')), 'nombreVentes']
+            [fn('SUM', col('ArticlePanier.total_t_t_c')), 'ca'],
+            [fn('SUM', col('ArticlePanier.montant_remise')), 'totalRemise'],
+            [fn('COUNT', col('ArticlePanier.panier_id')), 'nombreVentes']
         ],
         include: [
             {
@@ -621,8 +621,8 @@ const getTopClients = async ({ code_structure, debut, fin, magasinId, agentId, l
         attributes: [
             'clientId',
             [fn('COUNT', col('Panier.id')), 'nbAchats'],
-            [fn('SUM', col('Panier.totalTTC')), 'ca'],
-            [fn('MAX', col('Panier.dateCreation')), 'dernierAchat']
+            [fn('SUM', col('Panier.total_t_t_c')), 'ca'],
+            [fn('MAX', col('Panier.date_creation')), 'dernierAchat']
         ],
         where: {
             code_structure,
@@ -663,9 +663,9 @@ const getPerformanceVendeurs = async ({ code_structure, debut, fin, magasinId })
         attributes: [
             'agentId',
             [fn('COUNT', col('Panier.id')), 'nbVentes'],
-            [fn('SUM', col('Panier.totalHT')), 'caHT'],
-            [fn('SUM', col('Panier.totalTTC')), 'caTTC'],
-            [fn('AVG', col('Panier.totalTTC')), 'ticketMoyen'],
+            [fn('SUM', col('Panier.total_h_t')), 'caHT'],
+            [fn('SUM', col('Panier.total_t_t_c')), 'caTTC'],
+            [fn('AVG', col('Panier.total_t_t_c')), 'ticketMoyen'],
             //[fn('AVG', col('Panier->ArticlePanier.quantite')), 'panierMoyen']
         ],
         where: {
@@ -705,9 +705,9 @@ const getEvolutionVentesParJour = async ({ code_structure, debut, fin, magasinId
     
     const result = await db.Panier.findAll({
         attributes: [
-            [fn('DATE', col('dateCreation')), 'date'],
+            [fn('DATE', col('date_creation')), 'date'],
             [fn('COUNT', col('id')), 'nombreVentes'],
-            [fn('SUM', col('totalTTC')), 'ca']
+            [fn('SUM', col('total_t_t_c')), 'ca']
         ],
         where: {
             code_structure,
@@ -716,8 +716,8 @@ const getEvolutionVentesParJour = async ({ code_structure, debut, fin, magasinId
             ...(magasinId && { magasinId }),
             ...(agentId && { agentId })
         },
-        group: [fn('DATE', col('dateCreation'))],
-        order: [[fn('DATE', col('dateCreation')), 'ASC']],
+        group: [fn('DATE', col('date_creation'))],
+        order: [[fn('DATE', col('date_creation')), 'ASC']],
         raw: true
     });
 
@@ -737,9 +737,9 @@ const getStatsVendeurDetails = async ({ code_structure, debut, fin, vendeurId, m
     const statsGenerales = await db.Panier.findOne({
         attributes: [
             [fn('COUNT', col('id')), 'totalVentes'],
-            [fn('SUM', col('totalHT')), 'chiffreAffairesHT'],
-            [fn('SUM', col('totalTTC')), 'chiffreAffairesTTC'],
-            [fn('AVG', col('totalTTC')), 'ticketMoyen'],
+            [fn('SUM', col('total_h_t')), 'chiffreAffairesHT'],
+            [fn('SUM', col('total_t_t_c')), 'chiffreAffairesTTC'],
+            [fn('AVG', col('total_t_t_c')), 'ticketMoyen'],
             //[fn('AVG', col('Panier->ArticlePanier.quantite')), 'panierMoyen']
         ],
         where: {
@@ -772,7 +772,7 @@ const getStatsVendeurDetails = async ({ code_structure, debut, fin, vendeurId, m
             attributes: [
                 'produitId',
                 [fn('SUM', col('ArticlePanier.quantite')), 'quantite'],
-                [fn('SUM', col('ArticlePanier.totalTTC')), 'ca']
+                [fn('SUM', col('ArticlePanier.total_t_t_c')), 'ca']
             ],
             include: [
                 {
@@ -813,9 +813,9 @@ const getStatsVendeurDetails = async ({ code_structure, debut, fin, vendeurId, m
     // 5. Évolution des ventes du vendeur (pour le graphique)
     const evolution = await db.Panier.findAll({
         attributes: [
-            [fn('DATE', col('dateCreation')), 'date'],
+            [fn('DATE', col('date_creation')), 'date'],
             [fn('COUNT', col('id')), 'nombreVentes'],
-            [fn('SUM', col('totalTTC')), 'ca']
+            [fn('SUM', col('total_t_t_c')), 'ca']
         ],
         where: {
             code_structure,
@@ -824,8 +824,8 @@ const getStatsVendeurDetails = async ({ code_structure, debut, fin, vendeurId, m
             agentId: vendeurId,
             ...(magasinId && { magasinId })
         },
-        group: [fn('DATE', col('dateCreation'))],
-        order: [[fn('DATE', col('dateCreation')), 'ASC']],
+        group: [fn('DATE', col('date_creation'))],
+        order: [[fn('DATE', col('date_creation')), 'ASC']],
         raw: true
     });
 

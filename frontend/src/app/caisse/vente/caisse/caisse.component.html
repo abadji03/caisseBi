@@ -317,7 +317,7 @@
                         title="Détails">
                   <i class="bi bi-eye"></i>
                 </button>
-                <button *ngIf="transaction.statut !== 'annulé' && !isAdmin" 
+                <button *ngIf="transaction.statut === 'validé' && !isAdmin" 
                         class="btn btn-danger me-1" (click)="annulerPanier(transaction)"
                         title="Retourner">
                   <i class="bi bi-arrow-counterclockwise"></i>

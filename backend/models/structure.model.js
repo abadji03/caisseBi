@@ -46,7 +46,7 @@ module.exports = (sequelize, DataTypes) => {
     description: DataTypes.TEXT,
     code_structure: {
       type: DataTypes.STRING(36),
-      unique: true,
+      unique: 'code_structure',
       allowNull: false,
     },
   },

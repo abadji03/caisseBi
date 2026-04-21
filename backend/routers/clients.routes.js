@@ -17,10 +17,19 @@ router.put('/:id', authenticateToken, clientCtrl.updateClient);
 router.delete('/:id', authenticateToken, clientCtrl.deleteClient);      
 // Routes spécifiques
 router.patch('/:id/statut', authenticateToken, clientCtrl.updateClientStatut);
-router.patch('/:id/solde', authenticateToken, clientCtrl.updateClientSolde);
+
+//router.patch('/:id/solde', authenticateToken, clientCtrl.updateClientSolde);
+// Routes pour clients
+router.put('/clients/:clientId/magasins/:magasinId/solde', clientCtrl.updateClientSolde);
+
 router.patch('/:id/plafond', authenticateToken, clientCtrl.updateClientPlafond);
 router.patch('/:id/montant-a-payer', authenticateToken, clientCtrl.updateMontantANousPayer);
 
+// Dans votre fichier de routes
+router.get('/clients/:id/with-magasins',authenticateToken, clientCtrl.getClientWithMagasins);
+
 router.get('/export/excel',authenticateToken, clientCtrl.exportClientsExcel);
+
+router.post('/create-associate-client', authenticateToken, clientCtrl.createOrAssociateClient);
 
 module.exports = router;

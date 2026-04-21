@@ -1,4 +1,4 @@
-const SequenceService = require('../services/sequence.service');
+//const SequenceService = require('../services/sequence.service');
 
 module.exports = (sequelize, DataTypes) => {
   const Depense = sequelize.define('Depense', {
@@ -25,7 +25,7 @@ module.exports = (sequelize, DataTypes) => {
     // freezeTableName: true est déjà dans la config globale
     timestamps: true,
     underscored: true, // Convertit automatiquement camelCase en snake_case
-    hooks: {
+    /* hooks: {
       beforeCreate: async (depense, options) => {
         const { sequelize, Sequence } = require('../models');
         const numero = await SequenceService.getNextNumero(
@@ -36,6 +36,44 @@ module.exports = (sequelize, DataTypes) => {
           options.transaction
         );
         depense.numeroE = numero;
+      }
+    } */
+
+    hooks: {
+      beforeValidate: async (depense, options) => {
+        console.log('🔍 beforeValidate hook called', depense.code_structure);
+        
+        // Définir numeroE avant la validation
+        if (!depense.numeroE) {
+          try {
+            const depensesModel = sequelize.models.Depense;
+            if (depensesModel) {
+              const count = await depensesModel.count({
+                where: { code_structure: depense.code_structure },
+                transaction: options.transaction
+              });
+              depense.numeroE = count + 1;
+              console.log(`✅ Generated numeroE in beforeValidate: ${depense.numeroE}`);
+            } else {
+              depense.numeroE = 1;
+            }
+          } catch (error) {
+            console.error('❌ Hook error:', error);
+            depense.numeroE = 1;
+          }
+        }
+      },
+      beforeCreate: async (depense, options) => {
+        console.log('🎯 beforeCreate hook STARTED', depense.numeroE);
+        // Vérifier et régénérer si nécessaire
+        if (!depense.numeroE) {
+          const depensesModel = sequelize.models.Depense;
+          const count = await depensesModel.count({
+            where: { code_structure: depense.code_structure },
+            transaction: options.transaction
+          });
+          depense.numeroE = count + 1;
+        }
       }
     }
   });

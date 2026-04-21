@@ -33,7 +33,10 @@ module.exports = SequenceService; */
 class SequenceService {
   static async getNextNumero(sequelize, Sequence, code_structure, entite, transaction = null) {
 
-    // 🔥 utiliser transaction existante ou en créer une
+    if (!code_structure) {
+      return 0; // fallback simple pour admin général
+    }
+    // utiliser transaction existante ou en créer une
     const t = transaction || await sequelize.transaction();
 
     try {
@@ -47,7 +50,7 @@ class SequenceService {
         sequence = await Sequence.create({
           code_structure,
           entite,
-          dernier_numero: 1
+          dernier_numero: 0
         }, { transaction: t });
 
         if (!transaction) await t.commit();

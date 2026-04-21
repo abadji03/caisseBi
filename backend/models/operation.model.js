@@ -1,5 +1,5 @@
 // models/operation.js
-const SequenceService = require('../services/sequence.service');
+//const SequenceService = require('../services/sequence.service');
 
 module.exports = (sequelize, DataTypes) => {
   const Operation = sequelize.define('Operation', {
@@ -56,7 +56,7 @@ module.exports = (sequelize, DataTypes) => {
     // freezeTableName: true est déjà dans la config globale
     timestamps: true,
     underscored: true, // Convertit automatiquement camelCase en snake_case
-    hooks: {
+    /* hooks: {
       beforeCreate: async (operation, options) => {
         const { sequelize, Sequence } = require('../models');
         const numero = await SequenceService.getNextNumero(
@@ -68,13 +68,51 @@ module.exports = (sequelize, DataTypes) => {
         );
         operation.numeroE = numero;
       }
+    } */
+
+    hooks: {
+      beforeValidate: async (operation, options) => {
+        console.log('🔍 beforeValidate hook called', operation.code_structure);
+        
+        // Définir numeroE avant la validation
+        if (!operation.numeroE) {
+          try {
+            const OperationsModel = sequelize.models.Operation;
+            if (OperationsModel) {
+              const count = await OperationsModel.count({
+                where: { code_structure: operation.code_structure },
+                transaction: options.transaction
+              });
+              operation.numeroE = count + 1;
+              console.log(`✅ Generated numeroE in beforeValidate: ${operation.numeroE}`);
+            } else {
+              operation.numeroE = 1;
+            }
+          } catch (error) {
+            console.error('❌ Hook error:', error);
+            operation.numeroE = 1;
+          }
+        }
+      },
+      beforeCreate: async (operation, options) => {
+        console.log('🎯 beforeCreate hook STARTED', operation.numeroE);
+        // Vérifier et régénérer si nécessaire
+        if (!operation.numeroE) {
+          const operationsModel = sequelize.models.Operation;
+          const count = await operationsModel.count({
+            where: { code_structure: operation.code_structure },
+            transaction: options.transaction
+          });
+          operation.numeroE = count + 1;
+        }
+      }
     }
   });
 
   /* Operation.associate = models => {
     Operation.belongsTo(models.Client, { foreignKey: 'clientId', onDelete: 'SET NULL' });
     Operation.belongsTo(models.Fournisseur, { foreignKey: 'fournisseurId', onDelete: 'SET NULL' });
-    Operation.belongsTo(models.User, { foreignKey: 'agentId', onDelete: 'CASCADE' });
+    Operation.belongsTo(models.operation, { foreignKey: 'agentId', onDelete: 'CASCADE' });
     Operation.belongsTo(models.Bon, { foreignKey: 'bonId', onDelete: 'SET NULL' });
     Operation.belongsTo(models.Paiement, { foreignKey: 'paiementId', onDelete: 'SET NULL' });
     Operation.belongsTo(models.Magasin, { foreignKey: 'magasinId', onDelete: 'CASCADE' });

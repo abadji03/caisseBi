@@ -1,4 +1,5 @@
 import { Bon } from './bon.model';
+import { Magasin } from './magasin.model';
 import { Operation } from './operation.model';
 import { Paiement } from './paiement.model';
 
@@ -25,7 +26,19 @@ export class Fournisseur {
   paiements: Paiement[] = [];
   operations: Operation[] = [];
 
+  Magasins?: Magasin[];
+  
+
   constructor(data?: Partial<Fournisseur>) {
     Object.assign(this, data);
   }
+}
+
+export interface MagasinFournisseur {
+  id: number;
+  magasinId: number;
+  fournisseurId: number;
+  solde: number;
+  createdAt?: Date;
+  updatedAt?: Date;
 }

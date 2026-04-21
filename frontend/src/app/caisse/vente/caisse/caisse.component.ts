@@ -26,6 +26,7 @@ import { MouvementsStockService } from '../../../services/mouvements-stock.servi
 import { ClientsService } from '../../../services/clients.service';
 import { StructureService } from '../../../services/structure.service';
 import { AuthService } from '../../../services/auth.service';
+import { CategoriesDepencesRecettesService } from '../../../services/categories-depences-recettes.service';
 
 @Component({
   selector: 'app-caisse',
@@ -148,6 +149,7 @@ export class CaisseComponent implements OnInit, OnDestroy {
 
   private searchSubject = new Subject<string>();
 
+  private categorieCache = new Map<string, number>();
 
   private fb = inject(FormBuilder);
     //private paginationService = inject(ApplicationService);
@@ -162,6 +164,7 @@ export class CaisseComponent implements OnInit, OnDestroy {
     private clientsService = inject(ClientsService);
     private structureService = inject(StructureService)
     private authService = inject(AuthService);
+    private categoriesService = inject(CategoriesDepencesRecettesService);
 
   ngOnInit() {
     this.userSubscription = this.authService.currentUser.subscribe(user => {
@@ -425,7 +428,7 @@ export class CaisseComponent implements OnInit, OnDestroy {
             panierStatut: result.panier?.statut
           });
           if(result.paiement && result.paiement.id){
-            const recette = {
+            /* const recette = {
                   montant: result.paiement.montant!,
                   date:result.paiement.date,
                   paiementId: result.paiement.id,
@@ -444,8 +447,9 @@ export class CaisseComponent implements OnInit, OnDestroy {
             if (value !== undefined && value !== null) {
               formData.append(key, value.toString());
             }
-          });
-          this.createRecette(formData);
+          }); */
+          //this.createRecette(formData);
+          this.createRecetteAvecCategorie(result.paiement, 'VENTE_SERVICES');
           }
         this.toastr.success('Vente enregistrée avec succès', 'Succès');
         this.loadTransactions()
@@ -596,7 +600,7 @@ nouvelleVente() {
       },
       articles: panierAEnregistrer.articles.map(article => ({
         id: article.id,
-        produitId: article.produit?.id || article.produitId,
+        produitId: article.produitId || article.produit?.id || article.Produit?.id,
         quantite: article.quantite,
         prixUnitaire: article.prixUnitaire,
         prixVenteUnitaire: article.prixVenteUnitaire,
@@ -635,7 +639,7 @@ nouvelleVente() {
           });
           if(result.paiement && result.paiement.id){
             console.log('Paiement associé au panier enregistré:', result.paiement.id);
-            const recette = {
+            /* const recette = {
                   montant: result.paiement.montant!,
                   paiementId: result.paiement.id,
                   date:result.paiement.date,
@@ -657,9 +661,10 @@ nouvelleVente() {
                 formData.append(key, value.toString());
                 console.log(`Ajout au FormData: ${key} = ${value}`);
               }
-            });
+            }); */
             //console.log('FormData pour la recette:', formData);
-            this.createRecette(formData);
+            //this.createRecette(formData);
+            this.createRecetteAvecCategorie(result.paiement, 'VENTE_PRODUITS');
           }
         this.toastr.success('Vente enregistrée avec succès', 'Succès');
         this.loadTransactions()
@@ -679,10 +684,38 @@ nouvelleVente() {
     });
   }
 
+
+private async getCategoryId(code: string): Promise<number | null> {
+  // Vérifier le cache
+  if (this.categorieCache.has(code)) {
+    return this.categorieCache.get(code)!;
+  }
+
+  // Requête API
+  return new Promise((resolve) => {
+    this.categoriesService.getCategorieByCode(code, this.code_structure!)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (categorie) => {
+          if (categorie) {
+            this.categorieCache.set(code, categorie.id!);
+            resolve(categorie.id!);
+          } else {
+            resolve(null);
+          }
+        },
+        error: () => resolve(null)
+      });
+  });
+}
  /**
  * Créer une nouvelle dépense
  */
 private createRecette(formData: FormData): void {
+  console.log(
+    'Données recette à envoyer : ',
+    Object.fromEntries((formData as any).entries())
+  );
   this.recetteService.createRecette(formData)
   .pipe(takeUntil(this.destroy$))
     .subscribe({
@@ -697,6 +730,38 @@ private createRecette(formData: FormData): void {
         this.isLoading = false;
       }
     });
+}
+
+// Nouvelle méthode pour créer une recette avec catégorie par code
+private createRecetteAvecCategorie(paiement: any, categoryCode: string): void {
+  this.getCategoryId(categoryCode).then(categoryId => {
+    if (!categoryId) {
+      console.error(`Catégorie avec code ${categoryCode} non trouvée`);
+      this.toastr.error('Erreur de configuration: catégorie non trouvée');
+      return;
+    }
+
+    const recette = {
+      montant: paiement.montant,
+      date: paiement.date,
+      paiementId: paiement.id,
+      statutRecette: 'valide',
+      description: paiement.description || `Paiement - Réf: ${paiement.numero}`,
+      code_structure: this.code_structure,
+      magasinId: this.magasinId,
+      agentId: this.agentId,
+      categoryId: categoryId,
+      paymentMode: paiement.methodePaiement
+    };
+
+    const formData = new FormData();
+    Object.entries(recette).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, value.toString());
+      }
+    });    
+this.createRecette(formData);
+  });
 }
   /** AFFICHER DÉTAILS TRANSACTION */
   afficherDetails(panier: Panier) {

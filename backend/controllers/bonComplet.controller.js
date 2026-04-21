@@ -153,7 +153,7 @@ exports.createBonComplet = async (req, res) => {
           where: {
             numero: bon.numero,
             type: bon.type,
-            typeEntite: bon.typeEntite
+            typeEntite: typeEntite
           },
           transaction
         });
@@ -166,7 +166,7 @@ exports.createBonComplet = async (req, res) => {
       // Création d’un nouveau bon
       // ==============================
 
-      const bonData = await statutManager.preparerDonneesBon(bon, typeEntite, clientId, fournisseurId);
+      const bonData = await statutManager.preparerDonneesBon({ ...bon, statutBon: 'brouillon' }, typeEntite, clientId, fournisseurId);
       
       // Créer le bon
       nouveauBon = await db.Bon.create(
@@ -265,16 +265,17 @@ exports.createBonComplet = async (req, res) => {
           bonId: nouveauBon.id,
           bonNumero: nouveauBon.numero,
           montant: nouveauBon.avance,
-          typeEntite
+          typeEntite,
+          magasinId
         }
       );
       // CAS 1: BONS FOURNISSEURS
       if (typeEntite === 'fournisseur') {
-        await statutManager.mettreAJourFournisseurApresVersement(paiementCree,fournisseurId, transaction);
+        await statutManager.mettreAJourFournisseurApresVersement({ ...paiementCree.toJSON(), magasinId },fournisseurId, transaction);
       }
       // CAS 2: BONS CLIENTS
       else if (typeEntite === 'client') {
-        await statutManager.mettreAJourClientApresRegelement(paiementCree,clientId, transaction);
+        await statutManager.mettreAJourClientApresRegelement({ ...paiementCree.toJSON(), magasinId },clientId, transaction);
       } 
     }
 

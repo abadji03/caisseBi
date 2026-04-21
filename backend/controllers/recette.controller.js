@@ -32,10 +32,14 @@ exports.createRecette = async (req, res) => {
       code_structure,
       date,
     } = req.body;
+
+    console.log('Données recette reçu : ',req.body);
     let receipt = null;
     if (req.file) {
       receipt = BASE_URL + req.file.filename;
     }
+
+    console.log('Début création recette');
     const recette = await Recette.create({
       categoryId,
       montant,
@@ -49,6 +53,8 @@ exports.createRecette = async (req, res) => {
       code_structure,
       date,
     });
+
+    console.log('Fin création recette',recette);
 
         // ENREGISTRER L'HISTORIQUE DE CRÉATION
     await HistoriqueService.enregistrerAction(
@@ -93,7 +99,7 @@ exports.getByStructure = async (req, res) => {
     }
 
     // Vérifier rôle
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur"|| r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
 
     if (!isAdminStructure && !isGerant) {
@@ -169,7 +175,7 @@ exports.getByStructureBis = async (req, res) => {
     }
 
     // Vérifier rôle
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur"|| r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
 
     if (!isAdminStructure && !isGerant) {
@@ -257,41 +263,41 @@ exports.getByStructureBis = async (req, res) => {
         
         // Statistiques par mode de paiement
         [
-          literal(`SUM(CASE WHEN paymentMode = 'Espèce' THEN montant ELSE 0 END)`),
+          literal(`SUM(CASE WHEN payment_mode = 'Espèce' THEN montant ELSE 0 END)`),
           'totalEspece'
         ],
         [
-          literal(`SUM(CASE WHEN paymentMode = 'Carte' THEN montant ELSE 0 END)`),
+          literal(`SUM(CASE WHEN payment_mode = 'Carte' THEN montant ELSE 0 END)`),
           'totalCarte'
         ],
         [
-          literal(`SUM(CASE WHEN paymentMode = 'Orange Money' THEN montant ELSE 0 END)`),
+          literal(`SUM(CASE WHEN payment_mode = 'Orange Money' THEN montant ELSE 0 END)`),
           'totalOrangeeMoney'
         ],
         [
-          literal(`SUM(CASE WHEN paymentMode = 'Wave' THEN montant ELSE 0 END)`),
+          literal(`SUM(CASE WHEN payment_mode = 'Wave' THEN montant ELSE 0 END)`),
           'totalWave'
         ],
         [
-          literal(`SUM(CASE WHEN paymentMode = 'Virement' THEN montant ELSE 0 END)`),
+          literal(`SUM(CASE WHEN payment_mode = 'Virement' THEN montant ELSE 0 END)`),
           'totalVirement'
         ],
         [
-          literal(`SUM(CASE WHEN paymentMode = 'Chèque' THEN montant ELSE 0 END)`),
+          literal(`SUM(CASE WHEN payment_mode = 'Chèque' THEN montant ELSE 0 END)`),
           'totalCheque'
         ],
         [
-          literal(`SUM(CASE WHEN paymentMode = 'Autre' THEN montant ELSE 0 END)`),
+          literal(`SUM(CASE WHEN payment_mode = 'Autre' THEN montant ELSE 0 END)`),
           'totalAutre'
         ],
 
         // Statistiques par statut
         [
-          literal(`COUNT(CASE WHEN statutRecette = 'validé' THEN 1 END)`),
+          literal(`COUNT(CASE WHEN statut_recette = 'validé' THEN 1 END)`),
           'nbValidees'
         ],
         [
-          literal(`COUNT(CASE WHEN statutRecette = 'annulé' THEN 1 END)`),
+          literal(`COUNT(CASE WHEN statut_recette = 'annulé' THEN 1 END)`),
           'nbAnnulees'
         ],
 
@@ -309,7 +315,7 @@ exports.getByStructureBis = async (req, res) => {
     const statsParCategorie = await Recette.findAll({
       where: whereClause,
       attributes: [
-        'categoryId',
+        'category_id',
         [fn('COUNT', col('Recette.id')), 'nombreRecettes'],
         [fn('SUM', col('Recette.montant')), 'montantTotal'],
         [fn('AVG', col('Recette.montant')), 'montantMoyen']
@@ -320,7 +326,7 @@ exports.getByStructureBis = async (req, res) => {
           attributes: ['name', 'type']
         }
       ],
-      group: ['categoryId', 'Categorie.id', 'Categorie.name', 'Categorie.type'],
+      group: ['category_id', 'Categorie.id', 'Categorie.name', 'Categorie.type'],
       order: [[literal('montantTotal'), 'DESC']],
       limit: 5,
       raw: true,

@@ -1,5 +1,5 @@
 // models/historiqueStatut.
-const SequenceService = require('../services/sequence.service');
+//const SequenceService = require('../services/sequence.service');
 
 module.exports = (sequelize, DataTypes) => {
   const HistoriqueStatut = sequelize.define('HistoriqueStatut', {
@@ -32,24 +32,21 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
-    numeroE: {
+    /* numeroE: {
       type: DataTypes.INTEGER,
       allowNull: false,
-    },
+    }, */
     dateChangement: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW
     }
-  },{
-    tableName: 'historique_statuts',
-    timestamps: true
   },
   {
     // Pas de tableName - utilise 'Magasin' comme nom de table
     // freezeTableName: true est déjà dans la config globale
     timestamps: true,
     underscored: true, // Convertit automatiquement camelCase en snake_case
-    hooks: {
+    /* hooks: {
       beforeCreate: async (historiqueStatut, options) => {
         const { sequelize, Sequence } = require('../models');
         const numero = await SequenceService.getNextNumero(
@@ -61,22 +58,47 @@ module.exports = (sequelize, DataTypes) => {
         );
         historiqueStatut.numeroE = numero;
       }
-    }
+    } */
+
+    /* hooks: {
+      beforeValidate: async (historiqueStatut, options) => {
+        console.log('🔍 beforeValidate hook called', historiqueStatut.code_structure);
+        
+        // Définir numeroE avant la validation
+        if (!historiqueStatut.numeroE) {
+          try {
+            const HistoriqueStatutModel = sequelize.models.HistoriqueStatut;
+            if (HistoriqueStatutModel) {
+              const count = await HistoriqueStatutModel.count({
+                where: { code_structure: historiqueStatut.code_structure },
+                transaction: options.transaction
+              });
+              historiqueStatut.numeroE = count + 1;
+              console.log(`✅ Generated numeroE in beforeValidate: ${historiqueStatut.numeroE}`);
+            } else {
+              historiqueStatut.numeroE = 1;
+            }
+          } catch (error) {
+            console.error('❌ Hook error:', error);
+            historiqueStatut.numeroE = 1;
+          }
+        }
+      },
+      beforeCreate: async (historiqueStatut, options) => {
+        console.log('🎯 beforeCreate hook STARTED', historiqueStatut.numeroE);
+        // Vérifier et régénérer si nécessaire
+        if (!historiqueStatut.numeroE) {
+          const HistoriqueStatutModel = sequelize.models.HistoriqueStatut;
+          const count = await HistoriqueStatutModel.count({
+            where: { code_structure: historiqueStatut.code_structure },
+            transaction: options.transaction
+          });
+          historiqueStatut.numeroE = count + 1;
+        }
+      }
+    } */
   });
 
-  /* HistoriqueStatut.associate = (models) => {
-    // Un historique appartient à un bon
-    HistoriqueStatut.belongsTo(models.Bon, {
-      foreignKey: 'bonId',
-      as: 'bon'
-    });
-
-    // Un historique appartient à un agent (celui qui change le statut)
-    HistoriqueStatut.belongsTo(models.Users, {
-      foreignKey: 'agentId',
-      as: 'agent'
-    });
-  };
- */
+  
   return HistoriqueStatut;
 };

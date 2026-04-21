@@ -129,8 +129,8 @@ export class AuthService {
         children: [
           { label: 'Ventes', route: '/caisse-bi/ventes', titre: 'Ventes', sousTitre: 'Gestion des ventes' },
           { label: 'Caisse', route: '/caisse-bi/caisse', titre: 'Ventes', sousTitre: 'Gestion de la caisse' },
-          { label: 'Clients', route: '/caisse-bi/clients', titre: 'Ventes', sousTitre: 'Gestion des clients' },
-          { label: 'Client', route: '/caisse-bi/client', titre: 'Ventes', sousTitre: 'Gestion des clients' }
+          //{ label: 'Clients', route: '/caisse-bi/clients', titre: 'Ventes', sousTitre: 'Gestion des clients' },
+          { label: 'Clients', route: '/caisse-bi/client', titre: 'Ventes', sousTitre: 'Gestion des clients' }
         ]
       },
       {
@@ -153,8 +153,8 @@ export class AuthService {
         sousTitre: 'Gestion financière',
         children: [
           { label: 'Gestion Financière', route: '/caisse-bi/finance', titre: 'Finance', sousTitre: 'Gestion financière' },
-          { label: 'Fournisseurs', route: '/caisse-bi/fournisseurs', titre: 'Finance', sousTitre: 'Gestion des fournisseurs' },
-          { label: 'Fournisseur', route: '/caisse-bi/fournisseur', titre: 'Finance', sousTitre: 'Gestion des fournisseurs' },
+          //{ label: 'Fournisseurs', route: '/caisse-bi/fournisseurs', titre: 'Finance', sousTitre: 'Gestion des fournisseurs' },
+          { label: 'Fournisseurs', route: '/caisse-bi/fournisseur', titre: 'Finance', sousTitre: 'Gestion des fournisseurs' },
         ]
       },
       {
@@ -177,7 +177,7 @@ export class AuthService {
         sousTitre: 'Gestion du personnel',
         children: [
           { label: 'Magasins', route: '/caisse-bi/magasins', titre: 'Compte & Paramètres', sousTitre: 'Gestion des magasins' },
-          { label: 'Personnel', route: '/caisse-bi/gerant', titre: 'Compte & Paramètres', sousTitre: 'Gestion du personnel' },
+          //{ label: 'Personnel', route: '/caisse-bi/gerant', titre: 'Compte & Paramètres', sousTitre: 'Gestion du personnel' },
           { label: 'Paramètres', route: '/caisse-bi/parametres', titre: 'Compte & Paramètres', sousTitre: 'Gestion des paramètres' },
           //{ label: 'Actions utilisateurs', route: '/caisse-bi/historique-actions', titre: 'Compte & Paramètres', sousTitre: 'Historiques des actions des utilisateurs' }
         ]
@@ -203,8 +203,8 @@ export class AuthService {
         children: [
           { label: 'Ventes', route: '/caisse-bi/ventes', titre: 'Ventes', sousTitre: 'Gestion des ventes' },
           { label: 'Caisse', route: '/caisse-bi/caisse', titre: 'Ventes', sousTitre: 'Gestion de la caisse' },
-          { label: 'Clients', route: '/caisse-bi/clients', titre: 'Ventes', sousTitre: 'Gestion des clients' },
-          { label: 'Client', route: '/caisse-bi/client', titre: 'Ventes', sousTitre: 'Gestion des clients' }
+          //{ label: 'Clients', route: '/caisse-bi/clients', titre: 'Ventes', sousTitre: 'Gestion des clients' },
+          { label: 'Clients', route: '/caisse-bi/client', titre: 'Ventes', sousTitre: 'Gestion des clients' }
         ]
       },
       {
@@ -227,8 +227,8 @@ export class AuthService {
         sousTitre: 'Gestion financière',
         children: [
           { label: 'Gestion Financière', route: '/caisse-bi/finance', titre: 'Finance', sousTitre: 'Gestion financière' },
-          { label: 'Fournisseurs', route: '/caisse-bi/fournisseurs', titre: 'Finance', sousTitre: 'Gestion des fournisseurs' },
-          { label: 'Fournisseur', route: '/caisse-bi/fournisseur', titre: 'Finance', sousTitre: 'Gestion des fournisseurs' },
+          //{ label: 'Fournisseurs', route: '/caisse-bi/fournisseurs', titre: 'Finance', sousTitre: 'Gestion des fournisseurs' },
+          { label: 'Fournisseurs', route: '/caisse-bi/fournisseur', titre: 'Finance', sousTitre: 'Gestion des fournisseurs' },
         ]
       },
       {
@@ -251,7 +251,7 @@ export class AuthService {
         sousTitre: 'Gestion du personnel',
         children: [
           { label: 'Magasins', route: '/caisse-bi/magasins', titre: 'Compte & Paramètres', sousTitre: 'Gestion des magasins' },
-          { label: 'Personnel', route: '/caisse-bi/gerant', titre: 'Compte & Paramètres', sousTitre: 'Gestion du personnel' },
+          //{ label: 'Personnel', route: '/caisse-bi/gerant', titre: 'Compte & Paramètres', sousTitre: 'Gestion du personnel' },
           { label: 'Paramètres', route: '/caisse-bi/parametres', titre: 'Compte & Paramètres', sousTitre: 'Gestion des paramètres' },
         ]
       }
@@ -276,8 +276,8 @@ export class AuthService {
         children: [
           { label: 'Ventes', route: '/caisse-bi/ventes', titre: 'Ventes', sousTitre: 'Gestion des ventes' },
           { label: 'Caisse', route: '/caisse-bi/caisse', titre: 'Ventes', sousTitre: 'Gestion de la caisse' },
-          { label: 'Clients', route: '/caisse-bi/clients', titre: 'Ventes', sousTitre: 'Gestion des clients' },
-          { label: 'Client', route: '/caisse-bi/client', titre: 'Ventes', sousTitre: 'Gestion des clients' }
+          //{ label: 'Clients', route: '/caisse-bi/clients', titre: 'Ventes', sousTitre: 'Gestion des clients' },
+          { label: 'Clients', route: '/caisse-bi/client', titre: 'Ventes', sousTitre: 'Gestion des clients' }
 
         ]
       },
@@ -301,8 +301,8 @@ export class AuthService {
         sousTitre: 'Gestion financière',
         children: [
           { label: 'Gestion Financière', route: '/caisse-bi/finance', titre: 'Finance', sousTitre: 'Gestion financière' },
-          { label: 'Fournisseurs', route: '/caisse-bi/fournisseurs', titre: 'Finance', sousTitre: 'Gestion des fournisseurs' },
-          { label: 'Fournisseur', route: '/caisse-bi/fournisseur', titre: 'Finance', sousTitre: 'Gestion des fournisseurs' },
+          //{ label: 'Fournisseurs', route: '/caisse-bi/fournisseurs', titre: 'Finance', sousTitre: 'Gestion des fournisseurs' },
+          { label: 'Fournisseurs', route: '/caisse-bi/fournisseur', titre: 'Finance', sousTitre: 'Gestion des fournisseurs' },
         ]
       },
       {
@@ -337,7 +337,9 @@ export class AuthService {
         sousTitre: 'Gestion de la caisse',
         children: [
           { label: 'Caisse', route: '/caisse-bi/caisse', titre: 'Ventes', sousTitre: 'Gestion de la caisse' },
-          { label: 'Clients', route: '/caisse-bi/clients', titre: 'Mes Clients', sousTitre: 'Gestion des clients' }
+          //{ label: 'Clients', route: '/caisse-bi/clients', titre: 'Mes Clients', sousTitre: 'Gestion des clients' },
+          { label: 'Clients', route: '/caisse-bi/client', titre: 'Ventes', sousTitre: 'Gestion des clients' }
+
 
         ]
       },
@@ -393,7 +395,7 @@ export class AuthService {
         sousTitre: 'Gestion du stock',
         children: [
           { label: 'Stock', route: '/caisse-bi/stock', titre: 'Stock', sousTitre: 'Gestion du stock' },
-          { label: 'Catalogue', route: '/caisse-bi/catalogue-produits', titre: 'Stock', sousTitre: 'Consultation du catalogue' }
+          //{ label: 'Catalogue', route: '/caisse-bi/catalogue-produits', titre: 'Stock', sousTitre: 'Consultation du catalogue' }
         ]
       }
     ]

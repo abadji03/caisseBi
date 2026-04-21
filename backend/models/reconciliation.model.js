@@ -1,4 +1,4 @@
-const SequenceService = require('../services/sequence.service');
+//const SequenceService = require('../services/sequence.service');
 
 module.exports = (sequelize, DataTypes) => {
   const Reconciliation = sequelize.define('Reconciliation', {
@@ -55,7 +55,7 @@ module.exports = (sequelize, DataTypes) => {
     // freezeTableName: true est déjà dans la config globale
     timestamps: true,
     underscored: true, // Convertit automatiquement camelCase en snake_case
-    hooks: {
+    /* hooks: {
       beforeCreate: async (reconciliation, options) => {
         const { sequelize, Sequence } = require('../models');
         const numero = await SequenceService.getNextNumero(
@@ -66,6 +66,44 @@ module.exports = (sequelize, DataTypes) => {
           options.transaction
         );
         reconciliation.numeroE = numero;
+      }
+    } */
+
+    hooks: {
+      beforeValidate: async (reconciliation, options) => {
+        console.log('🔍 beforeValidate hook called', reconciliation.code_structure);
+        
+        // Définir numeroE avant la validation
+        if (!reconciliation.numeroE) {
+          try {
+            const ReconciliationsModel = sequelize.models.Reconciliation;
+            if (ReconciliationsModel) {
+              const count = await ReconciliationsModel.count({
+                where: { code_structure: reconciliation.code_structure },
+                transaction: options.transaction
+              });
+              reconciliation.numeroE = count + 1;
+              console.log(`✅ Generated numeroE in beforeValidate: ${reconciliation.numeroE}`);
+            } else {
+              reconciliation.numeroE = 1;
+            }
+          } catch (error) {
+            console.error('❌ Hook error:', error);
+            reconciliation.numeroE = 1;
+          }
+        }
+      },
+      beforeCreate: async (reconciliation, options) => {
+        console.log('🎯 beforeCreate hook STARTED', reconciliation.numeroE);
+        // Vérifier et régénérer si nécessaire
+        if (!reconciliation.numeroE) {
+          const reconciliationsModel = sequelize.models.Reconciliation;
+          const count = await reconciliationsModel.count({
+            where: { code_structure: reconciliation.code_structure },
+            transaction: options.transaction
+          });
+          reconciliation.numeroE = count + 1;
+        }
       }
     }
   });

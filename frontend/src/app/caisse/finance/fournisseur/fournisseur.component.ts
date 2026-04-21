@@ -32,6 +32,7 @@ import { PaiementComponent } from '../../../sharedComposants/paiement/paiement.c
 
 import { v4 as uuidv4 } from 'uuid';
 import { BonComponent } from '../../../sharedComposants/bon/bon.component';
+import { CategoriesDepencesRecettesService } from '../../../services/categories-depences-recettes.service';
 
 @Component({
   selector: 'app-fournisseur',
@@ -81,6 +82,9 @@ export class FournisseurComponent implements OnInit, OnDestroy {
   isRowSelected = false;
   showDetails = false;
   showBonDetailsSection = false;
+
+  selectedMagasinId: number | null = null;
+  magasinSoldes = new Map<number, number>();
 
   //Est admin
   isAdmin = false;
@@ -187,6 +191,8 @@ export class FournisseurComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private userSubscription!: Subscription;
 
+  private categorieCache = new Map<string, number>();
+
   // Services injectés
   private fb = inject(FormBuilder);
   private paginationService = inject(ApplicationService);
@@ -204,6 +210,7 @@ export class FournisseurComponent implements OnInit, OnDestroy {
   private pdfGenerator = inject(PdfMakerServiceService);
   private structureService = inject(StructureService);
   private depensesService = inject(DepencesService);
+  private categoriesService = inject(CategoriesDepencesRecettesService);
 
   Math = Math;
 
@@ -213,8 +220,11 @@ export class FournisseurComponent implements OnInit, OnDestroy {
       this.code_structure = user?.code_structure || null;
       this.magasinId = user?.magasinId || null;
       this.agentId = user?.id || null;
-      this.isAdmin = this.authService.hasRole('Administrateur');
+      this.isAdmin = this.authService.hasRole('Administrateur') || this.authService.hasRole('Administrateur secondaire');
       
+      if (!this.isAdmin && this.magasinId) {
+        this.selectedMagasinId = this.magasinId;
+      }
       if (this.code_structure) {
         this.loadData();
         this.loadDataProduits();
@@ -289,7 +299,8 @@ export class FournisseurComponent implements OnInit, OnDestroy {
       termeLivraison: [''],
       pays: [''],
       ville: [''],
-      magasinId: [this.magasinId, Validators.required],
+      //magasinId: [this.magasinId, Validators.required],
+      magasinIds: [[], Validators.required] // Changé: sélection multiple
     });
   }
 
@@ -483,7 +494,23 @@ export class FournisseurComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$), finalize(() => this.isLoadingFournisseur = false))
       .subscribe({
         next: (response) => {
-          this.fournisseurs = response.items; //.filter(f => f.statut === true);          
+          this.fournisseurs = response.items; //.filter(f => f.statut === true); 
+          
+          // Charger les magasins pour chaque fournisseur
+        this.fournisseurs.forEach(fournisseur => {
+          if (fournisseur.Magasins && fournisseur.Magasins.length > 0) {
+            // Initialiser les soldes par magasin
+            fournisseur.Magasins.forEach(magasin => {
+              if (magasin.MagasinFournisseur) {
+                this.magasinSoldes.set(
+                  magasin.id!, 
+                  magasin.MagasinFournisseur.solde
+                );
+              }
+            });
+          }
+        });
+          
           // Mise à jour de la pagination
           this.fournisseursTotalItems = response.pagination.total;
           this.fournisseursCurrentPage = response.pagination.page;
@@ -626,6 +653,12 @@ export class FournisseurComponent implements OnInit, OnDestroy {
 
     if (!this.selectedFournisseur) return;
 
+    // 🔥 Initialiser le magasin sélectionné
+  if (!this.isAdmin && this.magasinId) {
+    this.selectedMagasinId = this.magasinId;
+  } else {
+    this.selectedMagasinId = null;
+  }
     const today = new Date();
     this.startDate = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
     this.endDate = today.toISOString().split('T')[0];
@@ -644,14 +677,19 @@ export class FournisseurComponent implements OnInit, OnDestroy {
   openModal(fournisseur?: Fournisseur): void {
     if (fournisseur) {
       this.isEditMode = true;
-      this.fournisseurForm.patchValue(fournisseur);
+      //this.fournisseurForm.patchValue(fournisseur);
+      this.fournisseurForm.patchValue({
+      ...fournisseur,
+      magasinIds: fournisseur.Magasins?.map(m => m.id) || []
+    });
     } else {
       this.isEditMode = false;
       this.fournisseurForm.reset({
         code_structure: this.code_structure,
         statut: true,
         montantAPayer: 0,
-        magasinId: this.magasinId
+        //magasinId: this.magasinId
+        magasinIds: this.magasinId ? [this.magasinId] : []
       });
     }
     this.showModal = true;
@@ -677,8 +715,10 @@ export class FournisseurComponent implements OnInit, OnDestroy {
 
   // CRUD Fournisseurs
   createFournisseur(fournisseurData: Partial<Fournisseur>): void {
+    const magasinIds = this.fournisseurForm.get('magasinIds')?.value;
+
     this.isLoadingFournisseur = true;
-    this.fournisseurService.createFournisseur(fournisseurData as Fournisseur)
+    this.fournisseurService.createFournisseur(fournisseurData as Fournisseur, magasinIds)
       .pipe(takeUntil(this.destroy$), finalize(() => this.isLoadingFournisseur = false))
       .subscribe({
         next: () => {
@@ -694,8 +734,10 @@ export class FournisseurComponent implements OnInit, OnDestroy {
   }
 
   updateFournisseur(id: number, updateData: Partial<Fournisseur>): void {
+    const magasinIds = this.fournisseurForm.get('magasinIds')?.value;
+
     this.isLoadingFournisseur = true;
-    this.fournisseurService.updateFournisseur(id, updateData)
+    this.fournisseurService.updateFournisseur(id, updateData, magasinIds)
       .pipe(takeUntil(this.destroy$), finalize(() => this.isLoadingFournisseur = false))
       .subscribe({
         next: () => {
@@ -709,6 +751,87 @@ export class FournisseurComponent implements OnInit, OnDestroy {
         }
       });
   }
+
+  // Nouvelle méthode pour afficher le solde par magasin
+  getSoldeParMagasin(fournisseur: Fournisseur, magasinId: number): number {
+    const magasin = fournisseur.Magasins?.find(m => m.id === magasinId);
+    return magasin?.MagasinFournisseur?.solde || 0;
+  }
+
+  // Calculer le solde total (somme des soldes de tous les magasins)
+  getSoldeTotal(fournisseur: Fournisseur): number {
+    if (!fournisseur.Magasins) return 0;
+    return fournisseur.Magasins.reduce((total, magasin) => {
+      return total + (this.safeNumber(magasin.MagasinFournisseur?.solde) || 0);
+    }, 0);
+  }
+
+  // Obtenir le solde actuel en fonction du magasin sélectionné
+  /* getSoldeActuel(): number {
+    if (!this.selectedFournisseur) return 0;
+    
+    if (this.selectedMagasinId) {
+      const magasin = this.selectedFournisseur.Magasins?.find(m => m.id === this.selectedMagasinId);
+      return magasin?.MagasinFournisseur?.solde || 0;
+    }
+    return this.getSoldeTotal(this.selectedFournisseur);
+  } */
+
+  getSoldeActuel(): number {
+    if (!this.selectedFournisseur) return 0;
+    
+    // Pour les non-admins, utiliser automatiquement leur magasin
+    const magasinIdAAfficher = this.selectedMagasinId ?? this.magasinId;
+    
+    if (magasinIdAAfficher) {
+      const magasin = this.selectedFournisseur.Magasins?.find(m => m.id === magasinIdAAfficher);
+      return magasin?.MagasinFournisseur?.solde || 0;
+    }
+    
+    return this.getSoldeTotal(this.selectedFournisseur);
+  }
+
+  // Obtenir le nom du magasin sélectionné
+  /* getNomMagasinSelectionne(): string {
+    if (!this.selectedMagasinId || !this.selectedFournisseur?.Magasins) return 'tous les magasins';
+    const magasin = this.selectedFournisseur.Magasins.find(m => m.id === this.selectedMagasinId);
+    return magasin?.nom || 'ce magasin';
+  } */
+ getNomMagasinSelectionne(): string {
+    const magasinIdAAfficher = this.selectedMagasinId ?? this.magasinId;
+    
+    if (!magasinIdAAfficher || !this.selectedFournisseur?.Magasins) return 'tous les magasins';
+    
+    const magasin = this.selectedFournisseur.Magasins.find(m => m.id === magasinIdAAfficher);
+    return magasin?.nom || 'ce magasin';
+  }
+
+  // Gérer le changement de magasin
+  /* onMagasinChange(magasinId: number | null): void {
+    this.selectedMagasinId = magasinId;
+    this.loadOperations(); // Recharger les opérations filtrées par magasin
+  } */
+
+  onMagasinChange(magasinId: number | null): void {
+  // Si l'utilisateur n'est pas admin, ne pas permettre le changement
+  if (!this.isAdmin) {
+    console.log('Non-admin: changement de magasin non autorisé');
+    return;
+  }
+  this.selectedMagasinId = magasinId;
+  this.loadOperations();
+}
+
+private mettreAJourSoldeFournisseurDansMap(fournisseur: Fournisseur): void {
+  if (fournisseur.Magasins && fournisseur.Magasins.length > 0) {
+    fournisseur.Magasins.forEach(magasin => {
+      if (magasin.MagasinFournisseur) {
+        console.log(`Mise à jour du solde pour magasin ${magasin.id}: ${magasin.MagasinFournisseur.solde}`);
+        this.magasinSoldes.set(magasin.id!, magasin.MagasinFournisseur.solde);
+      }
+    });
+  }
+}
 
   deleteFournisseur(id: number): void {
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce fournisseur ?')) return;
@@ -892,12 +1015,15 @@ export class FournisseurComponent implements OnInit, OnDestroy {
 
   // Gestion des événements des composants enfants
   onBonEnregistre(event: BonAvecFichier): void {
+
+    if(!confirm('Confirmer la transaction ?')) return;
+
     if (!this.selectedFournisseur || !this.bonBrouillon || !this.panierBrouillon) {
       this.toastr.error('Données manquantes pour l\'enregistrement');
       return;
     }
 
-    if (event.bon.avance && this.selectedFournisseur.montantAPayer! - event.bon.avance < 0) {
+    if (event.bon.avance && (this.safeNumber(event.bon.netAPayer || event.bon.montantTotal) - this.safeNumber(event.bon.avance)) < 0) {
       this.toastr.error('Le montant de l\'avance dépasse le montant à payer au fournisseur');
       return;
     }
@@ -916,13 +1042,16 @@ export class FournisseurComponent implements OnInit, OnDestroy {
   }
 
   onPaiementEnregistre(event: PaiementAvecFichier): void {
+
+    if(!confirm('Confirmer la transaction ?')) return;
+
     if (!this.selectedFournisseur) {
       this.toastr.error('Aucun fournisseur sélectionné');
       return;
     }
 
     if (event.paiement.montant <= 0 || 
-        this.selectedFournisseur.montantAPayer! - event.paiement.montant < 0) {
+        (this.getSoldeActuel() - event.paiement.montant) < 0) {
       this.toastr.error('Montant invalide ou dépasse la dette');
       return;
     }
@@ -980,7 +1109,8 @@ export class FournisseurComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (result) => {
           if (result.paiement) {
-            this.createDepense(result.paiement);
+            //this.createDepense(result.paiement);
+             this.createDepenseAvecCategorie(result.paiement, 'PAIEMENT_FOURNISSEUR');
           }
           
           if (fichier && result.bon?.id) {
@@ -1021,7 +1151,13 @@ export class FournisseurComponent implements OnInit, OnDestroy {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private finaliserEnregistrement(_result: any, _avecFichier: boolean): void {
     this.toastr.success('Bon enregistré avec succès!', 'Succès');
+
     this.rafraichirDonneesImmediatement();
+
+    // Recharger les listes
+    this.loadBonsAvecPagination();
+    this.loadPaiementsAvecPagination();
+
     this.bonBrouillonService.clearBrouillons();
     this.bonBrouillon = null;
     this.panierBrouillon = null;
@@ -1029,9 +1165,71 @@ export class FournisseurComponent implements OnInit, OnDestroy {
     this.isLoadingBon = false;
   }
 
+  private async getCategoryId(code: string): Promise<number | null> {
+  // Vérifier le cache
+  if (this.categorieCache.has(code)) {
+    return this.categorieCache.get(code)!;
+  }
+
+  // Requête API
+  return new Promise((resolve) => {
+    this.categoriesService.getCategorieByCode(code, this.code_structure!)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (categorie) => {
+          if (categorie) {
+            this.categorieCache.set(code, categorie.id!);
+            resolve(categorie.id!);
+          } else {
+            resolve(null);
+          }
+        },
+        error: () => resolve(null)
+      });
+  });
+}
+
+// Nouvelle méthode pour créer une dépense avec catégorie par code
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+private createDepenseAvecCategorie(paiement: any, categoryCode: string): void {
+  this.getCategoryId(categoryCode).then(categoryId => {
+    if (!categoryId) {
+      console.error(`Catégorie avec code ${categoryCode} non trouvée`);
+      this.toastr.error('Erreur de configuration: catégorie non trouvée');
+      return;
+    }
+
+    const depense = {
+      montant: paiement.montant,
+      type: 'STOCK',
+      date: paiement.date,
+      paiementId: paiement.id,
+      statutDepense: 'validé',
+      description: `Paiement fournisseur ID: ${this.selectedFournisseur?.id} - Paiement ID: ${paiement.numero}`,
+      code_structure: this.code_structure,
+      magasinId: this.magasinId,
+      agentId: this.agentId,
+      categoryId: categoryId,
+      paymentMode: paiement.methodePaiement
+    };
+
+    const formData = new FormData();
+    Object.entries(depense).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    this.depensesService.createDepense(formData)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        error: (err) => console.error('Erreur création dépense:', err)
+      });
+  });
+}
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private createDepense(paiement: any): void {
-    const depense = {
+    /* const depense = {
       montant: paiement.montant,
       type: 'STOCK',
       date: paiement.date,
@@ -1056,7 +1254,9 @@ export class FournisseurComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         error: (err) => console.error('Erreur création dépense:', err)
-      });
+      }); */
+
+    this.createDepenseAvecCategorie(paiement, 'PAIEMENT_FOURNISSEUR');
   }
 
   // Enregistrement d'un paiement
@@ -1087,7 +1287,8 @@ export class FournisseurComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (result) => {
-          this.createDepense(result);
+          //this.createDepense(result);
+          this.createDepenseAvecCategorie(result, 'PAIEMENT_FOURNISSEUR');
           this.toastr.success('Paiement enregistré avec succès');
           this.rafraichirDonneesImmediatement();
           this.showPaiementForm = false;
@@ -1106,22 +1307,57 @@ export class FournisseurComponent implements OnInit, OnDestroy {
     this.rafraichirDonneesFournisseur();
   }
 
-  private rafraichirDonneesFournisseur(): void {
+  /* private rafraichirDonneesFournisseur(): void {
     if (!this.selectedFournisseur) return;
 
     this.fournisseurService.getFournisseurById(this.selectedFournisseur.id!)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (fournisseurMisAJour) => {
-          /* const index = this.fournisseurs.findIndex(f => f.id === fournisseurMisAJour.id);
-          if (index !== -1) this.fournisseurs[index] = fournisseurMisAJour; */
+          const index = this.fournisseurs.findIndex(f => f.id === fournisseurMisAJour.id);
+          if (index !== -1) this.fournisseurs[index] = fournisseurMisAJour; 
           this.selectedFournisseur = fournisseurMisAJour;
           this.loadData();
           this.cdr.detectChanges();
         },
         error: (err) => console.error('Erreur rafraîchissement fournisseur:', err)
       });
-  }
+  } */
+
+  private rafraichirDonneesFournisseur(): void {
+  if (!this.selectedFournisseur) return;
+
+  console.log('=== RAFRAÎCHISSEMENT FOURNISSEUR ===');
+  
+  // Sauvegarder le magasin actuel
+  const magasinActuel = this.selectedMagasinId;
+
+  this.fournisseurService.getFournisseurWithMagasins(this.selectedFournisseur.id!)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (fournisseurMisAJour) => {
+        console.log('Fournisseur mis à jour:', fournisseurMisAJour);
+        
+        // Mettre à jour la liste
+        const index = this.fournisseurs.findIndex(f => f.id === fournisseurMisAJour.id);
+        if (index !== -1) this.fournisseurs[index] = fournisseurMisAJour;
+        
+        // Mettre à jour le Map des soldes
+        this.mettreAJourSoldeFournisseurDansMap(fournisseurMisAJour);
+        
+        // Restaurer le magasin sélectionné
+        if (!this.isAdmin && this.magasinId) {
+          this.selectedMagasinId = this.magasinId;
+        } else if (magasinActuel) {
+          this.selectedMagasinId = magasinActuel;
+        }
+        
+        this.selectedFournisseur = fournisseurMisAJour;
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Erreur rafraîchissement fournisseur:', err)
+    });
+}
 
   // Gestion des événements de liste-operations
   onDateChange(dates: {startDate?: string, endDate?: string}): void {

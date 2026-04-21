@@ -7,19 +7,21 @@ const ExcelJS = require('exceljs');
 
 //Créer un client
 exports.createClient = async (req, res) => {
-
   try {
     const authUser = req.user;
     const clientIp = HistoriqueService.getClientIp(req);
+    const { magasinIds, ...clientData } = req.body; // Extraire les magasins
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-    const { email, telephone } = req.body;
+
+    const { email, telephone } = clientData;
+    
     // Vérifie s'il existe un client avec le même email ou téléphone
     const existingClient = await Client.findOne({
       where: {
-        [db.Sequelize.Op.or]: [{ email: email || null }, { telephone: telephone || null }],
+        [Op.or]: [{ email: email || null }, { telephone: telephone || null }],
       },
     });
 
@@ -30,8 +32,22 @@ exports.createClient = async (req, res) => {
       });
     }
 
-    // Créer le client s'il n'existe pas
-    const client = await Client.create(req.body);
+    // Créer le client
+    const client = await Client.create(clientData);
+
+    // Associer les magasins si fournis
+    if (magasinIds && magasinIds.length > 0) {
+      await client.setMagasins(magasinIds);
+      
+      // Initialiser les soldes dans la table de liaison
+      for (const magasinId of magasinIds) {
+        await db.MagasinClient.create({
+          magasinId: magasinId,
+          clientId: client.id,
+          solde: 0
+        });
+      }
+    }
 
     // ENREGISTRER L'HISTORIQUE
     await HistoriqueService.enregistrerAction(
@@ -46,17 +62,18 @@ exports.createClient = async (req, res) => {
           email: client.email,
           telephone: client.telephone,
           code_structure: client.code_structure,
-          magasinId: client.magasinId,
-          solde: client.solde,
-          plafond: client.plafond
+          magasins: magasinIds
         }
       }
     );
 
-    res.status(201).json(client);
-  } catch (error) {
+    // Recharger avec les associations
+    const clientAvecMagasins = await Client.findByPk(client.id, {
+      include: [{ model: Magasin, as: 'Magasin', through: { attributes: ['solde'] } }]
+    });
 
-    // Enregistrer l'erreur
+    res.status(201).json(clientAvecMagasins);
+  } catch (error) {
     if (req.user) {
       await HistoriqueService.enregistrerAction(
         req.user.id,
@@ -73,6 +90,185 @@ exports.createClient = async (req, res) => {
     res.status(500).json({
       message: 'Erreur lors de la création du client',
       error: error.message || error,
+    });
+  }
+};
+
+
+// Créer ou associer un client à un magasin
+exports.createOrAssociateClient = async (req, res) => {
+  const transaction = await db.sequelize.transaction();
+  
+  try {
+    const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
+    const { magasinIds, ...clientData } = req.body; // Récupérer le solde initial
+
+    console.log('Données client reçues', clientData, magasinIds);
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
+    const telephone = clientData.telephone;
+    const email = clientData.email;
+
+    // Vérifier si le client existe déjà
+    let existingClient = null;
+    
+    if (telephone) {
+      existingClient = await Client.findOne({
+        where: {
+          code_structure: authUser.code_structure,
+          telephone: telephone
+        },
+        include: [{ model: db.Magasin }]
+      });
+    }
+    
+    if (!existingClient && email) {
+      existingClient = await Client.findOne({
+        where: {
+          code_structure: authUser.code_structure,
+          email: email
+        },
+        include: [{ model: db.Magasin }]
+      });
+    }
+
+    let client;
+    let isNewClient = false;
+    let magasinsToAssociate = magasinIds || [];
+
+    if (existingClient) {
+      // Client existe déjà
+      client = existingClient;
+      const magasinsExistants = client.magasins?.map(m => m.id) || [];
+      const nouveauxMagasins = magasinsToAssociate.filter(id => !magasinsExistants.includes(id));
+      
+      if (nouveauxMagasins.length > 0) {
+        // Pour chaque nouveau magasin, créer l'association avec le solde
+        for (const magasinId of nouveauxMagasins) {
+          await db.MagasinClient.create({
+            magasinId: magasinId,
+            clientId: client.id,
+          }, { transaction });
+        }
+        
+        await HistoriqueService.enregistrerAction(
+          authUser.id,
+          `Association du client existant ${client.nomComplet} aux magasins: ${nouveauxMagasins.join(', ')}`,
+          clientIp,
+          {
+            action: 'ASSOCIATE_CLIENT_TO_MAGASINS',
+            clientId: client.id,
+            magasinsAjoutes: nouveauxMagasins,
+          }
+        );
+      }
+      
+      // Mettre à jour les informations du client
+      const hasChanges = Object.keys(clientData).some(key => 
+        clientData[key] !== undefined && client[key] !== clientData[key]
+      );
+      
+      if (hasChanges) {
+        await client.update(clientData, { transaction });
+      }
+    } else {
+      // Nouveau client
+      isNewClient = true;
+      
+      // Vérifier les doublons
+      const existingByPhone = await Client.findOne({
+        where: { telephone: telephone, code_structure: authUser.code_structure }
+      });
+      
+      if (existingByPhone) {
+        await transaction.rollback();
+        return res.status(409).json({
+          message: 'Un client avec ce numéro de téléphone existe déjà'
+        });
+      }
+      
+      if (email) {
+        const existingByEmail = await Client.findOne({
+          where: { email: email, code_structure: authUser.code_structure }
+        });
+        if (existingByEmail) {
+          await transaction.rollback();
+          return res.status(409).json({
+            message: 'Un client avec cet email existe déjà'
+          });
+        }
+      }
+      
+      // Créer le client
+      client = await Client.create({
+        ...clientData,
+        telephone,
+        email,
+        code_structure: authUser.code_structure,
+        statut: true,
+        solde_total: 0
+      }, { transaction });
+      
+      // Créer les associations avec le solde initial
+      if (magasinsToAssociate.length > 0) {
+        for (const magasinId of magasinsToAssociate) {
+          await db.MagasinClient.create({
+            magasinId: magasinId,
+            clientId: client.id,
+          }, { transaction });
+        }
+      }
+      
+      await HistoriqueService.enregistrerAction(
+        authUser.id,
+        `Création d'un nouveau client: ${client.nomComplet}`,
+        clientIp,
+        {
+          action: 'CREATE_CLIENT',
+          clientId: client.id,
+          clientData: {
+            nomComplet: client.nomComplet,
+            email: client.email,
+            telephone: client.telephone,
+            code_structure: client.code_structure,
+            magasins: magasinsToAssociate,
+          }
+        }
+      );
+    }
+
+    // Mettre à jour le solde total du client
+    /* const tousSoldes = await db.MagasinClient.sum('solde', {
+      where: { clientId: client.id },
+      transaction
+    });
+    await client.update({ solde_total: tousSoldes }, { transaction });
+ */
+    await transaction.commit();
+
+    const clientAvecMagasins = await Client.findByPk(client.id, {
+      include: [{ 
+        model: db.Magasin, 
+        through: { attributes: ['solde'] }
+      }]
+    });
+
+    res.status(isNewClient ? 201 : 200).json({
+      message: isNewClient ? 'Client créé avec succès' : 'Client mis à jour avec succès',
+      client: clientAvecMagasins,
+      isNew: isNewClient
+    });
+    
+  } catch (error) {
+    await transaction.rollback();
+    console.error('Erreur création/association client:', error);
+    res.status(500).json({
+      message: 'Erreur lors de l\'opération sur le client',
+      error: error.message
     });
   }
 };
@@ -214,7 +410,7 @@ exports.getClientById = async (req, res) => {
   }
 };
 
-//Obtenir tous les clients d'une structure
+// Obtenir tous les clients d'une structure
 exports.getClientsByStructure = async (req, res) => {
   try {
     const authUser = req.user;
@@ -224,7 +420,7 @@ exports.getClientsByStructure = async (req, res) => {
     }
     const { code_structure } = req.params;
 
-    // 🔥 Vérification : l’utilisateur doit appartenir à la structure demandée
+    // Vérification : l'utilisateur doit appartenir à la structure demandée
     if (authUser.code_structure !== code_structure) {
       return res.status(403).json({
         message: "Accès interdit : structure non autorisée"
@@ -232,71 +428,8 @@ exports.getClientsByStructure = async (req, res) => {
     }
 
     // Vérifier rôle
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
-    const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
-    const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
-
-    if (!isAdminStructure && !isGerant && !isCaissier) {
-    return res.status(403).json({
-      message: "Accès interdit : rôle insuffisant"
-    });
-}
-
-    // Clause where par défaut (structure)
-    let whereClause = {
-      code_structure: code_structure
-    };
-
-    // 🔹 Si gérant : filtrer par magasin
-    if (!isAdminStructure && (isGerant || isCaissier)) {
-      if (!authUser.magasinId) {
-        return res.status(400).json({
-          message: "Ce gérant ou caissier n’est associé à aucun magasin"
-        });
-      }
-
-      whereClause.magasinId = authUser.magasinId;
-    }
-    const clients = await Client.findAll({
-      where: whereClause,
-      include:[
-          { model: Magasin,attributes: ["id", "nom","telephone", "email"] },
-        ], 
-      order: [['createdAt', 'DESC']],
-    });
-    res.json(clients);
-  } catch (error) {
-    res.status(500).json({ message: 'Erreur récupération', error });
-  }
-};
-
-// Obtenir tous les clients d'une structure avec pagination
-exports.getClientsByStructureBis = async (req, res) => {
-  try {
-    const authUser = req.user;
-
-    if (!authUser) {
-      return res.status(401).json({ message: "Non authentifié" });
-    }
-    const { code_structure } = req.params;
-    
-    // Paramètres de pagination et recherche
-    const { 
-      page = 1, 
-      limit = 10, 
-      search = '',
-      statut = 'tous'
-    } = req.query;
-
-    // 🔥 Vérification : l’utilisateur doit appartenir à la structure demandée
-    if (authUser.code_structure !== code_structure) {
-      return res.status(403).json({
-        message: "Accès interdit : structure non autorisée"
-      });
-    }
-
-    // Vérifier rôle
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
+    //const isAdminSecondaire = authUser.roles?.some(r => r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
     const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
 
@@ -306,22 +439,111 @@ exports.getClientsByStructureBis = async (req, res) => {
       });
     }
 
-    // Clause where par défaut (structure)
-    let whereClause = {
-      code_structure: code_structure
-    };
+    let whereClause = { code_structure: code_structure, statut:true };
+    //let magasinFilter = {};
+    let includeConfig = [
+          { 
+            model: db.Magasin,
+            through: { attributes: ['solde'] },
+            attributes: ["id", "nom", "telephone", "email"]
+          }
+        ];
 
-    // 🔹 Si gérant ou caissier : filtrer par magasin
+    // Si gérant ou caissier : filtrer par magasin
     if (!isAdminStructure && (isGerant || isCaissier)) {
       if (!authUser.magasinId) {
         return res.status(400).json({
-          message: "Ce gérant ou caissier n’est associé à aucun magasin"
+          message: "Ce gérant ou caissier n'est associé à aucun magasin"
         });
       }
-      whereClause.magasinId = authUser.magasinId;
+      includeConfig[0].where = { id: authUser.magasinId };
+      includeConfig[0].required = true;
     }
 
-    // 🔍 FILTRE DE RECHERCHE TEXTUELLE
+    const clients = await Client.findAll({
+      where: whereClause,
+      include: includeConfig, 
+      order: [['created_at', 'DESC']],
+    });
+    
+    res.json(clients);
+  } catch (error) {
+    console.error('Erreur:', error);
+    res.status(500).json({ message: 'Erreur récupération', error: error.message });
+  }
+};
+
+// Obtenir le solde d'un client pour un magasin spécifique
+exports.getClientSoldeByMagasin = async (req, res) => {
+  try {
+    const { clientId, magasinId } = req.params;
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
+    const relation = await db.MagasinClient.findOne({
+      where: { clientId, magasinId },
+      include: [
+        { model: db.Client, attributes: ['id', 'nomComplet', 'telephone'] },
+        { model: db.Magasin, attributes: ['id', 'nom'] }
+      ]
+    });
+
+    if (!relation) {
+      return res.status(404).json({ 
+        message: 'Ce client n\'est pas associé à ce magasin' 
+      });
+    }
+
+    res.json({
+      clientId: relation.clientId,
+      clientNom: relation.Client.nomComplet,
+      magasinId: relation.magasinId,
+      magasinNom: relation.Magasin.nom,
+      solde: relation.solde
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur', error: error.message });
+  }
+};
+
+// Obtenir tous les clients d'une structure avec pagination
+
+exports.getClientsByStructureBis = async (req, res) => {
+  try {
+    const authUser = req.user;
+    const { code_structure } = req.params;
+    
+    const { 
+      page = 1, 
+      limit = 10, 
+      search = '',
+      statut = 'tous'
+    } = req.query;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
+    if (authUser.code_structure !== code_structure) {
+      return res.status(403).json({ message: "Accès interdit : structure non autorisée" });
+    }
+
+    // Vérifier les rôles
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
+    const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+    const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
+
+    if (!isAdminStructure && !isGerant && !isCaissier) {
+      return res.status(403).json({ message: "Accès interdit : rôle insuffisant" });
+    }
+
+    // Construction de la clause WHERE (sans magasinId car la colonne n'existe plus)
+    let whereClause = { code_structure: code_structure };
+    
+    // Pour la recherche textuelle
     if (search && search.trim() !== '') {
       whereClause[Op.or] = [
         { nomComplet: { [Op.like]: `%${search}%` } },
@@ -329,44 +551,68 @@ exports.getClientsByStructureBis = async (req, res) => {
         { telephone: { [Op.like]: `%${search}%` } },
         { email: { [Op.like]: `%${search}%` } }
       ];
-      
-      // Recherche par montant (solde ou plafond)
-      if (!isNaN(search)) {
-        whereClause[Op.or].push(
-          { solde: { [Op.eq]: parseFloat(search) } },
-          { plafond: { [Op.eq]: parseFloat(search) } }
-        );
-      }
     }
 
-    // 🔹 FILTRE PAR STATUT
+    // Filtre par statut
     if (statut !== 'tous') {
       whereClause.statut = statut === 'actif' ? true : false;
     }
 
-    // Calcul de l'offset pour la pagination
+    // Configuration de l'include pour les magasins
+    let includeConfig = [
+      { 
+        model: db.Magasin,
+        through: { attributes: ['solde'] },
+        attributes: ["id", "nom", "telephone", "email"]
+      }
+    ];
+
+    // Si l'utilisateur n'est pas admin, filtrer par son magasin
+    if (!isAdminStructure && (isGerant || isCaissier)) {
+      if (!authUser.magasinId) {
+        return res.status(400).json({ message: "Utilisateur non associé à un magasin" });
+      }
+      // Filtrer via la table de liaison
+      includeConfig[0].where = { id: authUser.magasinId };
+      includeConfig[0].required = true; // INNER JOIN au lieu de LEFT JOIN
+    }
+
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const limitInt = parseInt(limit);
 
-    // Exécution de la requête avec pagination
-    const { count, rows } = await Client.findAndCountAll({
+    // Utiliser findAndCountAll sans magasinId dans where
+    const { count, rows } = await db.Client.findAndCountAll({
       where: whereClause,
-      include: [
-        { model: db.Magasin, attributes: ["id", "nom", "telephone", "email"] },
-      ],
+      include: includeConfig,
       order: [['nomComplet', 'ASC']],
       offset,
       limit: limitInt,
       distinct: true
     });
 
-    // Calcul du nombre total de pages
+    // Calculer le solde pour chaque client en fonction du magasin filtré
+    const rowsAvecSolde = rows.map(client => {
+      const clientJson = client.toJSON();
+      
+      // Si l'utilisateur est non-admin et a un magasin spécifique
+      if (!isAdminStructure && authUser.magasinId) {
+        const magasinAssocie = clientJson.magasins?.find(m => m.id === authUser.magasinId);
+        clientJson.solde = magasinAssocie?.MagasinClient?.solde || 0;
+      } 
+      // Si admin, utiliser le solde total ou la somme des soldes
+      else {
+        clientJson.solde = clientJson.magasins?.reduce((total, magasin) => {
+          return total + (magasin.MagasinClient?.solde || 0);
+        }, 0) || 0;
+      }
+      
+      return clientJson;
+    });
+
     const totalPages = Math.ceil(count / limitInt);
 
-    console.log(`📦 Clients: ${count} trouvés, page ${page}/${totalPages}`);
-
     res.status(200).json({
-      items: rows,
+      items: rowsAvecSolde,
       pagination: {
         total: count,
         page: parseInt(page),
@@ -466,50 +712,95 @@ exports.updateClientPlafond = async (req, res) => {
   }
 };
 
-//Mettre à jour le solde
+
+// Mettre à jour le solde d'un client pour un magasin spécifique
 exports.updateClientSolde = async (req, res) => {
   try {
     const authUser = req.user;
     const clientIp = HistoriqueService.getClientIp(req);
+    const { clientId, magasinId } = req.params;
+    const { solde } = req.body;
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-    const client = await Client.findByPk(req.params.id);
-    if (!client) return res.status(404).json({ message: 'Client non trouvé' });
 
-    const oldSolde = client.solde;
-    await client.update({ solde: req.body.solde, dateMiseAJour: new Date() });
+    // Vérifier si la relation existe
+    const relation = await db.MagasinClient.findOne({
+      where: {
+        clientId: clientId,
+        magasinId: magasinId
+      }
+    });
+
+    if (!relation) {
+      return res.status(404).json({ 
+        message: 'Ce client n\'est pas associé à ce magasin' 
+      });
+    }
+
+    const oldSolde = relation.solde;
+    await relation.update({ solde });
 
     // ENREGISTRER L'HISTORIQUE
     await HistoriqueService.enregistrerAction(
       authUser.id,
-      `Modification du solde du client ${client.nomComplet || client.email || client.telephone}: ${oldSolde || 0} → ${req.body.solde || 0}`,
+      `Mise à jour du solde client pour le magasin ${magasinId}`,
       clientIp,
       {
         action: 'UPDATE_CLIENT_SOLDE',
-        clientId: client.id,
+        clientId: clientId,
+        magasinId: magasinId,
         oldSolde: oldSolde,
-        newSolde: req.body.solde
+        newSolde: solde
       }
     );
 
-    res.json({ message: 'Solde mis à jour', client });
+    res.json({ 
+      message: 'Solde mis à jour avec succès', 
+      magasinId, 
+      clientId, 
+      solde 
+    });
   } catch (error) {
-    // Enregistrer l'erreur
-    if (req.user) {
-      await HistoriqueService.enregistrerAction(
-        req.user.id,
-        `Erreur lors de la modification du solde du client ID: ${req.params.id}`,
-        HistoriqueService.getClientIp(req),
-        {
-          action: 'ERROR_UPDATE_CLIENT_SOLDE',
-          clientId: req.params.id,
-          error: error.message
-        }
-      );
+    res.status(500).json({ 
+      message: 'Erreur mise à jour solde', 
+      error: error.message 
+    });
+  }
+};
+
+// Nouvelle méthode : Obtenir un client avec ses magasins et soldes
+exports.getClientWithMagasins = async (req, res) => {
+  try {
+    const authUser = req.user;
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
     }
-    res.status(500).json({ message: 'Erreur mise à jour solde', error });
+    
+    const client = await Client.findByPk(req.params.id, {
+      include: [{ 
+        model: db.Magasin, 
+        through: { attributes: ['solde'] },
+        attributes: ["id", "nom", "telephone", "email", "adresse"]
+      }]
+    });
+    
+    if (!client) return res.status(404).json({ message: 'Client non trouvé' });
+
+    // Ajouter les soldes par magasin
+    const clientJson = client.toJSON();
+    if (clientJson.Magasins) {
+      clientJson.Magasins.forEach(magasin => {
+        magasin.solde = magasin.MagasinClient?.solde || 0;
+      });
+    }
+
+    res.json(clientJson);
+  } catch (error) {
+    console.error('Erreur getClientWithMagasins:', error);
+    res.status(500).json({ message: 'Erreur récupération', error: error.message });
   }
 };
 

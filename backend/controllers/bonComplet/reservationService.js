@@ -36,7 +36,7 @@ class ReservationService {
     }
     
      // 2. RÉSERVATIONS COMMANDES FOURNISSEURS (préparation réception)
-     if (typeEntite === 'fournisseur' && typeBon === 'commande') {
+     /* if (typeEntite === 'fournisseur' && typeBon === 'commande') {
         if (['validé'].includes(statut)) {
           await this.preparerReceptionFournisseur(articles, bon, magasinId, code_structure, transaction);
         }
@@ -44,7 +44,7 @@ class ReservationService {
         if (['annulé'].includes(statut)) {
           await this.libererPreparationFournisseur(articles, bon, magasinId, code_structure, transaction);
         }
-      }
+      } */
 
       // 3. LIBÉRATION GÉNÉRIQUE POUR RETOURS
       if (statut === 'retourné') {

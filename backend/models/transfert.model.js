@@ -1,4 +1,4 @@
-const SequenceService = require('../services/sequence.service');
+//const SequenceService = require('../services/sequence.service');
 
 module.exports = (sequelize, DataTypes) => {
   const Transfert = sequelize.define('Transfert', {
@@ -30,7 +30,7 @@ module.exports = (sequelize, DataTypes) => {
     // freezeTableName: true est déjà dans la config globale
     timestamps: true,
     underscored: true, // Convertit automatiquement camelCase en snake_case
-    hooks: {
+    /* hooks: {
       beforeCreate: async (transfert, options) => {
         const { sequelize, Sequence } = require('../models');
         const numero = await SequenceService.getNextNumero(
@@ -41,6 +41,44 @@ module.exports = (sequelize, DataTypes) => {
           options.transaction
         );
         transfert.numeroE = numero;
+      }
+    } */
+   
+      hooks: {
+      beforeValidate: async (transfert, options) => {
+        console.log('🔍 beforeValidate hook called', transfert.code_structure);
+        
+        // Définir numeroE avant la validation
+        if (!transfert.numeroE) {
+          try {
+            const TransfertsModel = sequelize.models.Transfert;
+            if (TransfertsModel) {
+              const count = await TransfertsModel.count({
+                where: { code_structure: transfert.code_structure },
+                transaction: options.transaction
+              });
+              transfert.numeroE = count + 1;
+              console.log(`✅ Generated numeroE in beforeValidate: ${transfert.numeroE}`);
+            } else {
+              transfert.numeroE = 1;
+            }
+          } catch (error) {
+            console.error('❌ Hook error:', error);
+            transfert.numeroE = 1;
+          }
+        }
+      },
+      beforeCreate: async (transfert, options) => {
+        console.log('🎯 beforeCreate hook STARTED', transfert.numeroE);
+        // Vérifier et régénérer si nécessaire
+        if (!transfert.numeroE) {
+          const TransfertsModel = sequelize.models.Transfert;
+          const count = await TransfertsModel.count({
+            where: { code_structure: transfert.code_structure },
+            transaction: options.transaction
+          });
+          transfert.numeroE = count + 1;
+        }
       }
     }
   });

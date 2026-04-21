@@ -157,7 +157,7 @@ exports.getStocksByStructure = async (req, res) => {
     }
 
     // Vérifier rôle
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
     const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
     const isEmploye = authUser.roles?.some(r => r.nom === "Employé");
@@ -218,9 +218,10 @@ exports.getStocksByStructureBis = async (req, res) => {
       return res.status(403).json({ message: "Accès interdit" });
     }
 
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur"|| r.nom === "Administrateur secondaire");
+    //const isAdminSecondaire = authUser.roles?.some(r => r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
-    const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
+    const isCaissier = authUser.roles?.some(r => r.nom === "Caissier" || r.nom === "Employé");
 
     if (!isAdminStructure && !isGerant && !isCaissier) {
       return res.status(403).json({ message: "Accès interdit : rôle insuffisant" });

@@ -11,4 +11,7 @@ router.patch('/toggle/:id', authenticateToken, ctrl.toggleActive);
 router.delete('/:id', authenticateToken, ctrl.deleteCategorie);
 
 router.get('/export/excel',authenticateToken, ctrl.exportCategoriesExcel);
+
+// routes/categorie.routes.js
+router.get('/code/:code', authenticateToken, ctrl.getByCode);
 module.exports = router;

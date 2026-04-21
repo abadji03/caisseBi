@@ -25,7 +25,7 @@ exports.getConnexionsByUser = async (req, res) => {
     const isAdminGeneral = !authUser.code_structure && 
       authUser.roles?.some(r => r.nom === 'Administrateur Général');
     const isAdminStructure = authUser.code_structure && 
-      authUser.roles?.some(r => r.nom === 'Administrateur');
+      authUser.roles?.some(r => r.nom === 'Administrateur' || r.nom === 'Administrateur secondaire');
     
     if (isAdminGeneral) {
       // Admin général: peut voir les historiques de tous les utilisateurs
@@ -141,7 +141,7 @@ exports.getActionsByUser = async (req, res) => {
     const isAdminGeneral = !authUser.code_structure && 
       authUser.roles?.some(r => r.nom === 'Administrateur Général');
     const isAdminStructure = authUser.code_structure && 
-      authUser.roles?.some(r => r.nom === 'Administrateur');
+      authUser.roles?.some(r => r.nom === 'Administrateur' || r.nom === 'Administrateur secondaire');
     
     if (isAdminGeneral) {
       // Admin général: peut voir les actions de tous les utilisateurs
@@ -276,7 +276,7 @@ exports.getAllRecentActions = async (req, res) => {
     const isAdminGeneral = !authUser.code_structure && 
       authUser.roles?.some(r => r.nom === 'Administrateur Général');
     const isAdminStructure = authUser.code_structure && 
-      authUser.roles?.some(r => r.nom === 'Administrateur');
+      authUser.roles?.some(r => r.nom === 'Administrateur' || r.nom === 'Administrateur secondaire');
     
     let whereClause = {
       date: { [Op.gte]: dateLimit }
@@ -399,7 +399,7 @@ exports.getHistoriqueStats = async (req, res) => {
     const isAdminGeneral = !authUser.code_structure && 
       authUser.roles?.some(r => r.nom === 'Administrateur Général');
     const isAdminStructure = authUser.code_structure && 
-      authUser.roles?.some(r => r.nom === 'Administrateur');
+      authUser.roles?.some(r => r.nom === 'Administrateur'|| r.nom === 'Administrateur secondaire');
     
     let userIds = [];
     

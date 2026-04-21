@@ -1,5 +1,5 @@
 // models/articlePanier.js
-const SequenceService = require('../services/sequence.service');
+//const SequenceService = require('../services/sequence.service');
 
 module.exports = (sequelize, DataTypes) => {
   const ArticlePanier = sequelize.define('ArticlePanier', {
@@ -59,7 +59,7 @@ module.exports = (sequelize, DataTypes) => {
     // freezeTableName: true est déjà dans la config globale
     timestamps: true,
     underscored: true, // Convertit automatiquement camelCase en snake_case
-    hooks: {
+    /* hooks: {
       beforeCreate: async (articlePanier, options) => {
         const { sequelize, Sequence } = require('../models');
         const numero = await SequenceService.getNextNumero(
@@ -70,6 +70,44 @@ module.exports = (sequelize, DataTypes) => {
           options.transaction
         );
         articlePanier.numeroE = numero;
+      }
+    } */
+
+    hooks: {
+      beforeValidate: async (articlePanier, options) => {
+        console.log('🔍 beforeValidate hook called', articlePanier.code_structure);
+        
+        // Définir numeroE avant la validation
+        if (!articlePanier.numeroE) {
+          try {
+            const articlePaniersModel = sequelize.models.ArticlePanier;
+            if (articlePaniersModel) {
+              const count = await articlePaniersModel.count({
+                where: { code_structure: articlePanier.code_structure },
+                transaction: options.transaction
+              });
+              articlePanier.numeroE = count + 1;
+              console.log(`✅ Generated numeroE in beforeValidate: ${articlePanier.numeroE}`);
+            } else {
+              articlePanier.numeroE = 1;
+            }
+          } catch (error) {
+            console.error('❌ Hook error:', error);
+            articlePanier.numeroE = 1;
+          }
+        }
+      },
+      beforeCreate: async (articlePanier, options) => {
+        console.log('🎯 beforeCreate hook STARTED', articlePanier.numeroE);
+        // Vérifier et régénérer si nécessaire
+        if (!articlePanier.numeroE) {
+          const articlePaniersModel = sequelize.models.ArticlePanier;
+          const count = await articlePaniersModel.count({
+            where: { code_structure: articlePanier.code_structure },
+            transaction: options.transaction
+          });
+          articlePanier.numeroE = count + 1;
+        }
       }
     }
   });

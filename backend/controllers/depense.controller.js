@@ -299,7 +299,7 @@ exports.getAllByStructure = async (req, res) => {
     }
 
     // Vérifier rôle
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur"|| r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
 
     if (!isAdminStructure && !isGerant) {
@@ -375,7 +375,7 @@ exports.getAllByStructureBis = async (req, res) => {
     }
 
     // Vérifier rôle
-    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur");
+    const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
 
     if (!isAdminStructure && !isGerant) {
@@ -469,31 +469,31 @@ exports.getAllByStructureBis = async (req, res) => {
         
         // Statistiques par mode de paiement
         [
-          literal(`SUM(CASE WHEN paymentMode = 'Espèce' THEN montant ELSE 0 END)`),
+          literal(`SUM(CASE WHEN payment_mode = 'Espèce' THEN montant ELSE 0 END)`),
           'totalEspece'
         ],
         [
-          literal(`SUM(CASE WHEN paymentMode = 'Carte' THEN montant ELSE 0 END)`),
+          literal(`SUM(CASE WHEN payment_mode = 'Carte' THEN montant ELSE 0 END)`),
           'totalCarte'
         ],
         [
-          literal(`SUM(CASE WHEN paymentMode = 'Orange Money' THEN montant ELSE 0 END)`),
+          literal(`SUM(CASE WHEN payment_mode = 'Orange Money' THEN montant ELSE 0 END)`),
           'totalOrangeMoney'
         ],
         [
-          literal(`SUM(CASE WHEN paymentMode = 'Wave' THEN montant ELSE 0 END)`),
+          literal(`SUM(CASE WHEN payment_mode = 'Wave' THEN montant ELSE 0 END)`),
           'totalWave'
         ],
         [
-          literal(`SUM(CASE WHEN paymentMode = 'Virement' THEN montant ELSE 0 END)`),
+          literal(`SUM(CASE WHEN payment_mode = 'Virement' THEN montant ELSE 0 END)`),
           'totalVirement'
         ],
         [
-          literal(`SUM(CASE WHEN paymentMode = 'Chèque' THEN montant ELSE 0 END)`),
+          literal(`SUM(CASE WHEN payment_mode = 'Chèque' THEN montant ELSE 0 END)`),
           'totalCheque'
         ],
         [
-          literal(`SUM(CASE WHEN paymentMode = 'Autre' THEN montant ELSE 0 END)`),
+          literal(`SUM(CASE WHEN payment_mode = 'Autre' THEN montant ELSE 0 END)`),
           'totalAutre'
         ],
 
@@ -517,11 +517,11 @@ exports.getAllByStructureBis = async (req, res) => {
 
         // Statistiques par statut
         [
-          literal(`COUNT(CASE WHEN statutDepense = 'validé' THEN 1 END)`),
+          literal(`COUNT(CASE WHEN statut_depense = 'validé' THEN 1 END)`),
           'nbValidees'
         ],
         [
-          literal(`COUNT(CASE WHEN statutDepense = 'annulé' THEN 1 END)`),
+          literal(`COUNT(CASE WHEN statut_depense = 'annulé' THEN 1 END)`),
           'nbAnnulees'
         ],
 
@@ -550,7 +550,7 @@ exports.getAllByStructureBis = async (req, res) => {
           attributes: ['name']
         }
       ],
-      group: ['categoryId', 'Categorie.id', 'Categorie.name'],
+      group: ['category_id', 'Categorie.id', 'Categorie.name'],
       order: [[literal('montantTotal'), 'DESC']],
       limit: 5,
       raw: true,
