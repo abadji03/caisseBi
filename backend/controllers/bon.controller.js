@@ -11,17 +11,13 @@ const User = db.Users;
 const Fournisseur = db.Fournisseur;
 const Client = db.Client;
 const Magasin = db.Magasin;
+const operationController = require('./operation.controller');
+const HistoriqueService = require('../services/historique.service');
+
+
 
 
 const BASE_URL = 'http://localhost:5000/uploads/'; //url de l'emplacement des fichier à stocker
-
-const {
-  stockManager,
-  reservationService,
-  mouvementService,
-  statutManager
-} = require('./bonComplet');
-
 
 exports.createBon = async (req, res) => {
 
@@ -742,6 +738,99 @@ exports.updateStatutBon = async (req, res) => {
   }
 };
 
+
+/**
+ * Mettre à jour le statut d'un bon (version simplifiée pour facturation)
+ * PATCH /api/bons/:id/statut
+ */
+exports.updateStatutBonBis = async (req, res) => {
+  const transaction = await db.sequelize.transaction();
+  
+  try {
+    const authUser = req.user;
+    const clientIp = HistoriqueService.getClientIp(req);
+
+    if (!authUser) {
+      return res.status(401).json({ message: "Non authentifié" });
+    }
+
+    const { statutBon, numeroFacture } = req.body;
+    const bonId = req.params.id;
+
+    // Récupérer le bon avec ses relations
+    const bon = await db.Bon.findByPk(bonId, {
+      include: [
+        { model: db.Panier },
+        { model: db.Client },
+        { model: db.Fournisseur }
+      ],
+      transaction
+    });
+
+    if (!bon) {
+      await transaction.rollback();
+      return res.status(404).json({ message: 'Bon non trouvé' });
+    }
+
+    // Sauvegarder l'ancien statut pour l'historique
+    const ancienStatut = bon.statutBon;
+    
+    // Mettre à jour le statut et éventuellement le numéro de facture
+    const updates = { statutBon };
+    if (numeroFacture) {
+      updates.numeroFacture = numeroFacture;
+    }
+    
+    await bon.update(updates, { transaction });
+
+    // Mettre à jour l'opération associée
+    await operationController.updateFromBon(bon, transaction);
+
+    // Enregistrer l'historique
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Mise à jour du statut du bon ${bon.numero} : ${ancienStatut} → ${statutBon}`,
+      clientIp,
+      {
+        action: 'UPDATE_BON_STATUT',
+        bonId: bon.id,
+        bonNumero: bon.numero,
+        ancienStatut,
+        nouveauStatut: statutBon,
+        numeroFacture: numeroFacture || bon.numeroFacture
+      }
+    );
+
+    await transaction.commit();
+
+    // Recharger le bon avec ses relations pour la réponse
+    const bonMisAJour = await db.Bon.findByPk(bonId, {
+      include: [
+        { model: db.Panier, include: [{ model: db.ArticlePanier, include: [{ model: db.Produit }] }] },
+        { model: db.Client },
+        { model: db.Fournisseur }
+      ]
+    });
+
+    return res.json({
+      success: true,
+      message: `Statut du bon mis à jour avec succès`,
+      bon: bonMisAJour
+    });
+
+  } catch (error) {
+    if (transaction && !transaction.finished) {
+      await transaction.rollback();
+    }
+    console.error('Erreur updateStatutBon:', error);
+    return res.status(500).json({ 
+      success: false,
+      message: 'Erreur lors de la mise à jour du statut',
+      error: error.message 
+    });
+  }
+};
+
 exports.updateTypeBon = async (req, res) => {
   try {
     const authUser = req.user;
@@ -1063,434 +1152,6 @@ exports.supprimerFichier = async (req, res) => {
   }
 };
 
-exports.createBonComplet = async (req, res) => {
-  const transaction = await db.sequelize.transaction();
-  
-  try {
-    const authUser = req.user;
-
-    if (!authUser) {
-      return res.status(401).json({ message: "Non authentifié" });
-    }
-    const { bon, panier, articles, paiement, code_structure, magasinId, agentId, fournisseurId, clientId, typeEntite } = req.body;
-    
-    // Validation
-    if (!bon || !panier || !articles || !code_structure || !magasinId || !agentId || !typeEntite) {
-      await transaction.rollback();
-      return res.status(400).json({ error: 'Données incomplètes' });
-    }
-
-    let nouveauBon;
-    let nouveauPanier;
-    let articlesCrees;
-
-    console.log(`Création bon - Type: ${bon.type}, Entité: ${typeEntite}, Statut: ${bon.statutBon}`);
-
-    // ==============================
-    // LOGIQUE SPÉCIFIQUE POUR LES BROUILLONS
-    // ==============================
-    
-    if (bon.id) {
-      // Mise à jour d'un bon existant
-      nouveauBon = await db.Bon.findByPk(bon.id, { transaction });
-      if (!nouveauBon) {
-        await transaction.rollback();
-        return res.status(404).json({ error: 'Bon introuvable' });
-      }
-      
-      // Préparer les données et mettre à jour le bon
-      const bonData = await statutManager.preparerDonneesBon(bon, typeEntite, clientId, fournisseurId);
-      await nouveauBon.update(bonData, { transaction });
-      
-      // Mettre à jour le panier
-      nouveauPanier = await db.Panier.findOne({ where: { bonId: nouveauBon.id }, transaction });
-      if (nouveauPanier) {
-        await nouveauPanier.update({
-          //...panier,
-          totalHT: panier.totalHT || 0,
-          tva: panier.tva || 0,
-          totalTTC: panier.totalTTC || 0,
-          statut: panier.statut || 'validé',
-        }, { transaction });
-        
-
-        // 🔥 CORRECTION : Mettre à jour les articles existants au lieu de tout supprimer/recréer
-        await this.mettreAJourArticlesExistants(nouveauPanier.id, articles, code_structure, transaction);
-      }
-        // Supprimer les anciens articles et créer les nouveaux
-        /* await db.ArticlePanier.destroy({ where: { panierId: nouveauPanier.id }, transaction });
-        
-        articlesCrees = await db.ArticlePanier.bulkCreate(
-          articles.map(article => ({ 
-            ...article, 
-            panierId: nouveauPanier.id, 
-            code_structure 
-          })),
-          { transaction }
-        );
-      } */
-      
-      // Créer historique si le statut a changé
-      if (bonData.statutBon && bonData.statutBon !== nouveauBon.statutBon) {
-        await statutManager.creerHistoriqueStatut(
-          nouveauBon.id,
-          nouveauBon.statutBon,
-          bonData.statutBon,
-          agentId,
-          'Mise à jour du statut du bon',
-          code_structure,
-          transaction
-        );
-      }
-    } else {
-      // ==============================
-      // Création d'un NOUVEAU bon avec statut "brouillon"
-      // ==============================
-      const bonData = await statutManager.preparerDonneesBon(
-        { ...bon, statutBon: 'brouillon' }, // Forcer le statut brouillon pour les nouveaux
-        typeEntite, 
-        clientId, 
-        fournisseurId
-      );
-      
-      // Créer le bon
-      nouveauBon = await db.Bon.create(
-        { 
-          ...bonData, 
-          code_structure, 
-          magasinId, 
-          agentId, 
-          clientId, 
-          fournisseurId, 
-          typeEntite 
-        },
-        { transaction }
-      );
-
-      // Créer le panier avec statut "en_cours"
-      nouveauPanier = await db.Panier.create(
-        { 
-          ...panier, 
-          bonId: nouveauBon.id, 
-          code_structure, 
-          magasinId, 
-          agentId, 
-          clientId, 
-          fournisseurId, 
-          typeEntite: typeEntite,
-          statut: 'en_cours' // Statut initial du panier
-        },
-        { transaction }
-      );
-
-      // Créer les articles (peut être vide pour un brouillon)
-      articlesCrees = await db.ArticlePanier.bulkCreate(
-        articles.map(article => ({ 
-          ...article, 
-          panierId: nouveauPanier.id, 
-          code_structure 
-        })),
-        { transaction }
-      );
-
-      // Créer historique de création
-      await statutManager.creerHistoriqueStatut(
-        nouveauBon.id,
-        'création',
-        nouveauBon.statutBon,
-        agentId,
-        'Création du bon en brouillon',
-        code_structure,
-        transaction
-      );
-    }
-
-    // ==============================
-    // TRAITEMENT SELON LE STATUT FINAL
-    // ==============================
-    const statutFinal = nouveauBon.statutBon;
-    
-    // Si le bon passe de "brouillon" à "validé", traiter les impacts métier
-    if (statutFinal === 'validé') {
-      if (typeEntite === 'fournisseur') {
-        await this.traiterBonFournisseur(nouveauBon, articles, magasinId, agentId, code_structure, transaction);
-      } else if (typeEntite === 'client') {
-        await this.traiterBonClient(nouveauBon, articles, magasinId, agentId, code_structure, transaction);
-      }
-    }
-
-    // Créer paiement si avance et bon validé
-    let paiementCree = null;
-    if (paiement && nouveauBon.avance > 0 && statutFinal === 'validé') {
-      paiementCree = await db.Paiement.create({ 
-        ...paiement, 
-        montant: nouveauBon.avance, 
-        bonId: nouveauBon.id, 
-        panierId: nouveauPanier.id, 
-        code_structure, 
-        magasinId, 
-        date: new Date() 
-      }, { transaction });
-    }
-
-    // Valider transaction
-    await transaction.commit();
-    
-    res.status(201).json({
-      message: 'Bon créé/mis à jour avec succès',
-      bon: nouveauBon,
-      panier: nouveauPanier,
-      articles: articlesCrees,
-      paiement: paiementCree,
-      typeEntite: typeEntite
-    });
-    
-  } catch (error) {
-    await transaction.rollback();
-    console.error('Erreur création bon complet:', error);
-    res.status(500).json({ error: 'Erreur lors de la création du bon', details: error.message });
-  }
-};
-
-// Méthode pour mettre à jour les articles existants
-exports.mettreAJourArticlesExistants = async (panierId, nouveauxArticles, code_structure, transaction) => {
-  try {
-    // Récupérer les articles existants
-    const articlesExistants = await db.ArticlePanier.findAll({
-      where: { panierId },
-      transaction
-    });
-
-    const resultats = [];
-
-    // Pour chaque nouvel article
-    for (const nouvelArticle of nouveauxArticles) {
-      if (nouvelArticle.id) {
-        //ARTICLE EXISTANT : Mettre à jour
-        const articleExistant = articlesExistants.find(art => art.id === nouvelArticle.id);
-        if (articleExistant) {
-          await articleExistant.update({
-            quantite: nouvelArticle.quantite,
-            prixUnitaire: nouvelArticle.prixUnitaire,
-            prixAchatUnitaire: nouvelArticle.prixAchatUnitaire,
-            prixVenteUnitaire: nouvelArticle.prixVenteUnitaire
-            // Ne pas mettre à jour l'ID ou produitId
-          }, { transaction });
-          resultats.push(articleExistant);
-        }
-      } else {
-        //NOUVEL ARTICLE : Créer
-        const articleCree = await db.ArticlePanier.create({
-          ...nouvelArticle,
-          panierId,
-          code_structure
-        }, { transaction });
-        resultats.push(articleCree);
-      }
-    }
-
-    //SUPPRIMER les articles qui n'existent plus dans la nouvelle liste
-    const nouveauxIds = nouveauxArticles.map(art => art.id).filter(id => id);
-    const articlesASupprimer = articlesExistants.filter(art => !nouveauxIds.includes(art.id));
-    
-    for (const articleASupprimer of articlesASupprimer) {
-      await articleASupprimer.destroy({ transaction });
-    }
-
-    return resultats;
-
-  } catch (error) {
-    console.error('Erreur mise à jour articles:', error);
-    throw error;
-  }
-};
-
-// Nouvelle méthode pour gérer les changements de statut du panier
-exports.changerStatutPanier = async (req, res) => {
-  const transaction = await db.sequelize.transaction();
-  
-  try {
-    const authUser = req.user;
-
-    if (!authUser) {
-      return res.status(401).json({ message: "Non authentifié" });
-    }
-
-    const { panierId, nouveauStatut, confirmation } = req.body;
-    
-    if (!panierId || !nouveauStatut) {
-      await transaction.rollback();
-      return res.status(400).json({ error: 'Données incomplètes' });
-    }
-
-    const panier = await db.Panier.findByPk(panierId, { 
-      include: [db.Bon],
-      transaction 
-    });
-
-    if (!panier) {
-      await transaction.rollback();
-      return res.status(404).json({ error: 'Panier introuvable' });
-    }
-
-    // Logique pour l'annulation avec confirmation
-    if (nouveauStatut === 'annulé') {
-      if (!confirmation) {
-        await transaction.rollback();
-        return res.status(200).json({ 
-          demandeConfirmation: true,
-          message: 'Voulez-vous vraiment annuler ce panier ? Cela supprimera également le bon associé.'
-        });
-      }
-      
-      // Supprimer le panier et le bon
-      await db.ArticlePanier.destroy({ where: { panierId }, transaction });
-      await panier.destroy({ transaction });
-      await db.Bon.destroy({ where: { id: panier.bonId }, transaction });
-      
-      await transaction.commit();
-      return res.json({ message: 'Panier et bon annulés avec succès' });
-    }
-
-    // Mettre à jour le statut du panier
-    await panier.update({ statut: nouveauStatut }, { transaction });
-
-    // Si le panier est validé, mettre à jour le statut du bon
-    if (nouveauStatut === 'validé' && panier.Bon) {
-      await panier.Bon.update({ statutBon: 'validé' }, { transaction });
-    }
-
-    await transaction.commit();
-    res.json({ message: 'Statut du panier mis à jour avec succès', panier });
-    
-  } catch (error) {
-    await transaction.rollback();
-    console.error('Erreur changement statut panier:', error);
-    res.status(500).json({ error: 'Erreur lors du changement de statut', details: error.message });
-  }
-};
-
-/**
- * Traitement spécifique pour les bons fournisseurs
- */
-exports.traiterBonFournisseur = async (bon, articles, magasinId, agentId, code_structure, transaction) => {
-  const statut = bon.statutBon;
-  const typeBon = bon.type;
-
-  console.log(`🏭 Traitement bon fournisseur - Type: ${typeBon}, Statut: ${statut}`);
-
-  switch (typeBon) {
-    case 'commande':
-      // COMMANDE FOURNISSEUR: Aucun impact immédiat sur le stock
-      // Seulement vérification et réservation si nécessaire
-      if (['commandé', 'expédié'].includes(statut)) {
-        await stockManager.verifierDisponibiliteStock(articles, magasinId, code_structure, 'commande', 'fournisseur', transaction);
-        
-        // Réservation pour préparation réception
-        await reservationService.gererReservationsStock(articles, bon, magasinId, agentId, code_structure, transaction);
-      }
-      break;
-
-    case 'livraison':
-      // LIVRAISON FOURNISSEUR: Impact sur le stock uniquement après validation
-      if (['livré', 'validé', 'facturé'].includes(statut)) {
-        // Vérification stock
-        await stockManager.verifierDisponibiliteStock(articles, magasinId, code_structure, 'livraison', 'fournisseur', transaction);
-        
-        // Libération des réservations précédentes
-        await reservationService.gererReservationsStock(articles, bon, magasinId, agentId, code_structure, transaction);
-        
-        // Mouvements physiques (entrée en stock)
-        await Promise.all(
-          articles.map(article =>
-            mouvementService.traiterMouvementStock(article, bon, magasinId, agentId, code_structure, transaction)
-          )
-        );
-
-        // Mise à jour du fournisseur
-        await statutManager.mettreAJourEntite(bon, 'fournisseur', null, bon.fournisseurId, transaction);
-      }
-      break;
-
-    case 'retour':
-      // RETOUR FOURNISSEUR: Sortie de stock après validation
-      if (['retourné', 'validé'].includes(statut)) {
-        // Vérification stock disponible
-        await stockManager.verifierDisponibiliteStock(articles, magasinId, code_structure, 'retour', 'fournisseur', transaction);
-        
-        // Mouvements physiques (sortie de stock)
-        await Promise.all(
-          articles.map(article =>
-            mouvementService.traiterMouvementStock(article, bon, magasinId, agentId, code_structure, transaction)
-          )
-        );
-
-        // Ajustement du fournisseur
-        await statutManager.mettreAJourEntite(bon, 'fournisseur', null, bon.fournisseurId, transaction);
-      }
-      break;
-
-    default:
-      console.log(`Type de bon fournisseur non géré: ${typeBon}`);
-  }
-};
-
-/**
- * Traitement spécifique pour les bons clients
- */
-exports.traiterBonClient = async (bon, articles, magasinId, agentId, code_structure, transaction) => {
-  const statut = bon.statutBon;
-  const typeBon = bon.type;
-
-  console.log(`👤 Traitement bon client - Type: ${typeBon}, Statut: ${statut}`);
-
-  switch (typeBon) {
-    case 'commande':
-      // COMMANDE CLIENT: Réservation immédiate du stock
-      if (['commandé', 'expédié'].includes(statut)) {
-        // Vérification stock disponible
-        await stockManager.verifierDisponibiliteStock(articles, magasinId, code_structure, 'commande', 'client', transaction);
-        
-        // Réservation du stock
-        await reservationService.gererReservationsStock(articles, bon, magasinId, agentId, code_structure, transaction);
-      }
-
-      // LIVRAISON/RÉALISATION: Impact physique sur le stock
-      if (['livré', 'validé', 'facturé', 'payé'].includes(statut)) {
-        // Libération des réservations
-        await reservationService.gererReservationsStock(articles, bon, magasinId, agentId, code_structure, transaction);
-        
-        // Mouvements physiques (sortie de stock)
-        await Promise.all(
-          articles.map(article =>
-            mouvementService.traiterMouvementStock(article, bon, magasinId, agentId, code_structure, transaction)
-          )
-        );
-
-        // Mise à jour du client
-        await statutManager.mettreAJourEntite(bon, 'client', bon.clientId, null, transaction);
-      }
-      break;
-
-    case 'retour':
-      // RETOUR CLIENT: Entrée en stock après validation
-      if (['retourné', 'validé'].includes(statut)) {
-        // Mouvements physiques (entrée en stock)
-        await Promise.all(
-          articles.map(article =>
-            mouvementService.traiterMouvementStock(article, bon, magasinId, agentId, code_structure, transaction)
-          )
-        );
-
-        // Ajustement du client (avoir)
-        await statutManager.mettreAJourEntite(bon, 'client', bon.clientId, null, transaction);
-      }
-      break;
-
-    default:
-      console.log(`Type de bon client non géré: ${typeBon}`);
-  }
-};
 
 // Dans le contrôleur
 exports.getBonsBrouillons = async (req, res) => {
@@ -1511,52 +1172,6 @@ exports.getBonsBrouillons = async (req, res) => {
     });
     res.json(bons);
   } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.supprimerBonComplet = async (req, res) => {
-  const transaction = await db.sequelize.transaction();
-  try {
-    const authUser = req.user;
-
-    if (!authUser) {
-      return res.status(401).json({ message: "Non authentifié" });
-    }
-    const { bonId } = req.params;
-    
-    const bon = await db.Bon.findByPk(bonId, { 
-      include: [db.Panier],
-      transaction 
-    });
-    
-    if (!bon) {
-      await transaction.rollback();
-      return res.status(404).json({ error: 'Bon introuvable' });
-    }
-    
-    // Supprimer dans l'ordre
-    if (bon.Panier) {
-      await db.ArticlePanier.destroy({ 
-        where: { panierId: bon.Panier.id }, 
-        transaction 
-      });
-      await db.Panier.destroy({ 
-        where: { id: bon.Panier.id }, 
-        transaction 
-      });
-    }
-    
-    await db.Bon.destroy({ 
-      where: { id: bonId }, 
-      transaction 
-    });
-    
-    await transaction.commit();
-    res.json({ message: 'Bon et éléments associés supprimés avec succès' });
-    
-  } catch (error) {
-    await transaction.rollback();
     res.status(500).json({ error: error.message });
   }
 };

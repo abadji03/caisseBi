@@ -39,6 +39,9 @@ router.delete('/:id',authenticateToken, bonController.deleteBon);
 //Mettre à jour le statut du bon
 router.patch('/:id/statut',authenticateToken, bonController.updateStatutBon);
 
+// Mettre à jour le statut d'un bon
+router.patch('/:id/bis/statut', authenticateToken, bonController.updateStatutBon);
+
 //Mettre à jour le type du bon
 router.patch('/:id/type',authenticateToken, bonController.updateTypeBon);
 
@@ -66,9 +69,9 @@ router.post('/upload-fichier', upload.single('fichier'), bonController.uploadFic
 // Supprimer un fichier
 router.delete('/:bonId/fichier',authenticateToken, bonController.supprimerFichier);
 
-router.post('/brouillon',authenticateToken, bonController.createBonComplet);
+//router.post('/brouillon',authenticateToken, bonController.createBonComplet);
 router.get('/brouillons/:code_structure', authenticateToken, bonController.getBonsBrouillons);
-router.post('/panier/statut', authenticateToken, bonController.changerStatutPanier);
-router.delete('/complet/:bonId', authenticateToken, bonController.supprimerBonComplet);
+//router.post('/panier/statut', authenticateToken, bonController.changerStatutPanier);
+//router.delete('/complet/:bonId', authenticateToken, bonController.supprimerBonComplet);
 
 module.exports = router;

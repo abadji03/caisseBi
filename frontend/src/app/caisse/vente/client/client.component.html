@@ -16,6 +16,18 @@
       </button>
       <button
         class="nav-link"
+        id="nav-facture-tab"
+        data-bs-toggle="tab"
+        data-bs-target="#nav-facture"
+        type="button"
+        role="tab"
+        aria-controls="nav-facture"
+        aria-selected="false"
+      >
+        Gestion des factures
+      </button>
+      <button
+        class="nav-link"
         id="nav-bons-tab"
         data-bs-toggle="tab"
         data-bs-target="#nav-bons"
@@ -427,6 +439,7 @@
               [entite]="selectedClient"
               [startDate]="startDate"
               [endDate]="endDate"
+              [isAdmin]="isAdmin"
               (onLivrerBon)="onLivrerBon($event)"
               (onAnnulerBon)="onAnnulerBon($event)"
               (onRetournerBon)="onRetournerBon($event)"
@@ -438,6 +451,21 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Onglet gestions des factures -->
+    <div
+      class="tab-pane fade"
+      id="nav-facture"
+      role="tabpanel"
+      aria-labelledby="nav-facture-tab"
+      tabindex="0"
+    >
+    <app-facture
+        [code_structure]="code_structure"
+        [isAdmin]="isAdmin"
+        [typeEntite]="typeEntite"
+      ></app-facture>
     </div>
 
     <!-- Onglet Historique des bons -->

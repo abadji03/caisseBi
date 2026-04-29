@@ -35,19 +35,19 @@
         Utilisateurs
       </button>
       <button class="nav-link" id="v-pills-actions-tab" data-bs-toggle="pill" data-bs-target="#v-pills-actions" type="button" role="tab" aria-controls="v-pills-actions" aria-selected="false">Actions utilisateurs </button>
-      <!-- <button
+      <button
         class="nav-link"
-        id="v-pills-droit-permission-tab"
+        id="v-pills-import-donnees-tab"
         data-bs-toggle="pill"
-        data-bs-target="#v-pills-droit-permission"
+        data-bs-target="#v-pills-import-donnees"
         type="button"
         role="tab"
-        aria-controls="v-pills-droit-permission"
+        aria-controls="v-pills-import-donnees"
         aria-selected="false"
-        droit-permission
+        import-donnees
       >
-        Droits et permissions
-      </button> -->
+        Importer des données
+      </button>
       <!-- <button class="nav-link" id="v-pills-messages-tab" data-bs-toggle="pill" data-bs-target="#v-pills-messages" type="button" role="tab" aria-controls="v-pills-messages" aria-selected="false">Messages</button>
       <button class="nav-link" id="v-pills-settings-tab" data-bs-toggle="pill" data-bs-target="#v-pills-settings" type="button" role="tab" aria-controls="v-pills-settings" aria-selected="false">Settings</button> -->
     </div>
@@ -59,7 +59,12 @@
         aria-labelledby="v-pills-general-tab"
         tabindex="0"
       >
-        <app-structure></app-structure>
+        <app-structure
+        [isGeneralAdmin]="isAdminGeneral"
+        [code_structure]="code_structure"
+        [currentStructureId]="structure_id"
+        [isAdminStructure]="isAdminStructure"
+        ></app-structure>
       </div> 
       <div
         class="tab-pane fade"
@@ -77,18 +82,17 @@
         [isAdminStructure]="isAdminStructure"
         [code_structure]="code_structure"
         >
-
         </app-historique>
       </div>
-      <!-- <div
+      <div
         class="tab-pane fade"
-        id="v-pills-droit-permission"
+        id="v-pills-import-donnees"
         role="tabpanel"
-        aria-labelledby="v-pills-droit-permission-tab"
+        aria-labelledby="v-pills-import-donnees-tab"
         tabindex="0"
       >
-        <app-roles-permissions></app-roles-permissions>
-      </div> -->
+        <app-import></app-import>
+      </div>
       <!-- <div class="tab-pane fade" id="v-pills-messages" role="tabpanel" aria-labelledby="v-pills-messages-tab" tabindex="0">...</div>
       <div class="tab-pane fade" id="v-pills-settings" role="tabpanel" aria-labelledby="v-pills-settings-tab" tabindex="0">...</div> -->
     </div>

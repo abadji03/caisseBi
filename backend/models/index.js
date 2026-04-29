@@ -542,14 +542,17 @@ db.Facture.belongsTo(db.Client, { foreignKey: 'clientId' });
 db.Magasin.hasMany(db.Facture, { foreignKey: 'magasinId' });
 db.Facture.belongsTo(db.Magasin, { foreignKey: 'magasinId' });
 
+db.Fournisseur.hasMany(db.Facture, { foreignKey: 'fournisseurId' });
+db.Facture.belongsTo(db.Fournisseur, { foreignKey: 'fournisseurId' });
+
 db.Bon.hasMany(db.Facture, { foreignKey: 'bonId' });
 db.Facture.belongsTo(db.Bon, { foreignKey: 'bonId' });
 
 db.Panier.hasMany(db.Facture, { foreignKey: 'panierId' });
 db.Facture.belongsTo(db.Panier, { foreignKey: 'panierId' });
 
-db.Facture.hasMany(db.Paiement, { foreignKey: 'factureId' });
-db.Paiement.belongsTo(db.Facture, { foreignKey: 'factureId' });
+/* db.Facture.hasMany(db.Paiement, { foreignKey: 'factureId' });
+db.Paiement.belongsTo(db.Facture, { foreignKey: 'factureId' }); */
 
 //Exportation de l'objet `db` contenant Sequelize, la connexion, et tous les modèles
 module.exports = db;

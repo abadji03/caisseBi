@@ -1,4 +1,4 @@
-import { Component, EventEmitter, inject, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component,inject, Input, OnDestroy, OnInit } from '@angular/core';
 import { Categorie, Depense } from '../../../modeles/finance.model';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, finalize, Subject, takeUntil } from 'rxjs';
@@ -6,6 +6,7 @@ import { DepencesService, DepensesFilter, DepensesResponse } from '../../../serv
 import { ToastrService } from 'ngx-toastr';
 import { CommonModule } from '@angular/common';
 import { ModePaiement } from '../../../modeles/paiement.model';
+import { CategoriesDepencesRecettesService } from '../../../services/categories-depences-recettes.service';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare let bootstrap: any; // Déclaration pour Bootstrap
@@ -19,7 +20,7 @@ declare let bootstrap: any; // Déclaration pour Bootstrap
 })
 export class DepensesComponent implements OnInit, OnDestroy {
 
-  @Input() categories: Categorie[] = [];
+  categories: Categorie[] = [];
   @Input() code_structure: string | null = null;
   @Input() magasinId: number | null = null;
   @Input() agentId: number | null = null;
@@ -27,9 +28,9 @@ export class DepensesComponent implements OnInit, OnDestroy {
   @Input() modesPaiement : ModePaiement [] = [];
 
 
-  @Output() categoryAction = new EventEmitter<{ action: string; category: Categorie }>();
+  /* @Output() categoryAction = new EventEmitter<{ action: string; category: Categorie }>();
   @Output() depenseAction = new EventEmitter<{ action: string; depense: Depense }>();
-  @Output() refreshCategories = new EventEmitter<void>();
+  @Output() refreshCategories = new EventEmitter<void>(); */
 
    // Données
   depenses: Depense[] = [];
@@ -65,7 +66,8 @@ export class DepensesComponent implements OnInit, OnDestroy {
   depenseForm!: FormGroup;
 
   // États
-  isLoading = false;
+  isLoadingDepenses = false;
+  isLoadingCategorie = false;
   isLoadingStats = false;
   errorMessage = '';
 
@@ -79,6 +81,7 @@ export class DepensesComponent implements OnInit, OnDestroy {
   private depenseService = inject(DepencesService);
   private toastr = inject(ToastrService);
   private searchSubject = new Subject<string>();
+  private categorieService = inject(CategoriesDepencesRecettesService);
   
 
   // Pour le template
@@ -112,7 +115,11 @@ export class DepensesComponent implements OnInit, OnDestroy {
   // Ouvrir le modal
   openStatsModal(): void {
     const modalElement = document.getElementById('statsModal');
-    this.loadDepenses();
+    //this.loadDepenses();
+    // NE PAS recharger les données si elles existent déjà
+    if (!this.stats && !this.isLoadingStats) {
+      this.loadDepenses();
+    }
     if (modalElement) {
       const modal = new bootstrap.Modal(modalElement);
       modal.show();
@@ -147,35 +154,11 @@ export class DepensesComponent implements OnInit, OnDestroy {
   /**
    * Charger les dépenses
    */
-  /* loadDepenses(): void {
-    if (!this.code_structure) return;
-
-    this.isLoading = true;
-    this.errorMessage = '';
-
-    this.depenseService.getDepensesByStructure(this.code_structure)
-      .pipe(
-        takeUntil(this.destroy$),
-        finalize(() => this.isLoading = false)
-      )
-      .subscribe({
-        next: (depenses) => {
-          this.depenses = depenses;
-          this.filteredDepenses = [...this.depenses];
-          this.toastr.success(`${depenses.length} dépenses chargées`);
-        },
-        error: (err) => {
-          this.errorMessage = 'Erreur lors du chargement des dépenses';
-          this.toastr.error(this.errorMessage);
-          console.error('Erreur chargement dépenses:', err);
-        }
-      });
-  }
- */
+  
 loadDepenses(): void {
     if (!this.code_structure) return;
 
-    this.isLoading = true;
+    this.isLoadingDepenses = true;
     this.errorMessage = '';
 
     const filters: DepensesFilter = {
@@ -191,7 +174,7 @@ loadDepenses(): void {
     this.depenseService.getDepensesByStructureBis(this.code_structure, filters)
       .pipe(
         takeUntil(this.destroy$),
-        finalize(() => this.isLoading = false)
+        finalize(() => this.isLoadingDepenses = false)
       )
       .subscribe({
         next: (response: DepensesResponse) => {
@@ -211,6 +194,40 @@ loadDepenses(): void {
           this.errorMessage = 'Erreur lors du chargement des dépenses';
           this.toastr.error(this.errorMessage);
           console.error('Erreur chargement dépenses:', err);
+        }
+      });
+  }
+
+  /**
+   * Charger les catégories (données partagées)
+   */
+  loadCategories(): void {
+    if (!this.code_structure) return;
+    
+    this.isLoadingCategorie = true;
+    this.errorMessage = '';
+
+    this.categorieService.getAllByStructure(this.code_structure)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.isLoadingCategorie = false;
+        })
+      )
+      .subscribe({
+        next: (categories) => {
+
+          // Séparation selon le type
+          this.categories = categories.filter(
+            cat => cat.type === 'DEPENSE'
+          );
+
+          console.log('Catégories chargées:', categories.length);
+        },
+        error: (err) => {
+          this.errorMessage = 'Erreur lors du chargement des catégories';
+          this.toastr.error(this.errorMessage);
+          console.error('Erreur chargement catégories:', err);
         }
       });
   }
@@ -249,22 +266,7 @@ loadDepenses(): void {
   /**
    * Gestionnaire de recherche
    */
-  /* onSearchChange(): void {
-    if (!this.searchTerm) {
-      this.filteredDepenses = [...this.depenses];
-    } else {
-      const term = this.searchTerm.toLowerCase();
-      this.filteredDepenses = this.depenses.filter(depense =>
-        this.getCategoryName(depense.categoryId).toLowerCase().includes(term) ||
-        depense.type.toLowerCase().includes(term) ||
-        depense.montant.toString().includes(term) ||
-        new Date(depense.date).toLocaleDateString().toLowerCase().includes(term) ||
-        (depense.description && depense.description.toLowerCase().includes(term))
-      );
-    }
-    this.currentPage = 1;
-  } */
-
+  
   onSearchChange(searchTerm: string): void {
     this.searchSubject.next(searchTerm);
   }
@@ -345,7 +347,7 @@ getMontantParMode(mode: string): number {
       return;
     }
 
-    this.isLoading = true;
+    this.isLoadingDepenses = true;
     
     const formData = new FormData();
     const depenseData = this.depenseForm.value;
@@ -381,7 +383,7 @@ getMontantParMode(mode: string): number {
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => {
-          this.isLoading = false; // S'exécute dans tous les cas
+          this.isLoadingDepenses = false; // S'exécute dans tous les cas
         })
       )
       .subscribe({
@@ -389,7 +391,8 @@ getMontantParMode(mode: string): number {
           this.toastr.success('Dépense enregistrée avec succès');
           this.loadDepenses();
           this.cancelForm();
-          this.depenseAction.emit({ action: 'created', depense: this.selectedDepense! });
+          //this.depenseAction.emit({ action: 'created', depense: this.selectedDepense! });
+          console.log({ action: 'created', depense: this.selectedDepense! });
         },
         error: (err) => {
           this.toastr.error('Erreur lors de l\'enregistrement');
@@ -404,7 +407,7 @@ getMontantParMode(mode: string): number {
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => {
-          this.isLoading = false; // S'exécute dans tous les cas
+          this.isLoadingDepenses = false; // S'exécute dans tous les cas
         })
       )
       .subscribe({
@@ -412,7 +415,8 @@ getMontantParMode(mode: string): number {
           this.toastr.success('Dépense modifiée avec succès');
           this.loadDepenses();
           this.cancelForm();
-          this.depenseAction.emit({ action: 'updated', depense: this.selectedDepense! });
+          //this.depenseAction.emit({ action: 'updated', depense: this.selectedDepense! });
+          console.log({ action: 'updated', depense: this.selectedDepense! });
         },
         error: (err) => {
           this.toastr.error('Erreur lors de la modification');
@@ -430,17 +434,18 @@ getMontantParMode(mode: string): number {
 
     if (!confirm(`Voulez-vous vraiment annuler cette dépense ?`)) return;
 
-    this.isLoading = true;
+    this.isLoadingDepenses = true;
     this.depenseService.updateStatut(depense.id,'annulé')
       .pipe(
         takeUntil(this.destroy$),
-        finalize(() => this.isLoading = false)
+        finalize(() => this.isLoadingDepenses = false)
       )
       .subscribe({
         next: () => {
           this.toastr.success('Dépense annulée avec succès');
           this.loadDepenses();
-          this.depenseAction.emit({ action: 'deleted', depense });
+          //this.depenseAction.emit({ action: 'deleted', depense });
+          console.log({ action: 'deleted', depense });
         },
         error: (err) => {
           this.toastr.error('Erreur lors de la suppression');

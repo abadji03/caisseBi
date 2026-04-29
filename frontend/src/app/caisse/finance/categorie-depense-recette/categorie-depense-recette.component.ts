@@ -1,4 +1,4 @@
-import { Component, EventEmitter, inject, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component,inject, Input, OnDestroy, OnInit } from '@angular/core';
 import { Categorie } from '../../../modeles/finance.model';
 import { User } from '../../../modeles/user.model';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -18,8 +18,8 @@ export class CategorieDepenseRecetteComponent implements OnInit, OnDestroy {
   @Input() code_structure: string | null = null;
   @Input() currentUser: User | null = null;
 
-  @Output() categoryAction = new EventEmitter<{ action: string; category: Categorie }>();
-  @Output() categoriesChange = new EventEmitter<void>();
+  /* @Output() categoryAction = new EventEmitter<{ action: string; category: Categorie }>();
+  @Output() categoriesChange = new EventEmitter<void>(); */
 
   // Données
   categories: Categorie[] = [];
@@ -142,7 +142,7 @@ export class CategorieDepenseRecetteComponent implements OnInit, OnDestroy {
             this.searchTerm = response.filtres.search;
           }
           
-          this.categoriesChange.emit();
+          //this.categoriesChange.emit();
           console.log('Catégories chargées:', response.items.length);
         },
         error: (err) => {
@@ -276,7 +276,8 @@ export class CategorieDepenseRecetteComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (newCategory) => {
           this.toastr.success('Catégorie créée avec succès');
-          this.categoryAction.emit({ action: 'created', category: newCategory });
+          //this.categoryAction.emit({ action: 'created', category: newCategory });
+          console.log({ action: 'created', category: newCategory });
           this.loadCategories(); // Recharger la liste avec pagination
           this.closeForm();
         },
@@ -295,7 +296,8 @@ export class CategorieDepenseRecetteComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (updatedCategory) => {
           this.toastr.success('Catégorie modifiée avec succès');
-          this.categoryAction.emit({ action: 'updated', category: updatedCategory });
+          //this.categoryAction.emit({ action: 'updated', category: updatedCategory });
+          console.log({ action: 'updated', category: updatedCategory });
           this.loadCategories(); // Recharger la liste avec pagination
           this.closeForm();
         },
@@ -321,7 +323,8 @@ export class CategorieDepenseRecetteComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           this.toastr.success('Catégorie supprimée avec succès');
-          this.categoryAction.emit({ action: 'deleted', category });
+          //this.categoryAction.emit({ action: 'deleted', category });
+          console.log({ action: 'deleted', category });
           this.loadCategories(); // Recharger la liste avec pagination
         },
         error: (err) => {
@@ -348,7 +351,8 @@ export class CategorieDepenseRecetteComponent implements OnInit, OnDestroy {
         next: (response) => {
           category.isActive = response.isActive;
           this.toastr.success(`Catégorie ${action}ée avec succès`);
-          this.categoryAction.emit({ action: 'toggled', category });
+          //this.categoryAction.emit({ action: 'toggled', category });
+          console.log({ action: 'toggled', category });
           
           // Si on masque les inactives et qu'on vient de désactiver, recharger
           if (!this.filters.showInactive && !response.isActive) {

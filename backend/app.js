@@ -118,6 +118,8 @@ app.use('/api/kpi-caisse', require('./routers/kpiCaisse.routes'));
 app.use('/api/rapport-financier', require('./routers/rapportFinancier.routes'));
 app.use('/api/rapport-stock', require('./routers/rapportsStocks.routes'));
 app.use('/api/logs', require('./routers/logger.routes'));
+app.use('/api/factures', require('./routers/facture.routes'));
+app.use('/api/imports', require('./routers/import.routes'));
 
 
 

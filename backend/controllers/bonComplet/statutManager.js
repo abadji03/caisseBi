@@ -70,6 +70,9 @@ class StatutManager {
       }
     }
 
+    if (bon.numeroFacture) {
+      bonData.numeroFacture = bon.numeroFacture;
+    }
     return bonData;
   }
 

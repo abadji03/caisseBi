@@ -1,4 +1,4 @@
-import { Component, EventEmitter, inject, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component,inject, Input, OnDestroy, OnInit } from '@angular/core';
 import { Categorie, Recette } from '../../../modeles/finance.model';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, finalize, Subject, takeUntil } from 'rxjs';
@@ -6,6 +6,7 @@ import { RecettesFilter, RecettesResponse, RecettesService } from '../../../serv
 import { ToastrService } from 'ngx-toastr';
 import { CommonModule } from '@angular/common';
 import { ModePaiement } from '../../../modeles/paiement.model';
+import { CategoriesDepencesRecettesService } from '../../../services/categories-depences-recettes.service';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare let bootstrap: any; // En haut du fichier
@@ -20,16 +21,16 @@ declare let bootstrap: any; // En haut du fichier
 })
 export class RecettesComponent implements OnInit, OnDestroy {
 
-  @Input() categories: Categorie[] = [];
+  categories: Categorie[] = [];
   @Input() code_structure: string | null = null;
   @Input() magasinId: number | null = null;
   @Input() agentId: number | null = null;
   @Input() isAdmin = false;
   @Input() modesPaiement : ModePaiement [] = [];
 
-  @Output() categoryAction = new EventEmitter<{ action: string; category: Categorie }>();
+ /*  @Output() categoryAction = new EventEmitter<{ action: string; category: Categorie }>();
   @Output() recetteAction = new EventEmitter<{ action: string; recette: Recette }>();
-  @Output() refreshCategories = new EventEmitter<void>();
+  @Output() refreshCategories = new EventEmitter<void>(); */
 
    // Données
   recettes: Recette[] = [];
@@ -64,7 +65,8 @@ export class RecettesComponent implements OnInit, OnDestroy {
   recetteForm!: FormGroup;
 
   // États
-  isLoading = false;
+  isLoadingRecette = false;
+  isLoadingCategorie = false;
   errorMessage = '';
 
   // Options pour les selects
@@ -76,6 +78,7 @@ export class RecettesComponent implements OnInit, OnDestroy {
   private recetteService = inject(RecettesService);
   private toastr = inject(ToastrService);
   private searchSubject = new Subject<string>();
+   private categorieService = inject(CategoriesDepencesRecettesService);
 
   // Pour le template
   Math = Math;
@@ -119,41 +122,14 @@ export class RecettesComponent implements OnInit, OnDestroy {
   /**
    * Charger les recettes
    */
-  /* loadRecettes(): void {
-    if (!this.code_structure) return;
-
-    this.isLoading = true;
-    this.errorMessage = '';
-
-    this.recetteService.getByStructure(this.code_structure)
-      .pipe(
-        takeUntil(this.destroy$),
-        finalize(() => this.isLoading = false)
-      )
-      .subscribe({
-        next: (recettes) => {
-          console.log('Liste des recette chargées',recettes)
-          this.recettes = recettes;
-          this.filteredRecettes = [...this.recettes];
-          this.toastr.success(`${recettes.length} recettes chargées`);
-          console.log('Recettes chargées:', recettes);
-        },
-        error: (err) => {
-          this.errorMessage = 'Erreur lors du chargement des recettes';
-          this.toastr.error(this.errorMessage);
-          console.error('Erreur chargement recettes:', err);
-        }
-      });
-  }
- */
-
+ 
   loadRecettes(): void {
     if (!this.code_structure) {
       console.error('code_structure est null');
       return;
     }
 
-    this.isLoading = true;
+    this.isLoadingRecette = true;
     this.errorMessage = '';
 
     const filters: RecettesFilter = {
@@ -170,7 +146,7 @@ export class RecettesComponent implements OnInit, OnDestroy {
     this.recetteService.getByStructureBis(this.code_structure, filters)
       .pipe(
         takeUntil(this.destroy$),
-        finalize(() => this.isLoading = false)
+        finalize(() => this.isLoadingRecette = false)
       )
       .subscribe({
         next: (response: RecettesResponse) => {
@@ -197,6 +173,38 @@ export class RecettesComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Charger les catégories (données partagées)
+   */
+  loadCategories(): void {
+    if (!this.code_structure) return;
+    
+    this.isLoadingCategorie = true;
+    this.errorMessage = '';
+
+    this.categorieService.getAllByStructure(this.code_structure)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.isLoadingCategorie= false;
+        })
+      )
+      .subscribe({
+        next: (categories) => {
+
+          this.categories = categories.filter(
+            cat => cat.type === 'RECETTE'
+          );
+          
+          console.log('Catégories chargées:', categories.length);
+        },
+        error: (err) => {
+          this.errorMessage = 'Erreur lors du chargement des catégories';
+          this.toastr.error(this.errorMessage);
+          console.error('Erreur chargement catégories:', err);
+        }
+      });
+  }
+  /**
    * Appliquer les filtres
    */
   applyFilters(): void {
@@ -222,7 +230,11 @@ export class RecettesComponent implements OnInit, OnDestroy {
   // Méthode pour ouvrir le modal
   openStatsModal(): void {
     const modalElement = document.getElementById('statsModal');
-    this.loadRecettes();
+    //this.loadRecettes();
+    // NE PAS recharger les données si elles existent déjà
+    if (!this.stats && !this.isLoadingRecette) {
+      this.loadRecettes();
+    }
     if (modalElement) {
       const modal = new bootstrap.Modal(modalElement);
       modal.show();
@@ -238,23 +250,6 @@ export class RecettesComponent implements OnInit, OnDestroy {
   /**
    * Gestionnaire de recherche
    */
-  /* onSearchChange(): void {
-    if (!this.searchTerm) {
-      this.filteredRecettes = [...this.recettes];
-    } else {
-      const term = this.searchTerm.toLowerCase().trim();
-      this.filteredRecettes = this.recettes.filter(recette =>
-        this.getCategoryName(recette.categoryId).toLowerCase().includes(term) ||
-        recette.montant.toString().includes(term) ||
-        new Date(recette.date).toLocaleDateString().toLowerCase().includes(term) ||
-        (recette.description && recette.description.toLowerCase().includes(term)) ||
-        (recette.paymentMode && recette.paymentMode.toLowerCase().includes(term))
-      );
-    }
-    this.currentPage = 1;
-  }
- */
-  
   onSearchChange(searchTerm: string): void {
     this.searchSubject.next(searchTerm);
   }
@@ -371,7 +366,7 @@ export class RecettesComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.isLoading = true;
+    this.isLoadingRecette = true;
     
     // Créer FormData pour envoyer les données
     const formData = new FormData();
@@ -410,13 +405,14 @@ export class RecettesComponent implements OnInit, OnDestroy {
     this.recetteService.createRecette(formData)
       .pipe(
         takeUntil(this.destroy$),
-        finalize(() => this.isLoading = false)
+        finalize(() => this.isLoadingRecette = false)
     )
       .subscribe({
         next: (newRecette) => {
           this.toastr.success('Recette enregistrée avec succès');
+          console.log('Recette enregistrée avec succès',newRecette);
           this.loadRecettes(); // Recharger la liste
-          this.recetteAction.emit({ action: 'created', recette: newRecette });
+          //this.recetteAction.emit({ action: 'created', recette: newRecette });
           this.cancelForm();
         },
         error: (err) => {
@@ -433,25 +429,27 @@ export class RecettesComponent implements OnInit, OnDestroy {
    * Mettre à jour une recette existante
    */
   private updateRecette(formData: FormData): void {
+    //this.isLoading = true;
     this.recetteService.updateRecette(this.selectedRecette!.id!, formData)
       .pipe(
         takeUntil(this.destroy$),
-        finalize(() => this.isLoading = false)
+        finalize(() => this.isLoadingRecette = false)
       )
       .subscribe({
         next: (updatedRecette) => {
           this.toastr.success('Recette modifiée avec succès');
+          console.log('Recette modifiée avec succès',updatedRecette);
           this.loadRecettes(); // Recharger la liste
-          this.recetteAction.emit({ action: 'updated', recette: updatedRecette });
+          //this.recetteAction.emit({ action: 'updated', recette: updatedRecette });
           this.cancelForm();
         },
         error: (err) => {
           console.error('Détails de l\'erreur:', err);
           this.toastr.error(err.error?.message || 'Erreur lors de la modification de la recette');
         },
-        complete: () => {
+        /* complete: () => {
           this.isLoading = false;
-        }
+        } */
       });
   }
 
@@ -464,17 +462,18 @@ export class RecettesComponent implements OnInit, OnDestroy {
 
     if (!confirm(`Voulez-vous vraiment annuler cette recette ?`)) return;
 
-    this.isLoading = true;
+    this.isLoadingRecette = true;
     this.recetteService.updateStatut(recette.id, 'annulé')
       .pipe(
         takeUntil(this.destroy$),
-        finalize(() => this.isLoading = false)
+        finalize(() => this.isLoadingRecette = false)
       )
       .subscribe({
         next: () => {
           this.toastr.success('Recette annulée avec succès');
+          console.log('Recette annulée avec succès');
           this.loadRecettes();
-          this.recetteAction.emit({ action: 'deleted', recette });
+          //this.recetteAction.emit({ action: 'deleted', recette });
         },
         error: (err) => {
           this.toastr.error('Erreur lors de la suppression');
@@ -626,26 +625,6 @@ export class RecettesComponent implements OnInit, OnDestroy {
   /**
    * Pagination - Obtenir les éléments de la page courante
    */
-  /* get paginatedRecettes() {
-    const start = (this.currentPage - 1) * this.itemsPerPage;
-    return this.filteredRecettes.slice(start, start + this.itemsPerPage);
-  } */
-
-  /**
-   * Pagination - Obtenir le nombre total de pages
-   */
-  /* get totalPages(): number {
-    return Math.ceil(this.filteredRecettes.length / this.itemsPerPage);
-  } */
-
-  /**
-   * Pagination - Changer de page
-   */
-  /* onPageChange(page: number): void {
-    if (page >= 1 && page <= this.totalPages) {
-      this.currentPage = page;
-    }
-  } */
   onPageChange(page: number): void {
       if (page >= 1 && page <= this.totalPages) {
         this.filters.page = page;

@@ -144,6 +144,17 @@ export class BonsService {
       .pipe(catchError(err => this.handleError(err)));
   }
 
+  // services/bons.service.ts
+  updateStatutBonBis(id: number, statutBon: string, numeroFacture?: string): Observable<Bon> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const body: any = { statutBon };
+    if (numeroFacture) {
+      body.numeroFacture = numeroFacture;
+    }
+    return this.http.patch<Bon>(`${API_URL}/${id}/bis/statut`, body, { headers: this.getHeaders() })
+      .pipe(catchError(err => this.handleError(err)));
+  }
+
   updateTypetBon(id: number, type: string): Observable<Bon> {
     return this.http.patch<Bon>(`${API_URL}/${id}/type`, { type }, { headers: this.getHeaders() })
       .pipe(catchError(err => this.handleError(err)));

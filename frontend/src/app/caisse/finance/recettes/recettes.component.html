@@ -242,7 +242,7 @@
         <i class="bi bi-arrow-counterclockwise"></i> Réinitialiser le filtre
       </button>
       <!-- Bouton pour ouvrir le modal des statistiques -->
-      <button type="button" class="btn btn-sm btn-outline-dark" (click)="openStatsModal()" *ngIf="stats && !isLoading">
+      <button type="button" class="btn btn-sm btn-outline-dark" (click)="openStatsModal()" *ngIf="stats && !isLoadingRecette">
         <i class="bi bi-graph-up me-2"></i>
         Voir les statistiques
         <!-- <span class="badge bg-light text-dark ms-2">{{ stats.globales.totalRecettes }}</span> -->
@@ -319,7 +319,7 @@
 
   <!-- Bouton Nouvelle recette -->
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <div class="text-muted" *ngIf="!isLoading">
+    <div class="text-muted" *ngIf="!isLoadingRecette">
       Total: <strong>{{ totalItems }}</strong> recette(s)
     </div>
     <div class="d-flex align-items-center">
@@ -410,11 +410,11 @@
 
         <!-- Boutons -->
         <div class="d-flex justify-content-end gap-2">
-          <button type="submit" class="btn btn-outline-success" [disabled]="recetteForm.invalid || isLoading">
-            <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+          <button type="submit" class="btn btn-outline-success" [disabled]="recetteForm.invalid || isLoadingRecette">
+            <span *ngIf="isLoadingRecette" class="spinner-border spinner-border-sm me-2"></span>
             {{ selectedRecette ? 'Modifier' : 'Enregistrer' }}
           </button>
-          <button type="button" class="btn btn-outline-secondary" (click)="cancelForm()" [disabled]="isLoading">
+          <button type="button" class="btn btn-outline-secondary" (click)="cancelForm()" [disabled]="isLoadingRecette">
             Annuler
           </button>
         </div>
@@ -423,7 +423,7 @@
   </div>
 
   <!-- Indicateur de chargement -->
-  <div *ngIf="isLoading" class="text-center my-5">
+  <div *ngIf="isLoadingRecette" class="text-center my-5">
     <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
       <span class="visually-hidden">Chargement...</span>
     </div>
@@ -431,7 +431,7 @@
   </div>
 
   <!-- Tableau des recettes -->
-  <div *ngIf="!isLoading" class="table-responsive">
+  <div *ngIf="!isLoadingRecette" class="table-responsive">
     <table class="table table-striped table-hover">
       <thead class="table-dark">
         <tr>

@@ -1,5 +1,5 @@
-<div class="container-fluid mt-1">
-  <!-- Navigation des onglets -->
+<!--<div class="container-fluid mt-1">
+   Navigation des onglets 
   <ul class="nav nav-tabs">
     <li class="nav-item">
       <button
@@ -30,14 +30,14 @@
         Gestion des catégories
       </button>
     </li>
-  </ul>
+  </ul>-->
 
-  <!-- Message d'erreur global -->
+  <!-- Message d'erreur global 
   <div *ngIf="errorMessage" class="alert alert-danger mt-3">
     {{ errorMessage }}
-  </div>
+  </div>-->
 
-  <!-- Indicateur de chargement global -->
+  <!-- Indicateur de chargement global 
   <div *ngIf="isLoading" class="text-center mt-1">
     <div class="spinner-border text-primary" role="status">
       <span class="visually-hidden">Chargement...</span>
@@ -45,9 +45,9 @@
     <p class="mt-2">Chargement des données...</p>
   </div>
 
-  <div class="tab-content mt-1">
-    <!-- Onglet Dépenses -->
-    <div *ngIf="activeTab === 'depenses'" class="tab-pane active">
+  <div class="tab-content mt-1">-->
+    <!-- Onglet Dépenses 
+    <div [hidden]="activeTab !== 'depenses'" class="tab-pane active">
       <app-depenses
         [categories]="categoriesDepense"
         [code_structure]="code_structure"
@@ -59,10 +59,10 @@
         (depenseAction)="onDepenseAction($event)"
         (refreshCategories)="refreshCategories()"
       ></app-depenses>
-    </div>
+    </div>-->
 
-    <!-- Onglet Recettes -->
-    <div *ngIf="activeTab === 'recettes'" class="tab-pane active">
+    <!-- Onglet Recettes
+    <div [hidden]="activeTab !== 'recettes'" class="tab-pane active">
       <app-recettes
         [categories]="categoriesRecette"
         [code_structure]="code_structure"
@@ -74,14 +74,64 @@
         (recetteAction)="onRecetteAction($event)"
         (refreshCategories)="refreshCategories()"
       ></app-recettes>
-    </div>
+    </div> -->
 
-    <!-- Onglet Gestion des catégories -->
-    <div *ngIf="activeTab === 'categories'" class="tab-pane active">
+    <!-- Onglet Gestion des catégories 
+    <div [hidden]="activeTab !== 'categories'" class="tab-pane active">
       <app-categorie-depense-recette
         [code_structure]="code_structure"
         (categoryAction)="onCategoryAction($event)"
         (categoriesChange)="refreshCategories()"
+      ></app-categorie-depense-recette>
+    </div>
+  </div>
+</div>-->
+
+<div class="container-fluid mt-4">
+  <nav>
+    <div class="nav nav-tabs" id="nav-tab" role="tablist">
+      <a class="nav-link active" id="nav-depenses-tab" data-bs-toggle="tab" href="#nav-depenses" 
+         role="tab" aria-controls="nav-depenses" aria-selected="true">
+        Dépenses
+      </a>
+      <a class="nav-link" id="nav-recette-tab" data-bs-toggle="tab" href="#nav-recette" 
+         role="tab" aria-controls="nav-recette" aria-selected="false">
+        Recettes
+      </a>
+      <a class="nav-link" id="nav-categorie-tab" data-bs-toggle="tab" href="#nav-categorie" 
+         role="tab" aria-controls="nav-categorie" aria-selected="false">
+        Gestion des catégories
+      </a>
+    </div>
+  </nav>
+
+  <div class="tab-content mt-4" id="nav-tabContent">
+    <div class="tab-pane fade show active" id="nav-depenses" role="tabpanel" 
+         aria-labelledby="nav-depenses-tab">
+      <app-depenses
+        [code_structure]="code_structure"
+        [magasinId]="magasinId"
+        [agentId]="agentId"
+        [isAdmin]="isAdmin"
+        [modesPaiement]="modesPaiement"
+      ></app-depenses>
+    </div>
+
+    <div class="tab-pane fade" id="nav-recette" role="tabpanel" 
+         aria-labelledby="nav-recette-tab">
+      <app-recettes
+        [code_structure]="code_structure"
+        [magasinId]="magasinId"
+        [agentId]="agentId"
+        [isAdmin]="isAdmin"
+        [modesPaiement]="modesPaiement"
+      ></app-recettes>
+    </div>
+
+    <div class="tab-pane fade" id="nav-categorie" role="tabpanel" 
+         aria-labelledby="nav-categorie-tab">
+      <app-categorie-depense-recette
+        [code_structure]="code_structure"
       ></app-categorie-depense-recette>
     </div>
   </div>

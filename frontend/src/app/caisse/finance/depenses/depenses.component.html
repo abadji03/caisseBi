@@ -13,7 +13,7 @@
         <div class="modal-body">
           <div class="row mb-4">
             <div class="col-12">
-              <div class="row mb-4" *ngIf="stats && !isLoading">
+              <div class="row mb-4" *ngIf="stats && !isLoadingDepenses">
                 <!-- Première ligne : 4 cartes principales -->
                 <div class="col-md-3 mb-3">
                   <div class="card bg-primary text-white h-100">
@@ -57,7 +57,7 @@
               </div>
 
               <!-- Deuxième ligne : Statistiques par statut -->
-              <div class="row mb-4" *ngIf="stats && !isLoading">
+              <div class="row mb-4" *ngIf="stats && !isLoadingDepenses">
                 <div class="col-12">
                   <div class="card">
                     <div class="card-header bg-light">
@@ -99,7 +99,7 @@
               </div>
 
               <!-- Troisième ligne : Statistiques détaillées -->
-              <div class="row mb-4" *ngIf="stats && !isLoading">
+              <div class="row mb-4" *ngIf="stats && !isLoadingDepenses">
                 <!-- Répartition par mode de paiement -->
                 <div class="col-md-6 mb-3">
                   <div class="card h-100">
@@ -178,7 +178,7 @@
               </div>
 
               <!-- Quatrième ligne : Top catégories et statistiques supplémentaires -->
-              <div class="row mb-4" *ngIf="stats && !isLoading">
+              <div class="row mb-4" *ngIf="stats && !isLoadingDepenses">
                 <!-- Top 5 catégories -->
                 <div class="col-md-6 mb-3">
                   <div class="card h-100">
@@ -371,7 +371,7 @@
 
   <!-- Bouton Nouvelle dépense -->
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <div class="text-muted" *ngIf="!isLoading">
+    <div class="text-muted" *ngIf="!isLoadingDepenses">
       Total: <strong>{{ totalItems }}</strong> dépense(s)
     </div>
     <div class="d-flex align-items-center">
@@ -470,11 +470,11 @@
         </div>
 
         <div class="d-flex justify-content-end gap-2">
-          <button type="submit" class="btn btn-outline-success" [disabled]="depenseForm.invalid || isLoading">
-            <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+          <button type="submit" class="btn btn-outline-success" [disabled]="depenseForm.invalid || isLoadingDepenses">
+            <span *ngIf="isLoadingDepenses" class="spinner-border spinner-border-sm me-2"></span>
             {{ selectedDepense ? 'Modifier' : 'Enregistrer' }}
           </button>
-          <button type="button" class="btn btn-outline-secondary" (click)="cancelForm()" [disabled]="isLoading">
+          <button type="button" class="btn btn-outline-secondary" (click)="cancelForm()" [disabled]="isLoadingDepenses">
             Annuler
           </button>
         </div>
@@ -482,7 +482,7 @@
     </div>
   </div>
 <!-- Indicateur de chargement -->
-  <div *ngIf="isLoading" class="text-center my-5">
+  <div *ngIf="isLoadingDepenses" class="text-center my-5">
     <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
       <span class="visually-hidden">Chargement...</span>
     </div>
@@ -505,7 +505,7 @@
 
   <!-- Tableau -->
   <!-- Tableau des dépenses -->
-  <div *ngIf="!isLoading" class="table-responsive">
+  <div *ngIf="!isLoadingDepenses" class="table-responsive">
     <table class="table table-striped table-hover">
       <thead class="table-dark">
         <tr>

@@ -92,11 +92,11 @@ exports.getByStructure = async (req, res) => {
     const code_structure = authUser.code_structure;
 
     // 🔥 Vérification : l’utilisateur doit appartenir à la structure demandée
-    if (authUser.code_structure !== code_structure) {
+    /* if (authUser.code_structure !== code_structure) {
       return res.status(403).json({
         message: "Accès interdit : structure non autorisée"
       });
-    }
+    } */
 
     // Vérifier rôle
     const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur"|| r.nom === "Administrateur secondaire");

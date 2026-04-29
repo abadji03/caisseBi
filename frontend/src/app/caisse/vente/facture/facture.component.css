@@ -1,0 +1,27 @@
+/* components/factures/factures.component.css */
+.badge {
+  font-size: 0.75rem;
+  padding: 0.35rem 0.65rem;
+}
+
+.table td {
+  vertical-align: middle;
+}
+
+.btn-group-sm .btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.modal.show {
+  display: block;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.card-header {
+  font-weight: 600;
+}
+
+.modal-lg {
+  max-width: 900px;
+}

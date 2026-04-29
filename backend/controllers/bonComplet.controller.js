@@ -363,7 +363,10 @@ exports.createBonComplet = async (req, res) => {
     });
 
   } catch (error) {
-    await transaction.rollback();
+   // await transaction.rollback();
+   if (!transaction.finished) {
+      await transaction.rollback();
+    }
     console.error('Erreur création bon complet:', error);
     //res.status(500).json({ error: 'Erreur lors de la création du bon', details: error.message });
     // ENREGISTRER L'HISTORIQUE D'ERREUR
@@ -431,7 +434,7 @@ exports.traiterBonFournisseur = async (bon, articles, magasinId, agentId, code_s
 
     case 'livraison':
       // LIVRAISON FOURNISSEUR: Impact sur le stock uniquement après validation
-      if (['validé', 'facturé'].includes(statut)) {
+      if (['validé'].includes(statut)) {
         // Vérification stock
         await stockManager.verifierDisponibiliteStock(articles, magasinId, code_structure, 'livraison', 'fournisseur', transaction);
         
@@ -476,6 +479,26 @@ exports.traiterBonFournisseur = async (bon, articles, magasinId, agentId, code_s
           { action: 'FOURNISSEUR_LIVRAISON_RETOURNEE', bonId: bon.id }
         );
       }
+      if (['facturé'].includes(statut)) {
+        // Mise à jour du client (déjà fait ou à faire)
+        //await statutManager.mettreAJourEntite(bon, 'client', bon.clientId, null, transaction);
+        
+        // Mettre à jour le numéro de facture sur le bon s'il est fourni
+        if (bon.numeroFacture) {
+          await bon.update({ 
+            numeroFacture: bon.numeroFacture,
+            //dateFacture: new Date()
+          }, { transaction });
+        }
+        
+        await HistoriqueService.enregistrerAction(
+          agentId,
+          `Bon client ${bon.numero} facturé - Facture: ${bon.numeroFacture || 'N/A'}`,
+          null,
+          { action: 'CLIENT_BON_FACTURE', bonId: bon.id, numeroFacture: bon.numeroFacture }
+        );
+      }
+      
       break;
 
     case 'retour':
@@ -546,7 +569,7 @@ exports.traiterBonClient = async (bon, articles, magasinId, agentId, code_struct
       }
 
       // LIVRAISON/RÉALISATION: Impact physique sur le stock
-      if (['livré','facturé'].includes(statut)) {
+      if (['livré'].includes(statut)) {
         // Libération des réservations
         await reservationService.gererReservationsStock(articles, bon, magasinId, agentId, code_structure, transaction);
         
@@ -605,6 +628,26 @@ exports.traiterBonClient = async (bon, articles, magasinId, agentId, code_struct
           { action: 'CLIENT_COMMANDE_ANNULEE', bonId: bon.id }
         );
       }
+
+      if (['facturé'].includes(statut)) {
+        // Mise à jour du client (déjà fait ou à faire)
+        //await statutManager.mettreAJourEntite(bon, 'client', bon.clientId, null, transaction);
+        
+        // Mettre à jour le numéro de facture sur le bon s'il est fourni
+        if (bon.numeroFacture) {
+          await bon.update({ 
+            numeroFacture: bon.numeroFacture,
+            //dateFacture: new Date()
+          }, { transaction });
+        }
+        
+        await HistoriqueService.enregistrerAction(
+          agentId,
+          `Bon client ${bon.numero} facturé - Facture: ${bon.numeroFacture || 'N/A'}`,
+          null,
+          { action: 'CLIENT_BON_FACTURE', bonId: bon.id, numeroFacture: bon.numeroFacture }
+        );
+      }
       break;
 
     case 'vente':
@@ -653,6 +696,26 @@ exports.traiterBonClient = async (bon, articles, magasinId, agentId, code_struct
           { action: 'CLIENT_VENTE_RETOURNEE', bonId: bon.id }
         );
       }
+
+      if (['facturé'].includes(statut)) {
+        // Mise à jour du client (déjà fait ou à faire)
+        //await statutManager.mettreAJourEntite(bon, 'client', bon.clientId, null, transaction);
+        
+        // Mettre à jour le numéro de facture sur le bon s'il est fourni
+        if (bon.numeroFacture) {
+          await bon.update({ 
+            numeroFacture: bon.numeroFacture,
+            //dateFacture: new Date()
+          }, { transaction });
+        }
+        
+        await HistoriqueService.enregistrerAction(
+          agentId,
+          `Bon client ${bon.numero} facturé - Facture: ${bon.numeroFacture || 'N/A'}`,
+          null,
+          { action: 'CLIENT_BON_FACTURE', bonId: bon.id, numeroFacture: bon.numeroFacture }
+        );
+      }
    
       break;
     case 'retour':
@@ -683,6 +746,25 @@ exports.traiterBonClient = async (bon, articles, magasinId, agentId, code_struct
       if (['validé'].includes(statut)) {
         // Pour un avoir validé, on met à jour le client et on crée l'avoir
         await statutManager.mettreAJourEntite(bon, 'client', bon.clientId, null, transaction);
+      }
+      if (['facturé'].includes(statut)) {
+        // Mise à jour du client (déjà fait ou à faire)
+        //await statutManager.mettreAJourEntite(bon, 'client', bon.clientId, null, transaction);
+        
+        // Mettre à jour le numéro de facture sur le bon s'il est fourni
+        if (bon.numeroFacture) {
+          await bon.update({ 
+            numeroFacture: bon.numeroFacture,
+            //dateFacture: new Date()
+          }, { transaction });
+        }
+        
+        await HistoriqueService.enregistrerAction(
+          agentId,
+          `Bon client ${bon.numero} facturé - Facture: ${bon.numeroFacture || 'N/A'}`,
+          null,
+          { action: 'CLIENT_BON_FACTURE', bonId: bon.id, numeroFacture: bon.numeroFacture }
+        );
       }
       
       break;

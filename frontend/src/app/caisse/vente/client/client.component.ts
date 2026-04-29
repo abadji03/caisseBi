@@ -31,6 +31,8 @@ import { StructureService } from '../../../services/structure.service';
 import { v4 as uuidv4 } from 'uuid';
 import { BonComponent } from '../../../sharedComposants/bon/bon.component';
 import { CategoriesDepencesRecettesService } from '../../../services/categories-depences-recettes.service';
+import { FactureComponent } from '../facture/facture.component';
+import { FactureService } from '../../../services/facture.service';
 
 
 @Component({
@@ -44,7 +46,9 @@ import { CategoriesDepencesRecettesService } from '../../../services/categories-
     BonComponent,
     ListeBonsComponent,
     ListeVersementsComponent,
-    ListeOperationsComponent],
+    ListeOperationsComponent,
+    FactureComponent
+  ],
   templateUrl: './client.component.html',
   styleUrl: './client.component.css'
 })
@@ -206,6 +210,7 @@ export class ClientComponent implements OnInit,OnDestroy {
   private structureService = inject(StructureService);
   private recetteService = inject(RecettesService);
   private categoriesService = inject(CategoriesDepencesRecettesService);
+  private factureService = inject(FactureService);
 
   Math = Math;
 
@@ -1540,16 +1545,331 @@ getNomMagasinSelectionne(): string {
     });
   }
 
-  onFacturerBon(bon: Bon): void {
-    if (!confirm(`Facturer le bon ${bon.numero} ?`)) return;
-    const numeroFacture = `FACT-${bon.numero}-${Date.now()}`;
-    this.changerStatutBon(bon, 'facturé', { numeroFacture });
+  /**
+   * Facturer un bon (générer une facture)
+   * @param bon - Le bon à facturer
+   */
+  /* onFacturerBon(bon: Bon): void {
+    // Vérifier que le bon n'est pas déjà facturé
+    if (bon.statutBon === 'facturé') {
+      this.toastr.warning(`Le bon ${bon.numero} est déjà facturé`);
+      return;
+    }
+    // Déterminer le type de facture en fonction du type de bon
+    const typeFacture = this.determinerTypeFacture(bon);
+    
+    // Message de confirmation personnalisé
+    const messageConfirmation = this.getConfirmationMessage(bon, typeFacture);
+    if (!confirm(messageConfirmation)) return;
+    
+    // Afficher un indicateur de chargement
+    this.isLoadingBon = true;
+    
+    // Appeler le service approprié selon le type
+    this.appelerCreationFacture(bon, typeFacture);
+  }
+ */
+
+  // client.component.ts
+
+onFacturerBon(bon: Bon): void {
+    // Éviter la double facturation
+    if (bon.statutBon === 'facturé') {
+      this.toastr.warning(`Le bon ${bon.numero} est déjà facturé`);
+      return;
+    }
+
+    // Vérifier le type et le statut
+    if (bon.type !== 'commande' && bon.type !== 'vente' && bon.type !== 'livraison') {
+      this.toastr.warning(`Ce type de bon (${bon.type}) ne peut pas être facturé`);
+      return;
+    }
+
+    if (bon.type === 'commande' && bon.statutBon !== 'livré') {
+      this.toastr.warning(`La commande doit être livrée avant d'être facturée`);
+      return;
+    }
+
+    if ((bon.type === 'vente' || bon.type === 'livraison') && bon.statutBon !== 'validé') {
+      this.toastr.warning(`Le bon doit être validé avant d'être facturé`);
+      return;
+    }
+
+    this.isLoadingBon = true;
+
+    // Créer la facture
+    let remise = 0;
+    const demandeRemise = confirm('Voulez-vous appliquer une remise sur cette facture ?');
+    if (demandeRemise) {
+      const remiseValue = prompt('Montant de la remise (en F CFA) :', '0');
+      if (remiseValue && !isNaN(parseFloat(remiseValue))) {
+        remise = parseFloat(remiseValue);
+      }
+    }
+
+    this.factureService.createFactureFromBon(
+      bon.id!,
+      remise,
+      `Facture pour bon ${bon.numero}`
+    ).subscribe({
+      next: (response) => {
+        this.toastr.success(`Facture ${response.facture.numero_facture} créée avec succès`);
+
+        // Mettre à jour le statut avec l'API simplifiée
+        this.bonService.updateStatutBonBis(bon.id!, 'facturé', response.facture.numero_facture)
+          .subscribe({
+            next: (result) => {
+              console.log('Bon mis à jour:', result);
+              
+              // Mettre à jour localement
+              const index = this.bons.findIndex(b => b.id === bon.id);
+              if (index !== -1) {
+                this.bons[index] = { ...this.bons[index], statutBon: 'facturé', numeroFacture: response.facture.numero_facture };
+              }
+              
+              // Ouvrir le PDF
+              this.openFacturePDF(response.facture.id, response.pdf);
+              
+              // Rafraîchir
+              this.rafraichirDonneesApresFacturation();
+            },
+            error: (err) => {
+              console.error('Erreur mise à jour statut bon:', err);
+              this.toastr.warning('Facture créée mais erreur lors de la mise à jour du statut');
+              this.openFacturePDF(response.facture.id, response.pdf);
+              this.rafraichirDonneesApresFacturation();
+            }
+          });
+      },
+      error: (err) => {
+        console.error('Erreur création facture:', err);
+        this.toastr.error(err.error?.message || 'Erreur lors de la création de la facture');
+        this.isLoadingBon = false;
+      }
+    });
+  }
+  /**
+   * Déterminer le type de facture en fonction du type de bon
+   */
+  private determinerTypeFacture(bon: Bon): 'commande' | 'vente' | 'achat' | null {
+    switch (bon.type?.toLowerCase()) {
+      case 'commande':
+        return 'commande';
+      case 'vente':
+      case 'livraison':
+        return 'vente';
+      case 'achat':
+        return 'achat';
+      default:
+        // Par défaut, si le bon est lié à un client, c'est une vente
+        if (bon.clientId) return 'vente';
+        // Si lié à un fournisseur, c'est un achat
+        if (bon.fournisseurId) return 'achat';
+        return null;
+    }
+  }
+
+  /**
+   * Obtenir le message de confirmation personnalisé
+   */
+  private getConfirmationMessage(bon: Bon, typeFacture: string | null): string {
+    const titre = this.getTypeBonLabel(bon.type);
+    
+    switch (typeFacture) {
+      case 'commande':
+        return `Générer un bon de commande pour ${titre} ${bon.numero} ?\n\n` +
+              `Cette opération va créer un document d'engagement sans impact sur la dette.`;
+      case 'vente':
+        return `Facturer le ${titre} ${bon.numero} ?\n\n` +
+              `Cette opération va créer une facture de vente.`;
+      case 'achat':
+        return `Facturer le ${titre} ${bon.numero} ?\n\n` +
+              `Cette opération va créer une facture d'achat.`;
+      default:
+        return `Facturer le ${titre} ${bon.numero} ?`;
+    }
+  }
+
+  /**
+   * Obtenir le libellé du type de bon
+   */
+  private getTypeBonLabel(type: string): string {
+    const labels: Record<string, string> = {
+      'commande': 'bon de commande',
+      'vente': 'bon de vente',
+      'livraison': 'bon de livraison',
+      'achat': 'bon d\'achat',
+      'retour': 'bon de retour'
+    };
+    return labels[type?.toLowerCase()] || 'bon';
+  }
+
+  /**
+   * Appeler la création de facture selon le type
+   */
+  private appelerCreationFacture(bon: Bon, typeFacture: 'commande' | 'vente' | 'achat' | null): void {
+    // Ajouter un petit délai pour permettre à l'utilisateur de voir le chargement
+    setTimeout(() => {
+      switch (typeFacture) {
+        case 'commande':
+          this.creerFactureCommande(bon);
+          break;
+        case 'vente':
+          this.creerFactureVente(bon);
+          break;
+       /*  case 'achat':
+          this.creerFactureAchat(bon);
+          break; */
+        default:
+          this.toastr.error('Type de bon non reconnu pour la facturation');
+          this.isLoadingBon = false;
+      }
+    }, 100);
+  }
+
+  /**
+   * Créer une facture de commande (bon de commande)
+   */
+  private creerFactureCommande(bon: Bon): void {
+    //if(!confirm(`Facturer le bon de commande avec la Réf: ${bon.numero}`)) return;
+    this.factureService.createFactureCommande(
+      bon.id!,
+      `Bon de commande généré depuis le système - Réf: ${bon.numero}`
+    ).subscribe({
+      next: (response) => {
+
+        console.log('Facture commande créer :', response);
+        this.toastr.success(`Bon de commande ${response.facture.numero_facture} créé avec succès`);
+        
+        // Mettre à jour le statut du bon
+        this.changerStatutBon(bon, 'facturé', { 
+          numeroFacture: response.facture.numero_facture,
+          //typeFacture: 'commande'
+        });
+        
+        // Ouvrir le PDF
+        this.openFacturePDF(response.facture.id, response.pdf);
+        
+        // Rafraîchir les données
+        this.rafraichirDonneesApresFacturation();
+      },
+      error: (err) => {
+        console.error('Erreur création bon de commande:', err);
+        this.toastr.error(err.error?.message || 'Erreur lors de la création du bon de commande');
+        this.isLoadingBon = false;
+      }
+    });
+  }
+
+  /**
+   * Créer une facture de vente
+   */
+  
+  private creerFactureVente(bon: Bon): void {
+  // Optionnel : demander une remise
+  let remise = 0;
+  const demandeRemise = confirm('Voulez-vous appliquer une remise sur cette facture ?');
+  
+  if (demandeRemise) {
+    const remiseValue = prompt('Montant de la remise (en F CFA) :', '0');
+    if (remiseValue && !isNaN(parseFloat(remiseValue))) {
+      remise = parseFloat(remiseValue);
+    }
+  }
+  this.factureService.createFactureFromBon(
+    bon.id!,
+    remise,
+    `Facture de vente pour bon ${bon.numero}`
+  )
+  .pipe(
+    takeUntil(this.destroy$), 
+    finalize(() => this.isLoadingBon = false)
+  )
+  .subscribe({
+    next: (response) => {
+      console.log('Facture vente créée :', response);
+
+      this.toastr.success(`Facture ${response.facture.numero_facture} créée avec succès`);
+      
+      // Mettre à jour le statut du bon AVEC le numéro de facture
+      // Utiliser la méthode changerStatutBon qui va correctement propager les données
+      this.changerStatutBon(bon, 'facturé', { 
+        numeroFacture: response.facture.numero_facture,
+        dateFacture: new Date()
+      });
+      
+      // Ouvrir le PDF
+      this.openFacturePDF(response.facture.id, response.pdf);
+      
+      // Rafraîchir les données
+      this.rafraichirDonneesApresFacturation();
+    },
+    error: (err) => {
+      console.error('Erreur création facture vente:', err);
+      this.toastr.error(err.error?.message || 'Erreur lors de la création de la facture');
+      //this.isLoadingBon = false; // S'assurer de réinitialiser isLoadingBon
+    }
+  });
+}
+
+  /**
+   * Ouvrir le PDF d'une facture
+   */
+  private openFacturePDF(factureId: number, pdfBase64?: string): void {
+    if (pdfBase64) {
+      // Si le PDF est renvoyé en base64
+      const blob = this.base64ToBlob(pdfBase64, 'application/pdf');
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      URL.revokeObjectURL(url);
+    } else {
+      // Sinon télécharger via le service
+      this.factureService.openPDF(factureId);
+    }
+  }
+
+  /**
+   * Convertir du base64 en Blob
+   */
+  private base64ToBlob(base64: string, contentType: string): Blob {
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], { type: contentType });
+  }
+
+  /**
+   * Rafraîchir les données après facturation
+   */
+  private rafraichirDonneesApresFacturation(): void {
+    // Recharger les bons pour mettre à jour le statut
+    this.loadBonsAvecPagination();
+    
+    // Recharger les opérations
+    this.loadOperations();
+    
+    // Recharger les clients pour mettre à jour les dettes
+    this.loadClientsWithPagination();
+    
+    // Réinitialiser l'état de chargement après un délai
+    setTimeout(() => {
+      this.isLoadingBon = false;
+      this.cdr.detectChanges();
+    }, 500);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private changerStatutBon(bon: Bon, nouveauStatut: string, extraData: any = {}): void {
     this.isLoadingBon = true;
-    const bonMiseAJour = { ...bon, ...extraData, statutBon: nouveauStatut };
+    const bonMiseAJour = { 
+      ...bon, 
+      ...extraData, 
+      statutBon: nouveauStatut,
+      numeroFacture: extraData.numeroFacture || bon.numeroFacture
+     };
     const bonCompletData = this.preparerDonneesPourMiseAJour(bonMiseAJour);
 
     this.bonService.createBonComplet(bonCompletData)

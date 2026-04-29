@@ -4,11 +4,12 @@ import { StructureComponent } from '../structure/structure.component';
 import { HistoriqueComponent } from '../historique/historique.component';
 import { Subject } from 'rxjs';
 import { AuthService } from '../../../services/auth.service';
+import { ImportComponent } from '../import/import.component';
 
 @Component({
   selector: 'app-parametres',
   standalone: true,
-  imports: [StructureComponent, UserComponent,HistoriqueComponent],
+  imports: [StructureComponent, UserComponent,HistoriqueComponent, ImportComponent],
   templateUrl: './parametres.component.html',
   styleUrl: './parametres.component.css',
 })
@@ -17,6 +18,7 @@ export class ParametresComponent implements OnInit, OnDestroy  {
     isAdminGeneral = false;
     isAdminStructure = false;
     code_structure : string|null = null;
+    structure_id : number|null = null;
     private destroy$ = new Subject<void>();
     private authService = inject(AuthService);
   
@@ -25,6 +27,7 @@ export class ParametresComponent implements OnInit, OnDestroy  {
         this.isAdminGeneral = this.authService.hasRole('Administrateur Général');
         this.isAdminStructure = (this.authService.hasRole('Administrateur') || this.authService.hasRole('Administrateur secondaire')) && !this.isAdminGeneral;
         this.code_structure = user.code_structure || null;
+        this.structure_id = user.structure_id || null;
       }); 
   
       

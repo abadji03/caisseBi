@@ -6,6 +6,25 @@ const Operation = db.Operation;
 // Méthode pour créer une opération à partir d'un bon
 exports.createFromBon = async (bon, transaction = null) => {
   try {
+
+    let statutOperation = bon.statutBon?.toUpperCase() || 'VALIDÉ';
+    
+    // Vérifier si une facture existe pour ce bon
+    const facture = await db.Facture.findOne({
+      where: { bonId: bon.id },
+      transaction
+    });
+    
+    if (facture) {
+      statutOperation = 'FACTURÉ';
+    }
+    
+    // Si le bon a un numeroFacture mais pas de facture, ignorer
+    if (bon.numeroFacture && !facture) {
+      console.warn(`⚠️ Bon ${bon.numero} a numeroFacture sans facture réelle`);
+      // Garder le statut original
+      statutOperation = bon.statutBon?.toUpperCase() || 'VALIDÉ';
+    }
     const operationData = {
       type: bon.type?.toUpperCase() || 'BON',
       bonId: bon.id,
@@ -16,7 +35,7 @@ exports.createFromBon = async (bon, transaction = null) => {
       agentId: bon.agentId,
       code_structure: bon.code_structure,
       montantPaye: bon.avance || 0,
-      statut: bon.statutBon?.toUpperCase() || 'brouillon',
+      statut: statutOperation, //bon.statutBon?.toUpperCase() || 'brouillon',
       dateOperation: bon.dateBon || bon.createdAt || new Date(),
       commentaire: `Bon ${bon.type} - ${bon.numero}`,
       numeroBon: bon.numero,
@@ -236,10 +255,16 @@ exports.synchroniserOperations = async (code_structure, transaction = null) => {
         code_structure,
         statutBon: { [Op.ne]: 'brouillon' } // Exclure les brouillons
       },
-      include: [{
+      include: [
+        {
         model: db.Operation,
         required: false // LEFT JOIN
-      }],
+      },
+      {
+          model: db.Facture,  // l'inclusion des factures
+          required: false
+        }
+    ],
       ...options
     });
 

@@ -39,6 +39,7 @@ import { structureGuard } from './guards/structure.guard';
 import { ParametresUsersAdminComponent } from './caisse/parametres/parametres-users-admin/parametres-users-admin.component';
 import { ClientComponent } from './caisse/vente/client/client.component';
 import { FournisseurComponent } from './caisse/finance/fournisseur/fournisseur.component';
+import { ImportComponent } from './caisse/parametres/import/import.component';
 //import { HistoriqueComponent } from './caisse/parametres/historique/historique.component';
 //import { FournisseurComponent } from './caisse/finance/fournisseur/fournisseur.component';
 /* import { LandingComponent } from './e-commerce/landing/landing.component';
@@ -248,6 +249,16 @@ export const routes: Routes = [
       {
         path: 'parametres',
         component: ParametresComponent,
+        canActivate: [roleGuard],
+        data: { 
+          roles: ['Administrateur','Administrateur secondaire'],
+          permissions: [PERMISSIONS.MANAGE_SETTINGS]
+        }
+      },
+
+      {
+        path: 'import-donnees',
+        component: ImportComponent,
         canActivate: [roleGuard],
         data: { 
           roles: ['Administrateur','Administrateur secondaire'],

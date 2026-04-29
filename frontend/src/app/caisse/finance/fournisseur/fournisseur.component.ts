@@ -33,6 +33,8 @@ import { PaiementComponent } from '../../../sharedComposants/paiement/paiement.c
 import { v4 as uuidv4 } from 'uuid';
 import { BonComponent } from '../../../sharedComposants/bon/bon.component';
 import { CategoriesDepencesRecettesService } from '../../../services/categories-depences-recettes.service';
+import { FactureService } from '../../../services/facture.service';
+import { FactureComponent } from '../../vente/facture/facture.component';
 
 @Component({
   selector: 'app-fournisseur',
@@ -45,7 +47,8 @@ import { CategoriesDepencesRecettesService } from '../../../services/categories-
     BonComponent,
     ListeBonsComponent,
     ListeVersementsComponent,
-    ListeOperationsComponent
+    ListeOperationsComponent,
+    FactureComponent
   ],
   templateUrl: './fournisseur.component.html',
   styleUrl: './fournisseur.component.css'
@@ -211,6 +214,7 @@ export class FournisseurComponent implements OnInit, OnDestroy {
   private structureService = inject(StructureService);
   private depensesService = inject(DepencesService);
   private categoriesService = inject(CategoriesDepencesRecettesService);
+  private factureService = inject(FactureService);
 
   Math = Math;
 
@@ -767,16 +771,6 @@ export class FournisseurComponent implements OnInit, OnDestroy {
   }
 
   // Obtenir le solde actuel en fonction du magasin sélectionné
-  /* getSoldeActuel(): number {
-    if (!this.selectedFournisseur) return 0;
-    
-    if (this.selectedMagasinId) {
-      const magasin = this.selectedFournisseur.Magasins?.find(m => m.id === this.selectedMagasinId);
-      return magasin?.MagasinFournisseur?.solde || 0;
-    }
-    return this.getSoldeTotal(this.selectedFournisseur);
-  } */
-
   getSoldeActuel(): number {
     if (!this.selectedFournisseur) return 0;
     
@@ -792,11 +786,6 @@ export class FournisseurComponent implements OnInit, OnDestroy {
   }
 
   // Obtenir le nom du magasin sélectionné
-  /* getNomMagasinSelectionne(): string {
-    if (!this.selectedMagasinId || !this.selectedFournisseur?.Magasins) return 'tous les magasins';
-    const magasin = this.selectedFournisseur.Magasins.find(m => m.id === this.selectedMagasinId);
-    return magasin?.nom || 'ce magasin';
-  } */
  getNomMagasinSelectionne(): string {
     const magasinIdAAfficher = this.selectedMagasinId ?? this.magasinId;
     
@@ -807,11 +796,6 @@ export class FournisseurComponent implements OnInit, OnDestroy {
   }
 
   // Gérer le changement de magasin
-  /* onMagasinChange(magasinId: number | null): void {
-    this.selectedMagasinId = magasinId;
-    this.loadOperations(); // Recharger les opérations filtrées par magasin
-  } */
-
   onMagasinChange(magasinId: number | null): void {
   // Si l'utilisateur n'est pas admin, ne pas permettre le changement
   if (!this.isAdmin) {
@@ -975,7 +959,7 @@ private mettreAJourSoldeFournisseurDansMap(fournisseur: Fournisseur): void {
       typeEntite: this.typeEntite
     };
 
-    this.bonService.creerBonBrouillon(bonBrouillonData)
+    this.bonService.createBonComplet(bonBrouillonData)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (result) => {
@@ -1383,11 +1367,148 @@ private createDepenseAvecCategorie(paiement: any, categoryCode: string): void {
     });
   }
 
-  onFacturerBon(bon: Bon): void {
-    if (!confirm(`Facturer le bon ${bon.numero} ?`)) return;
-    const numeroFacture = `FACT-${bon.numero}-${Date.now()}`;
-    this.changerStatutBon(bon, 'facturé', { numeroFacture });
+  /* onFacturerBon(bon: Bon): void {
+
+    if(!confirm(`Facturer le bon numéro ${bon.numero}`)) return;
+    // Éviter la double facturation
+    if (bon.statutBon === 'facturé') {
+      this.toastr.warning(`Le bon ${bon.numero} est déjà facturé`);
+      return;
+    }
+
+    // Vérifier que c'est un bon de livraison fournisseur ou commande livrée
+    if (bon.type !== 'livraison') {
+      this.toastr.warning(`Seuls les bons de livraison`);
+      return;
+    }
+
+    if (bon.type === 'livraison' && bon.statutBon !== 'validé') {
+      this.toastr.warning(`La livraison doit être validée avant d'être facturée`);
+      return;
+    }
+
+    this.isLoadingBon = true;
+    
+    // Appel direct à createFactureAchat
+    const fournisseurId = bon.fournisseurId || this.selectedFournisseur?.id;
+    const magasinId = this.magasinId || bon.magasinId;
+    
+    if (!fournisseurId) {
+      this.toastr.error('Fournisseur non identifié pour ce bon');
+      this.isLoadingBon = false;
+      return;
+    }
+    
+    this.factureService.createFactureAchat(
+      bon.id!,
+      fournisseurId,
+      magasinId ?? undefined,
+      0,
+      `Facture d'achat pour bon ${bon.numero}`
+    )
+    .pipe(
+      takeUntil(this.destroy$),
+      finalize(() => this.isLoadingBon = false)
+    )
+    .subscribe({
+      next: (response) => {
+        this.toastr.success(`Facture ${response.facture.numero_facture} créée avec succès`);
+        
+        // Mettre à jour le statut du bon
+        this.changerStatutBon(bon, 'facturé', { 
+          numeroFacture: response.facture.numero_facture
+        });
+        
+        // Ouvrir le PDF
+        this.openFacturePDF(response.facture.id, response.pdf);
+        
+        // Rafraîchir les données
+        this.rafraichirDonneesApresFacturation();
+      },
+      error: (err) => {
+        console.error('Erreur création facture:', err);
+        this.toastr.error(err.error?.message || 'Erreur lors de la création de la facture');
+        //this.isLoadingBon = false;
+      }
+    });
+  } */
+
+
+onFacturerBon(bon: Bon): void {
+
+  if(!confirm(`Facturer le bon numéro ${bon.numero}`)) return;
+  // Éviter la double facturation
+  if (bon.statutBon === 'facturé') {
+    this.toastr.warning(`Le bon ${bon.numero} est déjà facturé`);
+    return;
   }
+
+  // Vérifier que c'est un bon de livraison fournisseur
+  if (bon.type !== 'livraison') {
+    this.toastr.warning(`Seuls les bons de livraison peuvent être facturés`);
+    return;
+  }
+
+  if (bon.statutBon !== 'validé') {
+    this.toastr.warning(`Le bon de livraison doit être validé avant d'être facturé`);
+    return;
+  }
+
+  this.isLoadingBon = true;
+
+  // Créer d'abord la facture
+  const fournisseurId = bon.fournisseurId || this.selectedFournisseur?.id;
+  const magasinId = this.magasinId || bon.magasinId;
+
+  if (!fournisseurId) {
+    this.toastr.error('Fournisseur non identifié pour ce bon');
+    this.isLoadingBon = false;
+    return;
+  }
+
+  this.factureService.createFactureAchat(
+    bon.id!,
+    fournisseurId,
+    magasinId ?? undefined,
+    0,
+    `Facture d'achat pour bon ${bon.numero}`
+  ).subscribe({
+    next: (response) => {
+      this.toastr.success(`Facture ${response.facture.numero_facture} créée avec succès`);
+
+      // Puis mettre à jour le statut du bon avec l'API simplifiée
+      this.bonService.updateStatutBonBis(bon.id!, 'facturé', response.facture.numero_facture)
+        .subscribe({
+          next: (result) => {
+            console.log('Bon mis à jour:', result);
+            
+            // Mettre à jour le bon dans la liste locale
+            const index = this.bons.findIndex(b => b.id === bon.id);
+            if (index !== -1) {
+              this.bons[index] = { ...this.bons[index], statutBon: 'facturé', numeroFacture: response.facture.numero_facture };
+            }
+            
+            // Ouvrir le PDF
+            //this.openFacturePDF(response.facture.id, response.pdf);
+            
+            // Rafraîchir les données
+            this.rafraichirDonneesApresFacturation();
+          },
+          error: (err) => {
+            console.error('Erreur mise à jour statut bon:', err);
+            this.toastr.warning('Facture créée mais erreur lors de la mise à jour du statut du bon');
+            //this.openFacturePDF(response.facture.id, response.pdf);
+            this.rafraichirDonneesApresFacturation();
+          }
+        });
+    },
+    error: (err) => {
+      console.error('Erreur création facture:', err);
+      this.toastr.error(err.error?.message || 'Erreur lors de la création de la facture');
+      this.isLoadingBon = false;
+    }
+  });
+}
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private changerStatutBon(bon: Bon, nouveauStatut: string, extraData: any = {}): void {
@@ -1765,6 +1886,99 @@ private createDepenseAvecCategorie(paiement: any, categoryCode: string): void {
     return this.filteredOperations
       .filter(op => op.type === 'LIVRAISON')
       .reduce((total, op) => total + (this.safeNumber(op.Bon?.Panier?.totalTTC) || 0), 0);
+  }
+
+  /**
+   * Créer une facture d'achat
+   */
+  private creerFactureAchat(bon: Bon): void {
+    // Pour l'achat, on a besoin du fournisseur et du magasin
+    const fournisseurId = bon.fournisseurId || this.selectedFournisseur?.id;
+    const magasinId = this.magasinId || bon.magasinId;
+    
+    if (!fournisseurId) {
+      this.toastr.error('Fournisseur non identifié pour ce bon');
+      this.isLoadingBon = false;
+      return;
+    }
+    
+    this.factureService.createFactureAchat(
+      bon.id!,
+      fournisseurId,
+      magasinId ?? undefined,
+      0,
+      `Facture d'achat pour bon ${bon.numero}`
+    ).subscribe({
+      next: (response) => {
+        this.toastr.success(`Facture d'achat ${response.facture.numero_facture} créée avec succès`);
+        
+        // Mettre à jour le statut du bon
+        this.changerStatutBon(bon, 'facturé', { 
+          numeroFacture: response.facture.numero_facture,
+          typeFacture: 'achat'
+        });
+        
+        // Ouvrir le PDF
+        //this.openFacturePDF(response.facture.id, response.pdf);
+        
+        // Rafraîchir les données
+        this.rafraichirDonneesApresFacturation();
+      },
+      error: (err) => {
+        console.error('Erreur création facture achat:', err);
+        this.toastr.error(err.error?.message || 'Erreur lors de la création de la facture d\'achat');
+        this.isLoadingBon = false;
+      }
+    });
+  } 
+
+  /**
+   * Ouvrir le PDF d'une facture
+   */
+  private openFacturePDF(factureId: number, pdfBase64?: string): void {
+    if (pdfBase64) {
+      // Si le PDF est renvoyé en base64
+      const blob = this.base64ToBlob(pdfBase64, 'application/pdf');
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      URL.revokeObjectURL(url);
+    } else {
+      // Sinon télécharger via le service
+      this.factureService.openPDF(factureId);
+    }
+  }
+
+  /**
+   * Convertir du base64 en Blob
+   */
+  private base64ToBlob(base64: string, contentType: string): Blob {
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], { type: contentType });
+  }
+
+  /**
+   * Rafraîchir les données après facturation
+   */
+  private rafraichirDonneesApresFacturation(): void {
+    // Recharger les bons pour mettre à jour le statut
+    this.loadBonsAvecPagination();
+    
+    // Recharger les opérations
+    this.loadOperations();
+    
+    // Recharger les clients pour mettre à jour les dettes
+    this.loadData();
+    
+    // Réinitialiser l'état de chargement après un délai
+    setTimeout(() => {
+      this.isLoadingBon = false;
+      this.cdr.detectChanges();
+    }, 500);
   }
 
 }

@@ -128,7 +128,7 @@
                         </h4>
                         <small *ngIf="bon.type ==='avoir' || bon.statutBon ==='retourné partiellement'" >  {{bon.type ==='avoir' ? 'Montant avoir':'Montant retour'}} : {{bon.type ==='avoir' ? bon.montantAvoir +' F CFA': 'Voir bon retour correspondant'}}</small>
                         <!-- Actions du bon -->
-                        <div class="btn-group">
+                        <div *ngIf="!isAdmin" class="btn-group">
                           <button class="btn btn-outline-danger btn-sm me-1" (click)="onAnnulerBon.emit(bon)"
                                   *ngIf="bon.statutBon === 'validé' && bon.type ==='commande'">
                             <i class="bi bi-x-circle"></i> Annuler
@@ -150,7 +150,7 @@
                             <i class="bi bi-truck"></i> Livrer
                           </button>
                           <button class="btn btn-outline-info btn-sm me-1" (click)="onFacturerBon.emit(bon)"
-                                  *ngIf="bon.statutBon === 'validé'">
+                                  *ngIf="canFacturer(bon)">
                             <i class="bi bi-receipt"></i> Facturer
                           </button>
                           <button class="btn btn-outline-secondary btn-sm" (click)="onImprimerBon.emit(bon)">

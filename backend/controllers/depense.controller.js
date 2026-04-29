@@ -303,10 +303,10 @@ exports.getAllByStructure = async (req, res) => {
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
 
     if (!isAdminStructure && !isGerant) {
-    return res.status(403).json({
-      message: "Accès interdit : rôle insuffisant"
-    });
-}
+      return res.status(403).json({
+        message: "Accès interdit : rôle insuffisant"
+      });
+    }
 
     // Clause where par défaut (structure)
     let whereClause = {
