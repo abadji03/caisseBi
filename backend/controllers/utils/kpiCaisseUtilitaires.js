@@ -126,6 +126,9 @@ const getCAVenduBaseData = async ({
 
   /* =========================
      3️⃣ BONS RETOURNÉS PARTIELLEMENT
+     Règle de gestion : un retour (total ou partiel) DÉDUIT du chiffre
+     d'affaires — il ne génère pas de recette. Pour un bon partiellement
+     retourné, seule la partie restante (netAPayer - montantAvoir) compte.
   ========================== */
   const bonsRetourPartiel = await db.Bon.findAll({
     attributes: ['id', 'netAPayer', 'montantAvoir'],
@@ -164,10 +167,22 @@ const getCAVenduBaseData = async ({
 
   const totalVendu = totalCaisse + totalBonNormaux + totalRetourPartiel;
 
+  // Le ticket moyen doit refléter des PANIERS réels : pour les bons
+  // partiellement retournés on compte leurs paniers, pas les bons.
+  const bonsPartielIds = bonsRetourPartiel.map(b => b.id);
+  const nbPaniersRetourPartiel = bonsPartielIds.length
+    ? await Panier.count({
+        where: {
+          bonId: { [Op.in]: bonsPartielIds },
+          statut: { [Op.notIn]: ['annulé', 'retourné', 'en_cours'] }
+        }
+      })
+    : 0;
+
   const nombrePaniers =
     paniersCaisse.length +
     paniersBonNormaux.length +
-    bonsRetourPartiel.length;
+    nbPaniersRetourPartiel;
 
   return {
     totalVendu,
@@ -257,10 +272,13 @@ const getVentesCreditData = async ({ code_structure, periode, dateReference, mag
     dateCondition = { [Op.between]: [debutJournee, finJournee] };
   }
 
+  // Règle de gestion : un panier lié à un bon est une vente à CRÉDIT.
+  // Les bons brouillons (non finalisés) et annulés ne génèrent pas de créance.
   const whereBon = {
     code_structure,
     type: 'vente',
     typeEntite: 'client',
+    statutBon: { [Op.notIn]: ['annulé', 'brouillon'] },
     dateBon: dateCondition,
     ...(magasinId && { magasinId }),
     ...(agentId && { agentId })
