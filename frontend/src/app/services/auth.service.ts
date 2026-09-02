@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+﻿import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { BehaviorSubject, catchError, finalize, Observable, switchMap, tap, throwError } from 'rxjs';
@@ -6,6 +6,7 @@ import { JwtHelperService } from '@auth0/angular-jwt';
 import { NavigationItem, User } from '../modeles/user.model';
 import { NGXLogger } from 'ngx-logger';
 import { environment } from '../../environments/environment';
+import { NAVIGATION_CONFIG } from '../constantes/navigation.config';
 
 @Injectable({
   providedIn: 'root',
@@ -16,392 +17,10 @@ export class AuthService {
   public currentUser = this.currentUserSubject.asObservable();
   private jwtHelper = new JwtHelperService();
 
-  // Configuration complète des menus par rôle
-  private navigationConfig: Record<string, NavigationItem[]> = {
-    'Administrateur Général': [
-      /* {
-        label: 'Accueil',
-        icon: 'bi bi-house-door',
-        route: '/caisse-bi/overview',
-        titre: 'Accueil',
-        sousTitre: 'Vue d\'ensemble',
-        children: [
-          { label: 'Vue d\'ensemble', route: '/caisse-bi/overview', titre: 'Accueil', sousTitre: 'Vue d\'ensemble' },
-        ],
-      },
-      {
-        label: 'Ventes',
-        icon: 'bi-cash-stack',
-        route: '/caisse-bi/ventes',
-        titre: 'Ventes',
-        sousTitre: 'Gestion des ventes',
-        children: [
-          { label: 'Ventes', route: '/caisse-bi/ventes', titre: 'Ventes', sousTitre: 'Gestion des ventes' },
-          { label: 'Caisse', route: '/caisse-bi/caisse', titre: 'Ventes', sousTitre: 'Gestion de la caisse' },
-          { label: 'Clients', route: '/caisse-bi/clients', titre: 'Ventes', sousTitre: 'Gestion des clients' }
-        ]
-      },
-      {
-        label: 'Stock & Inventaire',
-        icon: 'bi-box',
-        route: '/caisse-bi/entrees-sorties',
-        titre: 'Stock & Inventaire',
-        sousTitre: 'Gestion des entrées/sorties',
-        children: [
-          { label: 'Entrées/Sorties', route: '/caisse-bi/entrees-sorties', titre: 'Stock & Inventaire', sousTitre: 'Gestion des entrées/sorties' },
-          { label: 'Stock', route: '/caisse-bi/stock', titre: 'Stock & Inventaire', sousTitre: 'Gestion du stock' },
-          { label: 'Catalogue', route: '/caisse-bi/catalogue-produits', titre: 'Stock & Inventaire', sousTitre: 'Gestion du catalogue' },
-        ]
-      },
-      {
-        label: 'Finance',
-        icon: 'bi-wallet',
-        route: '/caisse-bi/finance',
-        titre: 'Finance',
-        sousTitre: 'Gestion financière',
-        children: [
-          { label: 'Gestion Financière', route: '/caisse-bi/finance', titre: 'Finance', sousTitre: 'Gestion financière' },
-          { label: 'Fournisseurs', route: '/caisse-bi/fournisseurs', titre: 'Finance', sousTitre: 'Gestion des fournisseurs' },
-        ]
-      },
-      {
-        label: 'Rapports',
-        icon: 'bi-graph-up',
-        route: '/caisse-bi/rapport-financier',
-        titre: 'Rapports',
-        sousTitre: 'Rapport financier',
-        children: [
-          { label: 'Rapport financier', route: '/caisse-bi/rapport-financier', titre: 'Rapports', sousTitre: 'Rapport financier' },
-          { label: 'Rapport vente', route: '/caisse-bi/rapport-vente', titre: 'Rapports', sousTitre: 'Rapport de vente' },
-          { label: 'Rapport stock', route: '/caisse-bi/rapport-stk', titre: 'Rapports', sousTitre: 'Rapport de stock' }
-        ]
-      }, */
-      /* {
-        label: 'Compte & Paramètres',
-        icon: 'bi-gear',
-        route: '/caisse-bi/magasins',
-        titre: 'Compte & Paramètres',
-        sousTitre: 'Gestion des magasins',
-        children: [
-          { label: 'Magasins', route: '/caisse-bi/magasins', titre: 'Compte & Paramètres', sousTitre: 'Gestion des magasins' },
-          { label: 'Personnel', route: '/caisse-bi/gerant', titre: 'Compte & Paramètres', sousTitre: 'Gestion du personnel' },
-          { label: 'Paramètres', route: '/caisse-bi/parametres', titre: 'Compte & Paramètres', sousTitre: 'Gestion des paramètres' }
-        ]
-      } */
-     {
-        label: 'Paramètres',
-        icon: 'bi bi-house-door',
-        route: '/caisse-bi/admin-general/structure', // Redirige directement vers paramètres
-        titre: 'Structures et utilisateurs',
-        sousTitre: 'Gestion des structures',
-        children: [
-          { 
-            label: 'Structures', 
-            route: '/caisse-bi/admin-general/structure', 
-            titre: 'Administration générale', 
-            sousTitre: 'Gestion des structures' 
-          },
-         /* { 
-            label: 'Actions utilisateurs', 
-            route: '/caisse-bi/historique-actions', // Créez cette route si nécessaire
-            titre: 'Administration générale', 
-            sousTitre: 'Historiques des actions des utilisateurs' 
-          }  */ 
-        ]
-      }
-    ],
-    'Administrateur': [
-      {
-        label: 'Accueil',
-        icon: 'bi bi-house-door',
-        route: '/caisse-bi/overview',
-        titre: 'Accueil',
-        sousTitre: 'Vue d\'ensemble',
-        children: [
-          { label: 'Vue d\'ensemble', route: '/caisse-bi/overview', titre: 'Accueil', sousTitre: 'Vue d\'ensemble' },
-        ],
-      },
-      {
-        label: 'Ventes',
-        icon: 'bi-cash-stack',
-        route: '/caisse-bi/ventes',
-        titre: 'Ventes',
-        sousTitre: 'Gestion des ventes',
-        children: [
-          { label: 'Ventes', route: '/caisse-bi/ventes', titre: 'Ventes', sousTitre: 'Gestion des ventes' },
-          { label: 'Caisse', route: '/caisse-bi/caisse', titre: 'Ventes', sousTitre: 'Gestion de la caisse' },
-          //{ label: 'Clients', route: '/caisse-bi/clients', titre: 'Ventes', sousTitre: 'Gestion des clients' },
-          { label: 'Clients', route: '/caisse-bi/client', titre: 'Ventes', sousTitre: 'Gestion des clients' }
-        ]
-      },
-      {
-        label: 'Stock & Inventaire',
-        icon: 'bi-box',
-        route: '/caisse-bi/entrees-sorties',
-        titre: 'Stock & Inventaire',
-        sousTitre: 'Gestion des entrées/sorties',
-        children: [
-          { label: 'Entrées/Sorties', route: '/caisse-bi/entrees-sorties', titre: 'Stock & Inventaire', sousTitre: 'Gestion des entrées/sorties' },
-          { label: 'Stock', route: '/caisse-bi/stock', titre: 'Stock & Inventaire', sousTitre: 'Gestion du stock' },
-          { label: 'Catalogue', route: '/caisse-bi/catalogue-produits', titre: 'Stock & Inventaire', sousTitre: 'Gestion du catalogue' },
-        ]
-      },
-      {
-        label: 'Finance',
-        icon: 'bi-wallet',
-        route: '/caisse-bi/finance',
-        titre: 'Finance',
-        sousTitre: 'Gestion financière',
-        children: [
-          { label: 'Gestion Financière', route: '/caisse-bi/finance', titre: 'Finance', sousTitre: 'Gestion financière' },
-          //{ label: 'Fournisseurs', route: '/caisse-bi/fournisseurs', titre: 'Finance', sousTitre: 'Gestion des fournisseurs' },
-          { label: 'Fournisseurs', route: '/caisse-bi/fournisseur', titre: 'Finance', sousTitre: 'Gestion des fournisseurs' },
-        ]
-      },
-      {
-        label: 'Rapports',
-        icon: 'bi-graph-up',
-        route: '/caisse-bi/rapport-financier',
-        titre: 'Rapports',
-        sousTitre: 'Rapport financier',
-        children: [
-          { label: 'Rapport financier', route: '/caisse-bi/rapport-financier', titre: 'Rapports', sousTitre: 'Rapport financier' },
-          { label: 'Rapport vente', route: '/caisse-bi/rapport-vente', titre: 'Rapports', sousTitre: 'Rapport de vente' },
-          { label: 'Rapport stock', route: '/caisse-bi/rapport-stk', titre: 'Rapports', sousTitre: 'Rapport de stock' }
-        ]
-      },
-      {
-        label: 'Compte & Paramètres',
-        icon: 'bi-gear',
-        route: '/caisse-bi/gerant',
-        titre: 'Compte & Paramètres',
-        sousTitre: 'Gestion du personnel',
-        children: [
-          { label: 'Magasins', route: '/caisse-bi/magasins', titre: 'Compte & Paramètres', sousTitre: 'Gestion des magasins' },
-          //{ label: 'Personnel', route: '/caisse-bi/gerant', titre: 'Compte & Paramètres', sousTitre: 'Gestion du personnel' },
-          { label: 'Paramètres', route: '/caisse-bi/parametres', titre: 'Compte & Paramètres', sousTitre: 'Gestion des paramètres' },
-          //{ label: 'Actions utilisateurs', route: '/caisse-bi/historique-actions', titre: 'Compte & Paramètres', sousTitre: 'Historiques des actions des utilisateurs' }
-        ]
-      }
-    ],
-    'Administrateur secondaire': [
-      {
-        label: 'Accueil',
-        icon: 'bi bi-house-door',
-        route: '/caisse-bi/overview',
-        titre: 'Accueil',
-        sousTitre: 'Vue d\'ensemble',
-        children: [
-          { label: 'Vue d\'ensemble', route: '/caisse-bi/overview', titre: 'Accueil', sousTitre: 'Vue d\'ensemble' },
-        ],
-      },
-      {
-        label: 'Ventes',
-        icon: 'bi-cash-stack',
-        route: '/caisse-bi/ventes',
-        titre: 'Ventes',
-        sousTitre: 'Gestion des ventes',
-        children: [
-          { label: 'Ventes', route: '/caisse-bi/ventes', titre: 'Ventes', sousTitre: 'Gestion des ventes' },
-          { label: 'Caisse', route: '/caisse-bi/caisse', titre: 'Ventes', sousTitre: 'Gestion de la caisse' },
-          //{ label: 'Clients', route: '/caisse-bi/clients', titre: 'Ventes', sousTitre: 'Gestion des clients' },
-          { label: 'Clients', route: '/caisse-bi/client', titre: 'Ventes', sousTitre: 'Gestion des clients' }
-        ]
-      },
-      {
-        label: 'Stock & Inventaire',
-        icon: 'bi-box',
-        route: '/caisse-bi/entrees-sorties',
-        titre: 'Stock & Inventaire',
-        sousTitre: 'Gestion des entrées/sorties',
-        children: [
-          { label: 'Entrées/Sorties', route: '/caisse-bi/entrees-sorties', titre: 'Stock & Inventaire', sousTitre: 'Gestion des entrées/sorties' },
-          { label: 'Stock', route: '/caisse-bi/stock', titre: 'Stock & Inventaire', sousTitre: 'Gestion du stock' },
-          { label: 'Catalogue', route: '/caisse-bi/catalogue-produits', titre: 'Stock & Inventaire', sousTitre: 'Gestion du catalogue' },
-        ]
-      },
-      {
-        label: 'Finance',
-        icon: 'bi-wallet',
-        route: '/caisse-bi/finance',
-        titre: 'Finance',
-        sousTitre: 'Gestion financière',
-        children: [
-          { label: 'Gestion Financière', route: '/caisse-bi/finance', titre: 'Finance', sousTitre: 'Gestion financière' },
-          //{ label: 'Fournisseurs', route: '/caisse-bi/fournisseurs', titre: 'Finance', sousTitre: 'Gestion des fournisseurs' },
-          { label: 'Fournisseurs', route: '/caisse-bi/fournisseur', titre: 'Finance', sousTitre: 'Gestion des fournisseurs' },
-        ]
-      },
-      {
-        label: 'Rapports',
-        icon: 'bi-graph-up',
-        route: '/caisse-bi/rapport-financier',
-        titre: 'Rapports',
-        sousTitre: 'Rapport financier',
-        children: [
-          { label: 'Rapport financier', route: '/caisse-bi/rapport-financier', titre: 'Rapports', sousTitre: 'Rapport financier' },
-          { label: 'Rapport vente', route: '/caisse-bi/rapport-vente', titre: 'Rapports', sousTitre: 'Rapport de vente' },
-          { label: 'Rapport stock', route: '/caisse-bi/rapport-stk', titre: 'Rapports', sousTitre: 'Rapport de stock' }
-        ]
-      },
-      {
-        label: 'Compte & Paramètres',
-        icon: 'bi-gear',
-        route: '/caisse-bi/gerant',
-        titre: 'Compte & Paramètres',
-        sousTitre: 'Gestion du personnel',
-        children: [
-          { label: 'Magasins', route: '/caisse-bi/magasins', titre: 'Compte & Paramètres', sousTitre: 'Gestion des magasins' },
-          //{ label: 'Personnel', route: '/caisse-bi/gerant', titre: 'Compte & Paramètres', sousTitre: 'Gestion du personnel' },
-          { label: 'Paramètres', route: '/caisse-bi/parametres', titre: 'Compte & Paramètres', sousTitre: 'Gestion des paramètres' },
-        ]
-      }
-    ],
-    'Gérant': [
-      {
-        label: 'Accueil',
-        icon: 'bi bi-house-door',
-        route: '/caisse-bi/overview',
-        titre: 'Accueil',
-        sousTitre: 'Vue d\'ensemble',
-        children: [
-          { label: 'Vue d\'ensemble', route: '/caisse-bi/overview', titre: 'Accueil', sousTitre: 'Vue d\'ensemble' },
-        ],
-      },
-      {
-        label: 'Ventes',
-        icon: 'bi-cash-stack',
-        route: '/caisse-bi/ventes',
-        titre: 'Ventes',
-        sousTitre: 'Gestion des ventes',
-        children: [
-          { label: 'Ventes', route: '/caisse-bi/ventes', titre: 'Ventes', sousTitre: 'Gestion des ventes' },
-          { label: 'Caisse', route: '/caisse-bi/caisse', titre: 'Ventes', sousTitre: 'Gestion de la caisse' },
-          //{ label: 'Clients', route: '/caisse-bi/clients', titre: 'Ventes', sousTitre: 'Gestion des clients' },
-          { label: 'Clients', route: '/caisse-bi/client', titre: 'Ventes', sousTitre: 'Gestion des clients' }
-
-        ]
-      },
-      {
-        label: 'Stock & Inventaire',
-        icon: 'bi-box',
-        route: '/caisse-bi/entrees-sorties',
-        titre: 'Stock & Inventaire',
-        sousTitre: 'Gestion des entrées/sorties',
-        children: [
-          { label: 'Entrées/Sorties', route: '/caisse-bi/entrees-sorties', titre: 'Stock & Inventaire', sousTitre: 'Gestion des entrées/sorties' },
-          { label: 'Stock', route: '/caisse-bi/stock', titre: 'Stock & Inventaire', sousTitre: 'Gestion du stock' },
-          { label: 'Catalogue', route: '/caisse-bi/catalogue-produits', titre: 'Stock & Inventaire', sousTitre: 'Gestion du catalogue' },
-        ]
-      },
-      {
-        label: 'Finance',
-        icon: 'bi-wallet',
-        route: '/caisse-bi/finance',
-        titre: 'Finance',
-        sousTitre: 'Gestion financière',
-        children: [
-          { label: 'Gestion Financière', route: '/caisse-bi/finance', titre: 'Finance', sousTitre: 'Gestion financière' },
-          //{ label: 'Fournisseurs', route: '/caisse-bi/fournisseurs', titre: 'Finance', sousTitre: 'Gestion des fournisseurs' },
-          { label: 'Fournisseurs', route: '/caisse-bi/fournisseur', titre: 'Finance', sousTitre: 'Gestion des fournisseurs' },
-        ]
-      },
-      {
-        label: 'Rapports',
-        icon: 'bi-graph-up',
-        route: '/caisse-bi/rapport-financier',
-        titre: 'Rapports',
-        sousTitre: 'Rapport financier',
-        children: [
-          { label: 'Rapport financier', route: '/caisse-bi/rapport-financier', titre: 'Rapports', sousTitre: 'Rapport financier' },
-          { label: 'Rapport vente', route: '/caisse-bi/rapport-vente', titre: 'Rapports', sousTitre: 'Rapport de vente' },
-          { label: 'Rapport stock', route: '/caisse-bi/rapport-stk', titre: 'Rapports', sousTitre: 'Rapport de stock' }
-        ]
-      }
-    ],
-    'Caissier': [
-      /* {
-        label: 'Accueil',
-        icon: 'bi bi-house-door',
-        route: '/caisse-bi/overview',
-        titre: 'Accueil',
-        sousTitre: 'Vue d\'ensemble',
-        children: [
-          { label: 'Vue d\'ensemble', route: '/caisse-bi/overview', titre: 'Accueil', sousTitre: 'Vue d\'ensemble' },
-        ],
-      }, */
-      {
-        label: 'Ventes',
-        icon: 'bi-cash-stack',
-        route: '/caisse-bi/caisse',
-        titre: 'Ventes',
-        sousTitre: 'Gestion de la caisse',
-        children: [
-          { label: 'Caisse', route: '/caisse-bi/caisse', titre: 'Ventes', sousTitre: 'Gestion de la caisse' },
-          //{ label: 'Clients', route: '/caisse-bi/clients', titre: 'Mes Clients', sousTitre: 'Gestion des clients' },
-          { label: 'Clients', route: '/caisse-bi/client', titre: 'Ventes', sousTitre: 'Gestion des clients' }
-
-
-        ]
-      },
-      {
-        label: 'Stock',
-        icon: 'bi-box',
-        route: '/caisse-bi/stock',
-        titre: 'Stock',
-        sousTitre: 'Consultation du stock',
-        children: [
-          { label: 'Stock', route: '/caisse-bi/stock', titre: 'Stock', sousTitre: 'Consultation du stock' },
-          //{ label: 'Catalogue', route: '/caisse-bi/catalogue-produits', titre: 'Stock', sousTitre: 'Consultation du catalogue' }
-        ]
-      },
-      /* {
-        label: 'Mes Clients',
-        icon: 'bi-people',
-        route: '/caisse-bi/clients',
-        titre: 'Mes Clients',
-        sousTitre: 'Gestion des clients',
-        children: [
-          { label: 'Clients', route: '/caisse-bi/clients', titre: 'Mes Clients', sousTitre: 'Gestion des clients' }
-        ]
-      } */
-    ],
-    'Employé': [
-      {
-        label: 'Accueil',
-        icon: 'bi bi-house-door',
-        route: '/caisse-bi/overview',
-        titre: 'Accueil',
-        sousTitre: 'Vue d\'ensemble',
-        children: [
-          { label: 'Vue d\'ensemble', route: '/caisse-bi/overview', titre: 'Accueil', sousTitre: 'Vue d\'ensemble' },
-        ],
-      },
-      {
-        label: 'Ventes',
-        icon: 'bi-cash-stack',
-        route: '/caisse-bi/ventes',
-        titre: 'Ventes',
-        sousTitre: 'Gestion des ventes',
-        children: [
-          { label: 'Ventes', route: '/caisse-bi/ventes', titre: 'Ventes', sousTitre: 'Gestion des ventes' },
-          { label: 'Caisse', route: '/caisse-bi/caisse', titre: 'Ventes', sousTitre: 'Gestion de la caisse' }
-        ]
-      },
-      {
-        label: 'Stock',
-        icon: 'bi-box',
-        route: '/caisse-bi/stock',
-        titre: 'Stock',
-        sousTitre: 'Gestion du stock',
-        children: [
-          { label: 'Stock', route: '/caisse-bi/stock', titre: 'Stock', sousTitre: 'Gestion du stock' },
-          //{ label: 'Catalogue', route: '/caisse-bi/catalogue-produits', titre: 'Stock', sousTitre: 'Consultation du catalogue' }
-        ]
-      }
-    ]
-  };
-
+  // Configuration complÃ¨te des menus par rÃ´le
+  // Navigation unifiee : la configuration (roles autorises par item) vit dans
+  // constantes/navigation.config.ts. Le filtrage par role/permission est
+  // effectue dans getNavigationItems().
   private http = inject(HttpClient);
   private router = inject(Router);
   private logger = inject(NGXLogger);
@@ -412,35 +31,35 @@ export class AuthService {
 
   initAuth(): Promise<void> {
   return new Promise((resolve) => {
-    console.log('APP_INITIALIZER: Début initAuth');
+    console.log('APP_INITIALIZER: DÃ©but initAuth');
     
     const token = this.getToken();
-    console.log('Token présent:', !!token);
+    console.log('Token prÃ©sent:', !!token);
     
     if (!token) {
-      console.log('Aucun token, résolution immédiate');
+      console.log('Aucun token, rÃ©solution immÃ©diate');
       resolve();
       return;
     }
     
     if (this.jwtHelper.isTokenExpired(token)) {
-      console.log('Token expiré, logout');
+      console.log('Token expirÃ©, logout');
       this.logout();
       resolve();
       return;
     }
     
-    console.log('Token valide, récupération user');
+    console.log('Token valide, rÃ©cupÃ©ration user');
     this.getMe().subscribe({
       next: () => {
-        console.log('User récupéré avec succès');
+        console.log('User rÃ©cupÃ©rÃ© avec succÃ¨s');
         resolve();
       },
       error: (err) => {
-        console.error('Erreur récupération user:', err);
+        console.error('Erreur rÃ©cupÃ©ration user:', err);
         this.currentUserSubject.next({} as User);
         this.logout();
-        resolve(); // TOUJOURS résoudre même en erreur
+        resolve(); // TOUJOURS rÃ©soudre mÃªme en erreur
       }
     });
   });
@@ -449,9 +68,9 @@ export class AuthService {
     const token = localStorage.getItem('token');
     if (token && !this.jwtHelper.isTokenExpired(token)) {
       this.getMe().subscribe({
-        next: () => this.logger.info('Utilisateur chargé depuis le stockage local'),
+        next: () => this.logger.info('Utilisateur chargÃ© depuis le stockage local'),
         error: err => {
-          this.logger.error('Erreur lors de la récupération de l\'utilisateur', err);
+          this.logger.error('Erreur lors de la rÃ©cupÃ©ration de l\'utilisateur', err);
           this.logout();
         }
       });
@@ -468,7 +87,7 @@ export class AuthService {
         localStorage.setItem('token', response.token);
         localStorage.setItem('user', JSON.stringify(response.user));
         
-        // Créez une requête avec le header Authorization manuellement
+        // CrÃ©ez une requÃªte avec le header Authorization manuellement
         const headers = new HttpHeaders({
           'Authorization': `Bearer ${response.token}`
         });
@@ -495,32 +114,32 @@ export class AuthService {
       tap(user => {
         this.currentUserSubject.next(user);
         localStorage.setItem('user', JSON.stringify(user));
-        this.logger.info('Utilisateur récupéré avec succès', user.nom);
+        this.logger.info('Utilisateur rÃ©cupÃ©rÃ© avec succÃ¨s', user.nom);
       }),
       catchError(err => {
-        this.logger.error('Erreur lors de la récupération de l\'utilisateur', err);
+        this.logger.error('Erreur lors de la rÃ©cupÃ©ration de l\'utilisateur', err);
         return throwError(() => err);
       })
     );
   }
 
-  // Méthode pour détecter si l'utilisateur est admin général
+  // MÃ©thode pour dÃ©tecter si l'utilisateur est admin gÃ©nÃ©ral
   isGeneralAdmin(): boolean {
     const user = this.currentUserSubject.value;
-    // Méthode 1: Par structure_id null
+    // MÃ©thode 1: Par structure_id null
     if (user && user.structure_id === null) {
       return true;
     }
-    // Méthode 2: Par rôle
-    if (user?.roles?.some(r => r.nom === 'Administrateur Général')) {
+    // MÃ©thode 2: Par rÃ´le
+    if (user?.roles?.some(r => r.nom === 'Administrateur GÃ©nÃ©ral')) {
       return true;
     }
-    // Méthode 3: Par flag isGeneralAdmin
+    // MÃ©thode 3: Par flag isGeneralAdmin
     return user?.isGeneralAdmin || false;
   }
   
   private redirectBasedOnRole(user: User): void {
-    console.log('Redirection basée sur le rôle de l\'utilisateur',user);
+    console.log('Redirection basÃ©e sur le rÃ´le de l\'utilisateur',user);
     if (!user || !user.roles || user.roles.length === 0) {
       this.router.navigate(['/unauthorized']);
       return;
@@ -532,11 +151,11 @@ export class AuthService {
      }
 
     const userRoles = user.roles.map(r => r.nom);
-   console.log('Rôles de l\'utilisateur:', userRoles);
+   console.log('RÃ´les de l\'utilisateur:', userRoles);
     
-    // Admin général: rediriger vers paramètres
+    // Admin gÃ©nÃ©ral: rediriger vers paramÃ¨tres
     if (this.isGeneralAdmin()) {
-      console.log('Admin général détecté, redirection vers paramètres');
+      console.log('Admin gÃ©nÃ©ral dÃ©tectÃ©, redirection vers paramÃ¨tres');
       this.router.navigate(['/caisse-bi/admin-general/structure']);
       return;
     }
@@ -545,21 +164,21 @@ export class AuthService {
       console.log('Redirection vers overview pour Administrateur');
       this.router.navigate(['/caisse-bi/overview']);
     }
-    else if (userRoles.includes('Gérant')) {
-      console.log('Redirection vers caisse pour Gérant');
+    else if (userRoles.includes('GÃ©rant')) {
+      console.log('Redirection vers caisse pour GÃ©rant');
       this.router.navigate(['/caisse-bi/caisse']);
     } 
     else if (userRoles.includes('Caissier')) {
       console.log('Redirection vers caisse pour Caissier');
       this.router.navigate(['/caisse-bi/caisse']);
     } 
-    else if (userRoles.includes('Employé')) {
-      console.log('Redirection vers overview pour Employé');
+    else if (userRoles.includes('EmployÃ©')) {
+      console.log('Redirection vers overview pour EmployÃ©');
       this.router.navigate(['/caisse-bi/overview']);
     } 
     else {
-      console.log('Aucun rôle reconnu, redirection vers unauthorized');
-      console.log('Rôles disponibles:', userRoles);
+      console.log('Aucun rÃ´le reconnu, redirection vers unauthorized');
+      console.log('RÃ´les disponibles:', userRoles);
       this.router.navigate(['/unauthorized']);
     }
   }
@@ -570,6 +189,14 @@ export class AuthService {
     this.currentUserSubject.next({} as User);
     this.router.navigate(['/login']);
   } */
+
+  /**
+   * Session expirée ou invalide (401) : nettoie la session locale et
+   * redirige vers /login sans appel serveur (évite les boucles 401).
+   */
+  sessionExpired(): void {
+    this.clearSession();
+  }
 
   logout(): void {
   const token = localStorage.getItem('token');
@@ -586,8 +213,8 @@ export class AuthService {
   }).pipe(
     finalize(() => this.clearSession())
   ).subscribe({
-    next: () => console.log('✅ Déconnexion serveur OK'),
-    error: err => console.error('❌ Erreur serveur:', err)
+    next: () => console.log('âœ… DÃ©connexion serveur OK'),
+    error: err => console.error('âŒ Erreur serveur:', err)
   });
 }
 
@@ -611,52 +238,35 @@ private clearSession(): void {
   getNavigationItems(): NavigationItem[] {
     const user = this.currentUserSubject.value;
     if (!user || !user.roles || user.roles.length === 0) return [];
-    
-    /* if (userRoles.includes('Administrateur Général')) {
-      console.log('Navigation pour Administrateur Général');
-      return this.navigationConfig['Administrateur Général'];
-    }  */
 
-     // Admin général: menu spécifique
-    if (this.isGeneralAdmin()) {
-      return this.navigationConfig['Administrateur Général'];
-    }
+    // Admin general : menu dedie. Sinon filtrage par les roles de l'utilisateur.
+    const userRoles = this.isGeneralAdmin()
+      ? ['Administrateur G\u00e9n\u00e9ral']
+      : user.roles.map(r => r.nom);
 
-    const userRoles = user.roles.map(r => r.nom);
-    console.log('Rôles pour navigation:', userRoles);
-    
-    if (userRoles.includes('Administrateur') || userRoles.includes('Administrateur secondaire')) {
-      console.log('Navigation pour Administrateur');
-      return this.navigationConfig['Administrateur'];
-    } else if (userRoles.includes('Gérant')) {
-      console.log('Navigation pour Gérant');
-      return this.navigationConfig['Gérant'];
-    } else if (userRoles.includes('Caissier')) {
-      console.log('Navigation pour Caissier');
-      return this.navigationConfig['Caissier'];
-    } else if (userRoles.includes('Employé')) {
-      console.log('Navigation pour Employé');
-      return this.navigationConfig['Employé'];
-    }
-    
-    console.log('Aucun rôle correspondant, menu par défaut');
-    return [
-      {
-        label: 'Accueil',
-        icon: 'bi bi-house-door',
-        route: '/caisse-bi/overview',
-        titre: 'Accueil',
-        sousTitre: 'Vue d\'ensemble',
-        children: [
-          { label: 'Vue d\'ensemble', route: '/caisse-bi/overview', titre: 'Accueil', sousTitre: 'Vue d\'ensemble' },
-        ],
-      }
-    ];
+    const items = this.filterItemsByRoles(NAVIGATION_CONFIG, userRoles);
+    return this.filterItemsByPermission(items);
   }
-  // Méthode utilitaire pour filtrer les items par permission
+
+  private filterItemsByRoles(items: NavigationItem[], userRoles: string[]): NavigationItem[] {
+    return items
+      .map(item => ({
+        ...item,
+        children: item.children?.filter(
+          child => !child.roles || child.roles.some(r => userRoles.includes(r))
+        ),
+      }))
+      .filter(item => {
+        const hasAccess = !item.roles || item.roles.some(r => userRoles.includes(r));
+        if (!hasAccess) return false;
+        if (item.children) return item.children.length > 0;
+        return true;
+      });
+  }
+  // MÃ©thode utilitaire pour filtrer les items par permission
   filterItemsByPermission(items: NavigationItem[]): NavigationItem[] {
     return items.filter(item => {
-      // Vérifier l'accès à l'item principal
+      // VÃ©rifier l'accÃ¨s Ã  l'item principal
       if (item.requiredPermission && !this.hasPermission(item.requiredPermission)) {
         return false;
       }
@@ -758,11 +368,11 @@ private clearSession(): void {
       }
     }
 
-    // Fallback : retourner l'item par défaut
+    // Fallback : retourner l'item par dÃ©faut
     return { titre: 'Accueil', sousTitre: 'Vue d\'ensemble' };
   }
 
-  // Méthode pour mettre à jour les permissions dynamiquement
+  // MÃ©thode pour mettre Ã  jour les permissions dynamiquement
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   updateUserPermissions(roles: any[]): void {
     const currentUser = this.currentUserSubject.value;
@@ -773,7 +383,7 @@ private clearSession(): void {
     }
   }
 
-  // Vérifier si l'utilisateur a accès à un module spécifique
+  // VÃ©rifier si l'utilisateur a accÃ¨s Ã  un module spÃ©cifique
   hasModuleAccess(module: string): boolean {
     const modulePermissions: Record<string, string[]> = {
       'ventes': ['view_ventes', 'edit_ventes', 'manage_ventes'],
@@ -796,7 +406,7 @@ private clearSession(): void {
     const token = this.getToken();
     
     console.log('=== DEBUG AUTH SERVICE ===');
-    console.log('Token présent:', !!token);
+    console.log('Token prÃ©sent:', !!token);
     console.log('Token valeur:', token?.substring(0, 20) + '...');
     console.log('Utilisateur dans BehaviorSubject:', user);
     console.log('Roles:', user?.roles?.map(r => r.nom));
@@ -806,3 +416,4 @@ private clearSession(): void {
     console.log('=== FIN DEBUG ===');
   }
 }
+

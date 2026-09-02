@@ -1,30 +1,21 @@
-/* // interceptors/auth.interceptor.ts
-import { inject, Injectable } from '@angular/core';
-import { HttpRequest, HttpHandler, HttpEvent, HttpInterceptor } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { AuthService } from '../services/auth.service';
-
-@Injectable()
-export class AuthInterceptor implements HttpInterceptor {
-  private authService = inject(AuthService);
-
-  intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
-    const token = this.authService.getToken();
-    if (token) {
-      request = request.clone({
-        setHeaders: { Authorization: `Bearer ${token}` },
-      });
-    }
-    return next.handle(request);
-  }
-}
- */
 import { HttpInterceptorFn } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { ToastrService } from 'ngx-toastr';
+import { catchError, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 
+/**
+ * Intercepteur HTTP global :
+ *  - ajoute le token JWT aux requêtes
+ *  - 401 : session expirée/invalide → nettoyage + redirection /login
+ *  - 403 : droits insuffisants → notification (l'utilisateur reste où il est)
+ */
 export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
+  const router = inject(Router);
+  const toastr = inject(ToastrService);
   const token = authService.getToken();
 
   if (token) {
@@ -34,9 +25,15 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
       },
     });
   }
-   else {
-    console.log('Interceptor: Pas de token disponible');
-  }
 
-  return next(req);
+  return next(req).pipe(
+    catchError((err: HttpErrorResponse) => {
+      if (err.status === 401 && !router.url.startsWith('/login')) {
+        authService.sessionExpired();
+      } else if (err.status === 403) {
+        toastr.error('Vous n\'avez pas les droits nécessaires pour cette action.', 'Accès refusé');
+      }
+      return throwError(() => err);
+    })
+  );
 };

@@ -82,5 +82,9 @@ export interface NavigationItem {
   sousTitre: string;
   requiredRole?: string;
   requiredPermission?: string;
+  /** Rôles autorisés pour cet item (filtrage sidebar) */
+  roles?: string[];
+  /** Permissions requises pour cet item (filtrage sidebar) */
+  permissions?: string[];
   children?: NavigationItem[];
 }
