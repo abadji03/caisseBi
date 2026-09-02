@@ -4,7 +4,7 @@
   "description": "\"Backend de l'application de gestion de caisse\"",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest --runInBand",
     "lint": "eslint . --ext .js,.ts",
     "lint:fix": "eslint . --ext .js,.ts --fix",
     "format": "prettier --write \"**/*.{js,ts,json}\"",
@@ -13,8 +13,6 @@
   "author": "Aliou BADJI",
   "license": "ISC",
   "dependencies": {
-    "@angular-eslint/schematics": "^20.2.0",
-    "@sentry/node": "^10.9.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "csv-parser": "^3.2.0",
@@ -27,12 +25,11 @@
     "multer": "^1.4.5-lts.2",
     "mysql2": "^3.14.1",
     "pdfkit": "^0.17.2",
-    "puppeteer-core": "^24.37.5",
+    "puppeteer-core": "^25.9.0",
     "sequelize": "^6.37.7",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.4",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1",
-    "winston": "^3.17.0"
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.34.0",
