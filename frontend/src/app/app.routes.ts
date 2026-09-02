@@ -1,52 +1,16 @@
-import { Routes } from '@angular/router';
-/* import { ConnexionComponent } from './caisse/acces_accueil/connexion/connexion.component';
-import { WebProduitsComponent } from './e-commerce/web-produits/web-produits.component';
-import { CategorieProduitsComponent } from './e-commerce/categorie-produits/categorie-produits.component';
-import { LayoutComponent } from './e-commerce/layout/layout.component';
-import { PanierClientComponent } from './e-commerce/panier-client/panier-client.component';
-import { ClientOrderComponent } from './e-commerce/client-order/client-order.component';
-import { CheckoutComponent } from './e-commerce/checkout/checkout.component';
-import { DetailsProduitComponent } from './e-commerce/details-produit/details-produit.component'; */
-// import { EnregistrementProduitsComponent } from './caisse/acces_accueil/enregistrement-produits/enregistrement-produits.component';
-import { CaisseComponent } from './caisse/vente/caisse/caisse.component';
-// import { VenteComponent } from './caisse/vente/vente/vente.component';
-//import { EnregistrementActeurComponent } from './caisse/acces_accueil/enregistrement-acteur/enregistrement-acteur.component';
-//import { EspaceVendeursComponent } from './caisse/acces_accueil/espace-vendeurs/espace-vendeurs.component';
-import { OverviewComponent } from './caisse/acces_accueil/overview/overview.component';
-import { VentesComponent } from './caisse/vente/ventes/ventes.component';
-//import { FournisseursComponent } from './caisse/finance/fournisseurs/fournisseurs.component';
-//import { ClientsComponent } from './caisse/vente/clients/clients.component';
-import { RapportsFinanciersComponent } from './caisse/rapports/rapports-financiers/rapports-financiers.component';
-import { ParametresComponent } from './caisse/parametres/parametres/parametres.component';
-import { EntreesSortiesComponent } from './caisse/stock_inventaire/entrees-sorties/entrees-sorties.component';
-import { StockInventairesComponent } from './caisse/stock_inventaire/stock-inventaires/stock-inventaires.component';
-import { MagazinComponent } from './caisse/parametres/magazin/magazin.component';
-//import { GerantComponent } from './caisse/parametres/gerant/gerant.component';
-import { CatalogueProduitComponent } from './caisse/stock_inventaire/catalogue-produit/catalogue-produit.component';
-import { FinanceComponent } from './caisse/finance/finance/finance.component';
-import { RapportsVentesComponent } from './caisse/rapports/rapports-ventes/rapports-ventes.component';
-import { RapportsStocksComponent } from './caisse/rapports/rapports-stocks/rapports-stocks.component';
-import { DashboardComponent } from './caisse/acces_accueil/dashboard/dashboard.component';
-import { NotFoundComponent } from './caisse/notFoundPages/not-found/not-found.component';
+﻿import { Routes } from '@angular/router';
 import { roleGuard } from './guards/role.guard';
-import { UnauthorizedComponent } from './caisse/notFoundPages/unauthorized/unauthorized.component';
 import { authGuard } from './guards/auth.guard';
-import { ConnexionComponent } from './caisse/acces_accueil/connexion/connexion.component';
-import { PERMISSIONS } from './constantes/permissions.constants';
-//import { StructureComponent } from './caisse/parametres/structure/structure.component';
 import { generalAdminGuard } from './guards/general-admin.guard';
 import { structureGuard } from './guards/structure.guard';
-import { ParametresUsersAdminComponent } from './caisse/parametres/parametres-users-admin/parametres-users-admin.component';
-import { ClientComponent } from './caisse/vente/client/client.component';
-import { FournisseurComponent } from './caisse/finance/fournisseur/fournisseur.component';
-import { ImportComponent } from './caisse/parametres/import/import.component';
-//import { HistoriqueComponent } from './caisse/parametres/historique/historique.component';
-//import { FournisseurComponent } from './caisse/finance/fournisseur/fournisseur.component';
-/* import { LandingComponent } from './e-commerce/landing/landing.component';
-import { UserLoginComponent } from './e-commerce/user-login/user-login.component';
-import { UserAccountComponent } from './e-commerce/user-account/user-account.component';
-import { ProduitsComponent } from './e-commerce/produits/produits.component'; */
+import { PERMISSIONS } from './constantes/permissions.constants';
 
+/**
+ * Routes en lazy loading (loadComponent) : chaque page est chargee a la
+ * demande afin de reduire le bundle initial. Les guards et permissions
+ * restent inchanges. Les routes obsoletes (/clients, /fournisseurs,
+ * /gerant, e-commerce) ont ete supprimees.
+ */
 export const routes: Routes = [
   {
     path: '',
@@ -55,31 +19,31 @@ export const routes: Routes = [
   },
   {
     path: 'login',
-    component: ConnexionComponent,
+    loadComponent: () =>
+      import('./caisse/acces_accueil/connexion/connexion.component').then(m => m.ConnexionComponent),
   },
   {
     path: 'unauthorized',
-    component: UnauthorizedComponent,
+    loadComponent: () =>
+      import('./caisse/notFoundPages/unauthorized/unauthorized.component').then(m => m.UnauthorizedComponent),
   },
   {
     path: 'caisse-bi',
-    component: DashboardComponent,
+    loadComponent: () =>
+      import('./caisse/acces_accueil/dashboard/dashboard.component').then(m => m.DashboardComponent),
     canActivate: [authGuard],
     children: [
       {
         path: 'admin-general',
-        canActivate: [generalAdminGuard], // Nouveau guard spécifique
+        canActivate: [generalAdminGuard],
         children: [
           {
             path: 'structure',
-            component: ParametresUsersAdminComponent, // Créez ce composant
+            loadComponent: () =>
+              import('./caisse/parametres/parametres-users-admin/parametres-users-admin.component')
+                .then(m => m.ParametresUsersAdminComponent),
             data: { title: 'Gestion des structures' }
           },
-          /* {
-            path: 'parametres',
-            component: ParametresComponent, // Créez ce composant
-            data: { title: 'Gestion des utilisateurs' }
-          } */
         ]
       },
       {
@@ -89,18 +53,20 @@ export const routes: Routes = [
       },
       {
         path: 'overview',
-        component: OverviewComponent,
+        loadComponent: () =>
+          import('./caisse/acces_accueil/overview/overview.component').then(m => m.OverviewComponent),
         canActivate: [roleGuard, structureGuard],
-        data: { 
+        data: {
           roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant', 'Caissier', 'Employé'],
-          requireStructure: true 
+          requireStructure: true
         }
       },
       {
         path: 'ventes',
-        component: VentesComponent,
+        loadComponent: () =>
+          import('./caisse/vente/ventes/ventes.component').then(m => m.VentesComponent),
         canActivate: [roleGuard,structureGuard],
-        data: { 
+        data: {
           roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant', 'Caissier'],
           requireStructure: true,
           permissions: [PERMISSIONS.VIEW_SALES, PERMISSIONS.EDIT_SALES,PERMISSIONS.MANAGE_SALES]
@@ -108,29 +74,21 @@ export const routes: Routes = [
       },
       {
         path: 'caisse',
-        component: CaisseComponent,
+        loadComponent: () =>
+          import('./caisse/vente/caisse/caisse.component').then(m => m.CaisseComponent),
         canActivate: [roleGuard,structureGuard],
-        data: { 
+        data: {
           roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant', 'Caissier'],
           requireStructure: true,
           permissions: [PERMISSIONS.ACCESS_CASHIER]
         }
       },
-      /* {
-        path: 'clients',
-        component: ClientsComponent,
-        canActivate: [roleGuard,structureGuard],
-        data: { 
-          roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant'],
-          requireStructure: true,
-          permissions: [PERMISSIONS.VIEW_CLIENTS, PERMISSIONS.MANAGE_CLIENTS]
-        }
-      }, */
       {
         path: 'client',
-        component: ClientComponent,
+        loadComponent: () =>
+          import('./caisse/vente/client/client.component').then(m => m.ClientComponent),
         canActivate: [roleGuard,structureGuard],
-        data: { 
+        data: {
           roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant'],
           requireStructure: true,
           permissions: [PERMISSIONS.VIEW_CLIENTS, PERMISSIONS.MANAGE_CLIENTS]
@@ -138,9 +96,10 @@ export const routes: Routes = [
       },
       {
         path: 'entrees-sorties',
-        component: EntreesSortiesComponent,
+        loadComponent: () =>
+          import('./caisse/stock_inventaire/entrees-sorties/entrees-sorties.component').then(m => m.EntreesSortiesComponent),
         canActivate: [roleGuard, structureGuard],
-        data: { 
+        data: {
           roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant'],
           requireStructure: true,
           permissions: [PERMISSIONS.MANAGE_STOCK]
@@ -148,9 +107,10 @@ export const routes: Routes = [
       },
       {
         path: 'stock',
-        component: StockInventairesComponent,
+        loadComponent: () =>
+          import('./caisse/stock_inventaire/stock-inventaires/stock-inventaires.component').then(m => m.StockInventairesComponent),
         canActivate: [roleGuard, structureGuard],
-        data: { 
+        data: {
           roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant'],
           requireStructure: true,
           permissions: [PERMISSIONS.VIEW_STOCK]
@@ -158,9 +118,10 @@ export const routes: Routes = [
       },
       {
         path: 'catalogue-produits',
-        component: CatalogueProduitComponent,
+        loadComponent: () =>
+          import('./caisse/stock_inventaire/catalogue-produit/catalogue-produit.component').then(m => m.CatalogueProduitComponent),
         canActivate: [roleGuard, structureGuard],
-        data: { 
+        data: {
           roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant'],
           requireStructure: true,
           permissions: [PERMISSIONS.MANAGE_PRODUCTS, PERMISSIONS.VIEW_PRODUCTS]
@@ -168,39 +129,32 @@ export const routes: Routes = [
       },
       {
         path: 'finance',
-        component: FinanceComponent,
+        loadComponent: () =>
+          import('./caisse/finance/finance/finance.component').then(m => m.FinanceComponent),
         canActivate: [roleGuard, structureGuard],
-        data: { 
+        data: {
           roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant'],
           requireStructure: true,
           permissions: [PERMISSIONS.MANAGE_FINANCE, PERMISSIONS.EDIT_FINANCE, PERMISSIONS.VIEW_FINANCE,]
         }
       },
-      /* {
-        path: 'fournisseurs',
-        component: FournisseursComponent,
-        canActivate: [roleGuard, structureGuard],
-        data: { 
-          roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant'],
-          requireStructure: true,
-          permissions: [PERMISSIONS.MANAGE_SUPPLIERS]
-        }
-      }, */
       {
         path: 'fournisseur',
-        component: FournisseurComponent,
+        loadComponent: () =>
+          import('./caisse/finance/fournisseur/fournisseur.component').then(m => m.FournisseurComponent),
         canActivate: [roleGuard, structureGuard],
-        data: { 
+        data: {
           roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant'],
           requireStructure: true,
           permissions: [PERMISSIONS.MANAGE_SUPPLIERS]
         }
-      }, 
+      },
       {
         path: 'rapport-financier',
-        component: RapportsFinanciersComponent,
+        loadComponent: () =>
+          import('./caisse/rapports/rapports-financiers/rapports-financiers.component').then(m => m.RapportsFinanciersComponent),
         canActivate: [roleGuard, structureGuard],
-        data: { 
+        data: {
           roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant'],
           requireStructure: true,
           permissions: [PERMISSIONS.VIEW_REPORTS]
@@ -208,9 +162,10 @@ export const routes: Routes = [
       },
       {
         path: 'rapport-vente',
-        component: RapportsVentesComponent,
+        loadComponent: () =>
+          import('./caisse/rapports/rapports-ventes/rapports-ventes.component').then(m => m.RapportsVentesComponent),
         canActivate: [roleGuard, structureGuard],
-        data: { 
+        data: {
           roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant'],
           requireStructure: true,
           permissions: [PERMISSIONS.VIEW_REPORTS]
@@ -218,9 +173,10 @@ export const routes: Routes = [
       },
       {
         path: 'rapport-stk',
-        component: RapportsStocksComponent,
+        loadComponent: () =>
+          import('./caisse/rapports/rapports-stocks/rapports-stocks.component').then(m => m.RapportsStocksComponent),
         canActivate: [roleGuard, structureGuard],
-        data: { 
+        data: {
           roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant'],
           requireStructure: true,
           permissions: [PERMISSIONS.VIEW_REPORTS]
@@ -228,58 +184,42 @@ export const routes: Routes = [
       },
       {
         path: 'magasins',
-        component: MagazinComponent,
+        loadComponent: () =>
+          import('./caisse/parametres/magazin/magazin.component').then(m => m.MagazinComponent),
         canActivate: [roleGuard, structureGuard],
-        data: { 
+        data: {
           roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire'],
           requireStructure: true,
           permissions: [PERMISSIONS.MANAGE_STORES]
         }
       },
-      /* {
-        path: 'gerant',
-        component: GerantComponent,
-        canActivate: [roleGuard, structureGuard],
-        data: { 
-          roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire'],
-          requireStructure: true,
-          permissions: [PERMISSIONS.MANAGE_USERS]
-        }
-      }, */
       {
         path: 'parametres',
-        component: ParametresComponent,
+        loadComponent: () =>
+          import('./caisse/parametres/parametres/parametres.component').then(m => m.ParametresComponent),
         canActivate: [roleGuard],
-        data: { 
+        data: {
           roles: ['Administrateur','Administrateur secondaire'],
           permissions: [PERMISSIONS.MANAGE_SETTINGS]
         }
       },
-
       {
         path: 'import-donnees',
-        component: ImportComponent,
+        loadComponent: () =>
+          import('./caisse/parametres/import/import.component').then(m => m.ImportComponent),
         canActivate: [roleGuard],
-        data: { 
+        data: {
           roles: ['Administrateur','Administrateur secondaire'],
           permissions: [PERMISSIONS.MANAGE_SETTINGS]
         }
       },
-
-      /* {
-        path: 'historique-actions',
-        component: HistoriqueComponent,
-        canActivate: [roleGuard],
-        data: { 
-          roles: ['Administrateur Général','Administrateur'],
-          permissions: [PERMISSIONS.MANAGE_SETTINGS]
-        }
-      }, */
     ],
   },
   {
     path: '**',
-    component: NotFoundComponent,
+    loadComponent: () =>
+      import('./caisse/notFoundPages/not-found/not-found.component').then(m => m.NotFoundComponent),
   },
-  
+
   ];
+
