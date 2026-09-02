@@ -1,4 +1,5 @@
 const db = require('../models');
+const { verifierAppartenanceStructure } = require('../services/verification.service');
 const bcrypt = require('bcrypt');
 const User = db.Users;
 const Role = db.Role;
@@ -189,6 +190,10 @@ exports.update = async (req, res) => {
     if (!oldUser) {
       return res.status(404).json({ message: 'Utilisateur non trouvé' });
     }
+    const verifStructure = verifierAppartenanceStructure(oldUser, req.user);
+    if (!verifStructure.ok) {
+      return res.status(verifStructure.statut).json({ message: verifStructure.message });
+    }
 
     let data = req.body;
 
@@ -275,6 +280,10 @@ exports.delete = async (req, res) => {
     const userToDelete = await User.findByPk(req.params.id);
     if (!userToDelete) {
       return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+    const verifStructure = verifierAppartenanceStructure(userToDelete, req.user);
+    if (!verifStructure.ok) {
+      return res.status(verifStructure.statut).json({ message: verifStructure.message });
     }
     const deleted = await User.destroy({
       where: { id: req.params.id },
@@ -433,6 +442,8 @@ exports.updateUserStatus = async (req, res) => {
     }
     const user = await User.findByPk(req.params.id);
     if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(user, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
     const { status } = req.body;
     if (typeof status !== 'boolean')

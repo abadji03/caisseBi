@@ -1,4 +1,5 @@
 const db = require('../models');
+const { verifierAppartenanceStructure } = require('../services/verification.service');
 const Client = db.Client;
 const Magasin = db.Magasin;
 const {Op} = db.Sequelize;
@@ -284,6 +285,8 @@ exports.updateClient = async (req, res) => {
     }
     const client = await Client.findByPk(req.params.id);
     if (!client) return res.status(404).json({ message: 'Client non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(client, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
      // Sauvegarder les anciennes valeurs
     const oldValues = {
@@ -350,6 +353,8 @@ exports.deleteClient = async (req, res) => {
     }
     const client = await Client.findByPk(req.params.id);
     if (!client) return res.status(404).json({ message: 'Client non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(client, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
     // Sauvegarder les infos avant suppression
     const clientInfo = {
@@ -403,6 +408,8 @@ exports.getClientById = async (req, res) => {
     }
     const client = await Client.findByPk(req.params.id);
     if (!client) return res.status(404).json({ message: 'Client non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(client, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
     res.json(client);
   } catch (error) {
@@ -643,6 +650,8 @@ exports.updateClientStatut = async (req, res) => {
     }
     const client = await Client.findByPk(req.params.id);
     if (!client) return res.status(404).json({ message: 'Client non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(client, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
     const oldStatut = client.statut;
     await client.update({ statut: req.body.statut, dateMiseAJour: new Date() });
@@ -689,6 +698,8 @@ exports.updateClientPlafond = async (req, res) => {
     }
     const client = await Client.findByPk(req.params.id);
     if (!client) return res.status(404).json({ message: 'Client non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(client, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
     const oldPlafond = client.plafond;
     await client.update({ plafond: req.body.plafond, dateMiseAJour: new Date() });
@@ -814,6 +825,8 @@ exports.updateMontantANousPayer = async (req, res) => {
     }
     const client = await Client.findByPk(req.params.id);
     if (!client) return res.status(404).json({ message: 'Client non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(client, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
     await client.update({
       montantANousPayer: req.body.montantANousPayer,

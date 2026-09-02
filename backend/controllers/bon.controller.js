@@ -1,6 +1,7 @@
 // controllers/bonController.js
 const { Op } = require('sequelize');
 const db = require('../models');
+const { verifierAppartenanceStructure } = require('../services/verification.service');
 const Bon = db.Bon;
 const fs = require('fs');
 const path = require('path');
@@ -569,6 +570,8 @@ exports.getBonById = async (req, res) => {
 
     const bon = await Bon.findByPk(req.params.id);
     if (!bon) return res.status(404).json({ message: 'Bon non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(bon, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
     const bonData = bon.toJSON();
     const baseUrl = `${req.protocol}://${req.get('host')}/uploads/`;
@@ -593,6 +596,10 @@ exports.updateBon = async (req, res) => {
     const bon = await Bon.findByPk(req.params.id);
     if (!bon) {
       return res.status(404).json({ message: 'Bon non trouvé' });
+    }
+    const verifStructure = verifierAppartenanceStructure(bon, req.user);
+    if (!verifStructure.ok) {
+      return res.status(verifStructure.statut).json({ message: verifStructure.message });
     }
     const updatedData = { ...req.body };
     
@@ -657,6 +664,11 @@ exports.deleteBon = async (req, res) => {
     if (!bon) {
       await transaction.rollback();
       return res.status(404).json({ message: 'Bon non trouvé' });
+    }
+    const verifStructure = verifierAppartenanceStructure(bon, req.user);
+    if (!verifStructure.ok) {
+      await transaction.rollback();
+      return res.status(verifStructure.statut).json({ message: verifStructure.message });
     }
 
     // Si le bon a un fichier, le supprimer physiquement
@@ -723,6 +735,8 @@ exports.updateStatutBon = async (req, res) => {
     const { statutBon } = req.body;
     const bon = await Bon.findByPk(req.params.id);
     if (!bon) return res.status(404).json({ message: 'Bon non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(bon, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
     bon.statutBon = statutBon;
     await bon.save();
@@ -746,6 +760,8 @@ exports.updateTypeBon = async (req, res) => {
     const { type } = req.body;
     const bon = await Bon.findByPk(req.params.id);
     if (!bon) return res.status(404).json({ message: 'Bon non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(bon, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
     bon.type = type;
     await bon.save();
@@ -771,6 +787,11 @@ exports.updateResteAPayer = async (req, res) => {
     if (!bon) {
       await transaction.rollback();
       return res.status(404).json({ message: 'Bon non trouvé' });
+    }
+    const verifStructure = verifierAppartenanceStructure(bon, req.user);
+    if (!verifStructure.ok) {
+      await transaction.rollback();
+      return res.status(verifStructure.statut).json({ message: verifStructure.message });
     }
 
     const nouveauReste = parseFloat(bon.resteAPayer) - parseFloat(montant);
@@ -806,6 +827,11 @@ exports.updateNetAPayer = async (req, res) => {
       await transaction.rollback();
       return res.status(404).json({ message: 'Bon non trouvé' });
     }
+    const verifStructure = verifierAppartenanceStructure(bon, req.user);
+    if (!verifStructure.ok) {
+      await transaction.rollback();
+      return res.status(verifStructure.statut).json({ message: verifStructure.message });
+    }
 
     const netAPayer = parseFloat(bon.montantTotal) - parseFloat(remise);
     await bon.update({
@@ -834,6 +860,8 @@ exports.updateFichier = async (req, res) => {
 
       const bon = await Bon.findByPk(req.params.id);
       if (!bon) return res.status(404).json({ message: 'Bon non trouvé' });
+      const verifStructure = verifierAppartenanceStructure(bon, req.user);
+      if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
   
       if (!req.file) return res.status(400).json({ message: 'Aucune fichier fournie' });
   
@@ -859,6 +887,8 @@ exports.updateFichier = async (req, res) => {
     const { fichier } = req.body; // chemin ou base64
     const bon = await Bon.findByPk(req.params.id);
     if (!bon) return res.status(404).json({ message: 'Bon non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(bon, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
     bon.fichier = fichier;
     await bon.save();
@@ -884,6 +914,11 @@ exports.updateMotifsRetour = async (req, res) => {
     if (!bon) {
       await transaction.rollback();
       return res.status(404).json({ message: 'Bon non trouvé' });
+    }
+    const verifStructure = verifierAppartenanceStructure(bon, req.user);
+    if (!verifStructure.ok) {
+      await transaction.rollback();
+      return res.status(verifStructure.statut).json({ message: verifStructure.message });
     }
 
     await bon.update({ motifsRetour, statutBon: 'retourné' }, { transaction });

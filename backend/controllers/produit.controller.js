@@ -1,4 +1,5 @@
 const db = require('../models');
+const { verifierAppartenanceStructure } = require('../services/verification.service');
 const Produit = db.Produit;
 const Stock = db.Stock;
 const fs = require('fs');
@@ -145,6 +146,10 @@ exports.updateProduit = async (req, res) => {
     if (!produit) {
       return res.status(404).json({ message: 'Produit non trouvé' });
     }
+    const verifStructure = verifierAppartenanceStructure(produit, req.user);
+    if (!verifStructure.ok) {
+      return res.status(verifStructure.statut).json({ message: verifStructure.message });
+    }
 
     // Sauvegarder l'ancien état pour comparer
     const oldProduit = produit.toJSON();
@@ -287,6 +292,8 @@ exports.deleteProduit = async (req, res) => {
     }
     const produit = await Produit.findByPk(req.params.id);
     if (!produit) return res.status(404).json({ message: 'Produit non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(produit, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
     // Sauvegarder les données avant suppression
     const produitData = produit.toJSON();
@@ -341,6 +348,8 @@ exports.getProduitById = async (req, res) => {
     }
     const produit = await Produit.findByPk(req.params.id);
     if (!produit) return res.status(404).json({ message: 'Produit non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(produit, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
     const produitData = produit.toJSON();
     const baseUrl = `${req.protocol}://${req.get('host')}/uploads/`;
@@ -624,6 +633,8 @@ exports.updateStatusProduit = async (req, res) => {
     }
     const produit = await Produit.findByPk(req.params.id);
     if (!produit) return res.status(404).json({ message: 'Produit non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(produit, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
     const { statut } = req.body;
     // produit.statut = statut;
@@ -666,6 +677,8 @@ exports.updateTauxTVAProduit = async (req, res) => {
     }
     const produit = await Produit.findByPk(req.params.id);
     if (!produit) return res.status(404).json({ message: 'Produit non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(produit, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
     const { tauxTVA } = req.body;
     if (tauxTVA < 0) {
@@ -709,6 +722,10 @@ exports.updateImageProduit = async (req, res) => {
     const produit = await Produit.findByPk(req.params.id);
     if (!produit) {
       return res.status(404).json({ message: 'Produit non trouvé' });
+    }
+    const verifStructure = verifierAppartenanceStructure(produit, req.user);
+    if (!verifStructure.ok) {
+      return res.status(verifStructure.statut).json({ message: verifStructure.message });
     }
 
     if (!req.file) {
@@ -822,6 +839,10 @@ exports.updateCodeBarreProduit = async (req, res) => {
     const produit = await Produit.findByPk(req.params.id);
     if (!produit) {
       return res.status(404).json({ message: 'Produit non trouvé.' });
+    }
+    const verifStructure = verifierAppartenanceStructure(produit, req.user);
+    if (!verifStructure.ok) {
+      return res.status(verifStructure.statut).json({ message: verifStructure.message });
     }
 
     // Vérifier l’unicité du code-barre

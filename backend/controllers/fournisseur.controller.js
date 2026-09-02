@@ -1,4 +1,5 @@
 const db = require('../models');
+const { verifierAppartenanceStructure } = require('../services/verification.service');
 const Fournisseur = db.Fournisseur;
 const Bon = db.Bon;
 const Panier = db.Panier;
@@ -259,6 +260,8 @@ exports.getFournisseurWithMagasins = async (req, res) => {
     }
     const fournisseur = await Fournisseur.findByPk(req.params.id);
     if (!fournisseur) return res.status(404).json({ message: 'Fournisseur non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(fournisseur, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
     // Récupérer les anciennes valeurs pour comparer
     const oldValues = {
@@ -323,6 +326,8 @@ exports.updateFournisseur = async (req, res) => {
     
     const fournisseur = await Fournisseur.findByPk(req.params.id);
     if (!fournisseur) return res.status(404).json({ message: 'Fournisseur non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(fournisseur, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
     // Récupérer les anciennes valeurs
     const oldValues = {
@@ -464,6 +469,8 @@ exports.updateFournisseurStatus = async (req, res) => {
     }
     const fournisseur = await Fournisseur.findByPk(req.params.id);
     if (!fournisseur) return res.status(404).json({ message: 'Fournisseur non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(fournisseur, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
     const { statut } = req.body;
     if (typeof statut !== 'boolean')
@@ -515,6 +522,8 @@ exports.deleteFournisseur = async (req, res) => {
     }
     const fournisseur = await Fournisseur.findByPk(req.params.id);
     if (!fournisseur) return res.status(404).json({ message: 'Fournisseur non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(fournisseur, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
     // Sauvegarder les infos avant suppression
     const fournisseurInfo = {

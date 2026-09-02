@@ -1,6 +1,7 @@
 
 // controllers/panierController.js
 const db = require('../models');
+const { verifierAppartenanceStructure } = require('../services/verification.service');
 const Panier = db.Panier;
 const ArticlePanier = db.ArticlePanier;
 const fs = require('fs');
@@ -149,6 +150,8 @@ exports.getPanierById = async (req, res) => {
     }
     const panier = await Panier.findByPk(req.params.id);
     if (!panier) return res.status(404).json({ message: 'Panier non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(panier, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
     return res.json(panier);
   } catch (error) {
     console.error('Erreur récupération panier par ID:', error);
@@ -171,10 +174,14 @@ exports.updatePanier = async (req, res) => {
     if (!oldPanier) {
       return res.status(404).json({ message: 'Panier non trouvé' });
     }
+    const verifStructure = verifierAppartenanceStructure(oldPanier, req.user);
+    if (!verifStructure.ok) {
+      return res.status(verifStructure.statut).json({ message: verifStructure.message });
+    }
 
     req.body.dateMiseAJour = new Date(); // maj auto de la date
     const [updated] = await Panier.update(req.body, {
-      where: { id: req.params.id },
+      where: { id: req.params.id, code_structure: authUser.code_structure },
     });
     if (!updated) return res.status(404).json({ message: 'Panier non trouvé' });
     const panier = await Panier.findByPk(req.params.id);
@@ -365,6 +372,8 @@ exports.updateStatutPanier = async (req, res) => {
     const { statut } = req.body;
     const panier = await Panier.findByPk(req.params.id);
     if (!panier) return res.status(404).json({ message: 'Panier non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(panier, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
      const oldStatut = panier.statut;
     panier.statut = statut;
@@ -403,6 +412,8 @@ exports.updateTotauxPanier = async (req, res) => {
     const { totalHT, tva } = req.body;
     const panier = await Panier.findByPk(req.params.id);
     if (!panier) return res.status(404).json({ message: 'Panier non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(panier, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
     const oldTotaux = {
       totalHT: panier.totalHT,
@@ -450,6 +461,8 @@ exports.updateDetailsVisible = async (req, res) => {
     const { visible } = req.body; // true ou false
     const panier = await Panier.findByPk(req.params.id);
     if (!panier) return res.status(404).json({ message: 'Panier non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(panier, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
     const oldVisible = panier.detailsVisible;
     panier.detailsVisible = visible;
@@ -486,6 +499,8 @@ exports.resetPanier = async (req, res) => {
     }
     const panier = await Panier.findByPk(req.params.id);
     if (!panier) return res.status(404).json({ message: 'Panier non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(panier, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
     const oldValues = {
       totalHT: panier.totalHT,

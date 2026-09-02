@@ -1,4 +1,5 @@
 const db = require('../models');
+const { verifierAppartenanceStructure } = require('../services/verification.service');
 const Stock = db.Stock;
 const { safeNumber } = require('./bonComplet/statutManager')
 const HistoriqueService = require('../services/historique.service');
@@ -74,6 +75,8 @@ exports.updateStock = async (req, res) => {
     }
     const stock = await Stock.findByPk(req.params.id);
     if (!stock) return res.status(404).json({ message: 'Stock non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(stock, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
     // Sauvegarder l'ancien état pour l'historique
     const ancienEtat = {
@@ -400,6 +403,8 @@ exports.deleteStock = async (req, res) => {
     }
     const stock = await Stock.findByPk(req.params.id);
     if (!stock) return res.status(404).json({ message: 'Stock non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(stock, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
     // Récupérer les infos avant suppression
     const produit = await db.Produit.findByPk(stock.produitId);
@@ -451,6 +456,8 @@ exports.adjustQuantiteTotale = async (req, res) => {
 
     const stock = await Stock.findByPk(req.params.id);
     if (!stock) return res.status(404).json({ message: 'Stock non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(stock, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
     const ancienneQuantite = parseFloat(stock.quantiteTotale);
     const nouvelleQuantite = parseFloat(stock.quantiteTotale) + variation;
@@ -512,6 +519,8 @@ exports.adjustQuantiteReservee = async (req, res) => {
 
     const stock = await Stock.findByPk(req.params.id);
     if (!stock) return res.status(404).json({ message: 'Stock non trouvé' });
+    const verifStructure = verifierAppartenanceStructure(stock, req.user);
+    if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
     const ancienneReserve = parseFloat(stock.quantiteReservee || 0);
     const nouvelleReserve = parseFloat(stock.quantiteReservee || 0) + variation;
