@@ -4,6 +4,7 @@ const router = express.Router();
 const bonCompletController = require('../controllers/bonComplet.controller');
 const upload = require('../middlewares/uploadMiddleware');
 const authenticateToken = require('../middlewares/auth.middleware');
+const { requirePermission } = require('../middlewares/auth.middleware');
 const { validateBonComplet } = require('../middlewares/validateBonComplet.middleware');
 
 /**
@@ -63,7 +64,7 @@ const { validateBonComplet } = require('../middlewares/validateBonComplet.middle
  */
 
 // Route pour la création complète d'un bon
-router.post('/complet', upload.single('fichier'), authenticateToken, validateBonComplet, bonCompletController.createBonComplet);
+router.post('/complet', upload.single('fichier'), authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), validateBonComplet, bonCompletController.createBonComplet);
 
 // Note : les routes changer-statut, transitions et historique ont été retirées
 // car statut.controller.js dépendait de BonWorkflow/traiterChangementStatut

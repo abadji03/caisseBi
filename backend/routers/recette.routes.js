@@ -3,6 +3,7 @@ const router = express.Router();
 const ctrl = require('../controllers/recette.controller');
 const upload = require('../middlewares/uploadMiddleware');
 const authenticateToken = require('../middlewares/auth.middleware');
+const { requirePermission } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -45,12 +46,12 @@ const authenticateToken = require('../middlewares/auth.middleware');
  *         description: Liste des recettes
  */
 
-router.post('/', authenticateToken, upload.single('receipt'), ctrl.createRecette);
-router.get('/structure/:code_structure', authenticateToken, ctrl.getByStructure);
-router.get('/structure/bis/:code_structure', authenticateToken, ctrl.getByStructureBis);
-router.get('/paiement/:paiementId', authenticateToken, ctrl.findByPaiementId);
-router.delete('/:id', authenticateToken, ctrl.deleteRecette);
-router.put('/:id', authenticateToken, upload.single('receipt'), ctrl.updateRecette);
-router.patch('/:id/statutRecette', authenticateToken, ctrl.updateStatut);
+router.post('/', authenticateToken, requirePermission('Gérer les finances'), upload.single('receipt'), ctrl.createRecette);
+router.get('/structure/:code_structure', authenticateToken, requirePermission('Gérer les finances'), ctrl.getByStructure);
+router.get('/structure/bis/:code_structure', authenticateToken, requirePermission('Gérer les finances'), ctrl.getByStructureBis);
+router.get('/paiement/:paiementId', authenticateToken, requirePermission('Gérer les finances'), ctrl.findByPaiementId);
+router.delete('/:id', authenticateToken, requirePermission('Gérer les finances'), ctrl.deleteRecette);
+router.put('/:id', authenticateToken, requirePermission('Gérer les finances'), upload.single('receipt'), ctrl.updateRecette);
+router.patch('/:id/statutRecette', authenticateToken, requirePermission('Gérer les finances'), ctrl.updateStatut);
 
 module.exports = router;

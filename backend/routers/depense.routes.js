@@ -1,8 +1,9 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/depense.controller');
 const upload = require('../middlewares/uploadMiddleware');
 const authenticateToken = require('../middlewares/auth.middleware');
+const { requirePermission } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -52,14 +53,15 @@ const authenticateToken = require('../middlewares/auth.middleware');
  */
 
 
-router.post('/',authenticateToken,upload.single('receipt'), ctrl.createDepense);
+router.post('/',authenticateToken, requirePermission('Gérer les finances'), upload.single('receipt'), ctrl.createDepense);
 router.get('/magasin/:magasinId', ctrl.getAllByMagasin);
-router.delete('/:id',authenticateToken, ctrl.deleteDepense);
-router.put('/:id',authenticateToken,upload.single('receipt'), ctrl.updateDepense);
-router.get('/structure/:code_structure', authenticateToken, ctrl.getAllByStructure);
-router.get('/structure/bis/:code_structure', authenticateToken, ctrl.getAllByStructureBis);
-router.patch('/:id/statutDepense', authenticateToken, ctrl.updateStatut);
+router.delete('/:id',authenticateToken, requirePermission('Gérer les finances'), ctrl.deleteDepense);
+router.put('/:id',authenticateToken, requirePermission('Gérer les finances'), upload.single('receipt'), ctrl.updateDepense);
+router.get('/structure/:code_structure', authenticateToken, requirePermission('Gérer les finances'), ctrl.getAllByStructure);
+router.get('/structure/bis/:code_structure', authenticateToken, requirePermission('Gérer les finances'), ctrl.getAllByStructureBis);
+router.patch('/:id/statutDepense', authenticateToken, requirePermission('Gérer les finances'), ctrl.updateStatut);
 
-router.get('/export/excel',authenticateToken, ctrl.exportDepensesExcel);
+router.get('/export/excel',authenticateToken, requirePermission('Gérer les finances'), ctrl.exportDepensesExcel);
 
 module.exports = router;
+

@@ -2,6 +2,7 @@
 const router = require('express').Router();
 const importController = require('../controllers/import.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
+const { requirePermission } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -63,7 +64,7 @@ const authenticateToken = require('../middlewares/auth.middleware');
 
 router.use(authenticateToken);
 
-router.post('/detecter', importController.uploadMiddleware, importController.detecterStructure);
-router.post('/', importController.uploadMiddleware, importController.importer);
+router.post('/detecter', authenticateToken, requirePermission('Accès aux configurations'), importController.uploadMiddleware, importController.detecterStructure);
+router.post('/', authenticateToken, requirePermission('Accès aux configurations'), importController.uploadMiddleware, importController.importer);
 
 module.exports = router;

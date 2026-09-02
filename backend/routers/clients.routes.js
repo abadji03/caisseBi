@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const clientCtrl = require('../controllers/client.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
+const { requirePermission } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -83,27 +84,27 @@ const authenticateToken = require('../middlewares/auth.middleware');
  *         description: Client supprimé
  */
 
-router.get('/:id', authenticateToken, clientCtrl.getClientById);
-router.get('/structure/:code_structure', authenticateToken, clientCtrl.getClientsByStructure);
-router.get('/structure/bis/:code_structure', authenticateToken, clientCtrl.getClientsByStructureBis);
-router.post('/', authenticateToken, clientCtrl.createClient);
-router.put('/:id', authenticateToken, clientCtrl.updateClient);
-router.delete('/:id', authenticateToken, clientCtrl.deleteClient);      
+router.get('/:id', authenticateToken, requirePermission('Gérer les clients'), clientCtrl.getClientById);
+router.get('/structure/:code_structure', authenticateToken, requirePermission('Gérer les clients'), clientCtrl.getClientsByStructure);
+router.get('/structure/bis/:code_structure', authenticateToken, requirePermission('Gérer les clients'), clientCtrl.getClientsByStructureBis);
+router.post('/', authenticateToken, requirePermission('Gérer les clients'), clientCtrl.createClient);
+router.put('/:id', authenticateToken, requirePermission('Gérer les clients'), clientCtrl.updateClient);
+router.delete('/:id', authenticateToken, requirePermission('Gérer les clients'), clientCtrl.deleteClient);      
 // Routes spécifiques
-router.patch('/:id/statut', authenticateToken, clientCtrl.updateClientStatut);
+router.patch('/:id/statut', authenticateToken, requirePermission('Gérer les clients'), clientCtrl.updateClientStatut);
 
-//router.patch('/:id/solde', authenticateToken, clientCtrl.updateClientSolde);
+//router.patch('/:id/solde', authenticateToken, requirePermission('Gérer les clients'), clientCtrl.updateClientSolde);
 // Routes pour clients
 router.put('/clients/:clientId/magasins/:magasinId/solde', clientCtrl.updateClientSolde);
 
-router.patch('/:id/plafond', authenticateToken, clientCtrl.updateClientPlafond);
-router.patch('/:id/montant-a-payer', authenticateToken, clientCtrl.updateMontantANousPayer);
+router.patch('/:id/plafond', authenticateToken, requirePermission('Gérer les clients'), clientCtrl.updateClientPlafond);
+router.patch('/:id/montant-a-payer', authenticateToken, requirePermission('Gérer les clients'), clientCtrl.updateMontantANousPayer);
 
 // Dans votre fichier de routes
-router.get('/clients/:id/with-magasins',authenticateToken, clientCtrl.getClientWithMagasins);
+router.get('/clients/:id/with-magasins',authenticateToken, requirePermission('Gérer les clients'), clientCtrl.getClientWithMagasins);
 
-router.get('/export/excel',authenticateToken, clientCtrl.exportClientsExcel);
+router.get('/export/excel',authenticateToken, requirePermission('Gérer les clients'), clientCtrl.exportClientsExcel);
 
-router.post('/create-associate-client', authenticateToken, clientCtrl.createOrAssociateClient);
+router.post('/create-associate-client', authenticateToken, requirePermission('Gérer les clients'), clientCtrl.createOrAssociateClient);
 
 module.exports = router;

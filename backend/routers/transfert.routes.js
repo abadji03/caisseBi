@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/transfert.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
+const { requirePermission } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -77,14 +78,14 @@ const authenticateToken = require('../middlewares/auth.middleware');
  */
 
 
-router.post('/',authenticateToken, ctrl.createTransfert);
-router.put('/valider/:id',authenticateToken, ctrl.validerTransfert);
-router.get('/structure/:code_structure', authenticateToken, ctrl.listerParStructure);
+router.post('/',authenticateToken, requirePermission('Gérer le stock'), ctrl.createTransfert);
+router.put('/valider/:id',authenticateToken, requirePermission('Gérer le stock'), ctrl.validerTransfert);
+router.get('/structure/:code_structure', authenticateToken, requirePermission('Gérer le stock'), ctrl.listerParStructure);
 router.get(
   '/produit/:produitId/magasin/:magasinId',
   authenticateToken,
   ctrl.getStockByProduitAndMagasin
 );
-router.put('/refuser/:id', authenticateToken, ctrl.refuserTransfert);
+router.put('/refuser/:id', authenticateToken, requirePermission('Gérer le stock'), ctrl.refuserTransfert);
 
 module.exports = router;

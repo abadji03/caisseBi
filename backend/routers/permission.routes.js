@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const permission = require('../controllers/permission.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
+const { requirePermission } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -35,10 +36,10 @@ const authenticateToken = require('../middlewares/auth.middleware');
  *         description: Liste des permissions
  */
 
-router.post('/', authenticateToken, permission.create);
+router.post('/', authenticateToken, requirePermission('Gérer les rôles'), permission.create);
 router.get('/', authenticateToken, permission.findAll);
 router.get('/:id', authenticateToken, permission.findOne);
-router.put('/:id', authenticateToken, permission.update);
-router.delete('/:id', authenticateToken, permission.delete);
+router.put('/:id', authenticateToken, requirePermission('Gérer les rôles'), permission.update);
+router.delete('/:id', authenticateToken, requirePermission('Gérer les rôles'), permission.delete);
 
 module.exports = router;

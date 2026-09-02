@@ -4,6 +4,7 @@ const router = express.Router();
 const controller = require('../controllers/paiement.controller');
 const upload = require('../middlewares/uploadMiddleware');
 const authenticateToken = require('../middlewares/auth.middleware');
+const { requirePermission } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -54,8 +55,8 @@ const authenticateToken = require('../middlewares/auth.middleware');
  *       200:
  *         description: Liste des paiements
  */
-router.post('/', authenticateToken, upload.single('fichier'), controller.create);
-router.get('/', authenticateToken, controller.findAll);
+router.post('/', authenticateToken, requirePermission('Gérer les finances'), upload.single('fichier'), controller.create);
+router.get('/', authenticateToken, requirePermission('Gérer les finances'), controller.findAll);
 
 /**
  * @swagger
@@ -72,11 +73,11 @@ router.get('/', authenticateToken, controller.findAll);
  *       200:
  *         description: Liste des paiements de la structure
  */
-router.get('/structure/:code_structure', authenticateToken, controller.getPaiementsByStructure);
-router.get('/structure/:code_structure/clients', authenticateToken, controller.getPaiementsClientByStructure);
-router.get('/structure/:code_structure/fournisseurs', authenticateToken, controller.getPaiementsFournisseurByStructure);
-router.get('/structure/bis/:code_structure/clients', authenticateToken, controller.getPaiementsClientByStructureBis);
-router.get('/structure/bis/:code_structure/fournisseurs', authenticateToken, controller.getPaiementsFournisseurByStructureBis);
+router.get('/structure/:code_structure', authenticateToken, requirePermission('Gérer les finances'), controller.getPaiementsByStructure);
+router.get('/structure/:code_structure/clients', authenticateToken, requirePermission('Gérer les finances'), controller.getPaiementsClientByStructure);
+router.get('/structure/:code_structure/fournisseurs', authenticateToken, requirePermission('Gérer les finances'), controller.getPaiementsFournisseurByStructure);
+router.get('/structure/bis/:code_structure/clients', authenticateToken, requirePermission('Gérer les finances'), controller.getPaiementsClientByStructureBis);
+router.get('/structure/bis/:code_structure/fournisseurs', authenticateToken, requirePermission('Gérer les finances'), controller.getPaiementsFournisseurByStructureBis);
 
 /**
  * @swagger
@@ -119,10 +120,10 @@ router.get('/structure/bis/:code_structure/fournisseurs', authenticateToken, con
  *       204:
  *         description: Supprimé
  */
-router.get('/:id', authenticateToken, controller.findById);
-router.put('/:id', authenticateToken, upload.single('fichier'), controller.update);
-router.delete('/:id', authenticateToken, controller.delete);
-router.get('/:code_structure/fournisseur/:fournisseurId', authenticateToken, controller.getPaiementsByFournisseur);
-router.get('/:code_structure/client/:clientId', authenticateToken, controller.getPaiementsByClient);
+router.get('/:id', authenticateToken, requirePermission('Gérer les finances'), controller.findById);
+router.put('/:id', authenticateToken, requirePermission('Gérer les finances'), upload.single('fichier'), controller.update);
+router.delete('/:id', authenticateToken, requirePermission('Gérer les finances'), controller.delete);
+router.get('/:code_structure/fournisseur/:fournisseurId', authenticateToken, requirePermission('Gérer les finances'), controller.getPaiementsByFournisseur);
+router.get('/:code_structure/client/:clientId', authenticateToken, requirePermission('Gérer les finances'), controller.getPaiementsByClient);
 
 module.exports = router;

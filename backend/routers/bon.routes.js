@@ -4,6 +4,7 @@ const router = express.Router();
 const bonController = require('../controllers/bon.controller');
 const upload = require('../middlewares/uploadMiddleware');
 const authenticateToken = require('../middlewares/auth.middleware');
+const { requirePermission } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -55,8 +56,8 @@ const authenticateToken = require('../middlewares/auth.middleware');
  *       200:
  *         description: Liste des bons
  */
-router.post('/', authenticateToken, upload.single('fichier'), bonController.createBon);
-router.get('/', authenticateToken, bonController.getAllBons);
+router.post('/', authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), upload.single('fichier'), bonController.createBon);
+router.get('/', authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), bonController.getAllBons);
 
 /**
  * @swagger
@@ -73,11 +74,11 @@ router.get('/', authenticateToken, bonController.getAllBons);
  *       200:
  *         description: Liste des bons clients
  */
-router.get('/structure/:code_structure', authenticateToken, bonController.getBonsByStructure);
-router.get('/structure/:code_structure/clients', authenticateToken, bonController.getBonsClientsByStructure);
-router.get('/structure/bis/:code_structure/clients', authenticateToken, bonController.getBonsClientsByStructureBis);
-router.get('/structure/bis/:code_structure/fournisseurs', authenticateToken, bonController.getBonsFournisseursByStructureBis);
-router.get('/structure/:code_structure/fournisseurs', authenticateToken, bonController.getBonsFournisseursByStructure);
+router.get('/structure/:code_structure', authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), bonController.getBonsByStructure);
+router.get('/structure/:code_structure/clients', authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), bonController.getBonsClientsByStructure);
+router.get('/structure/bis/:code_structure/clients', authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), bonController.getBonsClientsByStructureBis);
+router.get('/structure/bis/:code_structure/fournisseurs', authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), bonController.getBonsFournisseursByStructureBis);
+router.get('/structure/:code_structure/fournisseurs', authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), bonController.getBonsFournisseursByStructure);
 
 /**
  * @swagger
@@ -122,9 +123,9 @@ router.get('/structure/:code_structure/fournisseurs', authenticateToken, bonCont
  *       200:
  *         description: Bon et éléments associés supprimés
  */
-router.get('/:id', authenticateToken, bonController.getBonById);
-router.put('/:id', authenticateToken, upload.single('fichier'), bonController.updateBon);
-router.delete('/:id', authenticateToken, bonController.deleteBon);
+router.get('/:id', authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), bonController.getBonById);
+router.put('/:id', authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), upload.single('fichier'), bonController.updateBon);
+router.delete('/:id', authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), bonController.deleteBon);
 
 /**
  * @swagger
@@ -151,7 +152,7 @@ router.delete('/:id', authenticateToken, bonController.deleteBon);
  *       200:
  *         description: Statut mis à jour
  */
-router.patch('/:id/statut', authenticateToken, bonController.updateStatutBon);
+router.patch('/:id/statut', authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), bonController.updateStatutBon);
 
 /**
  * @swagger
@@ -176,15 +177,15 @@ router.patch('/:id/statut', authenticateToken, bonController.updateStatutBon);
  *       200:
  *         description: Reste à payer mis à jour
  */
-router.patch('/:id/resteAPayer', authenticateToken, bonController.updateResteAPayer);
-router.patch('/:id/netAPayer', authenticateToken, bonController.updateNetAPayer);
-router.patch('/:id/type', authenticateToken, bonController.updateTypeBon);
-router.patch('/:id/fichier', upload.single('fichier'), authenticateToken, bonController.updateFichier);
-router.patch('/:id/motifsRetour', authenticateToken, bonController.updateMotifsRetour);
-router.get('/:code_structure/fournisseur/:fournisseurId', authenticateToken, bonController.getBonsByFournisseur);
-router.get('/:code_structure/client/:clientId', authenticateToken, bonController.getBonsByClient);
-router.post('/upload-fichier', authenticateToken, upload.single('fichier'), bonController.uploadFichier);
-router.delete('/:bonId/fichier', authenticateToken, bonController.supprimerFichier);
-router.get('/brouillons/:code_structure', authenticateToken, bonController.getBonsBrouillons);
+router.patch('/:id/resteAPayer', authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), bonController.updateResteAPayer);
+router.patch('/:id/netAPayer', authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), bonController.updateNetAPayer);
+router.patch('/:id/type', authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), bonController.updateTypeBon);
+router.patch('/:id/fichier', upload.single('fichier'), authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), bonController.updateFichier);
+router.patch('/:id/motifsRetour', authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), bonController.updateMotifsRetour);
+router.get('/:code_structure/fournisseur/:fournisseurId', authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), bonController.getBonsByFournisseur);
+router.get('/:code_structure/client/:clientId', authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), bonController.getBonsByClient);
+router.post('/upload-fichier', authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), upload.single('fichier'), bonController.uploadFichier);
+router.delete('/:bonId/fichier', authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), bonController.supprimerFichier);
+router.get('/brouillons/:code_structure', authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), bonController.getBonsBrouillons);
 
 module.exports = router;

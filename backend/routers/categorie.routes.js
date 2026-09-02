@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/categorie.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
+const { requirePermission } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -43,15 +44,15 @@ const authenticateToken = require('../middlewares/auth.middleware');
  *         description: Liste des catégories
  */    
 
-router.post('/', authenticateToken, ctrl.createCategorie);
-router.get('/structure/:code_structure',authenticateToken, ctrl.getAllByStructure);
-router.get('/structure/bis/:code_structure',authenticateToken, ctrl.getAllByStructureBis);
-router.put('/:id', authenticateToken, ctrl.updateCategorie);
-router.patch('/toggle/:id', authenticateToken, ctrl.toggleActive);
-router.delete('/:id', authenticateToken, ctrl.deleteCategorie);
+router.post('/', authenticateToken, requirePermission('Gérer les produits'), ctrl.createCategorie);
+router.get('/structure/:code_structure',authenticateToken, requirePermission('Gérer les produits'), ctrl.getAllByStructure);
+router.get('/structure/bis/:code_structure',authenticateToken, requirePermission('Gérer les produits'), ctrl.getAllByStructureBis);
+router.put('/:id', authenticateToken, requirePermission('Gérer les produits'), ctrl.updateCategorie);
+router.patch('/toggle/:id', authenticateToken, requirePermission('Gérer les produits'), ctrl.toggleActive);
+router.delete('/:id', authenticateToken, requirePermission('Gérer les produits'), ctrl.deleteCategorie);
 
-router.get('/export/excel',authenticateToken, ctrl.exportCategoriesExcel);
+router.get('/export/excel',authenticateToken, requirePermission('Gérer les produits'), ctrl.exportCategoriesExcel);
 
 // routes/categorie.routes.js
-router.get('/code/:code', authenticateToken, ctrl.getByCode);
+router.get('/code/:code', authenticateToken, requirePermission('Gérer les produits'), ctrl.getByCode);
 module.exports = router;

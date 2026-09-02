@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const users = require('../controllers/users.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
+const { requirePermission } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -50,7 +51,7 @@ const authenticateToken = require('../middlewares/auth.middleware');
  *               items:
  *                 $ref: '#/components/schemas/User'
  */
-router.post('/', authenticateToken, users.create);
+router.post('/', authenticateToken, requirePermission('Gérer les utilisateurs'), users.create);
 router.get('/', authenticateToken, users.findAll);
 
 /**
@@ -102,8 +103,8 @@ router.get('/', authenticateToken, users.findAll);
  *         description: Supprimé avec succès
  */
 router.get('/:id', authenticateToken, users.findOne);
-router.put('/:id', authenticateToken, users.update);
-router.delete('/:id', authenticateToken, users.delete);
+router.put('/:id', authenticateToken, requirePermission('Gérer les utilisateurs'), users.update);
+router.delete('/:id', authenticateToken, requirePermission('Gérer les utilisateurs'), users.delete);
 
 /**
  * @swagger
@@ -127,7 +128,7 @@ router.delete('/:id', authenticateToken, users.delete);
  *       200:
  *         description: Statut mis à jour
  */
-router.patch('/:id/status', authenticateToken, users.updateUserStatus);
+router.patch('/:id/status', authenticateToken, requirePermission('Gérer les utilisateurs'), users.updateUserStatus);
 
 /**
  * @swagger

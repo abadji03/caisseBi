@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/mouvementStock.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
+const { requirePermission } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -56,14 +57,14 @@ const authenticateToken = require('../middlewares/auth.middleware');
  */
 
 
-router.post('/',authenticateToken, controller.createMouvementStock);
-router.get('/structure/:code_structure', authenticateToken, controller.getMouvementsByStructure);
-//router.get('/',authenticateToken, controller.getAllMouvementsStock);
-router.get('/:id',authenticateToken, controller.getMouvementStockById);
-router.put('/:id',authenticateToken, controller.updateMouvementStock);
-router.delete('/:id',authenticateToken, controller.deleteMouvementStock);
+router.post('/',authenticateToken, requirePermission('Gérer le stock'), controller.createMouvementStock);
+router.get('/structure/:code_structure', authenticateToken, requirePermission('Gérer le stock'), controller.getMouvementsByStructure);
+//router.get('/',authenticateToken, requirePermission('Gérer le stock'), controller.getAllMouvementsStock);
+router.get('/:id',authenticateToken, requirePermission('Gérer le stock'), controller.getMouvementStockById);
+router.put('/:id',authenticateToken, requirePermission('Gérer le stock'), controller.updateMouvementStock);
+router.delete('/:id',authenticateToken, requirePermission('Gérer le stock'), controller.deleteMouvementStock);
 
 
-router.patch('/:id/statut', authenticateToken, controller.updateStatut);
+router.patch('/:id/statut', authenticateToken, requirePermission('Gérer le stock'), controller.updateStatut);
 
 module.exports = router;

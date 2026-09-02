@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/reconciliation.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
+const { requirePermission } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -60,15 +61,15 @@ const authenticateToken = require('../middlewares/auth.middleware');
 //router.post("/", ctrl.createReconciliation);
 //router.get("/structure/:code_structure", ctrl.getReconciliationsByStructure);
 
-router.post('/',authenticateToken, ctrl.createReconciliation);
-router.get('/structure/:code_structure',authenticateToken, ctrl.getReconciliationsByStructure); // Par structure
+router.post('/',authenticateToken, requirePermission('Gérer les finances'), ctrl.createReconciliation);
+router.get('/structure/:code_structure',authenticateToken, requirePermission('Gérer les finances'), ctrl.getReconciliationsByStructure); // Par structure
 
-//router.get('/',authenticateToken, ctrl.getAllReconciliations); // Tous
-router.get('/:id',authenticateToken, ctrl.getReconciliationById); // Par ID
-router.put('/:id',authenticateToken, ctrl.updateReconciliation); // MAJ
-router.delete('/:id',authenticateToken, ctrl.deleteReconciliation); // Suppression
+//router.get('/',authenticateToken, requirePermission('Gérer les finances'), ctrl.getAllReconciliations); // Tous
+router.get('/:id',authenticateToken, requirePermission('Gérer les finances'), ctrl.getReconciliationById); // Par ID
+router.put('/:id',authenticateToken, requirePermission('Gérer les finances'), ctrl.updateReconciliation); // MAJ
+router.delete('/:id',authenticateToken, requirePermission('Gérer les finances'), ctrl.deleteReconciliation); // Suppression
 
-router.patch('/:id/statut', authenticateToken, ctrl.updateStatut);
+router.patch('/:id/statut', authenticateToken, requirePermission('Gérer les finances'), ctrl.updateStatut);
 
 router.get(
   '/structure/:code_structure/analyse-ecart',
@@ -83,6 +84,6 @@ router.get(
 );
 
 
-router.get('/produit/:produitId',authenticateToken, ctrl.getReconciliationsByProduit); // Par produit
+router.get('/produit/:produitId',authenticateToken, requirePermission('Gérer les finances'), ctrl.getReconciliationsByProduit); // Par produit
 
 module.exports = router;

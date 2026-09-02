@@ -3,6 +3,7 @@ const router = express.Router();
 const produitCtrl = require('../controllers/produit.controller');
 const upload = require('../middlewares/uploadMiddleware');
 const authenticateToken = require('../middlewares/auth.middleware');
+const { requirePermission } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -43,7 +44,7 @@ const authenticateToken = require('../middlewares/auth.middleware');
  *             schema:
  *               $ref: '#/components/schemas/Produit'
  */
-router.post('/', authenticateToken, upload.single('image'), produitCtrl.createProduit);
+router.post('/', authenticateToken, requirePermission('Gérer les produits'), upload.single('image'), produitCtrl.createProduit);
 
 /**
  * @swagger
@@ -91,8 +92,8 @@ router.post('/', authenticateToken, upload.single('image'), produitCtrl.createPr
  *             schema:
  *               $ref: '#/components/schemas/Produit'
  */
-router.put('/:id', authenticateToken, upload.single('image'), produitCtrl.updateProduit);
-router.delete('/:id', authenticateToken, produitCtrl.deleteProduit);
+router.put('/:id', authenticateToken, requirePermission('Gérer les produits'), upload.single('image'), produitCtrl.updateProduit);
+router.delete('/:id', authenticateToken, requirePermission('Gérer les produits'), produitCtrl.deleteProduit);
 router.get('/:id', authenticateToken, produitCtrl.getProduitById);
 
 /**
@@ -151,10 +152,10 @@ router.get('/structure/:code_structure/produits-disponibles', authenticateToken,
  *       200:
  *         description: Statut mis à jour
  */
-router.patch('/:id/statut', authenticateToken, produitCtrl.updateStatusProduit);
-router.patch('/:id/tauxTVA', authenticateToken, produitCtrl.updateTauxTVAProduit);
-router.patch('/:id/image', authenticateToken, upload.single('image'), produitCtrl.updateImageProduit);
-router.put('/:id/code-barre', authenticateToken, produitCtrl.updateCodeBarreProduit);
+router.patch('/:id/statut', authenticateToken, requirePermission('Gérer les produits'), produitCtrl.updateStatusProduit);
+router.patch('/:id/tauxTVA', authenticateToken, requirePermission('Gérer les produits'), produitCtrl.updateTauxTVAProduit);
+router.patch('/:id/image', authenticateToken, requirePermission('Gérer les produits'), upload.single('image'), produitCtrl.updateImageProduit);
+router.put('/:id/code-barre', authenticateToken, requirePermission('Gérer les produits'), produitCtrl.updateCodeBarreProduit);
 
 /**
  * @swagger

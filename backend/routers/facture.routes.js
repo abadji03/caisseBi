@@ -1,4 +1,4 @@
-// routes/facture.routes.js
+﻿// routes/facture.routes.js
 const router = require('express').Router();
 const factureController = require('../controllers/facture.controller');
 const authenticateToken = require('../middlewares/auth.middleware');

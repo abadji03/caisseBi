@@ -1,12 +1,12 @@
 ﻿/**
  * Tests KPI â€” Lot 7 : règles de gestion
  *  R1. Ventes caisse = paniers SANS bon (bonId: null)
- *  R2. Ventes Ã  crédit = paniers LIÃ‰S Ã  un bon (type vente client)
+ *  R2. Ventes Ã  crédit = paniers LIÃ‰S Ã  un bon (type vente client)
  *  R3. Un mÃªme panier n'est compté que dans une seule catégorie
  *  R4. Retour partiel : seule la partie restante (netAPayer - montantAvoir)
  *      s'ajoute au CA (le retour déduit, il ne génère pas de recette)
  *  R5. Le ticket moyen compte des PANIERS, pas des bons
- *  R6. Les ventes Ã  crédit excluent les bons brouillons et annulés
+ *  R6. Les ventes Ã  crédit excluent les bons brouillons et annulés
  */
 jest.mock('../models', () => ({
   Sequelize: require('sequelize'),
@@ -35,7 +35,7 @@ afterEach(() => {
   console.error.mockRestore();
 });
 
-describe('getCAVenduBaseData â€” règles R1 Ã  R5', () => {
+describe('getCAVenduBaseData â€” règles R1 Ã  R5', () => {
   test('R1+R4+R5 : caisse (sans bon) + bons normaux + reste des retours partiels', async () => {
     // 1er findAll : ventes caisse ; 2e : paniers des bons normaux
     db.Panier.findAll
@@ -54,7 +54,7 @@ describe('getCAVenduBaseData â€” règles R1 Ã  R5', () => {
     expect(result.nombrePaniers).toBe(5);
     expect(result.ticketMoyenVente).toBeCloseTo(212);
 
-    // R1 : les ventes caisse excluent explicitement les paniers liés Ã  un bon
+    // R1 : les ventes caisse excluent explicitement les paniers liés Ã  un bon
     const appelCaisse = db.Panier.findAll.mock.calls[0][0];
     expect(appelCaisse.where.bonId).toBeNull();
     expect(appelCaisse.where.statut).toEqual(
@@ -94,7 +94,7 @@ describe('getCAVenduBaseData â€” règles R1 Ã  R5', () => {
 });
 
 describe('getVentesCreditData â€” règles R2 et R6', () => {
-  test('les bons brouillons et annulés sont exclus des ventes Ã  crédit', async () => {
+  test('les bons brouillons et annulés sont exclus des ventes Ã  crédit', async () => {
     db.Bon.findAll.mockResolvedValue([{ id: 7, numero: 'B7' }]);
     db.Panier.findAll.mockResolvedValue([{ totalMontant: '400.00', nombrePaniers: '3' }]);
 
@@ -108,7 +108,7 @@ describe('getVentesCreditData â€” règles R2 et R6', () => {
     expect(whereBon.type).toBe('vente');
     expect(whereBon.typeEntite).toBe('client');
 
-    // Les paniers comptés sont ceux LIÃ‰S aux bons (vente Ã  crédit)
+    // Les paniers comptés sont ceux LIÃ‰S aux bons (vente Ã  crédit)
     const wherePaniers = db.Panier.findAll.mock.calls[0][0].where;
     expect(wherePaniers.bonId).toEqual({ [Op.in]: [7] });
 
@@ -144,5 +144,6 @@ describe('getCAEncaisseBaseData', () => {
     );
   });
 });
+
 
 

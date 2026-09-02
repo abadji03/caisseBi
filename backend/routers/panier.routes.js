@@ -4,6 +4,7 @@ const router = express.Router();
 const panierController = require('../controllers/panier.controller');
 const panierCompletController = require('../controllers/panierComplet.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
+const { requirePermission } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -60,24 +61,24 @@ const authenticateToken = require('../middlewares/auth.middleware');
 
 
 
-router.post('/',authenticateToken, panierController.createPanier);
-router.get('/',authenticateToken, panierController.getAllPaniers);
-router.get('/:id',authenticateToken, panierController.getPanierById);
-router.put('/:id',authenticateToken, panierController.updatePanier);
-router.delete('/:id',authenticateToken, panierController.deletePanier);
-router.delete('/onlyPanier/:id',authenticateToken, panierController.deleteOnlyPanier);
-router.get('/bon/:bonId',authenticateToken, panierController.getPanierByBonId);
+router.post('/',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierController.createPanier);
+router.get('/',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierController.getAllPaniers);
+router.get('/:id',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierController.getPanierById);
+router.put('/:id',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierController.updatePanier);
+router.delete('/:id',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierController.deletePanier);
+router.delete('/onlyPanier/:id',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierController.deleteOnlyPanier);
+router.get('/bon/:bonId',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierController.getPanierByBonId);
 
-router.get('/structure/:code_structure/magasin/:magasinId',authenticateToken, panierController.getPaniersByStructure);
+router.get('/structure/:code_structure/magasin/:magasinId',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierController.getPaniersByStructure);
 
-router.get('/structure/:code_structure/magasin/:magasinId/brouillon',authenticateToken, panierController.getPaniersBrouillons);
+router.get('/structure/:code_structure/magasin/:magasinId/brouillon',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierController.getPaniersBrouillons);
 
-router.post('/panier-complet',authenticateToken, panierCompletController.createOrUpdatePanierComplet);
+router.post('/panier-complet',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierCompletController.createOrUpdatePanierComplet);
 
-router.get('/structure/:code_structure/journalier',authenticateToken, panierController.getPaniersByStructureBis);
-router.get('/par-date/:date',authenticateToken, panierController.getPaniersParDate);
-router.get('/structure/:code_structure/magasin/:magasinId/bons/:bonId/aujourdhui',authenticateToken, panierController.getPaniersAujourdhui);
-router.get('/structure/bis/:code_structure/magasin/:magasinId/bons/:bonId/aujourdhui',authenticateToken, panierController.getPaniersAujourdhuiBis);
+router.get('/structure/:code_structure/journalier',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierController.getPaniersByStructureBis);
+router.get('/par-date/:date',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierController.getPaniersParDate);
+router.get('/structure/:code_structure/magasin/:magasinId/bons/:bonId/aujourdhui',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierController.getPaniersAujourdhui);
+router.get('/structure/bis/:code_structure/magasin/:magasinId/bons/:bonId/aujourdhui',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierController.getPaniersAujourdhuiBis);
 
 
 module.exports = router;

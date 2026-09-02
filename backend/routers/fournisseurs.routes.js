@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const fournisseurCtrl = require('../controllers/fournisseur.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
+const { requirePermission } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -91,19 +92,19 @@ const authenticateToken = require('../middlewares/auth.middleware');
  */
 
 
-router.post('/', authenticateToken, fournisseurCtrl.createFournisseur);
-router.put('/:id', authenticateToken, fournisseurCtrl.updateFournisseur);
-router.delete('/:id', authenticateToken, fournisseurCtrl.deleteFournisseur);
-router.get('/structure/:code_structure', authenticateToken, fournisseurCtrl.getFournisseursByStructure);
-router.get('/structure/bis/:code_structure', authenticateToken, fournisseurCtrl.getFournisseursByStructureBis);
-router.patch('/:id/statut', authenticateToken, fournisseurCtrl.updateFournisseurStatus);
-router.get('/:id', authenticateToken, fournisseurCtrl.getFournisseurById);
-router.get('/:code_structure/:id/bons', authenticateToken, fournisseurCtrl.getBonsWithPaniersAndProduits);
+router.post('/', authenticateToken, requirePermission('Gérer les fournisseurs'), fournisseurCtrl.createFournisseur);
+router.put('/:id', authenticateToken, requirePermission('Gérer les fournisseurs'), fournisseurCtrl.updateFournisseur);
+router.delete('/:id', authenticateToken, requirePermission('Gérer les fournisseurs'), fournisseurCtrl.deleteFournisseur);
+router.get('/structure/:code_structure', authenticateToken, requirePermission('Gérer les fournisseurs'), fournisseurCtrl.getFournisseursByStructure);
+router.get('/structure/bis/:code_structure', authenticateToken, requirePermission('Gérer les fournisseurs'), fournisseurCtrl.getFournisseursByStructureBis);
+router.patch('/:id/statut', authenticateToken, requirePermission('Gérer les fournisseurs'), fournisseurCtrl.updateFournisseurStatus);
+router.get('/:id', authenticateToken, requirePermission('Gérer les fournisseurs'), fournisseurCtrl.getFournisseurById);
+router.get('/:code_structure/:id/bons', authenticateToken, requirePermission('Gérer les fournisseurs'), fournisseurCtrl.getBonsWithPaniersAndProduits);
 
-router.get('/:id/with-magasins',authenticateToken, fournisseurCtrl.getFournisseurWithMagasins);
+router.get('/:id/with-magasins',authenticateToken, requirePermission('Gérer les fournisseurs'), fournisseurCtrl.getFournisseurWithMagasins);
 
 // Routes pour fournisseurs
 router.put('/fournisseurs/:fournisseurId/magasins/:magasinId/solde', fournisseurCtrl.updateFournisseurSoldeByMagasin);
 
-router.get('/export/excel',authenticateToken, fournisseurCtrl.exportFournisseursExcel);
+router.get('/export/excel',authenticateToken, requirePermission('Gérer les fournisseurs'), fournisseurCtrl.exportFournisseursExcel);
 module.exports = router;

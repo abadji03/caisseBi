@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const operationController = require('../controllers/operation.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
+const { requirePermission } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -68,14 +69,14 @@ const authenticateToken = require('../middlewares/auth.middleware');
 
 // Routes spécifiques — doivent être AVANT /:id pour ne pas être avalées par ce pattern
 router.get('/stats', operationController.getStats);
-router.get('/fournisseur/:code_structure/:fournisseurId', authenticateToken, operationController.findByFournisseur);
-router.get('/client/:code_structure/:clientId', authenticateToken, operationController.findByClient);
+router.get('/fournisseur/:code_structure/:fournisseurId', authenticateToken, requirePermission('Gérer les finances'), operationController.findByFournisseur);
+router.get('/client/:code_structure/:clientId', authenticateToken, requirePermission('Gérer les finances'), operationController.findByClient);
 
 // Routes génériques — après les routes spécifiques
-router.post('/', authenticateToken, operationController.create);
-router.get('/', authenticateToken, operationController.findAll);
-router.get('/:id', authenticateToken, operationController.findById);
-router.put('/:id', authenticateToken, operationController.update);
-router.delete('/:id', authenticateToken, operationController.delete);
+router.post('/', authenticateToken, requirePermission('Gérer les finances'), operationController.create);
+router.get('/', authenticateToken, requirePermission('Gérer les finances'), operationController.findAll);
+router.get('/:id', authenticateToken, requirePermission('Gérer les finances'), operationController.findById);
+router.put('/:id', authenticateToken, requirePermission('Gérer les finances'), operationController.update);
+router.delete('/:id', authenticateToken, requirePermission('Gérer les finances'), operationController.delete);
 
 module.exports = router;
