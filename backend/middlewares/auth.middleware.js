@@ -34,8 +34,8 @@ const authenticateToken = async (req, res, next) => {
     req.user = decoded;
 
     next();
-  } catch (err) {
-    return res.status(403).json({ message: 'Token invalide', error: err.message });
+  } catch {
+    return res.status(403).json({ message: 'Token invalide' });
   }
 };
 

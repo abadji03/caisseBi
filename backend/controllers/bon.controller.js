@@ -11,10 +11,6 @@ const User = db.Users;
 const Fournisseur = db.Fournisseur;
 const Client = db.Client;
 const Magasin = db.Magasin;
-const operationController = require('./operation.controller');
-const HistoriqueService = require('../services/historique.service');
-
-
 
 
 const BASE_URL = 'http://localhost:5000/uploads/'; //url de l'emplacement des fichier à stocker

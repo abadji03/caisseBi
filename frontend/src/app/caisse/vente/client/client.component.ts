@@ -580,7 +580,7 @@ export class ClientComponent implements OnInit, OnDestroy {
     this.bonBrouillonService.clearBrouillons();
   }
 
-  private enregistrerBon(bon: import('../../../modeles/bon.model').Bon, panier: Panier, fichier: File | null): void {
+  private enregistrerBon(bon: import('../../../modeles/bon.model').Bon, panier: Panier, _fichier?: File | null): void {
     if (!this.selectedClient) return;
 
     const bonCompletData = {
