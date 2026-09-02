@@ -1,5 +1,5 @@
 // models/bon.js
-//const SequenceService = require('../services/sequence.service');
+const SequenceService = require('../services/sequence.service');
 
 module.exports = (sequelize, DataTypes) => {
   const Bon = sequelize.define('Bon', {
@@ -134,21 +134,13 @@ module.exports = (sequelize, DataTypes) => {
     // Calcul automatique : netAPayer = montantTotal – remise
     netAPayer: {
       type: DataTypes.DECIMAL(12, 2),
-      /* get() {
-        const total = parseFloat(this.getDataValue('montantTotal')) || 0;
-        const remise = parseFloat(this.getDataValue('remise')) || 0;
-        return (total - remise).toFixed(2);
-      } */
+      allowNull: true,
     },
 
     // Calcul automatique : resteAPayer = netAPayer – avance
     resteAPayer: {
       type: DataTypes.DECIMAL(12, 2),
-      /* get() {
-        const net = parseFloat(this.get('netAPayer')) || 0;
-        const avance = parseFloat(this.getDataValue('avance')) || 0;
-        return (net - avance).toFixed(2);
-      } */
+      allowNull: true,
     },
 
     // --- Paiement ---
@@ -209,21 +201,53 @@ module.exports = (sequelize, DataTypes) => {
     } */
     hooks: {
       beforeValidate: async (bon, options) => {
-        if (bon.numeroE) return; // déjà défini, rien à faire
+        // --- Numérotation atomique (séquence par structure) ---
+        if (!bon.numeroE) {
+          const t = options.transaction;
+          try {
+            // Séquence initialisée au MAX(numeroE) existant si absente,
+            // puis numéro atomique (SELECT ... FOR UPDATE) : évite les
+            // collisions sur créations simultanées.
+            const { Sequence } = require('../models');
+            await SequenceService.initialiserDepuisMax(
+              sequelize.models.Bon, 'numeroE', Sequence,
+              bon.code_structure, 'bon', t
+            );
+            bon.numeroE = await SequenceService.getNextNumero(
+              sequelize, Sequence, bon.code_structure, 'bon', t
+            );
+          } catch (error) {
+            // Repli : ancien comportement COUNT + 1 (risque de collision,
+            // mais ne bloque pas la création si la table Sequence est absente)
+            console.error('❌ Hook numeroE Bon error:', error);
+            try {
+              const count = await sequelize.models.Bon.count({
+                where: { code_structure: bon.code_structure },
+                transaction: t,
+                lock: t ? t.LOCK.UPDATE : undefined,
+              });
+              bon.numeroE = count + 1;
+            } catch (fallbackError) {
+              console.error('❌ Hook numeroE Bon fallback error:', fallbackError);
+              bon.numeroE = 1;
+            }
+          }
+        }
 
-        // Utiliser un SELECT ... FOR UPDATE dans la transaction courante
-        // pour éviter la race condition sur les créations simultanées
-        const t = options.transaction;
-        try {
-          const count = await sequelize.models.Bon.count({
-            where: { code_structure: bon.code_structure },
-            transaction: t,
-            lock: t ? t.LOCK.UPDATE : undefined,
-          });
-          bon.numeroE = count + 1;
-        } catch (error) {
-          console.error('❌ Hook numeroE Bon error:', error);
-          bon.numeroE = 1;
+        // --- Montants dérivés : remplis uniquement s'ils sont absents ---
+        // Les endpoints updateNetAPayer / updateResteAPayer mettent à jour
+        // ces valeurs explicitement (décrément au fil des paiements) : un
+        // recalcul systématique écraserait ce flux. On garantit seulement
+        // qu'aucun bon n'est créé avec des montants dérivés nuls/incohérents.
+        const num = (v) => {
+          const n = parseFloat(v);
+          return Number.isFinite(n) ? n : 0;
+        };
+        if (bon.netAPayer == null) {
+          bon.netAPayer = Number(Math.max(0, num(bon.montantTotal) - num(bon.remise)).toFixed(2));
+        }
+        if (bon.resteAPayer == null) {
+          bon.resteAPayer = Number(Math.max(0, num(bon.netAPayer) - num(bon.avance)).toFixed(2));
         }
       },
     }

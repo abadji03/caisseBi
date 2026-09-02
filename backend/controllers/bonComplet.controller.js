@@ -135,11 +135,14 @@ exports.createBonComplet = async (req, res) => {
       
 
       // Créer historique si le statut a changé
-      if (bonData.statutBon && bonData.statutBon !== nouveauBon.statutBon) {
+      // (comparaison avec ancienBon, chargé AVANT la mise à jour —
+      //  l'ancienne condition comparait bonData avec nouveauBon déjà
+      //  mis à jour et ne pouvait jamais se déclencher)
+      if (ancienBon && nouveauBon.statutBon !== ancienBon.statutBon) {
         await statutManager.creerHistoriqueStatut(
           nouveauBon.id,
+          ancienBon.statutBon,
           nouveauBon.statutBon,
-          bonData.statutBon,
           agentId,
           'Mise à jour du statut du bon',
           code_structure,

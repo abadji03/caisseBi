@@ -1,5 +1,5 @@
 // models/panier.js
-//const SequenceService = require('../services/sequence.service');
+const SequenceService = require('../services/sequence.service');
 
 module.exports = (sequelize, DataTypes) => {
   const Panier = sequelize.define('Panier', {
@@ -84,15 +84,32 @@ module.exports = (sequelize, DataTypes) => {
 
         const t = options.transaction;
         try {
-          const count = await sequelize.models.Panier.count({
-            where: { code_structure: panier.code_structure },
-            transaction: t,
-            lock: t ? t.LOCK.UPDATE : undefined,
-          });
-          panier.numeroE = count + 1;
+          // Numérotation atomique par séquence (SELECT ... FOR UPDATE) :
+          // évite les collisions sur créations simultanées.
+          // La séquence est initialisée au MAX(numeroE) existant si absente.
+          const { Sequence } = require('../models');
+          await SequenceService.initialiserDepuisMax(
+            sequelize.models.Panier, 'numeroE', Sequence,
+            panier.code_structure, 'panier', t
+          );
+          panier.numeroE = await SequenceService.getNextNumero(
+            sequelize, Sequence, panier.code_structure, 'panier', t
+          );
         } catch (error) {
+          // Repli : ancien comportement COUNT + 1 (risque de collision,
+          // mais ne bloque pas la création si la table Sequence est absente)
           console.error('❌ Hook numeroE Panier error:', error);
-          panier.numeroE = 1;
+          try {
+            const count = await sequelize.models.Panier.count({
+              where: { code_structure: panier.code_structure },
+              transaction: t,
+              lock: t ? t.LOCK.UPDATE : undefined,
+            });
+            panier.numeroE = count + 1;
+          } catch (fallbackError) {
+            console.error('❌ Hook numeroE Panier fallback error:', fallbackError);
+            panier.numeroE = 1;
+          }
         }
       },
     }
