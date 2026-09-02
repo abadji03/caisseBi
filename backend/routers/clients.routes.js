@@ -3,11 +3,85 @@ const router = express.Router();
 const clientCtrl = require('../controllers/client.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
 
+/**
+ * @swagger
+ * tags:
+ *   name: Clients
+ *   description: Gestion des clients
+ */
 
-/* router.post("/", clientCtrl.createClient);
-router.put("/:id", clientCtrl.updateClient);
-router.delete("/:id", clientCtrl.deleteClient);
-router.get("/structure/:code_structure", clientCtrl.getClientsByStructure); */
+/**
+ * @swagger
+ * /clients:
+ *   post:
+ *     summary: Créer un client
+ *     tags: [Clients]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [nomComplet, code_structure]
+ *             properties:
+ *               nomComplet: { type: string }
+ *               telephone: { type: string }
+ *               email: { type: string }
+ *               adresse: { type: string }
+ *               plafond: { type: number }
+ *               code_structure: { type: string }
+ *     responses:
+ *       201:
+ *         description: Client créé
+ *
+ * /clients/structure/{code_structure}:
+ *   get:
+ *     summary: Lister les clients d'une structure
+ *     tags: [Clients]
+ *     parameters:
+ *       - in: path
+ *         name: code_structure
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Liste des clients
+ *
+ * /clients/{id}:
+ *   get:
+ *     summary: Récupérer un client par ID
+ *     tags: [Clients]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Client trouvé
+ *   put:
+ *     summary: Mettre à jour un client
+ *     tags: [Clients]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Client mis à jour
+ *   delete:
+ *     summary: Supprimer un client
+ *     tags: [Clients]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Client supprimé
+ */
 
 router.get('/:id', authenticateToken, clientCtrl.getClientById);
 router.get('/structure/:code_structure', authenticateToken, clientCtrl.getClientsByStructure);

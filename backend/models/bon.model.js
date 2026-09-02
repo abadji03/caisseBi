@@ -209,40 +209,23 @@ module.exports = (sequelize, DataTypes) => {
     } */
     hooks: {
       beforeValidate: async (bon, options) => {
-        console.log('🔍 beforeValidate hook called', bon.code_structure);
-        
-        // Définir numeroE avant la validation
-        if (!bon.numeroE) {
-          try {
-            const BonsModel = sequelize.models.Bon;
-            if (BonsModel) {
-              const count = await BonsModel.count({
-                where: { code_structure: bon.code_structure },
-                transaction: options.transaction
-              });
-              bon.numeroE = count + 1;
-              console.log(`✅ Generated numeroE in beforeValidate: ${bon.numeroE}`);
-            } else {
-              bon.numeroE = 1;
-            }
-          } catch (error) {
-            console.error('❌ Hook error:', error);
-            bon.numeroE = 1;
-          }
-        }
-      },
-      beforeCreate: async (bon, options) => {
-        console.log('🎯 beforeCreate hook STARTED', bon.numeroE);
-        // Vérifier et régénérer si nécessaire
-        if (!bon.numeroE) {
-          const BonsModel = sequelize.models.Bon;
-          const count = await BonsModel.count({
+        if (bon.numeroE) return; // déjà défini, rien à faire
+
+        // Utiliser un SELECT ... FOR UPDATE dans la transaction courante
+        // pour éviter la race condition sur les créations simultanées
+        const t = options.transaction;
+        try {
+          const count = await sequelize.models.Bon.count({
             where: { code_structure: bon.code_structure },
-            transaction: options.transaction
+            transaction: t,
+            lock: t ? t.LOCK.UPDATE : undefined,
           });
           bon.numeroE = count + 1;
+        } catch (error) {
+          console.error('❌ Hook numeroE Bon error:', error);
+          bon.numeroE = 1;
         }
-      }
+      },
     }
   });
 

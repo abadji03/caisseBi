@@ -1,17 +1,19 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
+import { catchError, Observable, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 import { MouvementsStock, PaginatedResponse } from '../modeles/entrees-sorties.model';
-import { Observable } from 'rxjs';
+import { NGXLogger } from 'ngx-logger';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class MouvementsStockService {
-  private apiUrl = 'http://localhost:5000/api/mouvements-stock';
-
+  private apiUrl = `${environment.apiUrl}/mouvements-stock`;
   private http = inject(HttpClient);
   private authService = inject(AuthService);
+  private logger = inject(NGXLogger);
 
   private getHeaders(): HttpHeaders {
     const token = this.authService.getToken();
@@ -20,83 +22,59 @@ export class MouvementsStockService {
     });
   }
 
-  /** ----------------------------- CRUD ----------------------------- */
+  private handleError(method: string, error: unknown): Observable<never> {
+    this.logger.error(`MouvementsStockService -> ${method} :`, error);
+    return throwError(() => error);
+  }
 
-  /** Créer un mouvement */
   create(mouvement: MouvementsStock): Observable<MouvementsStock> {
-    return this.http.post<MouvementsStock>(this.apiUrl, mouvement, { headers: this.getHeaders() });
+    return this.http.post<MouvementsStock>(this.apiUrl, mouvement, { headers: this.getHeaders() })
+      .pipe(catchError(err => this.handleError('create', err)));
   }
 
-  /**Lire tous les mouvements */
   getAll(): Observable<MouvementsStock[]> {
-    return this.http.get<MouvementsStock[]>(this.apiUrl, { headers: this.getHeaders() });
+    return this.http.get<MouvementsStock[]>(this.apiUrl, { headers: this.getHeaders() })
+      .pipe(catchError(err => this.handleError('getAll', err)));
   }
 
-  /** Lire un mouvement par ID */
   getById(id: number): Observable<MouvementsStock> {
-    return this.http.get<MouvementsStock>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
+    return this.http.get<MouvementsStock>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() })
+      .pipe(catchError(err => this.handleError('getById', err)));
   }
 
-  /** Mettre à jour un mouvement */
   update(id: number, mouvement: Partial<MouvementsStock>): Observable<MouvementsStock> {
     return this.http.put<MouvementsStock>(`${this.apiUrl}/${id}`, mouvement, {
       headers: this.getHeaders(),
-    });
+    }).pipe(catchError(err => this.handleError('update', err)));
   }
 
-  /** Supprimer un mouvement */
   delete(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
+    return this.http.delete<void>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() })
+      .pipe(catchError(err => this.handleError('delete', err)));
   }
-
-  /** ------------------- End‑point spécifique ------------------- */
-
-  /** Obtenir les mouvements d’une structure donnée */
-  /* getByStructure(code_structure: string): Observable<MouvementsStock[]> {
-    return this.http.get<MouvementsStock[]>(`${this.apiUrl}/structure/${code_structure}`, {
-      headers: this.getHeaders(),
-    });
-  } */
 
   getByStructure(
-    code_structure: string, 
-    page= 1, 
-    limit= 10, 
-    search= '',
+    code_structure: string,
+    page = 1,
+    limit = 10,
+    search = '',
     typeMouvement: string,
- 
-): Observable<PaginatedResponse<MouvementsStock>> {
-  
-  // Construire les paramètres de requête
-  let params = `?page=${page}&limit=${limit}`;
-  
-  if (search) {
-    params += `&search=${encodeURIComponent(search)}`;
-  }
-  
-  if (typeMouvement && typeMouvement !== 'tous') {
-    params += `&typeMouvement=${encodeURIComponent(typeMouvement)}`;
-  }
-  
-  /* if (dateDebut) {
-    params += `&dateDebut=${encodeURIComponent(dateDebut)}`;
-  }
-  
-  if (dateFin) {
-    params += `&dateFin=${encodeURIComponent(dateFin)}`;
-  } */
+  ): Observable<PaginatedResponse<MouvementsStock>> {
+    let params = `?page=${page}&limit=${limit}`;
+    if (search) params += `&search=${encodeURIComponent(search)}`;
+    if (typeMouvement && typeMouvement !== 'tous') params += `&typeMouvement=${encodeURIComponent(typeMouvement)}`;
 
-  return this.http.get<PaginatedResponse<MouvementsStock>>(
-    `${this.apiUrl}/structure/${code_structure}${params}`, 
-    { headers: this.getHeaders() }
-  );
-}
+    return this.http.get<PaginatedResponse<MouvementsStock>>(
+      `${this.apiUrl}/structure/${code_structure}${params}`,
+      { headers: this.getHeaders() }
+    ).pipe(catchError(err => this.handleError('getByStructure', err)));
+  }
 
   updateStatut(id: number, statut: string): Observable<MouvementsStock> {
-      return this.http.patch<MouvementsStock>(
-        `${this.apiUrl}/${id}/statut`,
-        { statut },
-        { headers: this.getHeaders() },
-      );
-    }
+    return this.http.patch<MouvementsStock>(
+      `${this.apiUrl}/${id}/statut`,
+      { statut },
+      { headers: this.getHeaders() },
+    ).pipe(catchError(err => this.handleError('updateStatut', err)));
+  }
 }

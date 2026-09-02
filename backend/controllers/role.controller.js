@@ -1,6 +1,6 @@
 const db = require('../models');
-const Role = db.role;
-const Permission = db.permission;
+const Role = db.Role;
+const Permission = db.Permission;
 const HistoriqueService = require('../services/historique.service');
 
 

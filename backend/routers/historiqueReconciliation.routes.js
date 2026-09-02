@@ -12,7 +12,38 @@ const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/historiqueReconciliation.controller');
 
-router.post('/', ctrl.create);
+/**
+ * @swagger
+ * tags:
+ *   name: Historique Réconciliation
+ *   description: Historique des opérations de réconciliation
+ *
+ * /historiques-reconciliations/reconciliation/{reconciliationId}:
+ *   get:
+ *     summary: Historique d'une réconciliation
+ *     tags: [Historique Réconciliation]
+ *     parameters:
+ *       - in: path
+ *         name: reconciliationId
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Historique de la réconciliation
+ *
+ * /historiques-reconciliations/structure/{code_structure}:
+ *   get:
+ *     summary: Historiques d'une structure
+ *     tags: [Historique Réconciliation]
+ *     parameters:
+ *       - in: path
+ *         name: code_structure
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Liste des historiques
+ */
 router.get('/reconciliation/:reconciliationId', ctrl.findByReconciliation);
 router.get('/structure/:code_structure', ctrl.findByStructure);
 router.get('/:id', ctrl.findById);

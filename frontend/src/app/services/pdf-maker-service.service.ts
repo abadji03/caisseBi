@@ -11,6 +11,7 @@ import { Operation } from '../modeles/operation.model';
 import { Fournisseur } from '../modeles/fournisseur.model';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 
 
@@ -35,7 +36,7 @@ export class PdfMakerServiceService {
 
 private imageConverter = inject(ImageConverterService)
 
-private apiUrl = 'http://localhost:5000/api/kpi-caisse';
+private apiUrl = `${environment.apiUrl}/kpi-caisse`;
   
 private http = inject(HttpClient);
 
@@ -692,7 +693,7 @@ private generateOperationsTable(operations: Operation[]): any {
   // Ajouter les opérations avec validation
   operations.forEach(op => {
     if (op) { // Vérifier que l'opération n'est pas null/undefined
-          const montant = op.type ==='VERSEMENT'? (op.montantPaye || 0): (op.Bon?.Panier?.totalTTC || 0);
+          const montant = op.type ==='VERSEMENT'? (op.montantPaye || 0): (op.bon?.Panier?.totalTTC || 0);
       tableBody.push([
         { 
           text: `${op.dateOperation ? 
@@ -872,7 +873,7 @@ private validateArticlesData(articles: any[]): ArticlePanier[] {
 
       // Calculer les totaux si nécessaire
       if (!articleData.totalHT || !articleData.totalTTC) {
-        articlePanier.calculerTotauxArticle();
+        articlePanier.calculerTotaux(true, false, 0, 0, 0);
       }
 
       return articlePanier;
@@ -890,8 +891,8 @@ private validateOperationsData(operations: Operation[]): Operation[] {
     .map(op => ({
       date: op.dateOperation || new Date(),
       type: op.type || 'NON SPECIFIE',
-      reference: op.numeroVersement || op?.Bon?.numero || 'N/A',
-      montant: this.safeNumber(op.montantPaye) || this.safeNumber(op?.Bon?.montantTotal)|| 0,
+      reference: op.numeroVersement || op?.bon?.numero || 'N/A',
+      montant: this.safeNumber(op.montantPaye) || this.safeNumber(op?.bon?.montantTotal)|| 0,
       // Assurez-vous que toutes les propriétés nécessaires sont présentes
       ...op
     }));
@@ -1146,7 +1147,7 @@ async generateTicketCaisse(panier: any, agent?: any): Promise<void> {
         { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 250, y2: 0, lineWidth: 1 }], margin: [0, 5, 0, 5] },
         // Articles
         { text: 'Articles:', style: 'bold', margin: [0, 5, 0, 2] },
-        this.generateDetailedTicketTable(panier.articles || panier.ArticlePaniers || []),
+this.generateDetailedTicketTable(panier.articles || []),
         
         // Totaux
         { text: 'Récapitulatif:', style: 'bold', margin: [0, 5, 0, 2] },
@@ -1269,7 +1270,7 @@ async generateTicketVente(panier: any, client: any, agent?: any): Promise<void> 
         
         // Articles détaillés
         { text: 'DÉTAIL DE LA VENTE', style: 'bold', margin: [0, 5, 0, 2] },
-        this.generateDetailedTicketTable(panier.articles || panier.ArticlePaniers || []),
+this.generateDetailedTicketTable(panier.articles || []),
         
         // Récapitulatif
         { text: 'RÉCAPITULATIF', style: 'bold', margin: [0, 5, 0, 2] },
@@ -1400,7 +1401,7 @@ private generateTicketCaisseFallback(panier: any): void {
       { text: `Nº: ${panier.id || 'N/A'}`, alignment: 'center' },
       { text: `Date: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, fontSize: 8 },
       { text: '---', alignment: 'center', fontSize: 8 },
-      ...((panier.articles || panier.ArticlePaniers || []).map((article: any) => ({
+      ...((panier.articles || []).map((article: any) => ({
         text: `${article.quantite} x ${article.produit?.designation || 'Article'} = ${article.totalTTC || 0} F CFA`,
         fontSize: 8
       }))),
@@ -1543,8 +1544,8 @@ private generateOperationsTableClient(operations: any[]): any {
                       }).replace(',', ' à') : 'N/A';
       const type = op.type || 'N/A';
       //const reference = op.numeroVersement || op?.Bon?.numero || op.id || 'N/A';
-      const description = op.commentaire || op?.Bon?.description || 'Opération';
-      const montant = type ==='REGLEMENT'? (op.montantPaye || 0): (op.Bon?.Panier?.totalTTC || op.Bon?.montantAvoir || 0);
+      const description = op.commentaire || op?.bon?.description || 'Opération';
+      const montant = type ==='REGLEMENT'? (op.montantPaye || 0): (op.bon?.Panier?.totalTTC || op.bon?.montantAvoir || 0);
       
       
       // Déterminer débit/crédit selon le type d'opération

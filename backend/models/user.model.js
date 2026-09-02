@@ -59,40 +59,21 @@ module.exports = (sequelize, DataTypes) => {
     underscored: true, // Convertit automatiquement camelCase en snake_case
     hooks: {
       beforeValidate: async (user, options) => {
-        console.log('🔍 beforeValidate hook called', user.code_structure);
-        
-        // Définir numeroE avant la validation
-        if (!user.numeroE) {
-          try {
-            const UsersModel = sequelize.models.users;
-            if (UsersModel) {
-              const count = await UsersModel.count({
-                where: { code_structure: user.code_structure },
-                transaction: options.transaction
-              });
-              user.numeroE = count + 1;
-              console.log(`✅ Generated numeroE in beforeValidate: ${user.numeroE}`);
-            } else {
-              user.numeroE = 1;
-            }
-          } catch (error) {
-            console.error('❌ Hook error:', error);
-            user.numeroE = 1;
-          }
-        }
-      },
-      beforeCreate: async (user, options) => {
-        console.log('🎯 beforeCreate hook STARTED', user.numeroE);
-        // Vérifier et régénérer si nécessaire
-        if (!user.numeroE) {
-          const UsersModel = sequelize.models.users;
-          const count = await UsersModel.count({
+        if (user.numeroE) return;
+
+        const t = options.transaction;
+        try {
+          const count = await sequelize.models.users.count({
             where: { code_structure: user.code_structure },
-            transaction: options.transaction
+            transaction: t,
+            lock: t ? t.LOCK.UPDATE : undefined,
           });
           user.numeroE = count + 1;
+        } catch (error) {
+          console.error('❌ Hook numeroE users error:', error);
+          user.numeroE = 1;
         }
-      }
+      },
     }
   });
 };

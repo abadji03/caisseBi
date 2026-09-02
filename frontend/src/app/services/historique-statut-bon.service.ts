@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { NGXLogger } from 'ngx-logger';
 import { AuthService } from './auth.service';
 import { catchError, Observable, tap, throwError } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface HistoriqueStatut {
   id?: number;
@@ -21,7 +22,7 @@ export interface HistoriqueStatut {
 export class HistoriqueStatutBonService {
 
   //constructor() { }
-  private baseUrl = '/api/historique-status';
+  private baseUrl = `${environment.apiUrl}/historique-status`;
 
   constructor(
     // eslint-disable-next-line @angular-eslint/prefer-inject

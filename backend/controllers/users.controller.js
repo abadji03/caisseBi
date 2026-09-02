@@ -1,7 +1,7 @@
 const db = require('../models');
 const bcrypt = require('bcrypt');
 const User = db.Users;
-const Role = db.role;
+const Role = db.Role;
 const { Op } = require('sequelize'); // ✅ Op maintenant disponible
 const HistoriqueService = require('../services/historique.service');
 

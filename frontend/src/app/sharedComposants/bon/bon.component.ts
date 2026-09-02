@@ -1,4 +1,5 @@
-import { ChangeDetectorRef, Component, EventEmitter, inject, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
+import { ChangeDetectorRef, Component, EventEmitter, inject, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from '@angular/core';
+import { Subject, takeUntil, debounceTime } from 'rxjs';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Produits } from '../../modeles/produit.modele';
@@ -18,7 +19,7 @@ import { v4 as uuidv4 } from 'uuid';
   templateUrl: './bon.component.html',
   styleUrl: './bon.component.css'
 })
-export class BonComponent implements OnChanges, OnInit {
+export class BonComponent implements OnChanges, OnInit, OnDestroy {
 
   // ==================== INPUTS ====================
   @Input() produitsDisponibles: Produits[] = [];
@@ -60,6 +61,10 @@ export class BonComponent implements OnChanges, OnInit {
   maxFileSize = 10 * 1024 * 1024; // 10MB
   fichierSelectionne: File | null = null;
 
+  // ==================== NETTOYAGE ====================
+  private destroy$ = new Subject<void>();
+  private timeIntervalId: ReturnType<typeof setInterval> | null = null;
+
   // ==================== MESSAGES D'ERREUR ====================
   erreurs: string[] = [];
 
@@ -92,20 +97,12 @@ export class BonComponent implements OnChanges, OnInit {
     return this.bonForm?.get('type')?.value ?? '';
   }
 
-  get isRetourEtPasAvoir(): boolean {
-  return this.typeBon === 'retour' || this.typeBon === 'avoir';
-}
-
-  get isRetourOuAvoir(): boolean {
-    return this.typeBon === 'retour' || this.typeBon === 'avoir';
-  }
-
   get isCommande(): boolean {
     return this.typeBon === 'commande';
   }
 
-  get isVente(): boolean {
-    return this.typeBon === 'vente';
+  get isRetourOuAvoir(): boolean {
+    return this.typeBon === 'retour' || this.typeBon === 'avoir';
   }
 
   get montantHT(): number {
@@ -176,6 +173,15 @@ export class BonComponent implements OnChanges, OnInit {
     }
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+    if (this.timeIntervalId) {
+      clearInterval(this.timeIntervalId);
+      this.timeIntervalId = null;
+    }
+  }
+
   // ==================== INITIALISATION ====================
   private initForms(): void {
     this.bonForm = this.fb.group({
@@ -195,7 +201,7 @@ export class BonComponent implements OnChanges, OnInit {
     });
 
     // Écouter les changements pour validation
-    this.bonForm.valueChanges.subscribe(() => {
+    this.bonForm.valueChanges.pipe(debounceTime(300), takeUntil(this.destroy$)).subscribe(() => {
       this.validateForm();
       this.updateFileUploadVisibility();
       this.updateLogistiqueFieldsVisibility();
@@ -203,7 +209,7 @@ export class BonComponent implements OnChanges, OnInit {
   }
 
   private setupSubscriptions(): void {
-    this.bonBrouillonService.bonBrouillon$.subscribe(bon => {
+    this.bonBrouillonService.bonBrouillon$.pipe(takeUntil(this.destroy$)).subscribe(bon => {
       this.bonBrouillon = bon;
       if (bon) this.chargerBonBrouillon(bon);
     });
@@ -303,8 +309,7 @@ export class BonComponent implements OnChanges, OnInit {
   }
 
   private updateLogistiqueFieldsVisibility(): void {
-    this.showLogistiqueFields = this.isCommande || 
-                                 (this.typeBon === 'livraison' && this.typeEntite === 'fournisseur');
+    this.showLogistiqueFields = this.isCommande;
   }
 
   // ==================== GESTION DU PANIER ====================
@@ -443,9 +448,9 @@ export class BonComponent implements OnChanges, OnInit {
     
     this.onEnregistrerBon.emit({ bon, fichier });
     
-    setTimeout(() => {
-      this.isFormSubmitting = false;
-    }, 1000);
+    // Le parent est responsable de réinitialiser isFormSubmitting après le traitement
+    // via un callback ou un signal. Timeout retiré (risque de race condition).
+    // La propriété sera réinitialisée lors du reset du formulaire.
   }
 
   // ==================== ANNULATION ====================
@@ -560,7 +565,7 @@ export class BonComponent implements OnChanges, OnInit {
   }
 
   updateTime(): void {
-    setInterval(() => {
+    this.timeIntervalId = setInterval(() => {
       this.currentTime = new Date().toLocaleTimeString();
     }, 1000);
   }

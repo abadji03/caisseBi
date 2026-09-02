@@ -1,9 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormsModule, FormGroup, FormBuilder, Validators } from '@angular/forms';
 import { User } from '@sentry/angular';
 import { ToastrService } from 'ngx-toastr';
-import { Subject, Subscription, takeUntil, forkJoin, finalize, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subject, takeUntil, finalize, debounceTime, distinctUntilChanged } from 'rxjs';
 import { Bon, BonAvecFichier } from '../../../modeles/bon.model';
 import { Fournisseur } from '../../../modeles/fournisseur.model';
 import { Magasin } from '../../../modeles/magasin.model';
@@ -24,7 +24,6 @@ import { PaniersService } from '../../../services/paniers.service';
 import { PdfMakerServiceService } from '../../../services/pdf-maker-service.service';
 import { ProduitsService } from '../../../services/produits.service';
 import { StructureService } from '../../../services/structure.service';
-import { BonsComponent } from '../../../sharedComposants/bons/bons.component';
 import { ListeBonsComponent } from '../../../sharedComposants/liste-bons/liste-bons.component';
 import { ListeOperationsComponent } from '../../../sharedComposants/liste-operations/liste-operations.component';
 import { ListeVersementsComponent } from '../../../sharedComposants/liste-versements/liste-versements.component';
@@ -56,7 +55,6 @@ import { FactureComponent } from '../../vente/facture/facture.component';
 export class FournisseurComponent implements OnInit, OnDestroy {
 
   // Référence au composant Bon
-  @ViewChild(BonsComponent) bonComponent!: BonsComponent;
 
   // État général
   isLoadingFournisseur = false;
@@ -192,7 +190,6 @@ export class FournisseurComponent implements OnInit, OnDestroy {
 
   // Gestion des désabonnements
   private destroy$ = new Subject<void>();
-  private userSubscription!: Subscription;
 
   private categorieCache = new Map<string, number>();
 
@@ -219,7 +216,7 @@ export class FournisseurComponent implements OnInit, OnDestroy {
   Math = Math;
 
   ngOnInit(): void {
-    this.userSubscription = this.authService.currentUser.subscribe(user => {
+    this.authService.currentUser.pipe(takeUntil(this.destroy$)).subscribe(user => {
       this.currentUser = user;
       this.code_structure = user?.code_structure || null;
       this.magasinId = user?.magasinId || null;
@@ -282,9 +279,6 @@ export class FournisseurComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-    if (this.userSubscription) {
-      this.userSubscription.unsubscribe();
-    }
   }
 
   // Initialisation du formulaire
@@ -324,10 +318,10 @@ export class FournisseurComponent implements OnInit, OnDestroy {
     console.log('Chargement paiements avec filtres:', filters);
 
     this.isLoadingPaiement = true;
-    this.paiementService.getByFournisseursStructureBis(this.code_structure, filters)
+    this.paiementService.getPaiementsFournisseurs(this.code_structure, filters)
       .pipe(takeUntil(this.destroy$), finalize(() => this.isLoadingPaiement = false))
       .subscribe({
-        next: (response) => {
+        next: (response: import('../../../services/paiements.service').PaiementsResponse) => {
           console.log('✅ Réponse paiements:', response);
         this.paiements = response.items || [];
         this.paiementsTotalItems = response.pagination?.total || 0;
@@ -336,7 +330,7 @@ export class FournisseurComponent implements OnInit, OnDestroy {
         this.paiementsHasNext = response.pagination?.hasNext || false;
         this.paiementsHasPrev = response.pagination?.hasPrev || false;
         },
-        error: (err) => {
+        error: (err: unknown) => {
           console.error('Erreur chargement paiements:', err);
           this.toastr.error('Erreur lors du chargement des paiements');
         }
@@ -568,13 +562,11 @@ export class FournisseurComponent implements OnInit, OnDestroy {
 
 
   loadDataProduits(): void {
-    forkJoin([
-      this.produitsServices.getProduitsDisponibles(this.code_structure!),
-    ])
+    this.produitsServices.getProduitsDisponibles(this.code_structure!)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: ([produit]) => {
-          this.produits = produit;
+        next: (produits) => {
+          this.produits = produits;
           this.filteredProducts = this.produits;
         },
         error: err => console.error('Erreur chargement produits', err)
@@ -980,12 +972,13 @@ private mettreAJourSoldeFournisseurDansMap(fournisseur: Fournisseur): void {
     this.showBonForm = false;
     this.textBoutonNewBon = 'Nouveau bon';
     
-    if (this.bonComponent) {
+    /* if (this.bonComponent) {
       this.bonComponent.reinitialiserFormulaire();
-    }
+    } */
     
     this.resetPanierFlag = true;
-    setTimeout(() => this.resetPanierFlag = false, 100);
+    this.cdr.detectChanges();
+    this.resetPanierFlag = false;
   }
 
   // Génération de numéros
@@ -1535,7 +1528,7 @@ onFacturerBon(bon: Bon): void {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private preparerDonneesPourMiseAJour(bonMiseAJour: Bon): any {
     const panier = bonMiseAJour.Panier || bonMiseAJour.panier;
-    const articles = panier?.ArticlePaniers?.map(article => ({
+    const articles = panier?.articles?.map(article => ({
       id: article.id,
       produitId: article.produitId || article.Produit?.id,
       quantite: article.quantite,
@@ -1603,7 +1596,7 @@ onFacturerBon(bon: Bon): void {
     if(!confirm('Imprimer l\'opération?')) return;
     /* if (!bon) return;
     
-    const articlesFormates = (bon.Panier?.ArticlePaniers || []).map(article => ({
+    const articlesFormates = (bon.Panier?.articles || []).map(article => ({
       ...article,
       produit: article.produit || article.Produit,
       prixUnitaire: this.safeNumber(article.prixUnitaire || article.prixAchatUnitaire),
@@ -1646,10 +1639,10 @@ onFacturerBon(bon: Bon): void {
       this.isLoadingBon = true;
       
       console.log('Bon à imprimer:', bon);
-      console.log('Articles du bon:', bon.Panier?.ArticlePaniers);
+      console.log('Articles du bon:', bon.Panier?.articles);
 
       // Valider et formater les articles avec une meilleure gestion des nombres
-      const articlesFormates = (bon.Panier?.ArticlePaniers || []).map(article => {
+      const articlesFormates = (bon.Panier?.articles || []).map(article => {
         if (!article) return null;
         
         // Calculer les valeurs avec sécurité
@@ -1774,8 +1767,8 @@ onFacturerBon(bon: Bon): void {
         return {
           date: op.dateOperation,
           type: op.type || 'NON SPECIFIE',
-          reference: op.numeroVersement || op.Bon?.numero || 'N/A',
-          montant: op.montantPaye || op.Bon?.montantTotal ||0,
+          reference: op.numeroVersement || op.bon?.numero || 'N/A',
+          montant: op.montantPaye || op.bon?.montantTotal ||0,
           // Inclure toutes les propriétés nécessaires
           ...op
         };
@@ -1867,7 +1860,7 @@ onFacturerBon(bon: Bon): void {
   private calculerTotalCommandes(): number {
     return this.filteredOperations
       .filter(op => op.type === 'COMMANDE')
-      .reduce((total, op) => total + (this.safeNumber(op.Bon?.Panier?.totalTTC) || 0), 0);
+      .reduce((total, op) => total + (this.safeNumber(op.bon?.Panier?.totalTTC) || 0), 0);
   }
 
   private calculerTotalVersements(): number {
@@ -1878,14 +1871,14 @@ onFacturerBon(bon: Bon): void {
 
   private calculerTotalRetours(): number {
     return this.filteredOperations
-      .filter(op => op.type === 'RETOUR' || op.Bon?.statutBon === 'retourné' || op.Bon?.statutBon === 'retourné partiellement')
-      .reduce((total, op) => total + (this.safeNumber(op.Bon?.Panier?.totalTTC) || 0), 0);
+      .filter(op => op.type === 'RETOUR' || op.bon?.statutBon === 'retourné' || op.bon?.statutBon === 'retourné partiellement')
+      .reduce((total, op) => total + (this.safeNumber(op.bon?.Panier?.totalTTC) || 0), 0);
   }
 
   private calculerTotalLivraison(): number {
     return this.filteredOperations
       .filter(op => op.type === 'LIVRAISON')
-      .reduce((total, op) => total + (this.safeNumber(op.Bon?.Panier?.totalTTC) || 0), 0);
+      .reduce((total, op) => total + (this.safeNumber(op.bon?.Panier?.totalTTC) || 0), 0);
   }
 
   /**

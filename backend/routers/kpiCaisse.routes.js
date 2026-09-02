@@ -3,6 +3,71 @@ const router = express.Router();
 const kpiCaisseCTR = require('../controllers/kpiCaisse.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
 
+/**
+ * @swagger
+ * tags:
+ *   name: KPI Caisse
+ *   description: Indicateurs clés de performance de la caisse
+ *
+ * /kpi-caisse/stats/caisse/kpi:
+ *   get:
+ *     summary: KPI du jour courant
+ *     tags: [KPI Caisse]
+ *     parameters:
+ *       - in: query
+ *         name: magasinId
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: KPI journaliers (CA, nb ventes, panier moyen, etc.)
+ *
+ * /kpi-caisse/stats/caisse/kpi-periode:
+ *   get:
+ *     summary: KPI sur une période
+ *     tags: [KPI Caisse]
+ *     parameters:
+ *       - in: query
+ *         name: dateDebut
+ *         required: true
+ *         schema: { type: string, format: date }
+ *       - in: query
+ *         name: dateFin
+ *         required: true
+ *         schema: { type: string, format: date }
+ *       - in: query
+ *         name: magasinId
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: KPI de la période
+ *
+ * /kpi-caisse/rapport-vente:
+ *   get:
+ *     summary: Rapport de vente détaillé par vendeur
+ *     tags: [KPI Caisse]
+ *     parameters:
+ *       - in: query
+ *         name: dateDebut
+ *         schema: { type: string, format: date }
+ *       - in: query
+ *         name: dateFin
+ *         schema: { type: string, format: date }
+ *     responses:
+ *       200:
+ *         description: Rapport de vente
+ *
+ * /kpi-caisse/pdf:
+ *   get:
+ *     summary: Générer le rapport caisse en PDF
+ *     tags: [KPI Caisse]
+ *     responses:
+ *       200:
+ *         description: Fichier PDF
+ *         content:
+ *           application/pdf:
+ *             schema: { type: string, format: binary }
+ */
+
 
 // API unifiées qui supportent à la fois les KPI journaliers et par période
 router.get('/stats/caisse/kpi', authenticateToken, kpiCaisseCTR.getKpiCaisseJour); // Pour le jour courant

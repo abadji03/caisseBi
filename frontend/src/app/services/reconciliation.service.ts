@@ -1,154 +1,137 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
+import { catchError, Observable, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
-import { Observable } from 'rxjs';
+import { NGXLogger } from 'ngx-logger';
 import { PaginatedAnalyseResponse, PaginatedResponse, Reconciliation } from '../modeles/entrees-sorties.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ReconciliationService {
-  private apiUrl = 'http://localhost:5000/api/reconciliations';
-  private apiUrlBis = 'http://localhost:5000/api/historiques-reconciliations';
-
+  private apiUrl = `${environment.apiUrl}/reconciliations`;
+  private apiUrlBis = `${environment.apiUrl}/historiques-reconciliations`;
   private http = inject(HttpClient);
   private authService = inject(AuthService);
+  private logger = inject(NGXLogger);
 
   private getHeaders(): HttpHeaders {
     const token = this.authService.getToken();
     return new HttpHeaders({
       Authorization: `Bearer ${token}`,
-      //'Content-Type': 'application/json'
     });
   }
 
-  /** Créer une réconciliation */
+  private handleError(method: string, error: unknown): Observable<never> {
+    this.logger.error(`ReconciliationService -> ${method} :`, error);
+    return throwError(() => error);
+  }
+
   create(reconciliation: Reconciliation): Observable<Reconciliation> {
-    console.log('Données réconciliation',reconciliation)
-    return this.http.post<Reconciliation>(this.apiUrl, reconciliation, { headers: this.getHeaders() });
+    return this.http.post<Reconciliation>(this.apiUrl, reconciliation, { headers: this.getHeaders() })
+      .pipe(catchError(err => this.handleError('create', err)));
   }
-
-  /** Récupérer les réconciliations d'une structure */
-  /* getByStructure(codeStructure: string): Observable<Reconciliation[]> {
-    return this.http.get<Reconciliation[]>(`${this.apiUrl}/structure/${codeStructure}`, {
-      headers: this.getHeaders(),
-    });
-  } */
 
   getByStructure(
-  codeStructure: string, 
-  page = 1, 
-  limit= 10, 
-  search = '',
-): Observable<PaginatedResponse<Reconciliation>> {
-  
-  // Construire les paramètres de requête
-  let params = `?page=${page}&limit=${limit}`;
-  
-  if (search) {
-    params += `&search=${encodeURIComponent(search)}`;
+    codeStructure: string,
+    page = 1,
+    limit = 10,
+    search = '',
+  ): Observable<PaginatedResponse<Reconciliation>> {
+    let params = `?page=${page}&limit=${limit}`;
+    if (search) params += `&search=${encodeURIComponent(search)}`;
+
+    return this.http.get<PaginatedResponse<Reconciliation>>(
+      `${this.apiUrl}/structure/${codeStructure}${params}`,
+      { headers: this.getHeaders() }
+    ).pipe(catchError(err => this.handleError('getByStructure', err)));
   }
 
-  return this.http.get<PaginatedResponse<Reconciliation>>(
-    `${this.apiUrl}/structure/${codeStructure}${params}`, 
-    { headers: this.getHeaders() }
-  );
-}
-
-  /** Récupérer les réconciliations d'un produit */
   getByProduit(produitId: number): Observable<Reconciliation[]> {
     return this.http.get<Reconciliation[]>(`${this.apiUrl}/produit/${produitId}`, {
       headers: this.getHeaders(),
-    });
+    }).pipe(catchError(err => this.handleError('getByProduit', err)));
   }
 
-  /** Récupérer une réconciliation par ID */
   getById(id: number): Observable<Reconciliation> {
-    return this.http.get<Reconciliation>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
+    return this.http.get<Reconciliation>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() })
+      .pipe(catchError(err => this.handleError('getById', err)));
   }
 
-  /** Mettre à jour une réconciliation */
   update(id: number, reconciliation: Reconciliation): Observable<Reconciliation> {
     return this.http.put<Reconciliation>(`${this.apiUrl}/${id}`, reconciliation, {
       headers: this.getHeaders(),
-    });
+    }).pipe(catchError(err => this.handleError('update', err)));
   }
 
-  /** Supprimer une réconciliation */
   delete(id: number): Observable<Reconciliation> {
-    return this.http.delete<Reconciliation>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
+    return this.http.delete<Reconciliation>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() })
+      .pipe(catchError(err => this.handleError('delete', err)));
   }
 
-    getAnalyse(
+  getAnalyse(
     codeStructure: string,
-    page= 1,
-    limit= 10,
-    search= '',
-    tri?:string
+    page = 1,
+    limit = 10,
+    search = '',
+    tri?: string
   ): Observable<PaginatedAnalyseResponse> {
     let params = `?page=${page}&limit=${limit}&tri=${tri}`;
-    
     if (search) params += `&search=${encodeURIComponent(search)}`;
 
     return this.http.get<PaginatedAnalyseResponse>(
       `${this.apiUrl}/structure/${codeStructure}/analyse-ecart${params}`,
       { headers: this.getHeaders() }
-    );
+    ).pipe(catchError(err => this.handleError('getAnalyse', err)));
   }
 
-  getAnalyseProduit(
-    codeStructure: string,
-    produitId: number
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ): Observable<any> {
+  getAnalyseProduit(codeStructure: string, produitId: number): Observable<any> {
     return this.http.get(
       `${this.apiUrl}/structure/${codeStructure}/produit/${produitId}`,
       { headers: this.getHeaders() }
-    );
+    ).pipe(catchError(err => this.handleError('getAnalyseProduit', err)));
   }
-  /*.....................................................................................*/
 
-  /** Créer un historique */
   createHistorique(historique: unknown): Observable<unknown> {
-    return this.http.post<unknown>(this.apiUrlBis, historique, { headers: this.getHeaders() });
+    return this.http.post<unknown>(this.apiUrlBis, historique, { headers: this.getHeaders() })
+      .pipe(catchError(err => this.handleError('createHistorique', err)));
   }
 
-  /** Récupérer tous les historiques d'une réconciliation */
   getByReconciliation(reconciliationId: number): Observable<unknown[]> {
     return this.http.get<unknown[]>(`${this.apiUrlBis}/reconciliation/${reconciliationId}`, {
       headers: this.getHeaders(),
-    });
+    }).pipe(catchError(err => this.handleError('getByReconciliation', err)));
   }
 
-  /** Récupérer tous les historiques d’une structure */
   getHistoriqueByStructure(code_structure: string): Observable<unknown[]> {
     return this.http.get<unknown[]>(`${this.apiUrlBis}/structure/${code_structure}`, {
       headers: this.getHeaders(),
-    });
+    }).pipe(catchError(err => this.handleError('getHistoriqueByStructure', err)));
   }
 
-  /** Récupérer un historique par ID */
   getHistoriqueById(id: number): Observable<unknown> {
-    return this.http.get<unknown>(`${this.apiUrlBis}/${id}`, { headers: this.getHeaders() });
+    return this.http.get<unknown>(`${this.apiUrlBis}/${id}`, { headers: this.getHeaders() })
+      .pipe(catchError(err => this.handleError('getHistoriqueById', err)));
   }
 
-  /** Mettre à jour un historique */
   updateHistorique(id: number, historique: Partial<unknown>): Observable<unknown> {
     return this.http.put<unknown>(`${this.apiUrlBis}/${id}`, historique, {
       headers: this.getHeaders(),
-    });
+    }).pipe(catchError(err => this.handleError('updateHistorique', err)));
   }
 
-  /** Supprimer un historique */
   deleteHistorique(id: number): Observable<unknown> {
-    return this.http.delete(`${this.apiUrlBis}/${id}`, { headers: this.getHeaders() });
+    return this.http.delete(`${this.apiUrlBis}/${id}`, { headers: this.getHeaders() })
+      .pipe(catchError(err => this.handleError('deleteHistorique', err)));
   }
 
   updateStatut(id: number, statut: string): Observable<Reconciliation> {
-      return this.http.patch<Reconciliation>(
-        `${this.apiUrl}/${id}/statut`,
-        { statut },
-        { headers: this.getHeaders() },
-      );
-    }
+    return this.http.patch<Reconciliation>(
+      `${this.apiUrl}/${id}/statut`,
+      { statut },
+      { headers: this.getHeaders() },
+    ).pipe(catchError(err => this.handleError('updateStatut', err)));
+  }
 }

@@ -86,7 +86,7 @@
             <td>{{ operation.montantPaye | number }} F CFA</td>
             <td>
               <span *ngIf="operation.user; else noAgent">
-                {{ operation?.user?.['nom'] || 'N/A'}} 
+                {{ operation.user.nom || 'N/A' }} 
               </span>
               <ng-template #noAgent>
                 <span class="text-muted">Non assigné</span>
@@ -109,7 +109,7 @@
               <div class="p-3 bg-light rounded">
                 <!-- Affichage pour les BONS -->
                 <div *ngIf="operation.type !== 'VERSEMENT' && operation.type !== 'REGLEMENT'">
-                  <div *ngIf="operation?.Bon as bon; else noBon">
+                  <div *ngIf="operation?.bon as bon; else noBon">
                     <div class="row mb-3">
                       <div class="d-flex justify-content-between align-items-center">
                         <h4 class="me-3">
@@ -141,7 +141,7 @@
                                   *ngIf="bon.statutBon === 'validé' && (bon?.avance ?? 0) > 0">
                             <i class="bi bi-receipt"></i> Ticket de paiement
                           </button>
-                          <button class="btn btn-outline-success btn-sm me-1" 
+                          <button class="btn btn-outline-success btn-sm me-1" (click)="onFacturerBon.emit(bon)"
                                   *ngIf="bon.statutBon === 'validé' && bon.type === 'commande' && bon.typeEntite==='fournisseur'">
                             <i class="bi bi-send"></i> Transfèrer
                           </button>
@@ -162,7 +162,7 @@
                       <!-- Totaux du bon -->
                       <div class="row mt-3">
                         <div class="col-md-6">
-                          <div *ngIf="operation.Bon?.type !=='avoir'" class="card">
+                          <div *ngIf="operation.bon?.type !=='avoir'" class="card">
                             <div class="card-body">
                               <h6 class="card-title">Récapitulatif financier</h6>
                               <div class="row">
@@ -202,8 +202,8 @@
                     </div>
 
                     <!-- Tableau des produits -->
-                    <h5 *ngIf="operation.Bon?.type !=='avoir'">Produits associés</h5>
-                    <div *ngIf="operation.Bon?.type !=='avoir'" class="table-responsive">
+                    <h5 *ngIf="operation.bon?.type !=='avoir'">Produits associés</h5>
+                    <div *ngIf="operation.bon?.type !=='avoir'" class="table-responsive">
                       <table class="table table-sm table-hover">
                         <thead>
                           <tr>

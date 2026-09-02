@@ -21,7 +21,10 @@ interface ImportResultDetail {
 
 interface ImportResult {
   importes: number;
-  erreurs: number;
+  /** Nombre d'erreurs (raccourci numérique fourni par le backend) */
+  nombreErreurs: number;
+  /** Détail des erreurs sous forme de tableau d'objets */
+  erreurs: { ligne?: number; message: string }[];
   details: ImportResultDetail[];
 }
 
@@ -152,7 +155,7 @@ export class ImportComponent  implements OnInit{
     this.isLoadingDetection = true;
     this.detectionResult = null;
     
-    this.importService.detecterStructure(this.fichierSelectionne).subscribe({
+    this.importService.detecterStructure(this.fichierSelectionne, this.hasHeader).subscribe({
       next: (result) => {
         this.detectionResult = result;
         this.suggererMapping();
@@ -368,8 +371,11 @@ export class ImportComponent  implements OnInit{
       next: (result) => {
         this.importResult = result.results as ImportResult;
         this.isImporting = false;
-        
-        if (result.results.erreurs === 0) {
+
+        // Utiliser nombreErreurs (number) fourni explicitement par le backend
+        const nbErreurs: number = result.results.nombreErreurs ?? 0;
+
+        if (nbErreurs === 0) {
           this.toastr.success(result.message);
         } else if (result.results.importes > 0) {
           this.toastr.warning(result.message);

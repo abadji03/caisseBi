@@ -136,7 +136,7 @@ exports.getMagasinsByStructure = async (req, res) => {
           model:db.Users,
           attributes: ['id', 'nom'],
           include: [{
-            model: db.role,
+            model: db.Role,
             attributes: ['id', 'nom']
           }]
         }
@@ -214,7 +214,7 @@ exports.getMagasinsByStructureBis = async (req, res) => {
           model: db.Users,
           attributes: ['id', 'nom'],
           include: [{
-            model: db.role,
+            model: db.Role,
             attributes: ['id', 'nom']
           }]
         }

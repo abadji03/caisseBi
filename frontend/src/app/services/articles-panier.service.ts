@@ -4,13 +4,14 @@ import { NGXLogger } from 'ngx-logger';
 import { AuthService } from './auth.service';
 import { catchError, Observable, tap, throwError } from 'rxjs';
 import { ArticlePanier } from '../modeles/panier.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ArticlesPanierService {
 
-  private apiUrl = 'http://localhost:5000/api/articles-panier';
+  private apiUrl = `${environment.apiUrl}/articles-panier`;
 
   private http = inject(HttpClient);
   private logger = inject(NGXLogger);

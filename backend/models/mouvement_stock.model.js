@@ -90,40 +90,21 @@ module.exports = (sequelize, DataTypes) => {
 
     hooks: {
       beforeValidate: async (mouvementStock, options) => {
-        console.log('🔍 beforeValidate hook called', mouvementStock.code_structure);
-        
-        // Définir numeroE avant la validation
-        if (!mouvementStock.numeroE) {
-          try {
-            const MouvementStocksModel = sequelize.models.MouvementStock;
-            if (MouvementStocksModel) {
-              const count = await MouvementStocksModel.count({
-                where: { code_structure: mouvementStock.code_structure },
-                transaction: options.transaction
-              });
-              mouvementStock.numeroE = count + 1;
-              console.log(`✅ Generated numeroE in beforeValidate: ${mouvementStock.numeroE}`);
-            } else {
-              mouvementStock.numeroE = 1;
-            }
-          } catch (error) {
-            console.error('❌ Hook error:', error);
-            mouvementStock.numeroE = 1;
-          }
+        if (mouvementStock.numeroE) return;
+
+        const t = options.transaction;
+        try {
+          const count = await sequelize.models.MouvementStock.count({
+            where: { code_structure: mouvementStock.code_structure },
+            transaction: t,
+            lock: t ? t.LOCK.UPDATE : undefined,
+          });
+          mouvementStock.numeroE = count + 1;
+        } catch (error) {
+          console.error('❌ Hook numeroE MouvementStock error:', error);
+          mouvementStock.numeroE = 1;
         }
       },
-      beforeCreate: async (mouvementstock, options) => {
-        console.log('🎯 beforeCreate hook STARTED', mouvementstock.numeroE);
-        // Vérifier et régénérer si nécessaire
-        if (!mouvementstock.numeroE) {
-          const mouvementstocksModel = sequelize.models.MouvementStock;
-          const count = await mouvementstocksModel.count({
-            where: { code_structure: mouvementstock.code_structure },
-            transaction: options.transaction
-          });
-          mouvementstock.numeroE = count + 1;
-        }
-      }
     }
   });
 

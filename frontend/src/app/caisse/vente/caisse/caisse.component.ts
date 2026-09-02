@@ -286,7 +286,7 @@ export class CaisseComponent implements OnInit, OnDestroy {
       return;
     }
     
-    const articlesCount = (panier.articles?.length ?? 0) + (panier.ArticlePaniers?.length ?? 0);
+    const articlesCount = (panier.ArticlePaniers?.length ?? 0) + (panier.articles?.length ?? 0);
     const newHasArticles = articlesCount > 0;
     
     if (this._hasArticles !== newHasArticles) {
@@ -408,7 +408,7 @@ export class CaisseComponent implements OnInit, OnDestroy {
       agentId: this.agentId,
       clientId: this.panierData.clientId || null,
       typeEntite:this.typeEntite,
-      paiement: this.serviceMontant ?? 0 > 0 ? new Paiement ({
+      paiement: (this.serviceMontant ?? 0) > 0 ? new Paiement ({
         numero: this.generatedNumeroPaiement,
         methodePaiement: this.modePaiementSelectionne?.libelle || 'Espèce',
         description: `Montant total vente service ou produit non enregistré ${this.panierData.id}`,
@@ -618,7 +618,7 @@ nouvelleVente() {
       agentId: this.agentId, */
       clientId: panierAEnregistrer.clientId || null,
       typeEntite:this.typeEntite,
-      paiement: panierAEnregistrer.totalTTC ?? 0 > 0 ? new Paiement ({
+      paiement: (panierAEnregistrer.totalTTC ?? 0) > 0 ? new Paiement ({
         numero: this.generatedNumeroPaiement,
         methodePaiement: this.modePaiementSelectionneProduit?.libelle || 'Espèce',
         description: `Montant total vente panier ${panierAEnregistrer.id}`,
@@ -787,7 +787,7 @@ this.createRecette(formData);
       if(!panierRetourner.id){
         this.toastr.error('Impossible d\'annuler un panier sans identifiant');
       }
-      const paiementPanierRetourner: Paiement | undefined = panierRetourner?.Paiements?.[0];
+      const paiementPanierRetourner: Paiement | undefined = panierRetourner?.paiements?.[0];
 
       const panierCompletData = {
    
@@ -804,7 +804,7 @@ this.createRecette(formData);
           clientId: panierRetourner.clientId || null,
           statut: 'retourné' 
         },
-        articles: panierRetourner.articles||panierRetourner.ArticlePaniers,
+        articles: panierRetourner.articles || panierRetourner.ArticlePaniers,
         code_structure: this.code_structure,
         magasinId: this.magasinId,
         agentId: this.agentId,
@@ -888,7 +888,7 @@ retournerArticle(article: ArticlePanier) {
   if (confirm('Voulez-vous vraiment retourner cet article ?')) {
 
     // 1️⃣ Filtrer les articles
-    const nouveauxArticles = (this.selectedTransaction.ArticlePaniers || [])
+    const nouveauxArticles = (this.selectedTransaction.articles || [])
       .filter(a => a.id !== article.id)
       .map(a => new ArticlePanier(a));
     
@@ -931,7 +931,6 @@ retournerArticle(article: ArticlePanier) {
     // 4️⃣ Créer la nouvelle instance de panier
     const panier = new Panier({
       ...this.selectedTransaction,
-      ArticlePaniers: nouveauxArticles,
       articles: nouveauxArticles,
       remiseParArticle,
       tvaParArticle,
@@ -946,7 +945,7 @@ retournerArticle(article: ArticlePanier) {
 
     // 7️⃣ Remplacer l'ancien panier
     this.selectedTransaction = panier;
-    const paiementPanierRetourner: Paiement | undefined = this.selectedTransaction?.Paiements?.[0];
+    const paiementPanierRetourner: Paiement | undefined = this.selectedTransaction?.paiements?.[0];
 
       const panierCompletData = {
    
@@ -964,7 +963,7 @@ retournerArticle(article: ArticlePanier) {
           clientId: this.selectedTransaction.clientId || null,
           statut: this.selectedTransaction.statut 
         },
-        articles: panier.articles||panier.ArticlePaniers,
+        articles: panier.articles || panier.ArticlePaniers,
         code_structure: this.code_structure,
         magasinId: this.magasinId,
         agentId: this.agentId,
@@ -1139,16 +1138,16 @@ updateStockApresSuppressionArticle(article: ArticlePanier): void {
     .subscribe({
       next: (response) => {
         console.log('Résultat des transactions:', response);
-        this.paniers = response.items;
-        this.totalCaisse = response.statistiques.totalGlobal;
-        this.totalTransactions = response.statistiques.nombreTransactions;
+        this.paniers = response?.items ?? [];
+        this.totalCaisse = response?.statistiques?.totalGlobal ?? 0;
+        this.totalTransactions = response?.statistiques?.nombreTransactions ?? 0;
         
         // Mise à jour de la pagination
-        this.totalItems = response.pagination.total;
-        this.currentPage = response.pagination.page;
-        this.totalPages = response.pagination.totalPages;
-        this.hasNext = response.pagination.hasNext;
-        this.hasPrev = response.pagination.hasPrev;
+        this.totalItems = response?.pagination?.total ?? 0;
+        this.currentPage = response?.pagination?.page ?? 1;
+        this.totalPages = response?.pagination?.totalPages ?? 0;
+        this.hasNext = response?.pagination?.hasNext ?? false;
+        this.hasPrev = response?.pagination?.hasPrev ?? false;
         
         console.log('Transactions chargées:', this.paniers);
       },

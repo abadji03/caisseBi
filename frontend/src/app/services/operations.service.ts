@@ -1,19 +1,30 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
+import { NGXLogger } from 'ngx-logger';
+import { ToastrService } from 'ngx-toastr';
 import { AuthService } from './auth.service';
-import { map, Observable, tap } from 'rxjs';
+import { catchError, map, Observable, tap, throwError } from 'rxjs';
 import { Operation, OperationsFilters, OperationsResponse, StatsResponse } from '../modeles/operation.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class OperationsService {
 
-   private apiUrl = 'http://localhost:5000/api'; 
+  private apiUrl = environment.apiUrl;
 
   private http = inject(HttpClient);
   private authService = inject(AuthService);
+  private logger = inject(NGXLogger);
+  private toastr = inject(ToastrService);
+
+  private handleError(error: unknown, message: string) {
+    this.logger.error(message, error);
+    this.toastr.error(message);
+    return throwError(() => error);
+  }
 
   private getHeaders(): HttpHeaders {
     const token = this.authService.getToken();
@@ -22,18 +33,13 @@ export class OperationsService {
     });
   }
 
-  
   // ==============================
   // MÉTHODES PRINCIPALES
   // ==============================
 
-  /**
-   * Récupère toutes les opérations avec filtres
-   */
   getOperations(filters: OperationsFilters = {}): Observable<OperationsResponse> {
     let params = new HttpParams();
 
-    // Ajout des paramètres de filtrage
     Object.keys(filters).forEach(key => {
       const value = filters[key as keyof OperationsFilters];
       if (value !== undefined && value !== null && value !== '') {
@@ -45,93 +51,57 @@ export class OperationsService {
       headers: this.getHeaders(),
       params
     }).pipe(
-      tap(response => console.log(`📊 Opérations chargées: ${response.operations.length} / ${response.total} total`))
+      tap(response => this.logger.info(`Opérations chargées: ${response.operations.length} / ${response.total} total`)),
+      catchError(error => this.handleError(error, 'Erreur chargement opérations'))
     );
   }
 
-  /**
-   * Récupère les opérations d'un fournisseur
-   */
+  private getOperationsByEntity(
+    endpoint: string,
+    code_structure: string,
+    entityId: number,
+    filters: Record<string, string | number | undefined> = {}
+  ): Observable<Operation[]> {
+    let params = new HttpParams()
+      .set('code_structure', code_structure);
+
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        params = params.set(key, value.toString());
+      }
+    });
+
+    return this.http.get<Operation[]>(
+      `${this.apiUrl}/operations/${endpoint}/${code_structure}/${entityId}`,
+      { headers: this.getHeaders(), params }
+    ).pipe(
+      tap(operations => this.logger.info(`Opérations ${endpoint} chargées: ${operations.length}`)),
+      catchError(error => this.handleError(error, `Erreur chargement opérations ${endpoint}`))
+    );
+  }
+
   getOperationsByFournisseur(
-    code_structure: string, 
-    fournisseurId: number, 
+    code_structure: string,
+    fournisseurId: number,
     filters: Omit<OperationsFilters, 'code_structure' | 'fournisseurId'> = {}
   ): Observable<Operation[]> {
-    let params = new HttpParams()
-    .set('code_structure', code_structure)
-    .set('fournisseurId', fournisseurId.toString());
-
-     // Ajouter les filtres de date
-    if (filters.dateDebut) {
-      params = params.set('dateDebut', filters.dateDebut);
-    }
-    if (filters.dateFin) {
-      params = params.set('dateFin', filters.dateFin);
-    }
-    // Ajout des paramètres de filtrage
-    Object.keys(filters).forEach(key => {
-      const value = filters[key as keyof typeof filters];
-      if (value !== undefined && value !== null && value !== '') {
-        params = params.set(key, value.toString());
-      }
-    });
-
-    return this.http.get<Operation[]>(
-      `${this.apiUrl}/operations/fournisseur/${code_structure}/${fournisseurId}`, 
-      {
-        headers: this.getHeaders(),
-        params
-      }
-    ).pipe(
-      tap(operations => console.log(`📦 Opérations fournisseur chargées: ${operations.length}`))
-    );
+    return this.getOperationsByEntity('fournisseur', code_structure, fournisseurId, { ...filters, fournisseurId });
   }
 
-  /**
-   * Récupère les opérations d'un client
-   */
   getOperationsByClient(
-    code_structure: string, 
-    clientId: number, 
+    code_structure: string,
+    clientId: number,
     filters: Omit<OperationsFilters, 'code_structure' | 'clientId'> = {}
   ): Observable<Operation[]> {
-    let params = new HttpParams()
-    .set('code_structure', code_structure)
-    .set('clientId', clientId.toString());
-    // Ajouter les filtres de date
-    if (filters.dateDebut) {
-      params = params.set('dateDebut', filters.dateDebut);
-    }
-    if (filters.dateFin) {
-      params = params.set('dateFin', filters.dateFin);
-    }
-    // Ajout des paramètres de filtrage
-    Object.keys(filters).forEach(key => {
-      const value = filters[key as keyof typeof filters];
-      if (value !== undefined && value !== null && value !== '') {
-        params = params.set(key, value.toString());
-      }
-    });
-
-    return this.http.get<Operation[]>(
-      `${this.apiUrl}/operations/client/${code_structure}/${clientId}`, 
-      {
-        headers: this.getHeaders(),
-        params
-      }
-    ).pipe(
-      tap(operations => console.log(`Opérations client chargées: ${operations.length}`))
-    );
+    return this.getOperationsByEntity('client', code_structure, clientId, { ...filters, clientId });
   }
 
-  /**
-   * Récupère une opération spécifique par son ID
-   */
   getOperationById(id: number): Observable<Operation> {
     return this.http.get<Operation>(`${this.apiUrl}/operations/${id}`, {
       headers: this.getHeaders()
     }).pipe(
-      tap(operation => console.log('🔍 Détails opération chargés:', operation))
+      tap(operation => this.logger.info('Détails opération chargés', operation)),
+      catchError(error => this.handleError(error, `Erreur chargement opération ${id}`))
     );
   }
 
@@ -139,30 +109,23 @@ export class OperationsService {
   // MÉTHODES DE CRÉATION
   // ==============================
 
-  /**
-   * Crée une nouvelle opération
-   */
   createOperation(operationData: Partial<Operation>): Observable<Operation> {
     return this.http.post<Operation>(`${this.apiUrl}/operations`, operationData, {
       headers: this.getHeaders()
     }).pipe(
-      tap(operation => console.log('✅ Opération créée:', operation))
+      tap(operation => this.logger.info('Opération créée', operation)),
+      catchError(error => this.handleError(error, 'Erreur création opération'))
     );
   }
 
-  /**
-   * Crée une opération à partir d'un bon (pour usage interne)
-   */
   createOperationFromBon(bonData: any): Observable<Operation> {
-    // Cette méthode pourrait être utilisée côté backend
-    // Pour le frontend, on utilise directement createOperation
     return this.createOperation({
-      type: bonData.type.toUpperCase()||'BON',
+      type: bonData.type.toUpperCase() || 'BON',
       bonId: bonData.id,
       fournisseurId: bonData.fournisseurId,
       clientId: bonData.clientId,
       magasinId: bonData.magasinId,
-      resteAPayer:bonData.resteAPayer,
+      resteAPayer: bonData.resteAPayer,
       code_structure: bonData.code_structure,
       montantPaye: bonData.avance || 0,
       statut: bonData.statutBon?.toUpperCase() || 'BROUILLON',
@@ -173,12 +136,8 @@ export class OperationsService {
     });
   }
 
-  /**
-   * Crée une opération à partir d'un paiement (pour usage interne)
-   */
   createOperationFromPaiement(paiementData: any): Observable<Operation> {
     const typeOperation = paiementData.typePaiement === 'client' ? 'REGLEMENT' : 'VERSEMENT';
-    
     return this.createOperation({
       type: typeOperation,
       paiementId: paiementData.id,
@@ -201,177 +160,114 @@ export class OperationsService {
   // MÉTHODES DE MISE À JOUR ET SUPPRESSION
   // ==============================
 
-  /**
-   * Met à jour une opération
-   */
   updateOperation(id: number, updateData: Partial<Operation>): Observable<Operation> {
     return this.http.put<Operation>(`${this.apiUrl}/operations/${id}`, updateData, {
       headers: this.getHeaders()
     }).pipe(
-      tap(operation => console.log('Opération mise à jour:', operation))
+      tap(operation => this.logger.info('Opération mise à jour', operation)),
+      catchError(error => this.handleError(error, `Erreur mise à jour opération ${id}`))
     );
   }
 
-  /**
-   * Supprime une opération
-   */
   deleteOperation(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/operations/${id}`, {
       headers: this.getHeaders()
     }).pipe(
-      tap(() => console.log('🗑️ Opération supprimée:', id))
+      tap(() => this.logger.warn(`Opération supprimée: ${id}`)),
+      catchError(error => this.handleError(error, `Erreur suppression opération ${id}`))
     );
   }
 
   // ==============================
-  // MÉTHODES DE STATISTIQUES ET RAPPORTS
+  // STATISTIQUES
   // ==============================
 
-  /**
-   * Récupère les statistiques des opérations
-   */
   getOperationsStats(filters: Omit<OperationsFilters, 'page' | 'limit'> = {}): Observable<StatsResponse[]> {
     let params = new HttpParams();
-
-    // Ajout des paramètres de filtrage
     Object.keys(filters).forEach(key => {
       const value = filters[key as keyof typeof filters];
       if (value !== undefined && value !== null && value !== '') {
         params = params.set(key, value.toString());
       }
     });
-
     return this.http.get<StatsResponse[]>(`${this.apiUrl}/operations/stats`, {
-      headers: this.getHeaders(),
-      params
+      headers: this.getHeaders(), params
     }).pipe(
-      tap(stats => console.log('📈 Statistiques chargées:', stats))
+      tap(stats => this.logger.info('Statistiques chargées', stats)),
+      catchError(error => this.handleError(error, 'Erreur chargement statistiques'))
     );
   }
 
-  /**
-   * Récupère le solde d'un fournisseur
-   */
+  // TODO: Déplacer côté serveur
   getSoldeFournisseur(code_structure: string, fournisseurId: number): Observable<number> {
     return this.getOperationsByFournisseur(code_structure, fournisseurId).pipe(
       map(operations => {
         const solde = operations.reduce((total, op) => {
-          if (op.type === 'BON') {
-            return total - (op.resteAPayer || 0);
-          } else if (op.type === 'VERSEMENT') {
-            return total + (op.montantPaye || 0);
-          }
+          if (op.type === 'BON') return total - (op.resteAPayer || 0);
+          if (op.type === 'VERSEMENT') return total + (op.montantPaye || 0);
           return total;
         }, 0);
-        
-        console.log(`💰 Solde fournisseur ${fournisseurId}:`, solde);
+        this.logger.info(`Solde fournisseur ${fournisseurId}`, solde);
         return solde;
       })
     );
   }
 
-  /**
-   * Récupère le solde d'un client
-   */
+  // TODO: Déplacer côté serveur
   getSoldeClient(code_structure: string, clientId: number): Observable<number> {
     return this.getOperationsByClient(code_structure, clientId).pipe(
       map(operations => {
         const solde = operations.reduce((total, op) => {
-          if (op.type === 'BON') {
-            return total + (op.resteAPayer || 0);
-          } else if (op.type === 'REGLEMENT') {
-            return total - (op.montantPaye || 0);
-          }
+          if (op.type === 'BON') return total + (op.resteAPayer || 0);
+          if (op.type === 'REGLEMENT') return total - (op.montantPaye || 0);
           return total;
         }, 0);
-        
-        console.log(`💰 Solde client ${clientId}:`, solde);
+        this.logger.info(`Solde client ${clientId}`, solde);
         return solde;
       })
     );
   }
 
   // ==============================
-  // MÉTHODES UTILITAIRES
+  // UTILITAIRES - À extraire dans OperationHelper
   // ==============================
 
-  /**
-   * Filtre les opérations par type
-   */
-  filterOperationsByType(operations: Operation[], type: string): Operation[] {
-    return operations.filter(op => 
-      op?.type?.toLowerCase() === type.toLowerCase()
-    );
+  static filterOperationsByType(operations: Operation[], type: string): Operation[] {
+    return operations.filter(op => op?.type?.toLowerCase() === type.toLowerCase());
   }
 
-  /**
-   * Filtre les opérations par statut
-   */
-  filterOperationsByStatut(operations: Operation[], statut: string): Operation[] {
-    return operations.filter(op => 
-      op.statut.toLowerCase() === statut.toLowerCase()
-    );
+  static filterOperationsByStatut(operations: Operation[], statut: string): Operation[] {
+    return operations.filter(op => op.statut.toLowerCase() === statut.toLowerCase());
   }
 
-  /**
-   * Calcule le total des montants pour des opérations
-   */
-  calculerTotalOperations(operations: Operation[]): number {
+  static calculerTotalOperations(operations: Operation[]): number {
     return operations.reduce((total, op) => total + (op.montantPaye || 0), 0);
   }
 
-  /**
-   * Calcule le total des montants payés pour des opérations
-   */
-  calculerTotalPaye(operations: Operation[]): number {
-    return operations.reduce((total, op) => total + (op.montantPaye || 0), 0);
+  static hasBonDetails(operation: Operation): boolean {
+    return !!(operation.bon && operation.bon?.Panier);
   }
 
-  /**
-   * Vérifie si une opération a des détails de bon
-   */
-  hasBonDetails(operation: Operation): boolean {
-    return !!(operation.Bon && operation.Bon.Panier);
+  static hasPaiementDetails(operation: Operation): boolean {
+    return !!operation.paiement;
   }
 
-  /**
-   * Vérifie si une opération a des détails de paiement
-   */
-  hasPaiementDetails(operation: Operation): boolean {
-    return !!operation.Paiement;
-  }
-
-  /**
-   * Récupère le nombre d'articles d'une opération
-   */
-  getNombreArticles(operation: Operation): number {
-    if (this.hasBonDetails(operation) && operation.Bon!.Panier!.ArticlePaniers) {
-      return operation.Bon!.Panier!.ArticlePaniers.length;
+  static getNombreArticles(operation: Operation): number {
+    if (this.hasBonDetails(operation) && operation.bon?.Panier?.articles) {
+      return operation.bon.Panier.articles.length;
     }
     return 0;
   }
 
-  /**
-   * Rafraîchit les opérations après un enregistrement (méthode de compatibilité)
-   */
   rafraichirOperationsApresEnregistrement(
     code_structure: string,
     fournisseurId?: number,
     clientId?: number
   ): Observable<Operation[]> {
-    console.log('🔄 Rafraîchissement des opérations');
-
-    if (fournisseurId) {
-      return this.getOperationsByFournisseur(code_structure, fournisseurId);
-    } else if (clientId) {
-      return this.getOperationsByClient(code_structure, clientId);
-    }
-
-    // Fallback: récupérer toutes les opérations de la structure
-    return this.getOperations({ code_structure }).pipe(
-      map(response => response.operations)
-    );
+    this.logger.info('Rafraîchissement des opérations');
+    if (fournisseurId) return this.getOperationsByFournisseur(code_structure, fournisseurId);
+    if (clientId) return this.getOperationsByClient(code_structure, clientId);
+    return this.getOperations({ code_structure }).pipe(map(response => response.operations));
   }
 
-     
 }

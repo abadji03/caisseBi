@@ -3,6 +3,59 @@ const router = express.Router();
 const ctrl = require('../controllers/reconciliation.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
 
+/**
+ * @swagger
+ * tags:
+ *   name: Réconciliations
+ *   description: Inventaire et réconciliation des stocks
+ *
+ * /reconciliations:
+ *   post:
+ *     summary: Créer une réconciliation (inventaire)
+ *     tags: [Réconciliations]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [produitId, magasinId, quantiteReelle]
+ *             properties:
+ *               produitId: { type: integer }
+ *               magasinId: { type: integer }
+ *               quantiteReelle: { type: number }
+ *               commentaire: { type: string }
+ *     responses:
+ *       201:
+ *         description: Réconciliation créée
+ *
+ * /reconciliations/structure/{code_structure}:
+ *   get:
+ *     summary: Réconciliations d'une structure
+ *     tags: [Réconciliations]
+ *     parameters:
+ *       - in: path
+ *         name: code_structure
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Liste des réconciliations
+ *
+ * /reconciliations/structure/{code_structure}/analyse-ecart:
+ *   get:
+ *     summary: Analyse des écarts de stock
+ *     tags: [Réconciliations]
+ *     parameters:
+ *       - in: path
+ *         name: code_structure
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Rapport d'écarts
+ */
+
 
 //router.post("/", ctrl.createReconciliation);
 //router.get("/structure/:code_structure", ctrl.getReconciliationsByStructure);

@@ -739,98 +739,6 @@ exports.updateStatutBon = async (req, res) => {
 };
 
 
-/**
- * Mettre à jour le statut d'un bon (version simplifiée pour facturation)
- * PATCH /api/bons/:id/statut
- */
-exports.updateStatutBonBis = async (req, res) => {
-  const transaction = await db.sequelize.transaction();
-  
-  try {
-    const authUser = req.user;
-    const clientIp = HistoriqueService.getClientIp(req);
-
-    if (!authUser) {
-      return res.status(401).json({ message: "Non authentifié" });
-    }
-
-    const { statutBon, numeroFacture } = req.body;
-    const bonId = req.params.id;
-
-    // Récupérer le bon avec ses relations
-    const bon = await db.Bon.findByPk(bonId, {
-      include: [
-        { model: db.Panier },
-        { model: db.Client },
-        { model: db.Fournisseur }
-      ],
-      transaction
-    });
-
-    if (!bon) {
-      await transaction.rollback();
-      return res.status(404).json({ message: 'Bon non trouvé' });
-    }
-
-    // Sauvegarder l'ancien statut pour l'historique
-    const ancienStatut = bon.statutBon;
-    
-    // Mettre à jour le statut et éventuellement le numéro de facture
-    const updates = { statutBon };
-    if (numeroFacture) {
-      updates.numeroFacture = numeroFacture;
-    }
-    
-    await bon.update(updates, { transaction });
-
-    // Mettre à jour l'opération associée
-    await operationController.updateFromBon(bon, transaction);
-
-    // Enregistrer l'historique
-    await HistoriqueService.enregistrerAction(
-      authUser.id,
-      `Mise à jour du statut du bon ${bon.numero} : ${ancienStatut} → ${statutBon}`,
-      clientIp,
-      {
-        action: 'UPDATE_BON_STATUT',
-        bonId: bon.id,
-        bonNumero: bon.numero,
-        ancienStatut,
-        nouveauStatut: statutBon,
-        numeroFacture: numeroFacture || bon.numeroFacture
-      }
-    );
-
-    await transaction.commit();
-
-    // Recharger le bon avec ses relations pour la réponse
-    const bonMisAJour = await db.Bon.findByPk(bonId, {
-      include: [
-        { model: db.Panier, include: [{ model: db.ArticlePanier, include: [{ model: db.Produit }] }] },
-        { model: db.Client },
-        { model: db.Fournisseur }
-      ]
-    });
-
-    return res.json({
-      success: true,
-      message: `Statut du bon mis à jour avec succès`,
-      bon: bonMisAJour
-    });
-
-  } catch (error) {
-    if (transaction && !transaction.finished) {
-      await transaction.rollback();
-    }
-    console.error('Erreur updateStatutBon:', error);
-    return res.status(500).json({ 
-      success: false,
-      message: 'Erreur lors de la mise à jour du statut',
-      error: error.message 
-    });
-  }
-};
-
 exports.updateTypeBon = async (req, res) => {
   try {
     const authUser = req.user;
@@ -854,50 +762,66 @@ exports.updateTypeBon = async (req, res) => {
 };
 
 exports.updateResteAPayer = async (req, res) => {
+  const transaction = await db.sequelize.transaction();
   try {
     const authUser = req.user;
 
     if (!authUser) {
+      await transaction.rollback();
       return res.status(401).json({ message: "Non authentifié" });
     }
     const { montant } = req.body; // montant payé
-    const bon = await Bon.findByPk(req.params.id);
-    if (!bon) return res.status(404).json({ message: 'Bon non trouvé' });
-
-    bon.resteAPayer = parseFloat(bon.resteAPayer) - parseFloat(montant);
-
-    // Auto-ajustement du statut si payé
-    if (bon.resteAPayer <= 0) {
-      bon.resteAPayer = 0;
-      bon.statutBon = 'payé';
+    const bon = await Bon.findByPk(req.params.id, { transaction });
+    if (!bon) {
+      await transaction.rollback();
+      return res.status(404).json({ message: 'Bon non trouvé' });
     }
 
-    await bon.save();
+    const nouveauReste = parseFloat(bon.resteAPayer) - parseFloat(montant);
+    const updates = { resteAPayer: Math.max(0, nouveauReste) };
+
+    // Auto-ajustement du statut si payé
+    if (nouveauReste <= 0) {
+      updates.statutBon = 'payé';
+    }
+
+    await bon.update(updates, { transaction });
+    await transaction.commit();
     return res.json(bon);
   } catch (error) {
+    if (transaction && !transaction.finished) await transaction.rollback();
     console.error('Erreur update resteAPayer:', error);
     return res.status(500).json({ error: error.message });
   }
 };
 
 exports.updateNetAPayer = async (req, res) => {
+  const transaction = await db.sequelize.transaction();
   try {
     const authUser = req.user;
 
     if (!authUser) {
+      await transaction.rollback();
       return res.status(401).json({ message: "Non authentifié" });
     }
     const { remise } = req.body;
-    const bon = await Bon.findByPk(req.params.id);
-    if (!bon) return res.status(404).json({ message: 'Bon non trouvé' });
+    const bon = await Bon.findByPk(req.params.id, { transaction });
+    if (!bon) {
+      await transaction.rollback();
+      return res.status(404).json({ message: 'Bon non trouvé' });
+    }
 
-    bon.remise = remise;
-    bon.netAPayer = parseFloat(bon.montantTotal) - parseFloat(remise);
-    bon.resteAPayer = bon.netAPayer; // réinitialiser le reste dû
+    const netAPayer = parseFloat(bon.montantTotal) - parseFloat(remise);
+    await bon.update({
+      remise,
+      netAPayer,
+      resteAPayer: netAPayer // réinitialiser le reste dû
+    }, { transaction });
 
-    await bon.save();
+    await transaction.commit();
     return res.json(bon);
   } catch (error) {
+    if (transaction && !transaction.finished) await transaction.rollback();
     console.error('Erreur update netAPayer:', error);
     return res.status(500).json({ error: error.message });
   }
@@ -950,23 +874,27 @@ exports.updateFichier = async (req, res) => {
   } */
 };
 exports.updateMotifsRetour = async (req, res) => {
+  const transaction = await db.sequelize.transaction();
   try {
     const authUser = req.user;
 
     if (!authUser) {
+      await transaction.rollback();
       return res.status(401).json({ message: "Non authentifié" });
     }
 
     const { motifsRetour } = req.body;
-    const bon = await Bon.findByPk(req.params.id);
-    if (!bon) return res.status(404).json({ message: 'Bon non trouvé' });
+    const bon = await Bon.findByPk(req.params.id, { transaction });
+    if (!bon) {
+      await transaction.rollback();
+      return res.status(404).json({ message: 'Bon non trouvé' });
+    }
 
-    bon.motifsRetour = motifsRetour;
-    bon.statutBon = 'retourné';
-    await bon.save();
-
+    await bon.update({ motifsRetour, statutBon: 'retourné' }, { transaction });
+    await transaction.commit();
     return res.json(bon);
   } catch (error) {
+    if (transaction && !transaction.finished) await transaction.rollback();
     console.error('Erreur update motifsRetour:', error);
     return res.status(500).json({ error: error.message });
   }

@@ -103,27 +103,12 @@
           (change)="onMagasinSelect($event)"
           [disabled]="isLoading"
         >
-          <option [value]="undefined">Tous les magasins</option>
-          <option *ngFor="let magasin of magasins" [value]="magasin.id">
-            {{ magasin.nom }}
-          </option>
-        </select>
-      </div>
-
-      <!-- Filtre agent (si admin) -->
-      <!--<div class="col-md-3" *ngIf="isAdmin">
-        <label for="agent" class="form-label fw-semibold">Agent :</label>
-        <select
-          id="agent"
-          class="form-select"
-          [(ngModel)]="selectedAgentId"
-          (change)="onAgentSelect($event)"
-          [disabled]="isLoading"
-        >
-          <option [value]="undefined">Tous les agents</option>
-           Les agents seront chargés dynamiquement si nécessaire 
-        </select>
-      </div>-->
+      <option [value]="undefined">Tous les magasins</option>
+      <option *ngFor="let magasin of magasins" [value]="magasin.id">
+        {{ magasin.nom }}
+      </option>
+    </select>
+  </div>
 
       <!-- Bouton de rafraîchissement -->
       <div class="col-12 mt-2">

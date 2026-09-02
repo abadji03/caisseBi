@@ -6,13 +6,14 @@ import { NGXLogger } from 'ngx-logger';
 import { catchError, Observable, throwError } from 'rxjs';
 import { IndicateursStocks, MouvementsResponse, ProduitsSpecifiquesResponse, RapportCompletStocksResponse, StatistiquesProduit, StatsGraphiquesResponse, StatsProduitsResponse } from '../modeles/kpiCaisse.model';
 import { RapportStockParams } from '../modeles/finance.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class RapportStockService {
 
-  private apiUrl = 'http://localhost:5000/api/rapport-stock';
+  private apiUrl = `${environment.apiUrl}/rapport-stock`;
 
   private http = inject(HttpClient);
   private authService = inject(AuthService);

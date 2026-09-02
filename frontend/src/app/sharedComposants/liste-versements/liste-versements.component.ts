@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { Paiement } from '../../modeles/paiement.model';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -10,7 +10,7 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './liste-versements.component.html',
   styleUrl: './liste-versements.component.css'
 })
-export class ListeVersementsComponent implements OnInit, OnChanges{
+export class ListeVersementsComponent implements OnChanges{
 
   @Input() paiements: Paiement[] = [];
   @Input() entiteNom = '';
@@ -30,22 +30,31 @@ export class ListeVersementsComponent implements OnInit, OnChanges{
   // eslint-disable-next-line @angular-eslint/no-output-on-prefix
   @Output() onPageChange = new EventEmitter<number>();
 
-  Math = Math;
-  
-ngOnInit(): void {
-
-  console.log('Paiement chargé',this.paiements);
-}
-
   ngOnChanges(changes: SimpleChanges): void {
-    // Log pour déboguer
     if (changes['paiements']) {
       console.log('Paiements reçus:', this.paiements);
     }
   }
+
+  get affichageDebut(): number {
+    return ((this.currentPage - 1) * this.itemsPerPage) + 1;
+  }
+
+  get affichageFin(): number {
+    return Math.min(this.currentPage * this.itemsPerPage, this.totalItems);
+  }
  
 changePage(page: number): void {
     this.onPageChange.emit(page);
+  }
+
+  getEntiteNomValue(paiement: Paiement): string {
+    if (paiement.typePaiement === 'client') {
+      return paiement.Client?.nomComplet || 'N/A';
+    } else if (paiement.typePaiement === 'fournisseur') {
+      return paiement.Fournisseur?.nomComplet || 'N/A';
+    }
+    return 'N/A';
   }
 
   viewDetails(paiement: Paiement): void {
@@ -56,13 +65,5 @@ changePage(page: number): void {
     this.onImprimerTicket.emit(paiement);
   }
 
-  getEntiteNom(paiement: Paiement): string {
-    if (paiement.typePaiement === 'client') {
-      return paiement.Client?.nomComplet || 'N/A';
-    } else if (paiement.typePaiement === 'fournisseur') {
-      return paiement.Fournisseur?.nomComplet || 'N/A';
-    }
-    return 'N/A';
-  }
 
 }

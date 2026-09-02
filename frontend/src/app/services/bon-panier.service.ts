@@ -15,7 +15,8 @@ export class BonPanierService {
   }
   
   getPanier(): Panier | null {
-    return this.panierSubject.getValue();
+    const panier = this.panierSubject.getValue();
+    return panier ? panier.clone() : null;
   }
   
   clearPanier(): void {

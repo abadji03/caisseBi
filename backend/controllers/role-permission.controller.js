@@ -1,6 +1,6 @@
 const db = require('../models');
-const Role = db.role;
-const Permission = db.permission;
+const Role = db.Role;
+const Permission = db.Permission;
 const HistoriqueService = require('../services/historique.service');
 
 
@@ -72,12 +72,20 @@ exports.assignPermissionsToRole = async (req, res) => {
 
 exports.getRolePermissions = async (req, res) => {
   try {
-    const role = await Role.findByPk(req.params.roleId, {
-      include: Permission,
+    // Compatible avec /:roleId/permissions et /:id/permissions
+    const id = req.params.roleId || req.params.id;
+    const role = await Role.findByPk(id, {
+      include: {
+        model: Permission,
+        through: { attributes: [] }
+      }
     });
     if (!role) return res.status(404).json({ message: 'Rôle non trouvé' });
 
-    res.json(role.permissions);
+    res.json({
+      role: role.nom,
+      permissions: role.Permissions
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -190,29 +198,8 @@ exports.getAllRoles = async (req, res) => {
 };
 
 /**
- * GET /api/roles/:id/permissions
+ * GET /api/roles/:id/permissions — alias géré directement dans getRolePermissions ci-dessus
  */
-exports.getRolePermissions = async (req, res) => {
-  try {
-    const role = await Role.findByPk(req.params.id, {
-      include: {
-        model: Permission,
-        through: { attributes: [] }
-      }
-    });
-
-    if (!role) {
-      return res.status(404).json({ message: 'Rôle non trouvé' });
-    }
-
-    res.json({
-      role: role.nom,
-      permissions: role.Permissions
-    });
-  } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur', error });
-  }
-};
 
 exports.setRolePermissions = async (req, res) => {
   try {
@@ -271,18 +258,18 @@ exports.setRolePermissions = async (req, res) => {
 
 exports.getPermissionsGroupedByRole = async (req, res) => {
   try {
-    const roles = await db.role.findAll({
+    const roles = await db.Role.findAll({
       attributes: ['id', 'nom'],
       include: [
         {
-          model: db.permission,
+          model: db.Permission,
           attributes: ['id', 'nom', 'niveau', 'type'],
           through: { attributes: [] }
         }
       ],
       order: [
         ['id', 'ASC'],
-        [db.permission, 'niveau', 'ASC']
+        [db.Permission, 'niveau', 'ASC']
       ]
     });
 

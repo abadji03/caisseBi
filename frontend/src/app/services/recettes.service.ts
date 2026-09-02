@@ -4,6 +4,7 @@ import { NGXLogger } from 'ngx-logger';
 import { catchError, Observable, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 import { Recette } from '../modeles/finance.model';
+import { environment } from '../../environments/environment';
 
 export interface RecettesResponse {
   items: Recette[];
@@ -86,7 +87,7 @@ export interface RecettesFilter {
 })
 export class RecettesService {
 
-    private apiUrl = 'http://localhost:5000/api/recettes';
+    private apiUrl = `${environment.apiUrl}/recettes`;
     private http = inject(HttpClient);
     private authService = inject(AuthService);
     private logger = inject(NGXLogger);

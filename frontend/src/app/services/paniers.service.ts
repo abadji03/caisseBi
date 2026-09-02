@@ -1,11 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { AuthService } from './auth.service';
 import { NGXLogger } from 'ngx-logger';
 import { catchError, Observable, throwError } from 'rxjs';
 import { Panier } from '../modeles/panier.model';
-const API_URL = 'http://localhost:5000/api/paniers'; // adapte selon ton backend
+import { environment } from '../../environments/environment';
+
+const API_URL = `${environment.apiUrl}/paniers`;
 export interface TransactionsResponse {
   items: Panier[];
   pagination: {
@@ -53,10 +55,28 @@ export class PaniersService {
     });
   }
 
-  private handleError(error: Panier): Observable<never> {
-    this.logger.error('Erreur API Panier:', error);
+  private handleError(error: HttpErrorResponse): Observable<never> {
+    const message = typeof error.error === 'string'
+      ? error.error
+      : error.message || 'Erreur inconnue';
+    const status = error.status || 0;
+    this.logger.error(`Erreur API Panier (${status}): ${message}`, error);
     return throwError(() => error);
   }
+
+  // === HELPERS DE CONSTRUCTION D'URL ===
+
+  /** Construit l'URL de base pour une structure et un magasin */
+  private structureUrl(code_structure: string, magasinId: number): string {
+    return `${API_URL}/structure/${code_structure}/magasin/${magasinId}`;
+  }
+
+  /** Construit l'URL pour un panier par son ID */
+  private panierUrl(id: number): string {
+    return `${API_URL}/${id}`;
+  }
+
+  // === CRUD ===
 
   createPanierComplet(panierCompletData: any): Observable<any> {
       return this.http.post<any>(`${API_URL}/panier-complet`, panierCompletData);
@@ -68,12 +88,12 @@ export class PaniersService {
   }
 
   getPaniersByStructure(code_structure: string, magasinId: number): Observable<Panier[]> {
-    return this.http.get<Panier[]>(`${API_URL}/structure/${code_structure}/magasin/${magasinId }`, { headers: this.getHeaders() })
+    return this.http.get<Panier[]>(`${this.structureUrl(code_structure, magasinId)}`, { headers: this.getHeaders() })
       .pipe(catchError(err => this.handleError(err)));
   }
 
   getPaniersBrouillon(code_structure: string, magasinId: number): Observable<Panier[]> {
-    return this.http.get<Panier[]>(`${API_URL}/structure/${code_structure}/magasin/${magasinId }/brouillon`, { headers: this.getHeaders() })
+    return this.http.get<Panier[]>(`${this.structureUrl(code_structure, magasinId)}/brouillon`, { headers: this.getHeaders() })
       .pipe(catchError(err => this.handleError(err)));
   }
 
@@ -83,17 +103,17 @@ export class PaniersService {
   }
 
   getPanierById(id: number): Observable<Panier> {
-    return this.http.get<Panier>(`${API_URL}/${id}`, { headers: this.getHeaders() })
+    return this.http.get<Panier>(`${this.panierUrl(id)}`, { headers: this.getHeaders() })
       .pipe(catchError(err => this.handleError(err)));
   }
 
   updatePanier(id: number, data: Panier): Observable<Panier> {
-    return this.http.put<Panier>(`${API_URL}/${id}`, data, { headers: this.getHeaders() })
+    return this.http.put<Panier>(`${this.panierUrl(id)}`, data, { headers: this.getHeaders() })
       .pipe(catchError(err => this.handleError(err)));
   }
 
   deletePanier(id: number): Observable<Panier> {
-    return this.http.delete<Panier>(`${API_URL}/${id}`, { headers: this.getHeaders() })
+    return this.http.delete<Panier>(`${this.panierUrl(id)}`, { headers: this.getHeaders() })
       .pipe(catchError(err => this.handleError(err)));
   }
 
@@ -104,24 +124,25 @@ export class PaniersService {
   // === Méthodes spécifiques ===
 
   updateStatutPanier(id: number, statut: string): Observable<Panier> {
-    return this.http.patch<Panier>(`${API_URL}/${id}/statut`, { statut }, { headers: this.getHeaders() })
+    return this.http.patch<Panier>(`${this.panierUrl(id)}/statut`, { statut }, { headers: this.getHeaders() })
       .pipe(catchError(err => this.handleError(err)));
   }
 
   updateTotauxPanier(id: number, totalHT: number, tva: number): Observable<Panier> {
-    return this.http.patch<Panier>(`${API_URL}/${id}/totaux`, { totalHT, tva }, { headers: this.getHeaders() })
+    return this.http.patch<Panier>(`${this.panierUrl(id)}/totaux`, { totalHT, tva }, { headers: this.getHeaders() })
       .pipe(catchError(err => this.handleError(err)));
   }
 
   updateDetailsVisible(id: number, visible: boolean): Observable<Panier> {
-    return this.http.patch<Panier>(`${API_URL}/${id}/detailsVisible`, { visible }, { headers: this.getHeaders() })
+    return this.http.patch<Panier>(`${this.panierUrl(id)}/detailsVisible`, { visible }, { headers: this.getHeaders() })
       .pipe(catchError(err => this.handleError(err)));
   }
 
   resetPanier(id: number): Observable<Panier> {
-    return this.http.patch<Panier>(`${API_URL}/${id}/reset`, {}, { headers: this.getHeaders() })
+    return this.http.patch<Panier>(`${this.panierUrl(id)}/reset`, {}, { headers: this.getHeaders() })
       .pipe(catchError(err => this.handleError(err)));
   }
+
   getPanierByBonId(bonId: number): Observable<Panier> {
   return this.http.get<Panier>(`${API_URL}/bon/${bonId}`, {
     headers: this.getHeaders(),
@@ -179,38 +200,52 @@ export class PaniersService {
   }
 
   /**
-   * Récupère uniquement les paniers d'aujourd'hui
-   * @param code_structure Optionnel - Code de la structure
-   * @param magasinId Optionnel - ID du magasin
+   * Récupère les transactions du jour avec pagination, recherche et filtres
+   *
+   * @param code_structure Code de la structure (obligatoire)
+   * @param magasinId ID du magasin (optionnel)
+   * @param bonId ID du bon, null pour "sans bon", undefined pour "tous" (optionnel)
+   * @param filter Filtres optionnels (pagination, recherche, statut)
    */
-  getPaniersAujourdhui(code_structure?: string, magasinId?: number, bonId?: number | null | ''): Observable<any> {
+  getPaniersAujourdhui(
+    code_structure: string,
+    magasinId?: number,
+    bonId?: number | null | '',
+    filter: TransactionsFilter = {}
+  ): Observable<TransactionsResponse> {
     let params = new HttpParams();
-    
-    if (code_structure) {
-      params = params.set('code_structure', code_structure);
-    }
-    
-    if (magasinId) {
-      params = params.set('magasinId', magasinId.toString());
-    }
 
-    if (bonId !== undefined) {
+    // Pagination
+    if (filter.page)   params = params.set('page',  filter.page.toString());
+    if (filter.limit)  params = params.set('limit', filter.limit.toString());
+
+    // Recherche / filtres
+    if (filter.search) params = params.set('search', filter.search);
+    if (filter.statut) params = params.set('statut', filter.statut);
+
+    if (magasinId) params = params.set('magasinId', magasinId.toString());
+
+    // bonId : null → 'null' (filtre "sans bon"), undefined / '' → omis
     if (bonId === null) {
       params = params.set('bonId', 'null');
-    } 
-    else if (typeof bonId === 'number') {
+    } else if (bonId !== undefined && bonId !== '') {
       params = params.set('bonId', bonId.toString());
     }
-  }
 
-    return this.http.get<any>(`${API_URL}/structure/${code_structure}/magasin/${magasinId}/bons/${bonId}/aujourdhui`, {
+    // On utilise toujours la route "bis" (avec pagination + statistiques).
+    // bonId est passé entièrement en query param pour éviter les doubles slashes
+    // quand il est null/undefined.
+    const url = `${API_URL}/structure/bis/${code_structure}/magasin/${magasinId ?? ''}/bons/0/aujourdhui`;
+
+    return this.http.get<TransactionsResponse>(url, {
       headers: this.getHeaders(),
       params
     }).pipe(catchError(err => this.handleError(err)));
   }
 
-   /**
-   * Récupérer les transactions du jour avec pagination et recherche
+  /**
+   * @deprecated Utiliser `getPaniersAujourdhui(code_structure, magasinId, bonId, filter)` à la place.
+   * Conservé pour compatibilité ascendante.
    */
   getPaniersAujourdhuiBis(
     code_structure: string, 
@@ -218,41 +253,7 @@ export class PaniersService {
     bonId?: number | null | '',
     filter: TransactionsFilter = {}
   ): Observable<TransactionsResponse> {
-    let params = new HttpParams();
-    
-    // Pagination
-    if (filter.page) params = params.set('page', filter.page.toString());
-    if (filter.limit) params = params.set('limit', filter.limit.toString());
-    
-    // Recherche
-    if (filter.search) params = params.set('search', filter.search);
-    
-    // Filtre par statut
-    if (filter.statut) params = params.set('statut', filter.statut);
-    
-    // Paramètres existants
-    if (code_structure) {
-      params = params.set('code_structure', code_structure);
-    }
-    
-    if (magasinId) {
-      params = params.set('magasinId', magasinId.toString());
-    }
-
-    if (bonId !== undefined) {
-      if (bonId === null) {
-        params = params.set('bonId', 'null');
-      } else if (typeof bonId === 'number') {
-        params = params.set('bonId', bonId.toString());
-      }
-    }
-
-    const url = `${API_URL}/structure/bis/${code_structure}/magasin/${magasinId}/bons/${bonId}/aujourdhui`;
-    
-    return this.http.get<TransactionsResponse>(url, {
-      headers: this.getHeaders(),
-      params
-    }).pipe(catchError(err => this.handleError(err)));
+    return this.getPaniersAujourdhui(code_structure, magasinId, bonId, filter);
   }
 
 

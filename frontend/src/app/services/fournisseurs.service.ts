@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { Fournisseur } from '../modeles/fournisseur.model';
 import { catchError, Observable, tap, throwError } from 'rxjs';
 import { NGXLogger } from 'ngx-logger';
+import { environment } from '../../environments/environment';
 
 export interface FournisseursFilter {
   page?: number;
@@ -28,7 +29,7 @@ export interface FournisseursResponse {
   providedIn: 'root',
 })
 export class FournisseursService {
-  private apiUrl = 'http://localhost:5000/api/fournisseurs';
+  private apiUrl = `${environment.apiUrl}/fournisseurs`;
   private http = inject(HttpClient);
   private authService = inject(AuthService);
   private logger = inject(NGXLogger);
@@ -121,7 +122,7 @@ export class FournisseursService {
   }
 
   getFournisseurWithMagasins(id: number): Observable<Fournisseur> {
-      return this.http.get<Fournisseur>(`${this.apiUrl}/${id}/with-magasins`);
+      return this.http.get<Fournisseur>(`${this.apiUrl}/${id}/with-magasins`, { headers: this.getHeaders() });
     }
   // Mettre à jour le solde pour un magasin spécifique
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -138,41 +139,4 @@ export class FournisseursService {
     return throwError(() => error);
   }
 
-  // Recherche avancée de fournisseurs
-  /*  searchFournisseurs(params: {
-    nom?: string;
-    statut?: string;
-    code_structure?: string;
-  }): Observable<Fournisseur[]> {
-    let httpParams = new HttpParams();
-    
-    if (params.nom) httpParams = httpParams.append('nom', params.nom);
-    if (params.statut) httpParams = httpParams.append('statut', params.statut);
-    if (params.code_structure) httpParams = httpParams.append('code_structure', params.code_structure);
-
-    return this.http.get<Fournisseur[]>(
-      `${this.apiUrl}/fournisseurs/search`,
-      { headers: this.getHeaders(), params: httpParams }
-    );
-  }
-
-  // Compter le nombre total de fournisseurs
-  countFournisseurs(): Observable<{ count: number }> {
-    return this.http.get<{ count: number }>(
-      `${this.apiUrl}/fournisseurs/count`,
-      { headers: this.getHeaders() }
-    );
-  }
-
-  // Récupérer les fournisseurs avec pagination
-  getFournisseursPaginated(page: number = 1, limit: number = 10): Observable<PaginatedFournisseurs> {
-    const params = new HttpParams()
-      .set('page', page.toString())
-      .set('limit', limit.toString());
-
-    return this.http.get<PaginatedFournisseurs>(
-      `${this.apiUrl}/fournisseurs/page`,
-      { headers: this.getHeaders(), params }
-    );
-  } */
 }

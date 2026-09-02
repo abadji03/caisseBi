@@ -41,24 +41,13 @@ export class ListeBonsComponent implements OnInit,OnChanges {
   // eslint-disable-next-line @angular-eslint/no-output-on-prefix
   @Output() onPageChange = new EventEmitter<number>();
  
-  //filteredBons: Bon[] = [];
-  //currentPage = 1;
   selectedBonIndex: number | null = null;
 
   Math = Math; // Pour utiliser Math.min dans le template
 
-  //private paginationService = inject(ApplicationService);
-
   ngOnInit(): void {
-    //this.filteredBons = [...this.bons];
     console.log('Bon chargés',this.bons)
   }
-
-  /* ngOnChanges(changes: SimpleChanges): void {
-    if (changes['bons'] || changes['searchQuery']) {
-      this.filterBons();
-    }
-  } */
  ngOnChanges(changes: SimpleChanges): void {
     if (changes['bons']) {
       this.selectedBonIndex = null;
@@ -77,16 +66,6 @@ export class ListeBonsComponent implements OnInit,OnChanges {
   changePage(page: number): void {
     this.onPageChange.emit(page);
   }
-
-  /* onSearchInput(query: string): void {
-    //this.searchQuery = query;
-    this.onSearchChange.emit(query);
-  } */
-
-  /* onRowsPerPageChangeEvent(event: any): void {
-    const rows = Number(event.target.value);
-    this.onRowsPerPageChange.emit(rows);
-  } */
 
   canReturn(bon: Bon): boolean {
     if (!bon) return false;

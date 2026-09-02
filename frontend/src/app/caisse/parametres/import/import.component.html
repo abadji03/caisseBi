@@ -247,16 +247,16 @@
 
           <!-- Résultats -->
           <div *ngIf="importResult" class="mt-4">
-            <div class="alert" [ngClass]="importResult.erreurs === 0 ? 'alert-success' : 'alert-warning'" role="status">
+            <div class="alert" [ngClass]="importResult.nombreErreurs === 0 ? 'alert-success' : 'alert-warning'" role="status">
               <div class="d-flex align-items-center">
-                <i class="bi" [ngClass]="importResult.erreurs === 0 ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'"
+                <i class="bi" [ngClass]="importResult.nombreErreurs === 0 ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'"
                    style="font-size: 1.5rem; margin-right: 1rem;" aria-hidden="true"></i>
                 <div>
                   <h5 class="mb-1">Résultat de l'import</h5>
                   <p class="mb-0">
                     ✓ {{ importResult.importes }} élément(s) importé(s)
-                    <span *ngIf="importResult.erreurs > 0" class="text-danger ms-3">
-                      ⚠️ {{ importResult.erreurs }} erreur(s)
+                    <span *ngIf="importResult.nombreErreurs > 0" class="text-danger ms-3">
+                      ⚠️ {{ importResult.nombreErreurs }} erreur(s)
                     </span>
                   </p>
                 </div>

@@ -1,38 +1,65 @@
-// middleware/validateBonComplet.js
-const validateBonComplet = (req, res, next) => {
-  const {
-    bon,
-    panier,
-    articles,
-    code_structure,
-    magasinId,
-    agentId
-  } = req.body;
+// middlewares/validateBonComplet.middleware.js
+//
+// Valide le corps d'une requête de création/modification de bon complet.
+// Note : code_structure, magasinId et agentId sont extraits de req.user (JWT),
+// pas de req.body — ils ne sont donc pas validés ici.
 
+const validateBonComplet = (req, res, next) => {
+  const { bon, panier, articles, typeEntite } = req.body;
   const errors = [];
 
-  if (!bon) errors.push('Le bon est requis');
-  if (!panier) errors.push('Le panier est requis');
-  if (!articles || !Array.isArray(articles) || articles.length === 0) {
-    errors.push('Les articles sont requis et doivent être un tableau non vide');
+  // ── Champs obligatoires du body ──
+  if (!bon || typeof bon !== 'object') {
+    errors.push('Le champ "bon" est requis et doit être un objet');
   }
-  if (!code_structure) errors.push('Le code structure est requis');
-  if (!magasinId) errors.push('Le magasinId est requis');
-  if (!agentId) errors.push('L\'agentId est requis');
+  if (!panier || typeof panier !== 'object') {
+    errors.push('Le champ "panier" est requis et doit être un objet');
+  }
+  if (!typeEntite || !['client', 'fournisseur'].includes(typeEntite)) {
+    errors.push('Le champ "typeEntite" est requis (valeurs acceptées : client, fournisseur)');
+  }
+  if (!Array.isArray(articles) || articles.length === 0) {
+    errors.push('Le champ "articles" est requis et doit être un tableau non vide');
+  }
 
-  // Validation des articles
-  if (articles && Array.isArray(articles)) {
+  // ── Validation des montants du bon ──
+  if (bon && typeof bon === 'object') {
+    if (bon.montantTotal !== undefined && Number(bon.montantTotal) < 0) {
+      errors.push('"bon.montantTotal" ne peut pas être négatif');
+    }
+    if (bon.remise !== undefined && Number(bon.remise) < 0) {
+      errors.push('"bon.remise" ne peut pas être négative');
+    }
+    if (bon.avance !== undefined && Number(bon.avance) < 0) {
+      errors.push('"bon.avance" ne peut pas être négative');
+    }
+  }
+
+  // ── Validation article par article ──
+  if (Array.isArray(articles)) {
     articles.forEach((article, index) => {
+      const pos = `Article[${index + 1}]`;
       if (!article.produitId && !article.produit?.id) {
-        errors.push(`Article ${index + 1}: produitId est requis`);
+        errors.push(`${pos} : "produitId" est requis`);
       }
-      if (!article.quantite || article.quantite < 1) {
-        errors.push(`Article ${index + 1}: quantite doit être supérieure à 0`);
+      if (!article.quantite || Number(article.quantite) < 1) {
+        errors.push(`${pos} : "quantite" doit être supérieure à 0`);
       }
-      if (!article.prixVenteUnitaire || article.prixVenteUnitaire < 0) {
-        errors.push(`Article ${index + 1}: prixVenteUnitaire doit être positif`);
+      if (article.prixVenteUnitaire === undefined || Number(article.prixVenteUnitaire) < 0) {
+        errors.push(`${pos} : "prixVenteUnitaire" doit être positif ou nul`);
       }
     });
+  }
+
+  // ── Vérification que l'utilisateur est authentifié (req.user injecté par auth middleware) ──
+  if (!req.user) {
+    return res.status(401).json({ message: 'Non authentifié' });
+  }
+  if (!req.user.code_structure) {
+    errors.push('Impossible de déterminer la structure de l\'utilisateur connecté');
+  }
+  if (!req.user.magasinId) {
+    errors.push('L\'utilisateur connecté n\'est associé à aucun magasin');
   }
 
   if (errors.length > 0) {

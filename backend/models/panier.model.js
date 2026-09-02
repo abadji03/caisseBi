@@ -80,40 +80,21 @@ module.exports = (sequelize, DataTypes) => {
 
     hooks: {
       beforeValidate: async (panier, options) => {
-        console.log('🔍 beforeValidate hook called', panier.code_structure);
-        
-        // Définir numeroE avant la validation
-        if (!panier.numeroE) {
-          try {
-            const paniersModel = sequelize.models.Panier;
-            if (paniersModel) {
-              const count = await paniersModel.count({
-                where: { code_structure: panier.code_structure },
-                transaction: options.transaction
-              });
-              panier.numeroE = count + 1;
-              console.log(`✅ Generated numeroE in beforeValidate: ${panier.numeroE}`);
-            } else {
-              panier.numeroE = 1;
-            }
-          } catch (error) {
-            console.error('❌ Hook error:', error);
-            panier.numeroE = 1;
-          }
-        }
-      },
-      beforeCreate: async (panier, options) => {
-        console.log('🎯 beforeCreate hook STARTED', panier.numeroE);
-        // Vérifier et régénérer si nécessaire
-        if (!panier.numeroE) {
-          const paniersModel = sequelize.models.Panier;
-          const count = await paniersModel.count({
+        if (panier.numeroE) return;
+
+        const t = options.transaction;
+        try {
+          const count = await sequelize.models.Panier.count({
             where: { code_structure: panier.code_structure },
-            transaction: options.transaction
+            transaction: t,
+            lock: t ? t.LOCK.UPDATE : undefined,
           });
           panier.numeroE = count + 1;
+        } catch (error) {
+          console.error('❌ Hook numeroE Panier error:', error);
+          panier.numeroE = 1;
         }
-      }
+      },
     }
   });
 

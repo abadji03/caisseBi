@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { Magasin } from '../modeles/magasin.model';
 import { catchError, Observable, tap, throwError } from 'rxjs';
 import { NGXLogger } from 'ngx-logger';
+import { environment } from '../../environments/environment';
 
 export interface MagasinsFilter {
   page?: number;
@@ -27,7 +28,7 @@ export interface MagasinsResponse {
   providedIn: 'root',
 })
 export class MaagasinsService {
-  private apiUrl = 'http://localhost:5000/api/magasins';
+  private apiUrl = `${environment.apiUrl}/magasins`;
 
   private http = inject(HttpClient);
   private authService = inject(AuthService);

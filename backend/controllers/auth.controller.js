@@ -71,14 +71,34 @@ exports.connexion = async (req, res) => {
       clientIp,
       { success: true, timestamp: new Date() }
     );
-    // Générer un token JWT
+    // Générer un token JWT avec les données essentielles pour éviter
+    // une requête DB lourde (roles + permissions) à chaque requête
+    const userWithRoles = await User.findByPk(user.id, {
+      include: [{
+        model: db.Role,
+        through: { attributes: [] },
+        include: [{
+          model: db.Permission,
+          through: { attributes: [] },
+        }],
+      }],
+    });
+
+    const rolesPayload = (userWithRoles.roles || []).map(r => ({
+      id: r.id,
+      nom: r.nom,
+      permissions: (r.permissions || []).map(p => ({ id: p.id, nom: p.nom, type: p.type })),
+    }));
+
     const token = jwt.sign(
       {
         id: user.id,
         email: user.email,
-        role: user.role,
-        typeUser: user.typeUser,
-        structureId: user.structureId,
+        nom: user.nom,
+        code_structure: user.code_structure,
+        structure_id: user.structure_id,
+        magasinId: user.magasinId,
+        roles: rolesPayload,
       },
       JWT_SECRET,
       { expiresIn: '12h' }
@@ -95,9 +115,9 @@ exports.connexion = async (req, res) => {
         id: user.id,
         nom: user.nom,
         email: user.email,
-        role: user.role,
-        typeUser: user.typeUser,
-      
+        code_structure: user.code_structure,
+        magasinId: user.magasinId,
+        roles: rolesPayload,
       },
     });
   } catch (err) {
@@ -111,11 +131,11 @@ exports.getMe = async (req, res) => {
      const user = await db.Users.findByPk(req.user.id, {
       include: [
         {
-          model: db.role,
+          model: db.Role,
           through: { attributes: [] }, // ignore les colonnes de la table user_role
           include: [
               {
-                model: db.permission,
+                model: db.Permission,
                 through: { attributes: [] } // ignore les colonnes de role_permissions
               }
             ]

@@ -5,12 +5,13 @@ import { BehaviorSubject, catchError, finalize, Observable, switchMap, tap, thro
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { NavigationItem, User } from '../modeles/user.model';
 import { NGXLogger } from 'ngx-logger';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:5000/api'; // URL API
+  private apiUrl = environment.apiUrl;
   private currentUserSubject = new BehaviorSubject<User>({} as User);
   public currentUser = this.currentUserSubject.asObservable();
   private jwtHelper = new JwtHelperService();
@@ -578,7 +579,7 @@ export class AuthService {
     return;
   }
 
-  this.http.post('http://localhost:5000/api/auth/deconnexion', {}, {
+  this.http.post(`${this.apiUrl}/auth/deconnexion`, {}, {
     headers: {
       Authorization: `Bearer ${token}`
     }

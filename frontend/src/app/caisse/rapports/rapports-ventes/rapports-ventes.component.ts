@@ -172,12 +172,9 @@ export class RapportsVentesComponent implements OnInit, OnDestroy,AfterViewInit 
     this.destroyGraphiques();
   }
   ngAfterViewInit(): void {
-    // S'assurer que les références canvas sont disponibles après l'initialisation de la vue
-    setTimeout(() => {
-      if (this.rapportData) {
-        this.mettreAJourGraphiques();
-      }
-    }, 500);
+    if (this.rapportData) {
+      requestAnimationFrame(() => this.mettreAJourGraphiques());
+    }
   }
   private destroyGraphiques(): void {
     const charts = [
@@ -320,27 +317,8 @@ export class RapportsVentesComponent implements OnInit, OnDestroy,AfterViewInit 
           this.filteredVentes = data.ventes || [];
           this.mettreAJourIndicateurs();
 
-          // Utiliser ChangeDetectorRef pour forcer la mise à jour du DOM
           this.cdr.detectChanges();
-
-          /* setTimeout(() => {
-            this.mettreAJourGraphiques();
-          }, 200); */
-          // Utiliser setTimeout avec un délai plus long et vérifier
-        setTimeout(() => {
-          // Vérifier que les canvas sont bien dans le DOM
-          if (this.evolutionVentesChartRef?.nativeElement && 
-              this.paiementsChartRef?.nativeElement && 
-              this.topProduitsChartRef?.nativeElement) {
-            this.mettreAJourGraphiques();
-          } else {
-            console.warn('Canvas non trouvés après détection, nouvelle tentative...');
-            // Réessayer après un délai supplémentaire
-            setTimeout(() => {
-              this.mettreAJourGraphiques();
-            }, 500);
-          }
-        }, 300);
+          requestAnimationFrame(() => this.mettreAJourGraphiques());
           
           this.progress = 100;
           this.toastr.success('Rapport chargé avec succès');
@@ -396,39 +374,22 @@ export class RapportsVentesComponent implements OnInit, OnDestroy,AfterViewInit 
         console.error('Erreur lors de la création des graphiques:', error);
       }
     }, 100); */
-    // Utiliser requestAnimationFrame pour s'assurer que le DOM est prêt
     requestAnimationFrame(() => {
       try {
-        // Vérifier que les données existent ET que les références canvas sont disponibles
         if (this.evolutionParJour?.length && this.evolutionVentesChartRef?.nativeElement) {
           this.creerGraphiqueEvolutionVentes();
-        } else {
-          console.warn('Données ou canvas manquants pour le graphique d\'évolution');
         }
-        
         if (this.statmodesPaiement?.length && this.paiementsChartRef?.nativeElement) {
           this.creerGraphiquePaiements();
-        } else {
-          console.warn('Données ou canvas manquants pour le graphique des paiements');
         }
-        
         if (this.topProduits?.length && this.topProduitsChartRef?.nativeElement) {
           this.creerGraphiqueTopProduits();
         }
-         else {
-          console.warn('Données ou canvas manquants pour le graphique des top produits');
-        } 
         if (this.comparaisonData && this.comparaisonChartRef?.nativeElement) {
           this.creerGraphiqueComparaison();
         }
-        else {
-          console.warn('Données ou canvas manquants pour le graphique des comparaison');
-        }
         if (this.vendeurStats && this.vendeurEvolutionChartRef?.nativeElement) {
           this.creerGraphiqueEvolutionVendeur(this.vendeurStats.evolution);
-        }
-        else {
-          console.warn('Données ou canvas manquants pour le graphique des vendeurs');
         }
       } catch (error) {
         console.error('Erreur lors de la création des graphiques:', error);
@@ -968,11 +929,11 @@ export class RapportsVentesComponent implements OnInit, OnDestroy,AfterViewInit 
           this.showVendeurModal = true;
           this.isLoading = false;
 
-          setTimeout(() => {
+          requestAnimationFrame(() => {
             if (details.evolution) {
               this.creerGraphiqueEvolutionVendeur(details.evolution);
             }
-          }, 200);
+          });
         },
         error: (err) => {
           this.toastr.error('Erreur lors du chargement des détails du vendeur');

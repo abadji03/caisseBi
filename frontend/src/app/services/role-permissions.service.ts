@@ -3,12 +3,13 @@ import { inject, Injectable } from '@angular/core';
 import { catchError, map, Observable, of } from 'rxjs';
 import { Permission, Role, RolePermission } from '../modeles/role-permission.model';
 import { User } from '../modeles/user.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class RolePermissionsService {
-  private readonly baseUrl = 'http://localhost:5000/api'; //Url API
+  private readonly baseUrl = environment.apiUrl;
   private http = inject(HttpClient);
   //constructor() {}
 

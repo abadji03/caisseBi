@@ -13,9 +13,10 @@ import { provideToastr } from 'ngx-toastr';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
 import { JWT_OPTIONS, JwtHelperService } from '@auth0/angular-jwt';
 import { AuthService } from './services/auth.service';
+import { environment } from '../environments/environment';
 
 export function initAuthFactory(auth: AuthService) {
-  return () => auth.initAuth(); // renvoie une Promise
+  return () => auth.initAuth();
 }
 
 export const appConfig: ApplicationConfig = {
@@ -23,21 +24,14 @@ export const appConfig: ApplicationConfig = {
     provideRouter(
       routes,
       withInMemoryScrolling({
-        scrollPositionRestoration: 'top', // Fait remonter en haut à chaque navigation
-        anchorScrolling: 'enabled', // Optionnel : permet le scroll vers les ancres
+        scrollPositionRestoration: 'top',
+        anchorScrolling: 'enabled',
       }),
     ),
     provideHttpClient(
       withInterceptors([AuthInterceptor])
     ),
 
-   /*  {
-      provide: HTTP_INTERCEPTORS,
-      useClass: AuthInterceptor,
-      multi: true,
-    },
- */
-    //INITIALISATION AUTH AVANT LE ROUTER
     {
       provide: APP_INITIALIZER,
       useFactory: initAuthFactory,
@@ -56,7 +50,7 @@ export const appConfig: ApplicationConfig = {
       LoggerModule.forRoot({
         level: NgxLoggerLevel.DEBUG,
         serverLogLevel: NgxLoggerLevel.ERROR,
-        serverLoggingUrl: 'http://localhost:5000/api/logs',
+        serverLoggingUrl: `${environment.apiUrl}/logs`,
         disableConsoleLogging: false,
       })
     ),

@@ -4,6 +4,7 @@ import { Client } from '../modeles/clients.model';
 import { catchError, Observable, tap, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 import { NGXLogger } from 'ngx-logger';
+import { environment } from '../../environments/environment';
 
 export interface ClientsFilter {
   page?: number;
@@ -27,7 +28,7 @@ export interface ClientsResponse {
   providedIn: 'root',
 })
 export class ClientsService {
-  private apiUrl = 'http://localhost:5000/api/clients'; // URL de l'API backend
+  private apiUrl = `${environment.apiUrl}/clients`;
   private http = inject(HttpClient);
   private authService = inject(AuthService);
   private logger = inject(NGXLogger);
@@ -38,23 +39,6 @@ export class ClientsService {
       Authorization: `Bearer ${token}`,
     });
   }
-
-  /*  getClients(): Observable<Client[]> {
-    return this.http.get<Client[]>(this.apiUrl,{ headers: this.getHeaders() });
-  }
-
-  getClientById(id: number): Observable<Client> {
-    return this.http.get<Client>(`${this.apiUrl}/${id}`,{ headers: this.getHeaders() });
-  }
-
-  ajouterClient(client: Client): Observable<Client> {
-    return this.http.post<Client>(this.apiUrl, client,{ headers: this.getHeaders() });
-  }
-
-  rechercherClient(query: string): Observable<Client[]> {
-    return this.http.get<Client[]>(`${this.apiUrl}?q=${query}`,{ headers: this.getHeaders() });
-  }
- */
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private handleError(error: any, message: string): Observable<never> {
@@ -72,7 +56,7 @@ export class ClientsService {
         this.logger.error('Erreur lors de la récupération des clients', error);
         throw error; // on relance l'erreur pour que le composant gère aussi
       })
-    );;
+    );
   }
 
   // Récupérer un client par ID
@@ -86,11 +70,11 @@ export class ClientsService {
     ...client,
     magasinIds: magasinIds || []
   };
-    this.logger.debug('Appel API: ajout d’un client', data);
+    this.logger.debug('Appel API: ajout d\'un client', data);
     return this.http.post<Client>(this.apiUrl, data, { headers: this.getHeaders() }).pipe(
       tap((res) => this.logger.info('Client ajouté avec succès', res)),
       catchError((error) => {
-        this.logger.error('Erreur lors de l’ajout du client', error);
+        this.logger.error('Erreur lors de l\'ajout du client', error);
         throw error;
       })
     );
@@ -101,18 +85,18 @@ export class ClientsService {
     ...client,
     magasinIds: magasinIds || []
   };
-    this.logger.debug('Appel API: ajout d’un client', data);
+    this.logger.debug('Appel API: ajout d\'un client', data);
     return this.http.post<Client>(`${this.apiUrl}/create-associate-client`, data, { headers: this.getHeaders() }).pipe(
       tap((res) => this.logger.info('Client ajouté avec succès', res)),
       catchError((error) => {
-        this.logger.error('Erreur lors de l’ajout du client', error);
+        this.logger.error('Erreur lors de l\'ajout du client', error);
         throw error;
       })
     );
   }
 
   getClientWithMagasins(id: number): Observable<Client> {
-    return this.http.get<Client>(`${this.apiUrl}/clients/${id}/with-magasins`);
+    return this.http.get<Client>(`${this.apiUrl}/clients/${id}/with-magasins`, { headers: this.getHeaders() });
   }
   // Rechercher un client
   rechercherClient(query: string): Observable<Client[]> {

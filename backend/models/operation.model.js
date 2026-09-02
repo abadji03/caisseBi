@@ -10,6 +10,9 @@ module.exports = (sequelize, DataTypes) => {
     },
     type: {
       type: DataTypes.ENUM(
+        'BON',
+        'BON_COMMANDE',
+        'BON_LIVRAISON',
         'COMMANDE',
         'VERSEMENT',
         'REGLEMENT',

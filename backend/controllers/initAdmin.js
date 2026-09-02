@@ -21,7 +21,7 @@ const initAdmin = async () => {
     });
 
     // Associer le rôle ADMIN GENERAL
-    const role = await db.role.findOne({
+    const role = await db.Role.findOne({
       where: { nom: 'Administrateur Général' }
     });
 

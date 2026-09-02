@@ -64,7 +64,6 @@ export class RapportsFinanciersComponent implements OnInit, OnDestroy {
     { value: 'jour', label: 'Aujourd\'hui' },
     { value: 'semaine', label: 'Cette semaine' },
     { value: 'mois', label: 'Ce mois' },
-    /* { value: 'trimestre', label: 'Ce trimestre' }, */
     { value: 'annee', label: 'Cette année' },
     { value: 'personnalisee', label: 'Période personnalisée' }
   ];
@@ -74,7 +73,7 @@ export class RapportsFinanciersComponent implements OnInit, OnDestroy {
   magasins: Magasin[] = [];
   selectedMagasinId?: number;
   selectedAgentId?: number;
-  code_structure : string|null = null; // À remplacer par la vraie valeur
+  code_structure : string|null = null;
 
   // État du composant
   isAdmin = false;
@@ -105,17 +104,9 @@ export class RapportsFinanciersComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.userSubscription = this.authService.currentUser.subscribe(user => {
-      //this.currentUser = user;
-      // Initialiser la variable code_structure
       this.code_structure = user?.code_structure || null;
-      //this.magasinId = user?.magasinId || null;
-      //this.agentId = user?.id || null;
       console.log('Code structure initialisé :', this.code_structure);
-      // Déterminer si on doit montrer le champ structure
-      this.isAdmin = this.authService.hasRole('Administrateur'); // Ou vérifiez par ID
-
-      // Récupérer l'ID de la structure de l'utilisateur connecté
-      
+      this.isAdmin = this.authService.hasRole('Administrateur');
     });
     this.initDateFilters();
     this.chargerMagasins();
@@ -124,26 +115,22 @@ export class RapportsFinanciersComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    //this.destroy$.next();
-    //this.destroy$.complete();
+    this.destroy$.next();
+    this.destroy$.complete();
     if(this.userSubscription) {
       this.userSubscription.unsubscribe();
     }
   }
 
-  // Initialiser les filtres de date
   initDateFilters(): void {
     const today = new Date();
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     
     this.dateDebut = this.formatDate(firstDayOfMonth);
     this.dateFin = this.formatDate(today);
-
-    // Initialiser la date de référence avec aujourd'hui
     this.dateReference = this.formatDate(today);
   }
 
-  // Charger les magasins
   chargerMagasins(): void {
     this.isLoading = true;
     this.magasinService.getMagasinsByStructure(this.code_structure!)
@@ -160,13 +147,11 @@ export class RapportsFinanciersComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Charger toutes les données
   chargerDonnees(): void {
     this.isLoading = true;
 
     const filters = this.construireFiltres();
 
-    // Charger toutes les données en parallèle
     const requests = {
       indicateurs: this.rapportsService.getIndicateursFinanciers(filters),
       repartitionDepenses: this.rapportsService.getRepartitionDepenses(filters),
@@ -177,7 +162,6 @@ export class RapportsFinanciersComponent implements OnInit, OnDestroy {
       evolution: this.rapportsService.getDonneesEvolutives({...filters, groupBy: 'jour'})
     };
 
-    // Exécuter toutes les requêtes en parallèle
     Promise.all([
       requests.indicateurs.toPromise(),
       requests.repartitionDepenses.toPromise(),
@@ -206,12 +190,10 @@ export class RapportsFinanciersComponent implements OnInit, OnDestroy {
       this.isLoading = false;
       this.cdr.detectChanges();
       
-      // Mettre à jour les graphiques
       setTimeout(() => {
         this.mettreAJourGraphiques();
       }, 100);
       
-      // Charger les données comparatives
       this.chargerDonneesComparatives();
       
     }).catch(error => {
@@ -220,7 +202,6 @@ export class RapportsFinanciersComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Charger les données comparatives
   chargerDonneesComparatives(): void {
     this.isLoading = true;
     const filters = this.construireFiltres();
@@ -232,8 +213,6 @@ export class RapportsFinanciersComponent implements OnInit, OnDestroy {
     .subscribe({
       next: (comparatives) => {
         this.donneesComparatives = comparatives;
-       
-        // Recréer le graphique de tendances avec les nouvelles données
         this.creerGraphiqueTendances();
       },
       error: (error) => {
@@ -242,59 +221,46 @@ export class RapportsFinanciersComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Construire les filtres pour l'API
   construireFiltres(): any {
     const filters: any = {
       code_structure: this.code_structure
     };
 
-    // Ajouter magasinId si sélectionné
     if (this.selectedMagasinId !== undefined) {
       filters.magasinId = this.selectedMagasinId;
     }
 
-    // Ajouter agentId si sélectionné
     if (this.selectedAgentId !== undefined) {
       filters.agentId = this.selectedAgentId;
     }
 
-    // Gestion de la période
     if (this.periodeSelectionnee !== 'personnalisee') {
         filters.periode = this.periodeSelectionnee;
-        
-        // Utiliser la date de référence choisie par l'utilisateur, sinon aujourd'hui
         if (this.dateReference) {
           filters.dateReference = new Date(this.dateReference);
-        } 
-        else {
-          filters.dateReference = new Date(); // Par défaut: aujourd'hui
-          // Optionnel: initialiser la dateReference avec aujourd'hui
+        } else {
+          filters.dateReference = new Date();
           if (!this.dateReference) {
             this.dateReference = this.formatDate(new Date());
           }
         }
     }
     else if (this.dateDebut && this.dateFin) {
-      //filters.fromDate = new Date(this.dateDebut);
-      //filters.toDate = new Date(this.dateFin);
       filters.fromDate = this.formatDate(new Date(this.dateDebut));
       filters.toDate = this.formatDate(new Date(this.dateFin));
     } 
     else {
-      // Par défaut, utiliser le mois en cours
       const today = new Date();
       const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      filters.fromDate = this.formatDate(firstDayOfMonth);//firstDayOfMonth;
-      filters.toDate = this.formatDate(today);//today;
+      filters.fromDate = this.formatDate(firstDayOfMonth);
+      filters.toDate = this.formatDate(today);
     }
 
-    // Ajouter pagination pour les détails
     if (this.depensesDetaillees || this.recettesDetaillees) {
       filters.page = this.currentPageDepenses;
       filters.limit = this.pageSize;
     }
 
-    // Ajouter recherche si spécifiée
     if (this.searchTerm) {
       filters.search = this.searchTerm;
     }
@@ -302,10 +268,8 @@ export class RapportsFinanciersComponent implements OnInit, OnDestroy {
     return filters;
   }
 
-  // Gestion des événements de filtre
   onPeriodeChange(): void {
     if (this.periodeSelectionnee !== 'personnalisee') {
-      // Réinitialiser les dates personnalisées
       this.dateDebut = '';
       this.dateFin = '';
     }
@@ -331,13 +295,8 @@ export class RapportsFinanciersComponent implements OnInit, OnDestroy {
   }
 
   filtrerDates(): void {
-    /* if (this.periodeSelectionnee === 'personnalisee' && this.dateDebut && this.dateFin) {
-      this.filtrerDonnees();
-    } */
    if (this.periodeSelectionnee === 'personnalisee') {
-    // ✅ Vérifier que les dates sont valides
     if (this.dateDebut && this.dateFin) {
-      // S'assurer que la date de début <= date de fin
       if (new Date(this.dateDebut) > new Date(this.dateFin)) {
         this.toastr?.warning('La date de début doit être antérieure à la date de fin');
         return;
@@ -349,15 +308,15 @@ export class RapportsFinanciersComponent implements OnInit, OnDestroy {
   }
   }
 
-  // Recherche
   onSearchChange(): void {
     this.currentPageDepenses = 1;
     this.currentPageRecettes = 1;
     
     const filters = this.construireFiltres();
     
-    // Recharger seulement les détails avec recherche
-    this.rapportsService.getDepensesDetaillees(filters).subscribe({
+    this.rapportsService.getDepensesDetaillees(filters).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: (depenses) => {
         this.depensesDetaillees = depenses;
       },
@@ -366,7 +325,9 @@ export class RapportsFinanciersComponent implements OnInit, OnDestroy {
       }
     });
 
-    this.rapportsService.getRecettesDetaillees(filters).subscribe({
+    this.rapportsService.getRecettesDetaillees(filters).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: (recettes) => {
         this.recettesDetaillees = recettes;
       },
@@ -376,7 +337,6 @@ export class RapportsFinanciersComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Pagination
   onPageChange(page: number, type: 'depenses' | 'recettes'): void {
     const filters = this.construireFiltres();
     filters.page = page;
@@ -413,7 +373,6 @@ export class RapportsFinanciersComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Méthodes pour les graphiques
   mettreAJourGraphiques(): void {
     this.creerGraphiqueEvolution();
     this.creerGraphiqueDepenses();
@@ -443,7 +402,6 @@ export class RapportsFinanciersComponent implements OnInit, OnDestroy {
       type: 'line',
       data: {
         labels: donnees.map(d => {
-          // Formater la date selon le groupBy
           if (this.donneesEvolutives?.groupBy === 'jour') {
             return new Date(d.periode).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
           } else if (this.donneesEvolutives?.groupBy === 'semaine') {
@@ -687,7 +645,6 @@ export class RapportsFinanciersComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Méthodes utilitaires
   private formatDate(date: Date): string {
     return date.toISOString().split('T')[0];
   }
@@ -732,12 +689,6 @@ export class RapportsFinanciersComponent implements OnInit, OnDestroy {
 }
 
   get periodeAffichage(): string {
-    /* if (this.periodeSelectionnee !== 'personnalisee') {
-      return this.libellePeriodeSelectionnee;
-    } else if (this.dateDebut && this.dateFin) {
-      return `Du ${new Date(this.dateDebut).toLocaleDateString('fr-FR')} au ${new Date(this.dateFin).toLocaleDateString('fr-FR')}`;
-    }
-    return 'Période non définie'; */
     if (this.periodeSelectionnee !== 'personnalisee') {
       const dateRef = this.dateReference ? new Date(this.dateReference) : new Date();
       const formattedDate = dateRef.toLocaleDateString('fr-FR');
@@ -747,7 +698,7 @@ export class RapportsFinanciersComponent implements OnInit, OnDestroy {
     }
     return 'Période non définie';
   }
-// Charger les informations de la structure pour le PDF
+
 private loadStructureInfo(): void {
     this.isLoading = true;
     this.structureService.getByCodeStructure(this.code_structure!)
@@ -764,27 +715,21 @@ private loadStructureInfo(): void {
       });
   }
 
-  // Méthodes d'export (simplifiées pour l'instant)
-  // Dans rapports-financiers.component.ts
-
 async exportToPDF(): Promise<void> {
   try {
     this.isGeneratingPDF = true;
     this.progress = 0;
 
-    // Animation de progression
     const interval = setInterval(() => {
       if (this.progress < 90) {
         this.progress += 10;
       }
     }, 300);
 
-    // Construire les filtres
-    const params = this.construireFiltresPDF();
+    const params = this.construireFiltresExport();
 
     console.log('📄 Génération PDF financier avec params:', params);
 
-    // Générer le PDF
     const pdfBlob = await this.rapportsService.genererRapportPDF(params).toPromise();
 
     if(!pdfBlob){
@@ -795,9 +740,7 @@ async exportToPDF(): Promise<void> {
     clearInterval(interval);
     this.progress = 100;
 
-    // Sauvegarder le fichier
     this.savePDF(pdfBlob);
-
     this.toastr.success('PDF généré avec succès');
 
   } catch (error: any) {
@@ -817,12 +760,12 @@ async exportToPDF(): Promise<void> {
 }
 
 /**
- * Construire les filtres spécifiques pour le PDF
+ * Construit les filtres communs pour les exportations PDF et Excel
+ * Factorisé pour éviter la duplication B3
  */
-private construireFiltresPDF(): any {
+private construireFiltresExport(): any {
   const params: any = {};
 
-  // Période
   if (this.periodeSelectionnee !== 'personnalisee') {
     params.periode = this.periodeSelectionnee;
     if (this.dateReference) {
@@ -833,20 +776,19 @@ private construireFiltresPDF(): any {
     if (this.dateFin) params.toDate = this.dateFin;
   }
 
-  // Filtres magasin
   if (this.selectedMagasinId !== undefined) {
     params.magasinId = this.selectedMagasinId;
   }
 
-  // Nettoyer les paramètres undefined
+  if (this.selectedAgentId !== undefined) {
+    params.agentId = this.selectedAgentId;
+  }
+
   return Object.fromEntries(
     Object.entries(params).filter(([_, v]) => v !== undefined && v !== '')
   );
 }
 
-/**
- * Sauvegarder le fichier PDF
- */
 private savePDF(blob: Blob): void {
   const fileName = `rapport-financier-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.pdf`;
   
@@ -862,10 +804,7 @@ private savePDF(blob: Blob): void {
   window.URL.revokeObjectURL(url);
 }
 
-// Dans rapports-financiers.component.ts
-
 async exportToExcel(): Promise<void> {
-  // Vérifier que les dates sont valides
   if (this.periodeSelectionnee === 'personnalisee') {
     if (!this.dateDebut || !this.dateFin) {
       this.toastr.warning('Veuillez sélectionner une période');
@@ -878,22 +817,19 @@ async exportToExcel(): Promise<void> {
   }
 
   try {
-    this.isGeneratingPDF = true; // Réutiliser le même indicateur
+    this.isGeneratingPDF = true;
     this.progress = 0;
 
-    // Animation de progression
     const interval = setInterval(() => {
       if (this.progress < 90) {
         this.progress += 10;
       }
     }, 300);
 
-    // Construire les filtres
-    const params = this.construireFiltresExcel();
+    const params = this.construireFiltresExport();
 
     console.log('📊 Export Excel financier avec params:', params);
 
-    // Appel API
     const excelBlob = await this.rapportsService.exportRapportExcel(params).toPromise();
 
     if(!excelBlob){
@@ -904,9 +840,7 @@ async exportToExcel(): Promise<void> {
     clearInterval(interval);
     this.progress = 100;
 
-    // Sauvegarder le fichier
     this.saveExcelFile(excelBlob);
-
     this.toastr.success('Export Excel réussi');
 
   } catch (error: any) {
@@ -929,41 +863,7 @@ async exportToExcel(): Promise<void> {
   }
 }
 
-/**
- * Construire les filtres spécifiques pour Excel
- */
-private construireFiltresExcel(): any {
-  const params: any = {};
 
-  // Période
-  if (this.periodeSelectionnee !== 'personnalisee') {
-    params.periode = this.periodeSelectionnee;
-    if (this.dateReference) {
-      params.dateReference = this.dateReference;
-    }
-  } else {
-    if (this.dateDebut) params.fromDate = this.dateDebut;
-    if (this.dateFin) params.toDate = this.dateFin;
-  }
-
-  // Filtres magasin et agent
-  if (this.selectedMagasinId !== undefined) {
-    params.magasinId = this.selectedMagasinId;
-  }
-
-  if (this.selectedAgentId !== undefined) {
-    params.agentId = this.selectedAgentId;
-  }
-
-  // Nettoyer les paramètres undefined
-  return Object.fromEntries(
-    Object.entries(params).filter(([_, v]) => v !== undefined && v !== '')
-  );
-}
-
-/**
- * Sauvegarder le fichier Excel
- */
 private saveExcelFile(blob: Blob): void {
   const fileName = this.generateExcelFileName();
   
@@ -979,22 +879,17 @@ private saveExcelFile(blob: Blob): void {
   window.URL.revokeObjectURL(url);
 }
 
-/**
- * Générer un nom de fichier Excel pertinent
- */
 private generateExcelFileName(): string {
   const date = new Date();
   const dateStr = date.toISOString().slice(0, 19).replace(/:/g, '-');
   
   let suffix = '';
   
-  // Ajouter la période
   if (this.periodeSelectionnee !== 'personnalisee') {
     const periode = this.periodesDisponibles.find(p => p.value === this.periodeSelectionnee);
     suffix += `-${periode?.label.toLowerCase().replace(/\s+/g, '-')}`;
   }
   
-  // Ajouter le magasin si sélectionné
   if (this.selectedMagasinId !== undefined) {
     const magasin = this.magasins.find(m => m.id === this.selectedMagasinId);
     suffix += `-${magasin?.nom.toLowerCase().replace(/\s+/g, '-') || 'magasin'}`;
@@ -1008,13 +903,8 @@ private generateExcelFileName(): string {
     this.isGeneratingPDF = true;
     this.progress = 0;
 
-    // Construire les paramètres (comme pour le PDF)
-    const params = this.construireFiltresPDF();
+    const params = this.construireFiltresExport();
     
-    // Ajouter un paramètre pour indiquer que c'est pour impression
-    //params.print = true;
-
-    // Générer le PDF
     const pdfBlob = await this.rapportsService.genererRapportPDF(params).toPromise();
 
     if(!pdfBlob){
@@ -1022,21 +912,17 @@ private generateExcelFileName(): string {
       return;
     }
 
-    // Créer une URL pour le PDF
     const pdfUrl = URL.createObjectURL(pdfBlob);
     
-    // Ouvrir dans une nouvelle fenêtre et imprimer
     const printWindow = window.open(pdfUrl, '_blank');
     
     if (printWindow) {
-      // Attendre que le PDF soit chargé puis imprimer
       printWindow.onload = () => {
         setTimeout(() => {
           printWindow.print();
         }, 500);
       };
     } else {
-      // Si popup bloquée, proposer le téléchargement
       this.toastr.warning('Popup bloquée. Téléchargez le PDF et imprimez-le manuellement.');
       this.pdfMakerService.savePDF(pdfBlob, 'rapport-a-imprimer.pdf');
     }

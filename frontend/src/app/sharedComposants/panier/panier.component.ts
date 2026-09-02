@@ -67,6 +67,10 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
   panierBrouillon: Panier | null = null;
   private updateSubject$ = new Subject<{article: ArticlePanier, index: number}>();
   _uid = Math.random().toString(36).substr(2, 9);
+  /** Flag anti-boucle : évite les recalculs redondants lors de la synchro modèle → formulaire */
+  private _isUpdatingForm = false;
+  /** Référence du setInterval pour l'horloge, nettoyée dans ngOnDestroy */
+  private _intervalHeure: ReturnType<typeof setInterval> | null = null;
 
   // Services
   private fb = inject(FormBuilder);
@@ -93,7 +97,7 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
             const panier = new Panier(panierData);
             console.log('🔄 Panier converti:', {
               id: panier.id,
-              articlesCount: panier.tousLesArticles.length
+              articlesCount: panier.articles.length
             });
             
             this.panierBrouillon = panier;
@@ -107,6 +111,11 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    // Nettoyage du setInterval de l'horloge
+    if (this._intervalHeure) {
+      clearInterval(this._intervalHeure);
+      this._intervalHeure = null;
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -299,8 +308,8 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
     console.error('Panier est null ou undefined');
     return;
   }
-// Utiliser tousLesArticles pour récupérer tous les articles
-const tousLesArticles = panier.tousLesArticles || [];
+// Récupérer les articles du panier
+const tousLesArticles = panier.articles || [];
 
 // Filtrer les articles sans produitId
   const articlesValides = tousLesArticles.filter(article => {
@@ -338,8 +347,8 @@ this.panier = new Panier({
   // Réinitialiser d'abord le panier
   this.panierArray.clear();
 
-  // Charger les articles - CORRECTION ICI: Vérifier que tousLesArticles existe
-   const articlesACharger = panier.tousLesArticles || [];
+  // Charger les articles
+   const articlesACharger = panier.articles || [];
   console.log('Articles à charger:', articlesACharger);
   console.log('Articles à charger:', articlesACharger.length);
   
@@ -506,15 +515,20 @@ this.panier = new Panier({
   // === SYNCHRONISATION MODÈLE/FORMULAIRE ===
 
   private synchroniserFormulaireVersModele(): void {
+  // 🔒 Anti-boucle : si la mise à jour vient d'être faite par configurerEcouteursArticle
+  // ou recalculerPanierComplet, on saute ce recalcul redondant
+  if (this._isUpdatingForm) {
+    return;
+  }
   // Récupération sécurisée des valeurs du formulaire
   const raw = this.panierForm.getRawValue();
 
-  // 🔒 NORMALISATION DES VALEURS NUMÉRIQUES
+  // � NORMALISATION DES VALEURS NUMÉRIQUES
   const remiseGlobale = Number(raw.remiseGlobale);
   const tauxTVAGlobal = Number(raw.tauxTVAGlobal);
   const avance = Number(raw.avance);
 
-  // 🔹 Remise globale
+  // �🔹 Remise globale
   // '' | null | undefined | NaN  ==> 0
   this.panier.remiseGlobale = !isNaN(remiseGlobale) && remiseGlobale >= 0
     ? remiseGlobale
@@ -608,6 +622,11 @@ this.panier = new Panier({
       .subscribe((newValue) => {
         console.log(`🔄 Changement ${field}:`, newValue);
         
+        // 🔒 Activer le flag anti-boucle : on est déjà en train de recalculer
+        // via mettreAJourArticle() + calculerTotaux() + calculerTotals() ci-dessous
+        // Donc synchroniserFormulaireVersModele (déclenché par valueChanges) n'a pas besoin de refaire le travail
+        this._isUpdatingForm = true;
+        
         // 1. Mettre à jour l'article dans le modèle
         const index = this.panierArray.controls.indexOf(articleGroup);
         if (index !== -1) {
@@ -636,10 +655,13 @@ this.panier = new Panier({
           // 4. Recalculer les totaux du panier
           this.panier.calculerTotals();
           
-          // 5. Émettre le changement
+          // 5. Désactiver le flag anti-boucle APRÈS tous les calculs
+          this._isUpdatingForm = false;
+          
+          // 6. Émettre le changement
           this.totalPanierChange.emit(this.panier.totalTTC);
           
-          // 6. Forcer la détection de changement
+          // 7. Forcer la détection de changement
           this.cdr.detectChanges();
           
           console.log('✅ Article mis à jour:', {
@@ -651,10 +673,13 @@ this.panier = new Panier({
             montantRemise: article.montantRemise
           });
           
-          // 7. Mettre à jour en base si nécessaire
+          // 8. Mettre à jour en base si nécessaire
           if (article.id && this.panierBrouillon?.id) {
             this.updateSubject$.next({ article: article, index });
           }
+        } else {
+          // Si index invalide, désactiver le flag quand même
+          this._isUpdatingForm = false;
         }
       });
   });
@@ -797,7 +822,7 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annu
         console.log('📥 Panier reçu de l\'API:', {
           totalHT: panierMisAJour.totalHT,
           totalTTC: panierMisAJour.totalTTC,
-          articles: panierMisAJour.tousLesArticles?.map(a => ({
+          articles: panierMisAJour.articles?.map(a => ({
             id: a.id,
             produit: a.produit?.designation,
             totalHT: a.totalHT,
@@ -1003,7 +1028,7 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annu
   }
 
   private mettreAJourHeure(): void {
-    setInterval(() => {
+    this._intervalHeure = setInterval(() => {
       this.currentTime = new Date().toLocaleTimeString();
     }, 1000);
   }

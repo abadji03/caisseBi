@@ -4,6 +4,7 @@ import { catchError, Observable, tap, throwError } from 'rxjs';
 import { Structure } from '../modeles/structure.model';
 import { AuthService } from './auth.service';
 import { NGXLogger } from 'ngx-logger';
+import { environment } from '../../environments/environment';
 
 export interface StructuresFilter {
   page?: number;
@@ -28,7 +29,7 @@ export interface StructuresResponse {
   providedIn: 'root',
 })
 export class StructureService {
-  private apiUrl = 'http://localhost:5000/api/structures'; //URL API
+  private apiUrl = `${environment.apiUrl}/structures`;
 
   private http = inject(HttpClient);
   private authService = inject(AuthService);

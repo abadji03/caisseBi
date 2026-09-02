@@ -3,9 +3,52 @@ const router = express.Router();
 const rapportsStocksController = require('../controllers/rapportStock.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
 
-// ============================================
-// 🟢 ROUTES RAPPORTS STOCKS
-// ============================================
+/**
+ * @swagger
+ * tags:
+ *   name: Rapport Stock
+ *   description: Rapports et statistiques des stocks
+ *
+ * /rapport-stock/indicateurs:
+ *   get:
+ *     summary: Indicateurs globaux des stocks
+ *     tags: [Rapport Stock]
+ *     parameters:
+ *       - in: query
+ *         name: code_structure
+ *         required: true
+ *         schema: { type: string }
+ *       - in: query
+ *         name: magasinId
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Indicateurs (valeur totale, ruptures, alertes, etc.)
+ *
+ * /rapport-stock/produits-specifiques:
+ *   get:
+ *     summary: Produits en rupture, en alerte ou en surstock
+ *     tags: [Rapport Stock]
+ *     parameters:
+ *       - in: query
+ *         name: code_structure
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Produits en situation particulière
+ *
+ * /rapport-stock/pdf:
+ *   get:
+ *     summary: Générer le rapport stock en PDF
+ *     tags: [Rapport Stock]
+ *     responses:
+ *       200:
+ *         description: Fichier PDF
+ *         content:
+ *           application/pdf:
+ *             schema: { type: string, format: binary }
+ */
 
 // API 1: Indicateurs globaux des stocks
 router.get('/indicateurs', authenticateToken, rapportsStocksController.getIndicateursStocks);

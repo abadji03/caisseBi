@@ -32,13 +32,24 @@ class ImportService {
       success: true,
       total: 0,
       importes: 0,
+      // erreurs est un tableau d'objets { ligne, message }
+      // Le contrôleur expose erreurs.length au frontend via la clé "nombreErreurs"
       erreurs: [],
       details: {}
     };
 
     try {
       // Parser le fichier
-      const data = await this.parserFichier(filePath, options.hasHeader !== false);
+      let data = await this.parserFichier(filePath, options.hasHeader !== false);
+
+      // Appliquer le mapping utilisateur si fourni
+      // Le mapping est de la forme { "Colonne du fichier": "champ_interne" }
+      // Ex: { "Nom client": "nomComplet", "Tel": "telephone" }
+      if (options.mapping && Object.keys(options.mapping).length > 0) {
+        data = this.appliquerMapping(data, options.mapping);
+      }
+
+      results.total = data.length;
       
       // Sélectionner la méthode d'import selon le type
       switch (typeImport) {
@@ -63,19 +74,9 @@ class ImportService {
         case 'stocks':
           results.details = await this.importerStocks(data, code_structure, transaction);
           break;
-        case 'bons':
-          results.details = await this.importerBons(data, code_structure, userId, transaction);
-          break;
-        case 'paiements':
-          results.details = await this.importerPaiements(data, code_structure, userId, transaction);
-          break;
-        case 'factures':
-          results.details = await this.importerFactures(data, code_structure, transaction);
-          break;
-        case 'complet':
-          results.details = await this.importerComplet(data, code_structure, userId, transaction);
-          break;
         default:
+          // Ce cas ne devrait jamais être atteint car le contrôleur valide typeImport
+          // avant d'appeler importerFichier. On lève quand même une erreur défensive.
           throw new Error(`Type d'import non reconnu: ${typeImport}`);
       }
       
@@ -116,11 +117,38 @@ class ImportService {
     }
   }
   
+  /**
+   * Détecte le séparateur d'un fichier CSV en lisant ses premiers octets.
+   * Compte les occurrences de ',' et ';' sur la première ligne non vide
+   * et retourne le plus fréquent. Défaut : ','.
+   */
+  detecterSeparateurCSV(filePath) {
+    try {
+      // Lire les 2 premiers Ko — largement suffisant pour une première ligne
+      const buffer = Buffer.alloc(2048);
+      const fd = fs.openSync(filePath, 'r');
+      const bytesRead = fs.readSync(fd, buffer, 0, 2048, 0);
+      fs.closeSync(fd);
+
+      const extrait = buffer.slice(0, bytesRead).toString('utf8');
+      // Prendre uniquement la première ligne non vide
+      const premiereLigne = extrait.split(/\r?\n/).find(l => l.trim().length > 0) || '';
+
+      const nbVirgules  = (premiereLigne.match(/,/g)  || []).length;
+      const nbPointVirgules = (premiereLigne.match(/;/g) || []).length;
+
+      return nbPointVirgules > nbVirgules ? ';' : ',';
+    } catch {
+      return ','; // Valeur par défaut sûre
+    }
+  }
+
   parseCSV(filePath, hasHeader) {
+    const separator = this.detecterSeparateurCSV(filePath);
     return new Promise((resolve, reject) => {
       const results = [];
       fs.createReadStream(filePath)
-        .pipe(csv({ separator: ';', headers: hasHeader }))
+        .pipe(csv({ separator, headers: hasHeader }))
         .on('data', (data) => results.push(data))
         .on('end', () => resolve(results))
         .on('error', reject);
@@ -202,7 +230,7 @@ class ImportService {
       try {
         const structureData = {
           nom_structure: row.nom_structure || row.nom || row.Nom,
-          code_structure: row.code_structure || row.code || this.genererCodeStructure(),
+          code_structure: row.code_structure || row.code || this.generateCodeStructure(row.nom_structure || row.nom || row.Nom || 'STRUCT'),
           email: row.email,
           telephone: row.telephone,
           adresse: row.adresse,
@@ -569,6 +597,43 @@ class ImportService {
   }
 
   // ==================== UTILITAIRES ====================
+
+  /**
+   * Applique le mapping utilisateur sur toutes les lignes parsées.
+   *
+   * Le mapping est { "Colonne fichier" : "champ_interne" }.
+   * Exemple : { "Nom client": "nomComplet", "Tel": "telephone" }
+   *
+   * Pour chaque ligne, les clés présentes dans le mapping sont renommées
+   * vers leur champ interne. Les clés sans mapping sont conservées telles
+   * quelles (elles seront peut-être reconnues par les alias hardcodés).
+   * Les colonnes mappées vers la valeur vide "" sont ignorées (colonne exclue).
+   *
+   * @param {Object[]} data  - Tableau de lignes (objets clé→valeur)
+   * @param {Object}   mapping - Map { colonneSource: champCible }
+   * @returns {Object[]} Tableau de lignes avec clés renommées
+   */
+  appliquerMapping(data, mapping) {
+    return data.map(row => {
+      const nouvelleRow = {};
+
+      for (const [cle, valeur] of Object.entries(row)) {
+        const champCible = mapping[cle];
+
+        if (champCible === undefined) {
+          // Clé non mentionnée dans le mapping → on la garde telle quelle
+          nouvelleRow[cle] = valeur;
+        } else if (champCible === '' || champCible === null) {
+          // Colonne explicitement ignorée → on ne l'ajoute pas
+        } else {
+          // Renommer vers le champ interne attendu par les méthodes d'import
+          nouvelleRow[champCible] = valeur;
+        }
+      }
+
+      return nouvelleRow;
+    });
+  }
 
   generateCodeStructure(nom) {
     const cleanName = nom

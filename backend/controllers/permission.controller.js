@@ -1,5 +1,5 @@
 const db = require('../models');
-const Permission = db.permission;
+const Permission = db.Permission;
 const HistoriqueService = require('../services/historique.service');
 
 exports.create = async (req, res) => {

@@ -31,7 +31,6 @@ export interface CAEncaisse {
   ticketMoyenEncaisse: number;
 }
 
-// Suppression de KPICaisseStructure (fusionné avec KPICaissePeriode)
 export interface PaiementMode {
   methodePaiement: string;
   total: number;
@@ -64,17 +63,6 @@ export interface CaisseTheorique {
   niveau: 'structure' | 'magasin';
 }
 
-export interface CAVendu {
-  totalVendu: number;
-  nombrePaniers: number;
-  ticketMoyenVente: number;
-}
-
-export interface CAEncaisse {
-  totalEncaisse: number;
-  nombrePaiements: number;
-  ticketMoyenEncaisse: number;
-}
 
 export interface VaCAVendu {
   actuel: number;
@@ -87,6 +75,7 @@ export interface VaCAEncaisse {
   precedent: number;
   variationPourcent: number;
 }
+
 export interface ComparatifCA {
   niveau: 'structure' | 'magasin';
   periode: string;
@@ -164,11 +153,6 @@ export interface KPIParamsJournalier {
   agentId?: number;
 }
 
-// Interface pour les avoirs
-export interface StatsAvoirs {
-  montantAvoir: number;
-  nombreAvoirs: number;
-}
 
 // Interface pour les ventes à crédit
 export interface StatsVentesCredit {

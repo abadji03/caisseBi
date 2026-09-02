@@ -69,9 +69,9 @@ db.Operation = require('./operation.model')(sequelize, Sequelize);
 //Chargement et initialisation du modèle Paiement
 db.Paiement = require('./paiement.model')(sequelize, Sequelize);
 //Chargement et initialisation du modèle Permission
-db.permission = require('./permission.model')(sequelize, Sequelize);
+db.Permission = require('./permission.model')(sequelize, Sequelize);
 //Chargement et initialisation du modèle Role
-db.role = require('./role.model')(sequelize, Sequelize);
+db.Role = require('./role.model')(sequelize, Sequelize);
 db.HistoriqueStatut = require('./historiqueStatut.model')(sequelize, Sequelize);
 
 db.MagasinFournisseur = require('./magasinFournisseur.model')(sequelize, Sequelize);
@@ -82,9 +82,15 @@ db.Facture = require('./facture.model')(sequelize, Sequelize);
 /* Définition des relations entre les modèles */
 
 // ========== RELATIONS STRUCTURE ==========
-// Une structure peut avoir plusieurs utilisateurs
-db.Structure.hasMany(db.Users, { foreignKey: 'structure_id' });
-db.Users.belongsTo(db.Structure, { foreignKey: 'structure_id' });
+// Une structure peut avoir plusieurs utilisateurs (via code_structure)
+db.Structure.hasMany(db.Users, {
+  foreignKey: 'code_structure',
+  sourceKey: 'code_structure',
+});
+db.Users.belongsTo(db.Structure, {
+  foreignKey: 'code_structure',
+  targetKey: 'code_structure',
+});
 
 // Structure a plusieurs magasins
 db.Structure.hasMany(db.Magasin, {
@@ -517,21 +523,21 @@ db.Fournisseur.belongsToMany(db.Magasin, {
 
 // ========== RELATIONS PERMISSIONS & ROLES ==========
 // Role <-> Permission
-db.role.belongsToMany(db.permission, { 
+db.Role.belongsToMany(db.Permission, { 
   through: 'role_permissions', 
   foreignKey: 'role_id' 
 });
-db.permission.belongsToMany(db.role, { 
+db.Permission.belongsToMany(db.Role, { 
   through: 'role_permissions', 
   foreignKey: 'permission_id' 
 });
 
 // User <-> Role
-db.Users.belongsToMany(db.role, { 
+db.Users.belongsToMany(db.Role, { 
   through: 'users_roles', 
   foreignKey: 'user_id' 
 });
-db.role.belongsToMany(db.Users, { 
+db.Role.belongsToMany(db.Users, { 
   through: 'users_roles', 
   foreignKey: 'role_id' 
 });

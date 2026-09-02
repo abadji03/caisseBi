@@ -90,40 +90,21 @@ module.exports = (sequelize, DataTypes) => {
 
     hooks: {
       beforeValidate: async (paiement, options) => {
-        console.log('🔍 beforeValidate hook called', paiement.code_structure);
-        
-        // Définir numeroE avant la validation
-        if (!paiement.numeroE) {
-          try {
-            const PaiementsModel = sequelize.models.Paiement;
-            if (PaiementsModel) {
-              const count = await PaiementsModel.count({
-                where: { code_structure: paiement.code_structure },
-                transaction: options.transaction
-              });
-              paiement.numeroE = count + 1;
-              console.log(`✅ Generated numeroE in beforeValidate: ${paiement.numeroE}`);
-            } else {
-              paiement.numeroE = 1;
-            }
-          } catch (error) {
-            console.error('❌ Hook error:', error);
-            paiement.numeroE = 1;
-          }
-        }
-      },
-      beforeCreate: async (paiement, options) => {
-        console.log('🎯 beforeCreate hook STARTED', paiement.numeroE);
-        // Vérifier et régénérer si nécessaire
-        if (!paiement.numeroE) {
-          const paiementsModel = sequelize.models.Paiement;
-          const count = await paiementsModel.count({
+        if (paiement.numeroE) return;
+
+        const t = options.transaction;
+        try {
+          const count = await sequelize.models.Paiement.count({
             where: { code_structure: paiement.code_structure },
-            transaction: options.transaction
+            transaction: t,
+            lock: t ? t.LOCK.UPDATE : undefined,
           });
           paiement.numeroE = count + 1;
+        } catch (error) {
+          console.error('❌ Hook numeroE Paiement error:', error);
+          paiement.numeroE = 1;
         }
-      }
+      },
     }
   });
 

@@ -195,13 +195,13 @@ class PanierCompletController {
       let traitementDetails = null;
 
       if (panier.statut === 'validé') {
-        traitementDetails = await this.traiterPanierValide(nouveauPanier, articles, magasinId, agentId, code_structure, transaction);
+        traitementDetails = await this.traiterPanierValide(nouveauPanier, articles, magasinId, agentId, code_structure, clientIp, transaction);
       } 
       else if (panier.statut === 'retourné') {
-        traitementDetails = await this.traiterPanierRetourne(nouveauPanier, articles, magasinId, agentId, code_structure, transaction);
+        traitementDetails = await this.traiterPanierRetourne(nouveauPanier, articles, magasinId, agentId, code_structure, clientIp, transaction);
       }
       else if (panier.statut === 'annulé') {
-        traitementDetails = await this.traiterPanierAnnule(nouveauPanier, articles, magasinId, agentId, code_structure, transaction);
+        traitementDetails = await this.traiterPanierAnnule(nouveauPanier, articles, magasinId, agentId, code_structure, clientIp, transaction);
       }
 
       // ==============================

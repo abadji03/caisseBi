@@ -1,77 +1,190 @@
-// routes/bonRoutes.js
+// routes/bon.routes.js
 const express = require('express');
 const router = express.Router();
 const bonController = require('../controllers/bon.controller');
 const upload = require('../middlewares/uploadMiddleware');
 const authenticateToken = require('../middlewares/auth.middleware');
 
-//Créer un bon (avec fichier optionnel)
-router.post('/',authenticateToken, upload.single('fichier'), bonController.createBon);
+/**
+ * @swagger
+ * tags:
+ *   name: Bons
+ *   description: Gestion des bons (commandes, ventes, livraisons, retours)
+ */
 
-//Récupérer tous les bons
-router.get('/', bonController.getAllBons);
+/**
+ * @swagger
+ * /bons:
+ *   post:
+ *     summary: Créer un bon
+ *     tags: [Bons]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [numero, type, typeEntite, montantTotal]
+ *             properties:
+ *               numero: { type: string }
+ *               type:
+ *                 type: string
+ *                 enum: [commande, livraison, retour, avoir, vente]
+ *               typeEntite:
+ *                 type: string
+ *                 enum: [client, fournisseur]
+ *               montantTotal: { type: number }
+ *               remise: { type: number }
+ *               avance: { type: number }
+ *               clientId: { type: integer }
+ *               fournisseurId: { type: integer }
+ *               fichier:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       201:
+ *         description: Bon créé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Bon'
+ *   get:
+ *     summary: Lister tous les bons
+ *     tags: [Bons]
+ *     responses:
+ *       200:
+ *         description: Liste des bons
+ */
+router.post('/', authenticateToken, upload.single('fichier'), bonController.createBon);
+router.get('/', authenticateToken, bonController.getAllBons);
 
-//Récupérer les bons d’une structure
-router.get('/structure/:code_structure',authenticateToken, bonController.getBonsByStructure);
+/**
+ * @swagger
+ * /bons/structure/{code_structure}/clients:
+ *   get:
+ *     summary: Bons clients d'une structure
+ *     tags: [Bons]
+ *     parameters:
+ *       - in: path
+ *         name: code_structure
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Liste des bons clients
+ */
+router.get('/structure/:code_structure', authenticateToken, bonController.getBonsByStructure);
+router.get('/structure/:code_structure/clients', authenticateToken, bonController.getBonsClientsByStructure);
+router.get('/structure/bis/:code_structure/clients', authenticateToken, bonController.getBonsClientsByStructureBis);
+router.get('/structure/bis/:code_structure/fournisseurs', authenticateToken, bonController.getBonsFournisseursByStructureBis);
+router.get('/structure/:code_structure/fournisseurs', authenticateToken, bonController.getBonsFournisseursByStructure);
 
-//Récupérer les bons d’une structure pour les clients
-router.get('/structure/:code_structure/clients',authenticateToken, bonController.getBonsClientsByStructure);
+/**
+ * @swagger
+ * /bons/{id}:
+ *   get:
+ *     summary: Récupérer un bon par ID
+ *     tags: [Bons]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Bon trouvé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Bon'
+ *       404:
+ *         description: Bon introuvable
+ *   put:
+ *     summary: Mettre à jour un bon
+ *     tags: [Bons]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Bon mis à jour
+ *   delete:
+ *     summary: Supprimer un bon (cascade)
+ *     tags: [Bons]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Bon et éléments associés supprimés
+ */
+router.get('/:id', authenticateToken, bonController.getBonById);
+router.put('/:id', authenticateToken, upload.single('fichier'), bonController.updateBon);
+router.delete('/:id', authenticateToken, bonController.deleteBon);
 
-//Récupérer les bons d’une structure pour les clients
-router.get('/structure/bis/:code_structure/clients',authenticateToken, bonController.getBonsClientsByStructureBis);
+/**
+ * @swagger
+ * /bons/{id}/statut:
+ *   patch:
+ *     summary: Mettre à jour le statut d'un bon
+ *     tags: [Bons]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               statutBon:
+ *                 type: string
+ *                 enum: [brouillon, validé, livré, retourné, facturé, annulé]
+ *     responses:
+ *       200:
+ *         description: Statut mis à jour
+ */
+router.patch('/:id/statut', authenticateToken, bonController.updateStatutBon);
 
-//Récupérer les bons d’une structure pour les fournisseurs
-router.get('/structure/bis/:code_structure/fournisseurs',authenticateToken, bonController.getBonsFournisseursByStructureBis);
-
-
-//Récupérer les bons d’une structure pour les fournisseur
-router.get('/structure/:code_structure/fournisseurs',authenticateToken, bonController.getBonsFournisseursByStructure);
-
-//Récupérer un bon par ID
-router.get('/:id',authenticateToken, bonController.getBonById);
-
-//Mettre à jour un bon (avec fichier optionnel)
-router.put('/:id',authenticateToken, upload.single('fichier'), bonController.updateBon);
-
-//Supprimer un bon
-router.delete('/:id',authenticateToken, bonController.deleteBon);
-
-//Mettre à jour le statut du bon
-router.patch('/:id/statut',authenticateToken, bonController.updateStatutBon);
-
-// Mettre à jour le statut d'un bon
-router.patch('/:id/bis/statut', authenticateToken, bonController.updateStatutBon);
-
-//Mettre à jour le type du bon
-router.patch('/:id/type',authenticateToken, bonController.updateTypeBon);
-
-//Mettre à jour le reste à payer
-router.patch('/:id/resteAPayer',authenticateToken, bonController.updateResteAPayer);
-
-//Mettre à jour le net à payer (après remise)
-router.patch('/:id/netAPayer',authenticateToken, bonController.updateNetAPayer);
-
-//Mettre à jour uniquement le fichier du bon
-router.patch('/:id/fichier', upload.single('fichier'),authenticateToken, bonController.updateFichier);
-
-//Mettre à jour les motifs de retour
-router.patch('/:id/motifsRetour',authenticateToken, bonController.updateMotifsRetour);
-
-// Récupérer les bons d'une structure par fournisseur
-router.get('/:code_structure/fournisseur/:fournisseurId',authenticateToken, bonController.getBonsByFournisseur);
-
-// Récupérer les bons d'une structure par client
-router.get('/:code_structure/client/:clientId',authenticateToken, bonController.getBonsByClient);
-
-// Upload d'un fichier pour un bon
-router.post('/upload-fichier', upload.single('fichier'), bonController.uploadFichier);
-
-// Supprimer un fichier
-router.delete('/:bonId/fichier',authenticateToken, bonController.supprimerFichier);
-
-//router.post('/brouillon',authenticateToken, bonController.createBonComplet);
+/**
+ * @swagger
+ * /bons/{id}/resteAPayer:
+ *   patch:
+ *     summary: Déduire un montant du reste à payer
+ *     tags: [Bons]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               montant: { type: number }
+ *     responses:
+ *       200:
+ *         description: Reste à payer mis à jour
+ */
+router.patch('/:id/resteAPayer', authenticateToken, bonController.updateResteAPayer);
+router.patch('/:id/netAPayer', authenticateToken, bonController.updateNetAPayer);
+router.patch('/:id/type', authenticateToken, bonController.updateTypeBon);
+router.patch('/:id/fichier', upload.single('fichier'), authenticateToken, bonController.updateFichier);
+router.patch('/:id/motifsRetour', authenticateToken, bonController.updateMotifsRetour);
+router.get('/:code_structure/fournisseur/:fournisseurId', authenticateToken, bonController.getBonsByFournisseur);
+router.get('/:code_structure/client/:clientId', authenticateToken, bonController.getBonsByClient);
+router.post('/upload-fichier', authenticateToken, upload.single('fichier'), bonController.uploadFichier);
+router.delete('/:bonId/fichier', authenticateToken, bonController.supprimerFichier);
 router.get('/brouillons/:code_structure', authenticateToken, bonController.getBonsBrouillons);
-//router.post('/panier/statut', authenticateToken, bonController.changerStatutPanier);
-//router.delete('/complet/:bonId', authenticateToken, bonController.supprimerBonComplet);
 
 module.exports = router;

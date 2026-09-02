@@ -1,16 +1,17 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { catchError, Observable, throwError } from 'rxjs';
+import { catchError, lastValueFrom, Observable, throwError } from 'rxjs';
 import { Facture, FactureFilter } from '../modeles/facture.model';
 import { NGXLogger } from 'ngx-logger';
 import { AuthService } from './auth.service';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class FactureService {
 
-  private apiUrl = 'http://localhost:5000/api/factures';
+  private apiUrl = `${environment.apiUrl}/factures`;
 
   private http = inject(HttpClient);
   private authService = inject(AuthService);
@@ -194,7 +195,7 @@ export class FactureService {
    * Ouvrir le PDF dans un nouvel onglet
    */
   async openPDF(id: number): Promise<void> {
-    const blob = await this.downloadPDF(id).toPromise();
+    const blob = await lastValueFrom(this.downloadPDF(id));
     const url = window.URL.createObjectURL(blob!);
     window.open(url, '_blank');
   }

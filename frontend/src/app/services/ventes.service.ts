@@ -1,36 +1,43 @@
 import { inject, Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { catchError, Observable, of, throwError } from 'rxjs';
 import { Panier } from '../modeles/panier.model';
 import { HttpClient } from '@angular/common/http';
+import { NGXLogger } from 'ngx-logger';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class VentesService {
-  private apiUrl = 'http://localhost:3000/api/ventes';
-
+  private apiUrl = `${environment.apiUrl}/ventes`;
   private http = inject(HttpClient);
+  private logger = inject(NGXLogger);
+
+  private handleError(method: string, error: unknown): Observable<never> {
+    this.logger.error(`VentesService -> ${method} :`, error);
+    return throwError(() => error);
+  }
 
   enregistrerVente(panier: Panier): Observable<unknown> {
-    return this.http.post<unknown>(this.apiUrl, panier);
+    return this.http.post<unknown>(this.apiUrl, panier)
+      .pipe(catchError(err => this.handleError('enregistrerVente', err)));
   }
 
   getTotalCaisse(): Observable<number> {
-    return this.http.get<number>(`${this.apiUrl}/total-caisse`);
+    return this.http.get<number>(`${this.apiUrl}/total-caisse`)
+      .pipe(catchError(err => this.handleError('getTotalCaisse', err)));
   }
 
   getTransactionsJournalieres(): Observable<Panier[]> {
-    return this.http.get<Panier[]>(`${this.apiUrl}/transactions`);
+    return this.http.get<Panier[]>(`${this.apiUrl}/transactions`)
+      .pipe(catchError(err => this.handleError('getTransactionsJournalieres', err)));
   }
 
-  // Exemple de données statiques ou récupérées d'une API
   getSalesHistory(): Observable<unknown> {
-    // Remplacez ceci par une API réelle
     return of({
       history: [
         { date: '2024-12-01', total: 2000, type: 'local' },
         { date: '2024-12-02', total: 1500, type: 'en ligne' },
-        // Ajoutez d'autres données de ventes ici
       ],
       salesByCategory: [
         { category: 'Electronics', total: 5000 },

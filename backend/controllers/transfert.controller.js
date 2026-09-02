@@ -9,11 +9,13 @@ const HistoriqueService = require('../services/historique.service');
 
 
 exports.createTransfert = async (req, res) => {
+  const transaction = await db.sequelize.transaction();
   try {
     const authUser = req.user;
     const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
+      await transaction.rollback();
       return res.status(401).json({ message: "Non authentifié" });
     }
 
@@ -26,13 +28,20 @@ exports.createTransfert = async (req, res) => {
       agentResponsable,
     } = req.body;
 
+    if (!produitId || !quantite || !magasinSource || !magasinDestination) {
+      await transaction.rollback();
+      return res.status(400).json({ message: 'Données incomplètes : produitId, quantite, magasinSource et magasinDestination sont requis' });
+    }
+
     const code_structure = authUser.code_structure;
     const reference = `TRF-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
     // Récupérer les informations du produit et des magasins pour l'historique
-    const produit = await db.Produit.findByPk(produitId);
-    const magasinSrc = await db.Magasin.findByPk(magasinSource);
-    const magasinDest = await db.Magasin.findByPk(magasinDestination);
+    const [produit, magasinSrc, magasinDest] = await Promise.all([
+      db.Produit.findByPk(produitId, { transaction }),
+      db.Magasin.findByPk(magasinSource, { transaction }),
+      db.Magasin.findByPk(magasinDestination, { transaction }),
+    ]);
 
     const transfert = await Transfert.create({
       code_structure,
@@ -43,9 +52,11 @@ exports.createTransfert = async (req, res) => {
       motif,
       agentResponsable,
       reference,
-    });
+    }, { transaction });
 
-    // ENREGISTRER L'HISTORIQUE
+    await transaction.commit();
+
+    // ENREGISTRER L'HISTORIQUE (hors transaction — opération non critique)
     await HistoriqueService.enregistrerAction(
       authUser.id,
       `Création d'un transfert: ${reference} - ${produit?.designation || 'Produit'} (${quantite}) de ${magasinSrc?.nom || magasinSource} vers ${magasinDest?.nom || magasinDestination}`,
@@ -62,9 +73,14 @@ exports.createTransfert = async (req, res) => {
         agentResponsable: agentResponsable
       }
     );
+
     res.status(201).json(transfert);
   } catch (err) {
-    res.status(500).json({ message: 'Erreur lors de la création du transfert', error: err });
+    if (transaction && !transaction.finished) {
+      await transaction.rollback();
+    }
+    console.error('Erreur création transfert:', err);
+    res.status(500).json({ message: 'Erreur lors de la création du transfert', error: err.message });
   }
 };
 
@@ -260,13 +276,14 @@ exports.validerTransfert = async (req, res) => {
   }
 };
 
-// Ajouter la méthode pour refuser un transfert
 exports.refuserTransfert = async (req, res) => {
+  const transaction = await db.sequelize.transaction();
   try {
     const authUser = req.user;
     const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
+      await transaction.rollback();
       return res.status(401).json({ message: "Non authentifié" });
     }
 
@@ -278,24 +295,30 @@ exports.refuserTransfert = async (req, res) => {
         { model: db.Produit },
         { model: db.Magasin, as: 'MagasinSource' },
         { model: db.Magasin, as: 'MagasinDestination' }
-      ]
+      ],
+      transaction
     });
 
     if (!transfert) {
+      await transaction.rollback();
       return res.status(404).json({ message: 'Transfert introuvable' });
     }
 
     if (transfert.statut !== 'En attente') {
+      await transaction.rollback();
       return res.status(400).json({ message: 'Ce transfert a déjà été traité' });
     }
 
     const ancienStatut = transfert.statut;
-    transfert.statut = 'Refusé';
-    transfert.dateValidation = new Date();
-    transfert.agentValidation = agentValidation;
+    await transfert.update({
+      statut: 'Refusé',
+      dateValidation: new Date(),
+      agentValidation
+    }, { transaction });
 
-    await transfert.save();
-    // ENREGISTRER L'HISTORIQUE DE REFUS
+    await transaction.commit();
+
+    // ENREGISTRER L'HISTORIQUE (hors transaction — opération non critique)
     await HistoriqueService.enregistrerAction(
       authUser.id,
       `Refus du transfert: ${transfert.reference} - ${transfert.Produit?.designation || 'Produit'} (${transfert.quantite}) de ${transfert.MagasinSource?.nom || transfert.magasinSource} vers ${transfert.MagasinDestination?.nom || transfert.magasinDestination}`,
@@ -312,13 +335,13 @@ exports.refuserTransfert = async (req, res) => {
         magasinDestination: transfert.magasinDestination,
         magasinDestinationNom: transfert.MagasinDestination?.nom,
         ancienStatut: ancienStatut,
-        //motifRefus: motifRefus || 'Non spécifié'
       }
     );
 
-
     res.json({ message: 'Transfert refusé', transfert });
   } catch (err) {
+    if (transaction && !transaction.finished) await transaction.rollback();
+    console.error('Erreur refus transfert:', err);
     res.status(500).json({ message: 'Erreur lors du refus', error: err.message });
   }
 };

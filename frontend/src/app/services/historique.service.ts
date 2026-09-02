@@ -1,6 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface HistoriqueConnexion {
   id: number;
@@ -63,7 +64,7 @@ export interface PaginatedResponse<T> {
 export class HistoriqueService {
 
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:5000/api/historiques-connexions-actions';
+  private apiUrl = `${environment.apiUrl}/historiques-connexions-actions`;
 
   /**
    * Récupérer l'historique des connexions d'un utilisateur

@@ -4,10 +4,10 @@ import { catchError, Observable, tap, throwError } from 'rxjs';
 import { Bon } from '../modeles/bon.model';
 import { NGXLogger } from 'ngx-logger';
 import { AuthService } from './auth.service';
-const API_URL = 'http://localhost:5000/api/bons'; 
-const API_URL_BIS = 'http://localhost:5000/api/bons-complet'; 
-//const apiUrl = 'http://localhost:5000/api/bons';
+import { environment } from '../../environments/environment';
 
+const API_URL = `${environment.apiUrl}/bons`;
+const API_URL_BIS = `${environment.apiUrl}/bons-complet`;
 export interface BonsFilter {
   page?: number;
   limit?: number;
@@ -184,7 +184,7 @@ export class BonsService {
 // Méthode pour mettre à jour le bon avec le chemin du fichier
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 updateBonAvecFichier(bonId: number, cheminFichier: string): Observable<any> {
-  return this.http.patch(`/api/bons/${bonId}/fichier`, {fichier: cheminFichier }, { headers: this.getHeaders() })
+  return this.http.patch(`${API_URL}/${bonId}/fichier`, {fichier: cheminFichier }, { headers: this.getHeaders() })
   .pipe(catchError(err => this.handleError(err)));
 }
 
@@ -251,20 +251,4 @@ updateBonAvecFichier(bonId: number, cheminFichier: string): Observable<any> {
     .pipe(catchError(err => this.handleError(err)));
   }
 
-  /* // Créer un bon brouillon
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  creerBonBrouillons(bonData: any): Observable<any> {
-    return this.http.post(`${apiUrl}/brouillon`, bonData);
-  }
-
-  // Mettre à jour un panier brouillon
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  mettreAJourPanierBrouillon(panierId: number, panierData: any): Observable<any> {
-    return this.http.put(`${apiUrl}/panier/${panierId}`, panierData);
-  }
-
-  // Récupérer les bons brouillons
-  getBonsBrouillon(code_structure: string): Observable<Bon[]> {
-    return this.http.get<Bon[]>(`${apiUrl}/brouillons/${code_structure}`);
-  } */
 }

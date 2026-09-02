@@ -3,13 +3,18 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
+import { environment } from '../../environments/environment';
 
 export interface ImportResult {
   success: boolean;
   message: string;
   results: {
     importes: number;
-    erreurs: number;
+    total: number;
+    /** Nombre d'erreurs (raccourci numérique) */
+    nombreErreurs: number;
+    /** Détail des erreurs */
+    erreurs: { ligne?: number; message: string }[];
     details: any[];
   };
 }
@@ -27,7 +32,7 @@ export interface StructureDetection {
 })
 export class ImportService {
 
-  private apiUrl = 'http://localhost:5000/api/imports';
+  private apiUrl = `${environment.apiUrl}/imports`;
   private http = inject(HttpClient);
   private authService = inject(AuthService);
 
@@ -35,9 +40,10 @@ export class ImportService {
     return { Authorization: `Bearer ${this.authService.getToken()}` };
   }
 
-  detecterStructure(fichier: File): Observable<StructureDetection> {
+  detecterStructure(fichier: File, hasHeader = true): Observable<StructureDetection> {
     const formData = new FormData();
     formData.append('fichier', fichier);
+    formData.append('hasHeader', hasHeader ? 'true' : 'false');
     return this.http.post<StructureDetection>(`${this.apiUrl}/detecter`, formData, {
       headers: this.getHeaders()
     });

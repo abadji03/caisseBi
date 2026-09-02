@@ -23,7 +23,7 @@ export class Panier {
   Magasin?:Magasin;
   tauxTVA = 0;
   typeEntite?:'client' | 'fournisseur'|'autre';
-  typePanier?:'produit' | 'service '|'mixte'= 'produit';
+  typePanier?:'produit' | 'service'|'mixte'= 'produit';
   code_structure?:string;
   statut: 'en_cours' | 'validé' | 'annulé'|'retourné' = 'en_cours';
   dateCreation: Date = new Date();
@@ -31,7 +31,6 @@ export class Panier {
   detailsVisible = false; // Permet de gérer l'affichage des détails
   magasinId?: number;
   agentId?: number;
-  Paiements?:Paiement[];
   paiements?: Paiement[];
   remiseParArticle = false; // Indicateur pour savoir si on applique la remise par article
   tvaParArticle = true; // Par défaut, TVA par article

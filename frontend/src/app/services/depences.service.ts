@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { NGXLogger } from 'ngx-logger';
 import { catchError, Observable, throwError } from 'rxjs';
 import { Depense } from '../modeles/finance.model';
+import { environment } from '../../environments/environment';
 
 export interface DepensesResponse {
   items: Depense[];
@@ -91,7 +92,7 @@ export interface DepensesFilter {
 })
 export class DepencesService {
 
-  private apiUrl = 'http://localhost:5000/api/depenses';
+  private apiUrl = `${environment.apiUrl}/depenses`;
 
   private http = inject(HttpClient);
   private authService = inject(AuthService);

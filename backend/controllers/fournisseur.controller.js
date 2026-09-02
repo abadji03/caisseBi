@@ -183,23 +183,6 @@ exports.createFournisseur = async (req, res) => {
   }
 };
 
-// Récupérer tous les fournisseurs
-exports.getAllFournisseurs = async (req, res) => {
-  try {
-    const authUser = req.user;
-
-    if (!authUser) {
-      return res.status(401).json({ message: "Non authentifié" });
-    }
-    const fournisseurs = await Fournisseur.findAll({
-      order: [['createdAt', 'DESC']],
-    });
-    res.json(fournisseurs);
-  } catch (error) {
-    res.status(500).json({ message: 'Erreur récupération des fournisseurs', error });
-  }
-};
-
 // Récupérer un fournisseur par son ID
 exports.getFournisseurById = async (req, res) => {
   try {
@@ -784,72 +767,7 @@ exports.getFournisseursByStructureBis = async (req, res) => {
   }
 };
 
-// Rechercher des fournisseurs selon différents critères
-exports.searchFournisseurs = async (req, res) => {
-  try {
-    const authUser = req.user;
 
-    if (!authUser) {
-      return res.status(401).json({ message: "Non authentifié" });
-    }
-    const whereClause = {};
-
-    // Filtres possibles
-    if (req.query.nom) whereClause.nom = { [db.Sequelize.Op.like]: `%${req.query.nom}%` };
-    if (req.query.statut) whereClause.statut = req.query.statut;
-    if (req.query.code_structure) whereClause.code_structure = req.query.code_structure;
-
-    const fournisseurs = await Fournisseur.findAll({ where: whereClause });
-    res.json(fournisseurs);
-  } catch (error) {
-    res.status(500).json({ message: 'Erreur recherche', error });
-  }
-};
-
-// Compter le nombre total de fournisseurs
-exports.countFournisseurs = async (req, res) => {
-  try {
-    const authUser = req.user;
-
-    if (!authUser) {
-      return res.status(401).json({ message: "Non authentifié" });
-    }
-
-    const count = await Fournisseur.count();
-    res.json({ count });
-  } catch (error) {
-    res.status(500).json({ message: 'Erreur comptage', error });
-  }
-};
-
-// Récupérer les fournisseurs avec pagination
-exports.getFournisseursPaginated = async (req, res) => {
-  try {
-    const authUser = req.user;
-
-    if (!authUser) {
-      return res.status(401).json({ message: "Non authentifié" });
-    }
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const offset = (page - 1) * limit;
-
-    const { count, rows } = await Fournisseur.findAndCountAll({
-      limit,
-      offset,
-      order: [['createdAt', 'DESC']],
-    });
-
-    res.json({
-      total: count,
-      page,
-      totalPages: Math.ceil(count / limit),
-      fournisseurs: rows,
-    });
-  } catch (error) {
-    res.status(500).json({ message: 'Erreur pagination', error });
-  }
-};
 
 exports.getBonsWithPaniersAndProduits = async (req, res) => {
   try {

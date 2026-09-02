@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { NGXLogger } from 'ngx-logger';
 import { catchError, Observable, of, throwError } from 'rxjs';
 import { Categorie } from '../modeles/finance.model';
+import { environment } from '../../environments/environment';
 
 export interface CategoriesResponse {
   items: Categorie[];
@@ -35,7 +36,7 @@ export interface CategoriesFilter {
 })
 export class CategoriesDepencesRecettesService {
 
-  private apiUrl = 'http://localhost:5000/api/categories'; 
+  private apiUrl = `${environment.apiUrl}/categories`; 
 
   private http = inject(HttpClient);
   private authService = inject(AuthService);

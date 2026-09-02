@@ -22,6 +22,7 @@ exports.create = async (req, res) => {
     const clientIp = HistoriqueService.getClientIp(req);
 
     if (!authUser) {
+      await transaction.rollback();
       return res.status(401).json({ message: "Non authentifié" });
     }
     const paie = req.body;
@@ -32,17 +33,14 @@ exports.create = async (req, res) => {
     }
 
     const paiement = await Paiement.create({
-      ... paie,
-      date:new Date(),
+      ...paie,
+      date: new Date(),
       fichier
-    });
+    }, { transaction });
+
     // Créer l'opération associée
     await operationController.createFromPaiement(paiement, transaction);
 
-    // Mettre à jour le fournisseur ou le client selon le type de paiement
-
-    //if(paiement.typePaiement === 'fournisseur') await statutManager.mettreAJourFournisseurApresVersement(paiement, paiement.fournisseurId, transaction);
-    //if(paiement.typePaiement === 'client') await statutManager.mettreAJourClientApresRegelement(paiement, paiement.clientId, transaction);
     let cible = '';
     if (paiement.typePaiement === 'fournisseur') {
       await statutManager.mettreAJourFournisseurApresVersement(paiement, paiement.fournisseurId, transaction);
@@ -52,9 +50,10 @@ exports.create = async (req, res) => {
       await statutManager.mettreAJourClientApresRegelement(paiement, paiement.clientId, transaction);
       cible = `client ID: ${paiement.clientId}`;
     }
+
     await transaction.commit();
 
-      // ENREGISTRER L'HISTORIQUE
+    // ENREGISTRER L'HISTORIQUE (hors transaction — opération non critique)
     await HistoriqueService.enregistrerAction(
       authUser.id,
       `Création d'un paiement: ${paiement.montant} FCFA - ${paiement.typePaiement} (${cible})`,
@@ -74,6 +73,10 @@ exports.create = async (req, res) => {
 
     res.status(201).json(paiement);
   } catch (error) {
+    if (transaction && !transaction.finished) {
+      await transaction.rollback();
+    }
+    console.error('Erreur création paiement:', error);
     res.status(500).json({ error: error.message });
   }
 };

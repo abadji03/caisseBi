@@ -5,6 +5,59 @@ const panierController = require('../controllers/panier.controller');
 const panierCompletController = require('../controllers/panierComplet.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
 
+/**
+ * @swagger
+ * tags:
+ *   name: Paniers
+ *   description: Gestion des paniers de vente caisse
+ *
+ * /paniers:
+ *   post:
+ *     summary: Créer un panier
+ *     tags: [Paniers]
+ *     responses:
+ *       201:
+ *         description: Panier créé
+ *
+ * /paniers/panier-complet:
+ *   post:
+ *     summary: Créer ou mettre à jour un panier complet (panier + articles + paiement)
+ *     tags: [Paniers]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [panier, articles, typeEntite]
+ *             properties:
+ *               panier: { type: object }
+ *               articles: { type: array, items: { type: object } }
+ *               typeEntite: { type: string, enum: [client, fournisseur, autre] }
+ *               clientId: { type: integer }
+ *               paiement: { type: object }
+ *     responses:
+ *       201:
+ *         description: Panier traité avec succès
+ *
+ * /paniers/par-date/{date}:
+ *   get:
+ *     summary: Paniers d'une date spécifique
+ *     tags: [Paniers]
+ *     parameters:
+ *       - in: path
+ *         name: date
+ *         required: true
+ *         schema: { type: string, format: date }
+ *         description: Format YYYY-MM-DD
+ *       - in: query
+ *         name: magasinId
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Paniers du jour avec statistiques
+ */
+
 
 
 router.post('/',authenticateToken, panierController.createPanier);

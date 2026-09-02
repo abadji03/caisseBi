@@ -1,5 +1,4 @@
-import { User } from "@sentry/angular";
-import { Panier } from "./panier.model";
+import { User } from "./user.model";
 import { Bon } from "./bon.model";
 import { Paiement } from "./paiement.model";
 
@@ -20,14 +19,10 @@ export class Operation {
 
   moyenPaiement?: string; //'ESPECES' | 'MOBILE_MONEY' | 'CARTE_BANCAIRE' | 'VIREMENT' | 'CHEQUE';
 
-  panier?:Panier;
-  Panier?:Panier 
   user?:User
   fichier?:string;
   bon?:Bon;
-  Bon?:Bon;
   paiement?: Paiement;
-  Paiement?: Paiement;
 
   numeroBon?: string;
   numeroFacture?: string;

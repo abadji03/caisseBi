@@ -5,12 +5,13 @@ import { NGXLogger } from 'ngx-logger';
 import { AuthService } from './auth.service';
 import { catchError, Observable, throwError } from 'rxjs';
 import { DonneesComparativesResponse, DonneesEvolutivesResponse, IndicateursFinanciers, ModesPaiementStats, RepartitionDepenses, RepartitionRecettes, TransactionsResponse } from '../modeles/finance.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class RapportsFinanciersService {
-   private apiUrl = 'http://localhost:5000/api/rapport-financier';
+  private apiUrl = `${environment.apiUrl}/rapport-financier`;
     
     private http = inject(HttpClient);
     private authService = inject(AuthService);
@@ -43,7 +44,10 @@ export class RapportsFinanciersService {
     Object.keys(params).forEach(key => {
       if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
         if (params[key] instanceof Date) {
-          httpParams = httpParams.set(key, params[key].toISOString());
+          const year = params[key].getFullYear();
+          const month = String(params[key].getMonth() + 1).padStart(2, '0');
+          const day = String(params[key].getDate()).padStart(2, '0');
+          httpParams = httpParams.set(key, `${year}-${month}-${day}`);
         } else {
           httpParams = httpParams.set(key, params[key].toString());
         }

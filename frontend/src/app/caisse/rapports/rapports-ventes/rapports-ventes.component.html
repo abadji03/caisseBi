@@ -119,23 +119,6 @@
         </select>
       </div>
 
-      <!-- Filtre vendeur -->
-      <!-- <div class="col-md-3" *ngIf="isAdmin">
-        <label for="vendeur" class="form-label fw-semibold">Vendeur :</label>
-        <select
-          id="vendeur"
-          class="form-select"
-          [(ngModel)]="selectedVendeurId"
-          (change)="onVendeurSelect($event)"
-          [disabled]="isLoading"
-        >
-          <option [value]="-1">Tous les vendeurs</option>
-          <option *ngFor="let vendeur of vendeurs" [value]="vendeur.id">
-            {{ vendeur.nom }}
-          </option>
-        </select>
-      </div> -->
-
       <!-- Bouton de rafraîchissement -->
       <div class="col-12 mt-2">
         <button class="btn btn-outline-dark" (click)="filtrerDates()" [disabled]="isLoading">

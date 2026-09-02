@@ -1,17 +1,19 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
+import { catchError, Observable, throwError } from 'rxjs';
 import { DashboardStockResponse, Stock } from '../modeles/entrees-sorties.model';
-import { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
+import { NGXLogger } from 'ngx-logger';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class StockInventaireService {
-  private apiUrl = 'http://localhost:5000/api/stocks';
-
+  private apiUrl = `${environment.apiUrl}/stocks`;
   private http = inject(HttpClient);
   private authService = inject(AuthService);
+  private logger = inject(NGXLogger);
 
   private getHeaders(): HttpHeaders {
     const token = this.authService.getToken();
@@ -20,92 +22,79 @@ export class StockInventaireService {
     });
   }
 
-  // Créer un stock
+  private handleError(method: string, error: unknown): Observable<never> {
+    this.logger.error(`StockInventaireService -> ${method} :`, error);
+    return throwError(() => error);
+  }
+
   createStock(stock: Stock): Observable<Stock> {
-    return this.http.post<Stock>(this.apiUrl, stock, { headers: this.getHeaders() });
+    return this.http.post<Stock>(this.apiUrl, stock, { headers: this.getHeaders() })
+      .pipe(catchError(err => this.handleError('createStock', err)));
   }
 
-  // Mettre à jour un stock
   updateStock(id: number, stock: Partial<Stock>): Observable<Stock> {
-    return this.http.put<Stock>(`${this.apiUrl}/${id}`, stock, { headers: this.getHeaders() });
+    return this.http.put<Stock>(`${this.apiUrl}/${id}`, stock, { headers: this.getHeaders() })
+      .pipe(catchError(err => this.handleError('updateStock', err)));
   }
 
-  //Supprimer un stock
   deleteStock(id: number): Observable<unknown> {
-    return this.http.delete(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
+    return this.http.delete(`${this.apiUrl}/${id}`, { headers: this.getHeaders() })
+      .pipe(catchError(err => this.handleError('deleteStock', err)));
   }
 
-  // Récupérer tous les stocks d'une structure
   getStocksByStructure(codeStructure: string): Observable<Stock[]> {
     return this.http.get<Stock[]>(`${this.apiUrl}/structure/${codeStructure}`, {
       headers: this.getHeaders(),
-    });
-  } 
+    }).pipe(catchError(err => this.handleError('getStocksByStructure', err)));
+  }
 
   getStocksByStructureBis(
-  codeStructure: string,
-  page = 1,
-  limit = 10,
-  search = '',
-  statut = '',
-  perissable = '',
-  alerte = '',
-  tri= ''
-): Observable<DashboardStockResponse> {
-  let params = `?page=${page}&limit=${limit}&tri=${tri}`;
-  
-  if (search) params += `&search=${encodeURIComponent(search)}`;
-  //if (magasinId) params += `&magasinId=${magasinId}`;
-  if (statut) params += `&statut=${statut}`;
-  if (perissable) params += `&perissable=${perissable}`;
-  if (alerte) params += `&alerte=${alerte}`;
+    codeStructure: string,
+    page = 1,
+    limit = 10,
+    search = '',
+    statut = '',
+    perissable = '',
+    alerte = '',
+    tri = ''
+  ): Observable<DashboardStockResponse> {
+    let params = `?page=${page}&limit=${limit}&tri=${tri}`;
+    if (search) params += `&search=${encodeURIComponent(search)}`;
+    if (statut) params += `&statut=${statut}`;
+    if (perissable) params += `&perissable=${perissable}`;
+    if (alerte) params += `&alerte=${alerte}`;
 
-  return this.http.get<DashboardStockResponse>(
-    `${this.apiUrl}/structure/complet/${codeStructure}${params}`,
-    { headers: this.getHeaders() }
-  );
-}
+    return this.http.get<DashboardStockResponse>(
+      `${this.apiUrl}/structure/complet/${codeStructure}${params}`,
+      { headers: this.getHeaders() }
+    ).pipe(catchError(err => this.handleError('getStocksByStructureBis', err)));
+  }
 
-  // Récupérer un stock à partir d'un produitId
   getStockByProduitId(produitId: number): Observable<Stock> {
     return this.http.get<Stock>(`${this.apiUrl}/produit/${produitId}`, {
       headers: this.getHeaders(),
-    });
+    }).pipe(catchError(err => this.handleError('getStockByProduitId', err)));
   }
 
-  //Récupérer un stock avec calcul de statut (optionnel)
   getStockWithStatut(produitId: number): Observable<unknown> {
     return this.http.get<unknown>(`${this.apiUrl}/produit/${produitId}/statut`, {
       headers: this.getHeaders(),
-    });
+    }).pipe(catchError(err => this.handleError('getStockWithStatut', err)));
   }
 
-  /* ===========================================================
-   *  NOUVEAU : Ajustements de quantité
-   * ========================================================= */
-  /**
-   * Ajuste la quantité totale (entrée/sortie de stock)
-   * @param id        id du stock
-   * @param variation nombre positif (entrée) ou négatif (sortie)
-   */
   adjustQuantiteTotale(id: number, variation: number): Observable<Stock> {
     return this.http.patch<Stock>(
       `${this.apiUrl}/${id}/adjust-quantite`,
       { variation },
       { headers: this.getHeaders() },
-    );
+    ).pipe(catchError(err => this.handleError('adjustQuantiteTotale', err)));
   }
 
-  /**
-   * Ajuste la quantité réservée
-   * @param id        id du stock
-   * @param variation nombre positif ou négatif
-   */
   adjustQuantiteReservee(id: number, variation: number): Observable<Stock> {
     return this.http.patch<Stock>(
       `${this.apiUrl}/${id}/adjust-reservee`,
       { variation },
       { headers: this.getHeaders() },
-    );
+    ).pipe(catchError(err => this.handleError('adjustQuantiteReservee', err)));
   }
 }

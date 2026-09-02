@@ -4,6 +4,7 @@ import { catchError, Observable, tap, throwError } from 'rxjs';
 import { User } from '../modeles/user.model';
 import { AuthService } from './auth.service';
 import { NGXLogger } from 'ngx-logger';
+import { environment } from '../../environments/environment';
 
 export interface UsersFilter {
   page?: number;
@@ -28,7 +29,7 @@ export interface UsersResponse {
   providedIn: 'root',
 })
 export class UserService {
-  private apiUrl = 'http://localhost:5000/api/users';
+  private apiUrl = `${environment.apiUrl}/users`;
   private http = inject(HttpClient);
   private authService = inject(AuthService);
   private logger = inject(NGXLogger);

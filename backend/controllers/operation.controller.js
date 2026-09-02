@@ -3,7 +3,33 @@ const db = require('../models');
 const { Op } = require('sequelize');
 const Operation = db.Operation;
 
-// Méthode pour créer une opération à partir d'un bon
+/**
+ * Mappe le type d'un bon vers une valeur valide de l'ENUM Operation.type.
+ * Les bons peuvent avoir des types variés (livraison, commande, vente, etc.)
+ * qui doivent correspondre aux valeurs acceptées par la DB.
+ */
+const mapperTypeBon = (typeBon) => {
+  if (!typeBon) return 'BON';
+  const type = typeBon.toUpperCase().replace(/[\s-]/g, '_');
+  const mapping = {
+    BON:              'BON',
+    BON_LIVRAISON:    'BON_LIVRAISON',
+    BON_COMMANDE:     'BON_COMMANDE',
+    LIVRAISON:        'LIVRAISON',
+    COMMANDE:         'COMMANDE',
+    VENTE:            'VENTE',
+    RETOUR:           'RETOUR',
+    AVOIR:            'AVOIR',
+    FACTURE:          'FACTURE',
+    TICKET_CAISSE:    'TICKET_CAISSE',
+    VERSEMENT:        'VERSEMENT',
+    REGLEMENT:        'REGLEMENT',
+  };
+  return mapping[type] || 'BON';
+};
+
+// Exporter pour tests éventuels
+exports.mapperTypeBon = mapperTypeBon;
 exports.createFromBon = async (bon, transaction = null) => {
   try {
 
@@ -26,7 +52,7 @@ exports.createFromBon = async (bon, transaction = null) => {
       statutOperation = bon.statutBon?.toUpperCase() || 'VALIDÉ';
     }
     const operationData = {
-      type: bon.type?.toUpperCase() || 'BON',
+      type: mapperTypeBon(bon.type),
       bonId: bon.id,
       fournisseurId: bon.fournisseurId,
       clientId: bon.clientId,
@@ -405,12 +431,10 @@ exports.findAll = async (req, res) => {
     if (dateDebut || dateFin) {
       where.dateOperation = {};
       if (dateDebut) {
-        where.dateOperation[Op.gte] = new Date(dateDebut);
+        where.dateOperation[Op.gte] = new Date(`${dateDebut}T00:00:00`);
       }
       if (dateFin) {
-        const dateFinObj = new Date(dateFin);
-        dateFinObj.setHours(23, 59, 59, 999); // Fin de journée
-        where.dateOperation[Op.lte] = dateFinObj;
+        where.dateOperation[Op.lte] = new Date(`${dateFin}T23:59:59`);
       }
     }
 
@@ -525,15 +549,12 @@ exports.findByFournisseur = async (req, res) => {
     if (dateDebut || dateFin) {
       whereClause.dateOperation = {};
       if (dateDebut) {
-        const debutDate = new Date(dateDebut);
-        whereClause.dateOperation[Op.gte] = debutDate;
-        console.log('Date début:', dateDebut, '->', debutDate.toISOString());
+        whereClause.dateOperation[Op.gte] = new Date(`${dateDebut}T00:00:00`);
+        console.log('Date début:', dateDebut, '->', new Date(`${dateDebut}T00:00:00`).toISOString());
       }
       if (dateFin) {
-        const dateFinObj = new Date(dateFin);
-        dateFinObj.setHours(23, 59, 59, 999);
-        whereClause.dateOperation[Op.lte] = dateFinObj;
-        console.log('Date fin:', dateFin, '->', dateFinObj.toISOString());
+        whereClause.dateOperation[Op.lte] = new Date(`${dateFin}T23:59:59`);
+        console.log('Date fin:', dateFin, '->', new Date(`${dateFin}T23:59:59`).toISOString());
       }
     }
     console.log('Conditions date:', whereClause.dateOperation);
@@ -633,14 +654,17 @@ exports.findByClient = async (req, res) => {
     }; */
 
     // Filtre par date
+    // Les dates arrivent au format YYYY-MM-DD (heure locale).
+    // new Date("YYYY-MM-DD") les interprète en UTC minuit, ce qui décale
+    // d'un jour en heure locale positive (UTC+1, UTC+2...).
+    // On ajoute T00:00:00 pour forcer l'interprétation en heure locale.
     if (dateDebut || dateFin) {
       whereClause.dateOperation = {};
       if (dateDebut) {
-        whereClause.dateOperation[Op.gte] = new Date(dateDebut);
+        whereClause.dateOperation[Op.gte] = new Date(`${dateDebut}T00:00:00`);
       }
       if (dateFin) {
-        const dateFinObj = new Date(dateFin);
-        dateFinObj.setHours(23, 59, 59, 999);
+        const dateFinObj = new Date(`${dateFin}T23:59:59`);
         whereClause.dateOperation[Op.lte] = dateFinObj;
       }
     }
@@ -775,12 +799,8 @@ exports.getStats = async (req, res) => {
     
     if (dateDebut || dateFin) {
       where.dateOperation = {};
-      if (dateDebut) where.dateOperation[Op.gte] = new Date(dateDebut);
-      if (dateFin) {
-        const dateFinObj = new Date(dateFin);
-        dateFinObj.setHours(23, 59, 59, 999);
-        where.dateOperation[Op.lte] = dateFinObj;
-      }
+      if (dateDebut) where.dateOperation[Op.gte] = new Date(`${dateDebut}T00:00:00`);
+      if (dateFin) where.dateOperation[Op.lte] = new Date(`${dateFin}T23:59:59`);
     }
 
     const stats = await Operation.findAll({

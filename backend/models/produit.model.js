@@ -78,40 +78,21 @@ module.exports = (sequelize, DataTypes) => {
 
     hooks: {
       beforeValidate: async (produit, options) => {
-        console.log('🔍 beforeValidate hook called', produit.code_structure);
-        
-        // Définir numeroE avant la validation
-        if (!produit.numeroE) {
-          try {
-            const ProduitsModel = sequelize.models.Produit;
-            if (ProduitsModel) {
-              const count = await ProduitsModel.count({
-                where: { code_structure: produit.code_structure },
-                transaction: options.transaction
-              });
-              produit.numeroE = count + 1;
-              console.log(`✅ Generated numeroE in beforeValidate: ${produit.numeroE}`);
-            } else {
-              produit.numeroE = 1;
-            }
-          } catch (error) {
-            console.error('❌ Hook error:', error);
-            produit.numeroE = 1;
-          }
-        }
-      },
-      beforeCreate: async (produit, options) => {
-        console.log('🎯 beforeCreate hook STARTED', produit.numeroE);
-        // Vérifier et régénérer si nécessaire
-        if (!produit.numeroE) {
-          const produitsModel = sequelize.models.Produit;
-          const count = await produitsModel.count({
+        if (produit.numeroE) return;
+
+        const t = options.transaction;
+        try {
+          const count = await sequelize.models.Produit.count({
             where: { code_structure: produit.code_structure },
-            transaction: options.transaction
+            transaction: t,
+            lock: t ? t.LOCK.UPDATE : undefined,
           });
           produit.numeroE = count + 1;
+        } catch (error) {
+          console.error('❌ Hook numeroE Produit error:', error);
+          produit.numeroE = 1;
         }
-      }
+      },
     }
   });
 

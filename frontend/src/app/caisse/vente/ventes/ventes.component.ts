@@ -7,8 +7,9 @@ import { Subscription, finalize, forkJoin } from 'rxjs';
 import { EncaissementsResponse, StatsRemises, StatsAvoirs, CaisseTheorique, ComparatifCA, CAParJourResponse, KPICaissePeriode, KPIParamsJournalier, KPIParams, PaiementMode, ToutesStatistiquesSpeciales, ComptePaiement, CADailyMerged } from '../../../modeles/kpiCaisse.model';
 import { Structure } from '../../../modeles/structure.model';
 import { KpiCaisseService } from '../../../services/kpi-caisse.service';
+import { KpiFormatUtils } from '../../../utils/kpi-format-utils';
 import { Magasin } from '../../../modeles/magasin.model';
-import { User } from '@sentry/angular';
+import { User } from '../../../modeles/user.model';
 import { StructureService } from '../../../services/structure.service';
 import { UserService } from '../../../services/user.service';
 import { MaagasinsService } from '../../../services/maagasins.service';
@@ -109,20 +110,14 @@ export class VentesComponent implements OnInit, OnDestroy,OnChanges {
   ngOnInit(): void {
      this.userSubscription = this.authService.currentUser.subscribe(user => {
       this.currentUser = user;
-      // Initialiser la variable code_structure
       this.code_structure = user?.code_structure || null;
       this.magasinId = user?.magasinId || null;
-      //this.agentId = user?.id || null;
-      console.log('Code structure initialisé :', this.code_structure);
-      // Déterminer si on doit montrer le champ structure
-      this.isAdmin = this.authService.hasRole('Administrateur'); // Ou vérifiez par ID
-
-      // Récupérer l'ID de la structure de l'utilisateur connecté
+      this.isAdmin = this.authService.hasRole('Administrateur');
       
+      if (this.code_structure) {
+        this.loadUserAndStructure();
+      }
     });
-    //this.loadData();
-    //this.chargerDonnees();
-    this.loadUserAndStructure();
   }
   
  ngOnDestroy(): void {
@@ -157,27 +152,6 @@ export class VentesComponent implements OnInit, OnDestroy,OnChanges {
    */
   private loadUserAndStructure(): void {
     this.loading = true;
-    
-    // Récupérer l'utilisateur connecté
-    // this.currentUser = this.authService.getCurrentUser();
-    
-    // if (!this.currentUser) {
-    //   this.errorMessage = 'Utilisateur non connecté';
-    //   this.loading = false;
-    //   return;
-    // }
-    
-    // Déterminer si l'utilisateur est admin
-    /* this.isAdmin = this.currentUser.role === 'admin' || this.currentUser.role === 'super_admin';
-    
-    // Récupérer la structure de l'utilisateur
-    this.structureCode = this.currentUser.code_structure || this.currentUser.structure;
-    
-    if (!this.structureCode) {
-      this.errorMessage = 'Aucune structure associée à cet utilisateur';
-      this.loading = false;
-      return;
-    } */
     
     // Charger les données de la structure
     this.structureService.getByCodeStructure(this.code_structure!).subscribe({
@@ -780,7 +754,7 @@ private initialiserChartCAEvolutif(): void {
    * Formater un montant avec séparateur de milliers
    */
   formatMontant(montant: number): string {
-    return this.kpiService.formatMontant(montant);
+    return KpiFormatUtils.formatMontant(montant);
   }
   
   /**
@@ -853,8 +827,8 @@ private chargerStatistiquesSpeciales(): void {
   this.kpiService.getToutesStatistiquesSpeciales(params).subscribe({
     next: (data) => {
       this.statsSpeciales = data;
-      this.statsSpecialesFormatees = this.kpiService.formatStatistiquesSpeciales(data);
-      this.pourcentagesStatsSpeciales = this.kpiService.calculerPourcentagesStatistiquesSpeciales(data);
+      this.statsSpecialesFormatees = KpiFormatUtils.formatStatistiquesSpeciales(data);
+      this.pourcentagesStatsSpeciales = KpiFormatUtils.calculerPourcentagesStatistiquesSpeciales(data);
       this.chargementStatsSpeciales = false;
       this.afficherStatsSpeciales = true; // Afficher la section
     },
@@ -870,14 +844,14 @@ private chargerStatistiquesSpeciales(): void {
  * Obtenir l'icône pour un type de statistique spéciale
  */
 getIconeStatistique(type: string): string {
-  return this.kpiService.getIconeStatistiqueSpecial(type);
+  return KpiFormatUtils.getIconeStatistiqueSpecial(type);
 }
 
 /**
  * Obtenir la couleur pour un type de statistique spéciale
  */
 getCouleurStatistique(type: string): string {
-  return this.kpiService.getCouleurStatistiqueSpecial(type);
+  return KpiFormatUtils.getCouleurStatistiqueSpecial(type);
 }
 
 /**

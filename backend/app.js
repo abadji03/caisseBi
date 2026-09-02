@@ -7,10 +7,27 @@ const setupSwagger = require('./swagger');
 dotenv.config();
 
 const app = express();
-app.use(cors());
-// Configuration d'EJS
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+
+// ── Body parsers ── montés EN PREMIER, avant toutes les routes
+// (multer gère lui-même multipart/form-data, express.json() gère le reste)
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+    : 'http://localhost:3000',
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+}));
+
+// Configuration d'EJS — conservé si des vues sont ajoutées ultérieurement
+// app.set('view engine', 'ejs');
+// app.set('views', path.join(__dirname, 'views'));
+
+// Servir les fichiers uploadés
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Connexion à la base de données
 const db = require('./models');
@@ -52,13 +69,19 @@ const db = require('./models');
 const syncDatabase = async () => {
   try {
     console.log('🔄 Synchronisation de la base de données...');
-    await db.sequelize.sync({ alter: true });
-    //await db.sequelize.sync();
+    // En développement uniquement : sync({ alter: true }) peut modifier le schéma.
+    // En production, utiliser des migrations (sequelize-cli) à la place.
+    if (process.env.NODE_ENV === 'development') {
+      await db.sequelize.sync({ alter: true });
+    } else {
+      // Vérifie juste la connexion sans toucher au schéma
+      await db.sequelize.authenticate();
+    }
     console.log('✅ Connexion réussie à la base de données.');
-    // ✅ IMPORTANT : créer admin après sync
     //await initAdmin();
   } catch (error) {
     console.error('❌ Erreur de connexion DB :', error);
+    process.exit(1); // Arrêter le serveur si la DB est inaccessible
   }
 };
 
@@ -69,15 +92,7 @@ const syncDatabase = async () => {
 // Mode 2: Synchronisation normale (préserve les données)
 syncDatabase();
 
-
-//Ensuite les body parsers (après routes avec upload)
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-// Servir les images
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
 // Autres routes normales
-//Routes AVANT express.json() si elles utilisent `multipart/form-data`
 app.use('/api/produits', require('./routers/produits.routes'));
 app.use('/api/structures', require('./routers/structure.routes'));
 app.use('/api/magasins', require('./routers/magasins.routes'));
@@ -89,12 +104,9 @@ app.use('/api/reconciliations', require('./routers/reconciliations.routes'));
 app.use('/api/transferts', require('./routers/transfert.routes'));
 app.use('/api/categories', require('./routers/categorie.routes'));
 app.use('/api/depenses', require('./routers/depense.routes'));
-app.use('/api/reccetes', require('./routers/recette.routes'));
+app.use('/api/recettes', require('./routers/recette.routes'));
 app.use('/api/historiques-reconciliations', require('./routers/historiqueReconciliation.routes'));
-app.use(
-  '/api/historique-actions-utilisateur',
-  require('./routers/historiqueActionsUtilisateur.routes')
-);
+app.use('/api/historique-actions-utilisateur', require('./routers/historiqueActionsUtilisateur.routes'));
 app.use('/api/historiques-connexions', require('./routers/historiqueConnexions.routes'));
 app.use('/api/historiques-connexions-actions', require('./routers/historiqueConnexionAction.routes'));
 app.use('/api/bons', require('./routers/bon.routes'));
@@ -109,22 +121,14 @@ app.use('/api/mouvements-stock', require('./routers/mouvementStock.routes'));
 app.use('/api/user-roles', require('./routers/user-role.routes'));
 app.use('/api/role-permissions', require('./routers/role-permission.routes'));
 app.use('/api/auth', require('./routers/auth.routes'));
-app.use('/api/bons-complet', require('./routers/bonComplet.routes')); 
+app.use('/api/bons-complet', require('./routers/bonComplet.routes'));
 app.use('/api/historique-status', require('./routers/historiqueStatut.routes'));
-app.use('/api/categories', require('./routers/categorie.routes'));
-app.use('/api/depenses', require('./routers/depense.routes'));
-app.use('/api/recettes', require('./routers/recette.routes'));
 app.use('/api/kpi-caisse', require('./routers/kpiCaisse.routes'));
 app.use('/api/rapport-financier', require('./routers/rapportFinancier.routes'));
 app.use('/api/rapport-stock', require('./routers/rapportsStocks.routes'));
 app.use('/api/logs', require('./routers/logger.routes'));
 app.use('/api/factures', require('./routers/facture.routes'));
-app.use('/api/imports', require('./routers/import.routes'));
-
-
-
-
-// Test route
+app.use('/api/imports', require('./routers/import.routes'));// Test route
 app.get('/', (req, res) => {
   res.send('API Gestion de caisse opérationnelle !');
 });

@@ -8,7 +8,6 @@ import { finalize, Subject, Subscription, takeUntil } from 'rxjs';
 
 import { Magasin } from '../../../modeles/magasin.model';
 import {
-  DonneesRapport,
   IndicateursStocks,
   MouvementsResponse,
   MouvementStock,
@@ -327,48 +326,6 @@ rechargerDonnees(): void {
   
   // Recharger les données
   this.chargerDonnees();
-}
-
-/**
- * Adapte les données de l'API pour les rendre compatibles avec le composant
- */
-private adapterDonneesAPI(
-  indicateurs: any,
-  produits: any,
-  mouvements: any,
-  graphiques: any,
-  produitsSpecifiques: any
-): DonneesRapport {
-  return {
-    indicateurs: indicateurs || null,
-    
-    // Adapter la structure des produits
-    produits: produits ? {
-      niveau: produits.niveau,
-      periode: produits.periode,
-      total: produits.total,
-      page: produits.page,
-      totalPages: produits.totalPages,
-      limit: produits.limit,
-      items: produits.produits || [], // items pour le template
-      produits: produits.produits || [] // garder la structure originale
-    } : null,
-    
-    // Adapter la structure des mouvements
-    mouvements: mouvements ? {
-      niveau: mouvements.niveau,
-      periode: mouvements.periode,
-      total: mouvements.total,
-      page: mouvements.page,
-      totalPages: mouvements.totalPages,
-      limit: mouvements.limit,
-      items: mouvements.mouvements || [], // items pour le template
-      mouvements: mouvements.mouvements || [] // garder la structure originale
-    } : null,
-    
-    graphiques: graphiques || null,
-    produitsSpecifiques: produitsSpecifiques || null
-  };
 }
 
  
