@@ -48,10 +48,11 @@ const ctrl = require('../controllers/historiqueReconciliation.controller');
  *       200:
  *         description: Liste des historiques
  */
-router.get('/reconciliation/:reconciliationId', ctrl.findByReconciliation);
+router.post('/', authenticateToken, ctrl.create);
+router.get('/reconciliation/:reconciliationId', authenticateToken, ctrl.findByReconciliation);
 router.get('/structure/:code_structure', authenticateToken, requireStructureAccess, ctrl.findByStructure);
-router.get('/:id', ctrl.findById);
-router.put('/:id', ctrl.update);
-router.delete('/:id', ctrl.remove);
+router.get('/:id', authenticateToken, ctrl.findById);
+router.put('/:id', authenticateToken, ctrl.update);
+router.delete('/:id', authenticateToken, ctrl.remove);
 
 module.exports = router;

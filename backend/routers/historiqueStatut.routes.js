@@ -38,15 +38,15 @@ const historiqueStatutController = require('../controllers/historiqueStatut.cont
  */
 
 // Créer un historique
-router.post('/', historiqueStatutController.create);
+router.post('/', authenticateToken, historiqueStatutController.create);
 
 // Tous les historiques d’une structure
 router.get('/structure/:code_structure', authenticateToken, requireStructureAccess, historiqueStatutController.findAllByStructure);
 
 // Tous les historiques d’un bon
-router.get('/bon/:bonId', historiqueStatutController.findByBon);
+router.get('/bon/:bonId', authenticateToken, historiqueStatutController.findByBon);
 
-// Supprimer un historique (optionnel)
-router.delete('/:id', historiqueStatutController.delete);
+// Supprimer un historique (admin seulement)
+router.delete('/:id', authenticateToken, historiqueStatutController.delete);
 
 module.exports = router;

@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const authenticateToken = require('../middlewares/auth.middleware');
 const ctrl = require('../controllers/historiqueActionsUtilisateur.controller');
 
 /**
@@ -22,7 +23,7 @@ const ctrl = require('../controllers/historiqueActionsUtilisateur.controller');
  *         description: Liste des actions de l'utilisateur
  */
 
-router.post('/', ctrl.create);
-router.get('/user/:userId', ctrl.findByUser);
+router.post('/', authenticateToken, ctrl.create);
+router.get('/user/:userId', authenticateToken, ctrl.findByUser);
 
 module.exports = router;

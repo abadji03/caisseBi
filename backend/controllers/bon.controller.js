@@ -32,10 +32,14 @@ exports.createBon = async (req, res) => {
       fichier = BASE_URL + req.file.filename;
     }
 
-    const bonEnd = await Bon.create(
-      ... bon,
-      fichier
-    );
+    const bonEnd = await Bon.create({
+      ...bon,
+      // Identifiants dérivés de l'utilisateur authentifié — jamais du client
+      agentId: authUser.id,
+      code_structure: authUser.code_structure ?? bon.code_structure,
+      magasinId: authUser.magasinId ?? bon.magasinId,
+      fichier,
+    });
     
     res.status(201).json(bonEnd);
   } catch (error) {
@@ -535,10 +539,50 @@ exports.getBonsFournisseursByStructure = async (req, res) => {
     });
   }
 };
-// Lister tous les bons avec associations
+// Lister les bons selon le périmètre de l'utilisateur (multi-tenant) :
+//  - Administrateur général : toutes les structures ;
+//  - Administrateur / secondaire : toute leur structure ;
+//  - Gérant : son magasin ;
+//  - Caissier / Employé : uniquement SES propres bons (agentId).
 exports.getAllBons = async (req, res) => {
   try {
+    const authUser = req.user;
+    if (!authUser) {
+      return res.status(401).json({ message: 'Non authentifié' });
+    }
+
+    const nomRoles = (authUser.roles || []).map(r => r.nom);
+    const isAdminStructure =
+      nomRoles.includes('Administrateur') || nomRoles.includes('Administrateur secondaire');
+    const isGerant = nomRoles.includes('Gérant');
+    const isRestreint = nomRoles.includes('Caissier') || nomRoles.includes('Employé');
+
+    let whereClause;
+    if (!authUser.code_structure) {
+      // Administrateur général
+      whereClause = {};
+    } else if (isAdminStructure) {
+      whereClause = { code_structure: authUser.code_structure };
+    } else if (isGerant) {
+      if (!authUser.magasinId) {
+        return res.status(400).json({ message: "Ce gérant n'est associé à aucun magasin" });
+      }
+      whereClause = {
+        code_structure: authUser.code_structure,
+        magasinId: authUser.magasinId,
+      };
+    } else if (isRestreint) {
+      whereClause = {
+        code_structure: authUser.code_structure,
+        agentId: authUser.id,
+      };
+      if (authUser.magasinId) whereClause.magasinId = authUser.magasinId;
+    } else {
+      return res.status(403).json({ message: 'Accès interdit : rôle insuffisant' });
+    }
+
     const bons = await Bon.findAll({
+      where: whereClause,
       include: [
         { model: db.Fournisseur, as: 'Fournisseur' },
         { model: db.Client, as: 'Client' },
@@ -548,7 +592,8 @@ exports.getAllBons = async (req, res) => {
       order: [['createdAt', 'DESC']],
     });
     return res.json(bons);
-  } catch (error) {logger.error('bon.controller', 'Erreur récupération tous les bons:', error);
+  } catch (error) {
+    logger.error('bon.controller', 'Erreur récupération tous les bons:', error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -566,6 +611,18 @@ exports.getBonById = async (req, res) => {
     if (!bon) return res.status(404).json({ message: 'Bon non trouvé' });
     const verifStructure = verifierAppartenanceStructure(bon, req.user);
     if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
+
+    // Anti-IDOR : un Caissier/Employé ne peut consulter que SES propres bons
+    const nomRoles = (authUser.roles || []).map(r => r.nom);
+    const isPrivilege =
+      nomRoles.includes('Administrateur') ||
+      nomRoles.includes('Administrateur secondaire') ||
+      nomRoles.includes('Gérant');
+    const isRestreint = nomRoles.includes('Caissier') || nomRoles.includes('Employé');
+    if (isRestreint && !isPrivilege && bon.agentId != null &&
+        Number(bon.agentId) !== Number(authUser.id)) {
+      return res.status(403).json({ message: 'Accès interdit : ce bon ne vous appartient pas' });
+    }
 
     const bonData = bon.toJSON();
     const baseUrl = `${req.protocol}://${req.get('host')}/uploads/`;

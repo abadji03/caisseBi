@@ -27,16 +27,18 @@ exports.findByReconciliation = async (req, res) => {
  */
 
 const db = require('../models');
+const { verifierAppartenanceStructure } = require('../services/verification.service');
 const Historique = db.HistoriqueReconciliation;
 
 // Créer un historique
 exports.create = async (req, res) => {
   try {
-    const { reconciliationId, ecart, note, code_structure } = req.body;
+    const { reconciliationId, ecart, note } = req.body;
 
     const historique = await Historique.create({
       reconciliationId,
-      code_structure,
+      // Identifiant dérivé de l'utilisateur authentifié — jamais du client
+      code_structure: req.user.code_structure ?? req.body.code_structure,
       ecart,
       note,
     });
@@ -94,6 +96,9 @@ exports.findById = async (req, res) => {
       return res.status(404).json({ message: 'Historique non trouvé' });
     }
 
+    const verif = verifierAppartenanceStructure(historique, req.user);
+    if (!verif.ok) return res.status(verif.statut).json({ message: verif.message });
+
     res.json(historique);
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la récupération par ID', error });
@@ -109,6 +114,9 @@ exports.update = async (req, res) => {
     if (!historique) {
       return res.status(404).json({ message: 'Historique non trouvé' });
     }
+
+    const verif = verifierAppartenanceStructure(historique, req.user);
+    if (!verif.ok) return res.status(verif.statut).json({ message: verif.message });
 
     await historique.update(req.body);
     res.json({ message: 'Historique mis à jour avec succès', historique });
@@ -126,6 +134,9 @@ exports.remove = async (req, res) => {
     if (!historique) {
       return res.status(404).json({ message: 'Historique non trouvé' });
     }
+
+    const verif = verifierAppartenanceStructure(historique, req.user);
+    if (!verif.ok) return res.status(verif.statut).json({ message: verif.message });
 
     await historique.destroy();
     res.json({ message: 'Historique supprimé avec succès' });

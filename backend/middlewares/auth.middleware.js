@@ -205,6 +205,11 @@ const requireStructureAccess = (req, res, next) => {
   }
 
   const codeStructureUtilisateur = req.user.code_structure;
+
+  // Administrateur général (sans structure) : accès à toutes les structures,
+  // même sémantique que verifierAppartenanceStructure.
+  if (!codeStructureUtilisateur) return next();
+
   const codeStructureDemande =
     req.params.code_structure ||
     req.body?.code_structure ||
@@ -213,7 +218,7 @@ const requireStructureAccess = (req, res, next) => {
   // Pas de structure demandée explicitement : rien à vérifier ici.
   if (!codeStructureDemande) return next();
 
-  if (!codeStructureUtilisateur || codeStructureDemande !== codeStructureUtilisateur) {
+  if (codeStructureDemande !== codeStructureUtilisateur) {
     return res.status(403).json({
       message: "Accès refusé : cette ressource n'appartient pas à votre structure",
     });

@@ -34,13 +34,14 @@ async function main() {
     logger.log('migratePermissionCodes', 'Connexion DB OK. Mode: ' + (APPLY ? 'APPLY (écriture)' : 'AUDIT (lecture seule)'));
 
     const qi = db.sequelize.getQueryInterface();
+    const tableName = db.Permission.getTableName(); // nom réel de la table (freezeTableName)
 
     // 1. Ajouter la colonne code si absente
-    if (!(await columnExists(qi, 'Permissions', 'code'))) {
+    if (!(await columnExists(qi, tableName, 'code'))) {
       if (!APPLY) {
         logger.warn('migratePermissionCodes', 'Colonne `code` ABSENTE de la table Permissions (relancez avec --apply)');
       } else {
-        await qi.addColumn('Permissions', 'code', {
+        await qi.addColumn(tableName, 'code', {
           type: db.Sequelize.STRING(50),
           allowNull: true,
           unique: true,

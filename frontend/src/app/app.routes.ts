@@ -89,7 +89,7 @@ export const routes: Routes = [
           import('./caisse/vente/client/client.component').then(m => m.ClientComponent),
         canActivate: [roleGuard,structureGuard],
         data: {
-          roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant'],
+          roles: ['Administrateur Général', 'Administrateur','Administrateur secondaire', 'Gérant', 'Caissier'],
           requireStructure: true,
           permissions: [PERMISSIONS.VIEW_CLIENTS, PERMISSIONS.MANAGE_CLIENTS]
         }

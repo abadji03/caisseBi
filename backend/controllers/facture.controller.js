@@ -847,12 +847,43 @@ logger.error('facture.controller', 'Erreur getFactures:', error);
   }
 };
 
+const { verifierAppartenanceStructure } = require('../services/verification.service');
+
+/**
+ * Contrôle d'accès unitaire d'une facture (anti-IDOR) :
+ *  - la structure de la facture doit être celle de l'utilisateur ;
+ *  - un Caissier/Employé ne peut accéder qu'à SES propres factures (agentId).
+ */
+const verifierAccesFacture = (facture, authUser) => {
+  const verifStructure = verifierAppartenanceStructure(facture, authUser);
+  if (!verifStructure.ok) return verifStructure;
+
+  const nomRoles = (authUser.roles || []).map(r => r.nom);
+  const isPrivilege =
+    nomRoles.includes('Administrateur') ||
+    nomRoles.includes('Administrateur secondaire') ||
+    nomRoles.includes('Gérant');
+  const isRestreint =
+    nomRoles.includes('Caissier') || nomRoles.includes('Employé');
+
+  if (isRestreint && !isPrivilege && facture.agentId != null &&
+      Number(facture.agentId) !== Number(authUser.id)) {
+    return { ok: false, statut: 403, message: 'Accès interdit : cette facture ne vous appartient pas' };
+  }
+  return { ok: true };
+};
+
 /**
  * Récupérer une facture par ID
  * GET /api/factures/:id
  */
 exports.getFactureById = async (req, res) => {
   try {
+    const authUser = req.user;
+    if (!authUser) {
+      return res.status(401).json({ message: 'Non authentifié' });
+    }
+
     const facture = await Facture.findByPk(req.params.id, {
       include: [
         { model: db.Client },
@@ -868,6 +899,9 @@ exports.getFactureById = async (req, res) => {
     if (!facture) {
       return res.status(404).json({ message: 'Facture non trouvée' });
     }
+
+    const acces = verifierAccesFacture(facture, authUser);
+    if (!acces.ok) return res.status(acces.statut).json({ message: acces.message });
     
     res.json(facture);
     
@@ -884,10 +918,22 @@ exports.annulerFacture = async (req, res) => {
   const transaction = await db.sequelize.transaction();
   
   try {
+    const authUser = req.user;
+    if (!authUser) {
+      return res.status(401).json({ message: 'Non authentifié' });
+    }
+
     const facture = await Facture.findByPk(req.params.id, { transaction });
     
     if (!facture) {
       return res.status(404).json({ message: 'Facture non trouvée' });
+    }
+
+    // Anti-IDOR : structure + propriété (caissier/employé) avant annulation
+    const acces = verifierAccesFacture(facture, authUser);
+    if (!acces.ok) {
+      await transaction.rollback();
+      return res.status(acces.statut).json({ message: acces.message });
     }
     
     if (facture.statut === 'annulee') {

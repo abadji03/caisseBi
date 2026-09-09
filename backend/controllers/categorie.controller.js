@@ -33,6 +33,12 @@ exports.createCategorie = async (req, res) => {
       });
     }
 
+    // Cloisonnement : un utilisateur ne crée que dans sa structure
+    // (l'administrateur général, sans structure, peut créer pour toute structure)
+    if (authUser.code_structure && code_structure !== authUser.code_structure) {
+      return res.status(403).json({ message: 'Accès interdit : structure non autorisée' });
+    }
+
     const categorie = await Categorie.create({ code_structure, name, description, type,isActive });logger.log('categorie.controller', 'Catégorie créée:', categorie.id);
 
     // ENREGISTRER L'HISTORIQUE

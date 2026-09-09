@@ -8,6 +8,7 @@ import { NGXLogger } from 'ngx-logger';
 import { environment } from '../../environments/environment';
 import { handleApiError } from '../core/api/api-error';
 import { NAVIGATION_CONFIG } from '../constantes/navigation.config';
+import { CODE_TO_LABEL } from '../constantes/permissions.constants';
 
 @Injectable({
   providedIn: 'root',
@@ -280,10 +281,15 @@ private clearSession(): void {
     const user = this.currentUserSubject.value;
     if (!user?.roles) return false;
 
-    // Contrôle sur le CODE stable (alligné avec le backend) ; le libellé
-    // français est accepté en secours pendant la période de migration.
+    // Contrôle sur le CODE stable (aligné avec le backend). Filet de
+    // sécurité de transition : si la session ne contient pas encore les
+    // codes (base non migrée), on retombe sur le libellé français.
     return user.roles.some(role =>
-      role.permissions?.some(p => p.code === permission || p.nom === permission)
+      role.permissions?.some(p =>
+        p.code === permission ||
+        p.nom === permission ||
+        (p.code == null && p.nom === CODE_TO_LABEL[permission])
+      )
     );
   }
 

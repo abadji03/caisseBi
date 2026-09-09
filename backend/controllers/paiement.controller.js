@@ -35,6 +35,10 @@ exports.create = async (req, res) => {
 
     const paiement = await Paiement.create({
       ...paie,
+      // Identifiants dérivés de l'utilisateur authentifié — jamais du client
+      agentId: authUser.id,
+      code_structure: authUser.code_structure ?? paie.code_structure,
+      magasinId: authUser.magasinId ?? paie.magasinId,
       date: new Date(),
       fichier
     }, { transaction });
@@ -97,6 +101,33 @@ exports.findAll = async (req, res) => {
   }
 };
 
+const { verifierAppartenanceStructure } = require('../services/verification.service');
+
+/**
+ * Contrôle d'accès unitaire d'un paiement (anti-IDOR) :
+ *  - la structure du paiement doit être celle de l'utilisateur ;
+ *  - un Caissier/Employé ne peut accéder qu'à SES propres paiements (agentId).
+ * Admin structure / Gérant : tout leur périmètre. Admin général : tout.
+ */
+const verifierAccesPaiement = (paiement, authUser) => {
+  const verifStructure = verifierAppartenanceStructure(paiement, authUser);
+  if (!verifStructure.ok) return verifStructure;
+
+  const nomRoles = (authUser.roles || []).map(r => r.nom);
+  const isPrivilege =
+    nomRoles.includes('Administrateur') ||
+    nomRoles.includes('Administrateur secondaire') ||
+    nomRoles.includes('Gérant');
+  const isRestreint =
+    nomRoles.includes('Caissier') || nomRoles.includes('Employé');
+
+  if (isRestreint && !isPrivilege && paiement.agentId != null &&
+      Number(paiement.agentId) !== Number(authUser.id)) {
+    return { ok: false, statut: 403, message: 'Accès interdit : ce paiement ne vous appartient pas' };
+  }
+  return { ok: true };
+};
+
 exports.findById = async (req, res) => {
 
   try {
@@ -107,6 +138,9 @@ exports.findById = async (req, res) => {
     }
     const paiement = await Paiement.findByPk(req.params.id);
     if (!paiement) return res.status(404).json({ message: 'Paiement non trouvé' });
+
+    const acces = verifierAccesPaiement(paiement, authUser);
+    if (!acces.ok) return res.status(acces.statut).json({ message: acces.message });
 
     const paiementData = paiement.toJSON();
     const baseUrl = `${req.protocol}://${req.get('host')}/uploads/`;
@@ -130,6 +164,9 @@ try {
   if (!paiement) {
     return res.status(404).json({ message: 'Paiement non trouvé' });
   }
+  // Anti-IDOR : structure + propriété (caissier/employé)
+  const accesUpdate = verifierAccesPaiement(paiement, authUser);
+  if (!accesUpdate.ok) return res.status(accesUpdate.statut).json({ message: accesUpdate.message });
   // Sauvegarder les anciennes valeurs pour l'historique
   const oldValues = {
     montant: paiement.montant,
@@ -198,6 +235,9 @@ exports.delete = async (req, res) => {
     if (!paiement) {
       return res.status(404).json({ message: 'Paiement non trouvé' });
     }
+    // Anti-IDOR : structure + propriété (caissier/employé)
+    const accesDelete = verifierAccesPaiement(paiement, authUser);
+    if (!accesDelete.ok) return res.status(accesDelete.statut).json({ message: accesDelete.message });
 
     const deleted = await Paiement.destroy({
       where: { id: req.params.id },
@@ -339,6 +379,17 @@ exports.getPaiementsClientByStructure = async (req, res) => {
       }
 
       whereClause.magasinId = authUser.magasinId;
+
+    
+
+    // 🔒 Règle métier : un caissier ne voit que SES propres paiements
+
+    if (isCaissier) {
+
+      whereClause.agentId = authUser.id;
+
+    }
+
     }
     const paiements = await Paiement.findAll({
       where: whereClause ,
@@ -408,6 +459,17 @@ exports.getPaiementsFournisseurByStructure = async (req, res) => {
       }
 
       whereClause.magasinId = authUser.magasinId;
+
+    
+
+    // 🔒 Règle métier : un caissier ne voit que SES propres paiements
+
+    if (isCaissier) {
+
+      whereClause.agentId = authUser.id;
+
+    }
+
     }
     const paiements = await Paiement.findAll({
       where: whereClause ,
@@ -487,6 +549,17 @@ exports.getPaiementsClientByStructureBis = async (req, res) => {
         });
       }
       whereClause.magasinId = authUser.magasinId;
+
+    
+
+    // 🔒 Règle métier : un caissier ne voit que SES propres paiements
+
+    if (isCaissier) {
+
+      whereClause.agentId = authUser.id;
+
+    }
+
     }
 
     // 🔍 FILTRE DE RECHERCHE TEXTUELLE
@@ -634,6 +707,17 @@ exports.getPaiementsFournisseurByStructureBis = async (req, res) => {
         });
       }
       whereClause.magasinId = authUser.magasinId;
+
+    
+
+    // 🔒 Règle métier : un caissier ne voit que SES propres paiements
+
+    if (isCaissier) {
+
+      whereClause.agentId = authUser.id;
+
+    }
+
     }
 
     // 🔍 FILTRE DE RECHERCHE TEXTUELLE

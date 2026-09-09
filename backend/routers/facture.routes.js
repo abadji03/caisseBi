@@ -86,7 +86,7 @@ router.post('/regularisation', factureController.createFactureRegularisation);
 
 router.get('/:code_structure', authenticateToken, requireStructureAccess, factureController.getFactures);
 router.get('/:id', factureController.getFactureById);
-router.delete('/:id', factureController.annulerFacture);
+router.delete('/:id', authenticateToken, factureController.annulerFacture);
 router.get('/:id/pdf', factureController.downloadFacturePDF);
 
 module.exports = router;

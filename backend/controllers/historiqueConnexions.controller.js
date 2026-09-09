@@ -11,8 +11,34 @@ exports.create = async (req, res) => {
   }
 };
 
+// Même règle que historiqueActionsUtilisateur : soi-même, admin de la même
+// structure, ou administrateur général.
+const verifierAccesHistorique = async (authUser, userIdCible) => {
+  const cible = await db.Users.findByPk(userIdCible, {
+    attributes: ['id', 'code_structure'],
+  });
+  if (!cible) {
+    return { ok: false, statut: 404, message: 'Utilisateur non trouvé' };
+  }
+  if (!authUser.code_structure) return { ok: true };
+  if (Number(authUser.id) === Number(userIdCible)) return { ok: true };
+  const nomRoles = (authUser.roles || []).map(r => r.nom);
+  const isAdminStructure =
+    (nomRoles.includes('Administrateur') || nomRoles.includes('Administrateur secondaire')) &&
+    cible.code_structure === authUser.code_structure;
+  if (isAdminStructure) return { ok: true };
+  return {
+    ok: false,
+    statut: 403,
+    message: "Accès interdit : historique d'un autre utilisateur",
+  };
+};
+
 exports.findByUser = async (req, res) => {
   try {
+    const acces = await verifierAccesHistorique(req.user, req.params.userId);
+    if (!acces.ok) return res.status(acces.statut).json({ message: acces.message });
+
     const { userId } = req.params;
     const data = await HistoriqueConnexions.findAll({
       where: { userId },
