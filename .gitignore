@@ -128,3 +128,11 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Sorties locales (audits, lints, tests) — ne pas versionner
+*-out.txt
+audit-*.txt
+apply-permissions.txt
+test-output*.txt
+t.txt
+jres.json
