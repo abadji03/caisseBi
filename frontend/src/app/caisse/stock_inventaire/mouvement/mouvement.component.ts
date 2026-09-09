@@ -101,7 +101,6 @@ export class MouvementComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (response) => {
-          console.log('Statistique mvt',response)
           this.mouvements = response.items;
           this.totalItems = response.pagination.total;
           this.totalPages = response.pagination.totalPages;
@@ -114,7 +113,6 @@ export class MouvementComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Erreur chargement données', err);
-          this.toastr.error('Erreur lors du chargement des données');
         }
       });
   }
@@ -132,7 +130,6 @@ export class MouvementComponent implements OnInit, OnDestroy {
         this.produits = produits;
         this.stock = stocks;
         this.filteredProduits = [...produits];
-        console.log('Produits et stocks chargés');
       },
       error: (err) => {
         console.error('Erreur chargement produits/stocks', err);
@@ -180,7 +177,6 @@ export class MouvementComponent implements OnInit, OnDestroy {
   }
 
   selectProduit(prod: Produits): void {
-    console.log('Produit sélectionné:', prod);
     
     this.selectedProduct = prod;
     this.searchInput = prod.designation;
@@ -189,7 +185,6 @@ export class MouvementComponent implements OnInit, OnDestroy {
     const stk = this.stock.find(stoc => stoc.produitId === prod.id);
     if (stk) {
       this.idStockPoduct = stk.id;
-      console.log('Stock associé:', stk);
     }
 
     this.mouvementForm.patchValue({ 
@@ -279,15 +274,12 @@ export class MouvementComponent implements OnInit, OnDestroy {
   }  
 
   modifierMouvement(mouvement: MouvementsStock) {
-    console.log('=== MODIFICATION MOUVEMENT ===');
-    console.log('Mouvement à modifier:', mouvement);
     
     this.isEditing = true;
     this.currentMouvement = mouvement;
     
     // Récupérer le produit correspondant
     const produit = this.produits.find(p => p.id === mouvement.produitId);
-    console.log('Produit trouvé:', produit);
     
     if (produit) {
       this.selectedProduct = produit;
@@ -297,7 +289,6 @@ export class MouvementComponent implements OnInit, OnDestroy {
       const stk = this.stock.find(s => s.produitId === produit.id);
       if (stk) {
         this.idStockPoduct = stk.id;
-        console.log('Stock trouvé:', stk);
       }
     }
     
@@ -311,7 +302,6 @@ export class MouvementComponent implements OnInit, OnDestroy {
       prixUnitaire: mouvement.prixUnitaire
     });
     
-    console.log('Formulaire après patch:', this.mouvementForm.value);
     
     this.openModal();
   }
@@ -341,9 +331,6 @@ export class MouvementComponent implements OnInit, OnDestroy {
   }
 
   enregistrerMouvement() {
-    console.log('=== ENREGISTREMENT MOUVEMENT ===');
-    console.log('isEditing:', this.isEditing);
-    console.log('Valeurs formulaire:', this.mouvementForm.value);
 
     if (this.mouvementForm.invalid) {
       this.toastr.error('Veuillez remplir tous les champs obligatoires');
@@ -388,7 +375,6 @@ export class MouvementComponent implements OnInit, OnDestroy {
       }
 
 
-    console.log('Payload préparé:', payload);
 
     const operation = this.isEditing && this.currentMouvement
       ? this.mouvementsStockService.update(this.currentMouvement.id!, payload)
@@ -414,7 +400,6 @@ export class MouvementComponent implements OnInit, OnDestroy {
   }
 
   resetForm() {
-    console.log('Réinitialisation du formulaire');
     
     this.mouvementForm.reset({
       produitId: null,

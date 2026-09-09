@@ -105,7 +105,6 @@ export class RapportsFinanciersComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.userSubscription = this.authService.currentUser.subscribe(user => {
       this.code_structure = user?.code_structure || null;
-      console.log('Code structure initialisé :', this.code_structure);
       this.isAdmin = this.authService.hasRole('Administrateur');
     });
     this.initDateFilters();
@@ -728,12 +727,10 @@ async exportToPDF(): Promise<void> {
 
     const params = this.construireFiltresExport();
 
-    console.log('📄 Génération PDF financier avec params:', params);
 
     const pdfBlob = await this.rapportsService.genererRapportPDF(params).toPromise();
 
     if(!pdfBlob){
-      console.log('Echec appel API pour générer PDF');
       return;
     }
 
@@ -828,12 +825,10 @@ async exportToExcel(): Promise<void> {
 
     const params = this.construireFiltresExport();
 
-    console.log('📊 Export Excel financier avec params:', params);
 
     const excelBlob = await this.rapportsService.exportRapportExcel(params).toPromise();
 
     if(!excelBlob){
-      console.log('Echec appel API');
       return;
     }
 
@@ -908,7 +903,6 @@ private generateExcelFileName(): string {
     const pdfBlob = await this.rapportsService.genererRapportPDF(params).toPromise();
 
     if(!pdfBlob){
-      console.log('Echec appel API depuis backend');
       return;
     }
 

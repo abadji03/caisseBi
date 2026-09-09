@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/transfert.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
-const { requirePermission } = require('../middlewares/auth.middleware');
+const { requirePermission, requireStructureAccess } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -78,14 +78,14 @@ const { requirePermission } = require('../middlewares/auth.middleware');
  */
 
 
-router.post('/',authenticateToken, requirePermission('Gérer le stock'), ctrl.createTransfert);
-router.put('/valider/:id',authenticateToken, requirePermission('Gérer le stock'), ctrl.validerTransfert);
-router.get('/structure/:code_structure', authenticateToken, requirePermission('Gérer le stock'), ctrl.listerParStructure);
+router.post('/',authenticateToken, requireStructureAccess, requirePermission('stock.manage'), ctrl.createTransfert);
+router.put('/valider/:id',authenticateToken, requireStructureAccess, requirePermission('stock.manage'), ctrl.validerTransfert);
+router.get('/structure/:code_structure', authenticateToken, requireStructureAccess, requirePermission('stock.manage'), ctrl.listerParStructure);
 router.get(
   '/produit/:produitId/magasin/:magasinId',
   authenticateToken,
   ctrl.getStockByProduitAndMagasin
 );
-router.put('/refuser/:id', authenticateToken, requirePermission('Gérer le stock'), ctrl.refuserTransfert);
+router.put('/refuser/:id', authenticateToken, requireStructureAccess, requirePermission('stock.manage'), ctrl.refuserTransfert);
 
 module.exports = router;

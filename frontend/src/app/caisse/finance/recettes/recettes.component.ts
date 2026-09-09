@@ -7,6 +7,10 @@ import { ToastrService } from 'ngx-toastr';
 import { CommonModule } from '@angular/common';
 import { ModePaiement } from '../../../modeles/paiement.model';
 import { CategoriesDepencesRecettesService } from '../../../services/categories-depences-recettes.service';
+import { TableSearchComponent } from '../../../shared/table/table-search.component';
+import { TablePaginationComponent } from '../../../shared/table/table-pagination.component';
+import { TableStateComponent } from '../../../shared/table/table-state.component';
+import { ListState, toListState } from '../../../shared/table/list-state';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare let bootstrap: any; // En haut du fichier
@@ -15,7 +19,7 @@ declare let bootstrap: any; // En haut du fichier
 @Component({
   selector: 'app-recettes',
   standalone: true,
-  imports: [CommonModule, FormsModule,ReactiveFormsModule],
+  imports: [CommonModule, FormsModule,ReactiveFormsModule, TableSearchComponent, TablePaginationComponent, TableStateComponent],
   templateUrl: './recettes.component.html',
   styleUrl: './recettes.component.css'
 })
@@ -66,6 +70,8 @@ export class RecettesComponent implements OnInit, OnDestroy {
 
   // États
   isLoadingRecette = false;
+  /** État d'affichage de la liste — voir shared/table */
+  recettesListState: ListState = 'idle';
   isLoadingCategorie = false;
   errorMessage = '';
 
@@ -125,11 +131,11 @@ export class RecettesComponent implements OnInit, OnDestroy {
  
   loadRecettes(): void {
     if (!this.code_structure) {
-      console.error('code_structure est null');
       return;
     }
 
     this.isLoadingRecette = true;
+    this.recettesListState = 'loading';
     this.errorMessage = '';
 
     const filters: RecettesFilter = {
@@ -141,8 +147,6 @@ export class RecettesComponent implements OnInit, OnDestroy {
       statut: this.filters.statut || undefined
     };
 
-    console.log('Chargement des recettes avec filtres:', filters);
-
     this.recetteService.getByStructureBis(this.code_structure, filters)
       .pipe(
         takeUntil(this.destroy$),
@@ -150,7 +154,6 @@ export class RecettesComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (response: RecettesResponse) => {
-          console.log('✅ Réponse API reçue:', response);
           this.recettes = response.items;
           this.stats = response.statistiques;
           
@@ -160,13 +163,12 @@ export class RecettesComponent implements OnInit, OnDestroy {
           this.totalPages = response.pagination.totalPages;
           this.hasNext = response.pagination.hasNext;
           this.hasPrev = response.pagination.hasPrev;
-          
-          console.log('Recettes chargées:', response.items.length);
-          console.log('Stats chargées:', this.stats);
+
+          this.recettesListState = toListState(false, false, this.recettes);
         },
-        error: (err) => {
-          console.error('❌ Erreur API complète:', err);
-          this.errorMessage = err.error?.message || 'Erreur lors du chargement des recettes';
+        error: (_err) => {
+          this.recettesListState = 'error';
+          this.errorMessage = 'Erreur lors du chargement des recettes';
           this.toastr.error(this.errorMessage);
         }
       });
@@ -195,12 +197,10 @@ export class RecettesComponent implements OnInit, OnDestroy {
             cat => cat.type === 'RECETTE'
           );
           
-          console.log('Catégories chargées:', categories.length);
         },
-        error: (err) => {
+        error: (_err) => {
           this.errorMessage = 'Erreur lors du chargement des catégories';
           this.toastr.error(this.errorMessage);
-          console.error('Erreur chargement catégories:', err);
         }
       });
   }
@@ -292,7 +292,6 @@ export class RecettesComponent implements OnInit, OnDestroy {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       this.selectedFile = input.files[0];
-      console.log('Fichier sélectionné:', this.selectedFile.name);
     }
   }
 
@@ -408,15 +407,12 @@ export class RecettesComponent implements OnInit, OnDestroy {
         finalize(() => this.isLoadingRecette = false)
     )
       .subscribe({
-        next: (newRecette) => {
+        next: (_newRecette) => {
           this.toastr.success('Recette enregistrée avec succès');
-          console.log('Recette enregistrée avec succès',newRecette);
           this.loadRecettes(); // Recharger la liste
-          //this.recetteAction.emit({ action: 'created', recette: newRecette });
           this.cancelForm();
         },
         error: (err) => {
-          console.error('Détails de l\'erreur:', err);
           this.toastr.error(err.error?.message || 'Erreur lors de l\'enregistrement de la recette');
         },
         /* complete: () => {
@@ -436,15 +432,12 @@ export class RecettesComponent implements OnInit, OnDestroy {
         finalize(() => this.isLoadingRecette = false)
       )
       .subscribe({
-        next: (updatedRecette) => {
+        next: (_updatedRecette) => {
           this.toastr.success('Recette modifiée avec succès');
-          console.log('Recette modifiée avec succès',updatedRecette);
           this.loadRecettes(); // Recharger la liste
-          //this.recetteAction.emit({ action: 'updated', recette: updatedRecette });
           this.cancelForm();
         },
         error: (err) => {
-          console.error('Détails de l\'erreur:', err);
           this.toastr.error(err.error?.message || 'Erreur lors de la modification de la recette');
         },
         /* complete: () => {
@@ -471,13 +464,11 @@ export class RecettesComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           this.toastr.success('Recette annulée avec succès');
-          console.log('Recette annulée avec succès');
           this.loadRecettes();
           //this.recetteAction.emit({ action: 'deleted', recette });
         },
-        error: (err) => {
+        error: (_err) => {
           this.toastr.error('Erreur lors de la suppression');
-          console.error(err);
         },
         //complete: () => this.isLoading = false
       });

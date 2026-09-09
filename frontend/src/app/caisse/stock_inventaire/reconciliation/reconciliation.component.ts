@@ -82,7 +82,6 @@ export class ReconciliationComponent implements OnInit, OnDestroy {
   private loadData() {
     this.isLoading = true;
     
-    console.log('Chargement des réconciliations - Page:', this.currentPage);
     
     this.reconciliationService.getByStructure(
       this.codeStructure!,
@@ -94,13 +93,10 @@ export class ReconciliationComponent implements OnInit, OnDestroy {
       takeUntil(this.destroy$),
       finalize(() => {
         this.isLoading = false;
-        console.log('Chargement terminé');
       })
     )
     .subscribe({
       next: (response) => {
-        console.log('Réconciliations chargées:', response.items.length);
-        console.log('Pagination:', response.pagination);
         
         // Transformer les réconciliations
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -124,7 +120,6 @@ export class ReconciliationComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('Erreur chargement réconciliations', err);
-        this.toastr.error('Erreur lors du chargement des réconciliations');
         this.isLoading = false;
       }
     });
@@ -142,7 +137,6 @@ export class ReconciliationComponent implements OnInit, OnDestroy {
         this.produits = produits ;
         this.stock = stocks;
         this.filteredProduits = [...produits];
-        console.log('Produits et stocks chargés');
       },
       error: (err) => {
         console.error('Erreur chargement produits/stocks', err);
@@ -172,7 +166,6 @@ export class ReconciliationComponent implements OnInit, OnDestroy {
   }
 
   selectProduit(prod: Produits): void {
-    console.log('Produit sélectionné:', prod);
     this.selectedProduct = prod;
     this.searchInput = prod.designation;
     this.filteredProduits = [];
@@ -268,15 +261,12 @@ get pagesToShow(): number[] {
   }
 
 modifierReconciliation(reconciliation: Reconciliation) {
-  console.log('=== MODIFICATION RÉCONCILIATION ===');
-  console.log('Réconciliation à modifier:', reconciliation);
   
   this.isEditing = true;
   this.selectedReconciliation = reconciliation;
   
   // Récupérer le produit correspondant
   const produit = this.produits.find(p => p.id === reconciliation.produitId);
-  console.log('Produit trouvé:', produit);
   
   if (produit) {
     this.selectedProduct = produit;
@@ -291,7 +281,6 @@ modifierReconciliation(reconciliation: Reconciliation) {
     note: reconciliation.note || ''
   });
   
-  console.log('Formulaire après patch:', this.reconciliationForm.value);
   
   // Ouvrir le modal
   this.openModal();
@@ -375,9 +364,6 @@ supprimerReconciliation(reconciliation: Reconciliation) {
 }
 
   enregistrerReconciliation() {
-    console.log('=== ENREGISTREMENT RÉCONCILIATION ===');
-    console.log('isEditing:', this.isEditing);
-    console.log('Valeurs formulaire:', this.reconciliationForm.value);
 
     if (this.reconciliationForm.invalid) {
       this.toastr.error('Veuillez remplir tous les champs obligatoires');
@@ -412,14 +398,11 @@ supprimerReconciliation(reconciliation: Reconciliation) {
       reconciliationData.responsable = this.agentId;
     }
 
-    console.log('Données préparées:', reconciliationData);
 
     if (this.isEditing && this.selectedReconciliation) {
-        console.log('Mode édition - ID:', this.selectedReconciliation.id);
         this.updateReconciliation(reconciliationData);
     } 
     else {
-      console.log('Mode création');
       this.createReconciliation(reconciliationData);
     }
   }
@@ -442,7 +425,6 @@ supprimerReconciliation(reconciliation: Reconciliation) {
           const reconciliation = Reconciliation.fromRaw(raw);
           
           const ecart = reconciliation.ecart;
-          console.log('Réconciliation créée',reconciliation)
           // 2. Si écart non nul, créer un mouvement de correction
           if (ecart !== 0) {
             return this.createCorrectionMouvement(reconciliation, ecart).pipe(
@@ -493,7 +475,6 @@ supprimerReconciliation(reconciliation: Reconciliation) {
       .pipe(
         switchMap((updatedReconciliation: Reconciliation) => {
           // Si l'écart a changé, ajuster le stock et créer un mouvement
-          console.log('Reconciliaation après modification',updatedReconciliation)
           if (ecartDifference !== 0) {
             return this.createCorrectionMouvement(updatedReconciliation, -ecartDifference).pipe(
               switchMap(() => {

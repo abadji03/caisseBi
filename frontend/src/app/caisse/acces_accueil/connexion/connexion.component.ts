@@ -41,7 +41,6 @@ export class ConnexionComponent {
         // Redirection déjà gérée dans le service
         this.isLoading = false;
         this.isActif = result.status;
-        console.log('Connexion réussie :', result.status);
       },
       error: (err) => {
         this.isLoading = false;

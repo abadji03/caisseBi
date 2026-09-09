@@ -1,11 +1,11 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { catchError, Observable, throwError } from 'rxjs';
+import { catchError, Observable } from 'rxjs';
 import { CategorieProduits, Produits } from '../modeles/produit.modele';
-import { AuthService } from './auth.service';
 import { PaginatedResponse } from '../modeles/entrees-sorties.model';
 import { NGXLogger } from 'ngx-logger';
 import { environment } from '../../environments/environment';
+import { handleApiError } from '../core/api/api-error';
 
 @Injectable({
   providedIn: 'root',
@@ -13,24 +13,15 @@ import { environment } from '../../environments/environment';
 export class ProduitsService {
   private apiUrl = environment.apiUrl;
   private http = inject(HttpClient);
-  private authService = inject(AuthService);
   private logger = inject(NGXLogger);
 
-  private getHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
-    return new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-    });
-  }
 
   private handleError(method: string, error: unknown): Observable<never> {
-    this.logger.error(`ProduitsService -> ${method} :`, error);
-    return throwError(() => error);
+    return handleApiError(this.logger, `ProduitsService.${method}`, error);
   }
 
   getProduitsDisponibles(code_structure: string): Observable<Produits[]> {
     return this.http.get<Produits[]>(`${this.apiUrl}/produits/structure/${code_structure}/produits-disponibles`, {
-      headers: this.getHeaders(),
     }).pipe(catchError(err => this.handleError('getProduitsDisponibles', err)));
   }
 
@@ -49,7 +40,7 @@ export class ProduitsService {
 
     return this.http.get<PaginatedResponse<Produits>>(
       `${this.apiUrl}/produits/structure/${codeStructure}${params}`, 
-      { headers: this.getHeaders() }
+      {}
     ).pipe(catchError(err => this.handleError('getAllProduits', err)));
   }
 
@@ -66,7 +57,6 @@ export class ProduitsService {
 
     const url = `${this.apiUrl}/produits/export/excel/structure/${codeStructure}?${params.toString()}`;
     return this.http.get(url, {
-      headers: this.getHeaders(),
       responseType: 'blob'
     }).pipe(catchError(err => this.handleError('exportToExcel', err)));
   }
@@ -84,7 +74,6 @@ export class ProduitsService {
 
     const url = `${this.apiUrl}/produits/export-pdf/structure/${codeStructure}?${params.toString()}`;
     return this.http.get(url, {
-      headers: this.getHeaders(),
       responseType: 'blob'
     }).pipe(catchError(err => this.handleError('exportToPDF', err)));
   }
@@ -92,23 +81,22 @@ export class ProduitsService {
   getAllCategoriesProduits(code_structure: string): Observable<CategorieProduits[]> {
     return this.http.get<CategorieProduits[]>(
       `${this.apiUrl}/categories-produits/structure/${code_structure}`,
-      { headers: this.getHeaders() },
+      {},
     ).pipe(catchError(err => this.handleError('getAllCategoriesProduits', err)));
   }
 
   getProduits(): Observable<Produits[]> {
-    return this.http.get<Produits[]>(`${this.apiUrl}/produits`, { headers: this.getHeaders() })
+    return this.http.get<Produits[]>(`${this.apiUrl}/produits`, {})
       .pipe(catchError(err => this.handleError('getProduits', err)));
   }
 
   getProduitById(id: number): Observable<Produits> {
-    return this.http.get<Produits>(`${this.apiUrl}/produits/${id}`, { headers: this.getHeaders() })
+    return this.http.get<Produits>(`${this.apiUrl}/produits/${id}`, {})
       .pipe(catchError(err => this.handleError('getProduitById', err)));
   }
 
   getCategorieById(id: number): Observable<CategorieProduits> {
     return this.http.get<CategorieProduits>(`${this.apiUrl}/categories-produits/${id}`, {
-      headers: this.getHeaders(),
     }).pipe(catchError(err => this.handleError('getCategorieById', err)));
   }
 
@@ -119,19 +107,16 @@ export class ProduitsService {
 
   createCategorie(categorie: CategorieProduits): Observable<CategorieProduits> {
     return this.http.post<CategorieProduits>(`${this.apiUrl}/categories-produits`, categorie, {
-      headers: this.getHeaders(),
     }).pipe(catchError(err => this.handleError('createCategorie', err)));
   }
 
   updateProduit(id: number, produit: Partial<FormData>): Observable<FormData> {
     return this.http.put<FormData>(`${this.apiUrl}/produits/${id}`, produit, {
-      headers: this.getHeaders(),
     }).pipe(catchError(err => this.handleError('updateProduit', err)));
   }
 
   updateCategorie(id: number, categorie: Partial<CategorieProduits>): Observable<CategorieProduits> {
     return this.http.put<CategorieProduits>(`${this.apiUrl}/categories-produits/${id}`, categorie, {
-      headers: this.getHeaders(),
     }).pipe(catchError(err => this.handleError('updateCategorie', err)));
   }
 
@@ -139,25 +124,22 @@ export class ProduitsService {
     return this.http.put<string>(
       `${this.apiUrl}/produits/${id}/code-barre`,
       { codeBarre },
-      { headers: this.getHeaders() },
+      {},
     ).pipe(catchError(err => this.handleError('updateCodeBarre', err)));
   }
 
   deleteProduit(id: number): Observable<Produits> {
     return this.http.delete<Produits>(`${this.apiUrl}/produits/${id}`, {
-      headers: this.getHeaders(),
     }).pipe(catchError(err => this.handleError('deleteProduit', err)));
   }
 
   deleteCategorie(id: number): Observable<CategorieProduits> {
     return this.http.delete<CategorieProduits>(`${this.apiUrl}/categories-produits/${id}`, {
-      headers: this.getHeaders(),
     }).pipe(catchError(err => this.handleError('deleteCategorie', err)));
   }
 
   rechercherProduit(query: string): Observable<Produits[]> {
     return this.http.get<Produits[]>(`${this.apiUrl}/search/q?q=${encodeURIComponent(query)}`, {
-      headers: this.getHeaders(),
     }).pipe(catchError(err => this.handleError('rechercherProduit', err)));
   }
 
@@ -165,7 +147,7 @@ export class ProduitsService {
     return this.http.patch<Produits>(
       `${this.apiUrl}/produits/${id}/statut`,
       { statut },
-      { headers: this.getHeaders() },
+      {},
     ).pipe(catchError(err => this.handleError('updateStatusProduit', err)));
   }
 
@@ -173,7 +155,7 @@ export class ProduitsService {
     return this.http.patch<Produits>(
       `${this.apiUrl}/produits/${id}/tauxTVA`,
       { tauxTVA },
-      { headers: this.getHeaders() },
+      {},
     ).pipe(catchError(err => this.handleError('updateTauxTVAProduit', err)));
   }
 
@@ -181,7 +163,7 @@ export class ProduitsService {
     return this.http.patch(
       `${this.apiUrl}/categories-produits/${id}/statut`,
       { statut },
-      { headers: this.getHeaders() },
+      {},
     ).pipe(catchError(err => this.handleError('updateStatutCategorie', err)));
   }
 
@@ -189,14 +171,13 @@ export class ProduitsService {
     const formData = new FormData();
     formData.append('image', imageFile);
     return this.http.patch<Produits>(`${this.apiUrl}/produits/${id}/image`, formData, {
-      headers: this.getHeaders(),
     }).pipe(catchError(err => this.handleError('updateImageProduit', err)));
   }
 
   archiverProduit(id: number): Observable<Produits> {
     return this.http.patch<Produits>(
       `${this.apiUrl}/${id}/archive`, {},
-      { headers: this.getHeaders() },
+      {},
     ).pipe(catchError(err => this.handleError('archiverProduit', err)));
   }
 }

@@ -1,4 +1,5 @@
 const FonctionsUtilitaires = require('./utils/fonctionsUtilitaires');
+const logger = require('../services/logger.js');
 const utilitaireRapport  = require('./utils/rapportStockUtilitaire');
 const db = require('../models');
 // Importer ExcelJS
@@ -47,9 +48,7 @@ exports.getIndicateursStocks = async (req, res) => {
         // ✅ Gérant => uniquement son magasin
         if (isGerant && !isAdmin) {
         magasinIdFinal = authUser.magasinId;
-        }
-
-        console.log('📥 [Indicateurs Stocks] Requête reçue:', {
+        }logger.log('rapportStock.controller', '📥 [Indicateurs Stocks] Requête reçue:', {
             periode,
             fromDate,
             toDate,
@@ -75,8 +74,7 @@ exports.getIndicateursStocks = async (req, res) => {
             ...indicateurs
         });
 
-    } catch (error) {
-        console.error('❌ Erreur getIndicateursStocks:', error);
+    } catch (error) {logger.error('rapportStock.controller', '❌ Erreur getIndicateursStocks:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -155,8 +153,7 @@ exports.getStatsProduits = async (req, res) => {
             items: paginatedProduits 
         });
 
-    } catch (error) {
-        console.error('❌ Erreur getStatsProduits:', error);
+    } catch (error) {logger.error('rapportStock.controller', '❌ Erreur getStatsProduits:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -225,8 +222,7 @@ exports.getMouvementsPeriode = async (req, res) => {
             items: resultats.mouvements // Pour compatibilité avec pagination frontend
         });
 
-    } catch (error) {
-        console.error('❌ Erreur getMouvementsPeriode:', error);
+    } catch (error) {logger.error('rapportStock.controller', '❌ Erreur getMouvementsPeriode:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -286,8 +282,7 @@ exports.getStatsGraphiques = async (req, res) => {
             ...statsGraphiques
         });
 
-    } catch (error) {
-        console.error('❌ Erreur getStatsGraphiques:', error);
+    } catch (error) {logger.error('rapportStock.controller', '❌ Erreur getStatsGraphiques:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -365,8 +360,7 @@ exports.getProduitsSpecifiques = async (req, res) => {
             produitsRotationLente: produitsSpecifiques.produitsRotationLente.map(formaterProduit)
         });
 
-    } catch (error) {
-        console.error('❌ Erreur getProduitsSpecifiques:', error);
+    } catch (error) {logger.error('rapportStock.controller', '❌ Erreur getProduitsSpecifiques:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -423,9 +417,7 @@ exports.getRapportCompletStocks = async (req, res) => {
             page: pageProduits,
             limit,
             search
-        };
-
-        console.log('📥 [Rapport Complet Stocks] Génération...');
+        };logger.log('rapportStock.controller', '📥 [Rapport Complet Stocks] Génération...');
 
         // Exécuter toutes les requêtes en parallèle
         const [indicateurs, statsProduits, mouvements, graphiques, produitsSpecifiques] = await Promise.all([
@@ -472,8 +464,7 @@ exports.getRapportCompletStocks = async (req, res) => {
             }
         });
 
-    } catch (error) {
-        console.error('❌ Erreur getRapportCompletStocks:', error);
+    } catch (error) {logger.error('rapportStock.controller', '❌ Erreur getRapportCompletStocks:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -573,8 +564,7 @@ exports.exportDonneesStocks = async (req, res) => {
             return res.json(exportData);
         }
 
-    } catch (error) {
-        console.error('❌ Erreur exportDonneesStocks:', error);
+    } catch (error) {logger.error('rapportStock.controller', '❌ Erreur exportDonneesStocks:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -656,9 +646,7 @@ exports.genererRapportStockPDF = async (req, res) => {
             toDate,
             page: 1,
             limit: 50 // Limiter pour le PDF
-        };
-
-        console.log('📊 Génération PDF Rapport Stock du', debut, 'au', fin);
+        };logger.log('rapportStock.controller', '📊 Génération PDF Rapport Stock du', debut, 'au', fin);
 
         // Récupération des données
         const [
@@ -750,8 +738,7 @@ exports.genererRapportStockPDF = async (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename=rapport-stock-${Date.now()}.pdf`);
         res.send(pdf);
 
-    } catch (error) {
-        console.error('❌ Erreur génération PDF Rapport Stock:', error);
+    } catch (error) {logger.error('rapportStock.controller', '❌ Erreur génération PDF Rapport Stock:', error);
         res.status(500).json({ 
             error: 'Erreur lors de la génération du PDF',
             details: error.message 
@@ -846,9 +833,7 @@ exports.exportRapportStockExcel = async (req, res) => {
             toDate,
             page: 1,
             limit: 10000 // Pour l'export, on prend tout
-        };
-
-        console.log('📊 Export Excel Rapport Stock du', debut, 'au', fin);
+        };logger.log('rapportStock.controller', '📊 Export Excel Rapport Stock du', debut, 'au', fin);
 
         // Récupération des données
         const [
@@ -1058,8 +1043,7 @@ exports.exportRapportStockExcel = async (req, res) => {
         // Initialiser produitsSpecifiques à un objet vide si null
         const safeProduitsSpecifiques = produitsSpecifiques || {};
 
-        // Afficher toutes les propriétés disponibles pour déboguer
-        console.log('Propriétés disponibles dans produitsSpecifiques:', Object.keys(safeProduitsSpecifiques));
+        // Afficher toutes les propriétés disponibles pour déboguerlogger.log('rapportStock.controller', 'Propriétés disponibles dans produitsSpecifiques:', Object.keys(safeProduitsSpecifiques));
 
         // Fonction utilitaire pour formater une ligne de produit
         function formatProduitRow(p) {
@@ -1265,8 +1249,7 @@ exports.exportRapportStockExcel = async (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename=rapport-stock-${Date.now()}.xlsx`);
         res.send(buffer);
 
-    } catch (error) {
-        console.error('❌ Erreur export Excel Rapport Stock:', error);
+    } catch (error) {logger.error('rapportStock.controller', '❌ Erreur export Excel Rapport Stock:', error);
         res.status(500).json({ 
             error: 'Erreur lors de l\'export Excel',
             details: error.message 

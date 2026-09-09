@@ -1,10 +1,10 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { catchError, Observable, throwError } from 'rxjs';
+import { catchError, Observable } from 'rxjs';
 import { DashboardStockResponse, Stock } from '../modeles/entrees-sorties.model';
-import { AuthService } from './auth.service';
 import { NGXLogger } from 'ngx-logger';
 import { environment } from '../../environments/environment';
+import { handleApiError } from '../core/api/api-error';
 
 @Injectable({
   providedIn: 'root',
@@ -12,39 +12,30 @@ import { environment } from '../../environments/environment';
 export class StockInventaireService {
   private apiUrl = `${environment.apiUrl}/stocks`;
   private http = inject(HttpClient);
-  private authService = inject(AuthService);
   private logger = inject(NGXLogger);
 
-  private getHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
-    return new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-    });
-  }
 
   private handleError(method: string, error: unknown): Observable<never> {
-    this.logger.error(`StockInventaireService -> ${method} :`, error);
-    return throwError(() => error);
+    return handleApiError(this.logger, `StockInventaireService.${method}`, error);
   }
 
   createStock(stock: Stock): Observable<Stock> {
-    return this.http.post<Stock>(this.apiUrl, stock, { headers: this.getHeaders() })
+    return this.http.post<Stock>(this.apiUrl, stock, {})
       .pipe(catchError(err => this.handleError('createStock', err)));
   }
 
   updateStock(id: number, stock: Partial<Stock>): Observable<Stock> {
-    return this.http.put<Stock>(`${this.apiUrl}/${id}`, stock, { headers: this.getHeaders() })
+    return this.http.put<Stock>(`${this.apiUrl}/${id}`, stock, {})
       .pipe(catchError(err => this.handleError('updateStock', err)));
   }
 
   deleteStock(id: number): Observable<unknown> {
-    return this.http.delete(`${this.apiUrl}/${id}`, { headers: this.getHeaders() })
+    return this.http.delete(`${this.apiUrl}/${id}`, {})
       .pipe(catchError(err => this.handleError('deleteStock', err)));
   }
 
   getStocksByStructure(codeStructure: string): Observable<Stock[]> {
     return this.http.get<Stock[]>(`${this.apiUrl}/structure/${codeStructure}`, {
-      headers: this.getHeaders(),
     }).pipe(catchError(err => this.handleError('getStocksByStructure', err)));
   }
 
@@ -66,19 +57,17 @@ export class StockInventaireService {
 
     return this.http.get<DashboardStockResponse>(
       `${this.apiUrl}/structure/complet/${codeStructure}${params}`,
-      { headers: this.getHeaders() }
+      {}
     ).pipe(catchError(err => this.handleError('getStocksByStructureBis', err)));
   }
 
   getStockByProduitId(produitId: number): Observable<Stock> {
     return this.http.get<Stock>(`${this.apiUrl}/produit/${produitId}`, {
-      headers: this.getHeaders(),
     }).pipe(catchError(err => this.handleError('getStockByProduitId', err)));
   }
 
   getStockWithStatut(produitId: number): Observable<unknown> {
     return this.http.get<unknown>(`${this.apiUrl}/produit/${produitId}/statut`, {
-      headers: this.getHeaders(),
     }).pipe(catchError(err => this.handleError('getStockWithStatut', err)));
   }
 
@@ -86,7 +75,7 @@ export class StockInventaireService {
     return this.http.patch<Stock>(
       `${this.apiUrl}/${id}/adjust-quantite`,
       { variation },
-      { headers: this.getHeaders() },
+      {},
     ).pipe(catchError(err => this.handleError('adjustQuantiteTotale', err)));
   }
 
@@ -94,7 +83,7 @@ export class StockInventaireService {
     return this.http.patch<Stock>(
       `${this.apiUrl}/${id}/adjust-reservee`,
       { variation },
-      { headers: this.getHeaders() },
+      {},
     ).pipe(catchError(err => this.handleError('adjustQuantiteReservee', err)));
   }
 }

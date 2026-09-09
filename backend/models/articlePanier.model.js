@@ -1,3 +1,4 @@
+const logger = require('../services/logger.js');
 // models/articlePanier.js
 //const SequenceService = require('../services/sequence.service');
 
@@ -75,7 +76,6 @@ module.exports = (sequelize, DataTypes) => {
 
     hooks: {
       beforeValidate: async (articlePanier, options) => {
-        console.log('🔍 beforeValidate hook called', articlePanier.code_structure);
         
         // Définir numeroE avant la validation
         if (!articlePanier.numeroE) {
@@ -87,18 +87,16 @@ module.exports = (sequelize, DataTypes) => {
                 transaction: options.transaction
               });
               articlePanier.numeroE = count + 1;
-              console.log(`✅ Generated numeroE in beforeValidate: ${articlePanier.numeroE}`);
             } else {
               articlePanier.numeroE = 1;
             }
           } catch (error) {
-            console.error('❌ Hook error:', error);
+            logger.error('articlePanier.model', '❌ Hook error:', error);
             articlePanier.numeroE = 1;
           }
         }
       },
       beforeCreate: async (articlePanier, options) => {
-        console.log('🎯 beforeCreate hook STARTED', articlePanier.numeroE);
         // Vérifier et régénérer si nécessaire
         if (!articlePanier.numeroE) {
           const articlePaniersModel = sequelize.models.ArticlePanier;

@@ -31,6 +31,9 @@ export default tseslint.config(
           style: "kebab-case",
         },
       ],
+      // Garde-fou contre le bruit de debug en production (audit chantier 3 & 7).
+      // Les logs warn/error restent autorisés (gestion d'erreurs, à migrer vers ngx-logger).
+      "no-console": ["warn", { allow: ["warn", "error"] }],
       "@typescript-eslint/no-unused-vars": [
         "error",
         {

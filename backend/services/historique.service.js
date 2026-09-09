@@ -1,4 +1,5 @@
 const db = require('../models');
+const logger = require('./logger.js');
 
 class HistoriqueService {
   /**
@@ -13,9 +14,7 @@ class HistoriqueService {
         ip: ip,
         date: new Date()
       });
-      console.log(`✅ Connexion enregistrée pour l'utilisateur ${userId} depuis ${ip}`);
-    } catch (error) {
-      console.error('Erreur lors de l\'enregistrement de la connexion:', error);
+    } catch (error) {logger.error('historique.service', 'Erreur lors de l\'enregistrement de la connexion:', error);
     }
   }
 
@@ -35,9 +34,7 @@ class HistoriqueService {
         details: details,
         date: new Date()
       });
-      console.log(`✅ Action enregistrée pour l'utilisateur ${userId}: ${action}`);
-    } catch (error) {
-      console.error('Erreur lors de l\'enregistrement de l\'action:', error);
+    } catch (error) {logger.error('historique.service', 'Erreur lors de l\'enregistrement de l\'action:', error);
     }
   }
 

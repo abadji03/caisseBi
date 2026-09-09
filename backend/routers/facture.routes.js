@@ -2,6 +2,7 @@
 const router = require('express').Router();
 const factureController = require('../controllers/facture.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
+const { requireStructureAccess } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -83,7 +84,7 @@ router.post('/achat', factureController.createFactureAchat);
 router.post('/avoir', factureController.createAvoir);
 router.post('/regularisation', factureController.createFactureRegularisation);
 
-router.get('/:code_structure', factureController.getFactures);
+router.get('/:code_structure', authenticateToken, requireStructureAccess, factureController.getFactures);
 router.get('/:id', factureController.getFactureById);
 router.delete('/:id', factureController.annulerFacture);
 router.get('/:id/pdf', factureController.downloadFacturePDF);

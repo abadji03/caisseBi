@@ -53,7 +53,6 @@ export class PaiementComponent implements OnInit, OnChanges {
   // Surveiller les changements de resetFormPaiement
     ngOnChanges(changes: SimpleChanges) {
       if (changes['resetFormPaiement'] && changes['resetFormPaiement'].currentValue === true) {
-        console.log('ResetForm déclenché - Réinitialisation du formulaire de paiement');
         this.resetForm();
       }
     }
@@ -133,7 +132,6 @@ export class PaiementComponent implements OnInit, OnChanges {
   submitPaiement(): void {
     if (this.paiementForm.valid) {
       const { paiement, fichier } = this.preparePaiementData();
-      console.log('Paiement prêt à être enregistré:', paiement, fichier)
       this.onEnregistrerPaiement.emit({ paiement, fichier });
     }
   }

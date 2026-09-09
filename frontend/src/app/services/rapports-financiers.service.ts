@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { NGXLogger } from 'ngx-logger';
-import { AuthService } from './auth.service';
-import { catchError, Observable, throwError } from 'rxjs';
+import { catchError, Observable } from 'rxjs';
 import { DonneesComparativesResponse, DonneesEvolutivesResponse, IndicateursFinanciers, ModesPaiementStats, RepartitionDepenses, RepartitionRecettes, TransactionsResponse } from '../modeles/finance.model';
 import { environment } from '../../environments/environment';
+import { handleApiError } from '../core/api/api-error';
 
 @Injectable({
   providedIn: 'root',
@@ -14,25 +14,17 @@ export class RapportsFinanciersService {
   private apiUrl = `${environment.apiUrl}/rapport-financier`;
     
     private http = inject(HttpClient);
-    private authService = inject(AuthService);
     private logger = inject(NGXLogger);
   
     /** ================================
      *  GÉNÉRATION HEADERS AVEC TOKEN
      ================================== */
-    private getHeaders(): HttpHeaders {
-      const token = this.authService.getToken();
-      return new HttpHeaders({
-        Authorization: `Bearer ${token}`
-      });
-    }
   
     /** ================================
      *  GESTION CENTRALISÉE DES ERREURS
      ================================== */
-    private handleError<T>(method: string, error: any): Observable<T> {
-      this.logger.error(`RapportsFinanciersService -> ${method} :`, error);
-      return throwError(() => error);
+    private handleError<T>(method: string, error: unknown): Observable<T> {
+      return handleApiError(this.logger, `RapportsFinanciersService.${method}`, error);
     }
   
      /** ================================
@@ -72,7 +64,6 @@ export class RapportsFinanciersService {
     const params = this.buildParams(filters);
     
     return this.http.get<IndicateursFinanciers>(`${this.apiUrl}/indicateurs`, {
-      headers: this.getHeaders(),
       params
     }).pipe(
       catchError(error => this.handleError<IndicateursFinanciers>('getIndicateursFinanciers', error))
@@ -94,7 +85,6 @@ export class RapportsFinanciersService {
     const params = this.buildParams(filters);
     
     return this.http.get<RepartitionDepenses>(`${this.apiUrl}/depenses/repartition`, {
-      headers: this.getHeaders(),
       params
     }).pipe(
       catchError(error => this.handleError<RepartitionDepenses>('getRepartitionDepenses', error))
@@ -116,7 +106,6 @@ export class RapportsFinanciersService {
     const params = this.buildParams(filters);
     
     return this.http.get<RepartitionRecettes>(`${this.apiUrl}/recettes/repartition`, {
-      headers: this.getHeaders(),
       params
     }).pipe(
       catchError(error => this.handleError<RepartitionRecettes>('getRepartitionRecettes', error))
@@ -138,7 +127,6 @@ export class RapportsFinanciersService {
     const params = this.buildParams(filters);
     
     return this.http.get<ModesPaiementStats>(`${this.apiUrl}/modes-paiement/stats`, {
-      headers: this.getHeaders(),
       params
     }).pipe(
       catchError(error => this.handleError<ModesPaiementStats>('getStatistiquesModesPaiement', error))
@@ -164,7 +152,6 @@ export class RapportsFinanciersService {
     const params = this.buildParams(filters);
     
     return this.http.get<TransactionsResponse>(`${this.apiUrl}/depenses`, {
-      headers: this.getHeaders(),
       params
     }).pipe(
       catchError(error => this.handleError<TransactionsResponse>('getDepensesDetaillees', error))
@@ -190,7 +177,6 @@ export class RapportsFinanciersService {
     const params = this.buildParams(filters);
     
     return this.http.get<TransactionsResponse>(`${this.apiUrl}/recettes`, {
-      headers: this.getHeaders(),
       params
     }).pipe(
       catchError(error => this.handleError<TransactionsResponse>('getRecettesDetaillees', error))
@@ -213,7 +199,6 @@ export class RapportsFinanciersService {
     const params = this.buildParams(filters);
     
     return this.http.get<DonneesEvolutivesResponse>(`${this.apiUrl}/evolution`, {
-      headers: this.getHeaders(),
       params
     }).pipe(
       catchError(error => this.handleError<DonneesEvolutivesResponse>('getDonneesEvolutives', error))
@@ -234,7 +219,6 @@ export class RapportsFinanciersService {
     const params = this.buildParams(filters);
     
     return this.http.get<DonneesComparativesResponse>(`${this.apiUrl}/comparatives`, {
-      headers: this.getHeaders(),
       params
     }).pipe(
       catchError(error => this.handleError<DonneesComparativesResponse>('getDonneesComparatives', error))
@@ -254,7 +238,6 @@ export class RapportsFinanciersService {
     const params = this.buildParams(filters);
     
     return this.http.get(`${this.apiUrl}/export/pdf`, {
-      headers: this.getHeaders(),
       params,
       responseType: 'blob'
     }).pipe(
@@ -275,7 +258,6 @@ export class RapportsFinanciersService {
     const params = this.buildParams(filters);
     
     return this.http.get(`${this.apiUrl}/export/excel`, {
-      headers: this.getHeaders(),
       params,
       responseType: 'blob'
     }).pipe(
@@ -343,7 +325,6 @@ export class RapportsFinanciersService {
     const params = this.buildParams({ type });
     
     return this.http.get<any[]>(`${this.apiUrl}/categories`, {
-      headers: this.getHeaders(),
       params
     }).pipe(
       catchError(error => this.handleError<any>('getCategories', error))
@@ -355,7 +336,6 @@ export class RapportsFinanciersService {
    ================================== */
   getMagasins(code_structure: string): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/magasins`, {
-      headers: this.getHeaders(),
       params: this.buildParams({ code_structure })
     }).pipe(
       catchError(error => this.handleError<any>('getMagasins', error))
@@ -385,7 +365,6 @@ export class RapportsFinanciersService {
       occurrences: number;
       moyenne: number;
     }>(`${this.apiUrl}/stats/categorie`, {
-      headers: this.getHeaders(),
       params
     }).pipe(
       catchError(error => this.handleError<any>('getStatsByCategory', error))

@@ -1,4 +1,5 @@
 const db = require('../models');
+const logger = require('../services/logger.js');
 const { verifierAppartenanceStructure } = require('../services/verification.service');
 const Stock = db.Stock;
 const { safeNumber } = require('./bonComplet/statutManager')
@@ -367,8 +368,7 @@ exports.getStocksByStructureBis = async (req, res) => {
       }
     });
 
-  } catch (error) {
-    console.error('Erreur dashboard stock:', error);
+  } catch (error) {logger.error('stock.controller', 'Erreur dashboard stock:', error);
     res.status(500).json({ message: 'Erreur', error: error.message });
   }
 };

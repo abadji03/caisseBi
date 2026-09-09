@@ -90,20 +90,14 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
     this.bonBrouillonService.panierBrouillon$
         .pipe(takeUntil(this.destroy$))
         .subscribe(panierData => {
-          console.log('📩 Panier brouillon reçu du service:', panierData);
           
           if (panierData) {
             // Toujours créer une nouvelle instance de Panier
             const panier = new Panier(panierData);
-            console.log('🔄 Panier converti:', {
-              id: panier.id,
-              articlesCount: panier.articles.length
-            });
             
             this.panierBrouillon = panier;
             this.chargerPanierBrouillon(panier);
           } else {
-            console.log('📭 Aucun panier brouillon');
           }
         });
   }
@@ -286,7 +280,6 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private chargerPanierBrouillon(panier: Panier): void {
-    console.log('Chargement panier brouillon:', panier);
 
     if (!panier) {
       console.error('Panier brouillon est null');
@@ -302,7 +295,6 @@ export class PanierComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private chargerPanierExistant(panier: Panier): void {
-  console.log('Chargement du panier existant:', panier);
   
   if (!panier) {
     console.error('Panier est null ou undefined');
@@ -337,32 +329,14 @@ this.panier = new Panier({
   // Mettre à jour l'état du formulaire selon le statut
   this.isFormDisabled = this.panier.statut === 'validé';
   
-  console.log('Panier modèle mis à jour:', {
-    id: this.panier.id,
-    totalHT: this.panier.totalHT,
-    totalTTC: this.panier.totalTTC,
-    articlesCount: this.panier.articles.length
-  });
   
   // Réinitialiser d'abord le panier
   this.panierArray.clear();
 
   // Charger les articles
    const articlesACharger = panier.articles || [];
-  console.log('Articles à charger:', articlesACharger);
-  console.log('Articles à charger:', articlesACharger.length);
   
   articlesACharger.forEach((article, index) => {
-    console.log(`Article à ajouter au formulaire ${index}:`, {
-      id: article.id,
-      produit: article.produit?.designation,
-      Produit: article.Produit?.designation,
-      produitId:article.produitId,
-      produitIdBis: article.produit?.id,
-      produitIdTer: article.Produit?.id,
-      quantite: article.quantite,
-      prixUnitaire: article.prixUnitaire
-    });
     this.ajouterArticleAuFormulaire(article);
   });
 
@@ -402,21 +376,6 @@ this.panier = new Panier({
     this.verifierEtCorrigerEtatFormulaire();
   }, 300);
 
-  console.log('🎉 Panier chargé avec succès:', {
-    panierModel: {
-      totalHT: this.panier.totalHT,
-      totalTTC: this.panier.totalTTC,
-      tva: this.panier.tva,
-      remise: this.panier.remise
-    },
-    getters: {
-      totalPanier: this.totalPanier,
-      totalAPayer: this.totalAPayer,
-      montantTVA: this.montantTVA,
-      montantRemise: this.montantRemise
-    },
-    formArrayLength: this.panierArray.length
-  });
 }
 
 
@@ -601,11 +560,6 @@ this.panier = new Panier({
 
     this.configurerEcouteursArticle(articleGroup);
     this.panierArray.push(articleGroup);
-    console.log('📝 Article ajouté au formulaire:', {
-    produit: article.produit?.designation,
-    totalHT: article.totalHT,
-    totalTTC: article.totalTTC
-  });
   }
 
   // === GESTION DES ÉCOUTEURS D'ARTICLES ===
@@ -620,7 +574,6 @@ this.panier = new Panier({
         takeUntil(this.destroy$)
       )
       .subscribe((newValue) => {
-        console.log(`🔄 Changement ${field}:`, newValue);
         
         // 🔒 Activer le flag anti-boucle : on est déjà en train de recalculer
         // via mettreAJourArticle() + calculerTotaux() + calculerTotals() ci-dessous
@@ -664,14 +617,6 @@ this.panier = new Panier({
           // 7. Forcer la détection de changement
           this.cdr.detectChanges();
           
-          console.log('✅ Article mis à jour:', {
-            produit: article.produit?.designation,
-            field: field,
-            newValue: newValue,
-            totalHT: article.totalHT,
-            totalTTC: article.totalTTC,
-            montantRemise: article.montantRemise
-          });
           
           // 8. Mettre à jour en base si nécessaire
           if (article.id && this.panierBrouillon?.id) {
@@ -688,14 +633,26 @@ this.panier = new Panier({
 
   private onTVAModeChange(tvaParArticle: boolean): void {
     this.panier.tvaParArticle = tvaParArticle;
+    // Mode persisté côté backend
+    this.panier.tvaMode = tvaParArticle ? 'article' : 'globale';
     this.showTVAFields = tvaParArticle;
+    // Passage en global : réinitialiser les taux par ligne (plus de valeurs dormantes)
+    if (!tvaParArticle) {
+      this.panier.articles.forEach(a => (a.tauxTVA = 0));
+    }
     this.mettreAJourEtatChampsTVA();
     this.recalculerPanierComplet();
   }
 
   private onRemiseModeChange(remiseParArticle: boolean): void {
     this.panier.remiseParArticle = remiseParArticle;
+    // Mode persisté côté backend
+    this.panier.remiseMode = remiseParArticle ? 'article' : 'globale';
     this.showRemiseFields = remiseParArticle;
+    // Passage en global : réinitialiser les remises par ligne (plus de valeurs dormantes)
+    if (!remiseParArticle) {
+      this.panier.articles.forEach(a => (a.remise = 0));
+    }
     this.mettreAJourEtatChampsRemise();
     this.recalculerPanierComplet();
   }
@@ -768,7 +725,6 @@ this.panier = new Panier({
 
     this.panier.calculerTotals(); // dernier calcul propre
 
-    console.log('Panier à enregistrer',this.panier);
 
     this.ispanierValid = true;
     this.isFormDisabled = true;
@@ -779,10 +735,6 @@ this.panier = new Panier({
       //this.mettreAJourPanierEnBase();
       this.mettreAJourPanierEnBaseAvecStatut('validé');
     } */
-     console.log('✅ Panier validé', {
-      statut: this.panier.statut,
-      totalTTC: this.panier.totalTTC
-    });
   }
   else {
     console.error('❌ Panier invalide, impossible de valider');
@@ -792,45 +744,15 @@ this.panier = new Panier({
 private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annulé' | 'retourné'): void {
   if (!this.panierBrouillon?.id) return;
 
-  console.log(`🔄 Mise à jour statut panier en BD: ${statut}`);
   
   // 1. Préparer le panier avec TOUS les totaux
   const panierAMettreAJour = this.preparePanierForDB(statut);
   
-  console.log('📤 Panier envoyé à l\'API:', {
-    id: panierAMettreAJour.id,
-    statut: panierAMettreAJour.statut,
-    totalHT: panierAMettreAJour.totalHT,
-    totalTTC: panierAMettreAJour.totalTTC,
-    articles: panierAMettreAJour.articles.map(a => ({
-      id: a.id,
-      produit: a.produit?.designation,
-      quantite: a.quantite,
-      prixUnitaire: a.prixUnitaire,
-      totalHT: a.totalHT,
-      montantRemise: a.montantRemise,
-      montantTVA: a.montantTVA,
-      totalTTC: a.totalTTC
-    }))
-  });
   
   this.panierService.updatePanier(this.panierBrouillon.id, panierAMettreAJour)
     .pipe(takeUntil(this.destroy$))
     .subscribe({
       next: (panierMisAJour) => {
-        console.log(`✅ Statut panier mis à jour en BD: ${panierMisAJour.statut}`);
-        console.log('📥 Panier reçu de l\'API:', {
-          totalHT: panierMisAJour.totalHT,
-          totalTTC: panierMisAJour.totalTTC,
-          articles: panierMisAJour.articles?.map(a => ({
-            id: a.id,
-            produit: a.produit?.designation,
-            totalHT: a.totalHT,
-            montantRemise: a.montantRemise,
-            montantTVA: a.montantTVA,
-            totalTTC: a.totalTTC
-          }))
-        });
         
         // Mettre à jour le panier brouillon local
         this.panierBrouillon = panierMisAJour;
@@ -884,7 +806,6 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annu
   }
 
   private passerEnModeModification(): void {
-  console.log('🔄 Passage en mode modification');
   
   // 1. Changer le statut du panier
   this.panier.statut = 'en_cours';
@@ -904,10 +825,6 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annu
     this.mettreAJourPanierEnBaseAvecStatut('en_cours');
   } */
   
-  console.log('✅ Mode modification activé', {
-    statut: this.panier.statut,
-    isFormDisabled: this.isFormDisabled
-  });
 }
 
   // === UTILITAIRES ===
@@ -919,23 +836,19 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annu
   }
 
  canActivateTvaGlobalMode(): boolean {
-  console.log('🔍 Vérification activation mode TVA global');
   
   // 1. Si le formulaire est désactivé, on ne peut rien changer
   if (this.isFormDisabled) {
-    console.log('❌ Mode global impossible: formulaire désactivé');
     return true; // Désactive le bouton radio
   }
   
   // 2. Si déjà en mode global, on peut rester en global
   if (this.tvaRadioValue === 'global') {
-    console.log('✅ Mode global déjà activé');
     return false; // Bouton NON désactivé
   }
   
   // 3. Si pas d'articles, on peut choisir n'importe quel mode
   if (this.panierArray.length === 0) {
-    console.log('✅ Mode global activable: panier vide');
     return false; // Bouton NON désactivé
   }
   
@@ -959,11 +872,9 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annu
     }
   });
   
-  console.log('📊 Articles avec TVA personnalisée:', articlesAvecTvaPersonnalisee);
   
   // 5. Si AUCUN article n'a de TVA personnalisée, on peut passer en global
   if (articlesAvecTvaPersonnalisee.length === 0) {
-    console.log('✅ Mode global activable: aucun article avec TVA personnalisée');
     return false; // Bouton NON désactivé
   }
   
@@ -976,13 +887,11 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annu
     );
     
     if (tousMemeTaux) {
-      console.log(`✅ Mode global activable: tous les articles ont la même TVA (${premierTaux}%)`);
       return false; // Bouton NON désactivé
     }
   }
   
   // 7. Articles avec TVA différentes > 0, on ne peut PAS passer en global
-  console.log('❌ Mode global impossible: articles avec TVA différentes');
   return true; // Désactive le bouton radio
 }
 
@@ -1049,21 +958,11 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annu
       totalTTC: article.totalTTC || 0
     });
 
-    console.log('📤 Ajout article en BD:', {
-      produit: articleASauvegarder.produit?.designation,
-      totalHT: articleASauvegarder.totalHT,
-      totalTTC: articleASauvegarder.totalTTC
-    });
 
     this.articlesPanierService.create(articleASauvegarder)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (articleSauvegarde) => {
-          console.log('✅ Article ajouté en BD:', {
-            id: articleSauvegarde.id,
-            totalHT: articleSauvegarde.totalHT,
-            totalTTC: articleSauvegarde.totalTTC
-          });
           const index = this.panier.trouverArticleIndex(article.produitId!);
           if (index !== -1) {
             this.panier.articles[index].id = articleSauvegarde.id;
@@ -1076,15 +975,6 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annu
   }
 
  private performArticleUpdate(article: ArticlePanier, index: number): void {
-  console.log('🔧 Mise à jour article:', {
-    id: article.id,
-    produit: article.produit?.designation,
-    remise: article.remise,
-    montantRemise: article.montantRemise,
-    tauxTVA: article.tauxTVA,
-    montantTVA: article.montantTVA,
-    index:index
-  });
 
   if (!this.panierBrouillon?.id || !article.id) return;
 
@@ -1110,17 +1000,11 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annu
     totalTTC: article.totalTTC || 0
   };
 
-  console.log('📤 Données envoyées à l\'API:', articleAMettreAJour);
 
   this.articlesPanierService.update(article.id, articleAMettreAJour as ArticlePanier)
     .pipe(takeUntil(this.destroy$))
     .subscribe({
       next: (updatedArticle) => {
-        console.log('✅ Article mis à jour en base:', {
-          id: updatedArticle.id,
-          remise: updatedArticle.remise,
-          tauxTVA: updatedArticle.tauxTVA
-        });
         this.mettreAJourPanierEnBase();
       },
       error: (err) => {
@@ -1130,7 +1014,6 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annu
           console.error('Détails erreur:', err.error);
         }
         if (err.status === 404) {
-          console.log('📝 Article non trouvé, tentative de création');
           this.ajouterArticleEnBase(article);
         }
       }
@@ -1143,7 +1026,6 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annu
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
-          console.log('Article supprimé de la base');
           this.mettreAJourPanierEnBase();
         },
         error: (err) => console.error('Erreur suppression article:', err)
@@ -1159,7 +1041,6 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annu
   // === MÉTHODES PRÉSENTES DANS L'ANCIEN CODE MAIS MANQUANTES ===
 
   private preparePanierForDB(statut: 'en_cours' | 'validé' | 'annulé' | 'retourné'): Panier {
-  console.log('💾 Préparation du panier pour la base de données, statut:', statut);
   
   // 1. Recréer le panier avec tous les champs
   const panierPourBD = new Panier({
@@ -1211,15 +1092,6 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annu
       totalTTC: article.totalTTC
     });
     
-    console.log('📦 Article préparé pour BD:', {
-      produit: articlePourBD.produit?.designation,
-      quantite: articlePourBD.quantite,
-      prixUnitaire: articlePourBD.prixUnitaire,
-      totalHT: articlePourBD.totalHT,
-      montantRemise: articlePourBD.montantRemise,
-      montantTVA: articlePourBD.montantTVA,
-      totalTTC: articlePourBD.totalTTC
-    });
     
     return articlePourBD;
   });
@@ -1227,19 +1099,6 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annu
   // 3. Recalculer une dernière fois pour être sûr
   panierPourBD.calculerTotals();
   
-  console.log('✅ Panier préparé pour BD:', {
-    statut: panierPourBD.statut,
-    totalHT: panierPourBD.totalHT,
-    totalTTC: panierPourBD.totalTTC,
-    tva: panierPourBD.tva,
-    remise: panierPourBD.remise,
-    articlesCount: panierPourBD.articles.length,
-    articlesTotaux: panierPourBD.articles.map(a => ({
-      produit: a.produit?.designation,
-      totalHT: a.totalHT,
-      totalTTC: a.totalTTC
-    }))
-  });
   
   return panierPourBD;
 }
@@ -1247,18 +1106,11 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annu
   private verifierEtCorrigerEtatFormulaire(): void {
     // Délai pour s'assurer que tout est chargé
     setTimeout(() => {
-      console.log('🔍 Vérification état formulaire:', {
-        isFormDisabled: this.isFormDisabled,
-        panierStatut: this.panier?.statut,
-        panierBrouillonStatut: this.panierBrouillon?.statut,
-        panierArrayLength: this.panierArray?.length
-      });
       
       // Si le formulaire est désactivé mais devrait être activé
       if (this.isFormDisabled && 
           this.panier?.statut === 'en_cours' && 
           this.panierArray?.length > 0) {
-        console.log('⚠️ Correction automatique : formulaire devrait être activé');
         this.isFormDisabled = false;
         this.activerControlesFormulaire();
         this.cdr.detectChanges();
@@ -1267,7 +1119,6 @@ private mettreAJourPanierEnBaseAvecStatut(statut: 'en_cours' | 'validé' | 'annu
       // Si le formulaire est activé mais devrait être désactivé
       if (!this.isFormDisabled && 
           this.panier?.statut === 'validé') {
-        console.log('⚠️ Correction automatique : formulaire devrait être désactivé');
         this.isFormDisabled = true;
         this.desactiverControlesFormulaire();
         this.cdr.detectChanges();

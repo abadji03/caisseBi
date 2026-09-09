@@ -1,4 +1,5 @@
 const db = require('../models');
+const logger = require('../services/logger.js');
 const { verifierAppartenanceStructure } = require('../services/verification.service');
 const Client = db.Client;
 const Magasin = db.Magasin;
@@ -103,9 +104,7 @@ exports.createOrAssociateClient = async (req, res) => {
   try {
     const authUser = req.user;
     const clientIp = HistoriqueService.getClientIp(req);
-    const { magasinIds, ...clientData } = req.body; // Récupérer le solde initial
-
-    console.log('Données client reçues', clientData, magasinIds);
+    const { magasinIds, ...clientData } = req.body; // Récupérer le solde initiallogger.log('client.controller', 'Données client reçues', clientData, magasinIds);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -265,8 +264,7 @@ exports.createOrAssociateClient = async (req, res) => {
     });
     
   } catch (error) {
-    await transaction.rollback();
-    console.error('Erreur création/association client:', error);
+    await transaction.rollback();logger.error('client.controller', 'Erreur création/association client:', error);
     res.status(500).json({
       message: 'Erreur lors de l\'opération sur le client',
       error: error.message
@@ -474,8 +472,7 @@ exports.getClientsByStructure = async (req, res) => {
     });
     
     res.json(clients);
-  } catch (error) {
-    console.error('Erreur:', error);
+  } catch (error) {logger.error('client.controller', 'Erreur:', error);
     res.status(500).json({ message: 'Erreur récupération', error: error.message });
   }
 };
@@ -630,8 +627,7 @@ exports.getClientsByStructureBis = async (req, res) => {
       }
     });
 
-  } catch (error) {
-    console.error("Erreur récupération clients:", error);
+  } catch (error) {logger.error('client.controller', "Erreur récupération clients:", error);
     res.status(500).json({ 
       message: 'Erreur lors de la récupération des clients', 
       error: error.message 
@@ -809,8 +805,7 @@ exports.getClientWithMagasins = async (req, res) => {
     }
 
     res.json(clientJson);
-  } catch (error) {
-    console.error('Erreur getClientWithMagasins:', error);
+  } catch (error) {logger.error('client.controller', 'Erreur getClientWithMagasins:', error);
     res.status(500).json({ message: 'Erreur récupération', error: error.message });
   }
 };
@@ -957,8 +952,7 @@ exports.exportClientsExcel = async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename=clients-${Date.now()}.xlsx`);
     res.send(buffer);
     
-  } catch (error) {
-    console.error('❌ Erreur export Excel clients:', error);
+  } catch (error) {logger.error('client.controller', '❌ Erreur export Excel clients:', error);
     
     if (req.user) {
       await HistoriqueService.enregistrerAction(

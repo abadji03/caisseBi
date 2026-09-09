@@ -1,3 +1,4 @@
+const logger = require('../services/logger.js');
 
 
 module.exports = (sequelize, DataTypes) => {
@@ -30,6 +31,12 @@ module.exports = (sequelize, DataTypes) => {
     magasinId: {
       type: DataTypes.INTEGER,
       allowNull: false,
+    },
+    // 🔹 Agent ayant généré la facture (filtre "mes ventes" côté caissier).
+    // Renseigné à la création ; backfillé depuis le bon lié pour l'existant.
+    agentId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
     },
     bonId: {
       type: DataTypes.INTEGER,
@@ -129,17 +136,21 @@ module.exports = (sequelize, DataTypes) => {
     hooks: {
       beforeValidate: async (facture, options) => {
         if (!facture.numeroE) {
+          const { Sequence } = require('../models');
+          const SequenceService = require('../services/sequence.service');
           try {
-            const count = await sequelize.models.Facture.count({
-              where: { code_structure: facture.code_structure },
-              transaction: options.transaction
-            });
-            facture.numeroE = count + 1;
-            facture.numero_facture = `FAC-${facture.code_structure}-${String(facture.numeroE).padStart(6, '0')}`;
+            // Numérotation atomique (SELECT ... FOR UPDATE) + format court
+            // FAC-26-0013 (remplace FAC-<code_structure>-0000001, trop long).
+            const { numeroE, numero } = await SequenceService.getNextNumeroFormate(
+              sequelize, Sequence, facture.code_structure, 'facture', 'FAC',
+              options.transaction
+            );
+            facture.numeroE = numeroE;
+            facture.numero_facture = numero;
           } catch (error) {
-            console.error('❌ Hook error:', error);
+logger.error('facture.model', '❌ Hook error:', error);
             facture.numeroE = 1;
-            facture.numero_facture = `FAC-${facture.code_structure}-000001`;
+            facture.numero_facture = `FAC-` + String(new Date().getFullYear() % 100).padStart(2, '0') + `-0001`;
           }
         }
       }

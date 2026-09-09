@@ -1,7 +1,9 @@
 /**
  * Tests — middleware requirePermission (RBAC backend)
- * Verrouille le controle des permissions cote serveur : le payload JWT
- * (req.user.roles[].permissions[].nom) est la source de verite.
+ * Verrouille le controle des permissions cote serveur : les permissions
+ * rechargees depuis la base (req.user.roles[].permissions[].code) sont la
+ * source de verite. Les libelles historiques restent acceptes en entree
+ * (transitoire) mais la reponse 403 expose les CODES requis.
  */
 const { requirePermission, authenticateToken } = require('../middlewares/auth.middleware');
 
@@ -38,8 +40,9 @@ describe('requirePermission', () => {
 
     expect(next).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(403);
+    // Le middleware normalise les libelles en codes stables
     expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ required: ['Gérer les utilisateurs'] })
+      expect.objectContaining({ required: ['users.manage'] })
     );
   });
 

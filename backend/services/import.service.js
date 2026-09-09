@@ -1,3 +1,4 @@
+const logger = require('./logger.js');
 // services/import.service.js
 const db = require('../models');
 const ExcelJS = require('exceljs');
@@ -688,8 +689,7 @@ class ImportService {
           date: new Date().toISOString()
         }
       });
-    } catch (error) {
-      console.error('Erreur enregistrement log:', error);
+    } catch (error) {logger.error('import.service', 'Erreur enregistrement log:', error);
     }
   }
 

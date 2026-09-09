@@ -913,14 +913,12 @@ export class RapportsVentesComponent implements OnInit, OnDestroy,AfterViewInit 
     }
 
 
-    console.log('📤 Paramètres envoyés:', filters); // AJOUTER CE LOG
 
     this.isLoading = true;
     this.kpiService.getDetailsVendeur(vendeurId, filters)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (details) => {
-          console.log('Détails vendeur depuis API', details)
           this.selectedVendeurDetails = details.vendeur;
           //console.log('Détails vendeur depuis selectedVendeurDetails', this.selectedVendeurDetails);
           this.vendeurStats = details;
@@ -936,7 +934,6 @@ export class RapportsVentesComponent implements OnInit, OnDestroy,AfterViewInit 
           });
         },
         error: (err) => {
-          this.toastr.error('Erreur lors du chargement des détails du vendeur');
           console.error(err);
           this.isLoading = false;
         }
@@ -1078,7 +1075,6 @@ async impression(): Promise<void> {
     const pdfBlob = await this.pdfMakerService.generateRapportVentePDF(params).toPromise();
 
     if(!pdfBlob){
-      console.log('Echec appel API depuis backend');
       return;
     }
 
@@ -1135,7 +1131,6 @@ async exportToPDF(): Promise<void> {
     // Appel API
     const pdfBlob = await this.pdfMakerService.generateRapportVentePDF(params).toPromise();
     if(!pdfBlob){
-      console.log('Echec appel API depuis backend');
       return;
     }
     // Progression rapide vers 100%
@@ -1189,7 +1184,6 @@ private construireFiltresPDF(): any {
     params.comparaisonData = JSON.stringify(this.comparaisonData);
   }
 
-  console.log('📄 Génération PDF avec comparaison:', params);
 
   // Nettoyer les undefined
   return Object.fromEntries(
@@ -1269,13 +1263,11 @@ async exportToExcel(): Promise<void> {
     // Construire les paramètres (réutiliser la même méthode que pour le PDF)
     const params = this.construireFiltresExcel();
 
-    console.log('📊 Export Excel avec paramètres:', params);
 
     // Appel API
     const excelBlob = await this.kpiService.exportRapportExcel(params).toPromise();
 
     if(!excelBlob){
-      console.log('Echec appel API');
       return;
     }
 

@@ -10,12 +10,13 @@ import { AuthService } from '../services/auth.service';
  * Intercepteur HTTP global :
  *  - ajoute le token JWT aux requêtes
  *  - 401 : session expirée/invalide → nettoyage + redirection /login
- *  - 403 : droits insuffisants → notification (l'utilisateur reste où il est)
+ *  - 403 : NOTIFIÉ UNIQUEMENT PAR HttpErrorInterceptor (dédupliqué par
+ *    endpoint, cooldown 10 min) — ne pas toaste ici, sinon chaque
+ *    chargement de page sans permission génère un toast.
  */
 export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
-  const toastr = inject(ToastrService);
   const token = authService.getToken();
 
   if (token) {
@@ -30,8 +31,6 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
     catchError((err: HttpErrorResponse) => {
       if (err.status === 401 && !router.url.startsWith('/login')) {
         authService.sessionExpired();
-      } else if (err.status === 403) {
-        toastr.error('Vous n\'avez pas les droits nécessaires pour cette action.', 'Accès refusé');
       }
       return throwError(() => err);
     })

@@ -81,7 +81,6 @@ export class AnalyseEcartsComponent implements OnInit, OnDestroy {
     .subscribe({
       next: (response) => {
 
-        console.log('Résults analyse des écarts',response)
 
         this.analyses = response.analyses;
         this.statsGlobales = response.statsGlobales;
@@ -94,7 +93,6 @@ export class AnalyseEcartsComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('Erreur chargement analyses:', err);
-        this.toastr.error('Erreur lors du chargement des analyses');
       }
     });
   }

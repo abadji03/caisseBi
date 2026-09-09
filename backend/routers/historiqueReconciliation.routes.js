@@ -1,5 +1,7 @@
 /* const express = require("express");
 const router = express.Router();
+const authenticateToken = require('../middlewares/auth.middleware');
+const { requireStructureAccess } = require('../middlewares/auth.middleware');
 const ctrl = require("../controllers/historiqueReconciliation.controller");
 
 router.post("/", ctrl.create);
@@ -10,6 +12,8 @@ module.exports = router;
 
 const express = require('express');
 const router = express.Router();
+const authenticateToken = require('../middlewares/auth.middleware');
+const { requireStructureAccess } = require('../middlewares/auth.middleware');
 const ctrl = require('../controllers/historiqueReconciliation.controller');
 
 /**
@@ -45,7 +49,7 @@ const ctrl = require('../controllers/historiqueReconciliation.controller');
  *         description: Liste des historiques
  */
 router.get('/reconciliation/:reconciliationId', ctrl.findByReconciliation);
-router.get('/structure/:code_structure', ctrl.findByStructure);
+router.get('/structure/:code_structure', authenticateToken, requireStructureAccess, ctrl.findByStructure);
 router.get('/:id', ctrl.findById);
 router.put('/:id', ctrl.update);
 router.delete('/:id', ctrl.remove);

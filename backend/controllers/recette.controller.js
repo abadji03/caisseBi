@@ -1,4 +1,5 @@
 const db = require('../models');
+const logger = require('../services/logger.js');
 const Recette = db.Recette;
 const Magasin = db.Magasin;
 const User = db.Users;
@@ -31,15 +32,11 @@ exports.createRecette = async (req, res) => {
       statutRecette,
       code_structure,
       date,
-    } = req.body;
-
-    console.log('Données recette reçu : ',req.body);
+    } = req.body;logger.log('recette.controller', 'Données recette reçu : ',req.body);
     let receipt = null;
     if (req.file) {
       receipt = BASE_URL + req.file.filename;
-    }
-
-    console.log('Début création recette');
+    }logger.log('recette.controller', 'Début création recette');
     const recette = await Recette.create({
       categoryId,
       montant,
@@ -52,9 +49,7 @@ exports.createRecette = async (req, res) => {
       agentId,
       code_structure,
       date,
-    });
-
-    console.log('Fin création recette',recette);
+    });logger.log('recette.controller', 'Fin création recette',recette);
 
         // ENREGISTRER L'HISTORIQUE DE CRÉATION
     await HistoriqueService.enregistrerAction(
@@ -135,8 +130,7 @@ exports.getByStructure = async (req, res) => {
     });
 
     res.json(recettes);
-  } catch (error) {
-    console.error("Erreur récupération recettes:", error);
+  } catch (error) {logger.error('recette.controller', "Erreur récupération recettes:", error);
     res.status(500).json({
       message: "Erreur de récupération des recettes",
       error: error.message
@@ -382,9 +376,7 @@ exports.getByStructureBis = async (req, res) => {
     });
 
     // Calcul du nombre total de pages
-    const totalPages = Math.ceil(count / limitInt);
-
-    console.log(`📦 Recettes: ${count} trouvées, page ${page}/${totalPages}`);
+    const totalPages = Math.ceil(count / limitInt);logger.log('recette.controller', `📦 Recettes: ${count} trouvées, page ${page}/${totalPages}`);
 
     // Formater les statistiques
     const statistiques = {
@@ -473,8 +465,7 @@ exports.getByStructureBis = async (req, res) => {
       }
     });
 
-  } catch (error) {
-    console.error("Erreur récupération recettes:", error);
+  } catch (error) {logger.error('recette.controller', "Erreur récupération recettes:", error);
     res.status(500).json({
       message: "Erreur de récupération des recettes",
       error: error.message

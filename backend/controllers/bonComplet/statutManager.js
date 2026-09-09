@@ -1,4 +1,5 @@
 const db = require('../../models');
+const logger = require('../../services/logger.js');
 
 class StatutManager {
   
@@ -87,8 +88,7 @@ class StatutManager {
    // Déterminer si l'entité doit être mise à jour selon le type de bon et le statut
     const doitMettreAJour = this.determinerSiMiseAJourNecessaire(bon, typeEntite);
     
-    if (!doitMettreAJour) {
-      console.log(`⏭️ Pas de mise à jour ${typeEntite} nécessaire pour ${bon.type} avec statut ${bon.statutBon}`);
+    if (!doitMettreAJour) {logger.log('statutManager', `⏭️ Pas de mise à jour ${typeEntite} nécessaire pour ${bon.type} avec statut ${bon.statutBon}`);
       return;
     }
 
@@ -141,9 +141,7 @@ class StatutManager {
     const soldeActuel = this.safeNumber(client.solde);
 
     let nouveauSolde = soldeActuel;
-    let operation = '';
-
-    console.log('🔢 Mise à jour client - Calculs:', {
+    let operation = '';logger.log('statutManager', '🔢 Mise à jour client - Calculs:', {
       montant,
       soldeActuel,
       typeBon: bon.type,
@@ -157,34 +155,29 @@ class StatutManager {
     if (bon.statutBon === 'annulé') {
       // ANNULATION: Diminuer la dette (remboursement)
       nouveauSolde = soldeActuel - montant;
-      operation = 'annulation';
-      console.log(`🔁 Annulation bon ${bon.type} - Diminution dette: ${montant}`);
+      operation = 'annulation';logger.log('statutManager', `🔁 Annulation bon ${bon.type} - Diminution dette: ${montant}`);
     }
     else if (bon.type === 'retour' || bon.type === 'avoir') {
       
       if (bon.statutBon === 'validé') {
         nouveauSolde = soldeActuel - montant;
-        operation = 'retour (avoir)';
-        console.log(`↩️ Retour client validé - Création avoir: ${montant}`);
+        operation = 'retour (avoir)';logger.log('statutManager', `↩️ Retour client validé - Création avoir: ${montant}`);
       } else if (bon.statutBon === 'annulé') {
         // Annulation d'un retour = annuler l'avoir
         nouveauSolde = soldeActuel + montant;
-        operation = 'annulation retour';
-        console.log(`🚫 Annulation retour - Suppression avoir: ${montant}`);
+        operation = 'annulation retour';logger.log('statutManager', `🚫 Annulation retour - Suppression avoir: ${montant}`);
       }
     } 
     else if (bon.type === 'vente') {
       if (bon.statutBon === 'validé') {
         //VENTE VALIDÉE: Augmenter la dette
         nouveauSolde = soldeActuel + montant;
-        operation = 'vente validée';
-        console.log(`➕ ${bon.type} validé(e) - Augmentation dette: ${montant}`);
+        operation = 'vente validée';logger.log('statutManager', `➕ ${bon.type} validé(e) - Augmentation dette: ${montant}`);
       }
       else if (bon.statutBon === 'retourné') {
         //VENTE: Diminuer la dette
         nouveauSolde = soldeActuel - montant;
-        operation = 'retour sur vente';
-        console.log(`↩️ ${bon.type} retourné - Réduction dette: ${montant}`);
+        operation = 'retour sur vente';logger.log('statutManager', `↩️ ${bon.type} retourné - Réduction dette: ${montant}`);
       }
 
     }
@@ -192,31 +185,26 @@ class StatutManager {
       if (bon.statutBon === 'validé') {
         // COMMANDE VALIDÉE
         nouveauSolde = soldeActuel;
-        operation = 'commande/vente validée';
-        console.log(`➕ ${bon.type} validé(e) - pas d'impact sur la dette`);
+        operation = 'commande/vente validée';logger.log('statutManager', `➕ ${bon.type} validé(e) - pas d'impact sur la dette`);
       }
 
       else if (bon.statutBon === 'livré') {
         // COMMANDEVALIDÉE: Augmenter la dette
         nouveauSolde = soldeActuel + montant;
-        operation = 'commande/vente livré';
-        console.log(`➕ ${bon.type} livré(e) - Augmentation dette: ${montant}`);
+        operation = 'commande/vente livré';logger.log('statutManager', `➕ ${bon.type} livré(e) - Augmentation dette: ${montant}`);
       }
 
       else if (bon.statutBon === 'retourné') {
         // RETOUR SUR COMMANDE: Diminuer la dette
         nouveauSolde = soldeActuel - montant;
-        operation = 'retour sur vente/commande';
-        console.log(`↩️ ${bon.type} retourné - Réduction dette: ${montant}`);
+        operation = 'retour sur vente/commande';logger.log('statutManager', `↩️ ${bon.type} retourné - Réduction dette: ${montant}`);
       }
     }
      // Appliquer la mise à jour
     await client.update({
       solde: nouveauSolde,
       dateMiseAJour: new Date()
-    }, { transaction });
-
-    console.log('✅ Client mis à jour:', {
+    }, { transaction });logger.log('statutManager', '✅ Client mis à jour:', {
       ancienSolde: soldeActuel,
       nouveauSolde: nouveauSolde,
       variation: nouveauSolde - soldeActuel,
@@ -233,9 +221,7 @@ class StatutManager {
 
     // Utiliser safeNumber pour toutes les valeurs
     const montant = this.safeNumber(bon.netAPayer) || this.safeNumber(bon.montantTotal) || this.safeNumber(bon.montantAvoir);
-    const montantAPayerActuel = this.safeNumber(fournisseur.montantAPayer);
-
-    console.log('🔢 Mise à jour fournisseur - Calculs:', {
+    const montantAPayerActuel = this.safeNumber(fournisseur.montantAPayer);logger.log('statutManager', '🔢 Mise à jour fournisseur - Calculs:', {
       montant,
       montantAPayerActuel,
       typeBon: bon.type,
@@ -252,20 +238,17 @@ class StatutManager {
         if (bon.statutBon === 'validé') {
           // LIVRAISON FOURNISSEUR VALIDÉE: Augmenter la dette
           nouveauMontantAPayer = montantAPayerActuel + montant;
-          operation = 'livraison validée';
-          console.log(`📦 Livraison fournisseur validée - Augmentation dette: ${montant}`);
+          operation = 'livraison validée';logger.log('statutManager', `📦 Livraison fournisseur validée - Augmentation dette: ${montant}`);
         }
         else if (bon.statutBon === 'annulé') {
           // ANNULATION LIVRAISON: Diminuer la dette
           nouveauMontantAPayer = montantAPayerActuel - montant;
-          operation = 'annulation livraison';
-          console.log(`🚫 Annulation livraison - Diminution dette: ${montant}`);
+          operation = 'annulation livraison';logger.log('statutManager', `🚫 Annulation livraison - Diminution dette: ${montant}`);
         }
         else if (bon.statutBon === 'retourné') {
           // RETOUR LIVRAISON: Diminuer la dette
           nouveauMontantAPayer = montantAPayerActuel - montant;
-          operation = 'retour livraison';
-          console.log(`↩️ Retour livraison - Diminution dette: ${montant}`);
+          operation = 'retour livraison';logger.log('statutManager', `↩️ Retour livraison - Diminution dette: ${montant}`);
         }
     }
     else if (bon.type === 'retour' || bon.type === 'avoir') {
@@ -273,14 +256,12 @@ class StatutManager {
       if (bon.statutBon === 'validé') {
         // RETOUR FOURNISSEUR VALIDÉ: Diminuer la dette (avoir)
         nouveauMontantAPayer = montantAPayerActuel - montant;
-        operation = 'retour fournisseur';
-        console.log(`↪️ Retour fournisseur validé - Diminution dette: ${montant}`);
+        operation = 'retour fournisseur';logger.log('statutManager', `↪️ Retour fournisseur validé - Diminution dette: ${montant}`);
       }
       else if (bon.statutBon === 'annulé') {
         // ANNULATION RETOUR FOURNISSEUR: Ré-augmenter la dette
         nouveauMontantAPayer = montantAPayerActuel + montant;
-        operation = 'annulation retour fournisseur';
-        console.log(`🚫 Annulation retour fournisseur - Ré-augmentation dette: ${montant}`);
+        operation = 'annulation retour fournisseur';logger.log('statutManager', `🚫 Annulation retour fournisseur - Ré-augmentation dette: ${montant}`);
       }
     } 
     // S'assurer que le montant n'est pas négatif
@@ -289,9 +270,7 @@ class StatutManager {
     await fournisseur.update({
       montantAPayer: nouveauMontantAPayer,
       dateMiseAJour: new Date()
-    }, { transaction });
-
-    console.log('Fournisseur mis à jour:', {
+    }, { transaction });logger.log('statutManager', 'Fournisseur mis à jour:', {
       ancienMontant: montantAPayerActuel,
       nouveauMontant: nouveauMontantAPayer,
       variation: nouveauMontantAPayer - montantAPayerActuel,
@@ -315,8 +294,7 @@ async mettreAJourClient(bon, clientId, transaction) {
 
   // Utiliser le magasinId du bon (important pour la nouvelle architecture)
   const magasinId = bon.magasinId;
-  if (!magasinId) {
-    console.warn(`⚠️ Pas de magasinId sur le bon ${bon.id}, impossible de mettre à jour le solde`);
+  if (!magasinId) {logger.warn('statutManager', `⚠️ Pas de magasinId sur le bon ${bon.id}, impossible de mettre à jour le solde`);
     return;
   }
 
@@ -326,15 +304,12 @@ async mettreAJourClient(bon, clientId, transaction) {
     transaction
   });
 
-  if (!relationClientMagasin) {
-    console.warn(`⚠️ Relation client-magasin non trouvée pour client ${clientId} et magasin ${magasinId}`);
+  if (!relationClientMagasin) {logger.warn('statutManager', `⚠️ Relation client-magasin non trouvée pour client ${clientId} et magasin ${magasinId}`);
     return;
   }
 
   const montant = this.safeNumber(bon.netAPayer) || this.safeNumber(bon.montantTotal) || this.safeNumber(bon.montantAvoir);
-  const soldeActuel = this.safeNumber(relationClientMagasin.solde);
-
-  console.log('🔢 Mise à jour client par magasin - Calculs:', {
+  const soldeActuel = this.safeNumber(relationClientMagasin.solde);logger.log('statutManager', '🔢 Mise à jour client par magasin - Calculs:', {
     montant,
     soldeActuel,
     magasinId,
@@ -400,9 +375,7 @@ async mettreAJourClient(bon, clientId, transaction) {
   await client.update({
     solde: tousSoldes,
     dateMiseAJour: new Date()
-  }, { transaction });
-
-  console.log('✅ Client mis à jour:', {
+  }, { transaction });logger.log('statutManager', '✅ Client mis à jour:', {
     ancienSoldeParMagasin: soldeActuel,
     nouveauSoldeParMagasin: nouveauSolde,
     soldeTotalClient: tousSoldes,
@@ -425,8 +398,7 @@ async mettreAJourFournisseur(bon, fournisseurId, transaction) {
 
   // Utiliser le magasinId du bon
   const magasinId = bon.magasinId;
-  if (!magasinId) {
-    console.warn(`⚠️ Pas de magasinId sur le bon ${bon.id}, impossible de mettre à jour le solde`);
+  if (!magasinId) {logger.warn('statutManager', `⚠️ Pas de magasinId sur le bon ${bon.id}, impossible de mettre à jour le solde`);
     return;
   }
 
@@ -436,15 +408,12 @@ async mettreAJourFournisseur(bon, fournisseurId, transaction) {
     transaction
   });
 
-  if (!relationFournisseurMagasin) {
-    console.warn(`⚠️ Relation fournisseur-magasin non trouvée pour fournisseur ${fournisseurId} et magasin ${magasinId}`);
+  if (!relationFournisseurMagasin) {logger.warn('statutManager', `⚠️ Relation fournisseur-magasin non trouvée pour fournisseur ${fournisseurId} et magasin ${magasinId}`);
     return;
   }
 
   const montant = this.safeNumber(bon.netAPayer) || this.safeNumber(bon.montantTotal) || this.safeNumber(bon.montantAvoir);
-  const soldeActuel = this.safeNumber(relationFournisseurMagasin.solde);
-
-  console.log('🔢 Mise à jour fournisseur par magasin - Calculs:', {
+  const soldeActuel = this.safeNumber(relationFournisseurMagasin.solde);logger.log('statutManager', '🔢 Mise à jour fournisseur par magasin - Calculs:', {
     montant,
     soldeActuel,
     magasinId,
@@ -495,9 +464,7 @@ async mettreAJourFournisseur(bon, fournisseurId, transaction) {
   await fournisseur.update({
     montantAPayer: tousSoldes,
     dateMiseAJour: new Date()
-  }, { transaction });
-
-  console.log('✅ Fournisseur mis à jour:', {
+  }, { transaction });logger.log('statutManager', '✅ Fournisseur mis à jour:', {
     ancienSoldeParMagasin: soldeActuel,
     nouveauSoldeParMagasin: nouveauSolde,
     soldeTotalFournisseur: tousSoldes,
@@ -513,8 +480,7 @@ async mettreAJourFournisseur(bon, fournisseurId, transaction) {
 async mettreAJourClientApresRegelement(paiement, clientId, transaction) {
   // Récupérer la relation client-magasin
   const magasinId = paiement.magasinId;
-  if (!magasinId) {
-    console.warn(`⚠️ Pas de magasinId sur le paiement, impossible de mettre à jour`);
+  if (!magasinId) {logger.warn('statutManager', `⚠️ Pas de magasinId sur le paiement, impossible de mettre à jour`);
     return;
   }
 
@@ -523,8 +489,7 @@ async mettreAJourClientApresRegelement(paiement, clientId, transaction) {
     transaction
   });
 
-  if (!relationClientMagasin) {
-    console.warn(`⚠️ Relation client-magasin non trouvée pour client ${clientId} et magasin ${magasinId}`);
+  if (!relationClientMagasin) {logger.warn('statutManager', `⚠️ Relation client-magasin non trouvée pour client ${clientId} et magasin ${magasinId}`);
     return;
   }
 
@@ -534,8 +499,7 @@ async mettreAJourClientApresRegelement(paiement, clientId, transaction) {
   // Paiement = diminution de la dette
   const nouveauSolde = soldeActuel - montant;
   
-  if (nouveauSolde < 0) {
-    console.warn(`Attention: Le solde du client (${clientId}) devient négatif après le paiement.`);
+  if (nouveauSolde < 0) {logger.warn('statutManager', `Attention: Le solde du client (${clientId}) devient négatif après le paiement.`);
   }
   
   await relationClientMagasin.update({
@@ -553,9 +517,7 @@ async mettreAJourClientApresRegelement(paiement, clientId, transaction) {
       solde: tousSoldes,
       dateMiseAJour: new Date()
     }, { transaction });
-  }
-
-  console.log('✅ Client - Règlement traité par magasin:', {
+  }logger.log('statutManager', '✅ Client - Règlement traité par magasin:', {
     ancienSoldeParMagasin: soldeActuel,
     montantPaye: montant,
     nouveauSoldeParMagasin: nouveauSolde,
@@ -569,8 +531,7 @@ async mettreAJourClientApresRegelement(paiement, clientId, transaction) {
 async mettreAJourFournisseurApresVersement(paiement, fournisseurId, transaction) {
   // Récupérer la relation fournisseur-magasin
   const magasinId = paiement.magasinId;
-  if (!magasinId) {
-    console.warn(`⚠️ Pas de magasinId sur le paiement, impossible de mettre à jour`);
+  if (!magasinId) {logger.warn('statutManager', `⚠️ Pas de magasinId sur le paiement, impossible de mettre à jour`);
     return;
   }
 
@@ -579,8 +540,7 @@ async mettreAJourFournisseurApresVersement(paiement, fournisseurId, transaction)
     transaction
   });
 
-  if (!relationFournisseurMagasin) {
-    console.warn(`⚠️ Relation fournisseur-magasin non trouvée pour fournisseur ${fournisseurId} et magasin ${magasinId}`);
+  if (!relationFournisseurMagasin) {logger.warn('statutManager', `⚠️ Relation fournisseur-magasin non trouvée pour fournisseur ${fournisseurId} et magasin ${magasinId}`);
     return;
   }
 
@@ -590,8 +550,7 @@ async mettreAJourFournisseurApresVersement(paiement, fournisseurId, transaction)
   // Paiement = diminution de la dette
   const nouveauSolde = soldeActuel - montant;
   
-  if (nouveauSolde < 0) {
-    console.warn(`Attention: Le solde du fournisseur (${fournisseurId}) devient négatif après le versement.`);
+  if (nouveauSolde < 0) {logger.warn('statutManager', `Attention: Le solde du fournisseur (${fournisseurId}) devient négatif après le versement.`);
   }
   
   await relationFournisseurMagasin.update({
@@ -609,9 +568,7 @@ async mettreAJourFournisseurApresVersement(paiement, fournisseurId, transaction)
       montantAPayer: tousSoldes,
       dateMiseAJour: new Date()
     }, { transaction });
-  }
-
-  console.log('✅ Fournisseur - Versement traité par magasin:', {
+  }logger.log('statutManager', '✅ Fournisseur - Versement traité par magasin:', {
     ancienSoldeParMagasin: soldeActuel,
     montantPaye: montant,
     nouveauSoldeParMagasin: nouveauSolde,
@@ -642,9 +599,7 @@ async mettreAJourFournisseurApresVersement(paiement, fournisseurId, transaction)
 
     // Utiliser safeNumber pour toutes les valeurs
     const montant = this.safeNumber(paiement.montant) || 0;
-    const soldeActuel = this.safeNumber(client.solde);
-
-    console.log('Mise à jour client - Calculs:', {
+    const soldeActuel = this.safeNumber(client.solde);logger.log('statutManager', 'Mise à jour client - Calculs:', {
       montant,
       soldeActuel,
       methodePaiement: paiement.methodePaiement,
@@ -654,17 +609,12 @@ async mettreAJourFournisseurApresVersement(paiement, fournisseurId, transaction)
     
     // Paiement = diminution de la dette
     const nouveauSolde = soldeActuel - montant;
-    if(nouveauSolde < 0){
-      console.warn(`Attention: Le solde du client (${clientId}) devient négatif après le paiement.`);
-    }
-    
-    console.log(`Le solde du client (${clientId}) après paiement sera de ${nouveauSolde}.`);
+    if(nouveauSolde < 0){logger.warn('statutManager', `Attention: Le solde du client (${clientId}) devient négatif après le paiement.`);
+    }logger.log('statutManager', `Le solde du client (${clientId}) après paiement sera de ${nouveauSolde}.`);
     await client.update({
       solde: nouveauSolde,
       dateMiseAJour: new Date()
-    }, { transaction });
-
-    console.log('Client - Réglement traité:', {
+    }, { transaction });logger.log('statutManager', 'Client - Réglement traité:', {
       ancienSolde: soldeActuel,
       montantCommande: montant,
       nouveauSolde: nouveauSolde
@@ -682,9 +632,7 @@ async mettreAJourFournisseurApresVersement(paiement, fournisseurId, transaction)
 
     // Utiliser safeNumber pour toutes les valeurs
     const montant = this.safeNumber(paiement.montant) || 0;
-    const montantAPayerActuel = this.safeNumber(fournisseur.montantAPayer);
-
-    console.log('Mise à jour fournisseur - Calculs:', {
+    const montantAPayerActuel = this.safeNumber(fournisseur.montantAPayer);logger.log('statutManager', 'Mise à jour fournisseur - Calculs:', {
       montant,
       montantAPayerActuel,
       montantAPayerDB: fournisseur.montantAPayer
@@ -693,17 +641,12 @@ async mettreAJourFournisseurApresVersement(paiement, fournisseurId, transaction)
     // Paiement = diminution de la dette
     const nouveauMontantAPayer = montantAPayerActuel - montant;
     
-    if(nouveauMontantAPayer < 0){
-      console.warn(`Attention: Le montant à payer du fournisseur (${fournisseurId}) devient négatif après le versement.`);
-    }
-    
-    console.log(`Le montant à payer du fournisseur (${fournisseurId}) après versement sera de ${nouveauMontantAPayer}.`); 
+    if(nouveauMontantAPayer < 0){logger.warn('statutManager', `Attention: Le montant à payer du fournisseur (${fournisseurId}) devient négatif après le versement.`);
+    }logger.log('statutManager', `Le montant à payer du fournisseur (${fournisseurId}) après versement sera de ${nouveauMontantAPayer}.`); 
     await fournisseur.update({
       montantAPayer: nouveauMontantAPayer,
       dateMiseAJour: new Date()
-    }, { transaction });
-
-    console.log('Fournisseur - Versement traitée:', {
+    }, { transaction });logger.log('statutManager', 'Fournisseur - Versement traitée:', {
       ancienMontant: montantAPayerActuel,
       montantAjoute: montant,
       nouveauMontant: nouveauMontantAPayer
@@ -715,8 +658,7 @@ async mettreAJourFournisseurApresVersement(paiement, fournisseurId, transaction)
   /**
    * Méthode utilitaire pour debugger les types de données
    */
-  debugTypes(bon, entite, nomEntite) {
-    console.log('🐛 DEBUG Types de données:', {
+  debugTypes(bon, entite, nomEntite) {logger.log('statutManager', '🐛 DEBUG Types de données:', {
       nomEntite,
       // Données du bon
       resteAPayer: { valeur: bon.resteAPayer, type: typeof bon.resteAPayer },

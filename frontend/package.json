@@ -49,6 +49,7 @@
     "@angular/cli": "^17.3.12",
     "@angular/compiler-cli": "^17.3.12",
     "@angular/localize": "^17.3.12",
+    "@angular/platform-browser-dynamic": "^17.3.12",
     "@compodoc/compodoc": "^1.1.26",
     "@types/file-saver": "^2.0.7",
     "@types/jasmine": "~5.1.0",

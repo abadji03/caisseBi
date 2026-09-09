@@ -1,3 +1,4 @@
+const logger = require('../services/logger.js');
 // controllers/paiementController.js
 const db = require('../models');
 const Paiement = db.Paiement;
@@ -75,8 +76,7 @@ exports.create = async (req, res) => {
   } catch (error) {
     if (transaction && !transaction.finished) {
       await transaction.rollback();
-    }
-    console.error('Erreur création paiement:', error);
+    }logger.error('paiement.controller', 'Erreur création paiement:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -177,8 +177,7 @@ try {
           paiementId: paiement.id,
           changes: changes
         }
-      );
-      console.log('Paiement mis à jour avec:', updatedData);
+      );logger.log('paiement.controller', 'Paiement mis à jour avec:', updatedData);
       res.json({ message: 'Paiement mis à jour', paiement });
     } catch (error) {
       res.status(500).json({ message: 'Erreur lors de la mise à jour', error: error.message });
@@ -561,9 +560,7 @@ exports.getPaiementsClientByStructureBis = async (req, res) => {
       const paie = paiement.toJSON();
       paie.fichierUrl = paie.fichier ? baseUrl + paie.fichier : null;
       return paie;
-    });
-
-    console.log(`📦 Paiements: ${count} trouvés, page ${page}/${totalPages}`);
+    });logger.log('paiement.controller', `📦 Paiements: ${count} trouvés, page ${page}/${totalPages}`);
 
     res.status(200).json({
       items: paiementsWithFichierUrl,
@@ -577,8 +574,7 @@ exports.getPaiementsClientByStructureBis = async (req, res) => {
       }
     });
 
-  } catch (error) {
-    console.error("Erreur récupération paiements:", error);
+  } catch (error) {logger.error('paiement.controller', "Erreur récupération paiements:", error);
     res.status(500).json({ 
       message: 'Erreur lors de la récupération des paiements', 
       error: error.message 
@@ -695,9 +691,7 @@ exports.getPaiementsFournisseurByStructureBis = async (req, res) => {
       const paie = paiement.toJSON();
       paie.fichierUrl = paie.fichier ? baseUrl + paie.fichier : null;
       return paie;
-    });
-
-    console.log(`📦 Paiements fournisseurs: ${count} trouvés, page ${page}/${totalPages}`);
+    });logger.log('paiement.controller', `📦 Paiements fournisseurs: ${count} trouvés, page ${page}/${totalPages}`);
 
     res.status(200).json({
       items: paiementsWithFichierUrl,
@@ -711,8 +705,7 @@ exports.getPaiementsFournisseurByStructureBis = async (req, res) => {
       }
     });
 
-  } catch (error) {
-    console.error("Erreur récupération paiements fournisseurs:", error);
+  } catch (error) {logger.error('paiement.controller', "Erreur récupération paiements fournisseurs:", error);
     res.status(500).json({ 
       message: 'Erreur lors de la récupération des paiements', 
       error: error.message 

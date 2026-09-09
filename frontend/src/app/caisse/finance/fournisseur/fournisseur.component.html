@@ -107,50 +107,37 @@
               <!-- Barre de recherche et filtres -->
               <div class="d-flex justify-content-between mb-3">
                 <div class="d-flex gap-2">
-                  <div class="input-group" style="width: 300px;">
-                    <span class="input-group-text"><i class="bi bi-search"></i></span>
-                    <input
-                      type="text"
-                      class="form-control"
-                      placeholder="Rechercher un fournisseur..."
-                      [ngModel]="fournisseursFilters.search"
-                      (ngModelChange)="onFournisseursSearchChange($event)"
-                    />
-                  </div>
-                  
+                  <app-table-search
+                    placeholder="Rechercher un fournisseur..."
+                    [value]="fournisseursFilters.search"
+                    (searchChange)="onFournisseursSearchChange($event)"
+                  />
+
                   <select class="form-select" style="width: 150px;" 
                           [ngModel]="fournisseursFilters.statut" 
-                          (ngModelChange)="onFournisseursStatutChange($event)">
+                          (ngModelChange)="onFournisseursStatutChange($event)"
+                          aria-label="Filtrer par statut">
                     <option *ngFor="let opt of fournisseurStatutOptions" [value]="opt">
                       {{ opt === 'tous' ? 'Tous' : (opt === 'actif' ? 'Actifs' : 'Inactifs') }}
                     </option>
                   </select>
                 </div>
-                
-                <div>
-                  <select
-                    class="form-select"
-                    [ngModel]="fournisseursItemsPerPage"
-                    (ngModelChange)="onFournisseursRowsPerPageChange($event)"
-                  >
-                    <option [value]="5">5 éléments/page</option>
-                    <option [value]="10">10 éléments/page</option>
-                    <option [value]="20">20 éléments/page</option>
-                    <option [value]="50">50 éléments/page</option>
-                  </select>
-                </div>
               </div>
 
-              <!-- Indicateur de chargement -->
-              <div *ngIf="isLoadingFournisseur" class="text-center my-5">
-                <div class="spinner-border text-primary" role="status">
-                  <span class="visually-hidden">Chargement...</span>
-                </div>
-                <p class="mt-2">Chargement des fournisseurs...</p>
-              </div>
+              <!-- État : chargement / erreur / vide -->
+              @if (fournisseursListState === 'loading' || fournisseursListState === 'error' || fournisseursListState === 'empty') {
+                <app-table-state
+                  [state]="fournisseursListState"
+                  loadingMessage="Chargement des fournisseurs..."
+                  emptyMessage="Aucun fournisseur trouvé"
+                  errorMessage="Erreur lors du chargement des fournisseurs."
+                  (retry)="loadData()"
+                />
+              }
 
               <!-- Tableau des fournisseurs -->
-              <div *ngIf="!isLoadingFournisseur" class="table-responsive">
+              @if (fournisseursListState === 'success' || fournisseursListState === 'loading') {
+              <div class="table-responsive" [attr.aria-busy]="fournisseursListState === 'loading'">
                 <table class="table table-bordered table-hover">
                   <thead class="table-dark">
                     <tr>
@@ -163,12 +150,6 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr *ngIf="fournisseurs.length === 0">
-                        <td colspan="6" class="text-center py-4">
-                          <i class="bi bi-inbox display-4 text-muted"></i>
-                          <p class="mt-2">Aucun fournisseur trouvé</p>
-                        </td>
-                      </tr>
                     <tr *ngFor="let fournisseur of fournisseurs" (click)="onRowSelect(fournisseur)">
                       <td>{{ fournisseur.nomComplet }}</td>
                       <td>{{ fournisseur.adresse }}</td>
@@ -178,60 +159,26 @@
                       <td [ngClass]="{'text-danger fw-bold': getSoldeTotal(fournisseur) > 0}">
                         {{ getSoldeTotal(fournisseur) | number }} F CFA
                       </td>
-                      <!-- <td [ngClass]="{'text-danger fw-bold': fournisseur?.montantAPayer! > 0}">
-                        {{ fournisseur.montantAPayer | number }} F CFA
-                      </td> -->
                     </tr>
                   </tbody>
                 </table>
               </div>
 
               <!-- Pagination -->
-              <div *ngIf="!isLoadingFournisseur && fournisseurs.length > 0" class="d-flex justify-content-between align-items-center">
-                <div class="text-muted small">
-                  Affichage {{ ((fournisseursCurrentPage - 1) * fournisseursItemsPerPage) + 1 }} 
-                  à {{ Math.min(fournisseursCurrentPage * fournisseursItemsPerPage, fournisseursTotalItems) }} 
-                  sur {{ fournisseursTotalItems }} fournisseurs
-                </div>
-                <!-- <div>
-                  <button
-                    class="btn btn-success me-2"
-                    (click)="onFournisseursPageChange(fournisseursCurrentPage - 1)"
-                    [disabled]="!fournisseursHasPrev"
-                  >
-                    <i class="bi bi-arrow-left-circle"></i>
-                  </button>
-                  <span class="h5 mx-2">Page {{ fournisseursCurrentPage }} / {{ fournisseursTotalPages }}</span>
-                  <button
-                    class="btn btn-success ms-2"
-                    (click)="onFournisseursPageChange(fournisseursCurrentPage + 1)"
-                    [disabled]="!fournisseursHasNext"
-                  >
-                    <i class="bi bi-arrow-right-circle"></i>
-                  </button>
-                </div> -->
-                <div class="d-flex align-items-center gap-2">
-                  <button
-                    class="btn btn-outline-dark btn-sm"
-                    (click)="onFournisseursPageChange(fournisseursCurrentPage - 1)"
-                    [disabled]="!fournisseursHasPrev"
-                  >
-                    <i class="bi bi-chevron-left"></i> Précédent
-                  </button>
-                  
-                  <span class="fw-bold mx-2">
-                    Page {{ fournisseursCurrentPage }} / {{ fournisseursTotalPages }}
-                  </span>
-                  
-                  <button
-                    class="btn btn-outline-dark btn-sm"
-                    (click)="onFournisseursPageChange(fournisseursCurrentPage + 1)"
-                    [disabled]="!fournisseursHasNext"
-                  >
-                    Suivant <i class="bi bi-chevron-right"></i>
-                  </button>
-                </div>
-              </div>
+              @if (fournisseursListState === 'success' || fournisseursListState === 'loading') {
+                <app-table-pagination
+                  [page]="fournisseursCurrentPage"
+                  [totalPages]="fournisseursTotalPages"
+                  [total]="fournisseursTotalItems"
+                  [itemsPerPage]="fournisseursItemsPerPage"
+                  [hasNext]="fournisseursHasNext"
+                  [hasPrev]="fournisseursHasPrev"
+                  labelPlural="fournisseurs"
+                  (pageChange)="onFournisseursPageChange($event)"
+                  (itemsPerPageChange)="onFournisseursRowsPerPageChange($event)"
+                />
+              }
+            }
             </div>
 
             <!-- Colonne droite - Actions sur fournisseur sélectionné -->

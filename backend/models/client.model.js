@@ -1,4 +1,5 @@
 //const SequenceService = require('../services/sequence.service');
+const logger = require('../services/logger.js');
 
 module.exports = (sequelize, DataTypes) => {
   const Client = sequelize.define('Client', {
@@ -67,7 +68,6 @@ module.exports = (sequelize, DataTypes) => {
 
      hooks: {
       beforeValidate: async (client, options) => {
-        console.log('🔍 beforeValidate hook called', client.code_structure);
         
         // Définir numeroE avant la validation
         if (!client.numeroE) {
@@ -79,18 +79,16 @@ module.exports = (sequelize, DataTypes) => {
                 transaction: options.transaction
               });
               client.numeroE = count + 1;
-              console.log(`✅ Generated numeroE in beforeValidate: ${client.numeroE}`);
             } else {
               client.numeroE = 1;
             }
           } catch (error) {
-            console.error('❌ Hook error:', error);
+            logger.error('client.model', '❌ Hook error:', error);
             client.numeroE = 1;
           }
         }
       },
       beforeCreate: async (client, options) => {
-        console.log('🎯 beforeCreate hook STARTED', client.numeroE);
         // Vérifier et régénérer si nécessaire
         if (!client.numeroE) {
           const clientsModel = sequelize.models.Client;

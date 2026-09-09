@@ -15,24 +15,24 @@ export const roleGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
   const expectedRoles = route.data['roles'] as string[];
   const requiredPermissions = route.data['permissions'] as string[];
  
- let isAuthorized = false;
+  // Aligné sur le backend (auth.middleware.js / requirePermission) :
+  //  - sémantique ANY-of pour les permissions (some, pas every) ;
+  //  - rôles ET permissions combinés en OU : suffit d'être autorisé
+  //    par l'un des deux critères pour accéder à la route.
+  const roleCheck = expectedRoles?.length
+    ? expectedRoles.some(role => authService.hasRole(role))
+    : null;
 
- // Vérification par rôle
-  if (expectedRoles && expectedRoles.length > 0) {
-    isAuthorized = expectedRoles.some(role => authService.hasRole(role));
-  }
-
-  // Vérification par permission (plus granulaire)
-  if (requiredPermissions && requiredPermissions.length > 0) {
-    isAuthorized = requiredPermissions.every(permission => 
-      authService.hasPermission(permission)
-    );
-  }
+  const permissionCheck = requiredPermissions?.length
+    ? requiredPermissions.some(permission => authService.hasPermission(permission))
+    : null;
 
   // Si aucun critère n'est spécifié, l'accès est autorisé
-  if (!expectedRoles && !requiredPermissions) {
+  if (roleCheck === null && permissionCheck === null) {
     return true;
   }
+
+  const isAuthorized = roleCheck === true || permissionCheck === true;
 
   if (isAuthorized) {
     return true;

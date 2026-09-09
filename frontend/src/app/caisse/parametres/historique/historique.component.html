@@ -121,11 +121,19 @@
                           </button>
                         </td>
                       </tr>
-                      <tr *ngIf="actions.length === 0">
-                        <td [attr.colspan]="isAdminGeneral ? 6 : 5" class="text-center">
-                          Aucune action trouvée
-                        </td>
-                      </tr>
+                      @if (actionsListState === 'empty' || actionsListState === 'error' || actionsListState === 'loading') {
+                        <tr>
+                          <td [attr.colspan]="isAdminGeneral ? 6 : 5" class="text-center py-4">
+                            <app-table-state
+                              [state]="actionsListState"
+                              loadingMessage="Chargement des actions..."
+                              emptyMessage="Aucune action trouvée"
+                              errorMessage="Erreur lors du chargement des actions."
+                              (retry)="loadActions()"
+                            />
+                          </td>
+                        </tr>
+                      }
                     </tbody>
                   </table>
                 </div>

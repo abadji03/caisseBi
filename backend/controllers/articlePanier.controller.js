@@ -1,3 +1,4 @@
+const logger = require('../services/logger.js');
 // controllers/articlePanierController.js
 const db = require('../models');
 const ArticlePanier = db.ArticlePanier;
@@ -37,8 +38,7 @@ exports.createBatch = async (req, res) => {
     });
 
     res.status(201).json(createdArticles);
-  } catch (err) {
-    console.error('Erreur création batch articles:', err);
+  } catch (err) {logger.error('articlePanier.controller', 'Erreur création batch articles:', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -97,8 +97,7 @@ exports.getArticlesPanierByStructure = async (req, res) => {
       order: [['createdAt', 'DESC']],
     });
     return res.json(paniers);
-  } catch (error) {
-    console.error('Erreur récupération des articles des paniers par structure:', error);
+  } catch (error) {logger.error('articlePanier.controller', 'Erreur récupération des articles des paniers par structure:', error);
     return res.status(500).json({ message: 'Erreur lors de la récupération des articles' });
   }
 };
@@ -108,8 +107,7 @@ exports.deleteArticleFromPanier = async (req, res) => {
   try {
     const { panierId, id } = req.params;
 
-    if (!panierId || !id) {
-      console.error('erreur: panierId ou produitId manquant', panierId, id);
+    if (!panierId || !id) {logger.error('articlePanier.controller', 'erreur: panierId ou produitId manquant', panierId, id);
       return res.status(400).json({ message: 'panierId et produitId sont requis' });
     }
 
@@ -122,8 +120,7 @@ exports.deleteArticleFromPanier = async (req, res) => {
     }
 
     res.status(200).json({ message: 'Article supprimé du panier avec succès' });
-  } catch (error) {
-    console.error('Erreur lors de la suppression de l’article du panier:', error);
+  } catch (error) {logger.error('articlePanier.controller', 'Erreur lors de la suppression de l’article du panier:', error);
     res.status(500).json({ message: 'Erreur serveur lors de la suppression' });
   }
 };

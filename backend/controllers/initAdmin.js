@@ -1,4 +1,5 @@
 const bcrypt = require('bcrypt');
+const logger = require('../services/logger.js');
 const db = require('../models');
 
 const initAdmin = async () => {
@@ -27,11 +28,8 @@ const initAdmin = async () => {
 
     if (role) {
       await admin.addRole(role);
-    }
-
-    console.log('✅ Admin général créé');
-  } else {
-    console.log('ℹ️ Admin déjà existant');
+    }logger.log('initAdmin', '✅ Admin général créé');
+  } else {logger.log('initAdmin', 'ℹ️ Admin déjà existant');
   }
 };
 module.exports = initAdmin;

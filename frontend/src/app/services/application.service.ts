@@ -168,8 +168,7 @@ export class ApplicationService {
     return Array.from(new Set(category));
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getProductsByCategory(categ: any): Produit[] {
+  getProductsByCategory(categ: string): Produit[] {
     //const prod = this.produits.find(prod => prod.id === id);
     let categoryProd: Produit[] = [];
     categoryProd = this.produits.filter((prod) => prod.categorie === categ);
@@ -261,12 +260,9 @@ export class ApplicationService {
   public removeProduct(product: Produit) {
     //const fromStorage = this.getData()!;
     const objectsFromStorage = this.getData();
-    console.log('Un ' + objectsFromStorage.length);
     const index = objectsFromStorage.findIndex((prod: Produit) => prod.id === product.id);
-    console.log('index ' + index);
     if (index !== -1) {
       objectsFromStorage.splice(index, 1);
-      console.log('Deux ' + objectsFromStorage.length);
       this.produits = objectsFromStorage;
       const stringToStore = JSON.stringify(this.produits);
       localStorage.setItem('list_produits', stringToStore);
@@ -274,23 +270,8 @@ export class ApplicationService {
     }
   }
 
-  getProductById(valueToFind: string) {
-    const fromStorage = this.getData() || '{}';
-    const objectsFromStorage = JSON.parse(fromStorage);
-    console.log(objectsFromStorage);
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const toFind = objectsFromStorage.filter(function (obj: any) {
-      return obj == valueToFind;
-    });
-
-    console.log(toFind);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  paginate(items: any[], currentPage: number, itemsPerPage: number): any[] {
+  paginate<T>(items: T[], currentPage: number, itemsPerPage: number): T[] {
     const start = (currentPage - 1) * itemsPerPage;
-    //console.log('item affiches', items.slice(start, start + itemsPerPage));
     return items.slice(start, start + itemsPerPage);
   }
 

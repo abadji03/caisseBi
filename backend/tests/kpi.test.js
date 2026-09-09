@@ -2,7 +2,7 @@
  * Tests KPI â€” Lot 7 : règles de gestion
  *  R1. Ventes caisse = paniers SANS bon (bonId: null)
  *  R2. Ventes Ã  crédit = paniers LIÃ‰S Ã  un bon (type vente client)
- *  R3. Un mÃªme panier n'est compté que dans une seule catégorie
+ *  R3. Un même panier n'est compté que dans une seule catégorie
  *  R4. Retour partiel : seule la partie restante (netAPayer - montantAvoir)
  *      s'ajoute au CA (le retour déduit, il ne génère pas de recette)
  *  R5. Le ticket moyen compte des PANIERS, pas des bons
@@ -116,7 +116,7 @@ describe('getVentesCreditData â€” règles R2 et R6', () => {
     expect(result.nombrePaniersCredit).toBe(3);
   });
 
-  test('aucun bon : aucune requÃªte panier', async () => {
+  test('aucun bon : aucune requête panier', async () => {
     db.Bon.findAll.mockResolvedValue([]);
 
     const result = await getVentesCreditData({ code_structure: 'STR-1', periode: 'jour' });

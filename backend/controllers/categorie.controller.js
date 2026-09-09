@@ -1,4 +1,5 @@
 const db = require('../models');
+const logger = require('../services/logger.js');
 const Categorie = db.Categorie;
 const { Op, ValidationError, UniqueConstraintError } = require('sequelize');
 const HistoriqueService = require('../services/historique.service');
@@ -12,8 +13,7 @@ exports.createCategorie = async (req, res) => {
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
-    }
-    console.log('📝 Création catégorie - Données reçues:', req.body);
+    }logger.log('categorie.controller', '📝 Création catégorie - Données reçues:', req.body);
     const { code_structure, name, description, type,isActive } = req.body;
 
     // Validation des données requises
@@ -33,9 +33,7 @@ exports.createCategorie = async (req, res) => {
       });
     }
 
-    const categorie = await Categorie.create({ code_structure, name, description, type,isActive });
-
-    console.log('Catégorie créée:', categorie.id);
+    const categorie = await Categorie.create({ code_structure, name, description, type,isActive });logger.log('categorie.controller', 'Catégorie créée:', categorie.id);
 
     // ENREGISTRER L'HISTORIQUE
     await HistoriqueService.enregistrerAction(
@@ -126,8 +124,7 @@ exports.getByCode = async (req, res) => {
     }
 
     res.json(categorie);
-  } catch (error) {
-    console.error('Erreur récupération catégorie par code:', error);
+  } catch (error) {logger.error('categorie.controller', 'Erreur récupération catégorie par code:', error);
     res.status(500).json({ message: 'Erreur lors de la récupération', error: error.message });
   }
 };
@@ -232,9 +229,7 @@ exports.getAllByStructureBis = async (req, res) => {
     });
 
     // Calcul du nombre total de pages
-    const totalPages = Math.ceil(count / limitInt);
-
-    console.log(`📦 Catégories: ${count} trouvées, page ${page}/${totalPages}`);
+    const totalPages = Math.ceil(count / limitInt);logger.log('categorie.controller', `📦 Catégories: ${count} trouvées, page ${page}/${totalPages}`);
 
     // Réponse avec pagination
     res.status(200).json({
@@ -254,8 +249,7 @@ exports.getAllByStructureBis = async (req, res) => {
       }
     });
 
-  } catch (error) {
-    console.error('Erreur récupération catégories:', error);
+  } catch (error) {logger.error('categorie.controller', 'Erreur récupération catégories:', error);
     res.status(500).json({ 
       message: 'Erreur de récupération des catégories', 
       error: process.env.NODE_ENV === 'development' ? error.message : undefined 
@@ -543,8 +537,7 @@ exports.exportCategoriesExcel = async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename=categories-${Date.now()}.xlsx`);
     res.send(buffer);
     
-  } catch (error) {
-    console.error('❌ Erreur export Excel catégories:', error);
+  } catch (error) {logger.error('categorie.controller', '❌ Erreur export Excel catégories:', error);
     
     if (req.user) {
       await HistoriqueService.enregistrerAction(

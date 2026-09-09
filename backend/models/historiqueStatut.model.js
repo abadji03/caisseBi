@@ -1,3 +1,4 @@
+const logger = require('../services/logger.js');
 // models/historiqueStatut.
 //const SequenceService = require('../services/sequence.service');
 
@@ -62,7 +63,6 @@ module.exports = (sequelize, DataTypes) => {
 
     /* hooks: {
       beforeValidate: async (historiqueStatut, options) => {
-        console.log('🔍 beforeValidate hook called', historiqueStatut.code_structure);
         
         // Définir numeroE avant la validation
         if (!historiqueStatut.numeroE) {
@@ -74,18 +74,15 @@ module.exports = (sequelize, DataTypes) => {
                 transaction: options.transaction
               });
               historiqueStatut.numeroE = count + 1;
-              console.log(`✅ Generated numeroE in beforeValidate: ${historiqueStatut.numeroE}`);
             } else {
               historiqueStatut.numeroE = 1;
             }
-          } catch (error) {
-            console.error('❌ Hook error:', error);
+          } catch (error) {logger.error('historiqueStatut.model', '❌ Hook error:', error);
             historiqueStatut.numeroE = 1;
           }
         }
       },
       beforeCreate: async (historiqueStatut, options) => {
-        console.log('🎯 beforeCreate hook STARTED', historiqueStatut.numeroE);
         // Vérifier et régénérer si nécessaire
         if (!historiqueStatut.numeroE) {
           const HistoriqueStatutModel = sequelize.models.HistoriqueStatut;

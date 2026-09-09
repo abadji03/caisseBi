@@ -1,4 +1,5 @@
 //const SequenceService = require('../services/sequence.service');
+const logger = require('../services/logger.js');
 
 module.exports = (sequelize, DataTypes) => {
   const Fournisseur = sequelize.define('Fournisseur', {
@@ -63,7 +64,6 @@ module.exports = (sequelize, DataTypes) => {
 
     hooks: {
       beforeValidate: async (fournisseur, options) => {
-        console.log('🔍 beforeValidate hook called', fournisseur.code_structure);
         
         // Définir numeroE avant la validation
         if (!fournisseur.numeroE) {
@@ -75,18 +75,16 @@ module.exports = (sequelize, DataTypes) => {
                 transaction: options.transaction
               });
               fournisseur.numeroE = count + 1;
-              console.log(`✅ Generated numeroE in beforeValidate: ${fournisseur.numeroE}`);
             } else {
               fournisseur.numeroE = 1;
             }
           } catch (error) {
-            console.error('❌ Hook error:', error);
+            logger.error('fournisseur.model', '❌ Hook error:', error);
             fournisseur.numeroE = 1;
           }
         }
       },
       beforeCreate: async (fournisseur, options) => {
-        console.log('🎯 beforeCreate hook STARTED', fournisseur.numeroE);
         // Vérifier et régénérer si nécessaire
         if (!fournisseur.numeroE) {
           const fournisseursModel = sequelize.models.Fournisseur;

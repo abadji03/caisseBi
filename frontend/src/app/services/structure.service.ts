@@ -1,10 +1,10 @@
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { catchError, Observable, tap, throwError } from 'rxjs';
+import { catchError, Observable, tap } from 'rxjs';
 import { Structure } from '../modeles/structure.model';
-import { AuthService } from './auth.service';
 import { NGXLogger } from 'ngx-logger';
 import { environment } from '../../environments/environment';
+import { handleApiError } from '../core/api/api-error';
 
 export interface StructuresFilter {
   page?: number;
@@ -32,24 +32,16 @@ export class StructureService {
   private apiUrl = `${environment.apiUrl}/structures`;
 
   private http = inject(HttpClient);
-  private authService = inject(AuthService);
   private logger = inject(NGXLogger);
 
-  private getHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
-    return new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-    });
-  }
 
   getAll(): Observable<Structure[]> {
-    return this.http.get<Structure[]>(this.apiUrl, { headers: this.getHeaders() });
+    return this.http.get<Structure[]>(this.apiUrl, {});
   } 
 
-   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-   private handleError(error: any, message: string): Observable<never> {
-    this.logger.error(message, error);
-    return throwError(() => error);
+    
+   private handleError(error: unknown, message: string): Observable<never> {
+    return handleApiError(this.logger, 'StructureService', error, message);
   }
 
   // Dans structure.service.ts
@@ -72,8 +64,7 @@ export class StructureService {
       params = params.set('statut', filter.statut);
     }
 
-    return this.http.get<StructuresResponse>(`${this.apiUrl}/bis`, { 
-      headers: this.getHeaders(),
+    return this.http.get<StructuresResponse>(`${this.apiUrl}/bis`, {
       params 
     }).pipe(
       tap(response => this.logger.info(`Structures récupérées: ${response.items.length}`)),
@@ -83,38 +74,36 @@ export class StructureService {
 
 
   getById(id: number): Observable<Structure> {
-    return this.http.get<Structure>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
+    return this.http.get<Structure>(`${this.apiUrl}/${id}`, {});
   }
 
   getByCodeStructure(code_structure: string): Observable<Structure> {
-    return this.http.get<Structure>(`${this.apiUrl}/code/${code_structure}`, { headers: this.getHeaders() });
+    return this.http.get<Structure>(`${this.apiUrl}/code/${code_structure}`, {});
   }
 
   create(structure: FormData): Observable<Structure> {
-    return this.http.post<Structure>(this.apiUrl, structure, { headers: this.getHeaders() });
+    return this.http.post<Structure>(this.apiUrl, structure, {});
   }
 
   update(id: number, structure: FormData): Observable<Structure> {
     return this.http.put<Structure>(`${this.apiUrl}/${id}`, structure, {
-      headers: this.getHeaders(),
     });
   }
 
   updateBis(id: number, structure: Structure): Observable<Structure> {
     return this.http.put<Structure>(`${this.apiUrl}/${id}`, structure, {
-      headers: this.getHeaders(),
     });
   }
 
   delete(id: number): Observable<unknown> {
-    return this.http.delete(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
+    return this.http.delete(`${this.apiUrl}/${id}`, {});
   }
 
   updateStatus(id: number, estActive: boolean): Observable<Structure> {
     return this.http.patch<Structure>(
       `${this.apiUrl}/${id}/status`,
       { estActive },
-      { headers: this.getHeaders() },
+      {},
     );
   }
   /*   //Créer une structure

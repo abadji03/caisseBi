@@ -1,10 +1,10 @@
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { AuthService } from './auth.service';
 import { NGXLogger } from 'ngx-logger';
-import { catchError, Observable, of, throwError } from 'rxjs';
+import { catchError, Observable, of } from 'rxjs';
 import { Categorie } from '../modeles/finance.model';
 import { environment } from '../../environments/environment';
+import { handleApiError } from '../core/api/api-error';
 
 export interface CategoriesResponse {
   items: Categorie[];
@@ -39,26 +39,17 @@ export class CategoriesDepencesRecettesService {
   private apiUrl = `${environment.apiUrl}/categories`; 
 
   private http = inject(HttpClient);
-  private authService = inject(AuthService);
   private logger = inject(NGXLogger);
 
   /** ================================
    *  GÉNÉRATION HEADERS AVEC TOKEN
    ================================== */
-  private getHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
-    return new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
-  }
 
   /** ================================
    *  GESTION CENTRALISÉE DES ERREURS
    ================================== */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private handleError(method: string, error: any) {
-    this.logger.error(`CategorieService -> ${method} :`, error);
-    return throwError(() => error);
+  private handleError(method: string, error: unknown) {
+    return handleApiError(this.logger, `CategorieService.${method}`, error);
   }
 
   /** ================================
@@ -68,7 +59,6 @@ export class CategoriesDepencesRecettesService {
   /** Créer une catégorie */
   createCategorie(data: Categorie): Observable<Categorie> {
     return this.http.post<Categorie>(`${this.apiUrl}`, data, {
-      headers: this.getHeaders()
     }).pipe(
       catchError(err => this.handleError('createCategorie', err))
     );
@@ -77,7 +67,6 @@ export class CategoriesDepencesRecettesService {
   /** Récupérer toutes les catégories d'une structure */
   getAllByStructure(code_structure: string): Observable<Categorie[]> {
     return this.http.get<Categorie[]>(`${this.apiUrl}/structure/${code_structure}`, {
-      headers: this.getHeaders()
     }).pipe(
       catchError(err => this.handleError('getAllByStructure', err))
     );
@@ -99,7 +88,6 @@ export class CategoriesDepencesRecettesService {
     if (filter.showInactive !== undefined) params = params.set('showInactive', filter.showInactive.toString());
 
     return this.http.get<CategoriesResponse>(`${this.apiUrl}/structure/bis/${code_structure}`, {
-      headers: this.getHeaders(),
       params: params
     }).pipe(
       catchError(err => this.handleError('getAllByStructure', err))
@@ -110,7 +98,6 @@ export class CategoriesDepencesRecettesService {
   /** Modifier une catégorie */
   updateCategorie(id: number, data: Partial<Categorie>): Observable<Categorie> {
     return this.http.put<Categorie>(`${this.apiUrl}/${id}`, data, {
-      headers: this.getHeaders()
     }).pipe(
       catchError(err => this.handleError('updateCategorie', err))
     );
@@ -121,7 +108,7 @@ export class CategoriesDepencesRecettesService {
     return this.http.patch<{ message: string, isActive: boolean }>(
       `${this.apiUrl}/toggle/${id}`,
       {}, // body vide
-      { headers: this.getHeaders() }
+      {}
     ).pipe(
       catchError(err => this.handleError('toggleActive', err))
     );
@@ -130,7 +117,6 @@ export class CategoriesDepencesRecettesService {
   /** Supprimer une catégorie */
   deleteCategorie(id: number): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(`${this.apiUrl}/${id}`, {
-      headers: this.getHeaders()
     }).pipe(
       catchError(err => this.handleError('deleteCategorie', err))
     );
@@ -142,7 +128,6 @@ getCategorieByCode(code: string, code_structure: string): Observable<Categorie |
   const params = new HttpParams().set('code_structure', code_structure);
   
   return this.http.get<Categorie>(`${this.apiUrl}/code/${code}`, {
-    headers: this.getHeaders(),
     params: params
   }).pipe(
     catchError(err => {

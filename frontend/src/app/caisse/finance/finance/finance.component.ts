@@ -121,12 +121,10 @@ export class FinanceComponent implements OnInit,OnDestroy {
 
  /*  onDepenseAction(event: { action: string; depense: Depense }): void {
     // Logique supplémentaire si nécessaire
-    console.log('Action dépense:', event.action);
   }
 
   onRecetteAction(event: { action: string; recette: Recette }): void {
     // Logique supplémentaire si nécessaire
-    console.log('Action recette:', event.action);
   } */
 
   /**

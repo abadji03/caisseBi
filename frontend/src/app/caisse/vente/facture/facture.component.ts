@@ -70,11 +70,6 @@ export class FactureComponent implements OnInit,OnDestroy {
       
     }); */
 
-    console.log('FactureComponent - Inputs:', {
-      code_structure: this.code_structure,
-      isAdmin: this.isAdmin,
-      typeEntite: this.typeEntite
-    });
     
     if (this.code_structure) {
       this.loadFactures();
@@ -126,11 +121,6 @@ export class FactureComponent implements OnInit,OnDestroy {
       search: this.filters.search || undefined,
     };
 
-    console.log('Chargement factures avec:', {
-      code_structure: this.code_structure,
-      typeEntite: this.typeEntite,
-      filters: apiFilters
-    });
     
     this.isLoading = true;
 
@@ -139,7 +129,6 @@ export class FactureComponent implements OnInit,OnDestroy {
       .subscribe({
         next: (response) => {
           //console.log('Chargement des factures :', response)
-          console.log('Réponse brute de l\'API:', response);
           this.factures = response.items;
           this.totalItems = response.pagination.total;
           this.currentPage = response.pagination.page;
@@ -149,7 +138,6 @@ export class FactureComponent implements OnInit,OnDestroy {
         },
         error: (err) => {
           console.error('Erreur chargement factures:', err);
-          this.toastr.error('Erreur lors du chargement des factures');
         }
       });
   }

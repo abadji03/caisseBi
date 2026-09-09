@@ -1,10 +1,10 @@
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { AuthService } from './auth.service';
 import { Magasin } from '../modeles/magasin.model';
-import { catchError, Observable, tap, throwError } from 'rxjs';
+import { catchError, Observable, tap } from 'rxjs';
 import { NGXLogger } from 'ngx-logger';
 import { environment } from '../../environments/environment';
+import { handleApiError } from '../core/api/api-error';
 
 export interface MagasinsFilter {
   page?: number;
@@ -31,45 +31,36 @@ export class MaagasinsService {
   private apiUrl = `${environment.apiUrl}/magasins`;
 
   private http = inject(HttpClient);
-  private authService = inject(AuthService);
   private logger = inject(NGXLogger);
 
-  private getHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
-    return new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-    });
-  }
 
-   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-   private handleError(error: any, message: string): Observable<never> {
-    this.logger.error(message, error);
-    return throwError(() => error);
+    
+   private handleError(error: unknown, message: string): Observable<never> {
+    return handleApiError(this.logger, 'MagasinsService', error, message);
   }
   // Créer un nouveau magasin
   createMagasin(magasin: Magasin): Observable<Magasin> {
-    return this.http.post<Magasin>(this.apiUrl, magasin, { headers: this.getHeaders() });
+    return this.http.post<Magasin>(this.apiUrl, magasin, {});
   }
 
   // Mettre à jour un magasin
   updateMagasin(id: number, magasin: Magasin): Observable<Magasin> {
-    return this.http.put<Magasin>(`${this.apiUrl}/${id}`, magasin, { headers: this.getHeaders() });
+    return this.http.put<Magasin>(`${this.apiUrl}/${id}`, magasin, {});
   }
 
   // Supprimer un magasin
   deleteMagasin(id: number): Observable<Magasin> {
-    return this.http.delete<Magasin>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
+    return this.http.delete<Magasin>(`${this.apiUrl}/${id}`, {});
   }
 
   // Obtenir tous les magasins
   getAllMagasins(): Observable<Magasin[]> {
-    return this.http.get<Magasin[]>(this.apiUrl, { headers: this.getHeaders() });
+    return this.http.get<Magasin[]>(this.apiUrl, {});
   }
 
   // Obtenir les magasins d'une structure
   getMagasinsByStructure(codeStructure: string): Observable<Magasin[]> {
     return this.http.get<Magasin[]>(`${this.apiUrl}/structure/${codeStructure}`, {
-      headers: this.getHeaders(),
     });
   }
 
@@ -90,7 +81,6 @@ export class MaagasinsService {
     }
 
     return this.http.get<MagasinsResponse>(`${this.apiUrl}/structure/bis/${codeStructure}`, {
-      headers: this.getHeaders(),
       params
     }).pipe(
       tap(response => this.logger.info(`Magasins récupérés: ${response.items.length}`)),
@@ -100,7 +90,7 @@ export class MaagasinsService {
 
   // Obtenir un magasin par son ID
   getMagasinById(id: number): Observable<Magasin> {
-    return this.http.get<Magasin>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
+    return this.http.get<Magasin>(`${this.apiUrl}/${id}`, {});
   }
 
   // Mettre à jour le statut d'un magasin
@@ -108,7 +98,7 @@ export class MaagasinsService {
     return this.http.patch<Magasin>(
       `${this.apiUrl}/${id}/statut`,
       { statut },
-      { headers: this.getHeaders() },
+      {},
     );
   }
 }

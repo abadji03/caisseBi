@@ -1,4 +1,5 @@
 const db = require('../models');
+const logger = require('../services/logger.js');
 const Depense = db.Depense;
 const Magasin = db.Magasin;
 const User = db.Users;
@@ -335,8 +336,7 @@ exports.getAllByStructure = async (req, res) => {
     });
 
     res.json(depenses);
-  } catch (error) {
-    console.error("Erreur récupération dépenses:", error);
+  } catch (error) {logger.error('depense.controller', "Erreur récupération dépenses:", error);
     res.status(500).json({
       message: "Erreur de récupération des dépenses",
       error: error.message
@@ -606,9 +606,7 @@ exports.getAllByStructureBis = async (req, res) => {
     });
 
     // Calcul du nombre total de pages
-    const totalPages = Math.ceil(count / limitInt);
-
-    console.log(`📦 Dépenses: ${count} trouvées, page ${page}/${totalPages}`);
+    const totalPages = Math.ceil(count / limitInt);logger.log('depense.controller', `📦 Dépenses: ${count} trouvées, page ${page}/${totalPages}`);
 
     // Formater les statistiques
     const statistiques = {
@@ -706,8 +704,7 @@ exports.getAllByStructureBis = async (req, res) => {
       }
     });
 
-  } catch (error) {
-    console.error("Erreur récupération dépenses:", error);
+  } catch (error) {logger.error('depense.controller', "Erreur récupération dépenses:", error);
     res.status(500).json({
       message: "Erreur de récupération des dépenses",
       error: error.message
@@ -729,9 +726,7 @@ exports.updateStatut = async (req, res) => {
 
     const { statutDepense } = req.body;
 
-    const oldStatut = depense.statutDepense;
-
-    console.log('Statut dépense',statutDepense);
+    const oldStatut = depense.statutDepense;logger.log('depense.controller', 'Statut dépense',statutDepense);
     /* if (typeof statut !== 'boolean')
       return res.status(400).json({ message: 'Le statut doit être un booléen' }); */
 
@@ -940,8 +935,7 @@ exports.exportDepensesExcel = async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename=depenses-${Date.now()}.xlsx`);
     res.send(buffer);
     
-  } catch (error) {
-    console.error('❌ Erreur export Excel dépenses:', error);
+  } catch (error) {logger.error('depense.controller', '❌ Erreur export Excel dépenses:', error);
     
     if (req.user) {
       await HistoriqueService.enregistrerAction(

@@ -17,6 +17,10 @@ import { BonBrouillonService } from '../../../services/bon-brouillon.service';
 import { BonsFilter, BonsService } from '../../../services/bons.service';
 import { DepencesService } from '../../../services/depences.service';
 import { FournisseursFilter, FournisseursService } from '../../../services/fournisseurs.service';
+import { TableSearchComponent } from '../../../shared/table/table-search.component';
+import { TablePaginationComponent } from '../../../shared/table/table-pagination.component';
+import { TableStateComponent } from '../../../shared/table/table-state.component';
+import { ListState, toListState } from '../../../shared/table/list-state';
 import { MaagasinsService } from '../../../services/maagasins.service';
 import { OperationsService } from '../../../services/operations.service';
 import { PaiementsFilter, PaiementsService } from '../../../services/paiements.service';
@@ -47,12 +51,18 @@ import { FactureComponent } from '../../vente/facture/facture.component';
     ListeBonsComponent,
     ListeVersementsComponent,
     ListeOperationsComponent,
-    FactureComponent
+    FactureComponent,
+    TableSearchComponent,
+    TablePaginationComponent,
+    TableStateComponent
   ],
   templateUrl: './fournisseur.component.html',
   styleUrl: './fournisseur.component.css'
 })
 export class FournisseurComponent implements OnInit, OnDestroy {
+
+  /** État d'affichage de la liste fournisseurs — voir shared/table */
+  fournisseursListState: ListState = 'idle';
 
   // Référence au composant Bon
 
@@ -315,14 +325,12 @@ export class FournisseurComponent implements OnInit, OnDestroy {
       //dateFin: this.paiementsFilters.dateFin || undefined
     };
 
-    console.log('Chargement paiements avec filtres:', filters);
 
     this.isLoadingPaiement = true;
     this.paiementService.getPaiementsFournisseurs(this.code_structure, filters)
       .pipe(takeUntil(this.destroy$), finalize(() => this.isLoadingPaiement = false))
       .subscribe({
         next: (response: import('../../../services/paiements.service').PaiementsResponse) => {
-          console.log('✅ Réponse paiements:', response);
         this.paiements = response.items || [];
         this.paiementsTotalItems = response.pagination?.total || 0;
         this.paiementsCurrentPage = response.pagination?.page || 1;
@@ -332,7 +340,6 @@ export class FournisseurComponent implements OnInit, OnDestroy {
         },
         error: (err: unknown) => {
           console.error('Erreur chargement paiements:', err);
-          this.toastr.error('Erreur lors du chargement des paiements');
         }
       });
   }
@@ -429,7 +436,6 @@ export class FournisseurComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Erreur chargement bons:', err);
-          this.toastr.error('Erreur lors du chargement des bons');
         }
       });
   }
@@ -447,7 +453,6 @@ export class FournisseurComponent implements OnInit, OnDestroy {
   }
 
   onBonsRowsPerPageChange(limit: number): void {
-    console.log('Changement lignes par page:', limit); // Pour déboguer
     this.bonsItemsPerPage = limit;
     this.bonsFilters.limit = limit;
     this.bonsFilters.page = 1;
@@ -488,6 +493,7 @@ export class FournisseurComponent implements OnInit, OnDestroy {
     };
 
     this.isLoadingFournisseur = true;
+    this.fournisseursListState = 'loading';
     this.fournisseurService.getFournisseursByStructureBis(this.code_structure, filters)
       .pipe(takeUntil(this.destroy$), finalize(() => this.isLoadingFournisseur = false))
       .subscribe({
@@ -515,12 +521,12 @@ export class FournisseurComponent implements OnInit, OnDestroy {
           this.fournisseursTotalPages = response.pagination.totalPages;
           this.fournisseursHasNext = response.pagination.hasNext;
           this.fournisseursHasPrev = response.pagination.hasPrev;
+          this.fournisseursListState = toListState(false, false, this.fournisseurs);
 
           this.loadMagasins();
         },
         error: err => {
-          console.error('Erreur chargement fournisseurs', err);
-          this.toastr.error('Erreur lors du chargement des fournisseurs');
+          this.fournisseursListState = 'error';
         }
       });
   }
@@ -791,7 +797,6 @@ export class FournisseurComponent implements OnInit, OnDestroy {
   onMagasinChange(magasinId: number | null): void {
   // Si l'utilisateur n'est pas admin, ne pas permettre le changement
   if (!this.isAdmin) {
-    console.log('Non-admin: changement de magasin non autorisé');
     return;
   }
   this.selectedMagasinId = magasinId;
@@ -802,7 +807,6 @@ private mettreAJourSoldeFournisseurDansMap(fournisseur: Fournisseur): void {
   if (fournisseur.Magasins && fournisseur.Magasins.length > 0) {
     fournisseur.Magasins.forEach(magasin => {
       if (magasin.MagasinFournisseur) {
-        console.log(`Mise à jour du solde pour magasin ${magasin.id}: ${magasin.MagasinFournisseur.solde}`);
         this.magasinSoldes.set(magasin.id!, magasin.MagasinFournisseur.solde);
       }
     });
@@ -917,6 +921,11 @@ private mettreAJourSoldeFournisseurDansMap(fournisseur: Fournisseur): void {
 
   private creerNouveauBrouillon(): void {
     if (!this.selectedFournisseur) return;
+    // Garde : magasin requis pour la validation des bons (sinon 400 côté backend)
+    if (!this.magasinId) {
+      console.warn('creerNouveauBrouillon: magasinId indisponible, création différée');
+      return;
+    }
 
     const bonBrouillonData = {
       bon: {
@@ -1304,7 +1313,6 @@ private createDepenseAvecCategorie(paiement: any, categoryCode: string): void {
   private rafraichirDonneesFournisseur(): void {
   if (!this.selectedFournisseur) return;
 
-  console.log('=== RAFRAÎCHISSEMENT FOURNISSEUR ===');
   
   // Sauvegarder le magasin actuel
   const magasinActuel = this.selectedMagasinId;
@@ -1313,7 +1321,6 @@ private createDepenseAvecCategorie(paiement: any, categoryCode: string): void {
     .pipe(takeUntil(this.destroy$))
     .subscribe({
       next: (fournisseurMisAJour) => {
-        console.log('Fournisseur mis à jour:', fournisseurMisAJour);
         
         // Mettre à jour la liste
         const index = this.fournisseurs.findIndex(f => f.id === fournisseurMisAJour.id);
@@ -1473,7 +1480,6 @@ onFacturerBon(bon: Bon): void {
       this.bonService.updateStatutBonBis(bon.id!, 'facturé', response.facture.numero_facture)
         .subscribe({
           next: (result) => {
-            console.log('Bon mis à jour:', result);
             
             // Mettre à jour le bon dans la liste locale
             const index = this.bons.findIndex(b => b.id === bon.id);
@@ -1638,8 +1644,6 @@ onFacturerBon(bon: Bon): void {
     try {
       this.isLoadingBon = true;
       
-      console.log('Bon à imprimer:', bon);
-      console.log('Articles du bon:', bon.Panier?.articles);
 
       // Valider et formater les articles avec une meilleure gestion des nombres
       const articlesFormates = (bon.Panier?.articles || []).map(article => {
@@ -1650,12 +1654,6 @@ onFacturerBon(bon: Bon): void {
         const quantite = this.safeNumber(article.quantite);
         const total = prixUnitaire * quantite;
 
-        console.log('Article formaté:', {
-          designation: article.Produit?.designation,
-          prixUnitaire,
-          quantite,
-          total
-        });
 
         return {
           ...article,
@@ -1672,7 +1670,6 @@ onFacturerBon(bon: Bon): void {
       const montantTVA = this.safeNumber(bon.Panier?.tva);
       const totalTTC = this.safeNumber(bon.Panier?.totalTTC);
 
-      console.log('Totaux calculés:', { sousTotal, tauxTVA, montantTVA, totalTTC });
 
       const bonData = {
         numero: bon.numero || 'N/A',
@@ -1705,7 +1702,6 @@ onFacturerBon(bon: Bon): void {
         commentaire:bon.description
       };
 
-      console.log('Données formatées pour le PDF du bon:', bonData);
       this.pdfGenerator.generateBonFournisseur(bonData);
     } 
     catch (error) {
@@ -1757,8 +1753,6 @@ onFacturerBon(bon: Bon): void {
     try {
       this.isLoadingFournisseur = true;
       // Debug: vérifier les données
-      console.log('Operations à imprimer:', this.filteredOperations);
-      console.log('Nombre d\'opérations:', this.filteredOperations?.length);
 
       // Valider et formater les opérations
       const operationsFormatees = this.filteredOperations.map(op => {

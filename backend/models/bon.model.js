@@ -1,3 +1,4 @@
+const logger = require('../services/logger.js');
 // models/bon.js
 const SequenceService = require('../services/sequence.service');
 
@@ -219,7 +220,7 @@ module.exports = (sequelize, DataTypes) => {
           } catch (error) {
             // Repli : ancien comportement COUNT + 1 (risque de collision,
             // mais ne bloque pas la création si la table Sequence est absente)
-            console.error('❌ Hook numeroE Bon error:', error);
+            logger.error('bon.model', '❌ Hook numeroE Bon error:', error);
             try {
               const count = await sequelize.models.Bon.count({
                 where: { code_structure: bon.code_structure },
@@ -228,9 +229,20 @@ module.exports = (sequelize, DataTypes) => {
               });
               bon.numeroE = count + 1;
             } catch (fallbackError) {
-              console.error('❌ Hook numeroE Bon fallback error:', fallbackError);
+              logger.error('bon.model', '❌ Hook numeroE Bon fallback error:', fallbackError);
               bon.numeroE = 1;
             }
+          }
+        }
+
+        // --- Numéro métier court serveur (BON-26-0007) ---
+        // Remplace les numéros longs générés par le front (uuid / timestamp).
+        // Un numéro fourni "humain" ou une référence externe est préservé.
+        const numeroAuto = SequenceService.estNumeroAuto('BON', bon.numero);
+        if (numeroAuto && bon.numeroE) {
+          const { Sequence } = require('../models');
+          if (Sequence) {
+            bon.numero = SequenceService.formaterNumero('BON', new Date().getFullYear(), bon.numeroE);
           }
         }
 

@@ -1,4 +1,5 @@
 const db = require('../models');
+const logger = require('../services/logger.js');
 const { verifierAppartenanceStructure } = require('../services/verification.service');
 const Produit = db.Produit;
 const Stock = db.Stock;
@@ -25,9 +26,7 @@ exports.createProduit = async (req, res) => {
       return res.status(401).json({ message: "Non authentifié" });
     }
     
-  const produitData = req.body;
-
-  console.log('Données produit reçues : ',produitData)
+  const produitData = req.body;logger.log('produit.controller', 'Données produit reçues : ',produitData)
 
    const existingProduit = await Produit.findOne({
       where: {
@@ -49,9 +48,7 @@ exports.createProduit = async (req, res) => {
         const inputPath = req.file.path;
         tempFilePath = inputPath;
         const filename = "prod-" + Date.now() + ".jpg";
-        const outputPath = path.join("uploads", filename);
-
-        console.log('Traitement de l\'image:', inputPath, '->', outputPath);
+        const outputPath = path.join("uploads", filename);logger.log('produit.controller', 'Traitement de l\'image:', inputPath, '->', outputPath);
 
         // compression et redimensionnement
         await sharp(inputPath)
@@ -88,25 +85,21 @@ exports.createProduit = async (req, res) => {
         setTimeout(() => {
           try {
             if (fs.existsSync(inputPath)) {
-              fs.unlinkSync(inputPath);
-              console.log('Fichier temporaire supprimé:', inputPath);
+              fs.unlinkSync(inputPath);logger.log('produit.controller', 'Fichier temporaire supprimé:', inputPath);
             }
-          } catch (cleanupError) {
-            console.error('Erreur lors du nettoyage:', cleanupError);
+          } catch (cleanupError) {logger.error('produit.controller', 'Erreur lors du nettoyage:', cleanupError);
           }
         }, 1000);
 
         return res.status(201).json(produit);
 
-      } catch (imageError) {
-        console.error('Erreur lors du traitement de l\'image:', imageError);
+      } catch (imageError) {logger.error('produit.controller', 'Erreur lors du traitement de l\'image:', imageError);
         
         // Nettoyer le fichier temporaire en cas d'erreur
         if (tempFilePath && fs.existsSync(tempFilePath)) {
           try {
             fs.unlinkSync(tempFilePath);
-          } catch (cleanupError) {
-            console.error('Erreur lors du nettoyage:', cleanupError);
+          } catch (cleanupError) {logger.error('produit.controller', 'Erreur lors du nettoyage:', cleanupError);
           }
         }
         
@@ -120,8 +113,7 @@ exports.createProduit = async (req, res) => {
       const produit = await Produit.create(produitData);
       return res.status(201).json(produit);
     }
-  } catch (error) {
-    console.error('Erreur lors de la création du produit :', error);
+  } catch (error) {logger.error('produit.controller', 'Erreur lors de la création du produit :', error);
     return res.status(500).json({
       message: 'Erreur lors de la création du produit',
       error: error.message,
@@ -130,9 +122,7 @@ exports.createProduit = async (req, res) => {
 };
 
 //Mettre à jour un produit
-exports.updateProduit = async (req, res) => {
-  console.log('BODY:', req.body);
-  console.log('FILE:', req.file);
+exports.updateProduit = async (req, res) => {logger.log('produit.controller', 'BODY:', req.body);logger.log('produit.controller', 'FILE:', req.file);
 
   try {
     const authUser = req.user;
@@ -186,9 +176,7 @@ exports.updateProduit = async (req, res) => {
       try {
         const inputPath = req.file.path;
         const filename = "prod-" + Date.now() + ".jpg";
-        const outputPath = path.join("uploads", filename);
-
-        console.log('Traitement de la nouvelle image:', inputPath, '->', outputPath);
+        const outputPath = path.join("uploads", filename);logger.log('produit.controller', 'Traitement de la nouvelle image:', inputPath, '->', outputPath);
 
         await sharp(inputPath)
           .resize(300, 300, { fit: "cover" })
@@ -220,29 +208,24 @@ exports.updateProduit = async (req, res) => {
           try {
             // Supprimer le fichier temporaire
             if (fs.existsSync(inputPath)) {
-              fs.unlinkSync(inputPath);
-              console.log('Fichier temporaire supprimé:', inputPath);
+              fs.unlinkSync(inputPath);logger.log('produit.controller', 'Fichier temporaire supprimé:', inputPath);
             }
 
             // Supprimer l'ancienne image si elle existe et est différente
             if (oldImagePath && fs.existsSync(oldImagePath) && oldImagePath !== outputPath) {
-              fs.unlinkSync(oldImagePath);
-              console.log('Ancienne image supprimée:', oldImagePath);
+              fs.unlinkSync(oldImagePath);logger.log('produit.controller', 'Ancienne image supprimée:', oldImagePath);
             }
-          } catch (cleanupError) {
-            console.error('Erreur lors du nettoyage:', cleanupError);
+          } catch (cleanupError) {logger.error('produit.controller', 'Erreur lors du nettoyage:', cleanupError);
           }
         }, 1000);
 
-      } catch (imageError) {
-        console.error('Erreur lors du traitement de l\'image:', imageError);
+      } catch (imageError) {logger.error('produit.controller', 'Erreur lors du traitement de l\'image:', imageError);
         
         // Nettoyer le fichier temporaire en cas d'erreur
         if (req.file && req.file.path && fs.existsSync(req.file.path)) {
           try {
             fs.unlinkSync(req.file.path);
-          } catch (cleanupError) {
-            console.error('Erreur lors du nettoyage:', cleanupError);
+          } catch (cleanupError) {logger.error('produit.controller', 'Erreur lors du nettoyage:', cleanupError);
           }
         }
         
@@ -268,13 +251,10 @@ exports.updateProduit = async (req, res) => {
           hasImageChange: false
         }
       );
-    }
-
-    console.log('Produit mis à jour avec:', updatedData);
+    }logger.log('produit.controller', 'Produit mis à jour avec:', updatedData);
     
     res.json({ message: 'Produit mis à jour', produit });
-  } catch (error) {
-    console.error('Erreur updateProduit:', error);
+  } catch (error) {logger.error('produit.controller', 'Erreur updateProduit:', error);
     res.status(500).json({ 
       message: 'Erreur lors de la mise à jour', 
       error: error.message 
@@ -323,11 +303,9 @@ exports.deleteProduit = async (req, res) => {
       setTimeout(() => {
         try {
           if (fs.existsSync(imagePath)) {
-            fs.unlinkSync(imagePath);
-            console.log('Image du produit supprimée:', imagePath);
+            fs.unlinkSync(imagePath);logger.log('produit.controller', 'Image du produit supprimée:', imagePath);
           }
-        } catch (err) {
-          console.error('Erreur suppression image:', err);
+        } catch (err) {logger.error('produit.controller', 'Erreur suppression image:', err);
         }
       }, 1000);
     }
@@ -496,9 +474,7 @@ exports.getProduitsByStructure = async (req, res) => {
       return prod;
     });
 
-    const totalPages = Math.ceil(count / limitInt);
-
-    console.log(`📦 Produits: ${count} trouvés, page ${page}/${totalPages}`);
+    const totalPages = Math.ceil(count / limitInt);logger.log('produit.controller', `📦 Produits: ${count} trouvés, page ${page}/${totalPages}`);
 
     res.status(200).json({
       items: produitsWithImageUrl,
@@ -512,8 +488,7 @@ exports.getProduitsByStructure = async (req, res) => {
       }
     });
 
-  } catch (error) {
-    console.error('Erreur getProduitsByStructure:', error);
+  } catch (error) {logger.error('produit.controller', 'Erreur getProduitsByStructure:', error);
     res.status(500).json({ 
       message: 'Erreur lors de la récupération des produits', 
       error: error.message 
@@ -607,14 +582,11 @@ exports.getProduitsDisponibles = async (req, res) => {
       const prod = p.toJSON();
       prod.logoUrl = prod.image ? baseUrl + prod.image : null;
       return prod;
-    });
-
-    console.log(`📦 Produits disponibles (stock réel): ${result.length}`);
+    });logger.log('produit.controller', `📦 Produits disponibles (stock réel): ${result.length}`);
 
     return res.status(200).json(result);
 
-  } catch (error) {
-    console.error("Erreur getProduitsDisponibles:", error);
+  } catch (error) {logger.error('produit.controller', "Erreur getProduitsDisponibles:", error);
     return res.status(500).json({
       message: "Erreur lors de la récupération des produits",
       error: error.message
@@ -739,9 +711,7 @@ exports.updateImageProduit = async (req, res) => {
       // Traiter la nouvelle image
       const inputPath = req.file.path;
       const filename = "prod-" + Date.now() + ".jpg";
-      const outputPath = path.join("uploads", filename);
-
-      console.log('Traitement de la nouvelle image:', inputPath, '->', outputPath);
+      const outputPath = path.join("uploads", filename);logger.log('produit.controller', 'Traitement de la nouvelle image:', inputPath, '->', outputPath);
 
       // compression et redimensionnement
       await sharp(inputPath)
@@ -772,17 +742,14 @@ exports.updateImageProduit = async (req, res) => {
         try {
           // Supprimer l'image temporaire uploadée
           if (fs.existsSync(inputPath)) {
-            fs.unlinkSync(inputPath);
-            console.log('Fichier temporaire supprimé:', inputPath);
+            fs.unlinkSync(inputPath);logger.log('produit.controller', 'Fichier temporaire supprimé:', inputPath);
           }
 
           // Supprimer l'ancienne image si elle existe et est différente de la nouvelle
           if (oldImagePath && fs.existsSync(oldImagePath) && oldImagePath !== outputPath) {
-            fs.unlinkSync(oldImagePath);
-            console.log('Ancienne image supprimée:', oldImagePath);
+            fs.unlinkSync(oldImagePath);logger.log('produit.controller', 'Ancienne image supprimée:', oldImagePath);
           }
-        } catch (cleanupError) {
-          console.error('Erreur lors du nettoyage des fichiers:', cleanupError);
+        } catch (cleanupError) {logger.error('produit.controller', 'Erreur lors du nettoyage des fichiers:', cleanupError);
           // Ne pas bloquer la réponse pour cette erreur
         }
       }, 1000); // Attendre 1 seconde
@@ -795,15 +762,13 @@ exports.updateImageProduit = async (req, res) => {
         }
       });
 
-    } catch (imageError) {
-      console.error('Erreur lors du traitement de l\'image:', imageError);
+    } catch (imageError) {logger.error('produit.controller', 'Erreur lors du traitement de l\'image:', imageError);
       
       // Nettoyer le fichier temporaire en cas d'erreur
       if (req.file && req.file.path && fs.existsSync(req.file.path)) {
         try {
           fs.unlinkSync(req.file.path);
-        } catch (cleanupError) {
-          console.error('Erreur lors du nettoyage:', cleanupError);
+        } catch (cleanupError) {logger.error('produit.controller', 'Erreur lors du nettoyage:', cleanupError);
         }
       }
       
@@ -812,8 +777,7 @@ exports.updateImageProduit = async (req, res) => {
         error: imageError.message 
       });
     }
-  } catch (error) {
-    console.error('Erreur updateImageProduit:', error);
+  } catch (error) {logger.error('produit.controller', 'Erreur updateImageProduit:', error);
     res.status(500).json({ 
       message: "Erreur lors de la mise à jour de l'image", 
       error: error.message 
@@ -1166,8 +1130,7 @@ exports.exportProduitsToExcel = async (req, res) => {
     await workbook.xlsx.write(res);
     res.end();
 
-  } catch (error) {
-    console.error('Erreur exportProduitsToExcel:', error);
+  } catch (error) {logger.error('produit.controller', 'Erreur exportProduitsToExcel:', error);
     res.status(500).json({ 
       message: 'Erreur lors de l\'exportation des produits', 
       error: error.message 
@@ -1401,8 +1364,7 @@ exports.exportProduitsToPDF = async (req, res) => {
     // Finaliser le PDF
     doc.end();
 
-  } catch (error) {
-    console.error('Erreur exportProduitsToPDF:', error);
+  } catch (error) {logger.error('produit.controller', 'Erreur exportProduitsToPDF:', error);
     res.status(500).json({ 
       message: 'Erreur lors de l\'exportation PDF', 
       error: error.message 

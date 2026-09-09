@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const users = require('../controllers/users.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
-const { requirePermission } = require('../middlewares/auth.middleware');
+const { requirePermission, requireStructureAccess } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -51,7 +51,7 @@ const { requirePermission } = require('../middlewares/auth.middleware');
  *               items:
  *                 $ref: '#/components/schemas/User'
  */
-router.post('/', authenticateToken, requirePermission('Gérer les utilisateurs'), users.create);
+router.post('/', authenticateToken, requireStructureAccess, requirePermission('users.manage'), users.create);
 router.get('/', authenticateToken, users.findAll);
 
 /**
@@ -103,8 +103,8 @@ router.get('/', authenticateToken, users.findAll);
  *         description: Supprimé avec succès
  */
 router.get('/:id', authenticateToken, users.findOne);
-router.put('/:id', authenticateToken, requirePermission('Gérer les utilisateurs'), users.update);
-router.delete('/:id', authenticateToken, requirePermission('Gérer les utilisateurs'), users.delete);
+router.put('/:id', authenticateToken, requireStructureAccess, requirePermission('users.manage'), users.update);
+router.delete('/:id', authenticateToken, requireStructureAccess, requirePermission('users.manage'), users.delete);
 
 /**
  * @swagger
@@ -128,7 +128,7 @@ router.delete('/:id', authenticateToken, requirePermission('Gérer les utilisate
  *       200:
  *         description: Statut mis à jour
  */
-router.patch('/:id/status', authenticateToken, requirePermission('Gérer les utilisateurs'), users.updateUserStatus);
+router.patch('/:id/status', authenticateToken, requireStructureAccess, requirePermission('users.manage'), users.updateUserStatus);
 
 /**
  * @swagger
@@ -145,7 +145,7 @@ router.patch('/:id/status', authenticateToken, requirePermission('Gérer les uti
  *       200:
  *         description: Liste des utilisateurs de la structure
  */
-router.get('/:code_structure/users', authenticateToken, users.findByStructure);
-router.get('/:code_structure/bis/users', authenticateToken, users.findByStructureBis);
+router.get('/:code_structure/users', authenticateToken, requireStructureAccess, users.findByStructure);
+router.get('/:code_structure/bis/users', authenticateToken, requireStructureAccess, users.findByStructureBis);
 
 module.exports = router;

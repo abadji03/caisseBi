@@ -1,4 +1,5 @@
 const db = require('../models');
+const logger = require('../services/logger.js');
 const HistoriqueStatut = db.HistoriqueStatut;
 const Bon = db.Bon;
 const User = db.Users;
@@ -25,8 +26,7 @@ exports.create = async (req, res) => {
     });
 
     res.status(201).json(historique);
-  } catch (error) {
-    console.error('Erreur création historique statut :', error);
+  } catch (error) {logger.error('historiqueStatut.controller', 'Erreur création historique statut :', error);
     res.status(500).json({ error: 'Erreur serveur lors de la création', details: error.message });
   }
 };
@@ -60,8 +60,7 @@ exports.findAllByStructure = async (req, res) => {
     });
 
     res.status(200).json(historiques);
-  } catch (error) {
-    console.error('Erreur récupération historiques :', error);
+  } catch (error) {logger.error('historiqueStatut.controller', 'Erreur récupération historiques :', error);
     res.status(500).json({ error: 'Erreur serveur lors de la récupération', details: error.message });
   }
 };
@@ -86,8 +85,7 @@ exports.findByBon = async (req, res) => {
     });
 
     res.status(200).json(historiques);
-  } catch (error) {
-    console.error('Erreur récupération historiques par bon :', error);
+  } catch (error) {logger.error('historiqueStatut.controller', 'Erreur récupération historiques par bon :', error);
     res.status(500).json({ error: 'Erreur serveur lors de la récupération', details: error.message });
   }
 };
@@ -106,8 +104,7 @@ exports.delete = async (req, res) => {
 
     await historique.destroy();
     res.status(200).json({ message: 'Historique supprimé avec succès' });
-  } catch (error) {
-    console.error('Erreur suppression historique :', error);
+  } catch (error) {logger.error('historiqueStatut.controller', 'Erreur suppression historique :', error);
     res.status(500).json({ error: 'Erreur serveur lors de la suppression', details: error.message });
   }
 };

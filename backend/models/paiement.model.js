@@ -1,5 +1,6 @@
+const logger = require('../services/logger.js');
 // models/paiement.js
-//const SequenceService = require('../services/sequence.service');
+const SequenceService = require('../services/sequence.service');
 
 module.exports = (sequelize, DataTypes) => {
   const Paiement = sequelize.define('Paiement', {
@@ -90,19 +91,37 @@ module.exports = (sequelize, DataTypes) => {
 
     hooks: {
       beforeValidate: async (paiement, options) => {
-        if (paiement.numeroE) return;
+        if (paiement.numeroE) {
+          // Mise à jour : le front peut renvoyer son ancien numéro junk dans
+          // un spread (paiementExistant.update({...paiement})) — on le
+          // re-sérialise toujours au format serveur, jamais l'inverse.
+          if (SequenceService.estNumeroAuto('PAI', paiement.numero)) {
+            paiement.numero = SequenceService.formaterNumero('PAI', new Date().getFullYear(), paiement.numeroE);
+          }
+          return;
+        }
 
         const t = options.transaction;
         try {
-          const count = await sequelize.models.Paiement.count({
-            where: { code_structure: paiement.code_structure },
-            transaction: t,
-            lock: t ? t.LOCK.UPDATE : undefined,
-          });
-          paiement.numeroE = count + 1;
+          // Numérotation atomique par séquence (SELECT ... FOR UPDATE),
+          // initialisée au MAX(numeroE) existant si absente. Remplace
+          // l'ancien COUNT + 1 (risque de collision) et le numéro long
+          // généré côté client (timestamp + random).
+          const { Sequence } = require('../models');
+          await SequenceService.initialiserDepuisMax(
+            sequelize.models.Paiement, 'numeroE', Sequence,
+            paiement.code_structure, 'paiement', t
+          );
+          const { numeroE, numero } = await SequenceService.getNextNumeroFormate(
+            sequelize, Sequence, paiement.code_structure, 'paiement', 'PAI', t
+          );
+          paiement.numeroE = numeroE;
+          // Le serveur est la source de vérité : numéro court PAI-26-0001.
+          paiement.numero = numero;
         } catch (error) {
-          console.error('❌ Hook numeroE Paiement error:', error);
+          logger.error('paiement.model', '❌ Hook numeroE Paiement error:', error);
           paiement.numeroE = 1;
+          paiement.numero = SequenceService.formaterNumero('PAI', new Date().getFullYear(), 1);
         }
       },
     }

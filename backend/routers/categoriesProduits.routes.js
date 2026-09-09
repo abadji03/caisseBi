@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const categorieCtrl = require('../controllers/categorieProduit.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
-const { requirePermission } = require('../middlewares/auth.middleware');
+const { requirePermission, requireStructureAccess } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -43,13 +43,13 @@ const { requirePermission } = require('../middlewares/auth.middleware');
  *         description: Liste des catégories
  */    
 
-router.post('/', authenticateToken, requirePermission('Gérer les produits'), categorieCtrl.createCategorie);
-router.put('/:id', authenticateToken, requirePermission('Gérer les produits'), categorieCtrl.updateCategorie);
-router.delete('/:id', authenticateToken, requirePermission('Gérer les produits'), categorieCtrl.deleteCategorie);
-router.get('/:id', authenticateToken, requirePermission('Gérer les produits'), categorieCtrl.getCategoriesById);
-router.get('/structure/:code_structure', authenticateToken, requirePermission('Gérer les produits'), categorieCtrl.getCategoriesByStructure);
-router.patch('/:id/statut', authenticateToken, requirePermission('Gérer les produits'), categorieCtrl.updateStatutCategorie);
+router.post('/', authenticateToken, requireStructureAccess, requirePermission('products.manage'), categorieCtrl.createCategorie);
+router.put('/:id', authenticateToken, requireStructureAccess, requirePermission('products.manage'), categorieCtrl.updateCategorie);
+router.delete('/:id', authenticateToken, requireStructureAccess, requirePermission('products.manage'), categorieCtrl.deleteCategorie);
+router.get('/:id', authenticateToken, requireStructureAccess, requirePermission('products.manage'), categorieCtrl.getCategoriesById);
+router.get('/structure/:code_structure', authenticateToken, requireStructureAccess, requirePermission('products.manage'), categorieCtrl.getCategoriesByStructure);
+router.patch('/:id/statut', authenticateToken, requireStructureAccess, requirePermission('products.manage'), categorieCtrl.updateStatutCategorie);
 
-router.get('/export/excel',authenticateToken, requirePermission('Gérer les produits'), categorieCtrl.exportCategoriesExcel);
+router.get('/export/excel',authenticateToken, requireStructureAccess, requirePermission('products.manage'), categorieCtrl.exportCategoriesExcel);
 
 module.exports = router;

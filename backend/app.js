@@ -3,6 +3,7 @@ const path = require('path');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const setupSwagger = require('./swagger');
+const logger = require('./services/logger');
 
 dotenv.config();
 
@@ -68,7 +69,7 @@ const db = require('./models');
 // Fonction pour synchroniser normalement (sans suppression)
 const syncDatabase = async () => {
   try {
-    console.log('🔄 Synchronisation de la base de données...');
+    logger.info('app', '🔄 Synchronisation de la base de données...');
     // En développement uniquement : sync({ alter: true }) peut modifier le schéma.
     // En production, utiliser des migrations (sequelize-cli) à la place.
     if (process.env.NODE_ENV === 'development') {
@@ -77,10 +78,10 @@ const syncDatabase = async () => {
       // Vérifie juste la connexion sans toucher au schéma
       await db.sequelize.authenticate();
     }
-    console.log('✅ Connexion réussie à la base de données.');
+    logger.info('app', '✅ Connexion réussie à la base de données.');
     //await initAdmin();
   } catch (error) {
-    console.error('❌ Erreur de connexion DB :', error);
+    logger.error('app', '❌ Erreur de connexion DB :', error);
     process.exit(1); // Arrêter le serveur si la DB est inaccessible
   }
 };
@@ -136,7 +137,10 @@ app.get('/', (req, res) => {
 // Swagger
 setupSwagger(app);
 
+// Nettoyage automatique des brouillons de caisse abandonnés
+require('./services/nettoyageBrouillons.service').demarrerPlanificateur();
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Serveur démarré sur le port ${PORT}`);
+  logger.info('app', `Serveur démarré sur le port ${PORT}`);
 });

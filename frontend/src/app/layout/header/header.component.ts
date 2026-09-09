@@ -1,4 +1,5 @@
-import { Component, EventEmitter, inject, OnInit, Output } from '@angular/core';
+import { Component, DestroyRef, EventEmitter, inject, OnInit, Output } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TitreService } from '../../services/titre.service';
 import { AuthService } from '../../services/auth.service';
 import { NavigationEnd, Router } from '@angular/router';
@@ -22,6 +23,7 @@ export class HeaderComponent implements OnInit{
   private titreService = inject(TitreService);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private destroyRef = inject(DestroyRef);
 
   ngOnInit(): void {
     
@@ -32,7 +34,10 @@ export class HeaderComponent implements OnInit{
     }
     // 2️⃣ Écoute des changements de route
     this.router.events
-      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        takeUntilDestroyed(this.destroyRef)
+      )
       .subscribe((event) => {
         const nav = this.authService.findNavigationByRoute(event.urlAfterRedirects);
         if (nav) {
@@ -42,18 +47,22 @@ export class HeaderComponent implements OnInit{
 
 
     // 🔁 3.Écoute du service
-    this.titreService.titre$.subscribe(({ titre, sousTitre }) => {
-      this.titre = titre;
-      this.sousTitre = sousTitre;
-    });
-    
-    this.authService.currentUser.subscribe((user) => {
-      if (user && user.nom) {
-        this.userName = user.nom;
-        //this.code_structure = user.code_structure || 'Structure';
-        this.photoProfilUrl = user.photoProfil || null; // Valeur par défaut
-      }
-    });
+    this.titreService.titre$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(({ titre, sousTitre }) => {
+        this.titre = titre;
+        this.sousTitre = sousTitre;
+      });
+
+    this.authService.currentUser
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((user) => {
+        if (user && user.nom) {
+          this.userName = user.nom;
+          //this.code_structure = user.code_structure || 'Structure';
+          this.photoProfilUrl = user.photoProfil || null; // Valeur par défaut
+        }
+      });
   }
 
   

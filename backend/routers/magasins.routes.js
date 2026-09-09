@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const magasinCtrl = require('../controllers/magasin.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
-const { requirePermission } = require('../middlewares/auth.middleware');
+const { requirePermission, requireStructureAccess } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -87,13 +87,13 @@ const { requirePermission } = require('../middlewares/auth.middleware');
  */
 
 
-router.post('/', authenticateToken, requirePermission('Gérer les magasins'), magasinCtrl.createMagasin);
-router.put('/:id', authenticateToken, requirePermission('Gérer les magasins'), magasinCtrl.updateMagasin);
-router.delete('/:id', authenticateToken, requirePermission('Gérer les magasins'), magasinCtrl.deleteMagasin);
-router.get('/structure/:code_structure', authenticateToken, magasinCtrl.getMagasinsByStructure);
-router.get('/structure/bis/:code_structure', authenticateToken, magasinCtrl.getMagasinsByStructureBis);
+router.post('/', authenticateToken, requireStructureAccess, requirePermission('stores.manage'), magasinCtrl.createMagasin);
+router.put('/:id', authenticateToken, requireStructureAccess, requirePermission('stores.manage'), magasinCtrl.updateMagasin);
+router.delete('/:id', authenticateToken, requireStructureAccess, requirePermission('stores.manage'), magasinCtrl.deleteMagasin);
+router.get('/structure/:code_structure', authenticateToken, requireStructureAccess, magasinCtrl.getMagasinsByStructure);
+router.get('/structure/bis/:code_structure', authenticateToken, requireStructureAccess, magasinCtrl.getMagasinsByStructureBis);
 router.get('/', authenticateToken, magasinCtrl.getAllMagasins);
-router.patch('/:id/statut', authenticateToken, requirePermission('Gérer les magasins'), magasinCtrl.updateStatutMagasin);
+router.patch('/:id/statut', authenticateToken, requireStructureAccess, requirePermission('stores.manage'), magasinCtrl.updateStatutMagasin);
 router.get('/:id', authenticateToken, magasinCtrl.getMagasinById);
 
 module.exports = router;

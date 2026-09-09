@@ -1,3 +1,4 @@
+const logger = require('../services/logger.js');
 
 // controllers/panierController.js
 const db = require('../models');
@@ -37,7 +38,7 @@ exports.createPanier = async (req, res) => {
     );
     return res.status(201).json(panier);
   } catch (error) {
-    console.error('Erreur création panier:', error);
+logger.error('panier.controller', 'Erreur création panier:', error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -111,7 +112,7 @@ exports.getPaniersByStructure = async (req, res) => {
     });
     return res.json(paniers);
   } catch (error) {
-    console.error('Erreur récupération paniers par structure:', error);
+logger.error('panier.controller', 'Erreur récupération paniers par structure:', error);
     return res.status(500).json({ message: 'Erreur lors de la récupération des paniers' });
   }
 };
@@ -135,7 +136,7 @@ exports.getAllPaniers = async (req, res) => {
     });
     return res.json(paniers);
   } catch (error) {
-    console.error('Erreur récupération tous les paniers:', error);
+logger.error('panier.controller', 'Erreur récupération tous les paniers:', error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -154,7 +155,7 @@ exports.getPanierById = async (req, res) => {
     if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
     return res.json(panier);
   } catch (error) {
-    console.error('Erreur récupération panier par ID:', error);
+logger.error('panier.controller', 'Erreur récupération panier par ID:', error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -205,7 +206,7 @@ exports.updatePanier = async (req, res) => {
     );
     return res.json(panier);
   } catch (error) {
-    console.error('Erreur update panier:', error);
+logger.error('panier.controller', 'Erreur update panier:', error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -356,7 +357,7 @@ exports.deletePanier = async (req, res) => {
     
   } catch (error) {
     await transaction.rollback();
-    console.error('Erreur suppression panier avec cascade:', error);
+logger.error('panier.controller', 'Erreur suppression panier avec cascade:', error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -370,12 +371,30 @@ exports.updateStatutPanier = async (req, res) => {
       return res.status(401).json({ message: "Non authentifié" });
     }
     const { statut } = req.body;
+
+    // ── Garde-fou métier sur les transitions de statut ──
+    const STATUTS_VALIDES = ['en_cours', 'validé', 'annulé', 'retourné'];
+    const TRANSITIONS_AUTORISEES = {
+      'en_cours': ['validé', 'annulé'],
+      'validé': ['retourné', 'annulé'],
+      'retourné': [],
+      'annulé': [],
+    };
+    if (!STATUTS_VALIDES.includes(statut)) {
+      return res.status(400).json({ message: `Statut invalide : ${statut} (valeurs acceptées : ${STATUTS_VALIDES.join(', ')})` });
+    }
+
     const panier = await Panier.findByPk(req.params.id);
     if (!panier) return res.status(404).json({ message: 'Panier non trouvé' });
     const verifStructure = verifierAppartenanceStructure(panier, req.user);
     if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
      const oldStatut = panier.statut;
+    if (oldStatut !== statut && !(TRANSITIONS_AUTORISEES[oldStatut] || []).includes(statut)) {
+      return res.status(409).json({
+        message: `Transition de statut interdite : ${oldStatut} → ${statut}. La validation d'une vente doit passer par POST /paniers/panier-complet (stock, paiement et historique atomiques).`
+      });
+    }
     panier.statut = statut;
     panier.dateMiseAJour = new Date();
     await panier.save();
@@ -395,7 +414,7 @@ exports.updateStatutPanier = async (req, res) => {
 
     return res.json(panier);
   } catch (error) {
-    console.error('Erreur update statut panier:', error);
+logger.error('panier.controller', 'Erreur update statut panier:', error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -445,7 +464,29 @@ exports.updateTotauxPanier = async (req, res) => {
     );
     return res.json(panier);
   } catch (error) {
-    console.error('Erreur update totaux panier:', error);
+logger.error('panier.controller', 'Erreur update totaux panier:', error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+exports.nettoyerBrouillons = async (req, res) => {
+  try {
+    const authUser = req.user;
+    if (!authUser) {
+      return res.status(401).json({ message: 'Non authentifié' });
+    }
+    const NettoyageBrouillonsService = require('../services/nettoyageBrouillons.service');
+    const jours = Number(req.body.joursInactivite) > 0 ? Number(req.body.joursInactivite) : 7;
+    const resultat = await NettoyageBrouillonsService.nettoyerBrouillonsAbandonnes({ joursInactivite: jours });
+    await HistoriqueService.enregistrerAction(
+      authUser.id,
+      `Nettoyage des brouillons abandonnés (> ${jours} j) : ${resultat.supprimes} supprimé(s), ${resultat.archives} archivé(s)`,
+      HistoriqueService.getClientIp(req),
+      { action: 'NETTOYAGE_BROUILLONS', ...resultat }
+    );
+    return res.json(resultat);
+  } catch (error) {
+    logger.error('panier.controller', 'Erreur nettoyage brouillons:', error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -484,7 +525,7 @@ exports.updateDetailsVisible = async (req, res) => {
 
     return res.json(panier);
   } catch (error) {
-    console.error('Erreur update detailsVisible panier:', error);
+logger.error('panier.controller', 'Erreur update detailsVisible panier:', error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -512,7 +553,7 @@ exports.resetPanier = async (req, res) => {
     panier.totalHT = 0;
     panier.tva = 0;
     panier.totalTTC = 0;
-    panier.statut = 'EN_COURS';
+    panier.statut = 'en_cours';
     panier.dateMiseAJour = new Date();
 
     await panier.save();
@@ -530,14 +571,14 @@ exports.resetPanier = async (req, res) => {
           totalHT: 0,
           tva: 0,
           totalTTC: 0,
-          statut: 'EN_COURS'
+          statut: 'en_cours'
         }
       }
     );
     
     return res.json(panier);
   } catch (error) {
-    console.error('Erreur reset panier:', error);
+logger.error('panier.controller', 'Erreur reset panier:', error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -577,7 +618,7 @@ exports.getPanierByBonId = async (req, res) => {
 
     return res.status(200).json(panier);
   } catch (error) {
-    console.error('Erreur récupération panier par bon ID:', error);
+logger.error('panier.controller', 'Erreur récupération panier par bon ID:', error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -671,7 +712,7 @@ exports.getPanierByBonId = async (req, res) => {
       statistiques: stats
     });
   } catch (error) {
-    console.error('Erreur récupération paniers par date:', error);
+logger.error('panier.controller', 'Erreur récupération paniers par date:', error);
     return res.status(500).json({ 
       error: error.message 
     });
@@ -801,7 +842,7 @@ exports.getPaniersParDate = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Erreur récupération paniers par date:", error);
+logger.error('panier.controller', "Erreur récupération paniers par date:", error);
     return res.status(500).json({
       error: error.message
     });
@@ -919,7 +960,7 @@ exports.getPaniersByStructureBis = async (req, res) => {
     
     return res.json(paniers);
   } catch (error) {
-    console.error('Erreur récupération paniers par structure:', error);
+logger.error('panier.controller', 'Erreur récupération paniers par structure:', error);
     return res.status(500).json({ 
       message: 'Erreur lors de la récupération des paniers' 
     });
@@ -1063,7 +1104,7 @@ exports.getPaniersBrouillons = async (req, res) => {
     });
     //return res.json(paniers);
   } catch (error) {
-    console.error('Erreur récupération paniers du jour:', error);
+logger.error('panier.controller', 'Erreur récupération paniers du jour:', error);
     return res.status(500).json({ 
       error: error.message 
     });
@@ -1205,7 +1246,7 @@ exports.getPaniersAujourdhui = async (req, res) => {
       paniers,
     });
   } catch (error) {
-    console.error("Erreur récupération paniers du jour:", error);
+logger.error('panier.controller', "Erreur récupération paniers du jour:", error);
     return res.status(500).json({
       error: error.message,
     });
@@ -1233,7 +1274,7 @@ exports.getPaniersAujourdhui = async (req, res) => {
     } = req.query;
 
     // 🔍 LOGS DE DÉBOGAGE
-    console.log('🔍 Paramètres reçus:', {
+logger.log('panier.controller', '🔍 Paramètres reçus:', {
       page,
       limit,
       search: search || '(vide)',
@@ -1277,7 +1318,7 @@ exports.getPaniersAujourdhui = async (req, res) => {
     // 🔹 FILTRE DE RECHERCHE
     // ==========================
     if (search && search.trim() !== '') {
-      console.log('🔍 Recherche avec terme:', search);
+logger.log('panier.controller', '🔍 Recherche avec terme:', search);
       whereCondition[Op.or] = whereCondition[Op.or] || [];
       whereCondition[Op.or].push(
         { id: { [Op.like]: `%${search}%` } },
@@ -1394,8 +1435,7 @@ exports.getPaniersAujourdhui = async (req, res) => {
 
     // Calcul du nombre total de pages
     const totalPages = Math.ceil(count / limitInt);
-
-    console.log(`📦 Transactions: ${count} trouvées, page ${page}/${totalPages}`);
+logger.log('panier.controller', `📦 Transactions: ${count} trouvées, page ${page}/${totalPages}`);
 
     return res.json({
       items: rows,
@@ -1417,7 +1457,7 @@ exports.getPaniersAujourdhui = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Erreur récupération paniers du jour:", error);
+logger.error('panier.controller', "Erreur récupération paniers du jour:", error);
     return res.status(500).json({
       error: error.message,
     });
@@ -1445,7 +1485,7 @@ exports.getPaniersAujourdhuiBis = async (req, res) => {
     } = req.query;
 
     // 🔍 LOGS DE DÉBOGAGE
-    console.log('🔍 Paramètres reçus:', {
+logger.log('panier.controller', '🔍 Paramètres reçus:', {
       page,
       limit,
       search: search || '(vide)',
@@ -1485,7 +1525,7 @@ exports.getPaniersAujourdhuiBis = async (req, res) => {
     // 🔹 FILTRE DE RECHERCHE
     // ==========================
     if (search && search.trim() !== '') {
-      console.log('🔍 Recherche avec terme:', search);
+logger.log('panier.controller', '🔍 Recherche avec terme:', search);
       
       const orConditions = [];
       
@@ -1587,7 +1627,7 @@ exports.getPaniersAujourdhuiBis = async (req, res) => {
     // ==========================
     // 🔹 QUERY AVEC PAGINATION
     // ==========================
-    console.log('📋 Where condition:', JSON.stringify(whereCondition, null, 2));
+logger.log('panier.controller', '📋 Where condition:', JSON.stringify(whereCondition, null, 2));
     
     const { count, rows } = await Panier.findAndCountAll({
       where: whereCondition,
@@ -1616,8 +1656,7 @@ exports.getPaniersAujourdhuiBis = async (req, res) => {
 
     // Calcul du nombre total de pages
     const totalPages = Math.ceil(count / limitInt);
-
-    console.log(`📦 Transactions: ${count} trouvées, page ${page}/${totalPages}`);
+logger.log('panier.controller', `📦 Transactions: ${count} trouvées, page ${page}/${totalPages}`);
 
     return res.json({
       items: rows,
@@ -1639,7 +1678,7 @@ exports.getPaniersAujourdhuiBis = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Erreur récupération paniers du jour:", error);
+logger.error('panier.controller', "Erreur récupération paniers du jour:", error);
     return res.status(500).json({
       error: error.message,
     });

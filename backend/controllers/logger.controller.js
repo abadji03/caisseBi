@@ -1,4 +1,5 @@
 const logFileService = require('../services/logFile.service');
+const logger = require('../services/logger.js');
 const path = require('path');
 
 // POST /api/logs - Créer un nouveau log
@@ -26,8 +27,7 @@ const createLog = async (req, res) => {
         file: path.basename(logInfo.filePath)
       }
     });
-  } catch (err) {
-    console.error('Erreur serveur lors de l\'écriture du log:', err);
+  } catch (err) {logger.error('logger.controller', 'Erreur serveur lors de l\'écriture du log:', err);
     res.status(500).json({ 
       success: false, 
       error: 'Erreur serveur lors de l\'écriture du log' 
@@ -64,8 +64,7 @@ const getLogsByDate = async (req, res) => {
       count: logs.length,
       logs
     });
-  } catch (error) {
-    console.error('Erreur lors de la récupération des logs:', error);
+  } catch (error) {logger.error('logger.controller', 'Erreur lors de la récupération des logs:', error);
     res.status(500).json({
       success: false,
       error: error.message || 'Erreur serveur lors de la lecture des logs'
@@ -83,8 +82,7 @@ const getLogFiles = async (req, res) => {
       count: files.length,
       files
     });
-  } catch (error) {
-    console.error('Erreur lors de la liste des fichiers:', error);
+  } catch (error) {logger.error('logger.controller', 'Erreur lors de la liste des fichiers:', error);
     res.status(500).json({
       success: false,
       error: error.message || 'Erreur serveur'

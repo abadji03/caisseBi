@@ -1,4 +1,5 @@
 const db = require('../../models');
+const logger = require('../../services/logger.js');
 const stockManager = require('./stockManager');
 const statutManager = require('./statutManager');
 
@@ -17,8 +18,7 @@ class MouvementService {
       'retour-fournisseur': 'Sortie'
     };
     const cle = `${bon.type}-${bon.typeEntite}`;
-    const typeMouvement = matrice[cle];
-    console.log(`Détermination mouvement - Clé: ${cle}, Résultat: ${typeMouvement}`);
+    const typeMouvement = matrice[cle];logger.log('mouvementService', `Détermination mouvement - Clé: ${cle}, Résultat: ${typeMouvement}`);
     
     return typeMouvement;
     //return matrice[`${bon.type}-${bon.typeEntite}`] || 'Sortie';
@@ -53,15 +53,13 @@ class MouvementService {
     };
     
     // Si pas de mouvement défini, ne rien faire
-    /* if (!typeMouvement) {
-      console.log(`⏭️ Aucun mouvement nécessaire pour ${bon.type}-${bon.typeEntite}`);
+    /* if (!typeMouvement) {logger.log('mouvementService', `⏭️ Aucun mouvement nécessaire pour ${bon.type}-${bon.typeEntite}`);
       return;
     } */
     const cle = `${bon.type}-${bon.typeEntite}`;
     const statutsPourMouvement = statutsAutorises[cle] || [];
     
-    if (!statutsPourMouvement.includes(bon.statutBon) || !typeMouvement) {
-      console.log(`⏭️ Aucun mouvement nécessaire pour ${cle} avec statut ${bon.statutBon}`);
+    if (!statutsPourMouvement.includes(bon.statutBon) || !typeMouvement) {logger.log('mouvementService', `⏭️ Aucun mouvement nécessaire pour ${cle} avec statut ${bon.statutBon}`);
       return;
     }
     const stock = await stockManager.trouverOuCreerStock(
@@ -69,9 +67,7 @@ class MouvementService {
       magasinId,
       code_structure,
       transaction
-    );
-
-    console.log(`➡️ Préparation mouvement ${typeMouvement} pour le produit ID: ${article.produitId} et pour stock ${stock}`);
+    );logger.log('mouvementService', `➡️ Préparation mouvement ${typeMouvement} pour le produit ID: ${article.produitId} et pour stock ${stock}`);
     //const typeMouvement = this.determinerTypeMouvement(bon);
     await this.executerMouvementPhysique(article, stock,magasinId, typeMouvement, bon, agentId, code_structure, transaction);
   }
@@ -88,8 +84,7 @@ class MouvementService {
       else if (panier.statut === 'validé') {
         typeMouvement = 'Sortie';
       }
-      else{
-        console.log(`Aucun mouvement nécessaire pour panier avec statut ${panier.statut}`);
+      else{logger.log('mouvementService', `Aucun mouvement nécessaire pour panier avec statut ${panier.statut}`);
         return;
       }
     
@@ -98,9 +93,7 @@ class MouvementService {
       magasinId,
       code_structure,
       transaction
-    );
-
-    console.log(`➡️ Préparation mouvement ${typeMouvement} pour le produit ID: ${article.produitId} et pour stock ${stock}`);
+    );logger.log('mouvementService', `➡️ Préparation mouvement ${typeMouvement} pour le produit ID: ${article.produitId} et pour stock ${stock}`);
     //const typeMouvement = this.determinerTypeMouvement(bon);
     await this.executerMouvementPhysiqueBis(article, stock,magasinId, typeMouvement, panier, agentId, code_structure, transaction);
   }
@@ -111,9 +104,7 @@ class MouvementService {
   async executerMouvementPhysique(article, stock, magasinId,typeMouvement, bon, agentId, code_structure, transaction) {
     
     const ancienneQuantite = statutManager.safeNumber(stock.quantiteTotale);
-    let nouvelleQuantite = ancienneQuantite;
-
-    console.log(`Mouvement ${typeMouvement} - Produit: ${article.produitId}, Quantité: ${article.quantite}`);
+    let nouvelleQuantite = ancienneQuantite;logger.log('mouvementService', `Mouvement ${typeMouvement} - Produit: ${article.produitId}, Quantité: ${article.quantite}`);
 
     if (typeMouvement === 'Entree') {
       nouvelleQuantite += statutManager.safeNumber(article.quantite);
@@ -135,8 +126,7 @@ class MouvementService {
         prixVenteUnitaire: article.prixVenteUnitaire || stock.prixVenteUnitaire
       },
       { transaction }
-    );
-    console.log(`Stock mis à jour pour le produit ID: ${article.produitId} - Ancienne quantité: ${ancienneQuantite}, Nouvelle quantité: ${updatedStoct.quantiteTotale}`);
+    );logger.log('mouvementService', `Stock mis à jour pour le produit ID: ${article.produitId} - Ancienne quantité: ${ancienneQuantite}, Nouvelle quantité: ${updatedStoct.quantiteTotale}`);
     // Créer le mouvement de stock
     await db.MouvementStock.create(
       {
@@ -156,16 +146,13 @@ class MouvementService {
         bonId: bon.id
       },
       { transaction }
-    );
-    console.log(`Mouvement ${typeMouvement} exécuté - Stock: ${ancienneQuantite} → ${nouvelleQuantite}`);
+    );logger.log('mouvementService', `Mouvement ${typeMouvement} exécuté - Stock: ${ancienneQuantite} → ${nouvelleQuantite}`);
   }
 
   async executerMouvementPhysiqueBis(article, stock, magasinId,typeMouvement, panier, agentId, code_structure, transaction) {
     
     const ancienneQuantite = statutManager.safeNumber(stock.quantiteTotale);
-    let nouvelleQuantite = ancienneQuantite;
-
-    console.log(`Mouvement ${typeMouvement} - Produit: ${article.produitId}, Quantité: ${article.quantite}`);
+    let nouvelleQuantite = ancienneQuantite;logger.log('mouvementService', `Mouvement ${typeMouvement} - Produit: ${article.produitId}, Quantité: ${article.quantite}`);
 
     if (typeMouvement === 'Entree') {
       nouvelleQuantite += statutManager.safeNumber(article.quantite);
@@ -187,8 +174,7 @@ class MouvementService {
         prixVenteUnitaire: article.prixVenteUnitaire || stock.prixVenteUnitaire
       },
       { transaction }
-    );
-    console.log(`Stock mis à jour pour le produit ID: ${article.produitId} - Ancienne quantité: ${ancienneQuantite}, Nouvelle quantité: ${updatedStoct.quantiteTotale}`);
+    );logger.log('mouvementService', `Stock mis à jour pour le produit ID: ${article.produitId} - Ancienne quantité: ${ancienneQuantite}, Nouvelle quantité: ${updatedStoct.quantiteTotale}`);
     // Créer le mouvement de stock
     await db.MouvementStock.create(
       {
@@ -206,8 +192,7 @@ class MouvementService {
         code_structure,
       },
       { transaction }
-    );
-    console.log(`Mouvement ${typeMouvement} exécuté - Stock: ${ancienneQuantite} → ${nouvelleQuantite}`);
+    );logger.log('mouvementService', `Mouvement ${typeMouvement} exécuté - Stock: ${ancienneQuantite} → ${nouvelleQuantite}`);
   }
 
 

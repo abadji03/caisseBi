@@ -1,10 +1,11 @@
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { catchError, Observable, tap, throwError } from 'rxjs';
+import { catchError, Observable, tap } from 'rxjs';
 import { User } from '../modeles/user.model';
 import { AuthService } from './auth.service';
 import { NGXLogger } from 'ngx-logger';
 import { environment } from '../../environments/environment';
+import { handleApiError } from '../core/api/api-error';
 
 export interface UsersFilter {
   page?: number;
@@ -34,24 +35,16 @@ export class UserService {
   private authService = inject(AuthService);
   private logger = inject(NGXLogger);
 
-  private getHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
-    return new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    });
-  }
 
-   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-   private handleError(error: any, message: string): Observable<never> {
-    this.logger.error(message, error);
-    return throwError(() => error);
+    
+   private handleError(error: unknown, message: string): Observable<never> {
+    return handleApiError(this.logger, 'UserService', error, message);
   }
   
   // Récupère tous les utilisateurs (filtrés par structure si nécessaire)
 
   getAlls(): Observable<User[]> {
-    return this.http.get<User[]>(`${this.apiUrl}`, { headers: this.getHeaders() });
+    return this.http.get<User[]>(`${this.apiUrl}`, {});
   }
 
   // Récupérer tous les utilisateurs avec pagination
@@ -66,7 +59,6 @@ export class UserService {
     }
 
     return this.http.get<UsersResponse>(this.apiUrl, {
-      headers: this.getHeaders(),
       params
     }).pipe(
       tap(response => this.logger.info(`Utilisateurs récupérés: ${response.items.length}`)),
@@ -76,22 +68,22 @@ export class UserService {
 
   // Récupère un utilisateur par son ID
   getById(id: number): Observable<User> {
-    return this.http.get<User>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
+    return this.http.get<User>(`${this.apiUrl}/${id}`, {});
   }
 
   // Crée un nouvel utilisateur
   create(user: User): Observable<User> {
-    return this.http.post<User>(this.apiUrl, user, { headers: this.getHeaders() });
+    return this.http.post<User>(this.apiUrl, user, {});
   }
 
   // Met à jour un utilisateur existant
   update(id: number, user: User): Observable<User> {
-    return this.http.put<User>(`${this.apiUrl}/${id}`, user, { headers: this.getHeaders() });
+    return this.http.put<User>(`${this.apiUrl}/${id}`, user, {});
   }
 
   // Supprime un utilisateur
   delete(id: number): Observable<unknown> {
-    return this.http.delete(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
+    return this.http.delete(`${this.apiUrl}/${id}`, {});
   }
 
   // Active/désactive un utilisateur
@@ -99,7 +91,7 @@ export class UserService {
     return this.http.patch<User>(
       `${this.apiUrl}/${id}/status`,
       { status },
-      { headers: this.getHeaders() },
+      {},
     );
   }
 
@@ -108,7 +100,7 @@ export class UserService {
     return this.http.patch(
       `${this.apiUrl}/${id}/password`,
       { password: newPassword },
-      { headers: this.getHeaders() },
+      {},
     );
   }
 
@@ -126,13 +118,12 @@ export class UserService {
       query += `&structure_id=${this.authService.getUserStructureId()}`;
     } */
 
-    return this.http.get<User[]>(`${this.apiUrl}/search?${query}`, { headers: this.getHeaders() });
+    return this.http.get<User[]>(`${this.apiUrl}/search?${query}`, {});
   }
 
   // Récupère les utilisateurs par structure
   getByStructure(code_structure: string): Observable<User[]> {
     return this.http.get<User[]>(`${this.apiUrl}/${code_structure}/users`, {
-      headers: this.getHeaders(),
     });
   }
 
@@ -153,7 +144,6 @@ export class UserService {
     }
 
     return this.http.get<UsersResponse>(`${this.apiUrl}/${code_structure}/bis/users`, {
-      headers: this.getHeaders(),
       params
     }).pipe(
       tap(response => this.logger.info(`Utilisateurs récupérés: ${response.items.length}`)),
@@ -165,7 +155,6 @@ export class UserService {
   // Vérifie si un email est déjà utilisé
   checkEmailAvailability(email: string): Observable<{ available: boolean }> {
     return this.http.get<{ available: boolean }>(`${this.apiUrl}/check-email?email=${email}`, {
-      headers: this.getHeaders(),
     });
   }
 

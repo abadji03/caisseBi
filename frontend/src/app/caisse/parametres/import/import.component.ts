@@ -133,7 +133,6 @@ export class ImportComponent  implements OnInit{
 
   ngOnInit(): void {
     // Initialisation
-    console.log('Initialisation');
   }
 
   onTypeImportChange(): void {

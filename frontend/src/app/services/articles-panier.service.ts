@@ -1,10 +1,10 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { NGXLogger } from 'ngx-logger';
-import { AuthService } from './auth.service';
-import { catchError, Observable, tap, throwError } from 'rxjs';
+import { catchError, Observable, tap } from 'rxjs';
 import { ArticlePanier } from '../modeles/panier.model';
 import { environment } from '../../environments/environment';
+import { handleApiError } from '../core/api/api-error';
 
 @Injectable({
   providedIn: 'root'
@@ -15,19 +15,11 @@ export class ArticlesPanierService {
 
   private http = inject(HttpClient);
   private logger = inject(NGXLogger);
-  private authService = inject(AuthService);
 
-  /** Headers avec token */
-  private getHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
-    return new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-    });
-  }
 
   /** Créer un article panier */
   create(article: ArticlePanier): Observable<ArticlePanier> {
-    return this.http.post<ArticlePanier>(this.apiUrl, article, { headers: this.getHeaders() }).pipe(
+    return this.http.post<ArticlePanier>(this.apiUrl, article, {}).pipe(
       tap(() => {
         this.logger.info('Article ajouté', article);
       }),
@@ -36,7 +28,7 @@ export class ArticlesPanierService {
   }
 
   createArticles (articles: ArticlePanier[]): Observable<ArticlePanier[]> {
-    return this.http.post<ArticlePanier[]>(`${this.apiUrl}/batch`, articles, { headers: this.getHeaders() }).pipe(
+    return this.http.post<ArticlePanier[]>(`${this.apiUrl}/batch`, articles, {}).pipe(
       tap(() => {
         this.logger.info('Article ajouté', articles);
       }),
@@ -47,7 +39,7 @@ export class ArticlesPanierService {
 
   /**Récupérer tous les articles panier */
   findAll(): Observable<ArticlePanier[]> {
-    return this.http.get<ArticlePanier[]>(this.apiUrl, { headers: this.getHeaders() }).pipe(
+    return this.http.get<ArticlePanier[]>(this.apiUrl, {}).pipe(
       tap(() => this.logger.info('Liste des articles panier récupérée')),
       catchError((error) => this.handleError(error, 'Erreur lors du chargement des articles panier'))
     );
@@ -55,7 +47,7 @@ export class ArticlesPanierService {
 
   /**Récupérer un article par ID */
   findById(id: number): Observable<ArticlePanier> {
-    return this.http.get<ArticlePanier>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() }).pipe(
+    return this.http.get<ArticlePanier>(`${this.apiUrl}/${id}`, {}).pipe(
       tap(() => this.logger.info(`Article panier ${id} récupéré`)),
       catchError((error) => this.handleError(error, `Erreur lors de la récupération de l’article ${id}`))
     );
@@ -63,7 +55,7 @@ export class ArticlesPanierService {
 
   /**Mettre à jour un article panier */
   update(id: number, article: ArticlePanier): Observable<ArticlePanier> {
-    return this.http.put<ArticlePanier>(`${this.apiUrl}/${id}`, article, { headers: this.getHeaders() }).pipe(
+    return this.http.put<ArticlePanier>(`${this.apiUrl}/${id}`, article, {}).pipe(
       tap(() => {
         this.logger.info('Article mis à jour', { id, article });
       }),
@@ -73,7 +65,7 @@ export class ArticlesPanierService {
 
   /**Supprimer un article panier */
   delete(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() }).pipe(
+    return this.http.delete<void>(`${this.apiUrl}/${id}`, {}).pipe(
       tap(() => {
         this.logger.warn(`Article ${id} supprimé`);
       }),
@@ -82,21 +74,20 @@ export class ArticlesPanierService {
   }
 
   deleteArticleFromPanier(panierId: number, id: number) {
-  return this.http.delete(`${this.apiUrl}/panier/${panierId}/produit/${id}`,{ headers: this.getHeaders() });
+  return this.http.delete(`${this.apiUrl}/panier/${panierId}/produit/${id}`,{});
 }
  
   /**Récupérer les paniers d’une structure */
   getByStructure(code_structure: string): Observable<ArticlePanier[]> {
-    return this.http.get<ArticlePanier[]>(`${this.apiUrl}/structure/${code_structure}`, { headers: this.getHeaders() }).pipe(
+    return this.http.get<ArticlePanier[]>(`${this.apiUrl}/structure/${code_structure}`, {}).pipe(
       tap(() => this.logger.info(`Articles panier récupérés pour la structure ${code_structure}`)),
       catchError((error) => this.handleError(error, `Erreur lors du chargement des articles de la structure ${code_structure}`))
     );
   }
 
   /**Gestion des erreurs */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private handleError(error: any, message: string) {
-    this.logger.error(message, error);
-    return throwError(() => error);
+   
+  private handleError(error: unknown, message: string) {
+    return handleApiError(this.logger, 'ArticlesPanierService', error, message);
   }
 }

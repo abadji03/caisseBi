@@ -1,4 +1,5 @@
 const db = require('../../models');
+const logger = require('../../services/logger.js');
 const stockManager = require('./stockManager');
 const statutManager = require('./statutManager');
 
@@ -9,9 +10,7 @@ class ReservationService {
   async gererReservationsStock(articles, bon, magasinId, agentId, code_structure, transaction) {
     const statut = bon.statutBon;
     const typeEntite = bon.typeEntite;
-    const typeBon = bon.type;
-
-    console.log(`Gestion réservations - ${typeBon}-${typeEntite}, Statut: ${statut}`);
+    const typeBon = bon.type;logger.log('reservationService', `Gestion réservations - ${typeBon}-${typeEntite}, Statut: ${statut}`);
 
     // RÈGLES MÉTIER SPÉCIFIQUES
 

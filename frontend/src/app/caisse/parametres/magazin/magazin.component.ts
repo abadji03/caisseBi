@@ -93,7 +93,6 @@ export class MagazinComponent implements OnInit, OnDestroy {
     this.userSubscription = this.authService.currentUser.subscribe(user => {
       // Initialiser la variable code_structure
       this.code_structure = user?.code_structure || null;
-      console.log('Code structure initialisé :', this.code_structure);
       if (this.code_structure) {
         this.loadMagasinsWithPagination();
       }
@@ -167,7 +166,6 @@ export class MagazinComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Erreur lors du chargement des magasins', err);
-          this.toastr.error('Erreur lors du chargement des magasins');
         }
       });
   }
@@ -241,7 +239,6 @@ export class MagazinComponent implements OnInit, OnDestroy {
     )
     .subscribe((data) => {
       this.allUsers = data;
-      console.log(this.allUsers.length);
     });
   }
 
@@ -348,10 +345,6 @@ export class MagazinComponent implements OnInit, OnDestroy {
         code_structure: this.magasinSelectionne.code_structure // Garder la structure d'origine
       };
       
-      console.log('Mise à jour du magasin:', {
-        id: this.magasinSelectionne.id,
-        données: updatedMagasin
-      });
 
       this.isLoadingMagasin = true;
       this.magasinService.updateMagasin(this.magasinSelectionne.id, updatedMagasin)
@@ -430,7 +423,6 @@ export class MagazinComponent implements OnInit, OnDestroy {
 
   // Gestion du statut
   toggleStatutMagasin(magasin: Magasin): void {
-    console.log('réponse au clique');
     const newStatut = magasin.statut === 'Actif' ? 'Inactif' : 'Actif';
     this.magasinService.updateMagasinStatus(magasin.id, newStatut)
     .pipe(takeUntil(this.destroy$))

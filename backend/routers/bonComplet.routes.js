@@ -64,7 +64,7 @@ const { validateBonComplet } = require('../middlewares/validateBonComplet.middle
  */
 
 // Route pour la création complète d'un bon
-router.post('/complet', upload.single('fichier'), authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), validateBonComplet, bonCompletController.createBonComplet);
+router.post('/complet', upload.single('fichier'), authenticateToken, requirePermission('sales.manage', 'cash.access'), validateBonComplet, bonCompletController.createBonComplet);
 
 // Note : les routes changer-statut, transitions et historique ont été retirées
 // car statut.controller.js dépendait de BonWorkflow/traiterChangementStatut

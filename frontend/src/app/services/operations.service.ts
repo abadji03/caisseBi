@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { NGXLogger } from 'ngx-logger';
 import { ToastrService } from 'ngx-toastr';
-import { AuthService } from './auth.service';
-import { catchError, map, Observable, tap, throwError } from 'rxjs';
+import { catchError, map, Observable, tap } from 'rxjs';
 import { Operation, OperationsFilters, OperationsResponse, StatsResponse } from '../modeles/operation.model';
 import { environment } from '../../environments/environment';
+import { handleApiError } from '../core/api/api-error';
 
 @Injectable({
   providedIn: 'root'
@@ -16,22 +16,15 @@ export class OperationsService {
   private apiUrl = environment.apiUrl;
 
   private http = inject(HttpClient);
-  private authService = inject(AuthService);
   private logger = inject(NGXLogger);
   private toastr = inject(ToastrService);
 
   private handleError(error: unknown, message: string) {
-    this.logger.error(message, error);
-    this.toastr.error(message);
-    return throwError(() => error);
+    // Le service ne doit PAS afficher de toast : le composant reste
+    // responsable du message métier (voir contrat api-error.ts).
+    return handleApiError(this.logger, 'OperationsService', error, message);
   }
 
-  private getHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
-    return new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
-  }
 
   // ==============================
   // MÉTHODES PRINCIPALES
@@ -48,7 +41,6 @@ export class OperationsService {
     });
 
     return this.http.get<OperationsResponse>(`${this.apiUrl}/operations`, {
-      headers: this.getHeaders(),
       params
     }).pipe(
       tap(response => this.logger.info(`Opérations chargées: ${response.operations.length} / ${response.total} total`)),
@@ -73,7 +65,7 @@ export class OperationsService {
 
     return this.http.get<Operation[]>(
       `${this.apiUrl}/operations/${endpoint}/${code_structure}/${entityId}`,
-      { headers: this.getHeaders(), params }
+      { params }
     ).pipe(
       tap(operations => this.logger.info(`Opérations ${endpoint} chargées: ${operations.length}`)),
       catchError(error => this.handleError(error, `Erreur chargement opérations ${endpoint}`))
@@ -98,7 +90,6 @@ export class OperationsService {
 
   getOperationById(id: number): Observable<Operation> {
     return this.http.get<Operation>(`${this.apiUrl}/operations/${id}`, {
-      headers: this.getHeaders()
     }).pipe(
       tap(operation => this.logger.info('Détails opération chargés', operation)),
       catchError(error => this.handleError(error, `Erreur chargement opération ${id}`))
@@ -111,7 +102,6 @@ export class OperationsService {
 
   createOperation(operationData: Partial<Operation>): Observable<Operation> {
     return this.http.post<Operation>(`${this.apiUrl}/operations`, operationData, {
-      headers: this.getHeaders()
     }).pipe(
       tap(operation => this.logger.info('Opération créée', operation)),
       catchError(error => this.handleError(error, 'Erreur création opération'))
@@ -162,7 +152,6 @@ export class OperationsService {
 
   updateOperation(id: number, updateData: Partial<Operation>): Observable<Operation> {
     return this.http.put<Operation>(`${this.apiUrl}/operations/${id}`, updateData, {
-      headers: this.getHeaders()
     }).pipe(
       tap(operation => this.logger.info('Opération mise à jour', operation)),
       catchError(error => this.handleError(error, `Erreur mise à jour opération ${id}`))
@@ -171,7 +160,6 @@ export class OperationsService {
 
   deleteOperation(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/operations/${id}`, {
-      headers: this.getHeaders()
     }).pipe(
       tap(() => this.logger.warn(`Opération supprimée: ${id}`)),
       catchError(error => this.handleError(error, `Erreur suppression opération ${id}`))
@@ -190,8 +178,7 @@ export class OperationsService {
         params = params.set(key, value.toString());
       }
     });
-    return this.http.get<StatsResponse[]>(`${this.apiUrl}/operations/stats`, {
-      headers: this.getHeaders(), params
+    return this.http.get<StatsResponse[]>(`${this.apiUrl}/operations/stats`, { params
     }).pipe(
       tap(stats => this.logger.info('Statistiques chargées', stats)),
       catchError(error => this.handleError(error, 'Erreur chargement statistiques'))

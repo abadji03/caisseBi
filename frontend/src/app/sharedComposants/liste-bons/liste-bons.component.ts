@@ -1,16 +1,17 @@
-import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { Bon } from '../../modeles/bon.model';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { TablePaginationComponent } from '../../shared/table/table-pagination.component';
 
 @Component({
   selector: 'app-liste-bons',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TablePaginationComponent],
   templateUrl: './liste-bons.component.html',
   styleUrl: './liste-bons.component.css'
 })
-export class ListeBonsComponent implements OnInit,OnChanges {
+export class ListeBonsComponent implements OnChanges {
 
   @Input() bons: Bon[] = [];
   @Input() entiteNom = '';
@@ -43,12 +44,7 @@ export class ListeBonsComponent implements OnInit,OnChanges {
  
   selectedBonIndex: number | null = null;
 
-  Math = Math; // Pour utiliser Math.min dans le template
-
-  ngOnInit(): void {
-    console.log('Bon chargés',this.bons)
-  }
- ngOnChanges(changes: SimpleChanges): void {
+  ngOnChanges(changes: SimpleChanges): void {
     if (changes['bons']) {
       this.selectedBonIndex = null;
     }
@@ -61,10 +57,6 @@ export class ListeBonsComponent implements OnInit,OnChanges {
       this.selectedBonIndex = index;
     }
     this.onViewDetails.emit(bon);
-  }
-
-  changePage(page: number): void {
-    this.onPageChange.emit(page);
   }
 
   canReturn(bon: Bon): boolean {

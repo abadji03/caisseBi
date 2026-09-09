@@ -1,4 +1,5 @@
 const db = require('../models');
+const logger = require('../services/logger.js');
 const CategorieProduit = db.CategoriesProduits;
 const HistoriqueService = require('../services/historique.service');
 const ExcelJS = require('exceljs');
@@ -382,8 +383,7 @@ exports.exportCategoriesExcel = async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename=categories-${Date.now()}.xlsx`);
     res.send(buffer);
     
-  } catch (error) {
-    console.error('❌ Erreur export Excel catégories:', error);
+  } catch (error) {logger.error('categorieProduit.controller', '❌ Erreur export Excel catégories:', error);
     
     if (req.user) {
       await HistoriqueService.enregistrerAction(

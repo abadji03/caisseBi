@@ -419,7 +419,6 @@ calculerTotalPaiementsCompte(): number {
     const subscription = this.kpiService.getComparatifCA(params).subscribe({
       next: (data) => {
         this.comparatifData = data;
-        console.log('Comparatif data',this.comparatifData)
       },
       error: (error) => {
         console.error('Erreur lors du chargement du comparatif:', error);

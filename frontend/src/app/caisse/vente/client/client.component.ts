@@ -30,6 +30,10 @@ import { PaiementComponent } from '../../../sharedComposants/paiement/paiement.c
 import { v4 as uuidv4 } from 'uuid';
 import { BonComponent } from '../../../sharedComposants/bon/bon.component';
 import { FactureComponent } from '../facture/facture.component';
+import { TableSearchComponent } from '../../../shared/table/table-search.component';
+import { TablePaginationComponent } from '../../../shared/table/table-pagination.component';
+import { TableStateComponent } from '../../../shared/table/table-state.component';
+import { ListState, toListState } from '../../../shared/table/list-state';
 
 @Component({
   selector: 'app-client',
@@ -43,7 +47,10 @@ import { FactureComponent } from '../facture/facture.component';
     ListeBonsComponent,
     ListeVersementsComponent,
     ListeOperationsComponent,
-    FactureComponent
+    FactureComponent,
+    TableSearchComponent,
+    TablePaginationComponent,
+    TableStateComponent
   ],
   templateUrl: './client.component.html',
   styleUrl: './client.component.css'
@@ -52,6 +59,12 @@ export class ClientComponent implements OnInit, OnDestroy {
 
   // État général
   isLoadingClient = false;
+  /** État d'affichage de la liste clients (loading/success/empty/error) — voir shared/table */
+  clientsListState: ListState = 'idle';
+  clientsLoadError = false;
+  /** États des onglets bons et versements */
+  bonsListState: ListState = 'idle';
+  paiementsListState: ListState = 'idle';
   isLoadingBon = false;
   isLoadingPaiement = false;
   isLoadingOperation = false;
@@ -224,6 +237,8 @@ export class ClientComponent implements OnInit, OnDestroy {
       statut: this.clientsFilters.statut
     };
     this.isLoadingClient = true;
+    this.clientsListState = 'loading';
+    this.clientsLoadError = false;
     this.clientService.getClientsByStructureBis(this.code_structure, filters)
       .pipe(takeUntil(this.destroy$), finalize(() => this.isLoadingClient = false))
       .subscribe({
@@ -239,9 +254,13 @@ export class ClientComponent implements OnInit, OnDestroy {
           this.clientsTotalPages = response.pagination.totalPages;
           this.clientsHasNext = response.pagination.hasNext;
           this.clientsHasPrev = response.pagination.hasPrev;
+          this.clientsListState = toListState(false, false, this.clients);
           this.loadMagasins();
         },
-        error: err => { console.error('Erreur chargement clients', err); this.toastr.error('Erreur lors du chargement des clients'); }
+        error: err => {
+          this.clientsLoadError = true;
+          this.clientsListState = 'error';
+        }
       });
   }
 
@@ -273,6 +292,7 @@ export class ClientComponent implements OnInit, OnDestroy {
       statut: this.bonsFilters.statut !== 'tous' ? this.bonsFilters.statut : undefined
     };
     this.isLoadingBon = true;
+    this.bonsListState = 'loading';
     this.bonService.getBonsClientByStructureBis(this.code_structure, filters)
       .pipe(takeUntil(this.destroy$), finalize(() => this.isLoadingBon = false))
       .subscribe({
@@ -283,8 +303,11 @@ export class ClientComponent implements OnInit, OnDestroy {
           this.bonsTotalPages = response.pagination.totalPages;
           this.bonsHasNext = response.pagination.hasNext;
           this.bonsHasPrev = response.pagination.hasPrev;
+          this.bonsListState = 'success';
         },
-        error: err => { console.error('Erreur chargement bons:', err); this.toastr.error('Erreur lors du chargement des bons'); }
+        error: err => {
+          this.bonsListState = 'error';
+        }
       });
   }
 
@@ -297,6 +320,7 @@ export class ClientComponent implements OnInit, OnDestroy {
       methodePaiement: this.paiementsFilters.methodePaiement !== 'tous' ? this.paiementsFilters.methodePaiement : undefined
     };
     this.isLoadingPaiement = true;
+    this.paiementsListState = 'loading';
     this.paiementService.getPaiementsClients(this.code_structure, filters)
       .pipe(takeUntil(this.destroy$), finalize(() => this.isLoadingPaiement = false))
       .subscribe({
@@ -307,8 +331,11 @@ export class ClientComponent implements OnInit, OnDestroy {
           this.paiementsTotalPages = response.pagination?.totalPages || 0;
           this.paiementsHasNext = response.pagination?.hasNext || false;
           this.paiementsHasPrev = response.pagination?.hasPrev || false;
+          this.paiementsListState = 'success';
         },
-        error: (err: unknown) => { console.error('Erreur chargement paiements:', err); this.toastr.error('Erreur lors du chargement des paiements'); }
+        error: (err: unknown) => {
+          this.paiementsListState = 'error';
+        }
       });
   }
 

@@ -4,6 +4,10 @@ module.exports = (sequelize, DataTypes) => {
     {
       id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
       nom: { type: DataTypes.STRING(100), allowNull: false },
+      // Code stable (ex. 'sales.manage') — identifiant unique utilisé par le
+      // contrôle d'accès. Rempli par scripts/migratePermissionCodes.js.
+      // allowNull temporaire pendant la migration, puis NOT NULL.
+      code: { type: DataTypes.STRING(50), allowNull: true, unique: true },
       niveau: { type: DataTypes.TINYINT, defaultValue: 1 },
       type: {
         type: DataTypes.ENUM(

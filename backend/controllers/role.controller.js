@@ -1,7 +1,9 @@
 const db = require('../models');
+const logger = require('../services/logger.js');
 const Role = db.Role;
 const Permission = db.Permission;
 const HistoriqueService = require('../services/historique.service');
+const { invalidateAllPermissions } = require('../middlewares/auth.middleware');
 
 
 //Créer un rôle
@@ -121,8 +123,7 @@ exports.updateRole = async (req, res) => {
     );
 
     res.json({ message: 'Rôle mis à jour', role: oldRole });
-  } catch (err) {
-    console.error('Erreur mise à jour rôle:', err);
+  } catch (err) {logger.error('role.controller', 'Erreur mise à jour rôle:', err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -203,6 +204,7 @@ exports.assignPermissions = async (req, res) => {
     }
 
     await role.setPermissions(permissions);
+    invalidateAllPermissions();
 
     // Récupérer les nouvelles permissions pour l'historique
     const nouvellesPermissions = permissions.map(p => ({ id: p.id, nom: p.nom }));

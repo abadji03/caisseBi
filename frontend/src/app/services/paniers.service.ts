@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { AuthService } from './auth.service';
 import { NGXLogger } from 'ngx-logger';
-import { catchError, Observable, throwError } from 'rxjs';
+import { catchError, Observable } from 'rxjs';
 import { Panier } from '../modeles/panier.model';
 import { environment } from '../../environments/environment';
+import { handleApiError } from '../core/api/api-error';
 
 const API_URL = `${environment.apiUrl}/paniers`;
 export interface TransactionsResponse {
@@ -45,23 +45,10 @@ export class PaniersService {
 
   private http = inject(HttpClient);
   private logger = inject(NGXLogger);
-  private authService = inject(AuthService)
-
-
-  private getHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
-    return new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
-  }
 
   private handleError(error: HttpErrorResponse): Observable<never> {
-    const message = typeof error.error === 'string'
-      ? error.error
-      : error.message || 'Erreur inconnue';
-    const status = error.status || 0;
-    this.logger.error(`Erreur API Panier (${status}): ${message}`, error);
-    return throwError(() => error);
+    // handleApiError extrait déjà le message backend (string ou {message}) et le statut.
+    return handleApiError(this.logger, 'PaniersService', error, 'Erreur inconnue');
   }
 
   // === HELPERS DE CONSTRUCTION D'URL ===
@@ -82,70 +69,74 @@ export class PaniersService {
       return this.http.post<any>(`${API_URL}/panier-complet`, panierCompletData);
   }
 
+  /** Brouillon de caisse : 0 article autorisé, aucun effet stock/paiement */
+  createBrouillonPanier(brouillonData: any): Observable<any> {
+      return this.http.post<any>(`${API_URL}/brouillon`, brouillonData);
+  }
+
   createPanier(data: Panier): Observable<Panier> {
-    return this.http.post<Panier>(`${API_URL}`, data, { headers: this.getHeaders() })
+    return this.http.post<Panier>(`${API_URL}`, data, {})
       .pipe(catchError(err => this.handleError(err))); 
   }
 
   getPaniersByStructure(code_structure: string, magasinId: number): Observable<Panier[]> {
-    return this.http.get<Panier[]>(`${this.structureUrl(code_structure, magasinId)}`, { headers: this.getHeaders() })
+    return this.http.get<Panier[]>(`${this.structureUrl(code_structure, magasinId)}`, {})
       .pipe(catchError(err => this.handleError(err)));
   }
 
   getPaniersBrouillon(code_structure: string, magasinId: number): Observable<Panier[]> {
-    return this.http.get<Panier[]>(`${this.structureUrl(code_structure, magasinId)}/brouillon`, { headers: this.getHeaders() })
+    return this.http.get<Panier[]>(`${this.structureUrl(code_structure, magasinId)}/brouillon`, {})
       .pipe(catchError(err => this.handleError(err)));
   }
 
   getAllPaniers(): Observable<Panier[]> {
-    return this.http.get<Panier[]>(`${API_URL}`, { headers: this.getHeaders() })
+    return this.http.get<Panier[]>(`${API_URL}`, {})
       .pipe(catchError(err => this.handleError(err)));
   }
 
   getPanierById(id: number): Observable<Panier> {
-    return this.http.get<Panier>(`${this.panierUrl(id)}`, { headers: this.getHeaders() })
+    return this.http.get<Panier>(`${this.panierUrl(id)}`, {})
       .pipe(catchError(err => this.handleError(err)));
   }
 
   updatePanier(id: number, data: Panier): Observable<Panier> {
-    return this.http.put<Panier>(`${this.panierUrl(id)}`, data, { headers: this.getHeaders() })
+    return this.http.put<Panier>(`${this.panierUrl(id)}`, data, {})
       .pipe(catchError(err => this.handleError(err)));
   }
 
   deletePanier(id: number): Observable<Panier> {
-    return this.http.delete<Panier>(`${this.panierUrl(id)}`, { headers: this.getHeaders() })
+    return this.http.delete<Panier>(`${this.panierUrl(id)}`, {})
       .pipe(catchError(err => this.handleError(err)));
   }
 
   deleteOnlyPanier(id: number): Observable<Panier> {
-    return this.http.delete<Panier>(`${API_URL}/onlyPanier/${id}`, { headers: this.getHeaders() })
+    return this.http.delete<Panier>(`${API_URL}/onlyPanier/${id}`, {})
       .pipe(catchError(err => this.handleError(err)));
   }
   // === Méthodes spécifiques ===
 
   updateStatutPanier(id: number, statut: string): Observable<Panier> {
-    return this.http.patch<Panier>(`${this.panierUrl(id)}/statut`, { statut }, { headers: this.getHeaders() })
+    return this.http.patch<Panier>(`${this.panierUrl(id)}/statut`, { statut }, {})
       .pipe(catchError(err => this.handleError(err)));
   }
 
   updateTotauxPanier(id: number, totalHT: number, tva: number): Observable<Panier> {
-    return this.http.patch<Panier>(`${this.panierUrl(id)}/totaux`, { totalHT, tva }, { headers: this.getHeaders() })
+    return this.http.patch<Panier>(`${this.panierUrl(id)}/totaux`, { totalHT, tva }, {})
       .pipe(catchError(err => this.handleError(err)));
   }
 
   updateDetailsVisible(id: number, visible: boolean): Observable<Panier> {
-    return this.http.patch<Panier>(`${this.panierUrl(id)}/detailsVisible`, { visible }, { headers: this.getHeaders() })
+    return this.http.patch<Panier>(`${this.panierUrl(id)}/detailsVisible`, { visible }, {})
       .pipe(catchError(err => this.handleError(err)));
   }
 
   resetPanier(id: number): Observable<Panier> {
-    return this.http.patch<Panier>(`${this.panierUrl(id)}/reset`, {}, { headers: this.getHeaders() })
+    return this.http.patch<Panier>(`${this.panierUrl(id)}/reset`, {}, {})
       .pipe(catchError(err => this.handleError(err)));
   }
 
   getPanierByBonId(bonId: number): Observable<Panier> {
   return this.http.get<Panier>(`${API_URL}/bon/${bonId}`, {
-    headers: this.getHeaders(),
   }).pipe(catchError(err => this.handleError(err)));
 }
 
@@ -163,7 +154,6 @@ export class PaniersService {
     }
     
     return this.http.get<Panier[]>(`${API_URL}/structure/${code_structure}/journalier`, {
-      headers: this.getHeaders(),
       params
     }).pipe(catchError(err => this.handleError(err)));
   }
@@ -194,7 +184,6 @@ export class PaniersService {
       paniers: Panier[],
       statistiques: any
     }>(`${API_URL}/par-date/${date}`, {
-      headers: this.getHeaders(),
       params
     }).pipe(catchError(err => this.handleError(err)));
   }
@@ -238,7 +227,6 @@ export class PaniersService {
     const url = `${API_URL}/structure/bis/${code_structure}/magasin/${magasinId ?? ''}/bons/0/aujourdhui`;
 
     return this.http.get<TransactionsResponse>(url, {
-      headers: this.getHeaders(),
       params
     }).pipe(catchError(err => this.handleError(err)));
   }
@@ -278,7 +266,6 @@ export class PaniersService {
     }
     
     return this.http.get<any>(`${API_URL}/statistiques`, {
-      headers: this.getHeaders(),
       params
     }).pipe(catchError(err => this.handleError(err)));
   }
@@ -300,7 +287,6 @@ export class PaniersService {
     }
     
     return this.http.get(`${API_URL}/export/csv/${code_structure}`, {
-      headers: this.getHeaders(),
       params,
       responseType: 'blob'
     }).pipe(catchError(err => this.handleError(err)));

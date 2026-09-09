@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const operationController = require('../controllers/operation.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
-const { requirePermission } = require('../middlewares/auth.middleware');
+const { requirePermission, requireStructureAccess } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -69,14 +69,14 @@ const { requirePermission } = require('../middlewares/auth.middleware');
 
 // Routes spécifiques — doivent être AVANT /:id pour ne pas être avalées par ce pattern
 router.get('/stats', operationController.getStats);
-router.get('/fournisseur/:code_structure/:fournisseurId', authenticateToken, requirePermission('Gérer les finances'), operationController.findByFournisseur);
-router.get('/client/:code_structure/:clientId', authenticateToken, requirePermission('Gérer les finances'), operationController.findByClient);
+router.get('/fournisseur/:code_structure/:fournisseurId', authenticateToken, requireStructureAccess, requirePermission('finance.manage'), operationController.findByFournisseur);
+router.get('/client/:code_structure/:clientId', authenticateToken, requireStructureAccess, requirePermission('finance.manage', 'cash.access'), operationController.findByClient);
 
 // Routes génériques — après les routes spécifiques
-router.post('/', authenticateToken, requirePermission('Gérer les finances'), operationController.create);
-router.get('/', authenticateToken, requirePermission('Gérer les finances'), operationController.findAll);
-router.get('/:id', authenticateToken, requirePermission('Gérer les finances'), operationController.findById);
-router.put('/:id', authenticateToken, requirePermission('Gérer les finances'), operationController.update);
-router.delete('/:id', authenticateToken, requirePermission('Gérer les finances'), operationController.delete);
+router.post('/', authenticateToken, requireStructureAccess, requirePermission('finance.manage'), operationController.create);
+router.get('/', authenticateToken, requireStructureAccess, requirePermission('finance.manage'), operationController.findAll);
+router.get('/:id', authenticateToken, requireStructureAccess, requirePermission('finance.manage'), operationController.findById);
+router.put('/:id', authenticateToken, requireStructureAccess, requirePermission('finance.manage'), operationController.update);
+router.delete('/:id', authenticateToken, requireStructureAccess, requirePermission('finance.manage'), operationController.delete);
 
 module.exports = router;

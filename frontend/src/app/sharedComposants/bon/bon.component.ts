@@ -314,7 +314,6 @@ export class BonComponent implements OnChanges, OnInit, OnDestroy {
 
   // ==================== GESTION DU PANIER ====================
   onPanierEnregistre(panier: Panier): void {
-    console.log('📦 Panier reçu:', panier.statut);
     this.panierData = panier;
     
     if (panier.statut === 'validé') {
@@ -444,7 +443,6 @@ export class BonComponent implements OnChanges, OnInit, OnDestroy {
       bon.id = this.bonBrouillon.id;
     }
     
-    console.log('Données bon envoyées au parents',bon);
     
     this.onEnregistrerBon.emit({ bon, fichier });
     

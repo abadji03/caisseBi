@@ -1,3 +1,4 @@
+const logger = require('../services/logger.js');
 // models/panier.js
 const SequenceService = require('../services/sequence.service');
 
@@ -37,6 +38,17 @@ module.exports = (sequelize, DataTypes) => {
     remise: {
       type: DataTypes.DECIMAL(12, 2),
       defaultValue: 0,
+    },
+    // 🔹 Mode d'application persisté (avant : déduit par le frontend au rechargement)
+    remiseMode: {
+      type: DataTypes.ENUM('article', 'globale'),
+      allowNull: false,
+      defaultValue: 'globale',
+    },
+    tvaMode: {
+      type: DataTypes.ENUM('article', 'globale'),
+      allowNull: false,
+      defaultValue: 'globale',
     },
     totalTTC: {
       type: DataTypes.DECIMAL(12, 2),
@@ -98,7 +110,7 @@ module.exports = (sequelize, DataTypes) => {
         } catch (error) {
           // Repli : ancien comportement COUNT + 1 (risque de collision,
           // mais ne bloque pas la création si la table Sequence est absente)
-          console.error('❌ Hook numeroE Panier error:', error);
+          logger.error('panier.model', '❌ Hook numeroE Panier error:', error);
           try {
             const count = await sequelize.models.Panier.count({
               where: { code_structure: panier.code_structure },
@@ -107,7 +119,7 @@ module.exports = (sequelize, DataTypes) => {
             });
             panier.numeroE = count + 1;
           } catch (fallbackError) {
-            console.error('❌ Hook numeroE Panier fallback error:', fallbackError);
+            logger.error('panier.model', '❌ Hook numeroE Panier fallback error:', fallbackError);
             panier.numeroE = 1;
           }
         }

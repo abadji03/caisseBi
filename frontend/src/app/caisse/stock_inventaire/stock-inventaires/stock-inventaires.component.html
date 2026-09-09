@@ -55,13 +55,11 @@
     <div class="card-body">
       <div class="row">
         <div class="col-md-3 mb-2">
-          <input
-            type="text"
-            class="form-control"
+          <app-table-search
             placeholder="Rechercher produit..."
-            [(ngModel)]="searchText"
-            (input)="onSearchChange()"
-          >
+            [value]="searchText"
+            (searchChange)="onSearchChange()"
+          />
         </div>
         <div class="col-md-2 mb-2">
           <select class="form-select" [(ngModel)]="selectedStatut" (change)="onFilterChange()">
@@ -104,19 +102,9 @@
   <!-- Contrôles de pagination -->
   <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-      <span class="text-muted" *ngIf="!isLoading">
+      <span class="text-muted">
         {{ totalItems }} produit(s) • Page {{ currentPage }}/{{ totalPages }}
       </span>
-    </div>
-    <div class="d-flex align-items-center">
-      <label for="form-select" class="me-2">Afficher</label>
-      <select class="form-select w-auto" (change)="onPageSizeChange($event)">
-        <option [value]="10" selected>10</option> 
-        <option [value]="25">25</option>
-        <option [value]="50">50</option>
-        <option [value]="100">100</option>
-      </select>
-      <span> lignes par page</span>
     </div>
   </div>
 
@@ -139,16 +127,20 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngIf="isLoading">
-            <td [attr.colspan]="isAdmin ? 11 : 10" class="text-center py-4">
-              <div class="spinner-border text-success"></div>
-            </td>
-          </tr>
-          <tr *ngIf="!isLoading && stocks.length === 0">
-            <td [attr.colspan]="isAdmin ? 11 : 10" class="text-center py-4">
-              Aucun stock trouvé
-            </td>
-          </tr>
+          <!-- État : chargement / erreur / vide -->
+          @if (stocksListState === 'loading' || stocksListState === 'error' || stocksListState === 'empty') {
+            <tr>
+              <td [attr.colspan]="isAdmin ? 11 : 10" class="text-center py-4">
+                <app-table-state
+                  [state]="stocksListState"
+                  loadingMessage="Chargement des stocks..."
+                  emptyMessage="Aucun stock trouvé"
+                  errorMessage="Erreur lors du chargement des données."
+                  (retry)="loadData()"
+                />
+              </td>
+            </tr>
+          }
 
           <!-- Boucle principale sur les stocks -->
           <ng-container *ngFor="let stock of stocks; let i = index">
@@ -289,28 +281,20 @@
     </div>
 
   <!-- Pagination -->
-  <div class="d-flex justify-content-between mt-3" *ngIf="totalPages > 1">
-    <div class="text-muted mb-2 mb-md-0">
-      <small>
-        Page {{ currentPage }}/{{ totalPages }} ({{ totalItems }} produits)
-      </small>
-    </div>
-    <nav>
-      <ul class="pagination">
-        <li class="page-item" [class.disabled]="!hasPrev">
-          <button class="page-link" (click)="onPageChange(currentPage - 1)">«</button>
-        </li>
-        
-        <li class="page-item" *ngFor="let page of pagesToShow" [class.active]="currentPage === page">
-          <button class="page-link" (click)="onPageChange(page)">{{ page }}</button>
-        </li>
-        
-        <li class="page-item" [class.disabled]="!hasNext">
-          <button class="page-link" (click)="onPageChange(currentPage + 1)">»</button>
-        </li>
-      </ul>
-    </nav>
-  </div>
+  @if (stocksListState === 'success' || stocksListState === 'loading') {
+    <app-table-pagination
+      [page]="currentPage"
+      [totalPages]="totalPages"
+      [total]="totalItems"
+      [itemsPerPage]="pageSize"
+      [hasNext]="hasNext"
+      [hasPrev]="hasPrev"
+      labelPlural="produits"
+      [showPageNumbers]="true"
+      (pageChange)="onPageChange($event)"
+      (itemsPerPageChange)="onPageSizeChange($event)"
+    />
+  }
 </div>
 
 <!-- Modal de gestion des transferts -->

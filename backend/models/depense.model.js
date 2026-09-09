@@ -1,4 +1,5 @@
 //const SequenceService = require('../services/sequence.service');
+const logger = require('../services/logger.js');
 
 module.exports = (sequelize, DataTypes) => {
   const Depense = sequelize.define('Depense', {
@@ -41,7 +42,6 @@ module.exports = (sequelize, DataTypes) => {
 
     hooks: {
       beforeValidate: async (depense, options) => {
-        console.log('🔍 beforeValidate hook called', depense.code_structure);
         
         // Définir numeroE avant la validation
         if (!depense.numeroE) {
@@ -53,18 +53,16 @@ module.exports = (sequelize, DataTypes) => {
                 transaction: options.transaction
               });
               depense.numeroE = count + 1;
-              console.log(`✅ Generated numeroE in beforeValidate: ${depense.numeroE}`);
             } else {
               depense.numeroE = 1;
             }
           } catch (error) {
-            console.error('❌ Hook error:', error);
+            logger.error('depense.model', '❌ Hook error:', error);
             depense.numeroE = 1;
           }
         }
       },
       beforeCreate: async (depense, options) => {
-        console.log('🎯 beforeCreate hook STARTED', depense.numeroE);
         // Vérifier et régénérer si nécessaire
         if (!depense.numeroE) {
           const depensesModel = sequelize.models.Depense;

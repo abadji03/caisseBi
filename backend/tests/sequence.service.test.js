@@ -76,3 +76,53 @@ describe('SequenceService.initialiserDepuisMax', () => {
     expect(sourceModel.max).not.toHaveBeenCalled();
   });
 });
+
+describe('SequenceService.formaterNumero', () => {
+  test('formate un numéro court lisible PREFIX-AA-NNNN', () => {
+    expect(SequenceService.formaterNumero('PAI', 2026, 7)).toBe('PAI-26-0007');
+    expect(SequenceService.formaterNumero('BON', 2026, 123456789)).toBe('BON-26-123456789');
+  });
+
+  test('deux numéros consécutifs sont toujours distincts', () => {
+    const a = SequenceService.formaterNumero('FAC', 2026, 41);
+    const b = SequenceService.formaterNumero('FAC', 2026, 42);
+    expect(a).not.toBe(b);
+  });
+});
+
+describe('SequenceService.estNumeroAuto', () => {
+  test('détecte un numéro absent', () => {
+    expect(SequenceService.estNumeroAuto('PAI', null)).toBe(true);
+    expect(SequenceService.estNumeroAuto('PAI', '')).toBe(true);
+  });
+
+  test('détecte un uuid généré par le front (avec ou sans préfixe)', () => {
+    expect(SequenceService.estNumeroAuto('BON', 'BON-123e4567-e89b-42d3-a456-426614174000')).toBe(true);
+  });
+
+  test('détecte un numéro timestamp généré par le front', () => {
+    expect(SequenceService.estNumeroAuto('BON', 'BON-1759878028276-742')).toBe(true);
+  });
+
+  test('préserve les numéros courts serveur et les références humaines', () => {
+    expect(SequenceService.estNumeroAuto('PAI', 'PAI-26-0007')).toBe(false);
+    expect(SequenceService.estNumeroAuto('BON', 'BON-1')).toBe(false);
+    expect(SequenceService.estNumeroAuto('BON', 'RETOUR-BON-26-0007-1759878028276')).toBe(false);
+  });
+});
+
+describe('SequenceService.getNextNumeroFormate', () => {
+  test('combine getNextNumero et formaterNumero', async () => {
+    jest.mock('../models', () => ({ sequelize: {} }));
+    const Sequence = { findOne: jest.fn(), create: jest.fn() };
+    const fakeTx = { commit: jest.fn(), rollback: jest.fn(), LOCK: { UPDATE: 'UPDATE' } };
+    Sequence.findOne.mockResolvedValue({ dernier_numero: 41, save: jest.fn() });
+
+    const { numeroE, numero } = await SequenceService.getNextNumeroFormate(
+      { transaction: async () => fakeTx }, Sequence, 'STR-1', 'paiement', 'PAI', null
+    );
+
+    expect(numeroE).toBe(42);
+    expect(numero).toMatch(/^PAI-\d{2}-0042$/);
+  });
+});

@@ -1,8 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 import { AfterViewInit, Component, ElementRef, inject, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { HistoriqueAction, HistoriqueConnexion, HistoriqueService } from '../../../services/historique.service';
 import { ToastrService } from 'ngx-toastr';
 import { finalize, Subject, takeUntil } from 'rxjs';
+import { TableStateComponent } from '../../../shared/table/table-state.component';
+import { ListState, toListState } from '../../../shared/table/list-state';
 //import { AuthService } from '../../../services/auth.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -14,7 +16,7 @@ import Chart from 'chart.js/auto';
 @Component({
   selector: 'app-historique',
   standalone: true,
-  imports: [CommonModule, FormsModule, PaginationAdvancedComponent],
+  imports: [CommonModule, FormsModule, PaginationAdvancedComponent, TableStateComponent],
   templateUrl: './historique.component.html',
   styleUrl: './historique.component.css'
 })
@@ -34,9 +36,11 @@ export class HistoriqueComponent implements OnInit,OnDestroy,AfterViewInit  {
    // ViewChild pour référencer le canvas
   @ViewChild('actionsChartCanvas') actionsChartCanvas!: ElementRef<HTMLCanvasElement>;
   
-  // États
+  // Ã‰tats
   activeTab: 'actions' | 'connexions' | 'stats' = 'actions';
   isLoading = false;
+  /** Ã‰tat d'affichage de la liste actions â€” voir shared/table */
+  actionsListState: ListState = 'idle';
   
   // Données
   actions: HistoriqueAction[] = [];
@@ -65,7 +69,7 @@ export class HistoriqueComponent implements OnInit,OnDestroy,AfterViewInit  {
   private chartInitialized = false;
   
   // Modal
-  selectedActionDetails: any = null;
+  selectedActionDetails: Record<string, unknown> | null | undefined = null;
   
   ngOnInit(): void {
     /* this.authService.currentUser.subscribe(user => {
@@ -133,12 +137,10 @@ loadUsers(): void {
   
   /* if (this.isAdminGeneral) {
     // Admin général : tous les utilisateurs de toutes les structures
-    console.log('Admin Général - Chargement de tous les utilisateurs');
     request$ = this.userService.getAllsBis(filters);
   } 
   else if (this.code_structure) {
     // Administrateur normal : utilisateurs de sa structure uniquement
-    console.log(`Administrateur - Chargement des utilisateurs de la structure: ${this.code_structure}`);
     request$ = this.userService.getByStructureBis(this.code_structure,filters);
   } 
   else {
@@ -154,20 +156,16 @@ loadUsers(): void {
   ).subscribe({
     next: (response) => {
       // Extraction des utilisateurs
-      console.log('Données users chargées depuis API :',response);
       this.users = this.extractUsers(response);
-      console.log('Données users extraction :',this.users);
       
       // Extraction des structures (si admin général)
       /* if (this.isAdminGeneral && response.structures) {
         this.structures = response.structures;
       } */
       
-      console.log(`✅ ${this.users.length} utilisateur(s) chargé(s)`);
     },
     error: (err) => {
-      console.error('❌ Erreur chargement utilisateurs:', err);
-      this.toastr.error('Erreur lors du chargement des utilisateurs');
+      console.error('âŒ Erreur chargement utilisateurs:', err);
       this.users = [];
     }
   });
@@ -227,6 +225,7 @@ private extractUsers(response: any): any[] {
   
   loadActions(): void {
     this.isLoading = true;
+    this.actionsListState = 'loading';
     const userId = this.filtreUserId === 'all' ? 'all' : this.filtreUserId;
     
     this.historiqueService.getActionsByUser(userId, {
@@ -239,15 +238,14 @@ private extractUsers(response: any): any[] {
     }).pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {
-          console.log('Chargement des action',response);
           this.actions = response.items;
+          this.actionsListState = toListState(false, false, this.actions);
           this.totalPages = response.pagination.totalPages;
           this.totalItems = response.pagination.total; // AJOUT
           this.isLoading = false;
         },
         error: (err) => {
-          console.log('Erreur lors du chargement des actions', err)
-          this.toastr.error('Erreur lors du chargement des actions');
+          this.actionsListState = 'error';
           this.isLoading = false;
         }
       });
@@ -266,15 +264,12 @@ private extractUsers(response: any): any[] {
     }).pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {
-          console.log('Chargement des connexions',response);
           this.connexions = response.items;
           this.totalPages = response.pagination.totalPages;
           this.totalItems = response.pagination.total; // AJOUT
           this.isLoading = false;
         },
         error: (err) => {
-          console.log('Erreur lors du chargement des connexions', err)
-          this.toastr.error('Erreur lors du chargement des connexions');
           this.isLoading = false;
         }
       });
@@ -285,7 +280,6 @@ private extractUsers(response: any): any[] {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (stats) => {
-          console.log('Actions statistiques chargés',stats.actionsByType)
           this.stats = stats;
           // Mettre à jour le graphique après avoir reçu les stats
           setTimeout(() => {
@@ -347,7 +341,7 @@ private initChart(): void {
                 const labels = (chart.data.labels ?? []) as string[];
                 return labels
                   .map((label, i) => ({
-                    text: String(label), // ✅ correction ici
+                    text: String(label), // âœ… correction ici
                     fillStyle: (chart.data.datasets[0].backgroundColor as string[])[i],
                     hidden: false,
                     index: i,
@@ -374,7 +368,6 @@ private initChart(): void {
     });
     
     this.chartInitialized = true;
-    console.log('Graphique initialisé avec succès');
     
     // Mettre à jour avec les données existantes
     this.updateChart();
@@ -397,7 +390,6 @@ private updateChart(): void {
   }
   
   const actionsByType = this.stats.actionsByType || {};
-  console.log('Mise à jour du graphique avec:', actionsByType);
   
   // Compter les actions par catégorie
   const categoriesMap = new Map<string, number>();
@@ -453,7 +445,6 @@ private updateChart(): void {
   
   // S'il n'y a aucune donnée, afficher un message
   if (filteredData.length === 0) {
-    console.log('Aucune donnée à afficher dans le graphique');
     this.actionsChart.data.labels = ['Aucune donnée'];
     this.actionsChart.data.datasets[0].data = [1];
     this.actionsChart.data.datasets[0].backgroundColor = ['#e9ecef'];
@@ -467,7 +458,6 @@ private updateChart(): void {
   this.actionsChart.data.datasets[0].backgroundColor = filteredColors;
   
   this.actionsChart.update();
-  console.log('Graphique mis à jour avec', filteredLabels.length, 'catégories');
 }
 
   onPageChange(page: number): void {

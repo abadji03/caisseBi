@@ -1,3 +1,4 @@
+const logger = require('../services/logger.js');
 // controllers/structure.controller.js
 const db = require('../models');
 const Structure = db.Structure;
@@ -155,8 +156,7 @@ exports.createStructure = async (req, res) => {
       }
     );
     res.status(201).json(structure);
-  } catch (err) {
-    console.error(err);
+  } catch (err) {logger.error('structure.controller', err);
     res.status(500).json({ message: 'Erreur lors de la création de la structure.' });
   }
 };
@@ -181,8 +181,7 @@ exports.getAllStructures = async (req, res) => {
     });
 
     res.status(200).json(structuresWithLogoUrl);
-  } catch (err) {
-    console.error(err);
+  } catch (err) {logger.error('structure.controller', err);
     res.status(500).json({ message: 'Erreur lors de la récupération des structures.' });
   }
 }; 
@@ -245,9 +244,7 @@ exports.getAllStructuresBis = async (req, res) => {
       const structure = struct.toJSON();
       structure.logoUrl = structure.logo ? baseUrl + structure.logo : null;
       return structure;
-    });
-
-    console.log(`📦 Structures: ${count} trouvées, page ${page}/${totalPages}`);
+    });logger.log('structure.controller', `📦 Structures: ${count} trouvées, page ${page}/${totalPages}`);
 
     res.status(200).json({
       items: structuresWithLogoUrl,
@@ -261,8 +258,7 @@ exports.getAllStructuresBis = async (req, res) => {
       }
     });
 
-  } catch (err) {
-    console.error('Erreur récupération structures:', err);
+  } catch (err) {logger.error('structure.controller', 'Erreur récupération structures:', err);
     res.status(500).json({ 
       message: 'Erreur lors de la récupération des structures.',
       error: err.message 
@@ -288,8 +284,7 @@ exports.getStructureById = async (req, res) => {
     structureData.logoUrl = structureData.logo ? baseUrl + structureData.logo : null;
 
     res.status(200).json(structureData);
-  } catch (err) {
-    console.error(err);
+  } catch (err) {logger.error('structure.controller', err);
     res.status(500).json({ message: 'Erreur lors de la récupération de la structure.' });
   }
 };
@@ -312,8 +307,7 @@ exports.getStructureByCodeStructure = async (req, res) => {
     structureData.logoUrl = structureData.logo ? baseUrl + structureData.logo : null;
 
     res.status(200).json(structureData);
-  } catch (err) {
-    console.error(err);
+  } catch (err) {logger.error('structure.controller', err);
     res.status(500).json({ message: 'Erreur lors de la récupération de la structure.' });
   }
 };
@@ -386,8 +380,7 @@ exports.updateStructure = async (req, res) => {
 
 
     res.json({ message: 'Structure mise à jour', structure });
-  } catch (err) {
-    console.error(err);
+  } catch (err) {logger.error('structure.controller', err);
     res.status(500).json({ message: 'Erreur lors de la mise à jour' });
   }
 };
@@ -435,8 +428,7 @@ exports.deleteStructure = async (req, res) => {
     );
 
     res.json({ message: 'Structure supprimée' });
-  } catch (err) {
-    console.error(err);
+  } catch (err) {logger.error('structure.controller', err);
     res.status(500).json({ message: 'Erreur lors de la suppression' });
   }
 };
@@ -500,8 +492,7 @@ exports.updateStructureStatus = async (req, res) => {
     });
 
   } catch (err) {
-    await transaction.rollback();
-    console.error(err);
+    await transaction.rollback();logger.error('structure.controller', err);
     res.status(500).json({
       message: 'Erreur lors de la mise à jour du statut de la structure'
     });
@@ -551,23 +542,18 @@ exports.getStructuresWithoutAdmin = async (req, res) => {
     // Extraire les IDs des structures
     const structureIdsWithAdmin = usersWithAdminRole
       .map(user => user.structure_id)
-      .filter(id => id !== null && id !== undefined);
-    
-    console.log('Structures avec admin déjà existant:', structureIdsWithAdmin);
+      .filter(id => id !== null && id !== undefined);logger.log('structure.controller', 'Structures avec admin déjà existant:', structureIdsWithAdmin);
     
     // Récupérer toutes les structures
     const allStructures = await Structure.findAll({
       where: {
         id: { [Op.notIn]: structureIdsWithAdmin } // Exclure celles qui ont déjà un admin
       }
-    });
-    
-    console.log('Structures sans admin trouvées:', allStructures.length);
+    });logger.log('structure.controller', 'Structures sans admin trouvées:', allStructures.length);
     
     res.status(200).json(allStructures);
     
-  } catch (error) {
-    console.error('Erreur récupération structures sans admin:', error);
+  } catch (error) {logger.error('structure.controller', 'Erreur récupération structures sans admin:', error);
     res.status(500).json({ message: error.message });
   }
 };

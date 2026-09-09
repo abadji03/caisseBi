@@ -1,4 +1,5 @@
 const db = require('../models');
+const logger = require('../services/logger.js');
 const Transfert = db.Transfert;
 const Stock = db.Stock;
 const { Op } = db.Sequelize;
@@ -78,8 +79,7 @@ exports.createTransfert = async (req, res) => {
   } catch (err) {
     if (transaction && !transaction.finished) {
       await transaction.rollback();
-    }
-    console.error('Erreur création transfert:', err);
+    }logger.error('transfert.controller', 'Erreur création transfert:', err);
     res.status(500).json({ message: 'Erreur lors de la création du transfert', error: err.message });
   }
 };
@@ -270,8 +270,7 @@ exports.validerTransfert = async (req, res) => {
     });
 
   } catch (err) {
-    await transaction.rollback();
-    console.error('Erreur validation transfert:', err);
+    await transaction.rollback();logger.error('transfert.controller', 'Erreur validation transfert:', err);
     res.status(500).json({ message: 'Erreur lors de la validation', error: err.message });
   }
 };
@@ -340,8 +339,7 @@ exports.refuserTransfert = async (req, res) => {
 
     res.json({ message: 'Transfert refusé', transfert });
   } catch (err) {
-    if (transaction && !transaction.finished) await transaction.rollback();
-    console.error('Erreur refus transfert:', err);
+    if (transaction && !transaction.finished) await transaction.rollback();logger.error('transfert.controller', 'Erreur refus transfert:', err);
     res.status(500).json({ message: 'Erreur lors du refus', error: err.message });
   }
 };
@@ -466,9 +464,7 @@ exports.listerParStructure = async (req, res) => {
     });
 
     // Calcul du nombre total de pages
-    const totalPages = Math.ceil(count / limitInt);
-
-    console.log(`📦 Transferts: ${count} trouvés, page ${page}/${totalPages}`);
+    const totalPages = Math.ceil(count / limitInt);logger.log('transfert.controller', `📦 Transferts: ${count} trouvés, page ${page}/${totalPages}`);
 
     // Réponse avec pagination
     res.json({
@@ -483,8 +479,7 @@ exports.listerParStructure = async (req, res) => {
       }
     });
 
-  } catch (err) {
-    console.error('Erreur récupération transferts:', err);
+  } catch (err) {logger.error('transfert.controller', 'Erreur récupération transferts:', err);
     res.status(500).json({ 
       message: 'Erreur lors de la récupération des transferts', 
       error: err.message 

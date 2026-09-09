@@ -1,10 +1,10 @@
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { NGXLogger } from 'ngx-logger';
-import { catchError, Observable, throwError } from 'rxjs';
-import { AuthService } from './auth.service';
+import { catchError, Observable } from 'rxjs';
 import { Recette } from '../modeles/finance.model';
 import { environment } from '../../environments/environment';
+import { handleApiError } from '../core/api/api-error';
 
 export interface RecettesResponse {
   items: Recette[];
@@ -89,48 +89,38 @@ export class RecettesService {
 
     private apiUrl = `${environment.apiUrl}/recettes`;
     private http = inject(HttpClient);
-    private authService = inject(AuthService);
     private logger = inject(NGXLogger);
   
     /** ================================
      *  GÉNÉRATION HEADERS AVEC TOKEN
      ================================== */
-    private getHeaders(): HttpHeaders {
-      const token = this.authService.getToken();
-      return new HttpHeaders({
-        Authorization: `Bearer ${token}`
-      });
-    }
   
     /** ================================
      *  GESTION CENTRALISÉE DES ERREURS
      ================================== */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    private handleError(method: string, error: any) {
-      this.logger.error(`RecettesService -> ${method} :`, error);
-      return throwError(() => error);
+    private handleError(method: string, error: unknown): Observable<never> {
+      return handleApiError(this.logger, `RecettesService.${method}`, error);
     }
   /** 📌 1. Création de recette */
   createRecette(data: FormData): Observable<Recette> {
     return this.http
-      .post<Recette>(`${this.apiUrl}`, data, { headers: this.getHeaders() })
-      .pipe(catchError(this.handleError));
+      .post<Recette>(`${this.apiUrl}`, data, {})
+      .pipe(catchError(error => this.handleError('createRecette', error)));
   }
 
   /** 📌 2. Mise à jour de recette */
   updateRecette(id: number, data: FormData): Observable<Recette> {
     return this.http
-      .put<Recette>(`${this.apiUrl}/${id}`, data, { headers: this.getHeaders() })
-      .pipe(catchError(this.handleError));
+      .put<Recette>(`${this.apiUrl}/${id}`, data, {})
+      .pipe(catchError(error => this.handleError('updateRecette', error)));
   }
 
   /** 📌 3. Récupération par structure */
   getByStructure(code_structure: string): Observable<Recette[]> {
     return this.http
       .get<Recette[]>(`${this.apiUrl}/structure/${code_structure}`, {
-        headers: this.getHeaders(),
       })
-      .pipe(catchError(this.handleError));
+      .pipe(catchError(error => this.handleError('getByStructure', error)));
   }
 
 
@@ -156,7 +146,6 @@ export class RecettesService {
 
     return this.http
       .get<RecettesResponse>(`${this.apiUrl}/structure/bis/${code_structure}`, {
-        headers: this.getHeaders(),
         params: params
       })
       .pipe(catchError((error) => this.handleError('getByStructureBis', error)));
@@ -166,24 +155,23 @@ export class RecettesService {
   getByPaiementId(paiementId: number): Observable<Recette> {
     return this.http
       .get<Recette>(`${this.apiUrl}/paiement/${paiementId}`, {
-        headers: this.getHeaders(),
       })
-      .pipe(catchError(this.handleError));
+      .pipe(catchError(error => this.handleError('getByPaiementId', error)));
   }
 
   /** 📌 4. Suppression */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   deleteRecette(id: number): Observable<any> {
     return this.http
-      .delete(`${this.apiUrl}/${id}`, { headers: this.getHeaders() })
-      .pipe(catchError(this.handleError));
+      .delete(`${this.apiUrl}/${id}`, {})
+      .pipe(catchError(error => this.handleError('deleteRecette', error)));
   }
 
   updateStatut(id: number, statutRecette: string): Observable<Recette> {
         return this.http.patch<Recette>(
           `${this.apiUrl}/${id}/statutRecette`,
           { statutRecette },
-          { headers: this.getHeaders() },
-        ).pipe(catchError(this.handleError));;
+          {},
+        ).pipe(catchError(error => this.handleError('updateStatut', error)));
     }
 }

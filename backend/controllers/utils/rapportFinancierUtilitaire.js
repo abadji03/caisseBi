@@ -1,4 +1,5 @@
 const db = require('../../models');
+const logger = require('../../services/logger.js');
 const FonctionsUtilitaires  = require('./fonctionsUtilitaires');
 const { Op, fn, col } = db.Sequelize;
 const path = require('path');
@@ -29,37 +30,27 @@ const renderEjsTemplate = async (templateName, data) =>{
     
     // Chemin correct vers le dossier views à la racine du backend
     const viewsPath = path.join(backendRoot, 'views');
-    const templatePath = path.join(viewsPath, `${templateName}.ejs`);
-    
-    console.log('📁 Backend root:', backendRoot);
-    console.log('📁 Views path:', viewsPath);
-    console.log('📁 Template path:', templatePath);
+    const templatePath = path.join(viewsPath, `${templateName}.ejs`);logger.log('rapportFinancierUtilitaire', '📁 Backend root:', backendRoot);logger.log('rapportFinancierUtilitaire', '📁 Views path:', viewsPath);logger.log('rapportFinancierUtilitaire', '📁 Template path:', templatePath);
     
     // Vérifier que le dossier views existe
     try {
-        await fs.access(viewsPath);
-        console.log('✅ Dossier views trouvé');
-    } catch (error) {
-        console.log(error);
+        await fs.access(viewsPath);logger.log('rapportFinancierUtilitaire', '✅ Dossier views trouvé');
+    } catch (error) {logger.log('rapportFinancierUtilitaire', error);
         throw new Error(`Le dossier views n'existe pas: ${viewsPath}`);
     }
     
     // Vérifier que le template existe
     try {
-        await fs.access(templatePath);
-        console.log('✅ Template trouvé');
-    } catch (error) {
-        console.log(error)
+        await fs.access(templatePath);logger.log('rapportFinancierUtilitaire', '✅ Template trouvé');
+    } catch (error) {logger.log('rapportFinancierUtilitaire', error)
         throw new Error(`Template ${templateName}.ejs non trouvé: ${templatePath}`);
     }
     
     return new Promise((resolve, reject) => {
         ejs.renderFile(templatePath, data, { async: false }, (err, str) => {
-            if (err) {
-                console.error('❌ Erreur rendu EJS:', err);
+            if (err) {logger.error('rapportFinancierUtilitaire', '❌ Erreur rendu EJS:', err);
                 reject(err);
-            } else {
-                console.log('✅ Rendu EJS réussi');
+            } else {logger.log('rapportFinancierUtilitaire', '✅ Rendu EJS réussi');
                 resolve(str);
             }
         });
@@ -87,8 +78,7 @@ const generatePDF = async (html)=> {
                 await require('fs').promises.access(path);
                 executablePath = path;
                 break;
-            } catch (e) {
-                console.log('Erreur',e)
+            } catch (e) {logger.log('rapportFinancierUtilitaire', 'Erreur',e)
             }
         }
 

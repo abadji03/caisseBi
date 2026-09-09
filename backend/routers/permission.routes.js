@@ -36,10 +36,10 @@ const { requirePermission } = require('../middlewares/auth.middleware');
  *         description: Liste des permissions
  */
 
-router.post('/', authenticateToken, requirePermission('Gérer les rôles'), permission.create);
+router.post('/', authenticateToken, requirePermission('roles.manage'), permission.create);
 router.get('/', authenticateToken, permission.findAll);
 router.get('/:id', authenticateToken, permission.findOne);
-router.put('/:id', authenticateToken, requirePermission('Gérer les rôles'), permission.update);
-router.delete('/:id', authenticateToken, requirePermission('Gérer les rôles'), permission.delete);
+router.put('/:id', authenticateToken, requirePermission('roles.manage'), permission.update);
+router.delete('/:id', authenticateToken, requirePermission('roles.manage'), permission.delete);
 
 module.exports = router;

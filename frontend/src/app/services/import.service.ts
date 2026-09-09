@@ -2,8 +2,18 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
+
+/** Une ligne d'import/aperçu : colonnes hétérogènes provenant d'un fichier externe. */
+type Row = Record<string, unknown>;
+
+/** Détail d'une ligne traitée lors d'un import (renvoyé par le backend). */
+export interface ImportResultDetail {
+  ligne?: number;
+  type: string;
+  id?: number;
+  message?: string;
+}
 
 export interface ImportResult {
   success: boolean;
@@ -15,16 +25,23 @@ export interface ImportResult {
     nombreErreurs: number;
     /** Détail des erreurs */
     erreurs: { ligne?: number; message: string }[];
-    details: any[];
+    details: ImportResultDetail[];
   };
 }
 
 export interface StructureDetection {
   entetes: string[];
-  apercu: any[];
+  apercu: Row[];
   totalLignes: number;
   typeDetecte: string;
   mappingSuggere?: Record<string, string>;
+}
+
+export interface ImportOptions {
+  updateExisting?: boolean;
+  hasHeader?: boolean;
+  defaultStructureId?: number;
+  defaultCategorieId?: number;
 }
 
 @Injectable({
@@ -34,22 +51,16 @@ export class ImportService {
 
   private apiUrl = `${environment.apiUrl}/imports`;
   private http = inject(HttpClient);
-  private authService = inject(AuthService);
-
-  private getHeaders() {
-    return { Authorization: `Bearer ${this.authService.getToken()}` };
-  }
 
   detecterStructure(fichier: File, hasHeader = true): Observable<StructureDetection> {
     const formData = new FormData();
     formData.append('fichier', fichier);
     formData.append('hasHeader', hasHeader ? 'true' : 'false');
     return this.http.post<StructureDetection>(`${this.apiUrl}/detecter`, formData, {
-      headers: this.getHeaders()
     });
   }
 
-  importer(fichier: File, typeImport: string, mapping: any, options: any): Observable<ImportResult> {
+  importer(fichier: File, typeImport: string, mapping: Record<string, string>, options: ImportOptions = {}): Observable<ImportResult> {
     const formData = new FormData();
     formData.append('fichier', fichier);
     formData.append('typeImport', typeImport);
@@ -58,7 +69,6 @@ export class ImportService {
     formData.append('hasHeader', options.hasHeader !== false ? 'true' : 'false');
     
     return this.http.post<ImportResult>(`${this.apiUrl}`, formData, {
-      headers: this.getHeaders()
     });
   }
 }

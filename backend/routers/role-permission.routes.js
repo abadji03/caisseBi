@@ -4,14 +4,17 @@ const controller = require('../controllers/role-permission.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
 const { requirePermission } = require('../middlewares/auth.middleware');
 
-router.post('/:roleId/permissions', authenticateToken, requirePermission('Gérer les rôles'), controller.assignPermissionsToRole);
+// NB : les routes statiques DOIVENT être déclarées avant les routes
+// paramétrées, sinon '/permissions/grouped' est avalé par
+// '/:roleId/permissions' (roleId = 'permissions').
+router.get('/permissions/grouped', authenticateToken, controller.getPermissionsGroupedByRole);
+
+// Routes canoniques (paramètre :roleId)
+router.post('/:roleId/permissions', authenticateToken, requirePermission('roles.manage'), controller.setRolePermissions);
 router.get('/:roleId/permissions', authenticateToken, controller.getRolePermissions);
-router.put('/:roleId', authenticateToken, requirePermission('Gérer les rôles'), controller.updateRolePermissions);
-router.delete('/:roleId', authenticateToken, requirePermission('Gérer les rôles'), controller.removeRolePermissions);
+router.put('/:roleId', authenticateToken, requirePermission('roles.manage'), controller.updateRolePermissions);
+router.delete('/:roleId', authenticateToken, requirePermission('roles.manage'), controller.removeRolePermissions);
 
 router.get('/', authenticateToken, controller.getAllRoles);
-router.get('/:id/permissions', authenticateToken, controller.getRolePermissions);
-router.post('/:id/permissions', authenticateToken, requirePermission('Gérer les rôles'), controller.setRolePermissions);
-router.get('/permissions/grouped', authenticateToken, controller.getPermissionsGroupedByRole);
 
 module.exports = router;

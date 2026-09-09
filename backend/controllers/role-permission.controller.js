@@ -1,7 +1,9 @@
 const db = require('../models');
+const logger = require('../services/logger.js');
 const Role = db.Role;
 const Permission = db.Permission;
 const HistoriqueService = require('../services/historique.service');
+const { invalidateAllPermissions } = require('../middlewares/auth.middleware');
 
 
 exports.assignPermissionsToRole = async (req, res) => {
@@ -21,6 +23,7 @@ exports.assignPermissionsToRole = async (req, res) => {
     });
     
     await role.setPermissions(permissions);
+    invalidateAllPermissions();
     
     // Récupérer les nouvelles permissions assignées
     const newPermissions = await role.getPermissions();
@@ -64,8 +67,7 @@ exports.assignPermissionsToRole = async (req, res) => {
         total: newPermissions.length
       }
     });
-  } catch (err) {
-    console.error('Erreur assignPermissionsToRole:', err);
+  } catch (err) {logger.error('role-permission.controller', 'Erreur assignPermissionsToRole:', err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -109,6 +111,7 @@ exports.updateRolePermissions = async (req, res) => {
     });
     
     await role.setPermissions(permissions);
+    invalidateAllPermissions();
     
     // Récupérer les nouvelles permissions
     const newPermissions = await role.getPermissions();
@@ -158,6 +161,7 @@ exports.removeRolePermissions = async (req, res) => {
     });
     
     await role.removePermissions(req.body.permissionIds);
+    invalidateAllPermissions();
     
     // Enregistrer l'historique
     await HistoriqueService.enregistrerAction(
@@ -221,6 +225,7 @@ exports.setRolePermissions = async (req, res) => {
     });
 
     await role.setPermissions(permissions);
+    invalidateAllPermissions();
     
     // Récupérer les nouvelles permissions
     const newPermissions = await role.getPermissions();
@@ -250,8 +255,7 @@ exports.setRolePermissions = async (req, res) => {
         new: newPermissionNames
       }
     });
-  } catch (error) {
-    console.error('Erreur setRolePermissions:', error);
+  } catch (error) {logger.error('role-permission.controller', 'Erreur setRolePermissions:', error);
     res.status(500).json({ message: 'Erreur serveur', error });
   }
 };

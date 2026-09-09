@@ -1,12 +1,12 @@
 const db = require('../models');
+const logger = require('../services/logger.js');
 const MouvementStock = db.MouvementStock;
 const { Op,fn,col,literal} = db.Sequelize;
 const HistoriqueService = require('../services/historique.service');
 
 
 //Créer un mouvement de stock
-exports.createMouvementStock = async (req, res) => {
-  console.log(req.body);
+exports.createMouvementStock = async (req, res) => {logger.log('mouvementStock.controller', req.body);
   try {
     const authUser = req.user;
     const clientIp = HistoriqueService.getClientIp(req);
@@ -34,8 +34,7 @@ exports.createMouvementStock = async (req, res) => {
       }
     );
     res.status(201).json({ message: 'Mouvement créé avec succès', mouvement });
-  } catch (error) {
-    console.error(error);
+  } catch (error) {logger.error('mouvementStock.controller', error);
     res
       .status(500)
       .json({ message: 'Erreur lors de la création du mouvement', error: error.message });
@@ -434,9 +433,7 @@ exports.getMouvementsByStructure = async (req, res) => {
     });
 
     // Calcul du nombre total de pages
-    const totalPages = Math.ceil(count / limitInt);
-
-    console.log(`📦 Mouvements: ${count} trouvés, page ${page}/${totalPages}`);
+    const totalPages = Math.ceil(count / limitInt);logger.log('mouvementStock.controller', `📦 Mouvements: ${count} trouvés, page ${page}/${totalPages}`);
 
     // Réponse avec pagination
     res.status(200).json({
@@ -469,8 +466,7 @@ exports.getMouvementsByStructure = async (req, res) => {
       }
     });
 
-  } catch (error) {
-    console.error('Erreur getMouvementsByStructure:', error);
+  } catch (error) {logger.error('mouvementStock.controller', 'Erreur getMouvementsByStructure:', error);
     res.status(500).json({ 
       message: 'Erreur lors de la récupération', 
       error: error.message 

@@ -173,8 +173,14 @@ export class CaisseComponent implements OnInit, OnDestroy {
       this.code_structure = user?.code_structure || null;
       this.magasinId = user?.magasinId || null;
       this.agentId = user?.id || null;
+
+      // Rejeu différé : une création de brouillon demandée avant que le
+      // magasin soit connu est relancée maintenant qu'il est disponible.
+      if (this.magasinId && this.brouillonEnAttente) {
+        this.brouillonEnAttente = false;
+        this.chargerBrouillonsExistants();
+      }
       this.isAdmin = this.authService.hasRole('Administrateur');
-      console.log('Données user connecté :',user, this.code_structure, this.magasinId, this.agentId );
       // Déterminer si on doit montrer le champ structure
       //this.isStructureAdmin = this.authService.hasRole('Administrateur'); // Ou vérifiez par ID
 
@@ -204,7 +210,6 @@ export class CaisseComponent implements OnInit, OnDestroy {
           // ✅ Mettre à jour l'état des articles
           this.updateHasArticlesState(panier);
           
-          console.log('Panier mis à jour depuis service:', panier.id);
           
           // ✅ Forcer la détection de changement
           //this.cdr.detectChanges();
@@ -275,7 +280,6 @@ export class CaisseComponent implements OnInit, OnDestroy {
   shouldShowServiceTab(): boolean {
     // L'onglet service est affiché UNIQUEMENT si le panier est VIDE
     const show = !this._hasArticles;
-    console.log('shouldShowServiceTab:', { hasArticles: this._hasArticles, show });
     return show;
   }
 
@@ -290,18 +294,12 @@ export class CaisseComponent implements OnInit, OnDestroy {
     const newHasArticles = articlesCount > 0;
     
     if (this._hasArticles !== newHasArticles) {
-      console.log('🔄 État des articles changé:', { 
-        ancien: this._hasArticles, 
-        nouveau: newHasArticles,
-        articlesCount 
-      });
       this._hasArticles = newHasArticles;
     }
   }
 
   //Gestion du panier - version améliorée
   onPanierStatutChange(panier: Panier): void {
-    console.log('📦 Panier reçu dans caisse', panier.statut);
     
     // Toujours mettre à jour panierData
     this.panierData = panier;
@@ -326,17 +324,11 @@ export class CaisseComponent implements OnInit, OnDestroy {
 
   // ✅ Méthode appelée quand les articles changent
   onArticlesChange(event: { count: number, panier: Panier }): void {
-    console.log('📦 Changement articles détecté:', event);
     
     // Mettre à jour l'état
     const hasArticles = event.count > 0;
     
     if (this._hasArticles !== hasArticles) {
-      console.log('🎯 Changement d\'état articles:', { 
-        avant: this._hasArticles, 
-        après: hasArticles,
-        count: event.count 
-      });
       
       this._hasArticles = hasArticles;
       this.panierData = event.panier;
@@ -346,7 +338,6 @@ export class CaisseComponent implements OnInit, OnDestroy {
       
       // ✅ Si on a des articles et qu'on était sur l'onglet service, basculer sur produits
       if (hasArticles && this.activeTab === 'services') {
-        console.log('🔄 Bascule automatique vers onglet produits');
         this.activeTab = 'produits';
         //this.cdr.detectChanges();
       }
@@ -357,7 +348,6 @@ export class CaisseComponent implements OnInit, OnDestroy {
   associerClientATransaction(clientData: any) {
     if (this.selectedTransaction) {
       // Ici, vous devriez appeler un service pour mettre à jour la transaction
-      console.log('Association client à transaction:', this.selectedTransaction.id, clientData);
       this.toastr.success('Client associé à la transaction');
       
       // Mettre à jour l'affichage
@@ -415,18 +405,11 @@ export class CaisseComponent implements OnInit, OnDestroy {
         typePaiement: 'autre',
       }) : undefined
     };
-    console.log('Données de MISE À JOUR envoyées:', {
-      panierId: this.panierData?.id, //ID du panier existant
-    });
     this.isLoading = true;
   
     this.panierService.createPanierComplet(panierCompletData).pipe(takeUntil(this.destroy$))
     .subscribe({
       next: (result) => {
-        console.log('Panier enregistré avec succès:', {
-            panierId: result.panier?.id,
-            panierStatut: result.panier?.statut
-          });
           if(result.paiement && result.paiement.id){
             /* const recette = {
                   montant: result.paiement.montant!,
@@ -485,7 +468,6 @@ export class CaisseComponent implements OnInit, OnDestroy {
       this.toastr.warning('Veuillez sélectionner un mode de paiement');
       return;
     }
-    console.log('Enregistrement de la vente avec le panier:', this.panierData);
     // Enregistrer le panier
     this.onEnregistrerPanier(this.panierData);
 
@@ -520,12 +502,10 @@ export class CaisseComponent implements OnInit, OnDestroy {
 nouvelleVente() {
   // Si on a déjà un panier en cours, ne pas en créer un nouveau
   if (this.panierData && this.panierData.statut === 'en_cours') {
-    console.log('Une vente est déjà en cours');
     this.showVenteSection = true;
     return;
   }
 
-  console.log('Démarrage nouvelle vente');
 
   this.showVenteSection = true;
   this.activeTab = 'produits';
@@ -570,7 +550,6 @@ nouvelleVente() {
 
   private onEnregistrerPanier(panierAEnregistrer: Panier): void {
   
-    console.log('Enregistrement du panier dans onEnregistrerPanier:', panierAEnregistrer);
     //Vérifier que les brouillons sont bien chargés
     if (!this.panierData?.id || !this.panierData?.articles) {
       console.error('Brouillons non chargés:', {
@@ -593,6 +572,8 @@ nouvelleVente() {
         remise: panierAEnregistrer.remise,
         tauxTVA: panierAEnregistrer.tauxTVA,
         remiseGlobale: panierAEnregistrer.remiseGlobale,
+        remiseMode: panierAEnregistrer.remiseParArticle ? 'article' : 'globale',
+        tvaMode: panierAEnregistrer.tvaParArticle ? 'article' : 'globale',
         typeEntite: this.typeEntite,
         typePanier:'produit',
         clientId: this.panierData.clientId || null,
@@ -625,20 +606,12 @@ nouvelleVente() {
         typePaiement: 'autre',
       }) : undefined
     };
-    console.log('Données de MISE À JOUR envoyées:', {
-      DonnéesPanier: panierCompletData
-    });
     this.isLoading = true;
   
     this.panierService.createPanierComplet(panierCompletData).pipe(takeUntil(this.destroy$))
     .subscribe({
       next: (result) => {
-        console.log('Panier enregistré avec succès:', {
-            panierId: result.panier?.id,
-            panierStatut: result.panier?.statut
-          });
           if(result.paiement && result.paiement.id){
-            console.log('Paiement associé au panier enregistré:', result.paiement.id);
             /* const recette = {
                   montant: result.paiement.montant!,
                   paiementId: result.paiement.id,
@@ -651,7 +624,6 @@ nouvelleVente() {
                   paymentMode: result.paiement.methodePaiement
 
                 }
-               console.log('Création de la recette avec les données:', recette);
 
             const formData = new FormData();
 
@@ -659,7 +631,6 @@ nouvelleVente() {
             Object.entries(recette).forEach(([key, value]) => {
               if (value !== undefined && value !== null) {
                 formData.append(key, value.toString());
-                console.log(`Ajout au FormData: ${key} = ${value}`);
               }
             }); */
             //console.log('FormData pour la recette:', formData);
@@ -712,15 +683,10 @@ private async getCategoryId(code: string): Promise<number | null> {
  * Créer une nouvelle dépense
  */
 private createRecette(formData: FormData): void {
-  console.log(
-    'Données recette à envoyer : ',
-    Object.fromEntries((formData as any).entries())
-  );
   this.recetteService.createRecette(formData)
   .pipe(takeUntil(this.destroy$))
     .subscribe({
       next: (result) => {
-        console.log('Recette créée avec succès:', result);
       },
       error: (err) => {
         this.toastr.error('Erreur lors de l\'enregistrement de la recette');
@@ -782,7 +748,6 @@ this.createRecette(formData);
   annulerPanier(panierRetourner: Panier) {
     if (confirm('Voulez-vous vraiment annuler ce panier ?')) {
       /* this.onAnnulerPanier.emit();
-      console.log('Annulation du panier:', panier.id);
       this.toastr.info('Panier annulé'); */
       if(!panierRetourner.id){
         this.toastr.error('Impossible d\'annuler un panier sans identifiant');
@@ -816,18 +781,11 @@ this.createRecette(formData);
           typePaiement: 'autre',
         })
       };
-      console.log('Données panier à retourner :', {
-        DonnéesPanier: panierCompletData
-      });
      this.isLoading = true;
     
       this.panierService.createPanierComplet(panierCompletData).pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (result) => {
-          console.log('Panier retourné avec succès:', {
-              panierId: result.panier?.id,
-              panierStatut: result.panier?.statut
-            });
             if(result.paiement && result.paiement.id){
               this.recetteService.getByPaiementId(result.paiement.id)
               .pipe(takeUntil(this.destroy$))
@@ -853,7 +811,6 @@ this.createRecette(formData);
                       next: () => {
                         this.toastr.success('Panier retourné avec succès'); 
                         this.loadTransactions();
-                        console.log('Recette associée mise à jour avec succès:', recetteExistante.id);
                       },
                       error: (err) => {
                         console.error('Erreur mise à jour recette associée:', err);
@@ -893,12 +850,15 @@ retournerArticle(article: ArticlePanier) {
       .map(a => new ArticlePanier(a));
     
 
-    // 2️⃣ DÉDUIRE les paramètres dynamiquement (puisqu'ils ne sont pas sauvegardés)
-    // Remise par article = vrai si AU MOINS un article a une remise > 0
-    const remiseParArticle = nouveauxArticles.some(a => (a.remise ?? 0) > 0);
-    
-    // TVA par article = vrai si AU MOINS un article a un tauxTVA > 0
-    const tvaParArticle = nouveauxArticles.some(a => (a.tauxTVA ?? 0) > 0);
+    // 2️⃣ Utiliser les modes persistés côté backend si disponibles,
+    // sinon déduire des lignes (paniers historiques sans modes persistés)
+    const remiseParArticle = this.selectedTransaction.remiseMode
+      ? this.selectedTransaction.remiseMode === 'article'
+      : nouveauxArticles.some(a => (a.remise ?? 0) > 0);
+
+    const tvaParArticle = this.selectedTransaction.tvaMode
+      ? this.selectedTransaction.tvaMode === 'article'
+      : nouveauxArticles.some(a => (a.tauxTVA ?? 0) > 0);
     
     // Remise globale : conserver la valeur originale, mais...
     // Si on a des remises par article, la remise globale ne devrait pas s'appliquer
@@ -934,6 +894,8 @@ retournerArticle(article: ArticlePanier) {
       articles: nouveauxArticles,
       remiseParArticle,
       tvaParArticle,
+      remiseMode: remiseParArticle ? 'article' : 'globale',
+      tvaMode: tvaParArticle ? 'article' : 'globale',
       remiseGlobale,
       tauxTVA,
       dateMiseAJour: new Date() // Mettre à jour la date
@@ -958,6 +920,8 @@ retournerArticle(article: ArticlePanier) {
           remiseGlobale:panier.remiseGlobale,
           remise: panier.remise,
           tauxTVA: panier.tauxTVA,
+          remiseMode: panier.remiseMode,
+          tvaMode: panier.tvaMode,
           typeEntite: this.selectedTransaction.typeEntite,
           typePanier:this.selectedTransaction.typePanier,
           clientId: this.selectedTransaction.clientId || null,
@@ -975,25 +939,16 @@ retournerArticle(article: ArticlePanier) {
           typePaiement: 'autre',
         })
       };
-      console.log('Données panier avec article retourné :', {
-        DonnéesPanier: panierCompletData
-      });
      this.isLoading = true;
     
       this.panierService.createPanierComplet(panierCompletData).pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (result) => {
-          console.log('Panier mis à jour avec succès:', {
-              panierId: result.panier?.id,
-              panierStatut: result.panier?.statut,
-              paiements: result.paiement
-            });
             if(result.paiement && result.paiement.id){
               this.recetteService.getByPaiementId(result.paiement.id)
               .pipe(takeUntil(this.destroy$))
               .subscribe({
                 next: (recetteExistante) => {
-                  console.log('Recette existante pour le paiement retourné:', recetteExistante);
                   if(recetteExistante && recetteExistante.id){
                     const recette = {
                       ...recetteExistante,
@@ -1008,7 +963,6 @@ retournerArticle(article: ArticlePanier) {
                         formData.append(key, value.toString());
                       }
                     });
-                    console.log('Mise à jour de la recette avec les données:', formData);
                     // Mettre à jour la recette
                     this.recetteService.updateRecette(recetteExistante.id,formData)
                     .pipe(takeUntil(this.destroy$))
@@ -1018,7 +972,6 @@ retournerArticle(article: ArticlePanier) {
                         this.toastr.success('Article retourné avec succès');
                         this.loadTransactions();
                         //this.imprimerTicket(result.panier!);
-                        console.log('Recette associée mise à jour avec succès:', recetteExistante.id);
                          
                       },
                       error: (err) => {
@@ -1054,21 +1007,16 @@ updateStockApresSuppressionArticle(article: ArticlePanier): void {
       .subscribe({
         next: (stock) => {
           if (stock) {
-            console.log(`Stock actuel pour le produit ${article.produitId}:`, stock);
             const nouvelleQuantite = Number(stock.quantiteTotale )+ Number(article.quantite);
-            console.log(`Nouvelle quantité après retour de l'article: ${nouvelleQuantite}`);
             const updatedStock = new Stock({
               ...stock, 
               quantiteTotale: nouvelleQuantite,
                
             });
-            console.log('Mise à jour du stock avec les données:', updatedStock);
             this.stockService.updateStock(stock.id, updatedStock)
               .pipe(takeUntil(this.destroy$))
               .subscribe({
                 next: (stockMisajour) => {
-                  console.log('Stock mis à jour avec succès:', stockMisajour);
-                  console.log(`Stock mis à jour pour le produit ${article.produitId}: nouvelle quantité = ${nouvelleQuantite}`);
                   const mvtStock : MouvementsStock = {
                     produitId: article.produitId!,
                     stockId: stock.id,
@@ -1088,7 +1036,6 @@ updateStockApresSuppressionArticle(article: ArticlePanier): void {
                     .pipe(takeUntil(this.destroy$))
                     .subscribe({
                       next: () => {
-                        console.log('Mouvement de stock enregistré pour le retour d\'article');
                       },
                       error: (err) => {
                         console.error('Erreur enregistrement mouvement de stock:', err);
@@ -1119,7 +1066,6 @@ updateStockApresSuppressionArticle(article: ArticlePanier): void {
   /** CHARGER LES TRANSACTIONS */
   
  loadTransactions(): void {
-    console.log('Chargement des transactions avec pagination...');
     
     const filter: TransactionsFilter = {
       page: this.filters.page,
@@ -1137,7 +1083,6 @@ updateStockApresSuppressionArticle(article: ArticlePanier): void {
     .pipe(takeUntil(this.destroy$))
     .subscribe({
       next: (response) => {
-        console.log('Résultat des transactions:', response);
         this.paniers = response?.items ?? [];
         this.totalCaisse = response?.statistiques?.totalGlobal ?? 0;
         this.totalTransactions = response?.statistiques?.nombreTransactions ?? 0;
@@ -1149,11 +1094,9 @@ updateStockApresSuppressionArticle(article: ArticlePanier): void {
         this.hasNext = response?.pagination?.hasNext ?? false;
         this.hasPrev = response?.pagination?.hasPrev ?? false;
         
-        console.log('Transactions chargées:', this.paniers);
       },
       error: (err) => {
         console.error('Erreur chargement transactions:', err);
-        this.toastr.error('Erreur lors du chargement des transactions');
       }
     });
   }
@@ -1217,12 +1160,18 @@ onStatutChange(statut: string): void {
 
   //.............................................................................
 private chargerBrouillonsExistants(): void {
-  this.panierService.getPaniersBrouillon(this.code_structure!, this.magasinId!)
+  if (!this.code_structure || !this.magasinId) {
+    // Magasin pas encore connu : on diffère — le rejeu se fera à
+    // l'arrivée de l'utilisateur (évite /magasin/null/brouillon → 404).
+    this.brouillonEnAttente = true;
+    console.warn('chargerBrouillonsExistants: magasin indisponible, différé');
+    return;
+  }
+  this.panierService.getPaniersBrouillon(this.code_structure, this.magasinId)
     .pipe(takeUntil(this.destroy$))
     .subscribe({
       next: (paniersBrouillons) => {
 
-        console.log('Panier brouillon depuis le backend :', paniersBrouillons);
         const brouillonCaisse = paniersBrouillons.find(panier => 
           panier.agentId === this.agentId && 
           panier.magasinId === this.magasinId &&
@@ -1230,11 +1179,9 @@ private chargerBrouillonsExistants(): void {
           panier.bonId === null
         );
 
-        console.log('Panier brouillon affecté à brouillonCaisse :', brouillonCaisse);
         if (brouillonCaisse) {
           this.bonBrouillonService.setPanierBrouillon(brouillonCaisse);
           this.panierData = brouillonCaisse;
-          console.log('Brouillon existant chargé:', brouillonCaisse.id);
           this.toastr.info('Brouillon existant chargé');
         } else {
           // Créer un nouveau brouillon
@@ -1248,7 +1195,11 @@ private chargerBrouillonsExistants(): void {
     });
 }
 checkBrouillonExists(callback: (exists: boolean) => void): void {
-    this.panierService.getPaniersBrouillon(this.code_structure!, this.magasinId!)
+    if (!this.code_structure || !this.magasinId) {
+      callback(false);
+      return;
+    }
+    this.panierService.getPaniersBrouillon(this.code_structure, this.magasinId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (paniersBrouillons) => {
@@ -1261,7 +1212,18 @@ checkBrouillonExists(callback: (exists: boolean) => void): void {
         }
       });
   }
+// Vrai quand une création de brouillon a été demandée avant que le
+// magasin de l'utilisateur soit connu — rejouée à l'arrivée du user.
+private brouillonEnAttente = false;
+
 private creerNouveauBrouillon(): void {
+  // Garde : ne pas appeler le backend tant que le magasin n'est pas connu
+  // (race condition au démarrage — causait /magasin/null/... et des 400).
+  if (!this.magasinId) {
+    console.warn('creerNouveauBrouillon: magasinId indisponible, création différée');
+    this.brouillonEnAttente = true;
+    return;
+  }
   const panierBrouillonData = {
     panier: {
       articles: [],
@@ -1282,11 +1244,10 @@ private creerNouveauBrouillon(): void {
     typeEntite: this.typeEntite
   };
   
-  this.panierService.createPanierComplet(panierBrouillonData)
+  this.panierService.createBrouillonPanier(panierBrouillonData)
     .pipe(takeUntil(this.destroy$))
     .subscribe({
       next: (result) => {
-        console.log('Nouveau brouillon créé:', result);
         this.panierData = result.panier;
         // Mettre à jour le service GLOBALEMMENT
         this.bonBrouillonService.setPanierBrouillon(result.panier);
@@ -1317,8 +1278,6 @@ private creerNouveauBrouillon(): void {
               this.stocks = stock;
               this.clients = clients;
               this.filteredProducts = this.produits;
-              console.log('Produits chargés', this.produits);
-              console.log('Produits chargés', this.filteredProducts);
             },
             error: (err) => console.error('Erreur chargement données', err),
           });
@@ -1326,7 +1285,6 @@ private creerNouveauBrouillon(): void {
 
   // Gestion du panier
   /* onPanierStatutChange(panier: Panier): void {
-    console.log('📦 Panier reçu dans bon', panier.statut);
     
     // Toujours mettre à jour panierData
     this.panierData = panier;
@@ -1369,7 +1327,6 @@ onTotalPanierChange(total: number): void {
 
 /** IMPRIMER TICKET AUTOMATIQUE (sans client) */
 imprimerTicket(panier: Panier) {
-  console.log('Impression du ticket automatique pour le panier:', panier.id);
   
   // Appeler le service PDF pour générer le ticket de caisse
   this.pdfGenerator.generateTicketCaisse(panier, {
@@ -1438,7 +1395,6 @@ validerClientPourTicket() {
 
 /** MÉTHODE PRIVÉE POUR GÉNÉRER LE TICKET */
 private genererTicketPourClient(panier: Panier, client: any): void {
-  console.log('Génération du ticket avec client:', client);
   
   // Appeler le service PDF pour générer le ticket de vente
   this.pdfGenerator.generateTicketVente(panier, client, {

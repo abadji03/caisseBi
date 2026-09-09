@@ -1,4 +1,5 @@
 //const SequenceService = require('../services/sequence.service');
+const logger = require('../services/logger.js');
 
 module.exports = (sequelize, DataTypes) => {
   const MouvementStock = sequelize.define('MouvementStock', {
@@ -101,7 +102,7 @@ module.exports = (sequelize, DataTypes) => {
           });
           mouvementStock.numeroE = count + 1;
         } catch (error) {
-          console.error('❌ Hook numeroE MouvementStock error:', error);
+          logger.error('mouvement_stock.model', '❌ Hook numeroE MouvementStock error:', error);
           mouvementStock.numeroE = 1;
         }
       },

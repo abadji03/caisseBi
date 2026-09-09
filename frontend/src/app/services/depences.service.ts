@@ -1,10 +1,10 @@
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { AuthService } from './auth.service';
 import { NGXLogger } from 'ngx-logger';
-import { catchError, Observable, throwError } from 'rxjs';
+import { catchError, Observable } from 'rxjs';
 import { Depense } from '../modeles/finance.model';
 import { environment } from '../../environments/environment';
+import { handleApiError } from '../core/api/api-error';
 
 export interface DepensesResponse {
   items: Depense[];
@@ -95,64 +95,53 @@ export class DepencesService {
   private apiUrl = `${environment.apiUrl}/depenses`;
 
   private http = inject(HttpClient);
-  private authService = inject(AuthService);
   private logger = inject(NGXLogger);
 
   /** ================================
    *  GÉNÉRATION HEADERS AVEC TOKEN
    ================================== */
-  private getHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
-    return new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
-  }
 
   /** ================================
      *  GESTION CENTRALISÉE DES ERREURS
      ================================== */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    private handleError(method: string, error: any) {
-      this.logger.error(`DépensesService -> ${method} :`, error);
-      return throwError(() => error);
+    private handleError(method: string, error: unknown): Observable<never> {
+      return handleApiError(this.logger, `DepencesService.${method}`, error);
     }
   // ➕ Création d'une dépense
   createDepense(data: FormData): Observable<Depense> {
     return this.http
-      .post<Depense>(`${this.apiUrl}`, data, { headers: this.getHeaders() })
-      .pipe(catchError(this.handleError));
+      .post<Depense>(`${this.apiUrl}`, data, {})
+      .pipe(catchError(error => this.handleError('createDepense', error)));
   }
 
   //Mise à jour d'une dépense
   updateDepense(id: number, data: FormData): Observable<Depense> {
     return this.http
-      .put<Depense>(`${this.apiUrl}/${id}`, data, { headers: this.getHeaders() })
-      .pipe(catchError(this.handleError));
+      .put<Depense>(`${this.apiUrl}/${id}`, data, {})
+      .pipe(catchError(error => this.handleError('updateDepense', error)));
   }
 
   // 📌 Récupérer les dépenses d’un magasin
   getDepensesByMagasin(magasinId: number): Observable<Depense[]> {
     return this.http
       .get<Depense[]>(`${this.apiUrl}/magasin/${magasinId}`, {
-        headers: this.getHeaders(),
       })
-      .pipe(catchError(this.handleError));
+      .pipe(catchError(error => this.handleError('getDepensesByMagasin', error)));
   }
 
   // 📌 Récupérer les dépenses d’une structure
   getDepensesByStructure(code_structure: string): Observable<Depense[]> {
     return this.http
       .get<Depense[]>(`${this.apiUrl}/structure/${code_structure}`, {
-        headers: this.getHeaders(),
       })
-      .pipe(catchError(this.handleError));
+      .pipe(catchError(error => this.handleError('getDepensesByStructure', error)));
   }
   // 🗑️ Suppression d'une dépense
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   deleteDepense(id: number): Observable<any> {
     return this.http
-      .delete(`${this.apiUrl}/${id}`, { headers: this.getHeaders() })
-      .pipe(catchError(this.handleError));
+      .delete(`${this.apiUrl}/${id}`, {})
+      .pipe(catchError(error => this.handleError('deleteDepense', error)));
   }
 
   /**
@@ -178,21 +167,20 @@ export class DepencesService {
     if (filter.typeDepense) params = params.set('typeDepense', filter.typeDepense);
     if (filter.statut) params = params.set('statut', filter.statut);
 
-    //return this.http.get<DepensesResponse>(`${this.apiUrl}/structure/bis/${code_structure}${params}`,{ headers: this.getHeaders() });
+    //return this.http.get<DepensesResponse>(`${this.apiUrl}/structure/bis/${code_structure}${params}`,{});
     return this.http.get<DepensesResponse>(
       `${this.apiUrl}/structure/bis/${code_structure}`,
       { 
-        headers: this.getHeaders(),
         params: params
       }
-    );
+    ).pipe(catchError(error => this.handleError('getDepensesByStructureBis', error)));
   }
 
   updateStatut(id: number, statutDepense: string): Observable<Depense> {
           return this.http.patch<Depense>(
             `${this.apiUrl}/${id}/statutDepense`,
             { statutDepense },
-            { headers: this.getHeaders() },
-          ).pipe(catchError(this.handleError));;
+            {},
+          ).pipe(catchError(error => this.handleError('updateStatut', error)));
       }
 }

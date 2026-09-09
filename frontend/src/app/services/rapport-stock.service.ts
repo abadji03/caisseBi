@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { AuthService } from './auth.service';
 import { NGXLogger } from 'ngx-logger';
-import { catchError, Observable, throwError } from 'rxjs';
+import { catchError, Observable } from 'rxjs';
 import { IndicateursStocks, MouvementsResponse, ProduitsSpecifiquesResponse, RapportCompletStocksResponse, StatistiquesProduit, StatsGraphiquesResponse, StatsProduitsResponse } from '../modeles/kpiCaisse.model';
 import { RapportStockParams } from '../modeles/finance.model';
 import { environment } from '../../environments/environment';
+import { handleApiError } from '../core/api/api-error';
 
 @Injectable({
   providedIn: 'root'
@@ -16,25 +16,17 @@ export class RapportStockService {
   private apiUrl = `${environment.apiUrl}/rapport-stock`;
 
   private http = inject(HttpClient);
-  private authService = inject(AuthService);
   private logger = inject(NGXLogger);
 
   /** ================================
    *  GÉNÉRATION HEADERS AVEC TOKEN
    ================================== */
-  private getHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
-    return new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
-  }
 
   /** ================================
    *  GESTION CENTRALISÉE DES ERREURS
    ================================== */
-  private handleError<T>(method: string, error: any): Observable<T> {
-    this.logger.error(`RapportsStocksService -> ${method} :`, error);
-    return throwError(() => error);
+  private handleError<T>(method: string, error: unknown): Observable<T> {
+    return handleApiError(this.logger, `RapportsStocksService.${method}`, error);
   }
 
   /** ================================
@@ -74,7 +66,6 @@ export class RapportStockService {
     const params = this.buildParams(filters);
 
     return this.http.get<IndicateursStocks>(`${this.apiUrl}/indicateurs`, {
-      headers: this.getHeaders(),
       params
     }).pipe(
       catchError(error => this.handleError<IndicateursStocks>('getIndicateursStocks', error))
@@ -100,7 +91,6 @@ export class RapportStockService {
     const params = this.buildParams(filters);
 
     return this.http.get<StatsProduitsResponse>(`${this.apiUrl}/produits`, {
-      headers: this.getHeaders(),
       params
     }).pipe(
       catchError(error => this.handleError<StatsProduitsResponse>('getStatsProduits', error))
@@ -125,7 +115,6 @@ export class RapportStockService {
     const params = this.buildParams(filters);
 
     return this.http.get<MouvementsResponse>(`${this.apiUrl}/mouvements`, {
-      headers: this.getHeaders(),
       params
     }).pipe(
       catchError(error => this.handleError<MouvementsResponse>('getMouvementsPeriode', error))
@@ -146,7 +135,6 @@ export class RapportStockService {
     const params = this.buildParams(filters);
 
     return this.http.get<StatsGraphiquesResponse>(`${this.apiUrl}/graphiques`, {
-      headers: this.getHeaders(),
       params
     }).pipe(
       catchError(error => this.handleError<StatsGraphiquesResponse>('getStatsGraphiques', error))
@@ -167,7 +155,6 @@ export class RapportStockService {
     const params = this.buildParams(filters);
 
     return this.http.get<ProduitsSpecifiquesResponse>(`${this.apiUrl}/produits-specifiques`, {
-      headers: this.getHeaders(),
       params
     }).pipe(
       catchError(error => this.handleError<ProduitsSpecifiquesResponse>('getProduitsSpecifiques', error))
@@ -192,7 +179,6 @@ export class RapportStockService {
     const params = this.buildParams(filters);
 
     return this.http.get<RapportCompletStocksResponse>(`${this.apiUrl}/rapport-complet`, {
-      headers: this.getHeaders(),
       params
     }).pipe(
       catchError(error => this.handleError<RapportCompletStocksResponse>('getRapportCompletStocks', error))
@@ -214,7 +200,6 @@ export class RapportStockService {
     const params = this.buildParams(filters);
 
     return this.http.get(`${this.apiUrl}/export`, {
-      headers: this.getHeaders(),
       params
     }).pipe(
       catchError(error => this.handleError('exportDonneesStocks', error))
@@ -291,7 +276,6 @@ export class RapportStockService {
     const params = this.buildParams(filters);
 
     return this.http.get<StatistiquesProduit>(`${this.apiUrl}/produit/${filters.produitId}`, {
-      headers: this.getHeaders(),
       params
     }).pipe(
       catchError(error => this.handleError<StatistiquesProduit>('getStatistiquesProduit', error))
@@ -313,7 +297,6 @@ export class RapportStockService {
     const params = this.buildParams(filters);
 
     return this.http.get<MouvementsResponse>(`${this.apiUrl}/produit/${filters.produitId}/mouvements`, {
-      headers: this.getHeaders(),
       params
     }).pipe(
       catchError(error => this.handleError<MouvementsResponse>('getMouvementsParProduit', error))
@@ -334,7 +317,6 @@ export class RapportStockService {
     const params = this.buildParams(filters);
 
     return this.http.get<StatsProduitsResponse>(`${this.apiUrl}/magasin/${filters.magasinId}/stocks`, {
-      headers: this.getHeaders(),
       params
     }).pipe(
       catchError(error => this.handleError<StatsProduitsResponse>('getStocksParMagasin', error))
@@ -353,7 +335,6 @@ export class RapportStockService {
     const params = this.buildParams(filters);
 
     return this.http.get(`${this.apiUrl}/export/pdf`, {
-      headers: this.getHeaders(),
       params,
       responseType: 'blob'
     }).pipe(
@@ -373,7 +354,6 @@ export class RapportStockService {
     const params = this.buildParams(filters);
 
     return this.http.get(`${this.apiUrl}/export/excel`, {
-      headers: this.getHeaders(),
       params,
       responseType: 'blob'
     }).pipe(
@@ -386,7 +366,6 @@ export class RapportStockService {
    ================================== */
   getCategoriesProduits(code_structure: string): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/categories`, {
-      headers: this.getHeaders(),
       params: this.buildParams({ code_structure })
     }).pipe(
       catchError(error => this.handleError<any>('getCategoriesProduits', error))
@@ -422,8 +401,6 @@ export class RapportStockService {
     if (params.categorie) httpParams = httpParams.set('categorie', params.categorie);
     if (params.statut) httpParams = httpParams.set('statut', params.statut);
 
-    console.log('📤 Génération PDF Stock avec params:', httpParams.toString());
-
     return this.http.get(`${this.apiUrl}/pdf`, {
       params: httpParams,
       responseType: 'blob'
@@ -458,8 +435,6 @@ exportRapportStockExcel(params: RapportStockParams): Observable<Blob> {
   if (params.magasinId) httpParams = httpParams.set('magasinId', params.magasinId.toString());
   if (params.categorie) httpParams = httpParams.set('categorie', params.categorie);
   if (params.statut) httpParams = httpParams.set('statut', params.statut);
-
-  console.log('Export Excel Stock avec params:', httpParams.toString());
 
   return this.http.get(`${this.apiUrl}/excel`, {
     params: httpParams,

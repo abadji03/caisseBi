@@ -4,7 +4,9 @@ const router = express.Router();
 const panierController = require('../controllers/panier.controller');
 const panierCompletController = require('../controllers/panierComplet.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
-const { requirePermission } = require('../middlewares/auth.middleware');
+const { validatePanier } = require('../middlewares/validatePanier.middleware');
+const { validateBrouillon } = require('../middlewares/validateBrouillon.middleware');
+const { requirePermission, requireStructureAccess } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -61,24 +63,30 @@ const { requirePermission } = require('../middlewares/auth.middleware');
 
 
 
-router.post('/',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierController.createPanier);
-router.get('/',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierController.getAllPaniers);
-router.get('/:id',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierController.getPanierById);
-router.put('/:id',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierController.updatePanier);
-router.delete('/:id',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierController.deletePanier);
-router.delete('/onlyPanier/:id',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierController.deleteOnlyPanier);
-router.get('/bon/:bonId',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierController.getPanierByBonId);
+router.post('/',authenticateToken, requireStructureAccess, requirePermission('sales.manage', 'cash.access'), panierController.createPanier);
+router.get('/',authenticateToken, requireStructureAccess, requirePermission('sales.manage', 'cash.access'), panierController.getAllPaniers);
+router.get('/:id',authenticateToken, requireStructureAccess, requirePermission('sales.manage', 'cash.access'), panierController.getPanierById);
+router.put('/:id',authenticateToken, requireStructureAccess, requirePermission('sales.manage', 'cash.access'), panierController.updatePanier);
+router.delete('/:id',authenticateToken, requireStructureAccess, requirePermission('sales.manage', 'cash.access'), panierController.deletePanier);
+router.delete('/onlyPanier/:id',authenticateToken, requireStructureAccess, requirePermission('sales.manage', 'cash.access'), panierController.deleteOnlyPanier);
+router.get('/bon/:bonId',authenticateToken, requireStructureAccess, requirePermission('sales.manage', 'cash.access'), panierController.getPanierByBonId);
 
-router.get('/structure/:code_structure/magasin/:magasinId',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierController.getPaniersByStructure);
+router.get('/structure/:code_structure/magasin/:magasinId',authenticateToken, requireStructureAccess, requirePermission('sales.manage', 'cash.access'), panierController.getPaniersByStructure);
 
-router.get('/structure/:code_structure/magasin/:magasinId/brouillon',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierController.getPaniersBrouillons);
+router.get('/structure/:code_structure/magasin/:magasinId/brouillon',authenticateToken, requireStructureAccess, requirePermission('sales.manage', 'cash.access'), panierController.getPaniersBrouillons);
 
-router.post('/panier-complet',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierCompletController.createOrUpdatePanierComplet);
+// Nettoyage manuel des brouillons abandonnés (POST { joursInactivite?: number })
+router.post('/nettoyage-brouillons',authenticateToken, requireStructureAccess, requirePermission('sales.manage', 'cash.access'), panierController.nettoyerBrouillons);
 
-router.get('/structure/:code_structure/journalier',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierController.getPaniersByStructureBis);
-router.get('/par-date/:date',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierController.getPaniersParDate);
-router.get('/structure/:code_structure/magasin/:magasinId/bons/:bonId/aujourdhui',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierController.getPaniersAujourdhui);
-router.get('/structure/bis/:code_structure/magasin/:magasinId/bons/:bonId/aujourdhui',authenticateToken, requirePermission('Gérer les ventes', 'Accéder à la caisse'), panierController.getPaniersAujourdhuiBis);
+// Brouillon de caisse : 0 article autorisé, aucun effet stock/paiement
+router.post('/brouillon',authenticateToken, validateBrouillon, requireStructureAccess, requirePermission('sales.manage', 'cash.access'), panierCompletController.createOrUpdateBrouillon);
+
+router.post('/panier-complet',authenticateToken, validatePanier, requireStructureAccess, requirePermission('sales.manage', 'cash.access'), panierCompletController.createOrUpdatePanierComplet);
+
+router.get('/structure/:code_structure/journalier',authenticateToken, requireStructureAccess, requirePermission('sales.manage', 'cash.access'), panierController.getPaniersByStructureBis);
+router.get('/par-date/:date',authenticateToken, requireStructureAccess, requirePermission('sales.manage', 'cash.access'), panierController.getPaniersParDate);
+router.get('/structure/:code_structure/magasin/:magasinId/bons/:bonId/aujourdhui',authenticateToken, requireStructureAccess, requirePermission('sales.manage', 'cash.access'), panierController.getPaniersAujourdhui);
+router.get('/structure/bis/:code_structure/magasin/:magasinId/bons/:bonId/aujourdhui',authenticateToken, requireStructureAccess, requirePermission('sales.manage', 'cash.access'), panierController.getPaniersAujourdhuiBis);
 
 
 module.exports = router;

@@ -1,3 +1,4 @@
+const logger = require('../services/logger.js');
 // controllers/operationController.js
 const db = require('../models');
 const { Op } = require('sequelize');
@@ -46,8 +47,7 @@ exports.createFromBon = async (bon, transaction = null) => {
     }
     
     // Si le bon a un numeroFacture mais pas de facture, ignorer
-    if (bon.numeroFacture && !facture) {
-      console.warn(`⚠️ Bon ${bon.numero} a numeroFacture sans facture réelle`);
+    if (bon.numeroFacture && !facture) {logger.warn('operation.controller', `⚠️ Bon ${bon.numero} a numeroFacture sans facture réelle`);
       // Garder le statut original
       statutOperation = bon.statutBon?.toUpperCase() || 'VALIDÉ';
     }
@@ -78,20 +78,16 @@ exports.createFromBon = async (bon, transaction = null) => {
 
     if (operation) {
       // Mettre à jour l'opération existante
-      await operation.update(operationData, options);
-      console.log('Opération mise à jour depuis bon:', operation.id, 'Statut:', operationData.statut);
+      await operation.update(operationData, options);logger.log('operation.controller', 'Opération mise à jour depuis bon:', operation.id, 'Statut:', operationData.statut);
     } else {
       // Créer une nouvelle opération
-      operation = await Operation.create(operationData, options);
-      console.log('Nouvelle opération créée depuis bon:', operation.id, 'Statut:', operationData.statut);
+      operation = await Operation.create(operationData, options);logger.log('operation.controller', 'Nouvelle opération créée depuis bon:', operation.id, 'Statut:', operationData.statut);
     }
     
     return operation;
-    /* const operation = await Operation.create(operationData, options);
-    console.log('Opération créée depuis bon:', operation.id);
+    /* const operation = await Operation.create(operationData, options);logger.log('operation.controller', 'Opération créée depuis bon:', operation.id);
     return operation; */
-  } catch (error) {
-    console.error('Erreur création opération depuis bon:', error);
+  } catch (error) {logger.error('operation.controller', 'Erreur création opération depuis bon:', error);
     throw error;
   }
 };
@@ -144,20 +140,16 @@ exports.createFromPaiement = async (paiement, transaction = null) => {
 
     if (operation) {
       // Mettre à jour l'opération existante
-      await operation.update(operationData, options);
-      console.log('Opération mise à jour depuis paiement:', operation.id);
+      await operation.update(operationData, options);logger.log('operation.controller', 'Opération mise à jour depuis paiement:', operation.id);
     } else {
       // Créer une nouvelle opération
-      operation = await Operation.create(operationData, options);
-      console.log('Nouvelle opération créée depuis paiement:', operation.id);
+      operation = await Operation.create(operationData, options);logger.log('operation.controller', 'Nouvelle opération créée depuis paiement:', operation.id);
     }
     
     return operation;
-    /* const operation = await Operation.create(operationData, options);
-    console.log('Opération créée depuis paiement:', operation.id);
+    /* const operation = await Operation.create(operationData, options);logger.log('operation.controller', 'Opération créée depuis paiement:', operation.id);
     return operation; */
-  } catch (error) {
-    console.error('❌ Erreur création opération depuis paiement:', error);
+  } catch (error) {logger.error('operation.controller', '❌ Erreur création opération depuis paiement:', error);
     throw error;
   }
 };
@@ -191,17 +183,14 @@ exports.createOrUpdate = async (operationData, transaction = null) => {
 
     if (operation) {
       // Mettre à jour l'opération existante
-      await operation.update(operationData, options);
-      console.log('✅ Opération mise à jour:', operation.id);
+      await operation.update(operationData, options);logger.log('operation.controller', '✅ Opération mise à jour:', operation.id);
     } else {
       // Créer une nouvelle opération
-      operation = await Operation.create(operationData, options);
-      console.log('✅ Nouvelle opération créée:', operation.id);
+      operation = await Operation.create(operationData, options);logger.log('operation.controller', '✅ Nouvelle opération créée:', operation.id);
     }
     
     return operation;
-  } catch (error) {
-    console.error('❌ Erreur création/mise à jour opération:', error);
+  } catch (error) {logger.error('operation.controller', '❌ Erreur création/mise à jour opération:', error);
     throw error;
   }
 };
@@ -214,8 +203,7 @@ exports.updateFromBon = async (bon, transaction = null) => {
       transaction: transaction || undefined
     });
 
-    if (!operation) {
-      console.log(`⚠️ Aucune opération trouvée pour le bon ${bon.id}, création d'une nouvelle`);
+    if (!operation) {logger.log('operation.controller', `⚠️ Aucune opération trouvée pour le bon ${bon.id}, création d'une nouvelle`);
       return await this.createFromBon(bon, transaction);
     }
 
@@ -233,12 +221,10 @@ exports.updateFromBon = async (bon, transaction = null) => {
       updates.commentaire = `[${new Date().toLocaleDateString()}] ${operation.statut} → ${bon.statutBon.toUpperCase()}: ${bon.description || 'Changement de statut'}`;
     }
 
-    await operation.update(updates, { transaction: transaction || undefined });
-    console.log(`✅ Opération ${operation.id} mise à jour pour le bon ${bon.numero}, nouveau statut: ${updates.statut}`);
+    await operation.update(updates, { transaction: transaction || undefined });logger.log('operation.controller', `✅ Opération ${operation.id} mise à jour pour le bon ${bon.numero}, nouveau statut: ${updates.statut}`);
     
     return operation;
-  } catch (error) {
-    console.error('❌ Erreur mise à jour opération depuis bon:', error);
+  } catch (error) {logger.error('operation.controller', '❌ Erreur mise à jour opération depuis bon:', error);
     throw error;
   }
 };
@@ -250,8 +236,7 @@ exports.annulerOperation = async (bonId, raison = 'Bon annulé', transaction = n
       transaction: transaction || undefined
     });
 
-    if (!operation) {
-      console.log(`⚠️ Aucune opération trouvée pour annulation (bonId: ${bonId})`);
+    if (!operation) {logger.log('operation.controller', `⚠️ Aucune opération trouvée pour annulation (bonId: ${bonId})`);
       return null;
     }
 
@@ -260,12 +245,9 @@ exports.annulerOperation = async (bonId, raison = 'Bon annulé', transaction = n
       statut: 'ANNULE',
       commentaire: `${operation.commentaire} - [ANNULATION] ${raison}`,
       dateAnnulation: new Date()
-    }, { transaction: transaction || undefined });
-
-    console.log(`✅ Opération ${operation.id} annulée pour le bon ${bonId}`);
+    }, { transaction: transaction || undefined });logger.log('operation.controller', `✅ Opération ${operation.id} annulée pour le bon ${bonId}`);
     return operation;
-  } catch (error) {
-    console.error('❌ Erreur annulation opération:', error);
+  } catch (error) {logger.error('operation.controller', '❌ Erreur annulation opération:', error);
     throw error;
   }
 };
@@ -295,17 +277,14 @@ exports.synchroniserOperations = async (code_structure, transaction = null) => {
     });
 
     // Filtrer les bons qui n'ont pas d'opération
-    const bonsASynchroniser = bonsSansOperation.filter(bon => !bon.Operation);
-
-    console.log(`🔄 Synchronisation de ${bonsASynchroniser.length} bons sans opération`);
+    const bonsASynchroniser = bonsSansOperation.filter(bon => !bon.Operation);logger.log('operation.controller', `🔄 Synchronisation de ${bonsASynchroniser.length} bons sans opération`);
 
     // Créer des opérations pour chaque bon
     for (const bon of bonsASynchroniser) {
       try {
         await this.createFromBon(bon, transaction);
         compteur.nouvelles++;
-      } catch (error) {
-        console.error(`❌ Erreur synchronisation bon ${bon.id}:`, error.message);
+      } catch (error) {logger.error('operation.controller', `❌ Erreur synchronisation bon ${bon.id}:`, error.message);
         compteur.erreurs++;
       }
     }
@@ -340,16 +319,12 @@ exports.synchroniserOperations = async (code_structure, transaction = null) => {
             compteur.misesAJour++;
           }
         }
-      } catch (error) {
-        console.error(`❌ Erreur mise à jour opération ${operation.id}:`, error.message);
+      } catch (error) {logger.error('operation.controller', `❌ Erreur mise à jour opération ${operation.id}:`, error.message);
         compteur.erreurs++;
       }
-    }
-
-    console.log('✅ Synchronisation terminée:', compteur);
+    }logger.log('operation.controller', '✅ Synchronisation terminée:', compteur);
     return compteur;
-  } catch (error) {
-    console.error('❌ Erreur synchronisation générale:', error);
+  } catch (error) {logger.error('operation.controller', '❌ Erreur synchronisation générale:', error);
     throw error;
   }
 };
@@ -463,8 +438,7 @@ exports.findAll = async (req, res) => {
       currentPage: parseInt(page)
     });
 
-  } catch (error) {
-    console.error('❌ Erreur récupération opérations:', error);
+  } catch (error) {logger.error('operation.controller', '❌ Erreur récupération opérations:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -487,9 +461,7 @@ exports.findByFournisseur = async (req, res) => {
     }
 
     const { fournisseurId } = req.params;
-    const { dateDebut, dateFin, type, statut } = req.query;
-
-    console.log('Requête opérations fournisseur:', {
+    const { dateDebut, dateFin, type, statut } = req.query;logger.log('operation.controller', 'Requête opérations fournisseur:', {
       code_structure,
       fournisseurId,
       dateDebut,
@@ -549,19 +521,14 @@ exports.findByFournisseur = async (req, res) => {
     if (dateDebut || dateFin) {
       whereClause.dateOperation = {};
       if (dateDebut) {
-        whereClause.dateOperation[Op.gte] = new Date(`${dateDebut}T00:00:00`);
-        console.log('Date début:', dateDebut, '->', new Date(`${dateDebut}T00:00:00`).toISOString());
+        whereClause.dateOperation[Op.gte] = new Date(`${dateDebut}T00:00:00`);logger.log('operation.controller', 'Date début:', dateDebut, '->', new Date(`${dateDebut}T00:00:00`).toISOString());
       }
       if (dateFin) {
-        whereClause.dateOperation[Op.lte] = new Date(`${dateFin}T23:59:59`);
-        console.log('Date fin:', dateFin, '->', new Date(`${dateFin}T23:59:59`).toISOString());
+        whereClause.dateOperation[Op.lte] = new Date(`${dateFin}T23:59:59`);logger.log('operation.controller', 'Date fin:', dateFin, '->', new Date(`${dateFin}T23:59:59`).toISOString());
       }
-    }
-    console.log('Conditions date:', whereClause.dateOperation);
+    }logger.log('operation.controller', 'Conditions date:', whereClause.dateOperation);
     if (type) whereClause.type = type;
-    if (statut) whereClause.statut = statut;
-
-    console.log('🔍 Requête Sequelize WHERE:', JSON.stringify(whereClause, null, 2));
+    if (statut) whereClause.statut = statut;logger.log('operation.controller', '🔍 Requête Sequelize WHERE:', JSON.stringify(whereClause, null, 2));
 
     const operations = await Operation.findAll({
       where : whereClause,
@@ -577,12 +544,9 @@ exports.findByFournisseur = async (req, res) => {
         { model: db.Users }
       ],
     order: [['createdAt', 'DESC']]
-  });
-
-  console.log(`${operations.length} opérations trouvées`);
+  });logger.log('operation.controller', `${operations.length} opérations trouvées`);
     res.json(operations);
-  } catch (error) {
-    console.error(' Erreur opérations fournisseur:', error);
+  } catch (error) {logger.error('operation.controller', ' Erreur opérations fournisseur:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -689,8 +653,7 @@ exports.findByClient = async (req, res) => {
     });
 
     res.json(operations);
-  } catch (error) {
-    console.error('❌ Erreur opérations client:', error);
+  } catch (error) {logger.error('operation.controller', '❌ Erreur opérations client:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -728,8 +691,7 @@ exports.findById = async (req, res) => {
     }
     
     res.json(operation);
-  } catch (error) {
-    console.error('❌ Erreur récupération opération:', error);
+  } catch (error) {logger.error('operation.controller', '❌ Erreur récupération opération:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -815,8 +777,7 @@ exports.getStats = async (req, res) => {
     });
 
     res.json(stats);
-  } catch (error) {
-    console.error('❌ Erreur statistiques:', error);
+  } catch (error) {logger.error('operation.controller', '❌ Erreur statistiques:', error);
     res.status(500).json({ error: error.message });
   }
 };

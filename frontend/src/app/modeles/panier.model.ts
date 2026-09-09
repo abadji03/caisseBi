@@ -4,6 +4,9 @@ import { Paiement } from './paiement.model';
 import { Produits } from './produit.modele';
 import { User } from './user.model';
 
+export const arrondi2 = (v: number): number =>
+  Math.round((Number(v) + Number.EPSILON) * 100) / 100;
+
 export class Panier {
   id?: number;
   clientId?: number;
@@ -34,12 +37,23 @@ export class Panier {
   paiements?: Paiement[];
   remiseParArticle = false; // Indicateur pour savoir si on applique la remise par article
   tvaParArticle = true; // Par défaut, TVA par article
+  remiseMode?: 'article' | 'globale'; // Mode persisté côté backend
+  tvaMode?: 'article' | 'globale'; // Mode persisté côté backend
 
   constructor(data?: Partial<Panier>) {
     if (data) {
       Object.assign(this, data);
       // Recalculer les totaux après construction
       this.convertirArticlesEnInstances(data);
+
+      // Modes persistés côté backend → reflétés dans les flags locaux
+      // (remplace l'ancienne déduction fragile au rechargement)
+      if (data.remiseMode !== undefined) {
+        this.remiseParArticle = data.remiseMode === 'article';
+      }
+      if (data.tvaMode !== undefined) {
+        this.tvaParArticle = data.tvaMode === 'article';
+      }
 
       this.calculerTotals();
     }
@@ -104,6 +118,11 @@ export class Panier {
       this.remise += article.montantRemise ?? 0;
     }
 
+    // Arrondi monétaire (évite les écarts de centimes liés aux flottants)
+    this.totalHT = arrondi2(this.totalHT);
+    this.tva = arrondi2(this.tva);
+    this.remise = arrondi2(this.remise);
+
     // 2. Remise globale (SI PAS par article)
     /*if (!this.remiseParArticle && this.remiseGlobale && this.remiseGlobale > 0) {
        const remiseGlobaleMontant = this.totalHT * (this.remiseGlobale / 100);
@@ -121,7 +140,7 @@ export class Panier {
     }
 
     // 4. Total TTC
-    this.totalTTC = this.totalHT + this.tva;
+    this.totalTTC = arrondi2(this.totalHT + this.tva);
 
     // Validation des calculs
     this.validerCalculs(htTotalAvantRemise);
@@ -354,43 +373,43 @@ export class ArticlePanier {
       remise: this.remise
     });
     // 1. HT brut
-    const htBrut = this.prixUnitaire * this.quantite;
+    const htBrut = arrondi2(this.prixUnitaire * this.quantite);
     console.log('📊 HT brut:', htBrut, '=', this.prixUnitaire, '*', this.quantite);
 
     // 2. Calcul de la remise
     if (appliquerRemise && this.remise && this.remise > 0) {
       // Remise par article
-      this.montantRemise = htBrut * (this.remise / 100);
+      this.montantRemise = arrondi2(htBrut * (this.remise / 100));
     } 
      else if (!appliquerRemise && remiseGlobale && remiseGlobale > 0 && totalHTPanier && totalHTPanier > 0) {
       // Part de la remise globale pour cet article (proportionnelle)
       const proportion = htBrut / totalHTPanier  ;
       const montantRemiseGlobaleTotal = totalHTPanier * (remiseGlobale / 100);
-      this.montantRemise = montantRemiseGlobaleTotal * proportion;
+      this.montantRemise = arrondi2(montantRemiseGlobaleTotal * proportion);
       //this.montantRemise = totalHTPanier  * (remiseGlobale / 100) * proportion;
     }  
     else {
       this.montantRemise = 0;
     }
 
-    const htNet = htBrut - (this.montantRemise || 0);
+    const htNet = arrondi2(htBrut - (this.montantRemise || 0));
 
     // 3. Calcul de la TVA
     if (appliquerTVA && this.tauxTVA && this.tauxTVA > 0) {
       // TVA par article
-      this.montantTVA = htNet * (this.tauxTVA / 100);
+      this.montantTVA = arrondi2(htNet * (this.tauxTVA / 100));
     } 
     else if (!appliquerTVA && tauxTVAGlobal && tauxTVAGlobal > 0) {
       // TVA globale appliquée à la part HT de cet article
-      this.montantTVA = htNet * (tauxTVAGlobal / 100);
+      this.montantTVA = arrondi2(htNet * (tauxTVAGlobal / 100));
     } 
     else {
       this.montantTVA = 0;
     }
 
     // 4. Totaux
-    this.totalHT = htNet;
-    this.totalTTC = htNet + (this.montantTVA || 0);
+    this.totalHT = arrondi2(htNet);
+    this.totalTTC = arrondi2(htNet + (this.montantTVA || 0));
   }
 
   get isValid(): boolean {

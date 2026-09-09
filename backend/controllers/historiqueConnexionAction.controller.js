@@ -1,3 +1,4 @@
+const logger = require('../services/logger.js');
 // controllers/historiqueConnexionAction.controller.js
 const db = require('../models');
 const { Op } = db.Sequelize;
@@ -104,8 +105,7 @@ exports.getConnexionsByUser = async (req, res) => {
         code_structure: authUser.code_structure
       }
     });
-  } catch (error) {
-    console.error('Erreur getConnexionsByUser:', error);
+  } catch (error) {logger.error('historiqueConnexionAction.controller', 'Erreur getConnexionsByUser:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -250,8 +250,7 @@ exports.getActionsByUser = async (req, res) => {
         code_structure: authUser.code_structure
       }
     });
-  } catch (error) {
-    console.error('Erreur getActionsByUser:', error);
+  } catch (error) {logger.error('historiqueConnexionAction.controller', 'Erreur getActionsByUser:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -359,8 +358,7 @@ exports.getAllRecentActions = async (req, res) => {
         code_structure: authUser.code_structure
       }
     });
-  } catch (error) {
-    console.error('Erreur getAllRecentActions:', error);
+  } catch (error) {logger.error('historiqueConnexionAction.controller', 'Erreur getAllRecentActions:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -458,8 +456,7 @@ exports.getHistoriqueStats = async (req, res) => {
     }, {});
     
     res.json(stats);
-  } catch (error) {
-    console.error('Erreur getHistoriqueStats:', error);
+  } catch (error) {logger.error('historiqueConnexionAction.controller', 'Erreur getHistoriqueStats:', error);
     res.status(500).json({ message: error.message });
   }
 };

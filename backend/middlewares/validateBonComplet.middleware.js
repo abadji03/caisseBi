@@ -18,8 +18,12 @@ const validateBonComplet = (req, res, next) => {
   if (!typeEntite || !['client', 'fournisseur'].includes(typeEntite)) {
     errors.push('Le champ "typeEntite" est requis (valeurs acceptées : client, fournisseur)');
   }
+  // Un bon en brouillon peut être vide ; seul un bon validé exige des articles.
+  const estBrouillon = bon?.statutBon === 'brouillon';
   if (!Array.isArray(articles) || articles.length === 0) {
-    errors.push('Le champ "articles" est requis et doit être un tableau non vide');
+    if (!estBrouillon) {
+      errors.push('Le champ "articles" est requis et doit être un tableau non vide');
+    }
   }
 
   // ── Validation des montants du bon ──

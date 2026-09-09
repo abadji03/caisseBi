@@ -1,4 +1,5 @@
 const db = require('../models');
+const logger = require('../services/logger.js');
 const { verifierAppartenanceStructure } = require('../services/verification.service');
 const Fournisseur = db.Fournisseur;
 const Bon = db.Bon;
@@ -88,9 +89,7 @@ exports.createFournisseur = async (req, res) => {
   try {
     const authUser = req.user;
     const clientIp = HistoriqueService.getClientIp(req);
-    const { magasinIds, ...fournisseurData } = req.body; // Extraire les magasins
-
-    console.log('Données magasins et fournisseurs reçues : ', fournisseurData,magasinIds);
+    const { magasinIds, ...fournisseurData } = req.body; // Extraire les magasinslogger.log('fournisseur.controller', 'Données magasins et fournisseurs reçues : ', fournisseurData,magasinIds);
 
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
@@ -115,13 +114,9 @@ exports.createFournisseur = async (req, res) => {
         message = 'Un fournisseur existe déjà avec ce numéro de téléphone';
       }
       return res.status(400).json({ message });
-    }
-
-    console.log('Avant création fournisseur');
+    }logger.log('fournisseur.controller', 'Avant création fournisseur');
     // Créer le fournisseur
-    const fournisseur = await Fournisseur.create(fournisseurData);
-
-    console.log('Fournisseur créé:', fournisseur.id);
+    const fournisseur = await Fournisseur.create(fournisseurData);logger.log('fournisseur.controller', 'Fournisseur créé:', fournisseur.id);
 
     // Associer les magasins si fournis
     if (magasinIds && magasinIds.length > 0) {
@@ -161,8 +156,7 @@ exports.createFournisseur = async (req, res) => {
     });
 
     res.status(201).json(fournisseurAvecMagasins);
-  } catch (error) {
-    console.error('ERREUR COMPLETE:', error);
+  } catch (error) {logger.error('fournisseur.controller', 'ERREUR COMPLETE:', error);
     if (req.user) {
       await HistoriqueService.enregistrerAction(
         req.user.id,
@@ -243,8 +237,7 @@ exports.getFournisseurWithMagasins = async (req, res) => {
     }
 
     res.json(fournisseurJson);
-  } catch (error) {
-    console.error('Erreur getFournisseurWithMagasins:', error);
+  } catch (error) {logger.error('fournisseur.controller', 'Erreur getFournisseurWithMagasins:', error);
     res.status(500).json({ message: 'Erreur récupération', error: error.message });
   }
 };
@@ -634,8 +627,7 @@ exports.getFournisseursByStructure = async (req, res) => {
     });
 
     res.json(fournisseursAvecMontant);
-  } catch (error) {
-    console.error("Erreur récupération fournisseurs:", error);
+  } catch (error) {logger.error('fournisseur.controller', "Erreur récupération fournisseurs:", error);
     res.status(500).json({ message: 'Erreur récupération', error: error.message });
   }
 };
@@ -751,9 +743,7 @@ exports.getFournisseursByStructureBis = async (req, res) => {
       return fournisseurJson;
     });
 
-    const totalPages = Math.ceil(count / limitInt);
-
-    console.log(`📦 Fournisseurs: ${count} trouvés, page ${page}/${totalPages}`);
+    const totalPages = Math.ceil(count / limitInt);logger.log('fournisseur.controller', `📦 Fournisseurs: ${count} trouvés, page ${page}/${totalPages}`);
 
     res.status(200).json({
       items: rowsAvecMontant,
@@ -767,8 +757,7 @@ exports.getFournisseursByStructureBis = async (req, res) => {
       }
     });
 
-  } catch (error) {
-    console.error("Erreur récupération fournisseurs:", error);
+  } catch (error) {logger.error('fournisseur.controller', "Erreur récupération fournisseurs:", error);
     res.status(500).json({ 
       message: 'Erreur lors de la récupération des fournisseurs', 
       error: error.message 
@@ -936,8 +925,7 @@ exports.exportFournisseursExcel = async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename=fournisseurs-${Date.now()}.xlsx`);
     res.send(buffer);
     
-  } catch (error) {
-    console.error('❌ Erreur export Excel fournisseurs:', error);
+  } catch (error) {logger.error('fournisseur.controller', '❌ Erreur export Excel fournisseurs:', error);
     
     if (req.user) {
       await HistoriqueService.enregistrerAction(

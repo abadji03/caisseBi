@@ -113,7 +113,6 @@ export class RapportsStocksComponent implements OnInit, OnDestroy {
     Chart.defaults.font.size = 12;
     //Chart.defaults.plugins.legend.labels.generateLabels = undefined; // Désactiver la génération personnalisée
     
-    console.log('Chart.js initialisé avec succès');
   } catch (error) {
     console.error('Erreur lors de l\'initialisation de Chart.js:', error);
   }
@@ -253,7 +252,6 @@ chargerDonnees(): void {
       graphiques,
       produitsSpecifiques
     ]) => {
-      console.log('Données reçues:', { indicateurs, produits, mouvements, graphiques, produitsSpecifiques });
       
       this.indicateursStocks = indicateurs || null;
       
@@ -308,7 +306,6 @@ chargerDonnees(): void {
     })
     .catch(error => {
       console.error('Erreur lors du chargement des données:', error);
-      this.toastr.error('Erreur lors du chargement des données');
     })
     .finally(() => {
       this.isLoading = false;
@@ -542,7 +539,6 @@ creerGraphiqueTopProduits(): void {
  * Méthode principale pour mettre à jour tous les graphiques
  */
 mettreAJourGraphiques(): void {
-  console.log('Mise à jour des graphiques...');
 
   // Détruire tous les graphiques existants
   [this.evolutionChart, this.repartitionChart, this.topProduitsChart].forEach(chart => {
@@ -724,7 +720,6 @@ onPageChange(page: number, type: 'produits' | 'mouvements'): void {
         },
         error: (error) => {
           console.error('Erreur lors du changement de page des produits:', error);
-          this.toastr.error('Erreur lors du chargement de la page');
         }
       });
   } 
@@ -750,7 +745,6 @@ onPageChange(page: number, type: 'produits' | 'mouvements'): void {
         },
         error: (error) => {
           console.error('Erreur lors du changement de page des mouvements:', error);
-          this.toastr.error('Erreur lors du chargement de la page');
         }
       });
   }
@@ -839,7 +833,6 @@ async exportToPDF(): Promise<void> {
     const pdfBlob = await this.rapportsService.generateRapportStockPDF(params).toPromise();
 
     if(!pdfBlob){
-      console.log('Echec appel API pour générer le PDF');
       return;
     }
 
@@ -964,7 +957,6 @@ async exportToExcel(): Promise<void> {
     const excelBlob = await this.rapportsService.exportRapportStockExcel(params).toPromise();
 
     if(!excelBlob){
-      console.log('Echec appel API pour générer un fichier excel');
       return;
     }
 
@@ -1080,7 +1072,6 @@ private generateStockExcelFileName(): string {
     const pdfBlob = await this.rapportsService.generateRapportStockPDF(params).toPromise();
 
     if(!pdfBlob){
-      console.log('Echec appel API depuis backend');
       return;
     }
 

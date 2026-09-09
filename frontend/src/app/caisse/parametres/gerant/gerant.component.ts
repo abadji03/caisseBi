@@ -55,7 +55,6 @@ export class GerantComponent {
 
   // Méthode pour modifier un gérant
   modifierGerant(gerant: User) {
-    console.log(gerant);
     //this.gerant = { ...gerant };
   }
 

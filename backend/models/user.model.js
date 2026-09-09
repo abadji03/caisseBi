@@ -1,4 +1,5 @@
 //const SequenceService = require('../services/sequence.service');
+const logger = require('../services/logger.js');
 
 module.exports = (sequelize, DataTypes) => {
   // Définition du modèle users
@@ -70,7 +71,7 @@ module.exports = (sequelize, DataTypes) => {
           });
           user.numeroE = count + 1;
         } catch (error) {
-          console.error('❌ Hook numeroE users error:', error);
+          logger.error('user.model', '❌ Hook numeroE users error:', error);
           user.numeroE = 1;
         }
       },

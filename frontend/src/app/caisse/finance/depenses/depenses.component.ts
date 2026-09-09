@@ -7,6 +7,10 @@ import { ToastrService } from 'ngx-toastr';
 import { CommonModule } from '@angular/common';
 import { ModePaiement } from '../../../modeles/paiement.model';
 import { CategoriesDepencesRecettesService } from '../../../services/categories-depences-recettes.service';
+import { TableSearchComponent } from '../../../shared/table/table-search.component';
+import { TablePaginationComponent } from '../../../shared/table/table-pagination.component';
+import { TableStateComponent } from '../../../shared/table/table-state.component';
+import { ListState, toListState } from '../../../shared/table/list-state';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare let bootstrap: any; // Déclaration pour Bootstrap
@@ -14,7 +18,7 @@ declare let bootstrap: any; // Déclaration pour Bootstrap
 @Component({
   selector: 'app-depenses',
   standalone: true,
-  imports: [CommonModule,FormsModule, ReactiveFormsModule],
+  imports: [CommonModule,FormsModule, ReactiveFormsModule, TableSearchComponent, TablePaginationComponent, TableStateComponent],
   templateUrl: './depenses.component.html',
   styleUrl: './depenses.component.css'
 })
@@ -67,6 +71,8 @@ export class DepensesComponent implements OnInit, OnDestroy {
 
   // États
   isLoadingDepenses = false;
+  /** État d'affichage de la liste — voir shared/table */
+  depensesListState: ListState = 'idle';
   isLoadingCategorie = false;
   isLoadingStats = false;
   errorMessage = '';
@@ -159,6 +165,7 @@ loadDepenses(): void {
     if (!this.code_structure) return;
 
     this.isLoadingDepenses = true;
+    this.depensesListState = 'loading';
     this.errorMessage = '';
 
     const filters: DepensesFilter = {
@@ -187,13 +194,13 @@ loadDepenses(): void {
           this.totalPages = response.pagination.totalPages;
           this.hasNext = response.pagination.hasNext;
           this.hasPrev = response.pagination.hasPrev;
-          
-          console.log('Dépenses chargées:', response.items.length);
+
+          this.depensesListState = toListState(false, false, this.depenses);
         },
         error: (err) => {
+          this.depensesListState = 'error';
           this.errorMessage = 'Erreur lors du chargement des dépenses';
           this.toastr.error(this.errorMessage);
-          console.error('Erreur chargement dépenses:', err);
         }
       });
   }
@@ -222,7 +229,6 @@ loadDepenses(): void {
             cat => cat.type === 'DEPENSE'
           );
 
-          console.log('Catégories chargées:', categories.length);
         },
         error: (err) => {
           this.errorMessage = 'Erreur lors du chargement des catégories';
@@ -370,7 +376,6 @@ getMontantParMode(mode: string): number {
       formData.append('receipt', this.selectedFile);
     }
 
-    console.log('Données à envoyer :', formData);
     if (this.selectedDepense?.id) {
       this.updateDepense(formData);
     } else {
@@ -392,7 +397,6 @@ getMontantParMode(mode: string): number {
           this.loadDepenses();
           this.cancelForm();
           //this.depenseAction.emit({ action: 'created', depense: this.selectedDepense! });
-          console.log({ action: 'created', depense: this.selectedDepense! });
         },
         error: (err) => {
           this.toastr.error('Erreur lors de l\'enregistrement');
@@ -416,7 +420,6 @@ getMontantParMode(mode: string): number {
           this.loadDepenses();
           this.cancelForm();
           //this.depenseAction.emit({ action: 'updated', depense: this.selectedDepense! });
-          console.log({ action: 'updated', depense: this.selectedDepense! });
         },
         error: (err) => {
           this.toastr.error('Erreur lors de la modification');
@@ -445,7 +448,6 @@ getMontantParMode(mode: string): number {
           this.toastr.success('Dépense annulée avec succès');
           this.loadDepenses();
           //this.depenseAction.emit({ action: 'deleted', depense });
-          console.log({ action: 'deleted', depense });
         },
         error: (err) => {
           this.toastr.error('Erreur lors de la suppression');

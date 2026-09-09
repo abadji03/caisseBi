@@ -58,11 +58,11 @@ const { requirePermission } = require('../middlewares/auth.middleware');
 
 
 
-router.post('/', authenticateToken, requirePermission('Gérer les rôles'), role.create);
+router.post('/', authenticateToken, requirePermission('roles.manage'), role.create);
 router.get('/', authenticateToken, role.findAll);
 router.get('/:id', authenticateToken, role.getRoleById);
-router.put('/:id', authenticateToken, requirePermission('Gérer les rôles'), role.updateRole);
-router.delete('/:id', authenticateToken, requirePermission('Gérer les rôles'), role.deleteRole);
-router.post('/:id/permissions', authenticateToken, requirePermission('Gérer les rôles'), role.assignPermissions); // assigner permissions
+router.put('/:id', authenticateToken, requirePermission('roles.manage'), role.updateRole);
+router.delete('/:id', authenticateToken, requirePermission('roles.manage'), role.deleteRole);
+router.post('/:id/permissions', authenticateToken, requirePermission('roles.manage'), role.assignPermissions); // assigner permissions
 
 module.exports = router;

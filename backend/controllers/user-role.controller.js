@@ -1,4 +1,5 @@
 const db = require('../models');
+const logger = require('../services/logger.js');
 const User = db.Users;
 const Role = db.Role;
 
@@ -9,6 +10,7 @@ exports.assignRolesToUser = async (req, res) => {
 
     const roles = await Role.findAll({ where: { id: req.body.roleIds } });
     await user.setRoles(roles);
+    invalidateUserPermissions(user.id);
 
     res.json({ message: "Rôles assignés à l'utilisateur" });
   } catch (err) {
@@ -31,13 +33,13 @@ exports.getUserRoles = async (req, res) => {
 
 // Remplace les rôles existants par de nouveaux
 exports.updateUserRoles = async (req, res) => {
-  try {
-    console.log('Corps de la requête reçu :', req.body);
+  try {logger.log('user-role.controller', 'Corps de la requête reçu :', req.body);
     const user = await User.findByPk(req.params.userId);
     if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
 
     const roles = await Role.findAll({ where: { id: req.body.roleIds } });
-    await user.setRoles(roles); // Remplace les anciens rôles
+    await user.setRoles(roles);
+    invalidateUserPermissions(user.id); // Remplace les anciens rôles
 
     res.json({ message: "Rôles mis à jour pour l'utilisateur." });
   } catch (err) {
@@ -52,6 +54,7 @@ exports.removeUserRoles = async (req, res) => {
     if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
 
     await user.removeRoles(req.body.roleIds);
+    invalidateUserPermissions(user.id);
 
     res.json({ message: "Rôles supprimés de l'utilisateur." });
   } catch (err) {

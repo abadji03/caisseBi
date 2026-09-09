@@ -1,3 +1,4 @@
+const logger = require('../services/logger.js');
 // controllers/facture.controller.js
 const db = require('../models');
 const Facture = db.Facture;
@@ -93,6 +94,7 @@ exports.createFactureCommande = async (req, res) => {
     
     const facture = await Facture.create({
       code_structure: bon.code_structure,
+      agentId: authUser.id,
       clientId: bon.Client.id,
       magasinId: bon.magasinId,
       bonId: bon.id,
@@ -117,7 +119,7 @@ exports.createFactureCommande = async (req, res) => {
     try {
       pdfBuffer = await generateFacturePDF(facture.id);
     } catch (pdfError) {
-      console.error('Erreur génération PDF:', pdfError);
+logger.error('facture.controller', 'Erreur génération PDF:', pdfError);
       return res.status(201).json({
         message: 'Bon de commande créé avec succès (PDF non généré)',
         facture,
@@ -136,7 +138,7 @@ exports.createFactureCommande = async (req, res) => {
     if (transaction && !transaction.finished) {
       await transaction.rollback();
     }
-    console.error('Erreur:', error);
+logger.error('facture.controller', 'Erreur:', error);
     res.status(500).json({ message: 'Erreur lors de la création', error: error.message });
   }
 };
@@ -193,6 +195,7 @@ exports.createFactureFromBon = async (req, res) => {
     
     const facture = await Facture.create({
       code_structure: bon.code_structure,
+      agentId: authUser.id,
       clientId: bon.Client.id,
       magasinId: bon.magasinId,
       bonId: bon.id,
@@ -217,7 +220,7 @@ exports.createFactureFromBon = async (req, res) => {
     try {
       pdfBuffer = await generateFacturePDF(facture.id);
     } catch (pdfError) {
-      console.error('Erreur génération PDF:', pdfError);
+logger.error('facture.controller', 'Erreur génération PDF:', pdfError);
       return res.status(201).json({
         message: 'Facture créée avec succès (PDF non généré)',
         facture,
@@ -236,7 +239,7 @@ exports.createFactureFromBon = async (req, res) => {
     if (transaction && !transaction.finished) {
       await transaction.rollback();
     }
-    console.error('Erreur création facture:', error);
+logger.error('facture.controller', 'Erreur création facture:', error);
     res.status(500).json({ message: 'Erreur lors de la création de la facture', error: error.message });
   }
 };
@@ -281,6 +284,7 @@ exports.createAvoir = async (req, res) => {
     // Créer la facture d'avoir
     const avoir = await Facture.create({
       code_structure: factureOriginale.code_structure,
+      agentId: authUser.id,
       clientId: factureOriginale.clientId,
       magasinId: factureOriginale.magasinId,
       bonId: factureOriginale.bonId,
@@ -320,7 +324,7 @@ exports.createAvoir = async (req, res) => {
     
   } catch (error) {
     await transaction.rollback();
-    console.error('Erreur création avoir:', error);
+logger.error('facture.controller', 'Erreur création avoir:', error);
     res.status(500).json({ message: 'Erreur lors de la création de l\'avoir', error: error.message });
   }
 };
@@ -355,6 +359,7 @@ exports.createFactureRegularisation = async (req, res) => {
       code_structure: client.code_structure,
       clientId,
       magasinId,
+      agentId: authUser.id,
       type_facture: 'regularisation',
       montant_ht: type === 'debit' ? montantAbs : -montantAbs,
       montant_tva: 0,
@@ -386,7 +391,7 @@ exports.createFactureRegularisation = async (req, res) => {
     
   } catch (error) {
     await transaction.rollback();
-    console.error('Erreur:', error);
+logger.error('facture.controller', 'Erreur:', error);
     res.status(500).json({ message: 'Erreur lors de la création', error: error.message });
   }
 };
@@ -451,6 +456,7 @@ exports.createFactureAchat = async (req, res) => {
     
     const facture = await Facture.create({
       code_structure: fournisseur.code_structure,
+      agentId: authUser.id,
       fournisseurId,
       magasinId,
       bonId: bon?.id || null,
@@ -477,7 +483,7 @@ exports.createFactureAchat = async (req, res) => {
     try {
       pdfBuffer = await generateFacturePDF(facture.id);
     } catch (pdfError) {
-      console.error('Erreur génération PDF:', pdfError);
+logger.error('facture.controller', 'Erreur génération PDF:', pdfError);
       // Le PDF a échoué mais la facture est créée
       return res.status(201).json({
         message: 'Facture d\'achat créée avec succès (PDF non généré)',
@@ -498,7 +504,7 @@ exports.createFactureAchat = async (req, res) => {
     if (transaction && !transaction.finished) {
       await transaction.rollback();
     }
-    console.error('Erreur création facture achat:', error);
+logger.error('facture.controller', 'Erreur création facture achat:', error);
     res.status(500).json({ message: 'Erreur lors de la création', error: error.message });
   }
 };
@@ -579,7 +585,7 @@ exports.createFactureAchat = async (req, res) => {
     
   } catch (error) {
     await transaction.rollback();
-    console.error('Erreur:', error);
+logger.error('facture.controller', 'Erreur:', error);
     res.status(500).json({ message: 'Erreur lors de la création', error: error.message });
   }
 };
@@ -687,7 +693,7 @@ exports.createFactureAchat = async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Erreur:', error);
+logger.error('facture.controller', 'Erreur:', error);
     res.status(500).json({ message: 'Erreur lors de la récupération', error: error.message });
   }
 };
@@ -719,8 +725,7 @@ exports.getFactures = async (req, res) => {
         message: "Accès interdit : structure non autorisée"
       });
     }
-    
-    console.log('Paramètres de filtres', code_structure, req.query);
+logger.log('facture.controller', 'Paramètres de filtres', code_structure, req.query);
     // Vérifier rôle
     const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
@@ -801,7 +806,7 @@ exports.getFactures = async (req, res) => {
         };
       }
     }
-     console.log('Paramètres de la clause where', whereCondition);
+logger.log('facture.controller', 'Paramètres de la clause where', whereCondition);
     // ========== PAGINATION ==========
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const limitNum = parseInt(limit);
@@ -834,7 +839,7 @@ exports.getFactures = async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Erreur getFactures:', error);
+logger.error('facture.controller', 'Erreur getFactures:', error);
     res.status(500).json({ 
       message: 'Erreur lors de la récupération des factures', 
       error: error.message 
@@ -985,7 +990,7 @@ async function getLogoBuffer(structure) {
     
     return null;
   } catch (err) {
-    console.error('Erreur chargement logo:', err.message);
+logger.error('facture.controller', 'Erreur chargement logo:', err.message);
     return null;
   }
 }
@@ -1047,7 +1052,7 @@ async function generateFacturePDF(factureId) {
         doc.image(logoBuffer, MARGIN_LEFT, headerTop, { width: 70, height: 70 });
         logoWidth = 80;
       } catch (err) {
-        console.error('Erreur insertion logo:', err.message);
+logger.error('facture.controller', 'Erreur insertion logo:', err.message);
       }
     }
 
@@ -1399,7 +1404,7 @@ exports.downloadFacturePDF = async (req, res) => {
     res.send(pdfBuffer);
     
   } catch (error) {
-    console.error('Erreur génération PDF:', error);
+logger.error('facture.controller', 'Erreur génération PDF:', error);
     res.status(500).json({ message: 'Erreur lors de la génération du PDF', error: error.message });
   }
 };

@@ -66,7 +66,7 @@ exports.connexion = async (req, res) => {
     const rolesPayload = (userWithRoles.roles || []).map(r => ({
       id: r.id,
       nom: r.nom,
-      permissions: (r.permissions || []).map(p => ({ id: p.id, nom: p.nom, type: p.type })),
+      permissions: (r.permissions || []).map(p => ({ id: p.id, code: p.code, nom: p.nom, type: p.type })),
     }));
 
     const token = jwt.sign(
@@ -143,6 +143,7 @@ exports.getMe = async (req, res) => {
         nom: role.nom,
         permissions: (role.permissions || []).map(p =>({
            id: p.id,
+           code: p.code,
            nom: p.nom,
            type: p.type
       })),

@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+﻿import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
@@ -26,8 +26,8 @@ export interface HistoriqueAction {
   action: string;
   ip: string;
   userId: number;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  details?: any;
+  /** Détail JSON arbitraire renvoyé par le backend. */
+  details?: Record<string, unknown>;
   user?: {
     id: number;
     nom: string;
@@ -41,6 +41,14 @@ export interface HistoriqueAction {
   actionType?: string;
   actionCategory?: string;
   readableDate?: string;
+}
+
+/** Statistiques d'historique (onglet "stats"). */
+export interface HistoriqueStats {
+  totalActions?: number;
+  totalConnexions?: number;
+  /** Répartition des actions par type : { 'CREATE': 12, ... } */
+  actionsByType?: Record<string, number>;
 }
 
 export interface PaginatedResponse<T> {
@@ -136,8 +144,7 @@ export class HistoriqueService {
     days?: number;
     structureId?: string;
     actionCategory?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  }): Observable<any> {
+  }): Observable<PaginatedResponse<HistoriqueAction>> {
     let httpParams = new HttpParams();
     
     if (params) {
@@ -147,17 +154,16 @@ export class HistoriqueService {
       if (params.actionCategory) httpParams = httpParams.set('actionCategory', params.actionCategory);
     }
     
-    return this.http.get(`${this.apiUrl}/actions/recent`, { params: httpParams });
+    return this.http.get<PaginatedResponse<HistoriqueAction>>(`${this.apiUrl}/actions/recent`, { params: httpParams });
   }
 
   /**
    * Récupérer les statistiques des historiques
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getHistoriqueStats(params?: { period?: 'week' | 'month' | 'year' }): Observable<any> {
+  getHistoriqueStats(params?: { period?: 'week' | 'month' | 'year' }): Observable<HistoriqueStats> {
     let httpParams = new HttpParams();
     if (params?.period) httpParams = httpParams.set('period', params.period);
     
-    return this.http.get(`${this.apiUrl}/stats`, { params: httpParams });
+    return this.http.get<HistoriqueStats>(`${this.apiUrl}/stats`, { params: httpParams });
   }
 }

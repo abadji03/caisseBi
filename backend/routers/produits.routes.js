@@ -3,7 +3,7 @@ const router = express.Router();
 const produitCtrl = require('../controllers/produit.controller');
 const upload = require('../middlewares/uploadMiddleware');
 const authenticateToken = require('../middlewares/auth.middleware');
-const { requirePermission } = require('../middlewares/auth.middleware');
+const { requirePermission, requireStructureAccess } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -44,7 +44,7 @@ const { requirePermission } = require('../middlewares/auth.middleware');
  *             schema:
  *               $ref: '#/components/schemas/Produit'
  */
-router.post('/', authenticateToken, requirePermission('Gérer les produits'), upload.single('image'), produitCtrl.createProduit);
+router.post('/', authenticateToken, requireStructureAccess, requirePermission('products.manage'), upload.single('image'), produitCtrl.createProduit);
 
 /**
  * @swagger
@@ -92,8 +92,8 @@ router.post('/', authenticateToken, requirePermission('Gérer les produits'), up
  *             schema:
  *               $ref: '#/components/schemas/Produit'
  */
-router.put('/:id', authenticateToken, requirePermission('Gérer les produits'), upload.single('image'), produitCtrl.updateProduit);
-router.delete('/:id', authenticateToken, requirePermission('Gérer les produits'), produitCtrl.deleteProduit);
+router.put('/:id', authenticateToken, requireStructureAccess, requirePermission('products.manage'), upload.single('image'), produitCtrl.updateProduit);
+router.delete('/:id', authenticateToken, requireStructureAccess, requirePermission('products.manage'), produitCtrl.deleteProduit);
 router.get('/:id', authenticateToken, produitCtrl.getProduitById);
 
 /**
@@ -127,8 +127,8 @@ router.get('/:id', authenticateToken, produitCtrl.getProduitById);
  *               items:
  *                 $ref: '#/components/schemas/Produit'
  */
-router.get('/structure/:code_structure', authenticateToken, produitCtrl.getProduitsByStructure);
-router.get('/structure/:code_structure/produits-disponibles', authenticateToken, produitCtrl.getProduitsDisponibles);
+router.get('/structure/:code_structure', authenticateToken, requireStructureAccess, produitCtrl.getProduitsByStructure);
+router.get('/structure/:code_structure/produits-disponibles', authenticateToken, requireStructureAccess, produitCtrl.getProduitsDisponibles);
 
 /**
  * @swagger
@@ -152,10 +152,10 @@ router.get('/structure/:code_structure/produits-disponibles', authenticateToken,
  *       200:
  *         description: Statut mis à jour
  */
-router.patch('/:id/statut', authenticateToken, requirePermission('Gérer les produits'), produitCtrl.updateStatusProduit);
-router.patch('/:id/tauxTVA', authenticateToken, requirePermission('Gérer les produits'), produitCtrl.updateTauxTVAProduit);
-router.patch('/:id/image', authenticateToken, requirePermission('Gérer les produits'), upload.single('image'), produitCtrl.updateImageProduit);
-router.put('/:id/code-barre', authenticateToken, requirePermission('Gérer les produits'), produitCtrl.updateCodeBarreProduit);
+router.patch('/:id/statut', authenticateToken, requireStructureAccess, requirePermission('products.manage'), produitCtrl.updateStatusProduit);
+router.patch('/:id/tauxTVA', authenticateToken, requireStructureAccess, requirePermission('products.manage'), produitCtrl.updateTauxTVAProduit);
+router.patch('/:id/image', authenticateToken, requireStructureAccess, requirePermission('products.manage'), upload.single('image'), produitCtrl.updateImageProduit);
+router.put('/:id/code-barre', authenticateToken, requireStructureAccess, requirePermission('products.manage'), produitCtrl.updateCodeBarreProduit);
 
 /**
  * @swagger
@@ -177,7 +177,7 @@ router.put('/:id/code-barre', authenticateToken, requirePermission('Gérer les p
  *               type: string
  *               format: binary
  */
-router.get('/export/excel/structure/:code_structure', authenticateToken, produitCtrl.exportProduitsToExcel);
-router.get('/export-pdf/structure/:code_structure', authenticateToken, produitCtrl.exportProduitsToPDF);
+router.get('/export/excel/structure/:code_structure', authenticateToken, requireStructureAccess, produitCtrl.exportProduitsToExcel);
+router.get('/export-pdf/structure/:code_structure', authenticateToken, requireStructureAccess, produitCtrl.exportProduitsToPDF);
 
 module.exports = router;

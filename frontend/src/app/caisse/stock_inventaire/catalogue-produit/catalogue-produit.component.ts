@@ -1,4 +1,4 @@
-import { Component, inject, OnDestroy, OnInit } from '@angular/core';
+﻿import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { CategorieProduits, Produits } from '../../../modeles/produit.modele';
 import {
   FormBuilder,
@@ -14,6 +14,9 @@ import { ProduitsService } from '../../../services/produits.service';
 import { ToastrService } from 'ngx-toastr';
 import { FournisseursService } from '../../../services/fournisseurs.service';
 import { finalize, forkJoin, Subject, Subscription, takeUntil } from 'rxjs';
+import { TableStateComponent } from '../../../shared/table/table-state.component';
+import { TablePaginationComponent } from '../../../shared/table/table-pagination.component';
+import { ListState, toListState } from '../../../shared/table/list-state';
 import { Fournisseur } from '../../../modeles/fournisseur.model';
 import { StockInventaireService } from '../../../services/stock-inventaire.service';
 //import { UserService } from '../../../services/user.service';
@@ -24,7 +27,7 @@ import { MaagasinsService } from '../../../services/maagasins.service';
 @Component({
   selector: 'app-catalogue-produit',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatIconModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule, MatIconModule, FormsModule, TableStateComponent, TablePaginationComponent],
   templateUrl: './catalogue-produit.component.html',
   styleUrl: './catalogue-produit.component.css',
 })
@@ -55,6 +58,9 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
   totalPages = 0;
   hasNext = false;
   hasPrev = false;
+
+  /** Ã‰tat d'affichage de la liste produits â€” voir shared/table */
+  produitsListState: ListState = 'idle';
   
   // Filtres
   selectedCategorieId = '';
@@ -107,7 +113,7 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
   isCheckedCase = false;
   showStockSection = false;
 
-  imageChanged = false; // <- À ajouter tout en haut de ton composant
+  imageChanged = false; // <- Ã€ ajouter tout en haut de ton composant
 
   magasins: Magasin[] = [];
 
@@ -134,7 +140,7 @@ export class CatalogueProduitComponent implements OnInit, OnDestroy {
       this.magasinId = user?.magasinId || null;
       this.agentId = user?.id || null;
       this.isAdmin = this.authService.hasRole('Administrateur') || this.authService.hasRole('Administrateur secondaire');
-      console.log('Code structure initialisé :', this.code_structure);
+      
       // Déterminer si on doit montrer le champ structure
       //this.isStructureAdmin = this.authService.hasRole('Administrateur'); // Ou vérifiez par ID
 
@@ -553,7 +559,7 @@ closeStockModal(): void {
         this.openModal(this.actionType, this.selectedProduits);
       } 
       else if (this.actionType === 'statut') {
-        console.log(this.actionType);
+        
         this.selectedProduits.statut = !this.selectedProduits.statut;
         this.toggleProduitStatus(this.selectedProduits, this.selectedProduits.statut);
       } 
@@ -607,11 +613,11 @@ closeStockModal(): void {
       } */
      this.taxe = produit ? produit.tauxTVA || 0 : 0;
     // Mettre à jour le texte du bouton avant d'ouvrir la modal
-    console.log('Texte du bouton:', this.getButtonLabel()); // Vérifiez ici si la valeur est correcte
+     // Vérifiez ici si la valeur est correcte
     if (produit) {
       if (this.actionType === 'ajouter') {
         this.produitForm.reset();
-        console.log('Texte du bouton bis:', this.getButtonLabel()); // Vérifiez ici si la valeur est correcte
+         // Vérifiez ici si la valeur est correcte
       } else {
         this.produitForm.patchValue({
           // On charge les valeurs de certains champs comme la famille, designation, etc.
@@ -623,7 +629,7 @@ closeStockModal(): void {
       }
     } else {
       this.actionType = 'ajouter';
-      console.log('Texte du bouton bis:', this.getButtonLabel()); // Vérifiez ici si la valeur est correcte
+       // Vérifiez ici si la valeur est correcte
       this.produitForm.reset();
     }
 
@@ -640,7 +646,7 @@ closeStockModal(): void {
   onSubmit(): void {
     if (this.produitForm.valid) {
       const produit = this.produitForm.value;
-      console.log('Produit soumis:', produit);
+      
       this.closeModal(this.actionType);
     }
   }
@@ -659,8 +665,8 @@ closeStockModal(): void {
       statut: formValue.statut,
     };
 
-    console.log(this.categorieForm.get('code_structure')?.value);
-    console.log(categorieData);
+    
+    
 
     this.produitsServices.createCategorie(categorieData)
     .pipe(takeUntil(this.destroy$))
@@ -775,13 +781,13 @@ closeStockModal(): void {
       },
       error: (err) => {
         console.error('Erreur chargement données de base', err);
-        this.toastr.error('Erreur lors du chargement des données');
         this.isLoading = false;
       }
     });
   }
 
-  private loadProduits(): void {
+  loadProduits(): void {
+    this.produitsListState = 'loading';
     this.produitsServices.getAllProduits(
       this.code_structure!,
       this.currentPage,
@@ -796,8 +802,9 @@ closeStockModal(): void {
     )
     .subscribe({
       next: (response) => {
-        console.log('Liste des produits chargés',response);
+        
         this.prods = response.items;
+        this.produitsListState = toListState(false, false, this.prods);
     
         // Mettre à jour la pagination
         this.totalItems = response.pagination.total;
@@ -809,8 +816,7 @@ closeStockModal(): void {
         //this.loadAuxiliaryData();
       },
       error: (err) => {
-        console.error('Erreur chargement produits', err);
-        this.toastr.error('Erreur lors du chargement des produits');
+        this.produitsListState = 'error';
       }
     });
   }
@@ -893,19 +899,19 @@ get pagesToShow(): number[] {
 
   closeModal(act: string): void {
     const modalIdentifiant = this.getModalId(act);
-    console.log('[closeModal] ID généré pour la modal :', modalIdentifiant);
+    
 
     const modalElement = document.getElementById(modalIdentifiant);
-    console.log('[closeModal] Élément DOM récupéré :', modalElement);
+    
 
     if (modalElement) {
       // Vérifier si une instance Bootstrap existe déjà
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const bootstrapModal = (window as any).bootstrap.Modal.getInstance(modalElement);
-      console.log('[closeModal] Instance Bootstrap récupérée :', bootstrapModal);
+      
 
       if (bootstrapModal) {
-        console.log('[closeModal] L’instance Bootstrap existe déjà, appel de hide()');
+        
         bootstrapModal.hide();
       } else {
         console.warn(
@@ -914,13 +920,13 @@ get pagesToShow(): number[] {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const modal = new (window as any).bootstrap.Modal(modalElement);
         modal.hide();
-        console.log('[closeModal] Modal créée et masquée via hide()');
+        
       }
 
       // Facultatif : afficher les classes encore présentes
-      console.log('[closeModal] Classes DOM restantes :', modalElement.className);
+      
     } else {
-      console.error('[closeModal] Modal introuvable dans le DOM pour l’action :', act);
+      console.error('[closeModal] Modal introuvable dans le DOM pour lâ€™action :', act);
     }
   }
 
@@ -962,7 +968,7 @@ get pagesToShow(): number[] {
       return;
     }
     // Traitement de la soumission ici
-    console.log('Form submitted:', this.produitForm.value);
+    
     if (this.actionType === 'ajouter') {
       // Ajouter un produit
     } else if (this.actionType === 'mettre à jour') {
@@ -979,7 +985,7 @@ get pagesToShow(): number[] {
       // Logique pour archiver le produit
       //this.selectedProduits.archivé = true; // Exemple de mise à jour de l'état
       // Effectuer un appel au backend si nécessaire pour archiver le produit
-      console.log('Produit archivé', this.selectedProduits);
+      
 
       // Fermer la modal après confirmation
       this.closeModal(this.actionType);
@@ -1022,7 +1028,7 @@ get pagesToShow(): number[] {
     const input = $event.target as HTMLInputElement;
     if (input?.files?.length) {
       this.selectedImage = input.files[0];
-      console.log('Image sélectionnée', this.selectedImage);
+      
     }
   }
 
@@ -1050,10 +1056,10 @@ get pagesToShow(): number[] {
     if (this.selectedProduits) {
       this.codeBarre = barcodeValue;
       this.barcodeGenerated = true; //Active le bouton "Imprimer"
-      console.log('Code barre généré (modification) :', this.codeBarre);
+      
     } else {
       this.produitForm.patchValue({ codeBarre: barcodeValue });
-      console.log('Code barre généré (ajout) :', barcodeValue);
+      
     }
   }
 
@@ -1138,7 +1144,7 @@ get pagesToShow(): number[] {
 
   toggleCategorieStatus(categorie: CategorieProduits) {
     // Implémentez la logique pour activer/désactiver
-    if (confirm('Êtes-vous sûr de vouloir poursuivre cette action?')) {
+    if (confirm('ÃŠtes-vous sûr de vouloir poursuivre cette action?')) {
         this.isLoading = true;
         const newStatus = !categorie.statut;
         this.produitsServices
@@ -1164,7 +1170,7 @@ get pagesToShow(): number[] {
 
   toggleProduitStatus(prod: Produits, status: boolean) {
     // Implémentez la logique pour activer/désactiver
-    if (confirm('Êtes-vous sûr de vouloir poursuivre cette action?')) {
+    if (confirm('ÃŠtes-vous sûr de vouloir poursuivre cette action?')) {
       const statutCat = this.categories.find(cat => cat.id === prod.categorieId);
       if(!statutCat?.statut){
         this.toastr.error('Impossible d\'activer le produit. Veuillez activer la catégorie d\'abord');
@@ -1219,7 +1225,7 @@ get pagesToShow(): number[] {
 
     const tauxTva = this.taxe;
 
-    console.log('Taux TVA saisi :', tauxTva);
+    
 
     if (tauxTva < 0) {
       this.toastr.error('Veuillez saisir un taux valide.');
@@ -1234,7 +1240,7 @@ get pagesToShow(): number[] {
       )
       .subscribe({
         next: () => {
-          console.log('Taux TVA mis à jour avec succès');
+          
           this.toastr.success('Taux créé/mis à jour avec succès !');
           // Recharger les données ou mettre à jour localement si besoin
           this.closeModal(this.actionType);
@@ -1281,7 +1287,7 @@ get pagesToShow(): number[] {
   deleteCategorie(id: number) {
     this.isLoading = true;
     // Confirmation avant suppression
-    if (confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?')) {
+    if (confirm('ÃŠtes-vous sûr de vouloir supprimer cette catégorie ?')) {
       this.produitsServices
         .deleteCategorie(id)
         .pipe(
@@ -1367,8 +1373,6 @@ get pagesToShow(): number[] {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (newProduit) => {
-          console.log('Produit ajouté avec succès');
-
           // Construire les données du stock
           const completeStockData = {
             ...stockData,
@@ -1562,10 +1566,10 @@ onSubmitWithStock() {
   onTaxeChange(event: Event) {
     const input = event.target as HTMLInputElement;
     this.taxe = parseFloat(input.value);
-    console.log('Taxe modifiée :', this.taxe);
+    
   }
   validerNombre() {
-  console.log('Nombre récupéré :', this.taxe);
+  
   this.creerOuMettreAJourTaux();
   }
 

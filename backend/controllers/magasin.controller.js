@@ -1,4 +1,5 @@
 const db = require('../models');
+const logger = require('../services/logger.js');
 const Magasin = db.Magasin;
 const User = db.Users;
 const {Op} = db.Sequelize;
@@ -34,8 +35,7 @@ exports.createMagasin = async (req, res) => {
       { action: 'CREATE_MAGASIN', magasinId: magasin.id }
     );
     res.status(201).json(magasin);
-  } catch (error) {
-    console.error(error);
+  } catch (error) {logger.error('magasin.controller', error);
     res.status(500).json({ message: 'Erreur lors de la création du magasin' });
   }
 };
@@ -71,8 +71,7 @@ exports.updateMagasin = async (req, res) => {
       }
     );
     res.json({ message: 'Magasin mis à jour', magasin });
-  } catch (error) {
-    console.error(error);
+  } catch (error) {logger.error('magasin.controller', error);
     res.status(500).json({ message: 'Erreur lors de la mise à jour' });
   }
 };
@@ -107,8 +106,7 @@ exports.deleteMagasin = async (req, res) => {
         }
       );
     res.json({ message: 'Magasin supprimé' });
-  } catch (error) {
-    console.error(error);
+  } catch (error) {logger.error('magasin.controller', error);
     res.status(500).json({ message: 'Erreur lors de la suppression' });
   }
 };
@@ -146,8 +144,7 @@ exports.getMagasinsByStructure = async (req, res) => {
       
   );
     res.json(magasins);
-  } catch (error) {
-    console.error(error);
+  } catch (error) {logger.error('magasin.controller', error);
     res.status(500).json({ message: 'Erreur lors de la récupération des magasins' });
   }
 };
@@ -226,9 +223,7 @@ exports.getMagasinsByStructureBis = async (req, res) => {
     });
 
     // Calcul du nombre total de pages
-    const totalPages = Math.ceil(count / limitInt);
-
-    console.log(`📦 Magasins: ${count} trouvés, page ${page}/${totalPages}`);
+    const totalPages = Math.ceil(count / limitInt);logger.log('magasin.controller', `📦 Magasins: ${count} trouvés, page ${page}/${totalPages}`);
 
     res.json({
       items: rows,
@@ -242,8 +237,7 @@ exports.getMagasinsByStructureBis = async (req, res) => {
       }
     });
 
-  } catch (error) {
-    console.error(error);
+  } catch (error) {logger.error('magasin.controller', error);
     res.status(500).json({ 
       message: 'Erreur lors de la récupération des magasins',
       error: error.message 
@@ -264,8 +258,7 @@ exports.getMagasinById = async (req, res) => {
     if (!magasin) return res.status(404).json({ message: 'Magasin non trouvé' });
 
     res.json(magasin);
-  } catch (error) {
-    console.error(error);
+  } catch (error) {logger.error('magasin.controller', error);
     res.status(500).json({ message: 'Erreur lors de la récupération du magasin' });
   }
 };
@@ -281,8 +274,7 @@ exports.getAllMagasins = async (req, res) => {
       order: [['createdAt', 'DESC']],
     });
     res.json(magasins);
-  } catch (error) {
-    console.error(error);
+  } catch (error) {logger.error('magasin.controller', error);
     res.status(500).json({ message: 'Erreur lors de la récupération des magasins' });
   }
 };
@@ -351,8 +343,7 @@ exports.updateStatutMagasin = async (req, res) => {
     });
 
   } catch (err) {
-    await transaction.rollback();
-    console.error(err);
+    await transaction.rollback();logger.error('magasin.controller', err);
     res.status(500).json({
       message: 'Erreur lors de la mise à jour du statut du magasin'
     });

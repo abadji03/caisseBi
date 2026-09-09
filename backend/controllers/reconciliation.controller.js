@@ -1,4 +1,5 @@
 const db = require('../models');
+const logger = require('../services/logger.js');
 const Reconciliation = db.Reconciliation;
 const MouvementStock = db.MouvementStock;
 const Produit = db.Produit; // Assure-toi que l'association a été définie (Reconciliation.belongsTo(Produit))
@@ -261,9 +262,7 @@ exports.getAnalyseEcarts = async (req, res) => {
       produitsPositifs: analyses.filter(a => safeNumber(a.ecartTotal) > 0).length,
       produitsNegatifs: analyses.filter(a => safeNumber(a.ecartTotal) < 0).length,
       produitsNuls: analyses.filter(a => safeNumber(a.ecartTotal) === 0).length
-    };
-
-    console.log(`📊 Analyse écarts: ${totalItems} produits analysés, page ${page}/${totalPages}`);
+    };logger.log('reconciliation.controller', `📊 Analyse écarts: ${totalItems} produits analysés, page ${page}/${totalPages}`);
 
     res.status(200).json({
       analyses: paginatedAnalyses,
@@ -278,8 +277,7 @@ exports.getAnalyseEcarts = async (req, res) => {
       }
     });
 
-  } catch (error) {
-    console.error('Erreur getAnalyseEcarts:', error);
+  } catch (error) {logger.error('reconciliation.controller', 'Erreur getAnalyseEcarts:', error);
     res.status(500).json({ 
       message: 'Erreur lors de l\'analyse des écarts', 
       error: error.message 
@@ -330,8 +328,7 @@ exports.getAnalyseProduit = async (req, res) => {
     };
 
     res.json(stats);
-  } catch (error) {
-    console.error('Erreur getAnalyseProduit:', error);
+  } catch (error) {logger.error('reconciliation.controller', 'Erreur getAnalyseProduit:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -511,9 +508,7 @@ exports.getReconciliationsByStructure = async (req, res) => {
     });
 
     // Calcul du nombre total de pages
-    const totalPages = Math.ceil(count / limitInt);
-
-    console.log(`📦 Réconciliations: ${count} trouvées, page ${page}/${totalPages}`);
+    const totalPages = Math.ceil(count / limitInt);logger.log('reconciliation.controller', `📦 Réconciliations: ${count} trouvées, page ${page}/${totalPages}`);
 
     // Réponse avec pagination
     res.status(200).json({
@@ -547,8 +542,7 @@ exports.getReconciliationsByStructure = async (req, res) => {
 
     });
 
-  } catch (err) {
-    console.error('Erreur getReconciliationsByStructure:', err);
+  } catch (err) {logger.error('reconciliation.controller', 'Erreur getReconciliationsByStructure:', err);
     res.status(500).json({ 
       message: 'Erreur lors de la récupération', 
       error: err.message 

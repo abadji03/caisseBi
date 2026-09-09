@@ -1,3 +1,4 @@
+const logger = require('../services/logger.js');
 // controllers/import.controller.js
 const importService = require('../services/import.service');
 const multer = require('multer');
@@ -100,8 +101,7 @@ exports.importer = async (req, res) => {
       }
     });
     
-  } catch (error) {
-    console.error('Erreur import:', error);
+  } catch (error) {logger.error('import.controller', 'Erreur import:', error);
     res.status(500).json({ message: error.message });
   }
 };

@@ -2,11 +2,12 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from
 import { Paiement } from '../../modeles/paiement.model';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { TablePaginationComponent } from '../../shared/table/table-pagination.component';
 
 @Component({
   selector: 'app-liste-versements',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TablePaginationComponent],
   templateUrl: './liste-versements.component.html',
   styleUrl: './liste-versements.component.css'
 })
@@ -31,21 +32,7 @@ export class ListeVersementsComponent implements OnChanges{
   @Output() onPageChange = new EventEmitter<number>();
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['paiements']) {
-      console.log('Paiements reçus:', this.paiements);
-    }
-  }
-
-  get affichageDebut(): number {
-    return ((this.currentPage - 1) * this.itemsPerPage) + 1;
-  }
-
-  get affichageFin(): number {
-    return Math.min(this.currentPage * this.itemsPerPage, this.totalItems);
-  }
- 
-changePage(page: number): void {
-    this.onPageChange.emit(page);
+    // Réagit aux changements de paiements si nécessaire (hook conservé).
   }
 
   getEntiteNomValue(paiement: Paiement): string {

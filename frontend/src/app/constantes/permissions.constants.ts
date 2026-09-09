@@ -1,55 +1,60 @@
+/**
+ * Codes de permission stables — alignés sur backend/constants/permissions.js.
+ * Les codes sont les seuls identifiants du contrôle d'accès ; les libellés
+ * français ne servent qu'à l'affichage (voir l'écran Rôles & Permissions).
+ */
 export const PERMISSIONS = {
   // Permissions utilisateurs
-  VIEW_USERS: 'Voir les utilisateurs',
-  EDIT_USER: 'Modifier un utilisateur',
-  DELETE_USER: 'Supprimer un utilisateur',
-  MANAGE_USERS: 'Gérer les utilisateurs',
-  MANAGE_ROLES: 'Gérer les rôles',
-  
+  VIEW_USERS: 'users.manage',
+  EDIT_USER: 'users.manage',
+  DELETE_USER: 'users.manage',
+  MANAGE_USERS: 'users.manage',
+  MANAGE_ROLES: 'roles.manage',
+
   // Permissions rapports
-  VIEW_REPORTS: 'Voir les rapports',
-  EXPORT_REPORTS: 'Exporter les rapports',
-  
+  VIEW_REPORTS: 'finance.manage',
+  EXPORT_REPORTS: 'finance.manage',
+
   // Permissions ventes
-  VIEW_SALES: 'Voir les ventes',
-  EDIT_SALES: 'Modifier les ventes',
-  MANAGE_SALES: 'Gérer les ventes',
-  
+  VIEW_SALES: 'sales.manage',
+  EDIT_SALES: 'sales.manage',
+  MANAGE_SALES: 'sales.manage',
+
   // Permissions caisse
-  ACCESS_CASHIER: 'Accès à la caisse',
-  MANAGE_CASHIER: 'Gérer la caisse',
-  
+  ACCESS_CASHIER: 'cash.access',
+  MANAGE_CASHIER: 'sales.manage',
+
   // Permissions clients
-  VIEW_CLIENTS: 'Voir les clients',
-  EDIT_CLIENTS: 'Modifier les clients',
-  MANAGE_CLIENTS: 'Gérer les clients',
-  
+  VIEW_CLIENTS: 'clients.manage',
+  EDIT_CLIENTS: 'clients.manage',
+  MANAGE_CLIENTS: 'clients.manage',
+
   // Permissions stock
-  VIEW_STOCK: 'Voir le stock',
-  EDIT_STOCK: 'Modifier le stock',
-  MANAGE_STOCK: 'Gérer le stock',
-  
+  VIEW_STOCK: 'stock.manage',
+  EDIT_STOCK: 'stock.manage',
+  MANAGE_STOCK: 'stock.manage',
+
   // Permissions produits
-  VIEW_PRODUCTS: 'Voir les produits',
-  EDIT_PRODUCTS: 'Modifier les produits',
-  MANAGE_PRODUCTS: 'Gérer les produits',
-  
+  VIEW_PRODUCTS: 'products.manage',
+  EDIT_PRODUCTS: 'products.manage',
+  MANAGE_PRODUCTS: 'products.manage',
+
   // Permissions fournisseurs
-  VIEW_SUPPLIERS: 'Voir les fournisseurs',
-  EDIT_SUPPLIERS: 'Modifier les fournisseurs',
-  MANAGE_SUPPLIERS: 'Gérer les fournisseurs',
-  
+  VIEW_SUPPLIERS: 'suppliers.manage',
+  EDIT_SUPPLIERS: 'suppliers.manage',
+  MANAGE_SUPPLIERS: 'suppliers.manage',
+
   // Permissions finances
-  VIEW_FINANCE: 'Voir les finances',
-  EDIT_FINANCE: 'Modifier les finances',
-  MANAGE_FINANCE: 'Gérer les finances',
-  
+  VIEW_FINANCE: 'finance.manage',
+  EDIT_FINANCE: 'finance.manage',
+  MANAGE_FINANCE: 'finance.manage',
+
   // Permissions magasins
-  VIEW_STORES: 'Voir les magasins',
-  EDIT_STORES: 'Modifier les magasins',
-  MANAGE_STORES: 'Gérer les magasins',
-  
+  VIEW_STORES: 'stores.manage',
+  EDIT_STORES: 'stores.manage',
+  MANAGE_STORES: 'stores.manage',
+
   // Permissions paramètres
-  MANAGE_SETTINGS: 'Accès aux configurations',
-  FULL_ACCESS: 'Accès total'
-};
+  MANAGE_SETTINGS: 'config.access',
+  FULL_ACCESS: 'all.access'
+} as const;

@@ -1,4 +1,5 @@
 //const SequenceService = require('../services/sequence.service');
+const logger = require('../services/logger.js');
 
 module.exports = (sequelize, DataTypes) => {
   const Reconciliation = sequelize.define('Reconciliation', {
@@ -71,7 +72,6 @@ module.exports = (sequelize, DataTypes) => {
 
     hooks: {
       beforeValidate: async (reconciliation, options) => {
-        console.log('🔍 beforeValidate hook called', reconciliation.code_structure);
         
         // Définir numeroE avant la validation
         if (!reconciliation.numeroE) {
@@ -83,18 +83,16 @@ module.exports = (sequelize, DataTypes) => {
                 transaction: options.transaction
               });
               reconciliation.numeroE = count + 1;
-              console.log(`✅ Generated numeroE in beforeValidate: ${reconciliation.numeroE}`);
             } else {
               reconciliation.numeroE = 1;
             }
           } catch (error) {
-            console.error('❌ Hook error:', error);
+            logger.error('reconciliation.model', '❌ Hook error:', error);
             reconciliation.numeroE = 1;
           }
         }
       },
       beforeCreate: async (reconciliation, options) => {
-        console.log('🎯 beforeCreate hook STARTED', reconciliation.numeroE);
         // Vérifier et régénérer si nécessaire
         if (!reconciliation.numeroE) {
           const reconciliationsModel = sequelize.models.Reconciliation;

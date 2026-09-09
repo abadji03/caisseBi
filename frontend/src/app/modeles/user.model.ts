@@ -57,6 +57,8 @@ export interface Role {
 export interface Permission {
   id: number;
   nom: string;
+  /** Code stable (ex. 'sales.manage') — identifiant du contrôle d'accès */
+  code?: string;
   niveau: number;
   type: string;
   valeur?: string;

@@ -1,10 +1,12 @@
 const db = require('../models');
+const logger = require('../services/logger.js');
 const { verifierAppartenanceStructure } = require('../services/verification.service');
 const bcrypt = require('bcrypt');
 const User = db.Users;
 const Role = db.Role;
 const { Op } = require('sequelize'); // ✅ Op maintenant disponible
 const HistoriqueService = require('../services/historique.service');
+const { invalidateUserPermissions } = require('../middlewares/auth.middleware');
 
 
 // Créer un nouvel utilisateur
@@ -45,8 +47,7 @@ exports.create = async (req, res) => {
       }
     );
     res.status(201).json(user);
-  } catch (error) {
-    console.error(error);
+  } catch (error) {logger.error('users.controller', error);
     res
       .status(500)
       .json({ message: "Erreur lors de la création de l'utilisateur.", error: error.message });
@@ -128,9 +129,7 @@ exports.findAll = async (req, res) => {
     });
 
     // Calcul du nombre total de pages
-    const totalPages = Math.ceil(count / limitInt);
-
-    console.log(`📦 Utilisateurs: ${count} trouvés, page ${page}/${totalPages}`);
+    const totalPages = Math.ceil(count / limitInt);logger.log('users.controller', `📦 Utilisateurs: ${count} trouvés, page ${page}/${totalPages}`);
 
     res.status(200).json({
       items: rows,
@@ -144,8 +143,7 @@ exports.findAll = async (req, res) => {
       }
     });
 
-  } catch (error) {
-    console.error('Erreur récupération utilisateurs:', error);
+  } catch (error) {logger.error('users.controller', 'Erreur récupération utilisateurs:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -172,16 +170,12 @@ exports.findOne = async (req, res) => {
 // Mettre à jour un utilisateur
 exports.update = async (req, res) => {
   try {
-    console.log('=== DÉBUT UPDATE UTILISATEUR ===');
-    console.log('ID utilisateur:', req.params.id);
-    console.log('Données reçues:', req.body);
-    console.log('Mot de passe reçu:', req.body.password ? 'OUI' : 'NON');
+    invalidateUserPermissions(req.params.id);logger.log('users.controller', '=== DÉBUT UPDATE UTILISATEUR ===');logger.log('users.controller', 'ID utilisateur:', req.params.id);logger.log('users.controller', 'Données reçues:', req.body);logger.log('users.controller', 'Mot de passe reçu:', req.body.password ? 'OUI' : 'NON');
     
     const authUser = req.user;
     const clientIp = HistoriqueService.getClientIp(req);
 
-    if (!authUser) {
-      console.log('ERROR: Non authentifié');
+    if (!authUser) {logger.log('users.controller', 'ERROR: Non authentifié');
       return res.status(401).json({ message: 'Non authentifié' });
     }
     
@@ -198,24 +192,17 @@ exports.update = async (req, res) => {
     let data = req.body;
 
     // Vérifie si un nouveau mot de passe est fourni
-    if (data.password) {
-      console.log('Hashage du mot de passe...');
+    if (data.password) {logger.log('users.controller', 'Hashage du mot de passe...');
       const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(data.password, salt);
-      console.log('Mot de passe hashé (début):', hashedPassword.substring(0, 20));
+      const hashedPassword = await bcrypt.hash(data.password, salt);logger.log('users.controller', 'Mot de passe hashé (début):', hashedPassword.substring(0, 20));
       data.password = hashedPassword;
-    } else {
-      console.log('Aucun mot de passe fourni');
-    }
-
-    console.log('Données à mettre à jour:', data);
+    } else {logger.log('users.controller', 'Aucun mot de passe fourni');
+    }logger.log('users.controller', 'Données à mettre à jour:', data);
     
     // OPTION 1: Utiliser update() standard
     const [updated] = await User.update(data, {
       where: { id: req.params.id },
-    });
-
-    console.log('Résultat update:', updated ? 'SUCCÈS' : 'ÉCHEC');
+    });logger.log('users.controller', 'Résultat update:', updated ? 'SUCCÈS' : 'ÉCHEC');
 
     if (updated) {
       // Récupérer l'utilisateur pour vérifier
@@ -239,14 +226,8 @@ exports.update = async (req, res) => {
           targetUserId: updatedUser.id,
           changes: changes
         }
-      );
-      console.log('Utilisateur après update:');
-      console.log('- ID:', updatedUser.id);
-      console.log('- Email:', updatedUser.email);
-      console.log('- Nom:', updatedUser.nom);
-      console.log('- Mot de passe présent:', updatedUser.password ? 'OUI' : 'NON');
-      if (updatedUser.password) {
-        console.log('- Longueur mot de passe:', updatedUser.password.length);
+      );logger.log('users.controller', 'Utilisateur après update:');logger.log('users.controller', '- ID:', updatedUser.id);logger.log('users.controller', '- Email:', updatedUser.email);logger.log('users.controller', '- Nom:', updatedUser.nom);logger.log('users.controller', '- Mot de passe présent:', updatedUser.password ? 'OUI' : 'NON');
+      if (updatedUser.password) {logger.log('users.controller', '- Longueur mot de passe:', updatedUser.password.length);
       }
       
       // Ne pas renvoyer le mot de passe hashé
@@ -255,14 +236,10 @@ exports.update = async (req, res) => {
       });
       
       res.json(userWithoutPassword);
-    } else {
-      console.log('ERROR: Utilisateur non trouvé');
+    } else {logger.log('users.controller', 'ERROR: Utilisateur non trouvé');
       res.status(404).json({ message: 'Utilisateur non trouvé' });
-    }
-    
-    console.log('=== FIN UPDATE UTILISATEUR ===');
-  } catch (error) {
-    console.error('ERROR dans update:', error);
+    }logger.log('users.controller', '=== FIN UPDATE UTILISATEUR ===');
+  } catch (error) {logger.error('users.controller', 'ERROR dans update:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -409,9 +386,7 @@ exports.findByStructureBis = async (req, res) => {
     });
 
     // Calcul du nombre total de pages
-    const totalPages = Math.ceil(count / limitInt);
-
-    console.log(`📦 Utilisateurs: ${count} trouvés, page ${page}/${totalPages}`);
+    const totalPages = Math.ceil(count / limitInt);logger.log('users.controller', `📦 Utilisateurs: ${count} trouvés, page ${page}/${totalPages}`);
 
     res.status(200).json({
       items: rows,
@@ -425,8 +400,7 @@ exports.findByStructureBis = async (req, res) => {
       }
     });
 
-  } catch (error) {
-    console.error("Erreur récupération utilisateurs:", error);
+  } catch (error) {logger.error('users.controller', "Erreur récupération utilisateurs:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -434,6 +408,7 @@ exports.findByStructureBis = async (req, res) => {
 // Mettre à jour uniquement le statut d'un fournisseur
 exports.updateUserStatus = async (req, res) => {
   try {
+    invalidateUserPermissions(req.params.id);
     const authUser = req.user; // utilisateur connecté
     const clientIp = HistoriqueService.getClientIp(req);
 

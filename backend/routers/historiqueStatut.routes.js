@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const authenticateToken = require('../middlewares/auth.middleware');
+const { requireStructureAccess } = require('../middlewares/auth.middleware');
 const historiqueStatutController = require('../controllers/historiqueStatut.controller');
 
 /**
@@ -39,7 +41,7 @@ const historiqueStatutController = require('../controllers/historiqueStatut.cont
 router.post('/', historiqueStatutController.create);
 
 // Tous les historiques d’une structure
-router.get('/structure/:code_structure', historiqueStatutController.findAllByStructure);
+router.get('/structure/:code_structure', authenticateToken, requireStructureAccess, historiqueStatutController.findAllByStructure);
 
 // Tous les historiques d’un bon
 router.get('/bon/:bonId', historiqueStatutController.findByBon);

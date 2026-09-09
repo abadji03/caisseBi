@@ -1,3 +1,4 @@
+const logger = require('../services/logger.js');
 // controllers/panierComplet.controller.js
 const db = require('../models');
 const {
@@ -11,7 +12,106 @@ class PanierCompletController {
   constructor() {
     this.createOrUpdatePanierComplet =
       this.createOrUpdatePanierComplet.bind(this);
+    this.createOrUpdateBrouillon = this.createOrUpdateBrouillon.bind(this);
   }
+  /**
+   * Créer ou mettre à jour un panier BROUILLON (panier de travail de caisse).
+   * Contrairement à /panier-complet, cette route :
+   *  - accepte un panier SANS article (initialisation à l'ouverture de l'écran) ;
+   *  - n'applique AUCUN effet métier : pas de stock, pas de paiement.
+   *    La validation réelle passe par /panier-complet.
+   */
+  async createOrUpdateBrouillon(req, res) {
+    const transaction = await db.sequelize.transaction();
+    try {
+      const authUser = req.user;
+      if (!authUser) {
+        await transaction.rollback();
+        return res.status(401).json({ message: 'Non authentifié' });
+      }
+      const code_structure = authUser.code_structure;
+      const magasinId = authUser.magasinId;
+      const agentId = authUser.id;
+      const { panier, articles, clientId, typeEntite } = req.body;
+
+      const champsManquants = [];
+      if (!panier) champsManquants.push('panier');
+      if (!code_structure) champsManquants.push('code_structure');
+      if (!agentId) champsManquants.push('agentId');
+      if (!magasinId) champsManquants.push('magasinId (utilisateur sans magasin assigné ?)');
+      if (!typeEntite) champsManquants.push('typeEntite');
+      if (champsManquants.length > 0) {
+        await transaction.rollback();
+        return res.status(400).json({ error: `Données incomplètes : ${champsManquants.join(', ')}` });
+      }
+
+      // Un seul brouillon actif par agent et magasin : on réutilise le
+      // brouillon existant plutôt que d'en créer un nouveau à chaque ouverture.
+      let brouillon = panier.id
+        ? await db.Panier.findByPk(panier.id, { transaction })
+        : await db.Panier.findOne({
+            where: { code_structure, magasinId, agentId, statut: 'en_cours', bonId: null },
+            transaction,
+          });
+
+      const champsBrouillon = {
+        code_structure,
+        magasinId,
+        agentId,
+        clientId: clientId || null,
+        typeEntite,
+        statut: 'en_cours',
+        totalHT: panier.totalHT ?? 0,
+        tva: panier.tva ?? 0,
+        tauxTVA: panier.tauxTVA ?? 0,
+        remise: panier.remise ?? 0,
+        remiseGlobale: panier.remiseGlobale ?? 0,
+        remiseMode: panier.remiseMode ?? 'globale',
+        tvaMode: panier.tvaMode ?? 'globale',
+        totalTTC: panier.totalTTC ?? 0,
+        dateMiseAJour: new Date(),
+      };
+
+      if (brouillon) {
+        await brouillon.update(champsBrouillon, { transaction });
+      } else {
+        brouillon = await db.Panier.create(champsBrouillon, { transaction });
+      }
+
+      // Articles facultatifs : s'ils sont fournis, on remplace les lignes.
+      if (Array.isArray(articles) && articles.length > 0) {
+        await db.ArticlePanier.destroy({ where: { panierId: brouillon.id }, transaction });
+        await db.ArticlePanier.bulkCreate(
+          articles.map(article => ({
+            ...article,
+            panierId: brouillon.id,
+            code_structure,
+          })),
+          { transaction }
+        );
+      }
+
+      await HistoriqueService.enregistrerAction(
+        agentId,
+        `Enregistrement du brouillon de caisse #${brouillon.id} - ${typeEntite}`,
+        HistoriqueService.getClientIp(req),
+        {
+          action: 'SAVE_BROUILLON_PANIER',
+          panierId: brouillon.id,
+          typeEntite,
+          articlesCount: Array.isArray(articles) ? articles.length : 0,
+        }
+      );
+
+      await transaction.commit();
+      return res.json({ panier: brouillon });
+    } catch (error) {
+      await transaction.rollback();
+      logger.error('panierComplet.controller', 'Erreur création brouillon:', error);
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
   /**
    * Créer ou mettre à jour un panier complet avec impact sur les stocks
    */
@@ -29,8 +129,7 @@ class PanierCompletController {
     const magasinId = authUser.magasinId;
     const agentId = authUser.id;
     const { panier, paiement, articles, clientId, typeEntite } = req.body;
-
-      console.log('Données reçues pour création panier complet:', {
+logger.log('panierComplet.controller', 'Données reçues pour création panier complet:', {
         panier,
         paiement,
         articles,
@@ -38,9 +137,21 @@ class PanierCompletController {
       });
 
       // Validation
-      if (!panier || !articles || !code_structure || !magasinId || !agentId || !typeEntite) {
+      const champsManquants = [];
+      if (!panier) champsManquants.push('panier');
+      if (!articles) champsManquants.push('articles');
+      if (!code_structure) champsManquants.push('code_structure');
+      if (!agentId) champsManquants.push('agentId');
+      if (!typeEntite) champsManquants.push('typeEntite');
+      // magasinId est requis uniquement pour la finalisation (mise à jour d'un panier existant)
+      if (panier.id && !magasinId) champsManquants.push('magasinId (utilisateur sans magasin assigné ?)');
+      if (champsManquants.length > 0) {
+        logger.error('panierComplet.controller', 'Données incomplètes, champs manquants:', champsManquants, {
+          magasinIdToken: magasinId,
+          typeEntite,
+        });
         await transaction.rollback();
-        return res.status(400).json({ error: 'Données incomplètes' });
+        return res.status(400).json({ error: `Données incomplètes : ${champsManquants.join(', ')}` });
       }
 
       // Valider les montants
@@ -353,7 +464,7 @@ class PanierCompletController {
           }
         ).catch(console.error); // Ne pas bloquer si l'historique échoue
       }
-      console.error('Erreur traitement panier complet:', error);
+logger.error('panierComplet.controller', 'Erreur traitement panier complet:', error);
       res.status(500).json({ 
         error: 'Erreur lors du traitement du panier', 
         details: error.message,
@@ -366,7 +477,7 @@ class PanierCompletController {
    * Traiter un panier validé (vente)
    */
   /* async traiterPanierValide(panier, articles, magasinId, agentId, code_structure, transaction) {
-    console.log(`💰 Traitement panier validé (vente) - Type: ${panier.typeEntite}`);
+logger.log('panierComplet.controller', `💰 Traitement panier validé (vente) - Type: ${panier.typeEntite}`);
 
     // 1. Vérifier la disponibilité du stock pour les clients
       await stockManager.verifierDisponibiliteStock(
@@ -392,13 +503,12 @@ class PanierCompletController {
         );
       })
     );
-
-    console.log(`✅ Panier ${panier.id} validé - Stock mis à jour`);
+logger.log('panierComplet.controller', `✅ Panier ${panier.id} validé - Stock mis à jour`);
     
   } */
 
   async traiterPanierValide(panier, articles, magasinId, agentId, code_structure, clientIp, transaction) {
-    console.log(`💰 Traitement panier validé (vente) - Type: ${panier.typeEntite}`);
+logger.log('panierComplet.controller', `💰 Traitement panier validé (vente) - Type: ${panier.typeEntite}`);
 
     try {
       // 1. Vérifier la disponibilité du stock pour les clients
@@ -438,8 +548,7 @@ class PanierCompletController {
         );
       })
     );
-
-      console.log(`✅ Panier ${panier.id} validé - Stock mis à jour`);
+logger.log('panierComplet.controller', `✅ Panier ${panier.id} validé - Stock mis à jour`);
 
       // Retourner les détails pour l'historique
       return {
@@ -486,7 +595,7 @@ class PanierCompletController {
    * Traiter un panier retourné
    */
   /* async traiterPanierRetourne(panier, articles, magasinId, agentId, code_structure, transaction) {
-    console.log(`↩️ Traitement panier retourné - Type: ${panier.typeEntite}`);
+logger.log('panierComplet.controller', `↩️ Traitement panier retourné - Type: ${panier.typeEntite}`);
 
     // Traiter les mouvements de stock (entrée pour retour client, sortie pour retour fournisseur)
     await Promise.all(
@@ -501,15 +610,14 @@ class PanierCompletController {
         );
       })
     );
-
-    console.log(`✅ Panier ${panier.id} retourné - Stock ajusté`);
+logger.log('panierComplet.controller', `✅ Panier ${panier.id} retourné - Stock ajusté`);
   }
  */
   /**
    * Traiter un panier annulé
    */
   /* async traiterPanierAnnule(panier, articles, magasinId, agentId, code_structure, transaction) {
-    console.log(`🚫 Traitement panier annulé - Type: ${panier.typeEntite}`);
+logger.log('panierComplet.controller', `🚫 Traitement panier annulé - Type: ${panier.typeEntite}`);
 
       await Promise.all(
         articles.map(async (article) => {
@@ -523,8 +631,7 @@ class PanierCompletController {
           );
         })
       );
-
-    console.log(`✅ Panier ${panier.id} annulé - Impact annulé`);
+logger.log('panierComplet.controller', `✅ Panier ${panier.id} annulé - Impact annulé`);
   }
  */
 
@@ -532,7 +639,7 @@ class PanierCompletController {
    * Traiter un panier retourné
    */
   async traiterPanierRetourne(panier, articles, magasinId, agentId, code_structure, clientIp, transaction) {
-    console.log(`↩️ Traitement panier retourné - Type: ${panier.typeEntite}`);
+logger.log('panierComplet.controller', `↩️ Traitement panier retourné - Type: ${panier.typeEntite}`);
 
     try {
       // Traiter les mouvements de stock (entrée pour retour client, sortie pour retour fournisseur)
@@ -561,8 +668,7 @@ class PanierCompletController {
           );
         })
       );
-
-      console.log(`✅ Panier ${panier.id} retourné - Stock ajusté`);
+logger.log('panierComplet.controller', `✅ Panier ${panier.id} retourné - Stock ajusté`);
 
       return {
         actionType: 'RETOUR_TRAITE',
@@ -600,7 +706,7 @@ class PanierCompletController {
    * Traiter un panier annulé
    */
   async traiterPanierAnnule(panier, articles, magasinId, agentId, code_structure, clientIp, transaction) {
-    console.log(`🚫 Traitement panier annulé - Type: ${panier.typeEntite}`);
+logger.log('panierComplet.controller', `🚫 Traitement panier annulé - Type: ${panier.typeEntite}`);
 
     try {
       /* const mouvements = [];
@@ -628,8 +734,7 @@ class PanierCompletController {
           );
         })
       );
-
-      console.log(`✅ Panier ${panier.id} annulé - Impact annulé`);
+logger.log('panierComplet.controller', `✅ Panier ${panier.id} annulé - Impact annulé`);
 
       return {
         actionType: 'ANNULATION_TRAITEE',

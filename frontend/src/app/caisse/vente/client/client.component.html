@@ -106,112 +106,74 @@
               <!-- Barre de recherche et filtres -->
               <div class="d-flex justify-content-between mb-3">
                 <div class="d-flex gap-2">
-                  <div class="input-group" style="width: 300px;">
-                    <span class="input-group-text"><i class="bi bi-search"></i></span>
-                    <input
-                      type="text"
-                      class="form-control"
-                      placeholder="Rechercher un client..."
-                      [ngModel]="clientsFilters.search"
-                      (ngModelChange)="onClientsSearchChange($event)"
-                    />
-                  </div>
-                  
+                  <app-table-search
+                    placeholder="Rechercher un client..."
+                    [value]="clientsFilters.search"
+                    (searchChange)="onClientsSearchChange($event)"
+                  />
+
                   <select class="form-select" style="width: 150px;" 
                           [ngModel]="clientsFilters.statut" 
-                          (ngModelChange)="onClientsStatutChange($event)">
+                          (ngModelChange)="onClientsStatutChange($event)"
+                          aria-label="Filtrer par statut">
                     <option *ngFor="let opt of clientStatutOptions" [value]="opt">
                       {{ opt === 'tous' ? 'Tous' : (opt === 'actif' ? 'Actifs' : 'Inactifs') }}
                     </option>
                   </select>
                 </div>
-                
-                <div>
-                  <select
-                    class="form-select"
-                    [ngModel]="clientsItemsPerPage"
-                    (ngModelChange)="onClientsRowsPerPageChange($event)"
-                  >
-                    <option [value]="5">5 éléments/page</option>
-                    <option [value]="10">10 éléments/page</option>
-                    <option [value]="20">20 éléments/page</option>
-                    <option [value]="50">50 éléments/page</option>
-                  </select>
-                </div>
               </div>
 
-              <!-- Indicateur de chargement -->
-              <div *ngIf="isLoadingClient" class="text-center my-5">
-                <div class="spinner-border text-primary" role="status">
-                  <span class="visually-hidden">Chargement...</span>
-                </div>
-                <p class="mt-2">Chargement des clients...</p>
-              </div>
+              <!-- État : chargement / erreur / vide -->
+              @if (clientsListState === 'loading' || clientsListState === 'error' || clientsListState === 'empty') {
+                <app-table-state
+                  [state]="clientsListState"
+                  loadingMessage="Chargement des clients..."
+                  emptyMessage="Aucun client trouvé"
+                  errorMessage="Erreur lors du chargement des clients."
+                  (retry)="loadData()"
+                />
+              }
 
               <!-- Tableau des clients -->
-              <div *ngIf="!isLoadingClient" class="table-responsive">
-                <table class="table table-bordered table-hover">
-                  <thead class="table-dark">
-                    <tr>
-                      <th>Nom Complet</th>
-                      <th>Adresse</th>
-                      <th>Téléphone</th>
-                      <th>Plafond</th>
-                      <th>Solde (Montant à nous Payer)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngIf="clients.length === 0">
-                      <td colspan="5" class="text-center py-4">
-                        <i class="bi bi-inbox display-4 text-muted"></i>
-                        <p class="mt-2">Aucun client trouvé</p>
-                      </td>
-                    </tr>
-                    <tr *ngFor="let client of clients" (click)="onRowSelect(client)">
-                      <td>{{ client.nomComplet }}</td>
-                      <td>{{ client.adresse }}</td>
-                      <td>{{ client.telephone }}</td>
-                      <td>{{ client.plafond | number }} F CFA</td>
-                      <!-- <td [ngClass]="{'text-danger fw-bold': client.solde > 0}">
-                        {{ client.solde | number }} F CFA
-                      </td> -->
-                      <td [ngClass]="{'text-danger fw-bold': getSoldeTotal(client) > 0}">
-                        {{ getSoldeTotal(client) | number }} F CFA
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+              @if (clientsListState === 'success' || clientsListState === 'loading') {
+                <div class="table-responsive" [attr.aria-busy]="clientsListState === 'loading'">
+                  <table class="table table-bordered table-hover">
+                    <thead class="table-dark">
+                      <tr>
+                        <th>Nom Complet</th>
+                        <th>Adresse</th>
+                        <th>Téléphone</th>
+                        <th>Plafond</th>
+                        <th>Solde (Montant à nous Payer)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let client of clients" (click)="onRowSelect(client)">
+                        <td>{{ client.nomComplet }}</td>
+                        <td>{{ client.adresse }}</td>
+                        <td>{{ client.telephone }}</td>
+                        <td>{{ client.plafond | number }} F CFA</td>
+                        <td [ngClass]="{'text-danger fw-bold': getSoldeTotal(client) > 0}">
+                          {{ getSoldeTotal(client) | number }} F CFA
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
 
-              <!-- Pagination -->
-              <div class="d-flex justify-content-between align-items-center">
-                <div class="text-muted small">
-                  Affichage {{ ((clientsCurrentPage - 1) * clientsItemsPerPage) + 1 }} 
-                  à {{ Math.min(clientsCurrentPage * clientsItemsPerPage, clientsTotalItems) }} 
-                  sur {{ clientsTotalItems }} clients
-                </div>
-                <div class="d-flex align-items-center gap-2">
-                  <button
-                    class="btn btn-outline-dark btn-sm"
-                    (click)="onClientsPageChange(clientsCurrentPage - 1)"
-                    [disabled]="!clientsHasPrev"
-                  >
-                    <i class="bi bi-chevron-left"></i> Précédent
-                  </button>
-                  
-                  <span class="fw-bold mx-2">
-                    Page {{ clientsCurrentPage }} / {{ clientsTotalPages }}
-                  </span>
-                  
-                  <button
-                    class="btn btn-outline-dark btn-sm"
-                    (click)="onClientsPageChange(clientsCurrentPage + 1)"
-                    [disabled]="!clientsHasNext"
-                  >
-                    Suivant <i class="bi bi-chevron-right"></i>
-                  </button>
-                </div>
-              </div>
+                <!-- Pagination -->
+                <app-table-pagination
+                  [page]="clientsCurrentPage"
+                  [totalPages]="clientsTotalPages"
+                  [total]="clientsTotalItems"
+                  [itemsPerPage]="clientsItemsPerPage"
+                  [hasNext]="clientsHasNext"
+                  [hasPrev]="clientsHasPrev"
+                  labelPlural="clients"
+                  (pageChange)="onClientsPageChange($event)"
+                  (itemsPerPageChange)="onClientsRowsPerPageChange($event)"
+                />
+              }
             </div>
 
             <!-- Colonne droite - Actions sur client sélectionné -->
@@ -483,18 +445,11 @@
             <!-- Recherche -->
             <div class="col-md-4">
               <label for="search" class="form-label">Recherche</label>
-              <div class="input-group">
-                <span class="input-group-text bg-white">
-                  <i class="bi bi-search"></i>
-                </span>
-                <input
-                  type="text"
-                  name="search"
-                  class="form-control"
-                  placeholder="Numéro, description,..."
-                  [ngModel]="bonsFilters.search"
-                  (ngModelChange)="onBonsSearchChange($event)" />
-              </div>
+              <app-table-search
+                placeholder="Numéro, description,..."
+                [value]="bonsFilters.search"
+                (searchChange)="onBonsSearchChange($event)"
+              />
             </div>
 
             <!-- Filtre par type -->
@@ -531,13 +486,15 @@
         </div>
       </div>
 
-      <!-- Indicateur de chargement -->
-      <div *ngIf="isLoadingBon" class="text-center my-5">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Chargement...</span>
-        </div>
-        <p class="mt-2">Chargement des bons...</p>
-      </div>
+      <!-- État : chargement / erreur -->
+      @if (bonsListState === 'loading' || bonsListState === 'error') {
+        <app-table-state
+          [state]="bonsListState"
+          loadingMessage="Chargement des bons..."
+          errorMessage="Erreur lors du chargement des bons."
+          (retry)="loadBonsAvecPagination()"
+        />
+      }
 
       <!-- Liste des bons avec pagination -->
       <app-liste-bons
@@ -575,18 +532,11 @@
             <!-- Recherche -->
             <div class="col-md-3">
               <label for="search1" class="form-label">Recherche</label>
-              <div class="input-group">
-                <span class="input-group-text bg-white">
-                  <i class="bi bi-search"></i>
-                </span>
-                <input
-                  name="search1"
-                  type="text"
-                  class="form-control"
-                  placeholder="Description, montant..."
-                  [ngModel]="paiementsFilters.search"
-                  (ngModelChange)="onPaiementsSearchChange($event)" />
-              </div>
+              <app-table-search
+                placeholder="Description, montant..."
+                [value]="paiementsFilters.search"
+                (searchChange)="onPaiementsSearchChange($event)"
+              />
             </div>
 
             <!-- Période -->
@@ -628,13 +578,15 @@
         </div>
       </div>
 
-      <!-- Indicateur de chargement -->
-      <div *ngIf="isLoadingPaiement" class="text-center my-5">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Chargement...</span>
-        </div>
-        <p class="mt-2">Chargement des versements...</p>
-      </div>
+      <!-- État : chargement / erreur -->
+      @if (paiementsListState === 'loading' || paiementsListState === 'error') {
+        <app-table-state
+          [state]="paiementsListState"
+          loadingMessage="Chargement des versements..."
+          errorMessage="Erreur lors du chargement des versements."
+          (retry)="loadPaiementsAvecPagination()"
+        />
+      }
 
       <!-- Liste des versements avec pagination -->
       <app-liste-versements

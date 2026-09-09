@@ -1,10 +1,14 @@
-import { Component, inject, Input, OnDestroy, OnInit } from '@angular/core';
+﻿import { Component, inject, Input, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MouvementsStock, StatsGlobalesStock, Stock, StockDashboardItem } from '../../../modeles/entrees-sorties.model';
 import { FormsModule } from '@angular/forms';
 import { Magasin } from '../../../modeles/magasin.model';
 import { StockInventaireService } from '../../../services/stock-inventaire.service';
 import { catchError, finalize, Observable, Subject, Subscription, switchMap, takeUntil, throwError } from 'rxjs';
+import { TableSearchComponent } from '../../../shared/table/table-search.component';
+import { TablePaginationComponent } from '../../../shared/table/table-pagination.component';
+import { TableStateComponent } from '../../../shared/table/table-state.component';
+import { ListState, toListState } from '../../../shared/table/list-state';
 import { ToastrService } from 'ngx-toastr';
 import { AuthService } from '../../../services/auth.service';
 import { MaagasinsService } from '../../../services/maagasins.service';
@@ -14,7 +18,7 @@ import { MouvementsStockService } from '../../../services/mouvements-stock.servi
 @Component({
   selector: 'app-stock-inventaires',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TableSearchComponent, TablePaginationComponent, TableStateComponent],
   templateUrl: './stock-inventaires.component.html',
   styleUrl: './stock-inventaires.component.css',
 })
@@ -37,6 +41,9 @@ export class StockInventairesComponent implements OnInit, OnDestroy {
   totalPages = 0;
   hasNext = false;
   hasPrev = false;
+
+  /** État d'affichage de la liste stocks — voir shared/table */
+  stocksListState: ListState = 'idle';
 
   // Filtres
   searchText = '';
@@ -122,10 +129,11 @@ export class StockInventairesComponent implements OnInit, OnDestroy {
     }
   }
 
-  private loadData() {
+  loadData() {
     if (!this.codeStructure) return;
 
     this.isLoading = true;
+    this.stocksListState = 'loading';
 
     this.stockService.getStocksByStructureBis(
       this.codeStructure,
@@ -144,10 +152,9 @@ export class StockInventairesComponent implements OnInit, OnDestroy {
     .subscribe({
       next: (response) => {
 
-        console.log('Statistiques stock',response)
-
         this.stocks = response.stocks;
         this.statsGlobales = response.statsGlobales;
+        this.stocksListState = toListState(false, false, this.stocks);
         
         this.totalItems = response.pagination.total;
         this.totalPages = response.pagination.totalPages;
@@ -155,8 +162,7 @@ export class StockInventairesComponent implements OnInit, OnDestroy {
         this.hasPrev = response.pagination.hasPrev;
       },
       error: (err) => {
-        console.error('Erreur chargement dashboard:', err);
-        this.toastr.error('Erreur lors du chargement des données');
+        this.stocksListState = 'error';
       }
     });
   }
@@ -177,9 +183,8 @@ export class StockInventairesComponent implements OnInit, OnDestroy {
     this.loadData();
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onPageSizeChange(event: any) {
-    this.pageSize = Number(event.target.value);
+  onPageSizeChange(limit: number) {
+    this.pageSize = Number(limit);
     this.currentPage = 1;
     this.loadData();
   }
@@ -294,7 +299,6 @@ validerTransfert(transfert: TransfertResponse) {
     return;
   }
   
-  console.log('Transfert à valider',transfert);
   this.isLoadingTransferts = true;
   
   this.transfertService.validerTransfert(transfert.id!)
@@ -304,7 +308,6 @@ validerTransfert(transfert: TransfertResponse) {
   )
   .subscribe({
     next: (response) => {
-      console.log('Transfert validé avec succès',response)
       this.toastr.success(`Transfert ${transfert.reference} validé avec succès`);
       this.chargerTransferts(this.currentPageTransferts);
       this.loadData(); // Recharger les stocks
@@ -334,7 +337,6 @@ private gererStockDestination(
   ).pipe(
     switchMap((stockDestExistant) => {
       if (stockDestExistant) {
-        console.log('Stock destination existant trouvé:', stockDestExistant);
         
         // Mettre à jour le stock existant
         return this.stockService.adjustQuantiteTotale(
@@ -342,7 +344,6 @@ private gererStockDestination(
           this.quantiteTransfert!
         ).pipe(
           switchMap((stockMisAJour) => {
-            console.log('Stock destination mis à jour:', stockMisAJour);
             
             // Mettre à jour le mouvement d'entrée avec le bon stockId
             mouvementEntree.stockId = stockDestExistant.id;
@@ -352,7 +353,6 @@ private gererStockDestination(
           })
         );
       } else {
-        console.log('Création d\'un nouveau stock pour le magasin destination');
         
         // Créer un nouveau stock dans le magasin destination
         const nouveauStock: Partial<Stock> = {
@@ -368,7 +368,6 @@ private gererStockDestination(
         
         return this.stockService.createStock(nouveauStock as Stock).pipe(
           switchMap((stockCree) => {
-            console.log('Nouveau stock créé:', stockCree);
             
             // Mettre à jour le mouvement d'entrée avec le bon stockId
             mouvementEntree.stockId = stockCree.id;
@@ -384,7 +383,6 @@ private gererStockDestination(
       
       // Si le stock n'existe pas (404), on crée un nouveau stock
       if (error.status === 404) {
-        console.log('Stock destination non trouvé (404), création...');
         
         const nouveauStock: Partial<Stock> = {
           produitId: stockSource.produitId,
@@ -451,7 +449,6 @@ creerDemandeTransfert(stock: StockDashboardItem) {
     )
     .subscribe({
       next: (transfert) => {
-        console.log('Transfer créé',transfert)
         this.toastr.success('Demande de transfert créée avec succès');
         this.cancelTransferForm();
         
@@ -503,7 +500,6 @@ chargerTransferts(page = 1) {
   )
   .subscribe({
     next: (response) => {
-      console.log('Transferts chargés',response)
       this.transferts = response.transferts;
       this.totalPagesTransferts = response.pagination.total;
       this.totalPagesTransferts = response.pagination.totalPages;
@@ -516,7 +512,6 @@ chargerTransferts(page = 1) {
     },
     error: (err) => {
       console.error('Erreur chargement transferts:', err);
-      this.toastr.error('Erreur lors du chargement des transferts');
     }
   });
 }

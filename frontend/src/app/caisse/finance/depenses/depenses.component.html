@@ -1,4 +1,4 @@
-<div class="depenses-container">
+﻿<div class="depenses-container">
   <!-- Modal des statistiques -->
   <div class="modal fade" id="statsModal" tabindex="-1" aria-labelledby="statsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
@@ -299,18 +299,11 @@
         <!-- Recherche -->
         <div class="col-md-3">
           <label for="search" class="form-label">Recherche</label>
-          <div class="input-group">
-            <span class="input-group-text bg-white">
-              <i class="bi bi-search"></i>
-            </span>
-            <input
-              name="search"
-              type="text"
-              class="form-control"
-              placeholder="type, description..."
-              [ngModel]="filters.search"
-              (ngModelChange)="onSearchChange($event)" />
-          </div>
+          <app-table-search
+            placeholder="type, description..."
+            [value]="filters.search"
+            (searchChange)="onSearchChange($event)"
+          />
         </div>
 
         <!-- Période -->
@@ -481,13 +474,16 @@
       </form>
     </div>
   </div>
-<!-- Indicateur de chargement -->
-  <div *ngIf="isLoadingDepenses" class="text-center my-5">
-    <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
-      <span class="visually-hidden">Chargement...</span>
-    </div>
-    <p class="mt-2 text-muted">Chargement des dépenses...</p>
-  </div>
+<!-- État : chargement / erreur / vide -->
+  @if (depensesListState === 'loading' || depensesListState === 'error' || depensesListState === 'empty') {
+    <app-table-state
+      [state]="depensesListState"
+      loadingMessage="Chargement des dépenses..."
+      emptyMessage="Aucune dépense trouvée"
+      errorMessage="Erreur lors du chargement des dépenses."
+      (retry)="loadDepenses()"
+    />
+  }
 
   <!-- Recherche et pagination -->
   <!-- <div class="d-flex justify-content-between mb-2">
@@ -503,9 +499,9 @@
   <!-- Message d'erreur -->
   <!-- <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div> -->
 
-  <!-- Tableau -->
   <!-- Tableau des dépenses -->
-  <div *ngIf="!isLoadingDepenses" class="table-responsive">
+  @if (depensesListState === 'success' || depensesListState === 'loading') {
+  <div class="table-responsive" [attr.aria-busy]="depensesListState === 'loading'">
     <table class="table table-striped table-hover">
       <thead class="table-dark">
         <tr>
@@ -522,12 +518,6 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngIf="depenses.length === 0">
-          <td colspan="10" class="text-center py-5">
-            <i class="bi bi-inbox display-1 text-muted"></i>
-            <p class="mt-3 text-muted">Aucune dépense trouvée</p>
-          </td>
-        </tr>
         <tr *ngFor="let dep of depenses">
           <td>{{ dep.date | date:'dd/MM/yyyy' }}</td>
           <td>
@@ -574,58 +564,20 @@
 
 
   <!-- Pagination -->
-  <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-3" *ngIf="totalPages > 1">
-    <!-- Informations de pagination -->
-    <div class="text-muted mb-2 mb-md-0">
-      <small>
-        Affichage de {{ ((currentPage - 1) * totalPages) + 1 }} 
-        à {{ currentPage * totalPages > totalItems ? totalItems : currentPage * totalPages }} 
-        sur {{ totalItems }} dépenses
-      </small>
-    </div>
-    
-    <!-- Navigation avec nombre de pages limité -->
-    <nav aria-label="Page navigation">
-      <ul class="pagination pagination-sm mb-0 flex-wrap">
-        <!-- Bouton précédent -->
-        <li class="page-item" [class.disabled]="!hasPrev">
-          <button class="page-link" (click)="onPageChange(currentPage - 1)" style="cursor: pointer;" aria-label="Précédent">
-            <i class="bi bi-chevron-left"></i>
-          </button>
-        </li>
-        
-        <!-- Première page (si loin du début) -->
-        <li class="page-item" *ngIf="currentPage > 3">
-          <button class="page-link" (click)="onPageChange(1)" style="cursor: pointer;">1</button>
-        </li>
-        <li class="page-item disabled" *ngIf="currentPage > 4">
-          <a class="page-link">...</a>
-        </li>
-        
-        <!-- Pages autour de la page courante (max 5 pages) -->
-        <li class="page-item" 
-            *ngFor="let page of pagesToShow" 
-            [class.active]="currentPage === page">
-          <button class="page-link" (click)="onPageChange(page)" style="cursor: pointer;">
-            {{ page }}
-          </button>
-        </li>
-        
-        <!-- Dernière page (si loin de la fin) -->
-        <li class="page-item disabled" *ngIf="currentPage < totalPages - 3">
-          <a class="page-link">...</a>
-        </li>
-        <li class="page-item" *ngIf="currentPage < totalPages - 2">
-          <button class="page-link" (click)="onPageChange(totalPages)" style="cursor: pointer;">{{ totalPages }}</button>
-        </li>
-        
-        <!-- Bouton suivant -->
-        <li class="page-item" [class.disabled]="!hasNext">
-          <button class="page-link" (click)="onPageChange(currentPage + 1)" style="cursor: pointer;" aria-label="Suivant">
-            <i class="bi bi-chevron-right"></i>
-          </button>
-        </li>
-      </ul>
-    </nav>
-  </div>
+  @if (depensesListState === 'success' || depensesListState === 'loading') {
+    <app-table-pagination
+      [page]="currentPage"
+      [totalPages]="totalPages"
+      [total]="totalItems"
+      [itemsPerPage]="itemsPerPage"
+      [hasNext]="hasNext"
+      [hasPrev]="hasPrev"
+      labelPlural="dépenses"
+      [showPageNumbers]="true"
+      [showItemsPerPage]="false"
+      (pageChange)="onPageChange($event)"
+      (itemsPerPageChange)="onItemsPerPageChange($event)"
+    />
+  }
+  }
 </div>

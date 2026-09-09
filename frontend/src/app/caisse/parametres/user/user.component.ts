@@ -104,7 +104,6 @@ export class UserComponent implements OnInit, OnDestroy {
     this.userSubscription = this.authService.currentUser.subscribe(user => {
       // Initialiser la variable code_structure
       this.code_structure = user?.code_structure || null;
-      console.log('Code structure initialisé :', this.code_structure);
       // Déterminer si on doit montrer le champ structure
       this.showStructureField = this.authService.isGeneralAdmin();
       this.isStructureAdmin = this.authService.hasRole('Administrateur'); // Ou vérifiez par ID
@@ -188,7 +187,6 @@ loadStructuresForAdminCreation(): void {
         .subscribe({
           next: (structures) => {
             this.structuresWithoutAdmin = structures;
-            console.log('Structures sans admin:', structures);
           },
           error: (err) => {
             console.error('Erreur chargement structures sans admin', err);
@@ -296,16 +294,6 @@ customPasswordValidator(form: FormGroup) {
     const hasAdminRole = this.selectedRoleIds.includes(this.adminRoleId);
     const hasOtherRole = this.selectedRoleIds.some(id => this.otherRoles.includes(id));
 
-    console.log('Debug - updateMagasinFieldVisibility:', {
-    hasAdminRole,
-    hasOtherRole,
-    selectedRoleIds: selectedRoles,
-    adminRoleId: adminRoleId,
-    otherRoles: otherRoles,
-    isGeneralAdmin: this.isGeneralAdmin,
-    isStructureAdmin: this.isStructureAdmin,
-    isAdminSecondaire:this.isAdminSecondaire
-  });
     
     if (this.isGeneralAdmin) {
       // Admin général : afficher magasin seulement pour les rôles non-admin
@@ -325,13 +313,6 @@ customPasswordValidator(form: FormGroup) {
       this.userForm.patchValue({ magasinId: null });
     }
     
-    console.log('Visibilité champ magasin:', {
-      showMagasinField: this.showMagasinField,
-      selectedRoleIds: selectedRoles,
-      isGeneralAdmin: this.isGeneralAdmin,
-      isStructureAdmin: this.isStructureAdmin,
-      isAdminSecondaire:this.isAdminSecondaire
-    });
   } */
  updateMagasinFieldVisibility(): void {
     const selectedRoles = this.selectedRoleIds || [];
@@ -339,17 +320,6 @@ customPasswordValidator(form: FormGroup) {
     const hasSecondaryAdminRole = this.selectedRoleIds.includes(this.secondaryAdminRoleId);
     const hasOtherRole = this.selectedRoleIds.some(id => this.otherRoles.includes(id));
 
-    console.log('Debug - updateMagasinFieldVisibility:', {
-      hasAdminRole,
-      hasSecondaryAdminRole,
-      hasOtherRole,
-      selectedRoleIds: selectedRoles,
-      adminRoleId: this.adminRoleId,
-      secondaryAdminRoleId: this.secondaryAdminRoleId,
-      otherRoles: this.otherRoles,
-      isGeneralAdmin: this.isGeneralAdmin,
-      isStructureAdmin: this.isStructureAdmin
-    });
     
     if (this.isGeneralAdmin) {
       // Admin général : magasin pour les rôles non-admin uniquement
@@ -376,10 +346,6 @@ customPasswordValidator(form: FormGroup) {
       this.userForm.patchValue({ magasinId: null });
     }
     
-    console.log('Visibilité champ magasin:', {
-      showMagasinField: this.showMagasinField,
-      selectedRoleIds: selectedRoles
-    });
   }
 
 
@@ -439,11 +405,6 @@ customPasswordValidator(form: FormGroup) {
     const isChecked = (event.target as HTMLInputElement).checked;
     const role = this.userForm.get('role')?.value || [];
 
-    console.log('DEBUG - onRoleChange:', {
-      roleId,
-      isChecked,
-      currentRoles: role
-    });
 
     if (isChecked) {
       this.userForm.get('role')?.setValue([...role, roleId]);
@@ -621,12 +582,6 @@ customPasswordValidator(form: FormGroup) {
         // Vérifier que structures est un tableau
         this.structures = Array.isArray(structures) ? structures : [];
 
-        console.log('Structures chargées:', this.structures.map(s => ({
-          id: s.id,
-          nom: s.nom_structure,
-          code_structure: s.code_structure,
-          hasCode: !!s.code_structure
-        })));
         
         // Mise à jour de la pagination si users a une propriété pagination
         if (users.pagination) {
@@ -685,8 +640,6 @@ customPasswordValidator(form: FormGroup) {
           this.userRolesMap[user.id] = user.roles?.map(role => role.nom) || [];
         }
         
-        console.log('Structures chargées:', this.structures.length);
-        console.log('Utilisateurs chargés:', this.users.length);
 
         if(this.isGeneralAdmin){
         this.loadStructuresForAdminCreation();
@@ -694,7 +647,6 @@ customPasswordValidator(form: FormGroup) {
       },
       error: err => {
         console.error('Erreur chargement données', err);
-        this.toastr.error('Erreur lors du chargement des données');
       }
     });
 }
@@ -790,14 +742,6 @@ customPasswordValidator(form: FormGroup) {
       return;
     }
   
-    console.log('DEBUG - openModal appelé', {
-      user,
-      isEditMode: !!user,
-      isGeneralAdmin: this.isGeneralAdmin,
-      isStructureAdmin: this.isStructureAdmin,
-      isAdminSecondaire: this.isAdminSecondaire,
-      currentUserStructureId: this.currentUserStructureId
-    });
 
     // Vérifier si l'utilisateur a le rôle "Administrateur secondaire"
     const hasSecondaryAdminRole = user?.roles?.some(role => 
@@ -953,7 +897,6 @@ customPasswordValidator(form: FormGroup) {
 
           // Charger les magasins de la structure
           /* if (structureId) {
-            console.log('DEBUG - Chargement magasins avec code_structure:', this.code_structure);
             this.loadMagasins(this.code_structure!);
           } */
           
@@ -997,7 +940,6 @@ onSubmit(): void {
   if (this.userForm.invalid) {
     // Marquer tous les champs comme touchés pour afficher les erreurs
     this.markFormGroupTouched(this.userForm);
-    console.log('Le formulaire est invalide');
     this.toastr.error('Le formulaire est invalide')
     return;
   }
@@ -1016,7 +958,6 @@ onSubmit(): void {
         const selectedStructure = this.structures.find(s => Number(s.id )=== Number(userData.structure_id));
         if (selectedStructure && selectedStructure.code_structure) {
           userData.code_structure = selectedStructure.code_structure;
-          console.log('code_structure depuis la structure sélectionnée Pour un non-admin',userData.code_structure)
         }
       }
     } else {
@@ -1027,13 +968,9 @@ onSubmit(): void {
       }
     
     // Récupérer le code_structure depuis la structure sélectionnée
-    console.log('Structure disponible',this.structures);
     const selectedStr = this.structures.find(s => Number(s.id )=== Number(userData.structure_id));
-    console.log('valeur de structure_id ',userData.structure_id);
-    console.log('selectedStructure dans Structure disponible',selectedStr);
     if (selectedStr && selectedStr.code_structure) {
       userData.code_structure = selectedStr.code_structure;
-      console.log('code_structure depuis la structure sélectionnée Pour un admin ',userData.code_structure)
     } else {
       this.errorMessage = 'Code structure non trouvé pour la structure sélectionnée';
       return;
@@ -1044,14 +981,6 @@ onSubmit(): void {
     const hasSecondaryAdminRole = this.selectedRoleIds.includes(this.secondaryAdminRoleId);
     const hasOtherRole = this.selectedRoleIds.some(id => this.otherRoles.includes(id));
 
-    console.log('Debug - Validation magasin:', {
-      hasAdminRole,
-      hasOtherRole,
-      selectedRoleIds: this.selectedRoleIds,
-      magasinId: userData.magasinId,
-      hasSecondaryAdminRole:hasSecondaryAdminRole,
-      userData
-    });
 
     if (hasSecondaryAdminRole) {
       userData.magasinId = null;
@@ -1084,7 +1013,6 @@ onSubmit(): void {
   // Supprimer toujours le champ de confirmation
   delete userData.confirmPassword;
 
-  console.log('Données utilisateur',userData);
 
   // Extraire les rôles sélectionnés
   const roleIds = userData.role || [];
@@ -1095,12 +1023,6 @@ onSubmit(): void {
     if (!userData.password) {
       delete userData.password;
     }
-    console.log('Données envoyées au backend:', {
-      userData,
-      hasPassword: !!userData.password,
-      isEditMode: this.isEditMode,
-      passwordValue: userData.password
-    });
     this.userService.update(this.selectedUser.id, userData)
     .pipe(takeUntil(this.destroy$))
     .subscribe({
@@ -1356,7 +1278,6 @@ private markFormGroupTouched(formGroup: FormGroup) {
 
   
   toggleStatus(user: User): void {
-  console.log('Liste des roles de l\'utilisateur', user.roles);
   const action = user.status ? 'désactiver' : 'activer';
   
   // Vérifier si l'utilisateur a le rôle "Administrateur secondaire"

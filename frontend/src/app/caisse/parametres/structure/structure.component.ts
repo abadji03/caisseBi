@@ -88,7 +88,6 @@ export class StructureComponent implements OnInit, OnDestroy {
       // Initialiser la variable code_structure
       this.code_structure = user?.code_structure || null;
       this.currentStructureId = user?.structure_id || null;
-      console.log('Code structure initialisé :', this.code_structure);
     });
     this.isGeneralAdmin = this.authService.isGeneralAdmin(); */
 
@@ -242,7 +241,6 @@ export class StructureComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Erreur chargement structures:', err);
-          this.toastr.error('Erreur lors du chargement des structures');
         }
       });
   }
@@ -292,7 +290,6 @@ export class StructureComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (structure) => {
-          console.log('Détails de la structure',structure)
           this.selectedStructure = structure;
           this.currentStructureId = structure.id!;
           this.isEditMode = true;
@@ -304,7 +301,6 @@ export class StructureComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Erreur chargement structure:', err);
-          this.toastr.error('Erreur lors du chargement de la structure');
         }
       });
   }
@@ -314,16 +310,8 @@ export class StructureComponent implements OnInit, OnDestroy {
     //console.log('Détails de la structure sélectionnée',structure);
     this.selectedStructure = structure;
     //this.modalService.open(content, { size: 'lg' }); 
-    console.log('=== showDetails appelé ===');
-    console.log('Structure reçue:', structure);
-    console.log('Content modal:', content);
-    console.log('Structure sélectionnée après affectation:', this.selectedStructure);
     
     // Vérifions que la structure a bien toutes les propriétés
-    console.log('Structure - nom:', structure.nom_structure);
-    console.log('Structure - email:', structure.email);
-    console.log('Structure - téléphone:', structure.telephone);
-    console.log('Structure - adresse:', structure.adresse);
     
     this.selectedStructure = structure;
 
@@ -331,7 +319,6 @@ export class StructureComponent implements OnInit, OnDestroy {
     
     // Ouvrir le modal
     const modalRef = this.modalService.open(content, { size: 'lg' });
-    console.log('Modal ouvert:', modalRef);
   }
 
   prepareEdit(structure: Structure): void {

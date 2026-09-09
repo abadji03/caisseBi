@@ -1,9 +1,11 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { catchError, map, Observable, of } from 'rxjs';
-import { Permission, Role, RolePermission } from '../modeles/role-permission.model';
+import { RolePermission, Role, Permission } from '../modeles/role-permission.model';
 import { User } from '../modeles/user.model';
+import { NGXLogger } from 'ngx-logger';
 import { environment } from '../../environments/environment';
+import { handleApiError } from '../core/api/api-error';
 
 @Injectable({
   providedIn: 'root',
@@ -11,6 +13,7 @@ import { environment } from '../../environments/environment';
 export class RolePermissionsService {
   private readonly baseUrl = environment.apiUrl;
   private http = inject(HttpClient);
+  private logger = inject(NGXLogger);
   //constructor() {}
 
   /*--------------Services Roles------------- */
@@ -63,7 +66,7 @@ export class RolePermissionsService {
 
   //Supprimer une permission
   deletePermission(id: number): Observable<unknown> {
-    return this.http.delete(`${this.baseUrl}/${id}`);
+    return this.http.delete(`${this.baseUrl}/permissions/${id}`);
   }
 
   /*--------------Services Roles,Permissions, Users------------- */
@@ -73,13 +76,17 @@ export class RolePermissionsService {
   }
 
   getPermissionsIdByRole(roleId: number): Observable<{ permissionIds: number[] }> {
-    return this.http.get<User[]>(`${this.baseUrl}/role-permissions/${roleId}/permissions`).pipe(
-      map((permissions) => ({
-        permissionIds: permissions.map((p) => p.id), // Extrait seulement les IDs
+    // Le backend renvoie { role: string, permissions: [...] } (getRolePermissions)
+    return this.http.get<{ role: string; permissions: { id: number }[] }>(
+      `${this.baseUrl}/role-permissions/${roleId}/permissions`
+    ).pipe(
+      map((response) => ({
+        permissionIds: (response?.permissions ?? []).map((p) => p.id),
       })),
       catchError((error) => {
-        console.error('Error fetching permissions', error);
-        return of({ permissionIds: [] }); // Retourne un tableau vide en cas d'erreur
+        // Dégradation gracieuse : une UI sans permissions vaut mieux qu'un crash.
+        return handleApiError(this.logger, 'RolePermissionsService.getPermissionsIdByRole', error)
+          .pipe(catchError(() => of({ permissionIds: [] })));
       }),
     );
   }
@@ -90,8 +97,9 @@ export class RolePermissionsService {
         roleIds: roles.map((p) => p.id), // Extrait seulement les IDs
       })),
       catchError((error) => {
-        console.error('Error fetching permissions', error);
-        return of({ roleIds: [] }); // Retourne un tableau vide en cas d'erreur
+        // Dégradation gracieuse : une UI sans rôles vaut mieux qu'un crash.
+        return handleApiError(this.logger, 'RolePermissionsService.getRolesIdByUser', error)
+          .pipe(catchError(() => of({ roleIds: [] })));
       }),
     );
   }

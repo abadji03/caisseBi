@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const stockCtrl = require('../controllers/stock.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
-const { requirePermission } = require('../middlewares/auth.middleware');
+const { requirePermission, requireStructureAccess } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -40,7 +40,7 @@ const { requirePermission } = require('../middlewares/auth.middleware');
  *             schema:
  *               $ref: '#/components/schemas/Stock'
  */
-router.post('/', authenticateToken, requirePermission('Gérer le stock'), stockCtrl.createStock);
+router.post('/', authenticateToken, requireStructureAccess, requirePermission('stock.manage'), stockCtrl.createStock);
 
 /**
  * @swagger
@@ -68,8 +68,8 @@ router.post('/', authenticateToken, requirePermission('Gérer le stock'), stockC
  *       200:
  *         description: Stock supprimé
  */
-router.put('/:id', authenticateToken, requirePermission('Gérer le stock'), stockCtrl.updateStock);
-router.delete('/:id', authenticateToken, requirePermission('Gérer le stock'), stockCtrl.deleteStock);
+router.put('/:id', authenticateToken, requireStructureAccess, requirePermission('stock.manage'), stockCtrl.updateStock);
+router.delete('/:id', authenticateToken, requireStructureAccess, requirePermission('stock.manage'), stockCtrl.deleteStock);
 
 /**
  * @swagger
@@ -95,8 +95,8 @@ router.delete('/:id', authenticateToken, requirePermission('Gérer le stock'), s
  *               items:
  *                 $ref: '#/components/schemas/Stock'
  */
-router.get('/structure/:code_structure', authenticateToken, requirePermission('Gérer le stock'), stockCtrl.getStocksByStructure);
-router.get('/structure/complet/:code_structure', authenticateToken, requirePermission('Gérer le stock'), stockCtrl.getStocksByStructureBis);
+router.get('/structure/:code_structure', authenticateToken, requireStructureAccess, requirePermission('stock.manage'), stockCtrl.getStocksByStructure);
+router.get('/structure/complet/:code_structure', authenticateToken, requireStructureAccess, requirePermission('stock.manage'), stockCtrl.getStocksByStructureBis);
 
 /**
  * @swagger
@@ -113,7 +113,7 @@ router.get('/structure/complet/:code_structure', authenticateToken, requirePermi
  *       200:
  *         description: Stock du produit
  */
-router.get('/produit/:produitId', authenticateToken, requirePermission('Gérer le stock'), stockCtrl.getStockByProduitId);
+router.get('/produit/:produitId', authenticateToken, requireStructureAccess, requirePermission('stock.manage'), stockCtrl.getStockByProduitId);
 
 /**
  * @swagger
@@ -138,7 +138,7 @@ router.get('/produit/:produitId', authenticateToken, requirePermission('Gérer l
  *       200:
  *         description: Quantité ajustée
  */
-router.patch('/:id/adjust-quantite', authenticateToken, requirePermission('Gérer le stock'), stockCtrl.adjustQuantiteTotale);
-router.patch('/:id/adjust-reservee', authenticateToken, requirePermission('Gérer le stock'), stockCtrl.adjustQuantiteReservee);
+router.patch('/:id/adjust-quantite', authenticateToken, requireStructureAccess, requirePermission('stock.manage'), stockCtrl.adjustQuantiteTotale);
+router.patch('/:id/adjust-reservee', authenticateToken, requireStructureAccess, requirePermission('stock.manage'), stockCtrl.adjustQuantiteReservee);
 
 module.exports = router;

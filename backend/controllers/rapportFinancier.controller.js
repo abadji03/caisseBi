@@ -1,4 +1,5 @@
 const db = require('../models');
+const logger = require('../services/logger.js');
 const FonctionsUtilitaires = require('./utils/fonctionsUtilitaires');
 const { Op, fn, col } = db.Sequelize;
 const utilitaireRapport  = require('./utils/rapportFinancierUtilitaire');
@@ -70,8 +71,7 @@ const HistoriqueService = require('../services/historique.service');
             tendances: tendancesRecalcul
         });
 
-    } catch (error) {
-        console.error('Erreur getIndicateursFinanciers:', error);
+    } catch (error) {logger.error('rapportFinancier.controller', 'Erreur getIndicateursFinanciers:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -93,15 +93,7 @@ const HistoriqueService = require('../services/historique.service');
             toDate
         } = req.query;
 
-        const code_structure = authUser.code_structure;
-        
-        console.log('📥 Requête reçue - indicateurs financiers:');
-        console.log('  - code_structure:', code_structure);
-        console.log('  - periode:', periode);
-        console.log('  - fromDate brut:', fromDate);
-        console.log('  - toDate brut:', toDate);
-        console.log('  - magasinId:', magasinId);
-        console.log('  - agentId:', agentId);
+        const code_structure = authUser.code_structure;logger.log('rapportFinancier.controller', '📥 Requête reçue - indicateurs financiers:');logger.log('rapportFinancier.controller', '  - code_structure:', code_structure);logger.log('rapportFinancier.controller', '  - periode:', periode);logger.log('rapportFinancier.controller', '  - fromDate brut:', fromDate);logger.log('rapportFinancier.controller', '  - toDate brut:', toDate);logger.log('rapportFinancier.controller', '  - magasinId:', magasinId);logger.log('rapportFinancier.controller', '  - agentId:', agentId);
 
         if (!code_structure) {
             return res.status(400).json({
@@ -114,10 +106,7 @@ const HistoriqueService = require('../services/historique.service');
         
         if (fromDate && toDate) {
             fromDateNormalized = FonctionsUtilitaires.normalizeDate(fromDate, 'start');
-            toDateNormalized = FonctionsUtilitaires.normalizeDate(toDate, 'end');
-            
-            console.log('  - fromDate normalisé:', fromDateNormalized.toLocaleString());
-            console.log('  - toDate normalisé:', toDateNormalized.toLocaleString());
+            toDateNormalized = FonctionsUtilitaires.normalizeDate(toDate, 'end');logger.log('rapportFinancier.controller', '  - fromDate normalisé:', fromDateNormalized.toLocaleString());logger.log('rapportFinancier.controller', '  - toDate normalisé:', toDateNormalized.toLocaleString());
         }
 
 
@@ -152,8 +141,7 @@ const HistoriqueService = require('../services/historique.service');
             tendances: tendancesRecalcul
         });
 
-    } catch (error) {
-        console.error('❌ Erreur getIndicateursFinanciers:', error);
+    } catch (error) {logger.error('rapportFinancier.controller', '❌ Erreur getIndicateursFinanciers:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -180,12 +168,7 @@ exports.getIndicateursFinanciers = async (req, res) => {
             toDate
         } = req.query;
 
-        const code_structure = authUser.code_structure;
-        
-        console.log('📥 [Indicateurs] Requête reçue:');
-        console.log('  - Période:', periode);
-        console.log('  - FromDate brut:', fromDate);
-        console.log('  - ToDate brut:', toDate);
+        const code_structure = authUser.code_structure;logger.log('rapportFinancier.controller', '📥 [Indicateurs] Requête reçue:');logger.log('rapportFinancier.controller', '  - Période:', periode);logger.log('rapportFinancier.controller', '  - FromDate brut:', fromDate);logger.log('rapportFinancier.controller', '  - ToDate brut:', toDate);
 
         if (!code_structure) {
             return res.status(400).json({ error: 'code_structure requis' });
@@ -217,11 +200,7 @@ exports.getIndicateursFinanciers = async (req, res) => {
             dateReference: dateReference ? FonctionsUtilitaires.normalizeDate(dateReference, 'start') : new Date(),
             fromDate: fromDate ? FonctionsUtilitaires.normalizeDate(fromDate, 'start') : undefined,
             toDate: toDate ? FonctionsUtilitaires.normalizeDate(toDate, 'end') : undefined
-        };
-
-        console.log('  ✅ Dates normalisées:');
-        console.log('    - FromDate:', filters.fromDate?.toLocaleString());
-        console.log('    - ToDate:', filters.toDate?.toLocaleString());
+        };logger.log('rapportFinancier.controller', '  ✅ Dates normalisées:');logger.log('rapportFinancier.controller', '    - FromDate:', filters.fromDate?.toLocaleString());logger.log('rapportFinancier.controller', '    - ToDate:', filters.toDate?.toLocaleString());
 
         const [indicateursPrincipaux, fluxTresorerie] = await Promise.all([
             utilitaireRapport.calculerIndicateursPrincipaux(filters),
@@ -242,8 +221,7 @@ exports.getIndicateursFinanciers = async (req, res) => {
             tendances: tendancesRecalcul
         });
 
-    } catch (error) {
-        console.error('❌ Erreur getIndicateursFinanciers:', error);
+    } catch (error) {logger.error('rapportFinancier.controller', '❌ Erreur getIndicateursFinanciers:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -368,8 +346,7 @@ exports.getIndicateursFinanciers = async (req, res) => {
             repartition: repartitionAvecPourcentage
         });
 
-    } catch (error) {
-        console.error('Erreur getRepartitionDepenses:', error);
+    } catch (error) {logger.error('rapportFinancier.controller', 'Erreur getRepartitionDepenses:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -494,8 +471,7 @@ exports.getRepartitionRecettes = async (req, res) => {
             repartition: repartitionAvecPourcentage
         });
 
-    } catch (error) {
-        console.error('Erreur getRepartitionRecettes:', error);
+    } catch (error) {logger.error('rapportFinancier.controller', 'Erreur getRepartitionRecettes:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -600,8 +576,7 @@ exports.getStatistiquesModesPaiement = async (req, res) => {
             modesPaiement: modesAvecPourcentage
         });
 
-    } catch (error) {
-        console.error('Erreur getStatistiquesModesPaiement:', error);
+    } catch (error) {logger.error('rapportFinancier.controller', 'Erreur getStatistiquesModesPaiement:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -730,8 +705,7 @@ exports.getDepensesDetaillees = async (req, res) => {
             depenses
         });
 
-    } catch (error) {
-        console.error('Erreur getDepensesDetaillees:', error);
+    } catch (error) {logger.error('rapportFinancier.controller', 'Erreur getDepensesDetaillees:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -860,8 +834,7 @@ exports.getRecettesDetaillees = async (req, res) => {
             recettes
         });
 
-    } catch (error) {
-        console.error('Erreur getRecettesDetaillees:', error);
+    } catch (error) {logger.error('rapportFinancier.controller', 'Erreur getRecettesDetaillees:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -1051,8 +1024,7 @@ exports.getDonneesEvolutives = async (req, res) => {
             donnees
         });
 
-    } catch (error) {
-        console.error('Erreur getDonneesEvolutives:', error);
+    } catch (error) {logger.error('rapportFinancier.controller', 'Erreur getDonneesEvolutives:', error);
         res.status(500).json({ error: error.message });
     }
 }; 
@@ -1166,9 +1138,7 @@ exports.getDonneesComparatives = async (req, res) => {
         } else {
             // Période prédéfinie
             periodeActuelle = FonctionsUtilitaires.getPeriodeDates(periodeBase, dateRef);
-        }
-
-        console.log('📊 Période actuelle:', periodeActuelle);
+        }logger.log('rapportFinancier.controller', '📊 Période actuelle:', periodeActuelle);
 
         const donneesPeriodes = [];
 
@@ -1241,8 +1211,7 @@ exports.getDonneesComparatives = async (req, res) => {
             donneesPeriodes
         });
 
-    } catch (error) {
-        console.error('Erreur getDonneesComparatives:', error);
+    } catch (error) {logger.error('rapportFinancier.controller', 'Erreur getDonneesComparatives:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -1299,9 +1268,7 @@ exports.genererRapportPDF = async (req, res) => {
             const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
             debut = debutJournee;
             fin = finJournee;
-        }
-
-        console.log('📊 Génération PDF financier du', debut, 'au', fin);
+        }logger.log('rapportFinancier.controller', '📊 Génération PDF financier du', debut, 'au', fin);
 
         // Récupération des informations de la structure
         const structure = await db.Structure.findOne({
@@ -1448,8 +1415,7 @@ exports.genererRapportPDF = async (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename=rapport-financier-${Date.now()}.pdf`);
         res.send(pdf);
 
-    } catch (error) {
-        console.error('❌ Erreur génération PDF financier:', error);
+    } catch (error) {logger.error('rapportFinancier.controller', '❌ Erreur génération PDF financier:', error);
         res.status(500).json({ 
             error: 'Erreur lors de la génération du PDF',
             details: error.message 
@@ -1511,8 +1477,7 @@ exports.getRepartitionDepensesData = async (filters) => {
             totalDepenses,
             repartition: repartitionAvecPourcentage
         };
-    } catch (error) {
-        console.error('Erreur getRepartitionDepensesData:', error);
+    } catch (error) {logger.error('rapportFinancier.controller', 'Erreur getRepartitionDepensesData:', error);
         return { totalDepenses: 0, repartition: [] };
     }
 };
@@ -1571,8 +1536,7 @@ exports.getRepartitionRecettesData = async (filters) => {
             totalRecettes,
             repartition: repartitionAvecPourcentage
         };
-    } catch (error) {
-        console.error('Erreur getRepartitionRecettesData:', error);
+    } catch (error) {logger.error('rapportFinancier.controller', 'Erreur getRepartitionRecettesData:', error);
         return { totalRecettes: 0, repartition: [] };
     }
 };
@@ -1615,8 +1579,7 @@ exports.getStatistiquesModesPaiementData = async (filters) => {
             totalTransactions,
             modesPaiement
         };
-    } catch (error) {
-        console.error('Erreur getStatistiquesModesPaiementData:', error);
+    } catch (error) {logger.error('rapportFinancier.controller', 'Erreur getStatistiquesModesPaiementData:', error);
         return { totalTransactions: 0, modesPaiement: [] };
     }
 };
@@ -1659,8 +1622,7 @@ exports.getDepensesDetailleesData = async (filters) => {
             total: count,
             depenses
         };
-    } catch (error) {
-        console.error('Erreur getDepensesDetailleesData:', error);
+    } catch (error) {logger.error('rapportFinancier.controller', 'Erreur getDepensesDetailleesData:', error);
         return { total: 0, depenses: [] };
     }
 };
@@ -1703,8 +1665,7 @@ exports.getRecettesDetailleesData = async (filters) => {
             total: count,
             recettes
         };
-    } catch (error) {
-        console.error('Erreur getRecettesDetailleesData:', error);
+    } catch (error) {logger.error('rapportFinancier.controller', 'Erreur getRecettesDetailleesData:', error);
         return { total: 0, recettes: [] };
     }
 };
@@ -1844,8 +1805,7 @@ exports.getDonneesEvolutivesData = async (filters) => {
             groupBy,
             donnees
         };
-    } catch (error) {
-        console.error('Erreur getDonneesEvolutivesData:', error);
+    } catch (error) {logger.error('rapportFinancier.controller', 'Erreur getDonneesEvolutivesData:', error);
         return { groupBy: 'jour', donnees: [] };
     }
 };
@@ -1894,8 +1854,7 @@ exports.getDonneesComparativesData = async (filters) => {
             nombrePeriodes,
             donneesPeriodes
         };
-    } catch (error) {
-        console.error('Erreur getDonneesComparativesData:', error);
+    } catch (error) {logger.error('rapportFinancier.controller', 'Erreur getDonneesComparativesData:', error);
         return { periodeBase: 'mois', nombrePeriodes: 0, donneesPeriodes: [] };
     }
 };
@@ -1952,9 +1911,7 @@ exports.exportRapportExcel = async (req, res) => {
             const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
             debut = debutJournee;
             fin = finJournee;
-        }
-
-        console.log('📊 Export Excel financier du', debut, 'au', fin);
+        }logger.log('rapportFinancier.controller', '📊 Export Excel financier du', debut, 'au', fin);
 
         // Récupération des informations de la structure
         const structure = await db.Structure.findOne({
@@ -2436,8 +2393,7 @@ exports.exportRapportExcel = async (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename=rapport-financier-${Date.now()}.xlsx`);
         res.send(buffer);
 
-    } catch (error) {
-        console.error('❌ Erreur export Excel financier:', error);
+    } catch (error) {logger.error('rapportFinancier.controller', '❌ Erreur export Excel financier:', error);
         // Enregistrement de l'erreur dans l'historique
         if (req.user) {
             await HistoriqueService.enregistrerAction(

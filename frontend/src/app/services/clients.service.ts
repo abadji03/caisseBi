@@ -1,10 +1,10 @@
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Client } from '../modeles/clients.model';
-import { catchError, Observable, tap, throwError } from 'rxjs';
-import { AuthService } from './auth.service';
+import { catchError, Observable, tap } from 'rxjs';
 import { NGXLogger } from 'ngx-logger';
 import { environment } from '../../environments/environment';
+import { handleApiError } from '../core/api/api-error';
 
 export interface ClientsFilter {
   page?: number;
@@ -30,38 +30,26 @@ export interface ClientsResponse {
 export class ClientsService {
   private apiUrl = `${environment.apiUrl}/clients`;
   private http = inject(HttpClient);
-  private authService = inject(AuthService);
   private logger = inject(NGXLogger);
 
-  private getHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
-    return new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-    });
-  }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private handleError(error: any, message: string): Observable<never> {
-    this.logger.error(message, error);
-    return throwError(() => error);
+  private handleError(error: unknown, message: string): Observable<never> {
+    return handleApiError(this.logger, 'ClientsService', error, message);
   }
   // Récupérer tous les clients
   getClients(): Observable<Client[]> {
 
     this.logger.debug('Appel API: récupération des clients');
 
-    return this.http.get<Client[]>(this.apiUrl, { headers: this.getHeaders() }).pipe(
+    return this.http.get<Client[]>(this.apiUrl, {}).pipe(
       tap((res) => this.logger.info('Clients récupérés avec succès', res)),
-      catchError((error) => {
-        this.logger.error('Erreur lors de la récupération des clients', error);
-        throw error; // on relance l'erreur pour que le composant gère aussi
-      })
+      catchError((error) => this.handleError(error, 'Erreur lors de la récupération des clients'))
     );
   }
 
   // Récupérer un client par ID
   getClientById(id: number): Observable<Client> {
-    return this.http.get<Client>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
+    return this.http.get<Client>(`${this.apiUrl}/${id}`, {});
   }
 
   // Ajouter un nouveau client (vérification en back si existe déjà)
@@ -71,12 +59,9 @@ export class ClientsService {
     magasinIds: magasinIds || []
   };
     this.logger.debug('Appel API: ajout d\'un client', data);
-    return this.http.post<Client>(this.apiUrl, data, { headers: this.getHeaders() }).pipe(
+    return this.http.post<Client>(this.apiUrl, data, {}).pipe(
       tap((res) => this.logger.info('Client ajouté avec succès', res)),
-      catchError((error) => {
-        this.logger.error('Erreur lors de l\'ajout du client', error);
-        throw error;
-      })
+      catchError((error) => this.handleError(error, 'Erreur lors de l\'ajout du client'))
     );
   }
 
@@ -86,27 +71,23 @@ export class ClientsService {
     magasinIds: magasinIds || []
   };
     this.logger.debug('Appel API: ajout d\'un client', data);
-    return this.http.post<Client>(`${this.apiUrl}/create-associate-client`, data, { headers: this.getHeaders() }).pipe(
+    return this.http.post<Client>(`${this.apiUrl}/create-associate-client`, data, {}).pipe(
       tap((res) => this.logger.info('Client ajouté avec succès', res)),
-      catchError((error) => {
-        this.logger.error('Erreur lors de l\'ajout du client', error);
-        throw error;
-      })
+      catchError((error) => this.handleError(error, 'Erreur lors de l\'ajout du client'))
     );
   }
 
   getClientWithMagasins(id: number): Observable<Client> {
-    return this.http.get<Client>(`${this.apiUrl}/clients/${id}/with-magasins`, { headers: this.getHeaders() });
+    return this.http.get<Client>(`${this.apiUrl}/clients/${id}/with-magasins`, {});
   }
   // Rechercher un client
   rechercherClient(query: string): Observable<Client[]> {
-    return this.http.get<Client[]>(`${this.apiUrl}?q=${query}`, { headers: this.getHeaders() });
+    return this.http.get<Client[]>(`${this.apiUrl}?q=${query}`, {});
   }
 
   // Récupérer les clients d'une structure
   getClientsByStructure(codeStructure: string): Observable<Client[]> {
     return this.http.get<Client[]>(`${this.apiUrl}/structure/${codeStructure}`, {
-      headers: this.getHeaders(),
     });
   }
 
@@ -127,7 +108,6 @@ export class ClientsService {
     }
 
     return this.http.get<ClientsResponse>(`${this.apiUrl}/structure/bis/${codeStructure}`, {
-      headers: this.getHeaders(),
       params
     }).pipe(
       tap(response => this.logger.info(`Clients récupérés: ${response.items.length}`)),
@@ -142,13 +122,12 @@ export class ClientsService {
       magasinIds: magasinIds
     };
     return this.http.put<Client>(`${this.apiUrl}/${id}`, data, {
-      headers: this.getHeaders(),
     });
   }
 
   // Supprimer un client
   deleteClient(id: number): Observable<Client> {
-    return this.http.delete<Client>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
+    return this.http.delete<Client>(`${this.apiUrl}/${id}`, {});
   }
 
   //Mise à jour du statut
@@ -156,7 +135,7 @@ export class ClientsService {
     return this.http.patch<Client>(
       `${this.apiUrl}/${id}/statut`,
       { statut },
-      { headers: this.getHeaders() },
+      {},
     );
   }
 
@@ -165,7 +144,7 @@ export class ClientsService {
     return this.http.patch<Client>(
       `${this.apiUrl}/${id}/plafond`,
       { plafond },
-      { headers: this.getHeaders() },
+      {},
     );
   }
 
@@ -175,7 +154,7 @@ export class ClientsService {
     return this.http.patch(
       `${this.apiUrl}/${clientId}/magasins/${magasinId}/solde`,
       { solde },
-      { headers: this.getHeaders() }
+      {}
     );
   }
 
@@ -184,7 +163,7 @@ export class ClientsService {
     return this.http.patch<Client>(
       `${this.apiUrl}/${id}/montant-a-payer`,
       { montantANousPayer },
-      { headers: this.getHeaders() },
+      {},
     );
   }
 }

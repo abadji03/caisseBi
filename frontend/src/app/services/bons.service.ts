@@ -1,10 +1,10 @@
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { catchError, Observable, tap, throwError } from 'rxjs';
+import { catchError, Observable } from 'rxjs';
 import { Bon } from '../modeles/bon.model';
 import { NGXLogger } from 'ngx-logger';
-import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
+import { handleApiError } from '../core/api/api-error';
 
 const API_URL = `${environment.apiUrl}/bons`;
 const API_URL_BIS = `${environment.apiUrl}/bons-complet`;
@@ -34,19 +34,10 @@ export interface BonsResponse {
 export class BonsService {
 
   private http= inject(HttpClient);
-  private logger= inject(NGXLogger)
-  private authService= inject(AuthService)
+  private logger= inject(NGXLogger);
 
-  private getHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
-    return new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
-  }
-
-  private handleError(error: Bon): Observable<never> {
-    this.logger.error('Erreur API Bon:', error);
-    return throwError(() => error);
+  private handleError(error: unknown): Observable<never> {
+    return handleApiError(this.logger, 'BonsService', error);
   }
 
   // bon.service.ts (frontend)
@@ -57,21 +48,21 @@ export class BonsService {
   }
 
   createBon(data: Bon): Observable<Bon> {
-    return this.http.post<Bon>(`${API_URL}`, data, { headers: this.getHeaders() })
+    return this.http.post<Bon>(`${API_URL}`, data, {})
       .pipe(catchError(err => this.handleError(err)));
   }
 
   getBonsByStructure(code_structure: string): Observable<Bon[]> {
-    return this.http.get<Bon[]>(`${API_URL}/structure/${code_structure}`, { headers: this.getHeaders() })
+    return this.http.get<Bon[]>(`${API_URL}/structure/${code_structure}`, {})
       .pipe(catchError(err => this.handleError(err)));
   }
 
   getBonsClientByStructure(code_structure: string): Observable<Bon[]> {
-    return this.http.get<Bon[]>(`${API_URL}/structure/${code_structure}/clients`, { headers: this.getHeaders() })
+    return this.http.get<Bon[]>(`${API_URL}/structure/${code_structure}/clients`, {})
       .pipe(catchError(err => this.handleError(err)));
   }
   getBonsFournisseursByStructure(code_structure: string): Observable<Bon[]> {
-    return this.http.get<Bon[]>(`${API_URL}/structure/${code_structure}/fournisseurs`, { headers: this.getHeaders() })
+    return this.http.get<Bon[]>(`${API_URL}/structure/${code_structure}/fournisseurs`, {})
       .pipe(catchError(err => this.handleError(err)));
   }
 
@@ -92,7 +83,6 @@ export class BonsService {
     return this.http.get<BonsResponse>(
       `${API_URL}/structure/bis/${code_structure}/clients`, 
       { 
-        headers: this.getHeaders(),
         params: params 
       }
     ).pipe(catchError(err => this.handleError(err)));
@@ -110,7 +100,6 @@ export class BonsService {
     return this.http.get<BonsResponse>(
       `${API_URL}/structure/bis/${code_structure}/fournisseurs`, 
       { 
-        headers: this.getHeaders(),
         params: params 
       }
     ).pipe(catchError(err => this.handleError(err)));
@@ -118,29 +107,29 @@ export class BonsService {
 
 
   getAllBons(): Observable<Bon[]> {
-    return this.http.get<Bon[]>(`${API_URL}`, { headers: this.getHeaders() })
+    return this.http.get<Bon[]>(`${API_URL}`, {})
       .pipe(catchError(err => this.handleError(err)));
   }
 
   getBonById(id: number): Observable<Bon> {
-    return this.http.get<Bon>(`${API_URL}/${id}`, { headers: this.getHeaders() })
+    return this.http.get<Bon>(`${API_URL}/${id}`, {})
       .pipe(catchError(err => this.handleError(err)));
   }
 
   updateBon(id: number, data: Bon): Observable<Bon> {
-    return this.http.put<Bon>(`${API_URL}/${id}`, data, { headers: this.getHeaders() })
+    return this.http.put<Bon>(`${API_URL}/${id}`, data, {})
       .pipe(catchError(err => this.handleError(err)));
   }
 
   deleteBon(id: number): Observable<Bon> {
-    return this.http.delete<Bon>(`${API_URL}/${id}`, { headers: this.getHeaders() })
+    return this.http.delete<Bon>(`${API_URL}/${id}`, {})
       .pipe(catchError(err => this.handleError(err)));
   }
 
   // === Méthodes spécifiques ===
 
   updateStatutBon(id: number, statutBon: string): Observable<Bon> {
-    return this.http.patch<Bon>(`${API_URL}/${id}/statut`, { statutBon }, { headers: this.getHeaders() })
+    return this.http.patch<Bon>(`${API_URL}/${id}/statut`, { statutBon }, {})
       .pipe(catchError(err => this.handleError(err)));
   }
 
@@ -151,76 +140,61 @@ export class BonsService {
     if (numeroFacture) {
       body.numeroFacture = numeroFacture;
     }
-    return this.http.patch<Bon>(`${API_URL}/${id}/bis/statut`, body, { headers: this.getHeaders() })
+    return this.http.patch<Bon>(`${API_URL}/${id}/bis/statut`, body, {})
       .pipe(catchError(err => this.handleError(err)));
   }
 
   updateTypetBon(id: number, type: string): Observable<Bon> {
-    return this.http.patch<Bon>(`${API_URL}/${id}/type`, { type }, { headers: this.getHeaders() })
+    return this.http.patch<Bon>(`${API_URL}/${id}/type`, { type }, {})
       .pipe(catchError(err => this.handleError(err)));
   }
 
   updateResteAPayer(id: number, montant: number): Observable<Bon> {
-    return this.http.patch<Bon>(`${API_URL}/${id}/resteAPayer`, { montant }, { headers: this.getHeaders() })
+    return this.http.patch<Bon>(`${API_URL}/${id}/resteAPayer`, { montant }, {})
       .pipe(catchError(err => this.handleError(err)));
   }
 
   updateNetAPayer(id: number, remise: number): Observable<Bon> {
-    return this.http.patch<Bon>(`${API_URL}/${id}/netAPayer`, { remise }, { headers: this.getHeaders() })
+    return this.http.patch<Bon>(`${API_URL}/${id}/netAPayer`, { remise }, {})
       .pipe(catchError(err => this.handleError(err)));
   }
 
   updateFichier(id: number, fichier: string): Observable<Bon> {
-    return this.http.patch<Bon>(`${API_URL}/${id}/fichier`, { fichier }, { headers: this.getHeaders() })
+    return this.http.patch<Bon>(`${API_URL}/${id}/fichier`, { fichier }, {})
       .pipe(catchError(err => this.handleError(err)));
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   uploadFichier(formData: FormData): Observable<any> {
-  return this.http.post<Bon>(`${API_URL}/upload-fichier`, formData,{ headers: this.getHeaders() })
+  return this.http.post<Bon>(`${API_URL}/upload-fichier`, formData,{})
   .pipe(catchError(err => this.handleError(err)));
 }
 
 // Méthode pour mettre à jour le bon avec le chemin du fichier
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 updateBonAvecFichier(bonId: number, cheminFichier: string): Observable<any> {
-  return this.http.patch(`${API_URL}/${bonId}/fichier`, {fichier: cheminFichier }, { headers: this.getHeaders() })
+  return this.http.patch(`${API_URL}/${bonId}/fichier`, {fichier: cheminFichier }, {})
   .pipe(catchError(err => this.handleError(err)));
 }
 
   updateMotifsRetour(id: number, motifsRetour: string): Observable<Bon> {
-    return this.http.patch<Bon>(`${API_URL}/${id}/motifsRetour`, { motifsRetour }, { headers: this.getHeaders() })
+    return this.http.patch<Bon>(`${API_URL}/${id}/motifsRetour`, { motifsRetour }, {})
       .pipe(catchError(err => this.handleError(err)));
   }
   
    // Créer un bon en mode brouillon
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   creerBonBrouillon(bonData: any): Observable<any> {
-    console.log('🚀 Envoi au backend - createBonComplet:', {
-      bonId: bonData.bon?.id,
-      statut: bonData.bon?.statutBon,
-      articlesCount: bonData.articles?.length,
-      hasPanier: !!bonData.panier,
-      typeEntite: bonData.typeEntite
-    });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return this.http.post<any>(`${API_URL}/brouillon`, bonData,{ headers: this.getHeaders() })
+    return this.http.post<any>(`${API_URL}/brouillon`, bonData,{})
           .pipe(
-              tap(response => {
-                console.log('Réponse du backend:', {
-                  bonId: response.bon?.id,
-                  statut: response.bon?.statutBon,
-                  panierStatut: response.panier?.statut,
-                  articlesCount: response.articles?.length
-                });
-              }),
             catchError(err => this.handleError(err)));
   }
 
   // Mettre à jour un bon existant
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   mettreAJourBon(bonId: number, bonData: any): Observable<any> {
-    return this.http.put(`${API_URL}/${bonId}`, bonData,{ headers: this.getHeaders() })
+    return this.http.put(`${API_URL}/${bonId}`, bonData,{})
       .pipe(
         catchError(err => this.handleError(err)));
   }
@@ -233,21 +207,21 @@ updateBonAvecFichier(bonId: number, cheminFichier: string): Observable<any> {
       nouveauStatut,
       confirmation
     },
-    { headers: this.getHeaders() }
+    {}
     )
     .pipe(catchError(err => this.handleError(err)));
   }
 
   // Récupérer les bons brouillons
   getBonsBrouillons(code_structure: string): Observable<Bon[]> {
-    return this.http.get<Bon[]>(`${API_URL}/brouillons/${code_structure}`, { headers: this.getHeaders()})
+    return this.http.get<Bon[]>(`${API_URL}/brouillons/${code_structure}`, {})
     .pipe(catchError(err => this.handleError(err)));
   }
 
   // Supprimer un bon et son panier
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supprimerBonComplet(bonId: number): Observable<any> {
-    return this.http.delete(`${API_URL}/complet/${bonId}`, { headers: this.getHeaders()})
+    return this.http.delete(`${API_URL}/complet/${bonId}`, {})
     .pipe(catchError(err => this.handleError(err)));
   }
 

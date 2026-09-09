@@ -64,7 +64,7 @@ const { requirePermission } = require('../middlewares/auth.middleware');
 
 router.use(authenticateToken);
 
-router.post('/detecter', authenticateToken, requirePermission('Accès aux configurations'), importController.uploadMiddleware, importController.detecterStructure);
-router.post('/', authenticateToken, requirePermission('Accès aux configurations'), importController.uploadMiddleware, importController.importer);
+router.post('/detecter', authenticateToken, requirePermission('config.access'), importController.uploadMiddleware, importController.detecterStructure);
+router.post('/', authenticateToken, requirePermission('config.access'), importController.uploadMiddleware, importController.importer);
 
 module.exports = router;

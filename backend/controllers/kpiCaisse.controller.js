@@ -1,4 +1,5 @@
 const db = require('../models');
+const logger = require('../services/logger.js');
 const puppeteer = require('puppeteer-core');
 const FonctionsUtilitaires  = require('./utils/fonctionsUtilitaires');
 const kpiUtilitaires  = require('./utils/kpiCaisseUtilitaires');
@@ -55,8 +56,7 @@ exports.getKpiCaisseJour = async (req, res) => {
       ecartCA: caVendu.totalVendu - caEncaisse.totalEncaisse
     });
 
-  } catch (error) {
-    console.error('Erreur getKpiCaisseJour:', error);
+  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getKpiCaisseJour:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -162,8 +162,7 @@ exports.getEncaissementsParMode = async (req, res) => {
       parCompte: paiementsParCompte
     });
 
-  } catch (error) {
-    console.error('Erreur getEncaissementsParMode:', error);
+  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getEncaissementsParMode:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -220,8 +219,7 @@ exports.getStatsRemises = async (req, res) => {
 
     return res.json(stats[0] || { totalRemise: 0, nombrePaniers: 0 });
 
-  } catch (error) {
-    console.error('Erreur getStatsRemises:', error);
+  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getStatsRemises:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -283,8 +281,7 @@ exports.getAvoirs = async (req, res) => {
       ...(result[0] || { montantAvoir: 0, nombreAvoirs: 0 })
     });
 
-  } catch (error) {
-    console.error('Erreur getAvoirs:', error);
+  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getAvoirs:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -361,8 +358,7 @@ exports.getCaisseTheorique = async (req, res) => {
       niveau: magasinId ? 'magasin' : 'structure'
     });
 
-  } catch (error) {
-    console.error('Erreur getCaisseTheorique:', error);
+  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getCaisseTheorique:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -410,8 +406,7 @@ exports.getStatsCaissePeriode = async (req, res) => {
       ecartCA: caVendu.totalVendu - caEncaisse.totalEncaisse
     });
 
-  } catch (error) {
-    console.error('Erreur getStatsCaissePeriode:', error);
+  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getStatsCaissePeriode:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -523,8 +518,7 @@ exports.getStatsComparatives = async (req, res) => {
       }
     });
 
-  } catch (error) {
-    console.error('Erreur getStatsComparatives:', error);
+  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getStatsComparatives:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -614,8 +608,7 @@ exports.getCAParJour = async (req, res) => {
       caEncaisseParJour
     });
 
-  } catch (error) {
-    console.error('Erreur getCAParJour:', error);
+  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getCAParJour:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -669,8 +662,7 @@ exports.getKpiCaisse = async (req, res) => {
       ecartCA: caVendu.totalVendu - caEncaisse.totalEncaisse
     });
 
-  } catch (error) {
-    console.error('Erreur getKpiCaisse:', error);
+  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getKpiCaisse:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -714,8 +706,7 @@ exports.compareMagasinVsStructure = async (req, res) => {
       partMagasin: Number(partMagasin.toFixed(2))
     });
 
-  } catch (error) {
-    console.error('Erreur compareMagasinVsStructure:', error);
+  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur compareMagasinVsStructure:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -773,8 +764,7 @@ exports.getStatsStructureParMagasin = async (req, res) => {
       stats
     });
 
-  } catch (error) {
-    console.error('Erreur getStatsStructureParMagasin:', error);
+  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getStatsStructureParMagasin:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -862,8 +852,7 @@ exports.getVentesCredit = async (req, res) => {
       nombreBonsCredit: bonIds.length
     });
  */
-  } catch (error) {
-    console.error('Erreur getVentesCredit:', error);
+  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getVentesCredit:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -951,8 +940,7 @@ exports.getAvances = async (req, res) => {
       moyenneAvance: parseFloat(data.moyenneAvance) || 0
     });
  */
-  } catch (error) {
-    console.error('Erreur getAvances:', error);
+  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getAvances:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -1052,8 +1040,7 @@ exports.getAvances = async (req, res) => {
       details: retoursDetails
     });
 
-  } catch (error) {
-    console.error('Erreur getVentesCreditAnnulees:', error);
+  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getVentesCreditAnnulees:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -1080,8 +1067,7 @@ exports.getVentesCreditAnnulees = async (req, res) => {
     
     return res.json(data)
 
-  } catch (error) {
-    console.error('Erreur getVentesCreditAnnulees:', error);
+  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getVentesCreditAnnulees:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -1202,8 +1188,7 @@ exports.getVentesCaisseAnnulees = async (req, res) => {
  */
     return res.json(data);
 
-  } catch (error) {
-    console.error('Erreur getVentesCaisseAnnulees:', error);
+  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getVentesCaisseAnnulees:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -1301,8 +1286,7 @@ exports.getToutesStatistiquesSpeciales = async (req, res) => {
       }
     });
 
-  } catch (error) {
-    console.error('Erreur getToutesStatistiquesSpeciales:', error);
+  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getToutesStatistiquesSpeciales:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -1528,8 +1512,7 @@ exports.getStatistiquesCommandes = async (req, res) => {
       dateFin: dateCondition[Op.between] ? dateCondition[Op.between][1] : null
     });
 
-  } catch (error) {
-    console.error('Erreur getStatistiquesCommandes:', error);
+  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getStatistiquesCommandes:', error);
     res.status(500).json({ 
       error: 'Erreur lors de la récupération des statistiques des commandes',
       details: error.message 
@@ -1603,9 +1586,7 @@ exports.getRapportVente = async (req, res) => {
             fin,
             magasinId: magasinIdFinal,
             agentId
-        };
-
-        console.log('📊 Génération rapport vente du', debut.toLocaleString(), 'au', fin.toLocaleString());
+        };logger.log('kpiCaisse.controller', '📊 Génération rapport vente du', debut.toLocaleString(), 'au', fin.toLocaleString());
 
         // Récupération des clients pour le mapping (optionnel)
         const clients = await db.Client.findAll({
@@ -1749,10 +1730,7 @@ exports.getRapportVente = async (req, res) => {
                     offset,
                     limit: parseInt(limit),
                     distinct: true
-                });
-
-                console.log(`📦 Détails ventes: ${count} ventes trouvées, page ${page}/${Math.ceil(count / parseInt(limit))}`) ;
-                console.log('Premier objet:', Object.keys(rows[0] || {}));
+                });logger.log('kpiCaisse.controller', `📦 Détails ventes: ${count} ventes trouvées, page ${page}/${Math.ceil(count / parseInt(limit))}`) ;logger.log('kpiCaisse.controller', 'Premier objet:', Object.keys(rows[0] || {}));
                 return {
                     ventes: rows,
                     total: count,
@@ -1831,9 +1809,7 @@ exports.getRapportVente = async (req, res) => {
                 montant: p.montant,
                 statut: p.statutPaiement
             })) : []
-        }));
-
-        console.log('📊 Performance vendeurs récupérée',performanceVendeurs);
+        }));logger.log('kpiCaisse.controller', '📊 Performance vendeurs récupérée',performanceVendeurs);
         // Formatage de la réponse
         return res.json({
             niveau: magasinIdFinal ? 'magasin' : 'structure',
@@ -1871,8 +1847,7 @@ exports.getRapportVente = async (req, res) => {
             }
         });
 
-    } catch (error) {
-        console.error('Erreur getRapportVente:', error);
+    } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getRapportVente:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -2024,8 +1999,7 @@ exports.getDetailsVendeur = async (req, res) => {
             ventes: ventesFormatted
         });
 
-    } catch (error) {
-        console.error('Erreur getDetailsVendeur:', error);
+    } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getDetailsVendeur:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -2116,9 +2090,7 @@ exports.getComparaison = async (req, res) => {
                         params.debut = debutJournee;
                         params.fin = finJournee;
                     }
-                }
-
-                console.log(`🔍 Comparaison - Élément ${elementType}:`, params);
+                }logger.log('kpiCaisse.controller', `🔍 Comparaison - Élément ${elementType}:`, params);
 
                 const caVendu = await kpiUtilitaires.getCAVenduBaseData(params);
                 
@@ -2127,8 +2099,7 @@ exports.getComparaison = async (req, res) => {
                     ventes: caVendu.nombrePaniers || 0,
                     ticketMoyen: caVendu.ticketMoyenVente || 0
                 };
-            } catch (error) {
-                console.error(`❌ Erreur pour l'élément ${elementType}:`, error);
+            } catch (error) {logger.error('kpiCaisse.controller', `❌ Erreur pour l'élément ${elementType}:`, error);
                 return { ca: 0, ventes: 0, ticketMoyen: 0 };
             }
         };
@@ -2149,8 +2120,7 @@ exports.getComparaison = async (req, res) => {
             ticketMoyen2: data2.ticketMoyen
         });
 
-    } catch (error) {
-        console.error('❌ Erreur getComparaison:', error);
+    } catch (error) {logger.error('kpiCaisse.controller', '❌ Erreur getComparaison:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -2276,8 +2246,7 @@ exports.getOptionsComparaison = async (req, res) => {
 
         res.json(options);
 
-    } catch (error) {
-        console.error('❌ Erreur getOptionsComparaison:', error);
+    } catch (error) {logger.error('kpiCaisse.controller', '❌ Erreur getOptionsComparaison:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -2367,9 +2336,7 @@ exports.genererRapportPDF = async (req, res) => {
             fin,
             magasinId: magasinIdFinal,
             agentId: agentId ? parseInt(agentId) : null
-        };
-
-        console.log('📊 Génération rapport PDF du', debut, 'au', fin);
+        };logger.log('kpiCaisse.controller', '📊 Génération rapport PDF du', debut, 'au', fin);
 
         // Récupération des données
         const [
@@ -2533,10 +2500,8 @@ exports.genererRapportPDF = async (req, res) => {
                 // Sinon, on essaie de le parser
                 else {
                     parsedComparaisonData = JSON.parse(comparaisonData);
-                }
-                console.log('✅ Données comparaison parsées:', parsedComparaisonData);
-            } catch (e) {
-                console.error('❌ Erreur parsing comparaisonData:', e.message);
+                }logger.log('kpiCaisse.controller', '✅ Données comparaison parsées:', parsedComparaisonData);
+            } catch (e) {logger.error('kpiCaisse.controller', '❌ Erreur parsing comparaisonData:', e.message);
                 // Ne pas bloquer la génération du PDF, juste ignorer la comparaison
                 parsedComparaisonData = null;
             }
@@ -2549,8 +2514,7 @@ exports.genererRapportPDF = async (req, res) => {
                 } else {
                     parsedComparaisonLabels = JSON.parse(comparaisonLabels);
                 }
-            } catch (e) {
-                console.error('❌ Erreur parsing comparaisonLabels:', e.message);
+            } catch (e) {logger.error('kpiCaisse.controller', '❌ Erreur parsing comparaisonLabels:', e.message);
                 parsedComparaisonLabels = ['Élément 1', 'Élément 2'];
             }
         }
@@ -2639,8 +2603,7 @@ exports.genererRapportPDF = async (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename=rapport-vente-${Date.now()}.pdf`);
         res.send(pdf);
 
-    } catch (error) {
-        console.error('❌ Erreur génération PDF:', error);
+    } catch (error) {logger.error('kpiCaisse.controller', '❌ Erreur génération PDF:', error);
         // Enregistrer l'erreur dans l'historique
         if (req.user) {
             await HistoriqueService.enregistrerAction(
@@ -2701,8 +2664,7 @@ async function generatePDF(html) {
                 executablePath = path;
                 break;
             } catch (e) {
-                // Chemin non trouvé
-                console.log('Chemin non trouvé',e);
+                // Chemin non trouvélogger.log('kpiCaisse.controller', 'Chemin non trouvé',e);
             }
         }
 
@@ -2837,8 +2799,7 @@ exports.testRapportHTML = async (req, res) => {
         
         res.send(html);
 
-    } catch (error) {
-        console.error('❌ Erreur test HTML:', error);
+    } catch (error) {logger.error('kpiCaisse.controller', '❌ Erreur test HTML:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -2904,9 +2865,7 @@ exports.exportRapportExcel = async (req, res) => {
             fin,
             magasinId: magasinIdFinal,
             agentId: agentId ? parseInt(agentId) : null
-        };
-
-        console.log('📊 Génération Excel du', debut, 'au', fin);
+        };logger.log('kpiCaisse.controller', '📊 Génération Excel du', debut, 'au', fin);
 
         // Récupération des données (similaire au PDF mais sans limite)
         const [
@@ -3304,8 +3263,7 @@ exports.exportRapportExcel = async (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename=rapport-vente-${Date.now()}.xlsx`);
         res.send(buffer);
 
-    } catch (error) {
-        console.error('❌ Erreur export Excel:', error);
+    } catch (error) {logger.error('kpiCaisse.controller', '❌ Erreur export Excel:', error);
         res.status(500).json({ 
             error: 'Erreur lors de l\'export Excel',
             details: error.message 

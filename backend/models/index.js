@@ -18,7 +18,6 @@ db.sequelize = sequelize;
 try {
   db.Sequence = require('./sequence.model')(sequelize, Sequelize);
 } catch (error) {
-  console.log('Sequence model not found, skipping...',error);
 }
 
 //Chargement et initialisation du modèle Structure

@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/mouvementStock.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
-const { requirePermission } = require('../middlewares/auth.middleware');
+const { requirePermission, requireStructureAccess } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -57,14 +57,14 @@ const { requirePermission } = require('../middlewares/auth.middleware');
  */
 
 
-router.post('/',authenticateToken, requirePermission('Gérer le stock'), controller.createMouvementStock);
-router.get('/structure/:code_structure', authenticateToken, requirePermission('Gérer le stock'), controller.getMouvementsByStructure);
-//router.get('/',authenticateToken, requirePermission('Gérer le stock'), controller.getAllMouvementsStock);
-router.get('/:id',authenticateToken, requirePermission('Gérer le stock'), controller.getMouvementStockById);
-router.put('/:id',authenticateToken, requirePermission('Gérer le stock'), controller.updateMouvementStock);
-router.delete('/:id',authenticateToken, requirePermission('Gérer le stock'), controller.deleteMouvementStock);
+router.post('/',authenticateToken, requireStructureAccess, requirePermission('stock.manage'), controller.createMouvementStock);
+router.get('/structure/:code_structure', authenticateToken, requireStructureAccess, requirePermission('stock.manage'), controller.getMouvementsByStructure);
+//router.get('/',authenticateToken, requireStructureAccess, requirePermission('stock.manage'), controller.getAllMouvementsStock);
+router.get('/:id',authenticateToken, requireStructureAccess, requirePermission('stock.manage'), controller.getMouvementStockById);
+router.put('/:id',authenticateToken, requireStructureAccess, requirePermission('stock.manage'), controller.updateMouvementStock);
+router.delete('/:id',authenticateToken, requireStructureAccess, requirePermission('stock.manage'), controller.deleteMouvementStock);
 
 
-router.patch('/:id/statut', authenticateToken, requirePermission('Gérer le stock'), controller.updateStatut);
+router.patch('/:id/statut', authenticateToken, requireStructureAccess, requirePermission('stock.manage'), controller.updateStatut);
 
 module.exports = router;

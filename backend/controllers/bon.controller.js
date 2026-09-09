@@ -1,3 +1,4 @@
+const logger = require('../services/logger.js');
 // controllers/bonController.js
 const { Op } = require('sequelize');
 const db = require('../models');
@@ -289,9 +290,7 @@ exports.getBonsClientsByStructureBis = async (req, res) => {
       bn.client = bn.Client;
       delete bn.Client;
       return bn;
-    });
-
-    console.log(`📦 Bons clients: ${count} trouvés, page ${page}/${totalPages}`);
+    });logger.log('bon.controller', `📦 Bons clients: ${count} trouvés, page ${page}/${totalPages}`);
 
     res.status(200).json({
       items: bonsWithFichierUrl,
@@ -305,8 +304,7 @@ exports.getBonsClientsByStructureBis = async (req, res) => {
       }
     });
 
-  } catch (error) {
-    console.error("Erreur récupération bons clients:", error);
+  } catch (error) {logger.error('bon.controller', "Erreur récupération bons clients:", error);
     res.status(500).json({ 
       message: 'Erreur lors de la récupération des bons clients', 
       error: error.message 
@@ -433,9 +431,7 @@ exports.getBonsFournisseursByStructureBis = async (req, res) => {
       bn.fournisseur = bn.Fournisseur;
       delete bn.Fournisseur;
       return bn;
-    });
-
-    console.log(`📦 Bons clients: ${count} trouvés, page ${page}/${totalPages}`);
+    });logger.log('bon.controller', `📦 Bons clients: ${count} trouvés, page ${page}/${totalPages}`);
 
     res.status(200).json({
       items: bonsWithFichierUrl,
@@ -449,8 +445,7 @@ exports.getBonsFournisseursByStructureBis = async (req, res) => {
       }
     });
 
-  } catch (error) {
-    console.error("Erreur récupération bons clients:", error);
+  } catch (error) {logger.error('bon.controller', "Erreur récupération bons clients:", error);
     res.status(500).json({ 
       message: 'Erreur lors de la récupération des bons clients', 
       error: error.message 
@@ -553,8 +548,7 @@ exports.getAllBons = async (req, res) => {
       order: [['createdAt', 'DESC']],
     });
     return res.json(bons);
-  } catch (error) {
-    console.error('Erreur récupération tous les bons:', error);
+  } catch (error) {logger.error('bon.controller', 'Erreur récupération tous les bons:', error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -620,8 +614,7 @@ exports.updateBon = async (req, res) => {
           updatedData.fichier = bon.fichier;
         }
     
-        await bon.update(updatedData);
-        console.log('Bon mis à jour avec:', updatedData);
+        await bon.update(updatedData);logger.log('bon.controller', 'Bon mis à jour avec:', updatedData);
         res.json({ message: 'Bon mis à jour', bon });
       } catch (error) {
         res.status(500).json({ message: 'Erreur lors de la mise à jour', error: error.message });
@@ -634,8 +627,7 @@ exports.updateBon = async (req, res) => {
     const deleted = await Bon.destroy({ where: { id: req.params.id } });
     if (!deleted) return res.status(404).json({ message: 'Bon non trouvé' });
     return res.status(204).send();
-  } catch (error) {
-    console.error('Erreur suppression bon:', error);
+  } catch (error) {logger.error('bon.controller', 'Erreur suppression bon:', error);
     return res.status(500).json({ error: error.message });
   }
 }; */
@@ -718,8 +710,7 @@ exports.deleteBon = async (req, res) => {
     return res.status(200).json({ message: 'Bon, panier et éléments associés supprimés avec succès' });
     
   } catch (error) {
-    await transaction.rollback();
-    console.error('Erreur suppression bon avec cascade:', error);
+    await transaction.rollback();logger.error('bon.controller', 'Erreur suppression bon avec cascade:', error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -742,8 +733,7 @@ exports.updateStatutBon = async (req, res) => {
     await bon.save();
 
     return res.json(bon);
-  } catch (error) {
-    console.error('Erreur update statutBon:', error);
+  } catch (error) {logger.error('bon.controller', 'Erreur update statutBon:', error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -767,8 +757,7 @@ exports.updateTypeBon = async (req, res) => {
     await bon.save();
 
     return res.json(bon);
-  } catch (error) {
-    console.error('Erreur update type:', error);
+  } catch (error) {logger.error('bon.controller', 'Erreur update type:', error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -806,8 +795,7 @@ exports.updateResteAPayer = async (req, res) => {
     await transaction.commit();
     return res.json(bon);
   } catch (error) {
-    if (transaction && !transaction.finished) await transaction.rollback();
-    console.error('Erreur update resteAPayer:', error);
+    if (transaction && !transaction.finished) await transaction.rollback();logger.error('bon.controller', 'Erreur update resteAPayer:', error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -843,8 +831,7 @@ exports.updateNetAPayer = async (req, res) => {
     await transaction.commit();
     return res.json(bon);
   } catch (error) {
-    if (transaction && !transaction.finished) await transaction.rollback();
-    console.error('Erreur update netAPayer:', error);
+    if (transaction && !transaction.finished) await transaction.rollback();logger.error('bon.controller', 'Erreur update netAPayer:', error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -894,8 +881,7 @@ exports.updateFichier = async (req, res) => {
     await bon.save();
 
     return res.json(bon);
-  } catch (error) {
-    console.error('Erreur update fichier:', error);
+  } catch (error) {logger.error('bon.controller', 'Erreur update fichier:', error);
     return res.status(500).json({ error: error.message });
   } */
 };
@@ -925,8 +911,7 @@ exports.updateMotifsRetour = async (req, res) => {
     await transaction.commit();
     return res.json(bon);
   } catch (error) {
-    if (transaction && !transaction.finished) await transaction.rollback();
-    console.error('Erreur update motifsRetour:', error);
+    if (transaction && !transaction.finished) await transaction.rollback();logger.error('bon.controller', 'Erreur update motifsRetour:', error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -1067,9 +1052,7 @@ exports.uploadFichier = async (req, res) => {
     // En cas d'erreur, supprimer le fichier uploadé
     if (req.file && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
-    }
-    
-    console.error('Erreur upload fichier:', error);
+    }logger.error('bon.controller', 'Erreur upload fichier:', error);
     res.status(500).json({ 
       error: 'Erreur lors de l\'upload du fichier',
       details: error.message 
@@ -1105,8 +1088,7 @@ exports.supprimerFichier = async (req, res) => {
 
     res.json({ message: 'Fichier supprimé avec succès' });
 
-  } catch (error) {
-    console.error('Erreur suppression fichier:', error);
+  } catch (error) {logger.error('bon.controller', 'Erreur suppression fichier:', error);
     res.status(500).json({ error: 'Erreur lors de la suppression du fichier' });
   }
 };

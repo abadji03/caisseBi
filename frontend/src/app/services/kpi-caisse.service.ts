@@ -1,12 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { AuthService } from './auth.service';
 import { NGXLogger } from 'ngx-logger';
 import { CaisseTheorique, CAParJourResponse, CommandeStats, ComparaisonOptions, ComparaisonResponse, ComparatifCA, ComparatifMagasin, EncaissementsResponse,KPICaissePeriode, KPIParams, KPIParamsJournalier, RapportVenteParams, RapportVenteResponse, StatsAvances, StatsAvoirs, StatsRemises, StatsStructureParMagasinResponse, StatsVentesCaisseAnnulees, StatsVentesCredit, StatsVentesCreditAnnulees, ToutesStatistiquesSpeciales, VendeurDetailsResponse } from '../modeles/kpiCaisse.model';
 import { catchError, Observable, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
-
+import { handleApiError } from '../core/api/api-error';
 @Injectable({
   providedIn: 'root'
 })
@@ -15,25 +14,17 @@ export class KpiCaisseService {
   private apiUrl = `${environment.apiUrl}/kpi-caisse`;
   
   private http = inject(HttpClient);
-  private authService = inject(AuthService);
   private logger = inject(NGXLogger);
 
   /** ================================
    *  GÉNÉRATION HEADERS AVEC TOKEN
    ================================== */
-  private getHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
-    return new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
-  }
 
   /** ================================
    *  GESTION CENTRALISÉE DES ERREURS
    ================================== */
-  private handleError<T>(method: string, error: any): Observable<T> {
-    this.logger.error(`KpiCaisseService -> ${method} :`, error);
-    return throwError(() => error);
+  private handleError<T>(method: string, error: unknown): Observable<T> {
+    return handleApiError(this.logger, `KpiCaisseService.${method}`, error);
   }
 
   /** ================================
@@ -86,7 +77,6 @@ export class KpiCaisseService {
     });
     
     return this.http.get<KPICaissePeriode>(url, {
-      headers: this.getHeaders(),
       params: httpParams
     }).pipe(
       catchError(error => this.handleError<KPICaissePeriode>('getKpiCaisseJour', error))
@@ -109,7 +99,6 @@ export class KpiCaisseService {
     });
     
     return this.http.get<EncaissementsResponse>(url, {
-      headers: this.getHeaders(),
       params: httpParams
     }).pipe(
       catchError(error => this.handleError<EncaissementsResponse>('getPaiementsJour', error))
@@ -137,7 +126,6 @@ export class KpiCaisseService {
     const httpParams = this.buildParams(params);
     
     return this.http.get<KPICaissePeriode>(url, {
-      headers: this.getHeaders(),
       params: httpParams
     }).pipe(
       catchError(error => this.handleError<KPICaissePeriode>('getKpiCaissePeriode', error))
@@ -160,7 +148,6 @@ export class KpiCaisseService {
     const httpParams = this.buildParams(params);
     
     return this.http.get<KPICaissePeriode>(url, {
-      headers: this.getHeaders(),
       params: httpParams
     }).pipe(
       catchError(error => this.handleError<KPICaissePeriode>('getKpiCaisseStructure', error))
@@ -184,7 +171,6 @@ export class KpiCaisseService {
     const httpParams = this.buildParams(params);
     
     return this.http.get<EncaissementsResponse>(url, {
-      headers: this.getHeaders(),
       params: httpParams
     }).pipe(
       catchError(error => this.handleError<EncaissementsResponse>('getPaiementsPeriode', error))
@@ -208,7 +194,6 @@ export class KpiCaisseService {
     const httpParams = this.buildParams(params);
     
     return this.http.get<StatsRemises>(url, {
-      headers: this.getHeaders(),
       params: httpParams
     }).pipe(
       catchError(error => this.handleError<StatsRemises>('getRemises', error))
@@ -228,7 +213,6 @@ export class KpiCaisseService {
     const httpParams = this.buildParams(params);
     
     return this.http.get<StatsAvoirs>(url, {
-      headers: this.getHeaders(),
       params: httpParams
     }).pipe(
       catchError(error => this.handleError<StatsAvoirs>('getAvoirs', error))
@@ -248,7 +232,6 @@ export class KpiCaisseService {
     const httpParams = this.buildParams(params);
     
     return this.http.get<CaisseTheorique>(url, {
-      headers: this.getHeaders(),
       params: httpParams
     }).pipe(
       catchError(error => this.handleError<CaisseTheorique>('getCaisseTheorique', error))
@@ -276,7 +259,6 @@ export class KpiCaisseService {
     const httpParams = this.buildParams(params);
     
     return this.http.get<ComparatifCA>(url, {
-      headers: this.getHeaders(),
       params: httpParams
     }).pipe(
       catchError(error => this.handleError<ComparatifCA>('getComparatifCA', error))
@@ -304,7 +286,6 @@ export class KpiCaisseService {
     const httpParams = this.buildParams(params);
     
     return this.http.get<ComparatifMagasin>(url, {
-      headers: this.getHeaders(),
       params: httpParams
     }).pipe(
       catchError(error => this.handleError<ComparatifMagasin>('getComparatifMagasin', error))
@@ -324,7 +305,6 @@ export class KpiCaisseService {
     const httpParams = this.buildParams(params);
     
     return this.http.get<CAParJourResponse>(url, {
-      headers: this.getHeaders(),
       params: httpParams
     }).pipe(
       catchError(error => this.handleError<CAParJourResponse>('getCAParJour', error))
@@ -348,7 +328,6 @@ export class KpiCaisseService {
     const httpParams = this.buildParams(params);
     
     return this.http.get<StatsStructureParMagasinResponse>(url, {
-      headers: this.getHeaders(),
       params: httpParams
     }).pipe(
       catchError(error => this.handleError<StatsStructureParMagasinResponse>('getStatsStructureParMagasin', error))
@@ -382,7 +361,6 @@ export class KpiCaisseService {
     const httpParams = this.buildParams(params);
 
     return this.http.get<ToutesStatistiquesSpeciales>(url, {
-      headers: this.getHeaders(),
       params: httpParams
     }).pipe(
       catchError(error => this.handleError<ToutesStatistiquesSpeciales>('getToutesStatistiquesSpeciales', error))
@@ -407,7 +385,6 @@ export class KpiCaisseService {
     const httpParams = this.buildParams(params);
 
     return this.http.get<StatsVentesCredit>(url, {
-      headers: this.getHeaders(),
       params: httpParams
     }).pipe(
       catchError(error => this.handleError<StatsVentesCredit>('getStatistiquesVentesCredit', error))
@@ -426,7 +403,6 @@ export class KpiCaisseService {
     const httpParams = this.buildParams(params);
 
     return this.http.get<StatsAvances>(url, {
-      headers: this.getHeaders(),
       params: httpParams
     }).pipe(
       catchError(error => this.handleError<StatsAvances>('getStatistiquesAvances', error))
@@ -445,7 +421,6 @@ export class KpiCaisseService {
     const httpParams = this.buildParams(params);
 
     return this.http.get<StatsVentesCreditAnnulees>(url, {
-      headers: this.getHeaders(),
       params: httpParams
     }).pipe(
       catchError(error => this.handleError<StatsVentesCreditAnnulees>('getStatistiquesVentesCreditAnnulees', error))
@@ -464,7 +439,6 @@ export class KpiCaisseService {
     const httpParams = this.buildParams(params);
 
     return this.http.get<StatsVentesCaisseAnnulees>(url, {
-      headers: this.getHeaders(),
       params: httpParams
     }).pipe(
       catchError(error => this.handleError<StatsVentesCaisseAnnulees>('getStatistiquesVentesCaisseAnnulees', error))
@@ -483,7 +457,6 @@ export class KpiCaisseService {
     const httpParams = this.buildParams(params);
 
     return this.http.get<CommandeStats>(url, {
-      headers: this.getHeaders(),
       params: httpParams
     }).pipe(
       catchError(error => this.handleError<CommandeStats>('getStatistiquesCommandes', error))
@@ -525,7 +498,6 @@ getRapportVente(params: RapportVenteParams): Observable<RapportVenteResponse> {
   }
 
   return this.http.get<RapportVenteResponse>(url, {
-    headers: this.getHeaders(),
     params: httpParams
   }).pipe(
     catchError(error => this.handleError<RapportVenteResponse>('getRapportVente', error))
@@ -569,7 +541,6 @@ getDetailsVendeur(vendeurId: number, params: RapportVenteParams): Observable<Ven
   }
 
   return this.http.get<VendeurDetailsResponse>(url, {
-    headers: this.getHeaders(),
     params: httpParams
   }).pipe(
     catchError(error => this.handleError<VendeurDetailsResponse>('getDetailsVendeur', error))
@@ -593,7 +564,6 @@ getOptionsComparaison(type: string): Observable<ComparaisonOptions[]> {
     //.set('code_structure', code_struc);
 
   return this.http.get<ComparaisonOptions[]>(url, {
-    headers: this.getHeaders(),
     params
   }).pipe(
     catchError(error => this.handleError<ComparaisonOptions[]>('getOptionsComparaison', error))
@@ -648,7 +618,6 @@ genererComparaison(data: {
 
   
   return this.http.post<ComparaisonResponse>(url,{}, {
-    headers: this.getHeaders(),
     params
   }).pipe(
     catchError(error => this.handleError<ComparaisonResponse>('genererComparaison', error))
@@ -658,7 +627,7 @@ genererComparaison(data: {
 /**
    * Exporte le rapport de vente au format Excel
    */
-  exportRapportExcel(params: any): Observable<Blob> {
+  exportRapportExcel(params: RapportVenteParams): Observable<Blob> {
     let httpParams = new HttpParams();
 
     // Ajouter les paramètres
@@ -668,8 +637,6 @@ genererComparaison(data: {
     if (params.toDate) httpParams = httpParams.set('toDate', params.toDate);
     if (params.magasinId) httpParams = httpParams.set('magasinId', params.magasinId.toString());
     if (params.agentId) httpParams = httpParams.set('agentId', params.agentId.toString());
-
-    console.log('📤 Export Excel avec paramètres:', httpParams.toString());
 
     return this.http.get(`${this.apiUrl}/rapport-vente/excel`, {
       params: httpParams,

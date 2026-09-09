@@ -29,6 +29,7 @@ jest.mock('../models', () => ({
 jest.mock('../services/sequence.service', () => ({
   initialiserDepuisMax: jest.fn(),
   getNextNumero: jest.fn(),
+  estNumeroAuto: jest.fn(() => false),
 }));
 
 jest.mock('../controllers/bonComplet', () => ({

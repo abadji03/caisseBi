@@ -1,10 +1,10 @@
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { AuthService } from './auth.service';
 import { Fournisseur } from '../modeles/fournisseur.model';
-import { catchError, Observable, tap, throwError } from 'rxjs';
+import { catchError, Observable, tap } from 'rxjs';
 import { NGXLogger } from 'ngx-logger';
 import { environment } from '../../environments/environment';
+import { handleApiError } from '../core/api/api-error';
 
 export interface FournisseursFilter {
   page?: number;
@@ -31,15 +31,8 @@ export interface FournisseursResponse {
 export class FournisseursService {
   private apiUrl = `${environment.apiUrl}/fournisseurs`;
   private http = inject(HttpClient);
-  private authService = inject(AuthService);
   private logger = inject(NGXLogger);
 
-  private getHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
-    return new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-    });
-  }
 
   // Créer un fournisseur
   createFournisseur(fournisseur: Fournisseur,magasinIds?: number[]): Observable<Fournisseur> {
@@ -48,18 +41,17 @@ export class FournisseursService {
       magasinIds: magasinIds || []
     };
     return this.http.post<Fournisseur>(`${this.apiUrl}`, data, {
-      headers: this.getHeaders(),
     });
   }
 
   // Récupérer tous les fournisseurs
   getAllFournisseurs(): Observable<Fournisseur[]> {
-    return this.http.get<Fournisseur[]>(`${this.apiUrl}`, { headers: this.getHeaders() });
+    return this.http.get<Fournisseur[]>(`${this.apiUrl}`, {});
   }
 
   // Récupérer un fournisseur par ID
   getFournisseurById(id: number): Observable<Fournisseur> {
-    return this.http.get<Fournisseur>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
+    return this.http.get<Fournisseur>(`${this.apiUrl}/${id}`, {});
   }
 
   // Mettre à jour un fournisseur
@@ -69,7 +61,6 @@ export class FournisseursService {
       magasinIds: magasinIds
     };
     return this.http.put<Fournisseur>(`${this.apiUrl}/${id}`, data, {
-      headers: this.getHeaders(),
     });
   }
 
@@ -78,21 +69,19 @@ export class FournisseursService {
     return this.http.patch<Fournisseur>(
       `${this.apiUrl}/${id}/statut`,
       { statut }, // Envoyez un objet JSON contenant le statut
-      { headers: this.getHeaders() },
+      {},
     );
   }
 
   // Supprimer un fournisseur
   deleteFournisseur(id: number): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(`${this.apiUrl}/${id}`, {
-      headers: this.getHeaders(),
     });
   }
 
   // Récupérer les fournisseurs par structure
   getFournisseursByStructure(codeStructure: string): Observable<Fournisseur[]> {
     return this.http.get<Fournisseur[]>(`${this.apiUrl}/structure/${codeStructure}`, {
-      headers: this.getHeaders(),
     });
   }
 
@@ -113,7 +102,6 @@ export class FournisseursService {
     }
 
     return this.http.get<FournisseursResponse>(`${this.apiUrl}/structure/bis/${codeStructure}`, {
-      headers: this.getHeaders(),
       params
     }).pipe(
       tap(response => this.logger.info(`Fournisseurs récupérés: ${response.items.length}`)),
@@ -122,7 +110,7 @@ export class FournisseursService {
   }
 
   getFournisseurWithMagasins(id: number): Observable<Fournisseur> {
-      return this.http.get<Fournisseur>(`${this.apiUrl}/${id}/with-magasins`, { headers: this.getHeaders() });
+      return this.http.get<Fournisseur>(`${this.apiUrl}/${id}/with-magasins`, {});
     }
   // Mettre à jour le solde pour un magasin spécifique
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -130,13 +118,12 @@ export class FournisseursService {
     return this.http.patch(
       `${this.apiUrl}/${fournisseurId}/magasins/${magasinId}/solde`,
       { solde },
-      { headers: this.getHeaders() }
+      {}
     );
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private handleError(error: any, message: string): Observable<never> {
-    this.logger.error(message, error);
-    return throwError(() => error);
+   
+  private handleError(error: unknown, message: string): Observable<never> {
+    return handleApiError(this.logger, 'FournisseursService', error, message);
   }
 
 }

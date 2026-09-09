@@ -1,4 +1,5 @@
 const db = require('../models');
+const logger = require('../services/logger.js');
 const operationController = require('./operation.controller');
 const HistoriqueService = require('../services/historique.service'); 
 
@@ -24,9 +25,7 @@ exports.createBonComplet = async (req, res) => {
     const magasinId = authUser.magasinId;
     const agentId = authUser.id;
 
-    const { bon, panier, articles, paiement,fournisseurId, clientId, typeEntite } = req.body;
-
-    console.log('Données reçues pour création bon complet:', {
+    const { bon, panier, articles, paiement,fournisseurId, clientId, typeEntite } = req.body;logger.log('bonComplet.controller', 'Données reçues pour création bon complet:', {
       bon,
       panier,
       articles,
@@ -49,8 +48,7 @@ exports.createBonComplet = async (req, res) => {
     let articlesCrees;
     let isUpdate = false;
 
-    // LOGIQUE MÉTIER AMÉLIORÉE
-    console.log(`Création bon - Type: ${bon.type}, Entité: ${typeEntite}, Statut: ${bon.statutBon}`);
+    // LOGIQUE MÉTIER AMÉLIORÉElogger.log('bonComplet.controller', `Création bon - Type: ${bon.type}, Entité: ${typeEntite}, Statut: ${bon.statutBon}`);
     
     // ==============================
     // GESTION DES MODIFICATIONS DE BON
@@ -239,8 +237,7 @@ exports.createBonComplet = async (req, res) => {
         // Mettre à jour le statut du bon d'origine
         await this.mettreAJourBonOrigineRetour(nouveauBon, agentId, code_structure, transaction);
       }
-    // 7. Créer paiement si avance
-    console.log('Vérification de la création du paiement pour l\'avance...');
+    // 7. Créer paiement si avancelogger.log('bonComplet.controller', 'Vérification de la création du paiement pour l\'avance...');
     let paiementCree = null;
     if (paiement && nouveauBon.avance > 0) {
       paiementCree = await db.Paiement.create({
@@ -282,11 +279,9 @@ exports.createBonComplet = async (req, res) => {
       } 
     }
 
-    // Créer ou mettre à jour l'opération associée
-    console.log('Création/mise à jour de l\'opération associée au bon...'); 
+    // Créer ou mettre à jour l'opération associéelogger.log('bonComplet.controller', 'Création/mise à jour de l\'opération associée au bon...'); 
     if (nouveauBon) {
-      const operation = await operationController.updateFromBon(nouveauBon, transaction);
-      console.log('🔄 Opération associée au bon:', {
+      const operation = await operationController.updateFromBon(nouveauBon, transaction);logger.log('bonComplet.controller', '🔄 Opération associée au bon:', {
         operationId: operation.id,
         type: operation.type,
         statut: operation.statut,
@@ -294,23 +289,19 @@ exports.createBonComplet = async (req, res) => {
       });
     }  
 
-    // Créer ou mettre à jour l'opération pour le paiement si applicable
-    console.log('Création/mise à jour de l\'opération associée au paiement...');  
+    // Créer ou mettre à jour l'opération pour le paiement si applicablelogger.log('bonComplet.controller', 'Création/mise à jour de l\'opération associée au paiement...');  
     if (paiementCree) {
-      const operationPaiement = await operationController.createFromPaiement(paiementCree, transaction);
-      console.log('💳 Opération de paiement:', {
+      const operationPaiement = await operationController.createFromPaiement(paiementCree, transaction);logger.log('bonComplet.controller', '💳 Opération de paiement:', {
         operationId: operationPaiement.id,
         type: operationPaiement.type,
         montant: operationPaiement.montantPaye
       });
     }  
 
-    // Vérifier et corriger les incohérences
-    console.log('Vérification et synchronisation des opérations pour la structure:', code_structure);                                   
+    // Vérifier et corriger les incohérenceslogger.log('bonComplet.controller', 'Vérification et synchronisation des opérations pour la structure:', code_structure);                                   
     await operationController.synchroniserOperations(code_structure, transaction);
 
-    // Ou pour un seul bon spécifique :
-    console.log('Vérification et mise à jour de l\'opération pour le bon spécifique...');
+    // Ou pour un seul bon spécifique :logger.log('bonComplet.controller', 'Vérification et mise à jour de l\'opération pour le bon spécifique...');
     if (nouveauBon && nouveauBon.id) {
       // Vérifier si l'opération existe et est à jour
       const operationExistante = await db.Operation.findOne({
@@ -320,8 +311,7 @@ exports.createBonComplet = async (req, res) => {
 
       if (operationExistante) {
         // Mettre à jour l'opération existante
-        await operationController.updateFromBon(nouveauBon, transaction);
-        console.log(`✅ Opération pour le bon ${nouveauBon.numero} mise à jour avec succès.`,
+        await operationController.updateFromBon(nouveauBon, transaction);logger.log('bonComplet.controller', `✅ Opération pour le bon ${nouveauBon.numero} mise à jour avec succès.`,
           {
             operationId: operationController.id,
             type: operationController.type,
@@ -329,8 +319,7 @@ exports.createBonComplet = async (req, res) => {
           });  
       } else {
         // Créer une nouvelle opération
-        await operationController.createFromBon(nouveauBon, transaction);
-        console.log(`✅ Opération pour le bon ${nouveauBon.numero} créée avec succès.`,
+        await operationController.createFromBon(nouveauBon, transaction);logger.log('bonComplet.controller', `✅ Opération pour le bon ${nouveauBon.numero} créée avec succès.`,
           {
             operationId: operationController.id,
             type: operationController.type,
@@ -369,8 +358,7 @@ exports.createBonComplet = async (req, res) => {
    // await transaction.rollback();
    if (!transaction.finished) {
       await transaction.rollback();
-    }
-    console.error('Erreur création bon complet:', error);
+    }logger.error('bonComplet.controller', 'Erreur création bon complet:', error);
     //res.status(500).json({ error: 'Erreur lors de la création du bon', details: error.message });
     // ENREGISTRER L'HISTORIQUE D'ERREUR
     if (req.user) {
@@ -400,9 +388,7 @@ exports.createBonComplet = async (req, res) => {
  */
 exports.traiterBonFournisseur = async (bon, articles, magasinId, agentId, code_structure, panier,transaction) => {
   const statut = bon.statutBon;
-  const typeBon = bon.type;
-
-  console.log(`🏭 Traitement bon fournisseur - Type: ${typeBon}, Statut: ${statut}`);
+  const typeBon = bon.type;logger.log('bonComplet.controller', `🏭 Traitement bon fournisseur - Type: ${typeBon}, Statut: ${statut}`);
 
   switch (typeBon) {
     case 'commande':
@@ -537,8 +523,7 @@ exports.traiterBonFournisseur = async (bon, articles, magasinId, agentId, code_s
       }
       break;
 
-    default:
-      console.log(`Type de bon fournisseur non géré: ${typeBon}`);
+    default:logger.log('bonComplet.controller', `Type de bon fournisseur non géré: ${typeBon}`);
   }
 };
 
@@ -547,9 +532,7 @@ exports.traiterBonFournisseur = async (bon, articles, magasinId, agentId, code_s
  */
 exports.traiterBonClient = async (bon, articles, magasinId, agentId, code_structure,panier, transaction) => {
   const statut = bon.statutBon;
-  const typeBon = bon.type;
-
-  console.log(`Traitement bon client - Type: ${typeBon}, Statut: ${statut}`);
+  const typeBon = bon.type;logger.log('bonComplet.controller', `Traitement bon client - Type: ${typeBon}, Statut: ${statut}`);
 
   switch (typeBon) {
     case 'commande':
@@ -771,8 +754,7 @@ exports.traiterBonClient = async (bon, articles, magasinId, agentId, code_struct
       }
       
       break;
-    default:
-      console.log(`Type de bon client non géré: ${typeBon}`);
+    default:logger.log('bonComplet.controller', `Type de bon client non géré: ${typeBon}`);
   }
 };
 
@@ -790,8 +772,7 @@ exports.mettreAJourBonOrigineRetour = async (bonRetour, agentId, code_structure,
     transaction
   });
   
-  if (!bonOrigine) {
-    console.warn(`⚠️ Bon d'origine ${bonRetour.numeroBonOrigine} introuvable`);
+  if (!bonOrigine) {logger.warn('bonComplet.controller', `⚠️ Bon d'origine ${bonRetour.numeroBonOrigine} introuvable`);
     return null;
   }
   
@@ -845,21 +826,15 @@ exports.mettreAJourBonOrigineRetour = async (bonRetour, agentId, code_structure,
     // Optionnel: créer une opération inverse pour le retour
     const operationRetour = await operationController.createFromBon(bonRetour, transaction);
     operationRetour.operationOrigineId = operationOrigine.id;
-    await operationRetour.save({ transaction });
-    
-    console.log(`🔄 Opération ${operationOrigine.id} marquée comme retournée, opération de retour ${operationRetour.id} créée`);
-  }
-  
-  console.log(`✅ Bon d'origine ${bonOrigine.numero} mis à jour avec statut "retourné"`);
+    await operationRetour.save({ transaction });logger.log('bonComplet.controller', `🔄 Opération ${operationOrigine.id} marquée comme retournée, opération de retour ${operationRetour.id} créée`);
+  }logger.log('bonComplet.controller', `✅ Bon d'origine ${bonOrigine.numero} mis à jour avec statut "retourné"`);
   return bonOrigine;
 };
 
 /**
  * Créer un bon de retour automatique
  */
-exports.creerBonRetour = async (bonOrigine, articles, magasinId, agentId, code_structure, panier, transaction) => {
-
-  console.log('Début création bon de retour à partir du bon ',bonOrigine.id)
+exports.creerBonRetour = async (bonOrigine, articles, magasinId, agentId, code_structure, panier, transaction) => {logger.log('bonComplet.controller', 'Début création bon de retour à partir du bon ',bonOrigine.id)
   // Vérifier si un retour existe déjà pour ce bon
   const retourExistant = await db.Bon.findOne({
     where: {
@@ -870,8 +845,7 @@ exports.creerBonRetour = async (bonOrigine, articles, magasinId, agentId, code_s
     transaction
   });
   
-  if (retourExistant) {
-    console.log(`⚠️ Un retour existe déjà pour le bon ${bonOrigine.numero}: ${retourExistant.numero}`);
+  if (retourExistant) {logger.log('bonComplet.controller', `⚠️ Un retour existe déjà pour le bon ${bonOrigine.numero}: ${retourExistant.numero}`);
     return retourExistant;
   }
   
@@ -946,10 +920,7 @@ exports.creerBonRetour = async (bonOrigine, articles, magasinId, agentId, code_s
       bonOrigineNumero: bonOrigine.numero,
       articlesCount: articlesRetour.length
     }
-  );
-
-
-  console.log(`📋 Bon de retour créé: ${bonRetour.numero}`);
+  );logger.log('bonComplet.controller', `📋 Bon de retour créé: ${bonRetour.numero}`);
   
   return { bonRetour, panierRetour, articlesRetour };
 };

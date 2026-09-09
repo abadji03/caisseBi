@@ -247,21 +247,20 @@
             </tr>
           </thead>
           <tbody>
-            <!-- Loading state -->
-            <tr *ngIf="isLoading">
-              <td colspan="13" class="text-center py-4">
-                <div class="spinner-border text-success" role="status">
-                  <span class="visually-hidden">Chargement...</span>
-                </div>
-              </td>
-            </tr>
-            <!-- Aucune donnée -->
-            <tr *ngIf="!isLoading && prods.length === 0">
-              <td colspan="13" class="text-center py-4">
-                <i class="bi bi-inbox fs-1 d-block text-muted"></i>
-                <span class="text-muted">Aucun produit trouvé</span>
-              </td>
-            </tr>
+            <!-- État : chargement / erreur / vide (colonne pleine) -->
+            @if (produitsListState === 'loading' || produitsListState === 'error' || produitsListState === 'empty') {
+              <tr>
+                <td colspan="13" class="text-center py-4">
+                  <app-table-state
+                    [state]="produitsListState"
+                    loadingMessage="Chargement des produits..."
+                    emptyMessage="Aucun produit trouvé"
+                    errorMessage="Erreur lors du chargement des produits."
+                    (retry)="loadProduits()"
+                  />
+                </td>
+              </tr>
+            }
             <tr *ngFor="let produit of prods" (click)="onRowSelect(produit)">
               <!-- Case à cocher pour chaque produit -->
               <!-- <td class="petit-colonne">
@@ -300,100 +299,20 @@
       </div>
 
       <!-- Pagination -->
-      <!--  <div class="pagination d-flex justify-content-center align-items-center">
-            <button class="w-auto btn btn-success" (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 1"><i class="bi bi-arrow-left-circle fs-3"></i></button>
-            <span class="h3">{{ currentPage }}</span>
-            <button class="w-auto btn btn-success" (click)="onPageChange(currentPage + 1)" [disabled]="currentPage * itemsPerPage >= filteredProducts.length"><i class="bi bi-arrow-right-circle fs-3"></i></button>
-        </div> -->
-      <!-- <div class="d-flex justify-content-between align-items-center">
-        <div>
-          Affichage de {{ (currentPage - 1) * itemsPerPage + 1 }} à
-          {{ min(currentPage * itemsPerPage, filteredProducts.length) }}
-          sur {{ filteredProducts.length }} fournisseurs
-        </div>
-        <div>
-          <button
-            class="btn btn-success"
-            (click)="onPageChange(currentPage - 1)"
-            [disabled]="currentPage === 1"
-          >
-            <i class="bi bi-arrow-left-circle"></i>
-          </button>
-          <span class="h3">{{ currentPage }} </span>
-          <button
-            class="btn btn-success"
-            (click)="onPageChange(currentPage + 1)"
-            [disabled]="currentPage >= getTotalPages(filteredProducts)"
-          >
-            <i class="bi bi-arrow-right-circle"></i>
-          </button>
-        </div>
-      </div> -->
-      <!-- Pagination compacte -->
-      <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-3" *ngIf="totalPages > 1">
-        <div class="text-muted mb-2 mb-md-0">
-          <small>
-            Affichage de {{ ((currentPage - 1) * itemsPerPage) + 1 }} 
-            à {{ currentPage * itemsPerPage > totalItems ? totalItems : currentPage * itemsPerPage }} 
-            sur {{ totalItems }} produits
-          </small>
-        </div>
-        
-        <nav aria-label="Page navigation">
-          <ul class="pagination pagination-sm mb-0 flex-wrap">
-            <!-- Bouton précédent -->
-            <li class="page-item" [class.disabled]="!hasPrev">
-              <button class="page-link" (click)="onPageChange(currentPage - 1)" style="cursor: pointer;">
-                <i class="bi bi-chevron-left"></i>
-              </button>
-            </li>
-            
-            <!-- Première page -->
-            <li class="page-item" *ngIf="currentPage > 3">
-              <button class="page-link" (click)="onPageChange(1)" style="cursor: pointer;">1</button>
-            </li>
-            <li class="page-item disabled" *ngIf="currentPage > 4">
-              <a class="page-link">...</a>
-            </li>
-            
-            <!-- Pages autour de la page courante -->
-            <li class="page-item" 
-                *ngFor="let page of pagesToShow" 
-                [class.active]="currentPage === page">
-              <button class="page-link" (click)="onPageChange(page)" style="cursor: pointer;">
-                {{ page }}
-              </button>
-            </li>
-            
-            <!-- Dernière page -->
-            <li class="page-item disabled" *ngIf="currentPage < totalPages - 3">
-              <a class="page-link">...</a>
-            </li>
-            <li class="page-item" *ngIf="currentPage < totalPages - 2">
-              <button class="page-link" (click)="onPageChange(totalPages)" style="cursor: pointer;">
-                {{ totalPages }}
-              </button>
-            </li>
-            
-            <!-- Bouton suivant -->
-            <li class="page-item" [class.disabled]="!hasNext">
-              <button class="page-link" (click)="onPageChange(currentPage + 1)" style="cursor: pointer;">
-                <i class="bi bi-chevron-right"></i>
-              </button>
-            </li>
-          </ul>
-        </nav>
-      </div>
-      <!-- <div class="d-flex justify-content-center">
-          <ul class="pagination">
-            <li class="page-item" [class.disabled]="currentPage === 1" (click)="onPageChange(currentPage - 1)">
-              <span class="page-link">Précédent</span>
-            </li>
-            <li class="page-item" [class.disabled]="currentPage === paginatedProducts.length" (click)="onPageChange(currentPage + 1)">
-              <span class="page-link">Suivant</span>
-            </li>
-          </ul>
-        </div> -->
+      @if (produitsListState === 'success' || produitsListState === 'loading') {
+        <app-table-pagination
+          [page]="currentPage"
+          [totalPages]="totalPages"
+          [total]="totalItems"
+          [itemsPerPage]="itemsPerPage"
+          [hasNext]="hasNext"
+          [hasPrev]="hasPrev"
+          labelPlural="produits"
+          [showPageNumbers]="true"
+          [showItemsPerPage]="false"
+          (pageChange)="onPageChange($event)"
+        />
+      }
     </div>
 
     <!-- Colonne droite (actions) -->

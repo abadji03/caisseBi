@@ -1,10 +1,10 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { catchError, Observable, throwError } from 'rxjs';
-import { AuthService } from './auth.service';
+import { catchError, Observable } from 'rxjs';
 import { NGXLogger } from 'ngx-logger';
 import { PaginatedAnalyseResponse, PaginatedResponse, Reconciliation } from '../modeles/entrees-sorties.model';
 import { environment } from '../../environments/environment';
+import { handleApiError } from '../core/api/api-error';
 
 @Injectable({
   providedIn: 'root',
@@ -13,23 +13,15 @@ export class ReconciliationService {
   private apiUrl = `${environment.apiUrl}/reconciliations`;
   private apiUrlBis = `${environment.apiUrl}/historiques-reconciliations`;
   private http = inject(HttpClient);
-  private authService = inject(AuthService);
   private logger = inject(NGXLogger);
 
-  private getHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
-    return new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-    });
-  }
 
   private handleError(method: string, error: unknown): Observable<never> {
-    this.logger.error(`ReconciliationService -> ${method} :`, error);
-    return throwError(() => error);
+    return handleApiError(this.logger, `ReconciliationService.${method}`, error);
   }
 
   create(reconciliation: Reconciliation): Observable<Reconciliation> {
-    return this.http.post<Reconciliation>(this.apiUrl, reconciliation, { headers: this.getHeaders() })
+    return this.http.post<Reconciliation>(this.apiUrl, reconciliation, {})
       .pipe(catchError(err => this.handleError('create', err)));
   }
 
@@ -44,29 +36,27 @@ export class ReconciliationService {
 
     return this.http.get<PaginatedResponse<Reconciliation>>(
       `${this.apiUrl}/structure/${codeStructure}${params}`,
-      { headers: this.getHeaders() }
+      {}
     ).pipe(catchError(err => this.handleError('getByStructure', err)));
   }
 
   getByProduit(produitId: number): Observable<Reconciliation[]> {
     return this.http.get<Reconciliation[]>(`${this.apiUrl}/produit/${produitId}`, {
-      headers: this.getHeaders(),
     }).pipe(catchError(err => this.handleError('getByProduit', err)));
   }
 
   getById(id: number): Observable<Reconciliation> {
-    return this.http.get<Reconciliation>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() })
+    return this.http.get<Reconciliation>(`${this.apiUrl}/${id}`, {})
       .pipe(catchError(err => this.handleError('getById', err)));
   }
 
   update(id: number, reconciliation: Reconciliation): Observable<Reconciliation> {
     return this.http.put<Reconciliation>(`${this.apiUrl}/${id}`, reconciliation, {
-      headers: this.getHeaders(),
     }).pipe(catchError(err => this.handleError('update', err)));
   }
 
   delete(id: number): Observable<Reconciliation> {
-    return this.http.delete<Reconciliation>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() })
+    return this.http.delete<Reconciliation>(`${this.apiUrl}/${id}`, {})
       .pipe(catchError(err => this.handleError('delete', err)));
   }
 
@@ -82,7 +72,7 @@ export class ReconciliationService {
 
     return this.http.get<PaginatedAnalyseResponse>(
       `${this.apiUrl}/structure/${codeStructure}/analyse-ecart${params}`,
-      { headers: this.getHeaders() }
+      {}
     ).pipe(catchError(err => this.handleError('getAnalyse', err)));
   }
 
@@ -90,40 +80,37 @@ export class ReconciliationService {
   getAnalyseProduit(codeStructure: string, produitId: number): Observable<any> {
     return this.http.get(
       `${this.apiUrl}/structure/${codeStructure}/produit/${produitId}`,
-      { headers: this.getHeaders() }
+      {}
     ).pipe(catchError(err => this.handleError('getAnalyseProduit', err)));
   }
 
   createHistorique(historique: unknown): Observable<unknown> {
-    return this.http.post<unknown>(this.apiUrlBis, historique, { headers: this.getHeaders() })
+    return this.http.post<unknown>(this.apiUrlBis, historique, {})
       .pipe(catchError(err => this.handleError('createHistorique', err)));
   }
 
   getByReconciliation(reconciliationId: number): Observable<unknown[]> {
     return this.http.get<unknown[]>(`${this.apiUrlBis}/reconciliation/${reconciliationId}`, {
-      headers: this.getHeaders(),
     }).pipe(catchError(err => this.handleError('getByReconciliation', err)));
   }
 
   getHistoriqueByStructure(code_structure: string): Observable<unknown[]> {
     return this.http.get<unknown[]>(`${this.apiUrlBis}/structure/${code_structure}`, {
-      headers: this.getHeaders(),
     }).pipe(catchError(err => this.handleError('getHistoriqueByStructure', err)));
   }
 
   getHistoriqueById(id: number): Observable<unknown> {
-    return this.http.get<unknown>(`${this.apiUrlBis}/${id}`, { headers: this.getHeaders() })
+    return this.http.get<unknown>(`${this.apiUrlBis}/${id}`, {})
       .pipe(catchError(err => this.handleError('getHistoriqueById', err)));
   }
 
   updateHistorique(id: number, historique: Partial<unknown>): Observable<unknown> {
     return this.http.put<unknown>(`${this.apiUrlBis}/${id}`, historique, {
-      headers: this.getHeaders(),
     }).pipe(catchError(err => this.handleError('updateHistorique', err)));
   }
 
   deleteHistorique(id: number): Observable<unknown> {
-    return this.http.delete(`${this.apiUrlBis}/${id}`, { headers: this.getHeaders() })
+    return this.http.delete(`${this.apiUrlBis}/${id}`, {})
       .pipe(catchError(err => this.handleError('deleteHistorique', err)));
   }
 
@@ -131,7 +118,7 @@ export class ReconciliationService {
     return this.http.patch<Reconciliation>(
       `${this.apiUrl}/${id}/statut`,
       { statut },
-      { headers: this.getHeaders() },
+      {},
     ).pipe(catchError(err => this.handleError('updateStatut', err)));
   }
 }

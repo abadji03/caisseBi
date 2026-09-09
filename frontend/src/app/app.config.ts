@@ -11,6 +11,7 @@ import { LoggerModule, NgxLoggerLevel } from 'ngx-logger';
 
 import { provideToastr } from 'ngx-toastr';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
+import { HttpErrorInterceptor } from './interceptors/http-error.interceptor';
 import { JWT_OPTIONS, JwtHelperService } from '@auth0/angular-jwt';
 import { AuthService } from './services/auth.service';
 import { environment } from '../environments/environment';
@@ -29,7 +30,7 @@ export const appConfig: ApplicationConfig = {
       }),
     ),
     provideHttpClient(
-      withInterceptors([AuthInterceptor])
+      withInterceptors([AuthInterceptor, HttpErrorInterceptor])
     ),
 
     {

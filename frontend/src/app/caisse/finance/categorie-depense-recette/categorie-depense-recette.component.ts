@@ -118,7 +118,6 @@ export class CategorieDepenseRecetteComponent implements OnInit, OnDestroy {
       showInactive: this.filters.showInactive
     };
 
-    console.log('Chargement des catégories avec filtres:', filters);
 
     this.categorieService.getAllByStructureBis(this.code_structure, filters)
       .pipe(
@@ -127,7 +126,6 @@ export class CategorieDepenseRecetteComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (response: CategoriesResponse) => {
-          console.log('✅ Réponse API reçue:', response);
           this.categories = response.items;
           
           // Mise à jour de la pagination
@@ -143,7 +141,6 @@ export class CategorieDepenseRecetteComponent implements OnInit, OnDestroy {
           }
           
           //this.categoriesChange.emit();
-          console.log('Catégories chargées:', response.items.length);
         },
         error: (err) => {
           console.error('❌ Erreur API complète:', err);
@@ -277,7 +274,6 @@ export class CategorieDepenseRecetteComponent implements OnInit, OnDestroy {
         next: (newCategory) => {
           this.toastr.success('Catégorie créée avec succès');
           //this.categoryAction.emit({ action: 'created', category: newCategory });
-          console.log({ action: 'created', category: newCategory });
           this.loadCategories(); // Recharger la liste avec pagination
           this.closeForm();
         },
@@ -297,7 +293,6 @@ export class CategorieDepenseRecetteComponent implements OnInit, OnDestroy {
         next: (updatedCategory) => {
           this.toastr.success('Catégorie modifiée avec succès');
           //this.categoryAction.emit({ action: 'updated', category: updatedCategory });
-          console.log({ action: 'updated', category: updatedCategory });
           this.loadCategories(); // Recharger la liste avec pagination
           this.closeForm();
         },
@@ -324,7 +319,6 @@ export class CategorieDepenseRecetteComponent implements OnInit, OnDestroy {
         next: () => {
           this.toastr.success('Catégorie supprimée avec succès');
           //this.categoryAction.emit({ action: 'deleted', category });
-          console.log({ action: 'deleted', category });
           this.loadCategories(); // Recharger la liste avec pagination
         },
         error: (err) => {
@@ -352,7 +346,6 @@ export class CategorieDepenseRecetteComponent implements OnInit, OnDestroy {
           category.isActive = response.isActive;
           this.toastr.success(`Catégorie ${action}ée avec succès`);
           //this.categoryAction.emit({ action: 'toggled', category });
-          console.log({ action: 'toggled', category });
           
           // Si on masque les inactives et qu'on vient de désactiver, recharger
           if (!this.filters.showInactive && !response.isActive) {

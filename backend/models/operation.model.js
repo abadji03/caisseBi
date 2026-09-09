@@ -1,3 +1,4 @@
+const logger = require('../services/logger.js');
 // models/operation.js
 //const SequenceService = require('../services/sequence.service');
 
@@ -75,7 +76,6 @@ module.exports = (sequelize, DataTypes) => {
 
     hooks: {
       beforeValidate: async (operation, options) => {
-        console.log('🔍 beforeValidate hook called', operation.code_structure);
         
         // Définir numeroE avant la validation
         if (!operation.numeroE) {
@@ -87,18 +87,16 @@ module.exports = (sequelize, DataTypes) => {
                 transaction: options.transaction
               });
               operation.numeroE = count + 1;
-              console.log(`✅ Generated numeroE in beforeValidate: ${operation.numeroE}`);
             } else {
               operation.numeroE = 1;
             }
           } catch (error) {
-            console.error('❌ Hook error:', error);
+            logger.error('operation.model', '❌ Hook error:', error);
             operation.numeroE = 1;
           }
         }
       },
       beforeCreate: async (operation, options) => {
-        console.log('🎯 beforeCreate hook STARTED', operation.numeroE);
         // Vérifier et régénérer si nécessaire
         if (!operation.numeroE) {
           const operationsModel = sequelize.models.Operation;
