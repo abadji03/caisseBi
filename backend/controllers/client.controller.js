@@ -437,8 +437,9 @@ exports.getClientsByStructure = async (req, res) => {
     //const isAdminSecondaire = authUser.roles?.some(r => r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
     const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
+    const isEmploye = authUser.roles?.some(r => r.nom === "Employé");
 
-    if (!isAdminStructure && !isGerant && !isCaissier) {
+    if (!isAdminStructure && !isGerant && !isCaissier && !isEmploye) {
       return res.status(403).json({
         message: "Accès interdit : rôle insuffisant"
       });
@@ -454,8 +455,8 @@ exports.getClientsByStructure = async (req, res) => {
           }
         ];
 
-    // Si gérant ou caissier : filtrer par magasin
-    if (!isAdminStructure && (isGerant || isCaissier)) {
+    // Si gérant, caissier ou employé : filtrer par magasin
+    if (!isAdminStructure && (isGerant || isCaissier || isEmploye)) {
       if (!authUser.magasinId) {
         return res.status(400).json({
           message: "Ce gérant ou caissier n'est associé à aucun magasin"
@@ -539,8 +540,9 @@ exports.getClientsByStructureBis = async (req, res) => {
     const isAdminStructure = authUser.roles?.some(r => r.nom === "Administrateur" || r.nom === "Administrateur" || r.nom === "Administrateur secondaire");
     const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
     const isCaissier = authUser.roles?.some(r => r.nom === "Caissier");
+    const isEmploye = authUser.roles?.some(r => r.nom === "Employé");
 
-    if (!isAdminStructure && !isGerant && !isCaissier) {
+    if (!isAdminStructure && !isGerant && !isCaissier && !isEmploye) {
       return res.status(403).json({ message: "Accès interdit : rôle insuffisant" });
     }
 
@@ -572,7 +574,7 @@ exports.getClientsByStructureBis = async (req, res) => {
     ];
 
     // Si l'utilisateur n'est pas admin, filtrer par son magasin
-    if (!isAdminStructure && (isGerant || isCaissier)) {
+    if (!isAdminStructure && (isGerant || isCaissier || isEmploye)) {
       if (!authUser.magasinId) {
         return res.status(400).json({ message: "Utilisateur non associé à un magasin" });
       }

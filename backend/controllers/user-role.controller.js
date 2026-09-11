@@ -1,5 +1,6 @@
 const db = require('../models');
 const logger = require('../services/logger.js');
+const { invalidateUserPermissions } = require('../middlewares/auth.middleware');
 const User = db.Users;
 const Role = db.Role;
 

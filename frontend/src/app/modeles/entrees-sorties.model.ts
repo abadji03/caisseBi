@@ -97,6 +97,7 @@ export class MouvementsStock {
   public dateMouvement: Date = new Date();
   public reconciliationId?:number;
   public transfertId?:number;
+  public Produit?: { id: number; designation: string; unite?: string }; // Produit associé (joint par le backend)
   //Calcul du prix total
   public get prixTotal(): number {
     return (this.prixUnitaire || 0) * this.quantite;

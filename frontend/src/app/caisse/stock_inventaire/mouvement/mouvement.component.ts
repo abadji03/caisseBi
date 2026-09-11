@@ -242,17 +242,33 @@ export class MouvementComponent implements OnInit, OnDestroy {
     }
     
     const produit = this.produits.find(p => p.id === produitId);
-    if (!produit) {
-      console.warn(`Produit avec ID ${produitId} non trouvé dans la liste`);
-      return `Produit (ID: ${produitId})`;
+    if (produit) {
+      return produit.designation;
     }
-    
-    return produit.designation;
+
+    // La liste de référence n'affiche que les produits en stock.
+    // En secours, on utilise le produit joint par le backend sur chaque mouvement.
+    const mvt = this.mouvements.find(m => m.produitId === produitId);
+    if (mvt?.Produit?.designation) {
+      return mvt.Produit.designation;
+    }
+
+    console.warn(`Produit avec ID ${produitId} non trouvé dans la liste`);
+    return `Produit (ID: ${produitId})`;
   }
 
   getUniteProduitById(produitId: number): string {
     const produit = this.produits.find(p => p.id === produitId);
-    return produit ? produit.unite : 'Produit introuvable';
+    if (produit && produit.unite) {
+      return produit.unite;
+    }
+
+    const mvt = this.mouvements.find(m => m.produitId === produitId);
+    if (mvt?.Produit?.unite) {
+      return mvt.Produit.unite;
+    }
+
+    return 'Produit introuvable';
   }
 
   onPageChange(page: number): void {

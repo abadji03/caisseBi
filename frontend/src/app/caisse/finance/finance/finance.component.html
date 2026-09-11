@@ -90,24 +90,23 @@
 <div class="container-fluid mt-4">
   <nav>
     <div class="nav nav-tabs" id="nav-tab" role="tablist">
-      <a class="nav-link active" id="nav-depenses-tab" data-bs-toggle="tab" href="#nav-depenses" 
-         role="tab" aria-controls="nav-depenses" aria-selected="true">
+      <button type="button" class="nav-link" [class.active]="activeTab === 'depenses'"
+         (click)="setActiveTab('depenses')">
         Dépenses
-      </a>
-      <a class="nav-link" id="nav-recette-tab" data-bs-toggle="tab" href="#nav-recette" 
-         role="tab" aria-controls="nav-recette" aria-selected="false">
+      </button>
+      <button type="button" class="nav-link" [class.active]="activeTab === 'recettes'"
+         (click)="setActiveTab('recettes')">
         Recettes
-      </a>
-      <a class="nav-link" id="nav-categorie-tab" data-bs-toggle="tab" href="#nav-categorie" 
-         role="tab" aria-controls="nav-categorie" aria-selected="false">
+      </button>
+      <button type="button" class="nav-link" [class.active]="activeTab === 'categories'"
+         (click)="setActiveTab('categories')">
         Gestion des catégories
-      </a>
+      </button>
     </div>
   </nav>
 
   <div class="tab-content mt-4" id="nav-tabContent">
-    <div class="tab-pane fade show active" id="nav-depenses" role="tabpanel" 
-         aria-labelledby="nav-depenses-tab">
+    @if (activeTab === 'depenses') {
       <app-depenses
         [code_structure]="code_structure"
         [magasinId]="magasinId"
@@ -115,10 +114,9 @@
         [isAdmin]="isAdmin"
         [modesPaiement]="modesPaiement"
       ></app-depenses>
-    </div>
+    }
 
-    <div class="tab-pane fade" id="nav-recette" role="tabpanel" 
-         aria-labelledby="nav-recette-tab">
+    @if (activeTab === 'recettes') {
       <app-recettes
         [code_structure]="code_structure"
         [magasinId]="magasinId"
@@ -126,13 +124,12 @@
         [isAdmin]="isAdmin"
         [modesPaiement]="modesPaiement"
       ></app-recettes>
-    </div>
+    }
 
-    <div class="tab-pane fade" id="nav-categorie" role="tabpanel" 
-         aria-labelledby="nav-categorie-tab">
+    @if (activeTab === 'categories') {
       <app-categorie-depense-recette
         [code_structure]="code_structure"
       ></app-categorie-depense-recette>
-    </div>
+    }
   </div>
 </div>

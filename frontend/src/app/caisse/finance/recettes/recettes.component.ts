@@ -1,4 +1,4 @@
-import { Component,inject, Input, OnDestroy, OnInit } from '@angular/core';
+import { Component,inject, Input, OnChanges, OnDestroy, OnInit, SimpleChanges } from '@angular/core';
 import { Categorie, Recette } from '../../../modeles/finance.model';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, finalize, Subject, takeUntil } from 'rxjs';
@@ -23,7 +23,7 @@ declare let bootstrap: any; // En haut du fichier
   templateUrl: './recettes.component.html',
   styleUrl: './recettes.component.css'
 })
-export class RecettesComponent implements OnInit, OnDestroy {
+export class RecettesComponent implements OnInit, OnChanges, OnDestroy {
 
   categories: Categorie[] = [];
   @Input() code_structure: string | null = null;
@@ -105,6 +105,12 @@ export class RecettesComponent implements OnInit, OnDestroy {
       this.filters.page = 1;
       this.loadRecettes();
     });
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['code_structure']?.currentValue && !changes['code_structure'].firstChange) {
+      this.loadRecettes();
+    }
   }
 
   ngOnDestroy(): void {

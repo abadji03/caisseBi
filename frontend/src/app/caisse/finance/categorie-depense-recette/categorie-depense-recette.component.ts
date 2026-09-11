@@ -1,4 +1,4 @@
-import { Component,inject, Input, OnDestroy, OnInit } from '@angular/core';
+import { Component,inject, Input, OnChanges, OnDestroy, OnInit, SimpleChanges } from '@angular/core';
 import { Categorie } from '../../../modeles/finance.model';
 import { User } from '../../../modeles/user.model';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -14,7 +14,7 @@ import { CommonModule } from '@angular/common';
   templateUrl: './categorie-depense-recette.component.html',
   styleUrls: ['./categorie-depense-recette.component.css']
 })
-export class CategorieDepenseRecetteComponent implements OnInit, OnDestroy {
+export class CategorieDepenseRecetteComponent implements OnInit, OnChanges, OnDestroy {
   @Input() code_structure: string | null = null;
   @Input() currentUser: User | null = null;
 
@@ -80,6 +80,12 @@ export class CategorieDepenseRecetteComponent implements OnInit, OnDestroy {
     });
 
     if (this.code_structure) {
+      this.loadCategories();
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['code_structure']?.currentValue && !changes['code_structure'].firstChange) {
       this.loadCategories();
     }
   }

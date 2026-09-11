@@ -1,4 +1,4 @@
-import { Component,inject, Input, OnDestroy, OnInit } from '@angular/core';
+import { Component,inject, Input, OnChanges, OnDestroy, OnInit, SimpleChanges } from '@angular/core';
 import { Categorie, Depense } from '../../../modeles/finance.model';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, finalize, Subject, takeUntil } from 'rxjs';
@@ -22,7 +22,7 @@ declare let bootstrap: any; // Déclaration pour Bootstrap
   templateUrl: './depenses.component.html',
   styleUrl: './depenses.component.css'
 })
-export class DepensesComponent implements OnInit, OnDestroy {
+export class DepensesComponent implements OnInit, OnChanges, OnDestroy {
 
   categories: Categorie[] = [];
   @Input() code_structure: string | null = null;
@@ -113,6 +113,12 @@ export class DepensesComponent implements OnInit, OnDestroy {
 
   }
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['code_structure']?.currentValue && !changes['code_structure'].firstChange) {
+      this.loadDepenses();
+    }
+  }
+
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
@@ -197,7 +203,7 @@ loadDepenses(): void {
 
           this.depensesListState = toListState(false, false, this.depenses);
         },
-        error: (err) => {
+        error: (_err) => {
           this.depensesListState = 'error';
           this.errorMessage = 'Erreur lors du chargement des dépenses';
           this.toastr.error(this.errorMessage);

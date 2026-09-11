@@ -51,8 +51,22 @@ exports.findAllByStructure = async (req, res) => {
       return res.status(400).json({ error: 'code_structure requis' });
     }
 
+    // 🔒 Règle métier : un Caissier/Employé ne voit que l'historique de
+    // SES propres bons. Admin structure / Gérant / admin général : tout.
+    const nomRoles = (req.user.roles || []).map(r => r.nom);
+    const isPrivilege =
+      nomRoles.includes('Administrateur') ||
+      nomRoles.includes('Administrateur secondaire') ||
+      nomRoles.includes('Gérant');
+    const isRestreint =
+      nomRoles.includes('Caissier') || nomRoles.includes('Employé');
+    const whereClause = { code_structure };
+    if (isRestreint && !isPrivilege) {
+      whereClause.agentId = req.user.id;
+    }
+
     const historiques = await HistoriqueStatut.findAll({
-      where: { code_structure },
+      where: whereClause,
       include: [
         {
           model: Bon,

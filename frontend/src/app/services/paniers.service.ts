@@ -224,7 +224,7 @@ export class PaniersService {
     // On utilise toujours la route "bis" (avec pagination + statistiques).
     // bonId est passé entièrement en query param pour éviter les doubles slashes
     // quand il est null/undefined.
-    const url = `${API_URL}/structure/bis/${code_structure}/magasin/${magasinId ?? ''}/bons/0/aujourdhui`;
+    const url = `${API_URL}/structure/bis/${code_structure}/magasin/0/bons/0/aujourdhui`;
 
     return this.http.get<TransactionsResponse>(url, {
       params

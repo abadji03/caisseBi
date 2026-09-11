@@ -19,8 +19,7 @@ import { ModePaiement } from '../../../modeles/paiement.model';
   styleUrl: './finance.component.css',
 })
 export class FinanceComponent implements OnInit,OnDestroy {
-  // Onglet actif
-  //activeTab = 'depenses';
+  activeTab: 'depenses' | 'recettes' | 'categories' = 'depenses';
   
   // Références aux composants enfants
   //@ViewChild(DepensesComponent) depensesComponent!: DepensesComponent;
@@ -73,6 +72,11 @@ export class FinanceComponent implements OnInit,OnDestroy {
     if (this.userSubscription) {
       this.userSubscription.unsubscribe();
     }
+  }
+
+  setActiveTab(tab: 'depenses' | 'recettes' | 'categories'): void {
+    this.activeTab = tab;
+    this.errorMessage = '';
   }
 
   /**

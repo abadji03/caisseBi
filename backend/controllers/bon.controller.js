@@ -3,6 +3,21 @@ const logger = require('../services/logger.js');
 const { Op } = require('sequelize');
 const db = require('../models');
 const { verifierAppartenanceStructure } = require('../services/verification.service');
+
+/**
+ * Périmètre agent pour les Caissiers/Employés (règle métier : chacun
+ * voit ses propres opérations). Les autres rôles gardent le périmètre
+ * structure/magasin habituel. Retourne un spread de clause where.
+ */
+const filtreAgentCaissier = (authUser) => {
+  const nomRoles = (authUser.roles || []).map(r => r.nom);
+  const isPrivilege =
+    nomRoles.includes('Administrateur') ||
+    nomRoles.includes('Administrateur secondaire') ||
+    nomRoles.includes('Gérant');
+  const isRestreint = nomRoles.includes('Caissier') || nomRoles.includes('Employé');
+  return isRestreint && !isPrivilege ? { agentId: authUser.id } : {};
+};
 const Bon = db.Bon;
 const fs = require('fs');
 const path = require('path');
@@ -58,7 +73,7 @@ exports.getBonsByStructure = async (req, res) => {
     }
 
     const bons = await Bon.findAll({
-      where: { code_structure: req.params.code_structure },
+      where: { code_structure: req.params.code_structure, ...filtreAgentCaissier(authUser) },
       include: [
         {
           model: Panier,
@@ -132,6 +147,17 @@ exports.getBonsClientsByStructure = async (req, res) => {
       }
 
       whereClause.magasinId = authUser.magasinId;
+
+    
+
+    // 🔒 Règle métier : un caissier ne voit que SES propres bons
+
+    if (isCaissier) {
+
+      whereClause.agentId = authUser.id;
+
+    }
+
     }
     const bons = await Bon.findAll({
       where: { 
@@ -226,6 +252,17 @@ exports.getBonsClientsByStructureBis = async (req, res) => {
         });
       }
       whereClause.magasinId = authUser.magasinId;
+
+    
+
+    // 🔒 Règle métier : un caissier ne voit que SES propres bons
+
+    if (isCaissier) {
+
+      whereClause.agentId = authUser.id;
+
+    }
+
     }
 
     // 🔍 FILTRE DE RECHERCHE
@@ -367,6 +404,17 @@ exports.getBonsFournisseursByStructureBis = async (req, res) => {
         });
       }
       whereClause.magasinId = authUser.magasinId;
+
+    
+
+    // 🔒 Règle métier : un caissier ne voit que SES propres bons
+
+    if (isCaissier) {
+
+      whereClause.agentId = authUser.id;
+
+    }
+
     }
 
     // 🔍 FILTRE DE RECHERCHE
