@@ -27,6 +27,7 @@ export class BonComponent implements OnChanges, OnInit, OnDestroy {
   @Input() entiteId?: number;
   @Input() showFileField = true;
   @Input() resetForm = false;
+  @Input() submissionError = 0;
   @Input() generatedNumero!: string;
   @Input() tvaParArticle = true;
   @Input() remiseParArticle = false;
@@ -130,6 +131,8 @@ export class BonComponent implements OnChanges, OnInit, OnDestroy {
   }
 
   get canEnregistrer(): boolean {
+  if (this.isFormSubmitting) return false;
+
   // Validation des informations du bon
   if (!this.bonForm?.valid) return false;
   
@@ -170,6 +173,9 @@ export class BonComponent implements OnChanges, OnInit, OnDestroy {
     }
     if (changes['typeEntite']) {
       this.updateLogistiqueFieldsVisibility();
+    }
+    if (changes['submissionError'] && !changes['submissionError'].firstChange) {
+      this.isFormSubmitting = false;
     }
   }
 
@@ -349,7 +355,7 @@ export class BonComponent implements OnChanges, OnInit, OnDestroy {
   const formValue = this.bonForm.value;
   
   const baseData = {
-    numero: this.generateNumero(),
+    numero: this.generatedNumero || this.generateNumero(),
     type: formValue.type,
     description: formValue.description,
     referenceExterne: formValue.referenceExterne,

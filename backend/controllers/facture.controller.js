@@ -428,6 +428,12 @@ exports.createFactureAchat = async (req, res) => {
       }
       
       panier = bon.Panier;
+      // Idempotence : refuser une seconde facture d'achat pour le même bon.
+      const factureExistante = await Facture.findOne({ where: { bonId: bon.id }, transaction });
+      if (factureExistante) {
+        await transaction.rollback();
+        return res.status(409).json({ message: `Une facture existe déjà pour le bon ${bon.numero}` });
+      }
       const calcul = calculerMontants(panier, remise);
       montantHT = calcul.montantHT;
       montantTVA = calcul.montantTVA;

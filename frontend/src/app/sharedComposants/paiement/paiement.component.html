@@ -3,6 +3,10 @@
   </div>
   
   <form [formGroup]="paiementForm" (ngSubmit)="submitPaiement()">
+    <div *ngIf="isSubmitting" class="alert alert-info d-flex align-items-center" role="status">
+      <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+      Enregistrement du paiement en cours...
+    </div>
     <table class="table table-bordered">
       <thead>
         <tr>
@@ -94,7 +98,7 @@
             <button
               type="submit"
               class="btn btn-success me-2"
-              [disabled]="paiementForm.invalid"
+              [disabled]="paiementForm.invalid || isSubmitting"
               title="Enregistrer le paiement"
             >
               <i class="bi bi-check"></i>

@@ -835,6 +835,7 @@ exports.updateStatutBon = async (req, res) => {
     if (!verifStructure.ok) return res.status(verifStructure.statut).json({ message: verifStructure.message });
 
     bon.statutBon = statutBon;
+    if (req.body.numeroFacture) bon.numeroFacture = req.body.numeroFacture;
     await bon.save();
 
     return res.json(bon);

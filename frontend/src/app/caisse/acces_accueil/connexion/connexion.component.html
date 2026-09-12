@@ -4,7 +4,7 @@
     <div class="right-section">
       <div class="login-container">
         <div class="bg-danger text-white" *ngIf="!isActif">Compte suspendu! Veuillez contacter votre administrateur.</div>
-        <form class="login-form">
+        <form class="login-form" (ngSubmit)="onLogin()">
           <h2 class="login-title"><i class="bi bi-person-circle"></i> Authentification</h2>
           <div class="form-control">
             <i class="bi bi-person icon"></i>
@@ -46,7 +46,7 @@
             <i class="fab fa-facebook-f social-icon"></i>
             <i class="fab fa-twitter social-icon"></i>
           </div> -->
-          <button type="button" (click)="onLogin()">Connexion</button>
+          <button type="submit">Connexion</button>
         </form>
       </div>
     </div>

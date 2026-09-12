@@ -1,0 +1,37 @@
+-- scripts/migrations/2026_add_operation_unique_constraints.sql
+-- ============================================================
+-- Contraintes d'unicité sur la table des opérations comptables.
+--
+-- ⚠️ À exécuter APRÈS avoir dédoublonné :
+--       node scripts/dedupe-operations.js --apply
+--    Sans dédoublonnage préalable, l'ajout d'un index unique échouera
+--    sur les doublons existants (MySQL).
+--
+-- Contexte (dialecte MySQL) :
+--   • Une opération "bon" (type BON/LIVRAISON/...) a  paiementId = NULL
+--     et porte bonId = <id du bon>.
+--   • Une opération de paiement (REGLEMENT/VERSEMENT) copie bon_id = <id du bon>
+--     ET porte paiement_id = <id du paiement>.
+--   ⇒ "bonId" seul ne peut PAS être unique : il est partagé entre le bon et
+--     son paiement, et MySQL ne supporte pas les index uniques partiels
+--     (WHERE ... IS NULL). La contrainte la plus sûre et portable est paiementId.
+--
+-- Table : `operation` (minuscules) — colonnes snake_case (bon_id, paiement_id…).
+-- ============================================================
+
+-- 1) Une seule opération par paiement (REGLEMENT / VERSEMENT).
+--    Les NULL (opérations "bon" sans paiement) restent acceptés :
+--    MySQL autorise plusieurs valeurs NULL dans un index unique.
+ALTER TABLE `operation` ADD UNIQUE INDEX `uq_operation_paiementId` (`paiement_id`);
+
+-- 2) Doublon d'opérations "bon" (même bonId, paiementId IS NULL).
+--    MySQL <= 8.0.12 interdit un index UNIQUE partiel. Si vous êtes en
+--    MySQL >= 8.0.13, l'index fonctionnel suivant suffit (l'expression
+--    renvoie NULL pour les opérations de paiement → plusieurs NULL autorisés) :
+--
+-- ALTER TABLE `operation`
+--   ADD UNIQUE INDEX `uq_operation_bon` ((IF(paiement_id IS NULL, bon_id, NULL)));
+--
+--    Sinon (MySQL <= 8.0.12), la protection applicative existante
+--    (findOne par bonId dans createFromBon/updateFromBon) + le script de
+--    dédoublonnage suffisent à éviter les doublons à nouveau.

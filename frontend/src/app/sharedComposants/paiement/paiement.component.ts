@@ -14,6 +14,7 @@ import { v4 as uuidv4 } from 'uuid';
 export class PaiementComponent implements OnInit, OnChanges {
 
   @Input() showPaiementForm  = false;
+  @Input() isSubmitting = false;
   @Input() titre = 'Formulaire d\'ajout d\'un paiement';
   @Input() typeEntite: 'client' | 'fournisseur'|'autre' = 'fournisseur';
   @Input() entiteId?: number;
@@ -130,6 +131,8 @@ export class PaiementComponent implements OnInit, OnChanges {
   }
 
   submitPaiement(): void {
+    if (this.isSubmitting) return;
+
     if (this.paiementForm.valid) {
       const { paiement, fichier } = this.preparePaiementData();
       this.onEnregistrerPaiement.emit({ paiement, fichier });

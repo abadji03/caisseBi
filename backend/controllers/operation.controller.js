@@ -31,6 +31,27 @@ const mapperTypeBon = (typeBon) => {
 
 // Exporter pour tests éventuels
 exports.mapperTypeBon = mapperTypeBon;
+// ============================================================
+// Sécurité : un utilisateur ne crée/modifie/supprime que des
+// opérations de SA structure (même logique que requireStructureAccess
+// / verifierAppartenanceStructure). L'admin général (sans code_structure)
+// et les comptes "Accès total" ne sont pas contraints.
+// ============================================================
+const verifierEntitesOperation = async (data, codeStructure, transaction) => {
+  const options = transaction ? { transaction } : {};
+  if (data.bonId) {
+    const bon = await db.Bon.findByPk(data.bonId, { attributes: ['id', 'code_structure'], ...options });
+    if (!bon) return `Le bon ${data.bonId} est introuvable`;
+    if (codeStructure && bon.code_structure !== codeStructure) return `Le bon ${data.bonId} n'appartient pas à votre structure`;
+  }
+  if (data.paiementId) {
+    const paiement = await db.Paiement.findByPk(data.paiementId, { attributes: ['id', 'code_structure'], ...options });
+    if (!paiement) return `Le paiement ${data.paiementId} est introuvable`;
+    if (codeStructure && paiement.code_structure !== codeStructure) return `Le paiement ${data.paiementId} n'appartient pas à votre structure`;
+  }
+  return null;
+};
+
 exports.createFromBon = async (bon, transaction = null) => {
   try {
 
@@ -57,10 +78,10 @@ exports.createFromBon = async (bon, transaction = null) => {
       fournisseurId: bon.fournisseurId,
       clientId: bon.clientId,
       magasinId: bon.magasinId,
-      resteAPayer: bon.resteAPayer || (bon.montantTotal - (bon.avance || 0)),
+      resteAPayer: bon.resteAPayer ?? (bon.montantTotal - (bon.avance ?? 0)),
       agentId: bon.agentId,
       code_structure: bon.code_structure,
-      montantPaye: bon.avance || 0,
+      montantPaye: bon.avance ?? 0,
       statut: statutOperation, //bon.statutBon?.toUpperCase() || 'brouillon',
       dateOperation: bon.dateBon || bon.createdAt || new Date(),
       commentaire: `Bon ${bon.type} - ${bon.numero}`,
@@ -210,8 +231,8 @@ exports.updateFromBon = async (bon, transaction = null) => {
     // Mettre à jour les champs pertinents
     const updates = {
       statut: bon.statutBon?.toUpperCase() || operation.statut,
-      resteAPayer: bon.resteAPayer || operation.resteAPayer,
-      montantPaye: bon.avance || operation.montantPaye,
+      resteAPayer: bon.resteAPayer ?? operation.resteAPayer,
+      montantPaye: bon.avance ?? operation.montantPaye,
       dateOperation: bon.dateBon || operation.dateOperation,
       commentaire: `Bon ${bon.type} - ${bon.numero} (${bon.statutBon})`
     };
@@ -307,13 +328,13 @@ exports.synchroniserOperations = async (code_structure, transaction = null) => {
           const besoinMiseAJour = 
             operation.statut !== bon.statutBon?.toUpperCase() ||
             operation.resteAPayer !== bon.resteAPayer ||
-            operation.montantPaye !== (bon.avance || 0);
+            operation.montantPaye !== (bon.avance ?? 0);
 
           if (besoinMiseAJour) {
             await operation.update({
               statut: bon.statutBon?.toUpperCase() || operation.statut,
-              resteAPayer: bon.resteAPayer || operation.resteAPayer,
-              montantPaye: bon.avance || operation.montantPaye,
+              resteAPayer: bon.resteAPayer ?? operation.resteAPayer,
+              montantPaye: bon.avance ?? operation.montantPaye,
               commentaire: `Bon ${bon.type} - ${bon.numero} (${bon.statutBon})`
             }, { transaction: transaction || undefined });
             compteur.misesAJour++;
@@ -337,7 +358,21 @@ exports.create = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-    const operation = await Operation.create(req.body, { transaction });
+    // SÉCURITÉ : la structure provient de l'utilisateur connecté (jamais du corps)
+    // et les entités liées (bon, paiement) doivent appartenir à cette structure.
+    const codeStructure = authUser.code_structure || req.body?.code_structure;
+    if (authUser.code_structure && req.body?.code_structure && req.body.code_structure !== authUser.code_structure) {
+      await transaction.rollback();
+      return res.status(403).json({ message: 'Accès refusé : cette ressource n\'appartient pas à votre structure' });
+    }
+    const corpsSecurise = { ...req.body, code_structure: codeStructure };
+    const erreurEntite = await verifierEntitesOperation(corpsSecurise, codeStructure, transaction);
+    if (erreurEntite) {
+      await transaction.rollback();
+      return res.status(400).json({ message: erreurEntite });
+    }
+
+    const operation = await Operation.create(corpsSecurise, { transaction });
     await transaction.commit();
     res.status(201).json(operation);
   } catch (error) {
@@ -705,7 +740,28 @@ exports.update = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-    const [updated] = await Operation.update(req.body, {
+    // SÉCURITÉ : l'utilisateur ne modifie que les opérations de sa structure.
+    const operationExistante = await Operation.findByPk(req.params.id, { transaction });
+    if (!operationExistante) {
+      await transaction.rollback();
+      return res.status(404).json({ message: 'Opération non trouvée' });
+    }
+    if (operationExistante.code_structure && authUser.code_structure && operationExistante.code_structure !== authUser.code_structure) {
+      await transaction.rollback();
+      return res.status(403).json({ message: 'Accès refusé : cette ressource n\'appartient pas à votre structure' });
+    }
+    // La clé de structure et les identifiants ne sont pas modifiables depuis le client.
+    const corpsSecurise = { ...req.body };
+    delete corpsSecurise.code_structure;
+    delete corpsSecurise.bonId;
+    delete corpsSecurise.paiementId;
+    const erreurEntite = await verifierEntitesOperation(corpsSecurise, operationExistante.code_structure, transaction);
+    if (erreurEntite) {
+      await transaction.rollback();
+      return res.status(400).json({ message: erreurEntite });
+    }
+
+    const [updated] = await Operation.update(corpsSecurise, {
       where: { id: req.params.id },
       transaction
     });
@@ -733,6 +789,17 @@ exports.delete = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
+    // SÉCURITÉ : l'utilisateur ne supprime que les opérations de sa structure.
+    const operationExistante = await Operation.findByPk(req.params.id, { transaction });
+    if (!operationExistante) {
+      await transaction.rollback();
+      return res.status(404).json({ message: 'Opération non trouvée' });
+    }
+    if (operationExistante.code_structure && authUser.code_structure && operationExistante.code_structure !== authUser.code_structure) {
+      await transaction.rollback();
+      return res.status(403).json({ message: 'Accès refusé : cette ressource n\'appartient pas à votre structure' });
+    }
+
     const deleted = await Operation.destroy({
       where: { id: req.params.id },
       transaction

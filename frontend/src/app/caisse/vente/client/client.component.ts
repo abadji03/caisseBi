@@ -142,6 +142,7 @@ export class ClientComponent implements OnInit, OnDestroy {
   bonBrouillon: Bon | null = null;
   panierBrouillon: Panier | null = null;
   resetPanierFlag = false;
+  bonSubmissionError = 0;
 
   // Listes
   bons: Bon[] = [];
@@ -593,18 +594,24 @@ export class ClientComponent implements OnInit, OnDestroy {
   }
 
   onBonEnregistre(event: import('../../../modeles/bon.model').BonAvecFichier): void {
-    if (!this.selectedClient || !this.bonBrouillon || !this.panierBrouillon) {
+    if (!this.selectedClient) {
       this.toastr.error('Données manquantes pour l\'enregistrement');
       return;
     }
 
     event.bon.clientId  = this.selectedClient.id;
     event.bon.statutBon = 'validé';
-    event.bon.id        = this.bonBrouillon.id;
+    if (this.bonBrouillon?.id) {
+      event.bon.id = this.bonBrouillon.id;
+    }
 
-    this.enregistrerBon(event.bon, event.bon.panier!, event.fichier);
-    this.showBonForm = false;
-    this.bonBrouillonService.clearBrouillons();
+    const panier = event.bon.panier || this.panierBrouillon;
+    if (!panier) {
+      this.toastr.error('Veuillez ajouter au moins un article au panier');
+      return;
+    }
+
+    this.enregistrerBon(event.bon, panier, event.fichier);
   }
 
   private enregistrerBon(bon: import('../../../modeles/bon.model').Bon, panier: Panier, _fichier?: File | null): void {
@@ -659,6 +666,8 @@ export class ClientComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           this.toastr.success('Bon enregistré avec succès');
+          this.showBonForm = false;
+          this.bonBrouillonService.clearBrouillons();
           this.loadBonsAvecPagination();
           this.loadOperations();
           // Rafraîchir le solde du client
@@ -673,6 +682,7 @@ export class ClientComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Erreur enregistrement bon:', err);
+          this.bonSubmissionError++;
           this.toastr.error(err.error?.error || err.error?.message || 'Erreur lors de l\'enregistrement du bon');
         }
       });
@@ -746,14 +756,52 @@ export class ClientComponent implements OnInit, OnDestroy {
   }
 
   // Actions operations
-  onLivrerBon(bon: Bon): void { console.log('Livrer bon:', bon); }
-  onAnnulerBon(bon: Bon): void { console.log('Annuler bon:', bon); }
-  onRetournerBon(bon: Bon): void { console.log('Retourner bon:', bon); }
-  onFacturerBon(bon: Bon): void { console.log('Facturer bon:', bon); }
-  onImprimerBon(bon: Bon): void { console.log('Imprimer bon:', bon); }
-  onGenererTicketPaiementBon(bon: Bon): void { console.log('Générer ticket paiement bon:', bon); }
-  onGenererTicketVersement(operation: Operation): void { console.log('Générer ticket versement:', operation); }
-  onImprimerReleve(): void { console.log('Imprimer relevé client'); }
+  onLivrerBon(bon: Bon): void {
+    if (!confirm(`Livrer le bon ${bon.numero} ?`)) return;
+    this.changerStatutBonClient(bon, 'livré');
+  }
+  onAnnulerBon(bon: Bon): void {
+    if (!confirm(`Annuler le bon ${bon.numero} ? Cette action est irréversible.`)) return;
+    this.changerStatutBonClient(bon, 'annulé');
+  }
+  onRetournerBon(bon: Bon): void {
+    if (!confirm(`Retourner le bon ${bon.numero} ?`)) return;
+    this.changerStatutBonClient(bon, 'retourné');
+  }
+  onFacturerBon(bon: Bon): void {
+    this.toastr.warning(`La facturation d'un bon client n'est pas encore disponible dans cet écran`);
+  }
+  onImprimerBon(bon: Bon): void {
+    this.toastr.warning(`L'impression d'un bon n'est pas encore disponible dans cet écran`);
+  }
+  onGenererTicketPaiementBon(bon: Bon): void {
+    this.toastr.warning(`La génération du ticket de paiement n'est pas encore disponible dans cet écran`);
+  }
+  onGenererTicketVersement(operation: Operation): void {
+    this.toastr.warning(`La génération du ticket de versement n'est pas encore disponible dans cet écran`);
+  }
+  onImprimerReleve(): void {
+    this.toastr.warning(`L'impression du relevé n'est pas encore disponible dans cet écran`);
+  }
+
+  /** Change le statut d'un bon client via l'API et rafraîchit la liste. */
+  private changerStatutBonClient(bon: Bon, nouveauStatut: Bon['statutBon']): void {
+    this.isLoadingBon = true;
+    this.bonService.updateStatutBon(bon.id!, nouveauStatut)
+      .pipe(takeUntil(this.destroy$), finalize(() => this.isLoadingBon = false))
+      .subscribe({
+        next: () => {
+          this.toastr.success(`Bon ${bon.numero} marqué comme ${nouveauStatut}`);
+          const index = this.bons.findIndex(b => b.id === bon.id);
+          if (index !== -1) this.bons[index] = { ...this.bons[index], statutBon: nouveauStatut };
+          this.loadBonsAvecPagination();
+        },
+        error: (err) => {
+          console.error('Erreur changement de statut:', err);
+          this.toastr.error(err.error?.message || 'Erreur lors du changement de statut');
+        }
+      });
+  }
 
   get displayedMagasins(): Magasin[] { return this.magasins; }
 }

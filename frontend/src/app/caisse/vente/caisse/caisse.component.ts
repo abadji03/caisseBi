@@ -369,6 +369,8 @@ export class CaisseComponent implements OnInit, OnDestroy {
 
   /** ENREGISTRER UN SERVICE */
   enregistrerService() {
+    if (this.isLoading) return;
+
     if(!confirm('Confirmer la transaction?')) return;
     if (!this.serviceMontant || this.serviceMontant <= 0) {
       this.toastr.warning('Veuillez remplir la description et le montant du service');
@@ -407,7 +409,10 @@ export class CaisseComponent implements OnInit, OnDestroy {
     };
     this.isLoading = true;
   
-    this.panierService.createPanierComplet(panierCompletData).pipe(takeUntil(this.destroy$))
+    this.panierService.createPanierComplet(panierCompletData).pipe(
+      takeUntil(this.destroy$),
+      finalize(() => this.isLoading = false)
+    )
     .subscribe({
       next: (result) => {
           if(result.paiement && result.paiement.id){
@@ -445,15 +450,14 @@ export class CaisseComponent implements OnInit, OnDestroy {
         console.error('Erreur:', error);
         this.toastr.error(error.error?.error || 'Erreur lors de l\'enregistrement', 'Erreur');
       },
-      complete: () => {
-        this.isLoading = false;
-      }
     });
     
   }
 
   /** ENREGISTRER LA VENTE (Produits + Services) */
   enregistrerVente() {
+    if (this.isLoading) return;
+
     if(!confirm('Confirmer la transaction ?')) return;
     if(!this.panierValide){
       this.toastr.warning('Veuillez valider le panier avant d\'enregistrer la vente');
@@ -608,7 +612,10 @@ nouvelleVente() {
     };
     this.isLoading = true;
   
-    this.panierService.createPanierComplet(panierCompletData).pipe(takeUntil(this.destroy$))
+    this.panierService.createPanierComplet(panierCompletData).pipe(
+      takeUntil(this.destroy$),
+      finalize(() => this.isLoading = false)
+    )
     .subscribe({
       next: (result) => {
           if(result.paiement && result.paiement.id){
@@ -649,9 +656,6 @@ nouvelleVente() {
         console.error('Erreur:', error);
         this.toastr.error(error.error?.error || 'Erreur lors de l\'enregistrement', 'Erreur');
       },
-      complete: () => {
-        this.isLoading = false;
-      }
     });
   }
 

@@ -140,7 +140,9 @@ export class BonsService {
     if (numeroFacture) {
       body.numeroFacture = numeroFacture;
     }
-    return this.http.patch<Bon>(`${API_URL}/${id}/bis/statut`, body, {})
+    // La route "/:id/bis/statut" n'existe pas : on passe par "/statut" (PATCH /bons/:id/statut),
+    // qui accepte désormais aussi numeroFacture pour le flux de facturation.
+    return this.http.patch<Bon>(`${API_URL}/${id}/statut`, body, {})
       .pipe(catchError(err => this.handleError(err)));
   }
 

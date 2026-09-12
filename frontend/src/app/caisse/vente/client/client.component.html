@@ -355,6 +355,7 @@
             <div *ngIf="showPaiementForm" class="mt-3 mb-5">
               <app-paiement
                 [showPaiementForm]="true"
+                [isSubmitting]="isLoadingPaiement"
                 [titre]="'Formulaire d\'ajout d\'un paiement client'"
                 [typeEntite]="typeEntite"
                 [resetFormPaiement]="!showPaiementForm"
@@ -378,6 +379,7 @@
                 [showFileField]="true"
                 [generatedNumero]="generatedNumero"
                 [resetForm]="!showBonForm"
+                [submissionError]="bonSubmissionError"
                 (onAnnulerBon)="onBonAnnule()"
                 (onReinitialiserPanier)="resetPanierFlag = true"
               ></app-bon> -->

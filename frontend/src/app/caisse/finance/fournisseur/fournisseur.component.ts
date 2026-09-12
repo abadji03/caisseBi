@@ -187,6 +187,7 @@ export class FournisseurComponent implements OnInit, OnDestroy {
   bonBrouillon: Bon | null = null;
   panierBrouillon: Panier | null = null;
   resetPanierFlag = false;
+  bonSubmissionError = 0;
 
   // Données pour les listes enfants
   bons: Bon[] = [];
@@ -1019,8 +1020,6 @@ private mettreAJourSoldeFournisseurDansMap(fournisseur: Fournisseur): void {
     event.bon.id = this.bonBrouillon.id;
 
     this.enregistrerBon(event.bon, event.bon.panier!, event.fichier);
-    this.showBonForm = false;
-    this.bonBrouillonService.clearBrouillons();
   }
 
   onBonAnnule(): void {
@@ -1045,7 +1044,6 @@ private mettreAJourSoldeFournisseurDansMap(fournisseur: Fournisseur): void {
     event.paiement.fournisseurId = this.selectedFournisseur.id;
     event.paiement.typePaiement = this.typeEntite;
     this.enregistrerPaiement(event.paiement, event.fichier);
-    this.showPaiementForm = false;
   }
 
   onPaiementAnnule(): void {
@@ -1107,6 +1105,7 @@ private mettreAJourSoldeFournisseurDansMap(fournisseur: Fournisseur): void {
         },
         error: (error) => {
           console.error('Erreur:', error);
+          this.bonSubmissionError++;
           this.toastr.error(error.error?.error || 'Erreur lors de l\'enregistrement');
           this.isLoadingBon = false;
         }
@@ -1270,7 +1269,10 @@ private createDepenseAvecCategorie(paiement: any, categoryCode: string): void {
 
     this.isLoadingPaiement = true;
     this.paiementService.create(formData)
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.isLoadingPaiement = false)
+      )
       .subscribe({
         next: (result) => {
           //this.createDepense(result);
@@ -1282,8 +1284,7 @@ private createDepenseAvecCategorie(paiement: any, categoryCode: string): void {
         error: (error) => {
           console.error('Erreur:', error);
           this.toastr.error(error.error?.error || 'Erreur lors de l\'enregistrement');
-        },
-        complete: () => this.isLoadingPaiement = false
+        }
       });
   }
 
@@ -1516,7 +1517,7 @@ onFacturerBon(bon: Bon): void {
     const bonCompletData = this.preparerDonneesPourMiseAJour(bonMiseAJour);
 
     this.bonService.createBonComplet(bonCompletData)
-      .pipe(takeUntil(this.destroy$))
+      .pipe(takeUntil(this.destroy$), finalize(() => this.isLoadingBon = false))
       .subscribe({
         next: (result) => {
           this.toastr.success(`Bon ${bon.numero} marqué comme ${nouveauStatut}`);
@@ -1527,7 +1528,9 @@ onFacturerBon(bon: Bon): void {
           console.error('Erreur:', error);
           this.toastr.error(error.error?.message || 'Erreur lors du changement de statut');
         },
-        complete: () => this.isLoadingBon = false
+        // complete ne se déclenche pas en cas d'erreur : la remise à zéro
+        // de isLoadingBon est désormais garantie par finalize() ci-dessus.
+        /* complete: () => this.isLoadingBon = false */
       });
   }
 

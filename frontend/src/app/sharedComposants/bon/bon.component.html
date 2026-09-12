@@ -14,6 +14,11 @@
   </ul>
 </div>
 
+<div *ngIf="isFormSubmitting" class="alert alert-info d-flex align-items-center" role="status">
+  <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+  Enregistrement du bon en cours...
+</div>
+
 <form [formGroup]="bonForm" (ngSubmit)="submitBon()">
   
   <!-- ==================== SECTION INFORMATIONS ==================== -->
@@ -290,8 +295,8 @@
       <i class="bi bi-x-lg me-2"></i>Annuler
     </button>
     
-    <button type="submit" class="btn btn-success px-4" 
-            [disabled]="!canEnregistrer">
+        <button type="submit" class="btn btn-success px-4" 
+          [disabled]="!canEnregistrer || isFormSubmitting">
       <i class="bi bi-floppy2-fill me-2"></i>Enregistrer le Bon
     </button>
   </div>

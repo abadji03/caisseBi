@@ -25,6 +25,21 @@ export class OperationsService {
     return handleApiError(this.logger, 'OperationsService', error, message);
   }
 
+  private normaliserOperation(operation: Operation): Operation {
+    const donnees = operation as Operation & {
+      Bon?: Operation['bon'];
+      Paiement?: Operation['paiement'];
+      Users?: Operation['user'];
+    };
+
+    return new Operation({
+      ...operation,
+      bon: operation.bon ?? donnees.Bon,
+      paiement: operation.paiement ?? donnees.Paiement,
+      user: operation.user ?? donnees.Users
+    });
+  }
+
 
   // ==============================
   // MÉTHODES PRINCIPALES
@@ -43,6 +58,10 @@ export class OperationsService {
     return this.http.get<OperationsResponse>(`${this.apiUrl}/operations`, {
       params
     }).pipe(
+      map(response => ({
+        ...response,
+        operations: response.operations.map(operation => this.normaliserOperation(operation))
+      })),
       tap(response => this.logger.info(`Opérations chargées: ${response.operations.length} / ${response.total} total`)),
       catchError(error => this.handleError(error, 'Erreur chargement opérations'))
     );
@@ -67,6 +86,7 @@ export class OperationsService {
       `${this.apiUrl}/operations/${endpoint}/${code_structure}/${entityId}`,
       { params }
     ).pipe(
+      map(operations => operations.map(operation => this.normaliserOperation(operation))),
       tap(operations => this.logger.info(`Opérations ${endpoint} chargées: ${operations.length}`)),
       catchError(error => this.handleError(error, `Erreur chargement opérations ${endpoint}`))
     );
@@ -91,6 +111,7 @@ export class OperationsService {
   getOperationById(id: number): Observable<Operation> {
     return this.http.get<Operation>(`${this.apiUrl}/operations/${id}`, {
     }).pipe(
+      map(operation => this.normaliserOperation(operation)),
       tap(operation => this.logger.info('Détails opération chargés', operation)),
       catchError(error => this.handleError(error, `Erreur chargement opération ${id}`))
     );
