@@ -14,7 +14,8 @@ export class Structure {
 
   // Informations fiscales
   numero_identification_fiscale?: string;
-  registreCommerce?: string;
+  registreCommerce?: string;     // camelCase (usage frontend)
+  registre_commerce?: string;    // snake_case (retourné par l'API backend)
   statutJuridique?: string;
 
   // Informations bancaires

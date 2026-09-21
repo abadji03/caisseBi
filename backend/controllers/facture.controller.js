@@ -60,7 +60,7 @@ exports.createFactureCommande = async (req, res) => {
     
     const bon = await Bon.findByPk(bonId, {
       include: [
-        { model: db.Panier, include: [{ model: db.ArticlePanier }] },
+        { model: db.Panier, include: [{ model: db.ArticlePanier, include: [{ model: db.Produit }] }] },
         { model: db.Client},
         { model: db.Magasin }
       ],
@@ -418,7 +418,7 @@ exports.createFactureAchat = async (req, res) => {
     
     if (bonId) {
       bon = await Bon.findByPk(bonId, {
-        include: [{ model: db.Panier, include: [{ model: db.ArticlePanier }] }],
+        include: [{ model: db.Panier, include: [{ model: db.ArticlePanier, include: [{ model: db.Produit }] }] }],
         transaction
       });
       
@@ -1286,7 +1286,12 @@ logger.error('facture.controller', 'Erreur insertion logo:', err.message);
         const designation = article.Produit?.designation || 'Produit sans nom';
         const quantite = parseFloat(article.quantite) || 0;
         const prixUnitaire = parseFloat(article.prixUnitaire) || 0;
-        const total = quantite * prixUnitaire;
+        // R3 FIX : utiliser le totalTTC stocké sur l'article (inclut remise réelle)
+        // Fallback sur quantite * prixUnitaire si totalTTC absent
+        const total = parseFloat(article.totalTTC) > 0
+          ? parseFloat(article.totalTTC)
+          : quantite * prixUnitaire;
+        const montantRemiseArticle = parseFloat(article.montantRemise) || 0;
 
         // Ligne de séparation (sauf première ligne)
         if (rowCount > 0) {
@@ -1339,7 +1344,10 @@ logger.error('facture.controller', 'Erreur insertion logo:', err.message);
     doc.text(formatMoney(montantHT), totalBoxX + 190, totalY, { align: 'right' });
     totalY += 18;
 
-    doc.text('TVA (18%):', totalBoxX + 15, totalY);
+    // R4 FIX : taux TVA dynamique calculé depuis les montants réels
+    const tauxTVA = montantHT > 0 ? Math.round((montantTVA / montantHT) * 100) : 0;
+    const libelleTVA = tauxTVA > 0 ? `TVA (${tauxTVA}%):` : 'TVA:';
+    doc.text(libelleTVA, totalBoxX + 15, totalY);
     doc.text(formatMoney(montantTVA), totalBoxX + 190, totalY, { align: 'right' });
     totalY += 18;
 

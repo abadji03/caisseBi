@@ -324,7 +324,8 @@ export class RapportStockService {
   }
 
   /** ================================
-   *  MÉTHODE POUR EXPORT PDF (optionnel)
+   *  MÉTHODE POUR EXPORT PDF
+   *  Route correcte : /rapport-stock/pdf
    ================================== */
   exportPDF(filters: {
     code_structure: string;
@@ -334,7 +335,7 @@ export class RapportStockService {
   }): Observable<any> {
     const params = this.buildParams(filters);
 
-    return this.http.get(`${this.apiUrl}/export/pdf`, {
+    return this.http.get(`${this.apiUrl}/pdf`, {
       params,
       responseType: 'blob'
     }).pipe(
@@ -344,6 +345,7 @@ export class RapportStockService {
 
   /** ================================
    *  MÉTHODE POUR EXPORT EXCEL
+   *  Route correcte : /rapport-stock/excel
    ================================== */
   exportExcel(filters: {
     code_structure: string;
@@ -353,7 +355,7 @@ export class RapportStockService {
   }): Observable<any> {
     const params = this.buildParams(filters);
 
-    return this.http.get(`${this.apiUrl}/export/excel`, {
+    return this.http.get(`${this.apiUrl}/excel`, {
       params,
       responseType: 'blob'
     }).pipe(

@@ -650,7 +650,20 @@ nouvelleVente() {
         this.bonBrouillonService.clearBrouillons();
         this.panierData = null;
         this.resetVente();
-        //this.imprimerTicket(result.panier!);
+        // R9 FIX : impression automatique du ticket après chaque vente réussie
+        if (result.panier) {
+          // FIX colonnes vides : la réponse backend renvoie le panier sans les
+          // lignes d'articles ; on repart des articles du brouillon local
+          // (produit, quantité, PU, remise, TVA...) pour remplir le ticket.
+          const ticketPanier = {
+            ...result.panier,
+            articles: (panierAEnregistrer.articles || []).length
+              ? panierAEnregistrer.articles
+              : (result.panier.articles || []),
+            Paiements: result.paiement ? [result.paiement] : (result.panier.Paiements || []),
+          };
+          this.imprimerTicket(ticketPanier);
+        }
       },
       error: (error) => {
         console.error('Erreur:', error);
@@ -818,12 +831,14 @@ this.createRecette(formData);
                       },
                       error: (err) => {
                         console.error('Erreur mise à jour recette associée:', err);
+                        this.toastr.warning('Le retour est enregistré mais la recette associée n\u2019a pas pu être mise à jour', 'Recette');
                       }
                     });
                   }
                 },
                 error: (err) => {
                   console.error('Erreur récupération recette par paiementId:', err);
+                  this.toastr.warning('Le retour est enregistré mais la recette associée n\u2019a pas pu être synchronisée', 'Recette');
                 }
               });
             }
@@ -849,7 +864,12 @@ retournerArticle(article: ArticlePanier) {
   if (confirm('Voulez-vous vraiment retourner cet article ?')) {
 
     // 1️⃣ Filtrer les articles
-    const nouveauxArticles = (this.selectedTransaction.articles || [])
+    // NB : selon la source, les lignes sont sous `articles` (brouillon local)
+    // ou `ArticlePaniers` (transaction chargée de l'API).
+    const articlesActuels = this.selectedTransaction.articles?.length
+      ? this.selectedTransaction.articles
+      : (this.selectedTransaction.ArticlePaniers || []);
+    const nouveauxArticles = articlesActuels
       .filter(a => a.id !== article.id)
       .map(a => new ArticlePanier(a));
     
@@ -893,9 +913,12 @@ retournerArticle(article: ArticlePanier) {
 
 
     // 4️⃣ Créer la nouvelle instance de panier
+    // ArticlePaniers est mis à jour également : c'est la propriété affichée
+    // par le tableau des détails (format API Sequelize).
     const panier = new Panier({
       ...this.selectedTransaction,
       articles: nouveauxArticles,
+      ArticlePaniers: nouveauxArticles,
       remiseParArticle,
       tvaParArticle,
       remiseMode: remiseParArticle ? 'article' : 'globale',
@@ -948,16 +971,27 @@ retournerArticle(article: ArticlePanier) {
       this.panierService.createPanierComplet(panierCompletData).pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (result) => {
+            // Totals, list and stock refreshed IMMEDIATELY after the return,
+            // regardless of the recipe update chain.
+            this.toastr.success('Article retourné avec succès');
+            this.updateStockApresSuppressionArticle(article);
+            this.loadTransactions();
             if(result.paiement && result.paiement.id){
               this.recetteService.getByPaiementId(result.paiement.id)
               .pipe(takeUntil(this.destroy$))
               .subscribe({
                 next: (recetteExistante) => {
                   if(recetteExistante && recetteExistante.id){
+                    // Recalcul de la recette après retour d'article :
+                    // montant = nouveau total TTC du panier ; si tout a été
+                    // retourné (total 0), la recette est annulée.
+                    const nouveauStatutRecette = (panier.totalTTC ?? 0) <= 0
+                      ? 'annulé'
+                      : recetteExistante.statutRecette;
                     const recette = {
                       ...recetteExistante,
-                      montant:recetteExistante.montant,
-                      statutRecette: recetteExistante.statutRecette
+                      montant: panier.totalTTC,
+                      statutRecette: nouveauStatutRecette
                     }
                     const formData = new FormData();
 
@@ -972,20 +1006,19 @@ retournerArticle(article: ArticlePanier) {
                     .pipe(takeUntil(this.destroy$))
                     .subscribe({
                       next: () => {
-                        this.updateStockApresSuppressionArticle(article);
-                        this.toastr.success('Article retourné avec succès');
-                        this.loadTransactions();
                         //this.imprimerTicket(result.panier!);
-                         
+                        
                       },
                       error: (err) => {
                         console.error('Erreur mise à jour recette associée:', err);
+                        this.toastr.warning('Le retour est enregistré mais la recette associée n\u2019a pas pu être mise à jour', 'Recette');
                       }
                     });
                   }
                 },
                 error: (err) => {
                   console.error('Erreur récupération recette par paiementId:', err);
+                  this.toastr.warning('Le retour est enregistré mais la recette associée n\u2019a pas pu être synchronisée', 'Recette');
                 }
               });
             }
@@ -1097,6 +1130,13 @@ updateStockApresSuppressionArticle(article: ArticlePanier): void {
         this.totalPages = response?.pagination?.totalPages ?? 0;
         this.hasNext = response?.pagination?.hasNext ?? false;
         this.hasPrev = response?.pagination?.hasPrev ?? false;
+
+        // Resynchroniser la transaction sélectionnée (modal détails) avec
+        // les données fraîches : totaux et articles après un retour d'article.
+        if (this.selectedTransaction?.id) {
+          const maj = this.paniers.find(p => p.id === this.selectedTransaction!.id);
+          if (maj) this.selectedTransaction = maj;
+        }
         
       },
       error: (err) => {

@@ -1,12 +1,16 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rapport Financier</title>
     
-    <!-- Chart.js -->
+    <!-- Chart.js — bundle local injecté par le serveur (pas de dépendance CDN) -->
+    <% if (locals.chartjsBundle) { %>
+    <script><%-chartjsBundle%></script>
+    <% } else { %>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <% } %>
     
     <style>
         /* ============================================ */
@@ -578,11 +582,15 @@
                                     <small class="text-muted">
                                         Évolution: 
                                         <% if (indicateursFinanciers?.evolutionCA) { %>
-                                            <span class="<%= indicateursFinanciers.evolutionCA.tendance === 'hausse' ? 'text-success' : 
-                                                                 (indicateursFinanciers.evolutionCA.tendance === 'baisse' ? 'text-danger' : 'text-warning') %>">
-                                                <%= (indicateursFinanciers.evolutionCA.pourcentage || 0).toFixed(0) %>%
-                                                <% if (indicateursFinanciers.evolutionCA.tendance === 'hausse') { %>↑<% } %>
-                                                <% if (indicateursFinanciers.evolutionCA.tendance === 'baisse') { %>↓<% } %>
+                                            <%
+                                              const evCA = indicateursFinanciers.evolutionCA;
+                                              const evTendance = evCA.tendance;
+                                              const evClasse = (evTendance === '↑') ? 'text-success' : (evTendance === '↓' ? 'text-danger' : 'text-warning');
+                                              const evVal = evCA.valeur !== undefined ? evCA.valeur : (evCA.pourcentage || 0);
+                                            %>
+                                            <span class="<%= evClasse %>">
+                                                <%= Math.abs(evVal).toFixed(0) %>%
+                                                <%= evTendance %>
                                             </span>
                                         <% } %>
                                     </small>
@@ -1292,6 +1300,80 @@
                 },
             });
         }
-    </script>
+    
+    <!-- ============================================ -->
+    <!-- SECTION OBSERVATIONS & RECOMMANDATIONS AUTO  -->
+    <!-- ============================================ -->
+    <div class="container">
+    <div class="card mb-4">
+        <div class="card-header bg-dark">
+            <h3 class="fw-bold mb-0">&#128203; Observations &amp; Recommandations</h3>
+        </div>
+        <div class="card-body">
+            <%
+            const obs = [];
+            const ind = indicateursFinanciers || {};
+            const flux = ind.fluxTresorerie || {};
+            const totalRecettes = (ind.chiffreAffaires || 0) + (ind.autresRecettes || 0);
+
+            if (ind.beneficeNet < 0) {
+                obs.push({ type: 'danger', msg: '&#128308; Résultat déficitaire : ' + Math.abs(ind.beneficeNet || 0).toLocaleString('fr-FR') + ' F CFA de pertes. Revoyez la structure des dépenses.' });
+            } else {
+                const margePct = totalRecettes > 0 ? ((ind.beneficeNet / totalRecettes) * 100) : 0;
+                if (margePct < 10 && margePct >= 0) {
+                    obs.push({ type: 'warning', msg: '&#128993; Marge nette faible (' + margePct.toFixed(1) + '%). Opportunité d\'optimisation des coûts.' });
+                } else if (margePct >= 10) {
+                    obs.push({ type: 'success', msg: '&#128994; Résultat positif (' + margePct.toFixed(1) + '% de marge nette).' });
+                }
+            }
+
+            if (flux.soldeFinal !== undefined && flux.soldeFinal < 0) {
+                obs.push({ type: 'danger', msg: '&#128308; Solde de trésorerie négatif (' + (flux.soldeFinal || 0).toLocaleString('fr-FR') + ' F CFA). Risque de tension de trésorerie.' });
+            }
+
+            if (totalRecettes > 0 && (ind.totalDepenses || 0) > 0) {
+                const ratioDepRec = ((ind.totalDepenses / totalRecettes) * 100);
+                if (ratioDepRec > 80) {
+                    obs.push({ type: 'warning', msg: '&#128993; Les dépenses représentent ' + ratioDepRec.toFixed(0) + '% des recettes (seuil critique : 80%).' });
+                }
+            }
+
+            if (ind.evolutionCA && ind.evolutionCA.tendance === '&#8595;') {
+                obs.push({ type: 'warning', msg: '&#128993; Chiffre d\'affaires en baisse de ' + Math.abs(ind.evolutionCA.valeur || 0) + '% par rapport à la période précédente.' });
+            }
+
+            if ((ind.nbVentes || 0) === 0 && (ind.nbDepenses || 0) === 0) {
+                obs.push({ type: 'secondary', msg: '&#9898; Aucune transaction enregistrée sur cette période.' });
+            }
+
+            if (obs.length === 0) {
+                obs.push({ type: 'success', msg: '&#128994; Situation financière globalement saine sur cette période.' });
+            }
+            %>
+            <% obs.forEach(function(o) { %>
+            <div style="border-left: 4px solid <%= o.type === 'danger' ? '#dc3545' : (o.type === 'warning' ? '#ffc107' : (o.type === 'success' ? '#198754' : '#6c757d')) %>; padding: 10px 15px; margin-bottom: 10px; border-radius: 6px; background: <%= o.type === 'danger' ? '#fff5f5' : (o.type === 'warning' ? '#fffbe6' : (o.type === 'success' ? '#f0fff4' : '#f8f9fa')) %>;">
+                <%- o.msg %>
+            </div>
+            <% }); %>
+
+            <div class="mt-4" style="border: 1px dashed #ccc; border-radius: 6px; padding: 15px; min-height: 80px;">
+                <p class="text-muted" style="font-size: 12px; margin-bottom: 8px;">Commentaires du responsable :</p>
+                <div style="min-height: 60px;"></div>
+            </div>
+
+            <div class="rapport-footer mt-4">
+                <div>
+                    <p class="text-muted" style="font-size: 12px;">Généré le <%= new Date().toLocaleString('fr-FR') %></p>
+                    <p class="text-muted" style="font-size: 12px;">Par : <%= utilisateur ? utilisateur.nom : 'Système' %></p>
+                </div>
+                <div class="signature">
+                    <p>Visa du responsable</p>
+                    <div class="signature-line"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+</script>
 </body>
 </html>

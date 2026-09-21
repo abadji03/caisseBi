@@ -1,875 +1,704 @@
-<div class="container-fluid">
+<div class="container-fluid p-3 p-md-4">
 
-  <!-- Section Filtres avec carte élégante -->
-  <div class="card border-0 shadow-lg mb-1">
-    <div class="card-header bg-white border-0 py-1 d-flex justify-content-between">
-      <h1 class="display-6 fw-bold mb-2">
-            <i class="bi bi-graph-up-arrow me-2"></i>Récapitulatifs des ventes
-      </h1>
-      <div class="alert alert-info border-0 py-2 mb-0"> 
-          <small>
-            <i class="bi bi-info-circle-fill me-2 fs-5"></i>
-            <span *ngIf="!isAdmin && magasinId" class="ms-1">Votre magasin seulement</span>
-            <span *ngIf="isAdmin && magasinSelectionne" class="ms-1">Magasin spécifique</span>
-            <span *ngIf="isAdmin && !magasinSelectionne" class="ms-1">Tous les magasins de la structure</span>
-          </small>
-      </div>
-      <div class="d-flex align-items-center flex-wrap gap-3">
-            <div class="d-flex align-items-center">
-              <i class="bi bi-building me-2 fs-5"></i>
-              <span class="fw-semibold">{{ currentStructure?.nom_structure || 'Chargement...' }}</span>
-            </div>
-            <span *ngIf="currentNiveau === 'magasin' && currentMagasinNom" class="d-flex align-items-center">
-              <i class="bi bi-arrow-right mx-2"></i>
-              <i class="bi bi-shop me-2"></i>
-              <span class="fw-semibold">{{ currentMagasinNom }}</span>
-            </span>
-          </div>
-    </div>
-    <div class="card-body">
-      <div class="row g-3">
-        <!-- Magasin (uniquement pour les admins) -->
-        <div *ngIf="canSelectMagasin" class="col-md-3">
-          <label for="magasin" class="form-label fw-medium">
-            <i class="bi bi-shop me-1"></i>Magasin
-          </label>
-          <select 
-            id="magasin"
-            [(ngModel)]="magasinSelectionne" 
-            (change)="onMagasinChange()"
-            class="form-select form-select-md"
-          >
-            <option [ngValue]="null">Tous les magasins</option>
-            <option *ngFor="let magasin of magasins" [ngValue]="magasin">
-              {{ magasin.nom }}
-            </option>
-          </select>
-          <div class="form-text">
-            <i class="bi bi-info-circle me-1"></i>
-            {{ magasinSelectionne ? 'Filtré par magasin' : 'Tous les magasins de la structure' }}
-          </div>
-        </div>
-        
-        <!-- Agent -->
-        <div class="col-md-3">
-          <label for="agent" class="form-label fw-medium">
-            <i class="bi bi-person-badge me-1"></i>Agent
-          </label>
-          <select 
-            id="agent"
-            [(ngModel)]="agentSelectionne" 
-            (change)="onAgentChange()"
-            class="form-select form-select-md"
-          >
-            <option [ngValue]="null">Tous les agents</option>
-            <option *ngFor="let agent of agents" [ngValue]="agent">
-              {{ agent?.['nom'] }}
-            </option>
-          </select>
-        </div>
-        
-        <!-- Période -->
-        <div class="col-md-2">
-          <label for="periodeSelectionnee" class="form-label fw-medium">
-            <i class="bi bi-calendar-range me-1"></i>Période
-          </label>
-          <select 
-            id="periodeSelectionnee"
-            [(ngModel)]="periodeSelectionnee" 
-            (change)="onPeriodeChange()"
-            class="form-select form-select-md"
-          >
-            <option *ngFor="let periode of periodes" [value]="periode.value">{{ periode.label }}</option>
-          </select>
-        </div>
-        
-        <!-- Date de référence -->
-        <div *ngIf="periodeSelectionnee !== 'jour'" class="col-md-2">
-          <label for="jour" class="form-label fw-medium">
-            <i class="bi bi-calendar-date me-1"></i>Date de référence
-          </label>
-          <input 
-            id="jour"
-            type="date" 
-            [(ngModel)]="dateReference" 
-            (change)="onDateChange()"
-            class="form-control form-control-md"
-          />
-        </div>
-        <div class="col-md-2 text-end d-flex align-items-end">
-          <button 
-            (click)="resetFilters()"
-            [disabled]="!hasActiveFilters"
-            class="btn btn-outline-secondary"
-          >
-            <i class="bi bi-arrow-clockwise me-2"></i>Réinitialiser
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Messages d'état -->
-  <div *ngIf="errorMessage && !loading" class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
-    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-    {{ errorMessage }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-  </div>
-
-  <!-- Indicateur de chargement -->
-  <div *ngIf="loading" class="text-center my-5 py-5">
-    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
-      <span class="visually-hidden">Chargement...</span>
-    </div>
-    <p class="mt-3 fs-5 text-muted">Chargement des données en cours...</p>
-  </div>
-
-  <!-- Section Indicateurs Clés -->
-  <div *ngIf="!loading && kpiData" class="mb-2">
-    <div class="d-flex justify-content-between align-items-center mb-1">
-      <h2 class="h3 fw-bold">
-        <i class="bi bi-speedometer2 me-2"></i>Indicateurs Clés
-      </h2>
-      <span class="badge bg-secondary">
-        <i class="bi bi-calendar-check me-1"></i>{{ getPeriodeLabel() }}
-      </span>
-    </div>
-
-    <div class="row g-4">
-      <!-- Chiffre d'affaires -->
-      <div class="col-xl-4 col-md-6">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body p-4">
-            
-            <div class="d-flex justify-content-between mb-3">
-              <h5 class="text-muted fw-semibold mb-0">
-                <i class="bi bi-cart-check me-2"></i>CA des ventes
-              </h5>
-              <span class="badge bg-primary bg-opacity-10 text-primary">
-                Activité
-              </span>
-            </div>
-
-            <h3 class="fw-bold mb-1">
-              {{ formatMontant(kpiData.caVendu.totalVendu) }} F CFA
-            </h3>
-
-            <div class="text-muted small mb-3">
-              {{ kpiData.caVendu.nombrePaniers }} paniers •
-              Ticket moyen {{ formatMontant(kpiData.caVendu.ticketMoyenVente) }} F CFA
-            </div>
-
-            <div *ngIf="comparatifData"
-                class="d-flex align-items-center"
-                [ngClass]="getVariationClass(comparatifData.vaCAVendu.variationPourcent)">
-              <i class="bi me-2"
-                [ngClass]="getVariationIcon(comparatifData.vaCAVendu.variationPourcent)"></i>
-              <strong>
-                {{ comparatifData.vaCAVendu.variationPourcent.toFixed(1) }}%
-              </strong>
-              <span class="ms-2 text-muted small">
-                vs {{periodeSelectionnee}} précédente ({{comparatifData.vaCAVendu.precedent}})
-              </span>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-      <div class="col-xl-4 col-md-6">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body p-4">
-
-            <div class="d-flex justify-content-between mb-3">
-              <h5 class="text-muted fw-semibold mb-0">
-                <i class="bi bi-cash-stack me-2"></i>CA encaissé
-              </h5>
-              <span class="badge bg-success bg-opacity-10 text-success">
-                Trésorerie
-              </span>
-            </div>
-
-            <h3 class="fw-bold text-success mb-1">
-              {{ formatMontant(kpiData.caEncaisse.totalEncaisse) }} F CFA
-            </h3>
-
-            <div class="text-muted small mb-3">
-              {{ kpiData.caEncaisse.nombrePaiements }} paiements •
-              Ticket moyen {{ formatMontant(kpiData.caEncaisse.ticketMoyenEncaisse) }} F
-            </div>
-
-            <div *ngIf="comparatifData"
-                class="d-flex align-items-center"
-                [ngClass]="getVariationClass(comparatifData.vaCAEncaisse.variationPourcent)">
-              <i class="bi me-2"
-                [ngClass]="getVariationIcon(comparatifData.vaCAEncaisse.variationPourcent)"></i>
-              <strong>
-                {{ comparatifData.vaCAEncaisse.variationPourcent.toFixed(1) }}%
-              </strong>
-              <span class="ms-2 text-muted small">
-                vs {{periodeSelectionnee}} précédente ({{comparatifData.vaCAEncaisse.precedent}})
-              </span>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-
-      <div class="col-xl-4 col-md-12">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body p-4">
-
-            <h5 class="text-muted fw-semibold mb-3">
-              <i class="bi bi-bank me-2"></i>Situation financière
-            </h5>
-
-            <div class="mb-3">
-              <span class="text-muted small">Reste à encaisser</span>
-              <h4 class="fw-bold text-warning mb-0">
-                {{ formatMontant(kpiData.ecartCA) }} F CFA
-              </h4>
-            </div>
-              <div *ngIf="caisseTheoriqueData" class="mb-0">
-                <span class="text-muted small">Caisse théorique (espèces)</span>
-                <h4 class="fw-bold mb-0">
-                  {{ formatMontant(caisseTheoriqueData.caisseTheorique) }} F CFA
-                </h4>
-              </div>
-              <button class="btn btn-sm btn-outline-secondary"
-                      (click)="showRepartitionComptes = !showRepartitionComptes">
-                <i class="bi" [ngClass]="showRepartitionComptes ? 'bi-dash' : 'bi-plus'"></i>
-              </button>
-
-            <hr *ngIf="showRepartitionComptes && paiementsData?.parCompte?.length" />
-         <!-- Répartition des comptes -->
-            <div *ngIf="showRepartitionComptes && paiementsData?.parCompte?.length">
-              <span class="text-muted small d-block mb-2">Encaissement par compte</span>
-
-              <div *ngFor="let c of paiementsData?.parCompte" class="d-flex justify-content-between mb-1">
-                <span>{{ c.compte }}</span>
-                <strong>{{ formatMontant(c.total) }} F</strong>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-  <!-- Section Statistiques Spéciales -->
-<div *ngIf="!loading && kpiData" class="mb-2">
-  <div class="d-flex justify-content-between align-items-center mb-2">
-    <h2 class="h3 fw-bold mb-0">
-      <i class="bi bi-stars me-2"></i>Ventes à crédit, Avoirs et Retour
-    </h2>
-    <button 
-      (click)="toggleStatsSpeciales()" 
-      class="btn btn-outline-dark btn-sm"
-    >
-      <i class="bi" [class.bi-eye]="!afficherStatsSpeciales" [class.bi-eye-slash]="afficherStatsSpeciales"></i>
-      {{ afficherStatsSpeciales ? 'Masquer' : 'Afficher' }}
-    </button>
-  </div>
-
-  <!-- Indicateur de chargement -->
-  <div *ngIf="chargementStatsSpeciales" class="text-center py-3">
-    <div class="spinner-border spinner-border-sm text-warning" role="status">
-      <span class="visually-hidden">Chargement...</span>
-    </div>
-    <small class="text-muted">Chargement des statistiques spéciales...</small>
-  </div>
-
-  <!-- Contenu des statistiques spéciales -->
-  <div *ngIf="afficherStatsSpeciales && statsSpecialesFormatees" class="row g-4">
-    <div class="col-xl-4 col-md-8">
-      <div class="card border-start border-warning border-0 shadow-sm h-100">
-          <div class="card-body p-4">
-            <div class="d-flex justify-content-between align-items-start mb-3">
-              <div>
-                <span class="text-muted fs-7 fw-medium">Remises accordées</span>
-                <h3 class="fw-bold mt-2 mb-0">{{ formatMontant(remisesData?.totalRemise ?? 0) }} F CFA</h3>
-              </div>
-              <div class="p-3 rounded-circle">
-                <i class="bi bi-percent fs-3 text-warning"></i>
-              </div>
-            </div>
-            <div class="d-flex align-items-center">
-              <i class="bi bi-tag-fill me-2 text-warning"></i>
-              <span class="text-muted">{{ remisesData?.nombrePaniers }} paniers concernés</span>
-            </div>
-          </div>
-        </div>
-    </div>
-    <div class="col-xl-4 col-md-8" *ngFor="let item of [
-              {key: 'totalAvoirs', label: 'Avoirs', icon: 'ticket-perforated', color: 'primary'},
-              {key: 'totalVentesCredit', label: 'Ventes Crédit', icon: 'credit-card', color: 'success'},
-              {key: 'totalAvances', label: 'Avances', icon: 'cash-coin', color: 'warning'},
-              {key: 'totalRetours', label: 'Retours', icon: 'arrow-return-left', color: 'info'},
-              {key: 'totalAnnulations', label: 'Annulations', icon: 'x-circle', color: 'danger'}
-            ]">
-      <!-- Carte de résumé -->
-      <div class="card border-0 shadow-sm h-100 hover-shadow">
-        <div class="card-body p-4">
-          <div class="d-flex justify-content-between align-items-start mb-3">
-            <div class="text-center">
-                <span class="text-muted fs-7 fw-medium">{{ item.label }}</span>
-                <h3 class="fw-bold mt-2 mb-0">{{ statsSpecialesFormatees.resume[item.key] }} F CFA</h3>
-            </div>
-            <div class="p-3 rounded-circle">
-                <i class="bi bi-{{item.icon}} fs-3 text-{{item.color}}"></i>
-            </div>
-          </div>
-          <div class="d-flex align-items-center" *ngIf="item.label ==='Avoirs'">
-              <i class="bi bi-tag-fill me-2 text-warning"></i>
-              <span class="text-muted">{{ statsSpecialesFormatees?.avoirs?.nombreAvoirs }} paniers concernés</span>
-          </div>
-          <div class="d-flex align-items-center" *ngIf="item.label ==='Ventes Crédit'">
-              <i class="bi bi-tag-fill me-2 text-warning"></i>
-              <span class="text-muted">{{ statsSpecialesFormatees?.ventesCredit?.nombrePaniersCredit }} paniers concernés</span>
-          </div>
-          <div class="d-flex align-items-center" *ngIf="item.label ==='Avances'">
-              <i class="bi bi-tag-fill me-2 text-warning"></i>
-              <span class="text-muted">{{ statsSpecialesFormatees?.avances?.nombrePaniersAvecAvance }} paniers concernés</span>
-          </div>
-          <div class="d-flex align-items-center" *ngIf="item.label ==='Retours'">
-              <i class="bi bi-tag-fill me-2 text-warning"></i>
-              <span class="text-muted">{{ statsSpecialesFormatees?.ventesCreditAnnulees?.nombreRetours }} paniers concernés</span>
-          </div>
-          <div class="d-flex align-items-center" *ngIf="item.label ==='Annulations'">
-              <i class="bi bi-tag-fill me-2 text-warning"></i>
-              <span class="text-muted">{{ statsSpecialesFormatees?.ventesCaisseAnnulees?.totalPaniers }} paniers concernés</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Détails des statistiques spéciales -->
-    <div class="col-xl-6">
-      <div class="card h-100">
-        <div class="card-header">
-          <h4 class="card-title mb-0">
-            <i class="bi bi-card-checklist me-2"></i>Détails des Opérations Spéciales
-          </h4>
-        </div>
-        <div class="card-body">
-          <div class="list-group list-group-flush">
-            <!-- Avoirs -->
-            <div class="list-group-item d-flex justify-content-between align-items-center">
-              <div>
-                <i class="bi bi-ticket-perforated text-primary me-2"></i>
-                <span class="fw-medium">Avoirs émis</span>
-              </div>
-              <div class="text-end">
-                <div class="fw-bold">{{ statsSpecialesFormatees.avoirs.montantAvoir }}</div>
-                <small class="text-muted">{{ statsSpeciales?.avoirs?.nombreAvoirs || 0 }} opérations</small>
-              </div>
-            </div>
-
-            <!-- Ventes à crédit -->
-            <div class="list-group-item d-flex justify-content-between align-items-center">
-              <div>
-                <i class="bi bi-credit-card text-success me-2"></i>
-                <span class="fw-medium">Ventes à crédit</span>
-              </div>
-              <div class="text-end">
-                <div class="fw-bold">{{ statsSpecialesFormatees.ventesCredit.montantCredit }}</div>
-                <small class="text-muted">
-                  {{ statsSpeciales?.ventesCredit?.nombrePaniersCredit || 0 }} paniers
-                  <span class="mx-1">•</span>
-                  {{ statsSpeciales?.ventesCredit?.nombreBonsCredit || 0 }} bons
-                </small>
-              </div>
-            </div>
-
-            <!-- Avances -->
-            <div class="list-group-item d-flex justify-content-between align-items-center">
-              <div>
-                <i class="bi bi-cash-coin text-warning me-2"></i>
-                <span class="fw-medium">Avances</span>
-              </div>
-              <div class="text-end">
-                <div class="fw-bold">{{ statsSpecialesFormatees.avances.totalAvances }}</div>
-                <small class="text-muted">
-                  {{ statsSpeciales?.avances?.nombreAvances || 0 }} avances
-                  <span class="mx-1">•</span>
-                  Moyenne: {{ statsSpecialesFormatees.avances.moyenneAvance }}
-                </small>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Retours et Annulations -->
-    <div class="col-xl-6">
-      <div class="card h-100">
-        <div class="card-header">
-          <h4 class="card-title mb-0">
-            <i class="bi bi-exclamation-triangle me-2"></i>Retours et Annulations
-          </h4>
-        </div>
-        <div class="card-body">
-          <div class="row">
-            <!-- Retours -->
-            <div class="col-md-6 mb-3">
-              <div class="border rounded p-3 h-100">
-                <div class="d-flex align-items-center mb-2">
-                  <div class="bg-info bg-opacity-10 rounded-circle p-2 me-2">
-                    <i class="bi bi-arrow-return-left text-info"></i>
-                  </div>
-                  <h6 class="mb-0">Retours</h6>
-                </div>
-                <div class="fw-bold fs-4 mb-1">
-                  {{ statsSpecialesFormatees.ventesCreditAnnulees.totalMontantRetour }}
-                </div>
-                <div class="text-muted small">
-                  <div>{{ statsSpeciales?.ventesCreditAnnulees?.nombreRetours || 0 }} retours</div>
-                  <div class="d-flex justify-content-between">
-                    <span>Totaux: {{ statsSpeciales?.ventesCreditAnnulees?.nombreRetoursTotaux || 0 }}</span>
-                    <span>Partiels: {{ statsSpeciales?.ventesCreditAnnulees?.nombreRetoursPartiels || 0 }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Annulations -->
-            <div class="col-md-6 mb-3">
-              <div class="border rounded p-3 h-100">
-                <div class="d-flex align-items-center mb-2">
-                  <div class="bg-danger bg-opacity-10 rounded-circle p-2 me-2">
-                    <i class="bi bi-x-circle text-danger"></i>
-                  </div>
-                  <h6 class="mb-0">Annulations</h6>
-                </div>
-                <div class="fw-bold fs-4 mb-1">
-                  {{ statsSpecialesFormatees.ventesCaisseAnnulees.totalMontant }}
-                </div>
-                <div class="text-muted small">
-                  <div>{{ statsSpeciales?.ventesCaisseAnnulees?.totalPaniers || 0 }} paniers</div>
-                  <div>{{ statsSpeciales?.ventesCaisseAnnulees?.totalPaiementsAnnules || 0 }} paiements annulés</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Graphique des pourcentages -->
-          <div *ngIf="pourcentagesStatsSpeciales" class="mt-3">
-            <h6 class="fw-medium mb-2">Répartition</h6>
-            <div class="progress" style="height: 20px;">
-              <div *ngFor="let item of [
-                {key: 'pourcentageAvoirs', color: 'primary', label: 'Avoirs'},
-                {key: 'pourcentageVentesCredit', color: 'success', label: 'Ventes Crédit'},
-                {key: 'pourcentageAvances', color: 'warning', label: 'Avances'},
-                {key: 'pourcentageRetours', color: 'info', label: 'Retours'},
-                {key: 'pourcentageAnnulations', color: 'danger', label: 'Annulations'}
-              ]" 
-                class="progress-bar bg-{{item.color}}" 
-                role="progressbar" 
-                [style.width]="pourcentagesStatsSpeciales[item.key] + '%'"
-                [attr.aria-valuenow]="pourcentagesStatsSpeciales[item.key]"
-                [title]="item.label + ': ' + pourcentagesStatsSpeciales[item.key].toFixed(1) + '%'"
-              >
-                <span *ngIf="pourcentagesStatsSpeciales[item.key] > 5">
-                  {{ pourcentagesStatsSpeciales[item.key].toFixed(0) }}%
-                </span>
-              </div>
-            </div>
-            <small class="text-muted mt-2 d-block">Pourcentage des opérations spéciales par type</small>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-<!-- Section Statistiques des Commandes Clients -->
-<div *ngIf="!loading && kpiData" class="mb-2">
-  <div class="d-flex justify-content-between align-items-center mb-2">
-    <h2 class="h3 fw-bold mb-0">
-      <i class="bi bi-cart-check me-2 text-primary"></i>Statistiques des Commandes Clients
-    </h2>
-    <button 
-      (click)="toggleStatistiquesCommandes()" 
-      class="btn btn-outline-dark btn-sm"
-    >
-      <i 
-        class="bi me-2" 
-        [class.bi-eye]="!affichageCommandesStats" 
-        [class.bi-eye-slash]="affichageCommandesStats"
-      ></i>
-      {{ affichageCommandesStats ? 'Masquer' : 'Afficher' }}
-      <span *ngIf="chargementCommandesStats" class="spinner-border spinner-border-sm ms-2"></span>
-    </button>
-  </div>
-
-  <!-- Indicateur de chargement -->
-  <div *ngIf="chargementCommandesStats" class="text-center py-5">
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Chargement...</span>
-    </div>
-    <p class="mt-2 text-muted">Chargement des statistiques des commandes...</p>
-  </div>
-
-  <!-- Contenu des statistiques des commandes -->
-  <div *ngIf="affichageCommandesStats && donneesCommandesFormatees" class="animate-fade-in">
-    
-    <!-- Carte de synthèse -->
-      <!-- <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="card-title mb-0">
-          <i class="bi bi-clipboard-data me-2"></i>Synthèse des Commandes
-        </h5>
-        <span class="badge bg-primary">
-          {{ getPeriodeLabel() }}
+  <!-- ── En-tête ─────────────────────────────────────────────────── -->
+  <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+      <h1 class="mb-1"><i class="bi bi-graph-up-arrow me-2"></i>Récapitulatifs des Ventes</h1>
+      <div class="d-flex align-items-center gap-3 flex-wrap mt-1">
+        <span class="small opacity-75">
+          <i class="bi bi-building me-1"></i>{{ currentStructure?.nom_structure || 'Chargement…' }}
         </span>
-      </div> -->
-        <div class="row g-4 mb-2">
-          
-          <!-- Validées -->
-          <div class="col-xl-3 col-md-6">
-            <div class="card border-0 shadow-sm h-100 hover-shadow">
-              <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-start">
-                  <div>
-                    <span class="text-muted fs-7 fw-medium mb-1">Commandes non livrées</span>
-                    <h4 class="fw-bold mb-0">{{ donneesCommandesFormatees.resume.totalCommandesValidees }}</h4>
-                    <div class="mt-2">{{ donneesCommandesFormatees.resume.totalMontantValidees }} F CFA</div>
-                  </div>
-                  <div class="rounded-circle p-2">
-                    <i class="bi bi-check-circle-fill text-primary fs-4"></i>
-                  </div>
-                </div>
-                <div class="mt-2 text-muted small">
-                  <i class="bi bi-cart-check me-1"></i>
-                  {{ donneesCommandes?.commandesValidees?.nombrePaniers || 0 }} paniers
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Livrées -->
-          <div class="col-xl-3 col-md-6">
-            <div class="card border-0 shadow-sm h-100 hover-shadow">
-              <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-start">
-                  <div>
-                    <span class="text-muted fs-7 fw-medium mb-1">Commandes livrées</span>
-                    <h4 class="fw-bold mb-0">{{ donneesCommandesFormatees.resume.totalCommandesLivrees }}</h4>
-                    <div class="mt-2">{{ donneesCommandesFormatees.resume.totalMontantLivrees }} F CFA</div>
-                  </div>
-                  <div class="rounded-circle p-2">
-                    <i class="bi bi-truck text-success fs-4"></i>
-                  </div>
-                </div>
-                <div class="mt-2">
-                  <span class="badge text-success">
-                    {{ donneesCommandesFormatees.resume.tauxConversion }}
-                  </span>
-                  <small class="text-muted ms-1">taux conversion</small>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Annulées -->
-          <div class="col-xl-3 col-md-6">
-            <div class="card border-0 shadow-sm h-100 hover-shadow">
-              <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-start">
-                  <div>
-                    <span class="text-muted fs-7 fw-medium mb-1">Commandes annulées</span>
-                    <h4 class="fw-bold mb-0">{{ donneesCommandesFormatees.resume.totalCommandesAnnulees }}</h4>
-                    <div class="mt-2">{{ donneesCommandesFormatees.resume.totalMontantAnnulees }} F CFA</div>
-                  </div>
-                  <div class="rounded-circle p-2">
-                    <i class="bi bi-x-circle-fill text-danger fs-4"></i>
-                  </div>
-                </div>
-                <div class="mt-2">
-                  <span class="badge text-danger">
-                    {{ donneesCommandesFormatees.resume.tauxAnnulation }}
-                  </span>
-                  <small class="text-muted ms-1">taux annulation</small>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Retournées -->
-          <div class="col-xl-3 col-md-6">
-            <div class="card border-0 shadow-sm h-100 hover-shadow">
-              <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-start">
-                  <div>
-                    <span class="text-muted fs-7 fw-medium mb-1">Commandes retournées</span>
-                    <h4 class="fw-bold mb-0">{{ donneesCommandesFormatees.resume.totalCommandesRetournees }}</h4>
-                    <div class="mt-2">{{ donneesCommandesFormatees.resume.totalMontantRetournees }} F CFA</div>
-                  </div>
-                  <div class="rounded-circle p-2">
-                    <i class="bi bi-arrow-return-left text-warning fs-4"></i>
-                  </div>
-                </div>
-                <div class="mt-2 text-muted small">
-                  <span class="me-2">{{ donneesCommandes?.commandesRetournees?.nombreRetoursPartiels || 0 }} partiels</span>
-                  <span>{{ donneesCommandes?.commandesRetournees?.nombreRetoursTotaux || 0 }} totaux</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-    <!-- Graphique et détails -->
-    <div class="row g-4">
-      <!-- Graphique de répartition -->
-      <div class="col-xl-6">
-        <div class="card h-100">
-          <div class="card-header">
-            <h4 class="card-title mb-0">
-              <i class="bi bi-pie-chart me-2"></i>Répartition des commandes
-            </h4>
-          </div>
-          <div class="card-body">
-            <div style="height: 300px;">
-              <canvas #chartCommandes></canvas>
-            </div>
-            <div class="row mt-3 text-center">
-              <div class="col-6">
-                <div class="fw-bold">{{ donneesCommandes?.synthese?.totalCommandes || 0 }}</div>
-                <small class="text-muted">Total commandes</small>
-              </div>
-              <div class="col-6">
-                <div class="fw-bold">
-                  {{ formatMontant(donneesCommandes?.synthese?.montantGlobal || 0) }} F CFA
-                </div>
-                <small class="text-muted">Montant global</small>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Détails des retours -->
-      <div class="col-xl-6">
-        <div class="card h-100">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <h4 class="card-title mb-0">
-              <i class="bi bi-list-check me-2"></i>Détails des retours
-            </h4>
-            <span class="badge bg-warning">
-              {{ donneesCommandesFormatees.detailsRetours.length }} retour(s)
-            </span>
-          </div>
-          <div class="card-body">
-            <div *ngIf="donneesCommandesFormatees.detailsRetours.length > 0" class="table-responsive">
-              <table class="table table-sm table-hover">
-                <thead>
-                  <tr>
-                    <!-- <th>Retour</th> -->
-                    <th>Commande</th>
-                    <th>Montant retour</th>
-                    <th>Type</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let detail of donneesCommandesFormatees.detailsRetours">
-                    <!-- <td class="fw-medium">{{ detail.numeroRetour }}</td> -->
-                    <td>{{ detail.numero }}</td>
-                    <td>{{ formatMontant(detail.montantRetour) }} F CFA</td>
-                    <td>
-                      <span class="badge bg-warning">{{ detail.type }}</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div *ngIf="donneesCommandesFormatees.detailsRetours.length === 0" class="text-center py-4">
-              <i class="bi bi-inbox text-muted fs-1"></i>
-              <p class="text-muted mt-2 mb-0">Aucun retour partiel</p>
-            </div>
-          </div>
-        </div>
+        <span *ngIf="currentNiveau === 'magasin' && currentMagasinNom" class="small opacity-75">
+          <i class="bi bi-arrow-right mx-1"></i>
+          <i class="bi bi-shop me-1"></i>{{ currentMagasinNom }}
+        </span>
+        <span class="badge bg-white text-primary small">
+          <i class="bi bi-info-circle me-1"></i>
+          <ng-container *ngIf="!isAdmin && magasinId">Votre magasin uniquement</ng-container>
+          <ng-container *ngIf="isAdmin && magasinSelectionne">Magasin sélectionné</ng-container>
+          <ng-container *ngIf="isAdmin && !magasinSelectionne">Tous les magasins</ng-container>
+        </span>
       </div>
     </div>
-  </div>
-</div>
-  <!-- Section Graphiques -->
-  <div *ngIf="!loading && kpiData" class="mb-5">
-    <h2 class="h3 fw-bold">
-        <i class="bi bi-speedometer2 me-2"></i>Evolution du  CA et répartition des paiements Clés
-    </h2>
-    <div class="row g-4">
-      <!-- Graphique des paiements -->
-      <div class="col-xl-6">
-        <div class="card border-0 shadow h-100">
-          <div class="card-header bg-white border-0 py-3">
-            <h4 class="card-title mb-0 d-flex align-items-center">
-              <i class="bi bi-pie-chart-fill me-2"></i>
-              Répartition des paiements
-              <span class="badge bg-dark text-white ms-2">
-                {{ paiementsData?.periode || 'jour' }}
-              </span>
-            </h4>
-          </div>
-          <div class="card-body p-4">
-            <div style="height: 200px;">
-              <canvas #chartPaiements></canvas>
-            </div>
-            <div *ngIf="!paiementsData?.parMethode?.length" class="text-center py-5">
-              <i class="bi bi-pie-chart display-4 text-muted mb-3"></i>
-              <p class="text-muted">Aucune donnée de paiement disponible</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Graphique CA par jour -->
-      <div class="col-xl-6">
-        <div class="card border-0 shadow h-100">
-          <div class="card-header bg-white border-0 py-3">
-            <h4 class="card-title mb-0 d-flex align-items-center">
-              <i class="bi bi-graph-up-arrow me-2 text-success"></i>
-              Évolution du CA par jour
-              <span class="badge bg-dark text-white ms-2">
-                {{ caParJourData?.periode || 'mois' }}
-              </span>
-            </h4>
-          </div>
-          <div class="card-body p-4">
-            <div style="height: 200px;">
-              <canvas #chartCADaily></canvas>
-            </div>
-            <div *ngIf="!caParJourData?.caVenduParJour?.length || !caParJourData?.caEncaisseParJour?.length" class="text-center py-5">
-              <i class="bi bi-bar-chart display-4 text-muted mb-3"></i>
-              <p class="text-muted">Aucune donnée de CA par jour disponible</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <span class="badge bg-white text-dark border">
+      <i class="bi bi-calendar-check me-1 text-primary"></i>{{ getPeriodeLabel() }}
+    </span>
   </div>
 
-  <!-- Section Statistiques Supplémentaires -->
-  <div *ngIf="!loading && kpiData && (remisesData || avoirsData)" class="mb-5">
-    <h2 class="h3 fw-bold mb-4">
-      <i class="bi bi-clipboard-data me-2 text-secondary"></i>Statistiques Supplémentaires
-    </h2>
-
-    <div class="row g-4">
-      <!-- Remises accordées -->
-      <div *ngIf="paiementsData" class="col-xl-6">
-        <div class="card border-0 shadow h-100">
-          <div class="card-header bg-white border-0 py-3">
-            <h4 class="card-title mb-0 d-flex align-items-center">
-              <i class="bi bi-credit-card-2-front me-2 text-primary"></i>
-              Détails des comptes
-            </h4>
-          </div>
-          <div class="card-body p-0">
-            <div class="table-responsive">
-              <table class="table table-hover mb-0">
-                <thead class="table-light">
-                  <tr>
-                    <th class="border-0 py-3 ps-4">
-                      <i class="bi bi-credit-card me-1"></i>Compte
-                    </th>
-                    <th class="border-0 py-3">
-                      <i class="bi bi-cash-stack me-1"></i>Montant
-                    </th>
-                    <th class="border-0 py-3 pe-4 text-end">
-                      <i class="bi bi-percent me-1"></i>Part
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let paiement of paiementsData.parCompte">
-                    <td class="py-3 ps-4 fw-medium">{{ paiement.compte }}</td>
-                    <td class="py-3">{{ formatMontant(paiement.total) }} F CFA</td>
-                    <td class="py-3 pe-4 text-end">
-                      <span class="badge text-primary px-3 py-2">
-                        {{ calculerPartCompte(paiement) }}%
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-                <tfoot *ngIf="paiementsData.parMethode.length > 0">
-                  <tr class="table-active">
-                    <td class="py-3 ps-4 fw-bold">Total</td>
-                    <td class="py-3 fw-bold">{{ formatMontant(calculerTotalPaiements()) }} F CFA</td>
-                    <td class="py-3 pe-4 text-end">
-                      <span class="badge bg-success px-3 py-2">100%</span>
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-        </div>
+  <!-- ── Filtres ──────────────────────────────────────────────────── -->
+  <div class="filtres-card p-3 mb-4">
+    <div class="row g-3 align-items-end">
+      <!-- Magasin -->
+      <div *ngIf="canSelectMagasin" class="col-md-3 col-sm-6">
+        <label class="form-label fw-semibold small">
+          <i class="bi bi-shop me-1"></i>Magasin
+        </label>
+        <select [(ngModel)]="magasinSelectionne" (change)="onMagasinChange()" class="form-select form-select-sm">
+          <option [ngValue]="null">Tous les magasins</option>
+          <option *ngFor="let m of magasins" [ngValue]="m">{{ m.nom }}</option>
+        </select>
       </div>
-      <!-- Détails des modes de paiement -->
-      <div *ngIf="paiementsData" class="col-xl-6">
-        <div class="card border-0 shadow h-100">
-          <div class="card-header bg-white border-0 py-3">
-            <h4 class="card-title mb-0 d-flex align-items-center">
-              <i class="bi bi-credit-card-2-front me-2 text-primary"></i>
-              Détails des modes de paiement
-            </h4>
-          </div>
-          <div class="card-body p-0">
-            <div class="table-responsive">
-              <table class="table table-hover mb-0">
-                <thead class="table-light">
-                  <tr>
-                    <th class="border-0 py-3 ps-4">
-                      <i class="bi bi-credit-card me-1"></i>Mode de paiement
-                    </th>
-                    <th class="border-0 py-3">
-                      <i class="bi bi-cash-stack me-1"></i>Montant
-                    </th>
-                    <th class="border-0 py-3 pe-4 text-end">
-                      <i class="bi bi-percent me-1"></i>Part
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let paiement of paiementsData.parMethode">
-                    <td class="py-3 ps-4 fw-medium">{{ paiement.methodePaiement }}</td>
-                    <td class="py-3">{{ formatMontant(paiement.total) }} F CFA</td>
-                    <td class="py-3 pe-4 text-end">
-                      <span class="badge text-primary px-3 py-2">
-                        {{ calculerPart(paiement) }}%
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-                <tfoot *ngIf="paiementsData.parMethode.length > 0">
-                  <tr class="table-active">
-                    <td class="py-3 ps-4 fw-bold">Total</td>
-                    <td class="py-3 fw-bold">{{ formatMontant(calculerTotalPaiements()) }} F CFA</td>
-                    <td class="py-3 pe-4 text-end">
-                      <span class="badge bg-success px-3 py-2">100%</span>
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Section Aucune donnée -->
-  <div *ngIf="!loading && !kpiData && !errorMessage" class="text-center py-5 my-5">
-    <div class="card border-0 shadow-sm bg-light">
-      <div class="card-body py-5">
-        <i class="bi bi-bar-chart display-1 text-muted mb-4"></i>
-        <h3 class="h4 fw-bold text-muted mb-3">Aucune donnée disponible</h3>
-        <p class="text-muted mb-4">Aucune donnée de vente n'a été trouvée pour les filtres sélectionnés.</p>
-        <button class="btn btn-primary btn-lg">
-          <i class="bi bi-arrow-repeat me-2"></i>Essayer d'autres filtres
+      <!-- Agent (masqué pour Caissier/Employé : stats de leurs propres ventes) -->
+      <div *ngIf="canSelectAgent" class="col-md-3 col-sm-6">
+        <label class="form-label fw-semibold small">
+          <i class="bi bi-person-badge me-1"></i>Agent
+        </label>
+        <select [(ngModel)]="agentSelectionne" (change)="onAgentChange()" class="form-select form-select-sm">
+          <option [ngValue]="null">Tous les agents</option>
+          <option *ngFor="let a of agents" [ngValue]="a">{{ a?.['nom'] }}</option>
+        </select>
+      </div>
+
+      <!-- Période -->
+      <div class="col-md-2 col-sm-6">
+        <label class="form-label fw-semibold small">
+          <i class="bi bi-calendar-range me-1"></i>Période
+        </label>
+        <select [(ngModel)]="periodeSelectionnee" (change)="onPeriodeChange()" class="form-select form-select-sm">
+          <option *ngFor="let p of periodes" [value]="p.value">{{ p.label }}</option>
+        </select>
+      </div>
+
+      <!-- Date de référence -->
+      <div *ngIf="periodeSelectionnee !== 'jour'" class="col-md-2 col-sm-6">
+        <label class="form-label fw-semibold small">
+          <i class="bi bi-calendar-date me-1"></i>Date de référence
+        </label>
+        <input type="date" [(ngModel)]="dateReference" (change)="onDateChange()" class="form-control form-control-sm" />
+      </div>
+
+      <!-- Bouton reset -->
+      <div class="col-md-2 text-end">
+        <button class="btn btn-outline-secondary btn-sm" (click)="resetFilters()" [disabled]="!hasActiveFilters">
+          <i class="bi bi-arrow-clockwise me-1"></i>Réinitialiser
         </button>
       </div>
     </div>
   </div>
+
+  <!-- ── Erreur ─────────────────────────────────────────────────── -->
+  <div *ngIf="errorMessage && !loading" class="alert alert-danger d-flex align-items-center mb-4" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2 flex-shrink-0"></i>
+    <span class="flex-grow-1">{{ errorMessage }}</span>
+    <button type="button" class="btn-close ms-2" (click)="errorMessage = null" aria-label="Fermer"></button>
+  </div>
+
+  <!-- ── Chargement ────────────────────────────────────────────────── -->
+  <div *ngIf="loading" class="loading-block">
+    <div class="spinner-border text-primary" style="width:2.5rem;height:2.5rem;" role="status">
+      <span class="visually-hidden">Chargement…</span>
+    </div>
+    <span class="text-muted">Chargement des données en cours…</span>
+  </div>
+
+  <!-- ── Vide ──────────────────────────────────────────────────────── -->
+  <div *ngIf="!loading && !kpiData && !errorMessage" class="vente-section">
+    <div class="empty-state">
+      <i class="bi bi-bar-chart-line fs-1 text-muted"></i>
+      <h5 class="text-muted">Aucune donnée disponible</h5>
+      <p class="text-muted small mb-0">Aucune vente n'a été trouvée pour les filtres sélectionnés.</p>
+    </div>
+  </div>
+
+  <ng-container *ngIf="!loading && kpiData">
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         SECTION 1 — INDICATEURS CLÉS
+         ═══════════════════════════════════════════════════════════════ -->
+    <div class="vente-section">
+      <div class="section-title">
+        <i class="bi bi-speedometer2 text-primary"></i>
+        Indicateurs Clés
+        <span class="badge bg-primary bg-opacity-10 text-primary small ms-auto">{{ getPeriodeLabel() }}</span>
+      </div>
+
+      <div class="row g-3">
+        <!-- CA des ventes -->
+        <div class="col-xl-4 col-md-6">
+          <div class="kpi-card card h-100">
+            <div class="card-body d-flex align-items-start gap-3">
+              <div class="kpi-icon bg-primary bg-opacity-10">
+                <i class="bi bi-cart-check text-primary"></i>
+              </div>
+              <div class="flex-grow-1">
+                <p class="kpi-label mb-0">CA des Ventes</p>
+                <p class="kpi-value mb-0">{{ formatMontant(kpiData.caVendu.totalVendu) }} F CFA</p>
+                <p class="kpi-sub mb-0">
+                  {{ kpiData.caVendu.nombrePaniers }} paniers &nbsp;·&nbsp;
+                  Ticket moy. {{ formatMontant(kpiData.caVendu.ticketMoyenVente) }} F CFA
+                </p>
+                <div *ngIf="comparatifData">
+                  <span class="variation-pill"
+                        [class.up]="comparatifData.vaCAVendu.variationPourcent > 0"
+                        [class.down]="comparatifData.vaCAVendu.variationPourcent < 0"
+                        [class.eq]="comparatifData.vaCAVendu.variationPourcent === 0">
+                    <i class="bi" [ngClass]="getVariationIcon(comparatifData.vaCAVendu.variationPourcent)"></i>
+                    {{ comparatifData.vaCAVendu.variationPourcent.toFixed(1) }}%
+                    <span class="fw-normal text-muted ms-1">vs {{ periodeSelectionnee }} préc.</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CA encaissé -->
+        <div class="col-xl-4 col-md-6">
+          <div class="kpi-card card h-100">
+            <div class="card-body d-flex align-items-start gap-3">
+              <div class="kpi-icon bg-success bg-opacity-10">
+                <i class="bi bi-cash-stack text-success"></i>
+              </div>
+              <div class="flex-grow-1">
+                <p class="kpi-label mb-0">CA Encaissé</p>
+                <p class="kpi-value mb-0 text-success">{{ formatMontant(kpiData.caEncaisse.totalEncaisse) }} F CFA</p>
+                <p class="kpi-sub mb-0">
+                  {{ kpiData.caEncaisse.nombrePaiements }} paiements &nbsp;·&nbsp;
+                  Ticket {{ formatMontant(kpiData.caEncaisse.ticketMoyenEncaisse) }} F CFA
+                </p>
+                <div *ngIf="comparatifData">
+                  <span class="variation-pill"
+                        [class.up]="comparatifData.vaCAEncaisse.variationPourcent > 0"
+                        [class.down]="comparatifData.vaCAEncaisse.variationPourcent < 0"
+                        [class.eq]="comparatifData.vaCAEncaisse.variationPourcent === 0">
+                    <i class="bi" [ngClass]="getVariationIcon(comparatifData.vaCAEncaisse.variationPourcent)"></i>
+                    {{ comparatifData.vaCAEncaisse.variationPourcent.toFixed(1) }}%
+                    <span class="fw-normal text-muted ms-1">vs {{ periodeSelectionnee }} préc.</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Situation financière -->
+        <div class="col-xl-4 col-md-12">
+          <div class="kpi-card card h-100">
+            <div class="card-body">
+              <p class="kpi-label mb-2"><i class="bi bi-bank me-1"></i>Situation Financière</p>
+              <div class="finance-row">
+                <span class="text-muted small">Reste à encaisser</span>
+                <span class="fw-bold text-warning">{{ formatMontant(kpiData.ecartCA) }} F CFA</span>
+              </div>
+              <div *ngIf="caisseTheoriqueData" class="finance-row">
+                <span class="text-muted small">Caisse théorique (espèces)</span>
+                <span class="fw-bold">{{ formatMontant(caisseTheoriqueData.caisseTheorique) }} F CFA</span>
+              </div>
+              <!-- Détails comptes dépliables -->
+              <div *ngIf="showRepartitionComptes && paiementsData?.parCompte?.length">
+                <div class="finance-row" *ngFor="let c of paiementsData?.parCompte">
+                  <span class="text-muted small">{{ c.compte }}</span>
+                  <span class="fw-semibold">{{ formatMontant(c.total) }} F CFA</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         SECTION 2 — GRAPHIQUES (PAIEMENTS + CA PAR JOUR)
+         ═══════════════════════════════════════════════════════════════ -->
+    <div class="vente-section">
+      <div class="section-title">
+        <i class="bi bi-bar-chart-line text-success"></i>
+        Évolution du CA et Répartition des Paiements
+      </div>
+
+      <div class="row g-3">
+        <!-- Répartition paiements -->
+        <div class="col-xl-5 col-md-6">
+          <div class="chart-card card h-100">
+            <div class="card-header d-flex align-items-center justify-content-between">
+              <h6 class="fw-bold mb-0"><i class="bi bi-pie-chart-fill me-2 text-primary"></i>Répartition des paiements</h6>
+              <span class="badge bg-dark text-white small">{{ paiementsData?.periode || periodeSelectionnee }}</span>
+            </div>
+            <div class="card-body">
+              <div *ngIf="paiementsData?.parMethode?.length; else noPaiements"
+                   style="height:220px; position:relative;">
+                <canvas #chartPaiements></canvas>
+              </div>
+              <ng-template #noPaiements>
+                <div class="chart-placeholder" style="height:220px;">
+                  <i class="bi bi-credit-card fs-2"></i>
+                  <span>Aucune donnée de paiement</span>
+                </div>
+              </ng-template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Évolution CA par jour -->
+        <div class="col-xl-7 col-md-6">
+          <div class="chart-card card h-100">
+            <div class="card-header d-flex align-items-center justify-content-between">
+              <h6 class="fw-bold mb-0"><i class="bi bi-graph-up-arrow me-2 text-success"></i>Évolution du CA par jour</h6>
+              <span class="badge bg-dark text-white small">{{ caParJourData?.periode || 'Mois courant' }}</span>
+            </div>
+            <div class="card-body">
+              <div *ngIf="caParJourData?.caVenduParJour?.length; else noCAJour"
+                   style="height:220px; position:relative;">
+                <canvas #chartCADaily></canvas>
+              </div>
+              <ng-template #noCAJour>
+                <div class="chart-placeholder" style="height:220px;">
+                  <i class="bi bi-bar-chart fs-2"></i>
+                  <span>Aucune donnée CA journalière disponible</span>
+                </div>
+              </ng-template>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tables paiements -->
+      <div class="row g-3 mt-1">
+        <!-- Par méthode -->
+        <div class="col-xl-6">
+          <div class="chart-card card h-100">
+            <div class="card-header">
+              <h6 class="fw-bold mb-0"><i class="bi bi-credit-card-2-front me-2 text-primary"></i>Détail par mode de paiement</h6>
+            </div>
+            <div class="card-body p-0">
+              <div *ngIf="paiementsData?.parMethode?.length; else noPaiementsTable">
+                <table class="table vente-table mb-0">
+                  <thead>
+                    <tr>
+                      <th>Mode</th>
+                      <th class="text-end">Montant (F CFA)</th>
+                      <th class="text-end">Part</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let p of paiementsData?.parMethode">
+                      <td class="fw-semibold">{{ p.methodePaiement }}</td>
+                      <td class="text-end">{{ formatMontant(p.total) }}</td>
+                      <td class="text-end">
+                        <span class="badge bg-primary bg-opacity-10 text-primary">
+                          {{ calculerPart(p) }}%
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td class="fw-bold">Total</td>
+                      <td class="text-end fw-bold">{{ formatMontant(calculerTotalPaiements()) }}</td>
+                      <td class="text-end"><span class="badge bg-success">100%</span></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <ng-template #noPaiementsTable>
+                <div class="empty-state"><span class="small">Aucun mode de paiement</span></div>
+              </ng-template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Par compte -->
+        <div class="col-xl-6" *ngIf="paiementsData?.parCompte?.length">
+          <div class="chart-card card h-100">
+            <div class="card-header">
+              <h6 class="fw-bold mb-0"><i class="bi bi-bank me-2 text-info"></i>Détail par compte</h6>
+            </div>
+            <div class="card-body p-0">
+              <table class="table vente-table mb-0">
+                <thead>
+                  <tr>
+                    <th>Compte</th>
+                    <th class="text-end">Montant (F CFA)</th>
+                    <th class="text-end">Part</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let c of paiementsData?.parCompte">
+                    <td class="fw-semibold">{{ c.compte }}</td>
+                    <td class="text-end">{{ formatMontant(c.total) }}</td>
+                    <td class="text-end">
+                      <span class="badge bg-info bg-opacity-10 text-info">
+                        {{ calculerPartCompte(c) }}%
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td class="fw-bold">Total</td>
+                    <td class="text-end fw-bold">{{ formatMontant(calculerTotalPaiementsCompte()) }}</td>
+                    <td class="text-end"><span class="badge bg-success">100%</span></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         SECTION 3 — VENTES À CRÉDIT, AVOIRS ET RETOURS
+         ═══════════════════════════════════════════════════════════════ -->
+    <div class="vente-section">
+      <!-- En-tête togglable -->
+      <div class="toggle-section-header mb-3" (click)="toggleStatsSpeciales()">
+        <span class="fw-bold">
+          <i class="bi bi-stars me-2 text-warning"></i>Ventes à crédit, Avoirs et Retours
+        </span>
+        <div class="d-flex align-items-center gap-2">
+          <span *ngIf="chargementStatsSpeciales" class="spinner-border spinner-border-sm text-warning"></span>
+          <button class="btn btn-sm btn-outline-dark">
+            <i class="bi" [class.bi-eye]="!afficherStatsSpeciales" [class.bi-eye-slash]="afficherStatsSpeciales"></i>
+            {{ afficherStatsSpeciales ? 'Masquer' : 'Afficher' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Spinner chargement interne -->
+      <div *ngIf="chargementStatsSpeciales" class="text-center py-4">
+        <div class="spinner-border spinner-border-sm text-warning"></div>
+        <p class="small text-muted mt-2">Chargement…</p>
+      </div>
+
+      <div *ngIf="afficherStatsSpeciales && statsSpecialesFormatees">
+
+        <!-- Remises + 5 cartes spéciales -->
+        <div class="row g-3 mb-3">
+          <!-- Remises -->
+          <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="stat-special-card card h-100">
+              <div class="card-body text-center p-3">
+                <i class="bi bi-percent fs-2 text-warning mb-2"></i>
+                <p class="kpi-label">Remises</p>
+                <p class="kpi-value text-warning mb-0">{{ formatMontant(remisesData?.totalRemise ?? 0) }}</p>
+                <p class="kpi-sub">F CFA</p>
+                <p class="kpi-sub">{{ remisesData?.nombrePaniers ?? 0 }} paniers</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Avoirs -->
+          <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="stat-special-card card h-100">
+              <div class="card-body text-center p-3">
+                <i class="bi bi-ticket-perforated fs-2 text-primary mb-2"></i>
+                <p class="kpi-label">Avoirs</p>
+                <p class="kpi-value mb-0">{{ statsSpecialesFormatees.resume.totalAvoirs }}</p>
+                <p class="kpi-sub">F CFA</p>
+                <p class="kpi-sub">{{ statsSpeciales?.avoirs?.nombreAvoirs ?? 0 }} opérations</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ventes Crédit -->
+          <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="stat-special-card card h-100">
+              <div class="card-body text-center p-3">
+                <i class="bi bi-credit-card fs-2 text-success mb-2"></i>
+                <p class="kpi-label">Ventes Crédit</p>
+                <p class="kpi-value text-success mb-0">{{ statsSpecialesFormatees.resume.totalVentesCredit }}</p>
+                <p class="kpi-sub">F CFA</p>
+                <p class="kpi-sub">{{ statsSpeciales?.ventesCredit?.nombrePaniersCredit ?? 0 }} paniers</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Avances -->
+          <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="stat-special-card card h-100">
+              <div class="card-body text-center p-3">
+                <i class="bi bi-cash-coin fs-2 text-warning mb-2"></i>
+                <p class="kpi-label">Avances</p>
+                <p class="kpi-value mb-0">{{ statsSpecialesFormatees.resume.totalAvances }}</p>
+                <p class="kpi-sub">F CFA</p>
+                <p class="kpi-sub">{{ statsSpeciales?.avances?.nombreAvances ?? 0 }} avances</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Retours -->
+          <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="stat-special-card card h-100">
+              <div class="card-body text-center p-3">
+                <i class="bi bi-arrow-return-left fs-2 text-info mb-2"></i>
+                <p class="kpi-label">Retours</p>
+                <p class="kpi-value text-info mb-0">{{ statsSpecialesFormatees.resume.totalRetours }}</p>
+                <p class="kpi-sub">F CFA</p>
+                <p class="kpi-sub">{{ statsSpeciales?.ventesCreditAnnulees?.nombreRetours ?? 0 }} retours</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Annulations -->
+          <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="stat-special-card card h-100">
+              <div class="card-body text-center p-3">
+                <i class="bi bi-x-circle fs-2 text-danger mb-2"></i>
+                <p class="kpi-label">Annulations</p>
+                <p class="kpi-value text-danger mb-0">{{ statsSpecialesFormatees.resume.totalAnnulations }}</p>
+                <p class="kpi-sub">F CFA</p>
+                <p class="kpi-sub">{{ statsSpeciales?.ventesCaisseAnnulees?.totalPaniers ?? 0 }} paniers</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Barre de répartition -->
+        <div *ngIf="pourcentagesStatsSpeciales" class="mb-3">
+          <div class="d-flex justify-content-between small text-muted mb-1">
+            <span>Répartition des opérations spéciales</span>
+            <span>100%</span>
+          </div>
+          <div class="progress" style="height:16px;">
+            <div class="progress-bar bg-primary"   [style.width]="pourcentagesStatsSpeciales.pourcentageAvoirs + '%'"          [title]="'Avoirs: ' + pourcentagesStatsSpeciales.pourcentageAvoirs.toFixed(1) + '%'">
+              <span *ngIf="pourcentagesStatsSpeciales.pourcentageAvoirs > 6" class="small">{{ pourcentagesStatsSpeciales.pourcentageAvoirs.toFixed(0) }}%</span>
+            </div>
+            <div class="progress-bar bg-success"   [style.width]="pourcentagesStatsSpeciales.pourcentageVentesCredit + '%'"    [title]="'Crédit: ' + pourcentagesStatsSpeciales.pourcentageVentesCredit.toFixed(1) + '%'">
+              <span *ngIf="pourcentagesStatsSpeciales.pourcentageVentesCredit > 6" class="small">{{ pourcentagesStatsSpeciales.pourcentageVentesCredit.toFixed(0) }}%</span>
+            </div>
+            <div class="progress-bar bg-warning"   [style.width]="pourcentagesStatsSpeciales.pourcentageAvances + '%'"         [title]="'Avances: ' + pourcentagesStatsSpeciales.pourcentageAvances.toFixed(1) + '%'">
+              <span *ngIf="pourcentagesStatsSpeciales.pourcentageAvances > 6" class="small">{{ pourcentagesStatsSpeciales.pourcentageAvances.toFixed(0) }}%</span>
+            </div>
+            <div class="progress-bar bg-info"      [style.width]="pourcentagesStatsSpeciales.pourcentageRetours + '%'"         [title]="'Retours: ' + pourcentagesStatsSpeciales.pourcentageRetours.toFixed(1) + '%'">
+              <span *ngIf="pourcentagesStatsSpeciales.pourcentageRetours > 6" class="small">{{ pourcentagesStatsSpeciales.pourcentageRetours.toFixed(0) }}%</span>
+            </div>
+            <div class="progress-bar bg-danger"    [style.width]="pourcentagesStatsSpeciales.pourcentageAnnulations + '%'"     [title]="'Annulations: ' + pourcentagesStatsSpeciales.pourcentageAnnulations.toFixed(1) + '%'">
+              <span *ngIf="pourcentagesStatsSpeciales.pourcentageAnnulations > 6" class="small">{{ pourcentagesStatsSpeciales.pourcentageAnnulations.toFixed(0) }}%</span>
+            </div>
+          </div>
+          <div class="d-flex gap-3 flex-wrap mt-2">
+            <span class="small"><span class="badge bg-primary me-1">Avoirs</span></span>
+            <span class="small"><span class="badge bg-success me-1">Crédit</span></span>
+            <span class="small"><span class="badge bg-warning me-1">Avances</span></span>
+            <span class="small"><span class="badge bg-info me-1">Retours</span></span>
+            <span class="small"><span class="badge bg-danger me-1">Annulations</span></span>
+          </div>
+        </div>
+
+        <!-- Détails avoirs + retours/annulations -->
+        <div class="row g-3">
+          <div class="col-xl-6">
+            <div class="chart-card card h-100">
+              <div class="card-header">
+                <h6 class="fw-bold mb-0"><i class="bi bi-card-checklist me-2 text-primary"></i>Détails des Opérations</h6>
+              </div>
+              <div class="card-body p-0">
+                <table class="table vente-table mb-0">
+                  <tbody>
+                    <tr>
+                      <td><i class="bi bi-ticket-perforated text-primary me-2"></i>Avoirs émis</td>
+                      <td class="text-end fw-semibold">{{ statsSpecialesFormatees.avoirs.montantAvoir }}</td>
+                      <td class="text-end text-muted small">{{ statsSpeciales?.avoirs?.nombreAvoirs ?? 0 }} op.</td>
+                    </tr>
+                    <tr>
+                      <td><i class="bi bi-credit-card text-success me-2"></i>Ventes à crédit</td>
+                      <td class="text-end fw-semibold">{{ statsSpecialesFormatees.ventesCredit.montantCredit }}</td>
+                      <td class="text-end text-muted small">{{ statsSpeciales?.ventesCredit?.nombrePaniersCredit ?? 0 }} paniers</td>
+                    </tr>
+                    <tr>
+                      <td><i class="bi bi-cash-coin text-warning me-2"></i>Avances</td>
+                      <td class="text-end fw-semibold">{{ statsSpecialesFormatees.avances.totalAvances }}</td>
+                      <td class="text-end text-muted small">Moy. {{ statsSpecialesFormatees.avances.moyenneAvance }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-6">
+            <div class="chart-card card h-100">
+              <div class="card-header">
+                <h6 class="fw-bold mb-0"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>Retours et Annulations</h6>
+              </div>
+              <div class="card-body">
+                <div class="row g-2">
+                  <div class="col-6">
+                    <div class="p-3 rounded" style="background:#e8f8fc;">
+                      <p class="kpi-label mb-1 text-info">Retours</p>
+                      <p class="kpi-value mb-0 text-info">{{ statsSpecialesFormatees.ventesCreditAnnulees.totalMontantRetour }}</p>
+                      <p class="kpi-sub">{{ statsSpeciales?.ventesCreditAnnulees?.nombreRetours ?? 0 }} retours
+                        · {{ statsSpeciales?.ventesCreditAnnulees?.nombreRetoursTotaux ?? 0 }} totaux
+                        · {{ statsSpeciales?.ventesCreditAnnulees?.nombreRetoursPartiels ?? 0 }} partiels
+                      </p>
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <div class="p-3 rounded" style="background:#fff0f0;">
+                      <p class="kpi-label mb-1 text-danger">Annulations</p>
+                      <p class="kpi-value mb-0 text-danger">{{ statsSpecialesFormatees.ventesCaisseAnnulees.totalMontant }}</p>
+                      <p class="kpi-sub">{{ statsSpeciales?.ventesCaisseAnnulees?.totalPaniers ?? 0 }} paniers
+                        · {{ statsSpeciales?.ventesCaisseAnnulees?.totalPaiementsAnnules ?? 0 }} paiements annulés
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         SECTION 4 — STATISTIQUES DES COMMANDES CLIENTS
+         ═══════════════════════════════════════════════════════════════ -->
+    <div class="vente-section">
+      <!-- En-tête togglable -->
+      <div class="toggle-section-header mb-3" (click)="toggleStatistiquesCommandes()">
+        <span class="fw-bold">
+          <i class="bi bi-cart-check me-2 text-primary"></i>Statistiques des Commandes Clients
+        </span>
+        <div class="d-flex align-items-center gap-2">
+          <span *ngIf="chargementCommandesStats" class="spinner-border spinner-border-sm text-primary"></span>
+          <button class="btn btn-sm btn-outline-dark">
+            <i class="bi" [class.bi-eye]="!affichageCommandesStats" [class.bi-eye-slash]="affichageCommandesStats"></i>
+            {{ affichageCommandesStats ? 'Masquer' : 'Afficher' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Spinner -->
+      <div *ngIf="chargementCommandesStats" class="text-center py-4">
+        <div class="spinner-border spinner-border-sm text-primary"></div>
+        <p class="small text-muted mt-2">Chargement…</p>
+      </div>
+
+      <div *ngIf="affichageCommandesStats && donneesCommandesFormatees">
+        <!-- 4 cartes -->
+        <div class="row g-3 mb-3">
+          <div class="col-xl-3 col-md-6">
+            <div class="stat-special-card card h-100">
+              <div class="card-body d-flex align-items-start gap-3 p-3">
+                <div class="kpi-icon bg-primary bg-opacity-10" style="width:44px;height:44px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+                  <i class="bi bi-check-circle-fill text-primary"></i>
+                </div>
+                <div>
+                  <p class="kpi-label mb-0">Non livrées</p>
+                  <p class="kpi-value mb-0">{{ donneesCommandesFormatees.resume.totalCommandesValidees }}</p>
+                  <p class="kpi-sub mb-0">{{ donneesCommandesFormatees.resume.totalMontantValidees }} F CFA</p>
+                  <p class="kpi-sub">{{ donneesCommandes?.commandesValidees?.nombrePaniers ?? 0 }} paniers</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-3 col-md-6">
+            <div class="stat-special-card card h-100">
+              <div class="card-body d-flex align-items-start gap-3 p-3">
+                <div class="kpi-icon bg-success bg-opacity-10" style="width:44px;height:44px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+                  <i class="bi bi-truck text-success"></i>
+                </div>
+                <div>
+                  <p class="kpi-label mb-0">Livrées</p>
+                  <p class="kpi-value mb-0 text-success">{{ donneesCommandesFormatees.resume.totalCommandesLivrees }}</p>
+                  <p class="kpi-sub mb-0">{{ donneesCommandesFormatees.resume.totalMontantLivrees }} F CFA</p>
+                  <span class="badge bg-success bg-opacity-10 text-success small">
+                    Taux : {{ donneesCommandesFormatees.resume.tauxConversion }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-3 col-md-6">
+            <div class="stat-special-card card h-100">
+              <div class="card-body d-flex align-items-start gap-3 p-3">
+                <div class="kpi-icon bg-danger bg-opacity-10" style="width:44px;height:44px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+                  <i class="bi bi-x-circle-fill text-danger"></i>
+                </div>
+                <div>
+                  <p class="kpi-label mb-0">Annulées</p>
+                  <p class="kpi-value mb-0 text-danger">{{ donneesCommandesFormatees.resume.totalCommandesAnnulees }}</p>
+                  <p class="kpi-sub mb-0">{{ donneesCommandesFormatees.resume.totalMontantAnnulees }} F CFA</p>
+                  <span class="badge bg-danger bg-opacity-10 text-danger small">
+                    Taux : {{ donneesCommandesFormatees.resume.tauxAnnulation }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-3 col-md-6">
+            <div class="stat-special-card card h-100">
+              <div class="card-body d-flex align-items-start gap-3 p-3">
+                <div class="kpi-icon bg-warning bg-opacity-10" style="width:44px;height:44px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+                  <i class="bi bi-arrow-return-left text-warning"></i>
+                </div>
+                <div>
+                  <p class="kpi-label mb-0">Retournées</p>
+                  <p class="kpi-value mb-0">{{ donneesCommandesFormatees.resume.totalCommandesRetournees }}</p>
+                  <p class="kpi-sub mb-0">{{ donneesCommandesFormatees.resume.totalMontantRetournees }} F CFA</p>
+                  <p class="kpi-sub">
+                    {{ donneesCommandes?.commandesRetournees?.nombreRetoursPartiels ?? 0 }} partiels
+                    · {{ donneesCommandes?.commandesRetournees?.nombreRetoursTotaux ?? 0 }} totaux
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Graphique + table détails retours -->
+        <div class="row g-3">
+          <div class="col-xl-5">
+            <div class="chart-card card h-100">
+              <div class="card-header">
+                <h6 class="fw-bold mb-0"><i class="bi bi-pie-chart me-2 text-primary"></i>Répartition des commandes</h6>
+              </div>
+              <div class="card-body">
+                <div style="height:260px; position:relative;">
+                  <canvas #chartCommandes></canvas>
+                </div>
+                <div class="row text-center mt-3 pt-2 border-top">
+                  <div class="col-6">
+                    <p class="kpi-value mb-0">{{ donneesCommandes?.synthese?.totalCommandes ?? 0 }}</p>
+                    <p class="kpi-sub">Total commandes</p>
+                  </div>
+                  <div class="col-6">
+                    <p class="kpi-value mb-0">{{ formatMontant(donneesCommandes?.synthese?.montantGlobal ?? 0) }}</p>
+                    <p class="kpi-sub">Montant global (F CFA)</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-xl-7">
+            <div class="chart-card card h-100">
+              <div class="card-header d-flex align-items-center justify-content-between">
+                <h6 class="fw-bold mb-0"><i class="bi bi-list-check me-2 text-warning"></i>Détails des retours</h6>
+                <span class="badge bg-warning text-dark">
+                  {{ donneesCommandesFormatees.detailsRetours.length }} retour(s)
+                </span>
+              </div>
+              <div class="card-body p-0">
+                <div *ngIf="donneesCommandesFormatees.detailsRetours.length > 0">
+                  <table class="table vente-table mb-0">
+                    <thead>
+                      <tr>
+                        <th>Commande</th>
+                        <th class="text-end">Montant retour (F CFA)</th>
+                        <th>Type</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let d of donneesCommandesFormatees.detailsRetours">
+                        <td>{{ d.numero }}</td>
+                        <td class="text-end">{{ formatMontant(d.montantRetour) }}</td>
+                        <td><span class="badge bg-warning text-dark">{{ d.type }}</span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div *ngIf="donneesCommandesFormatees.detailsRetours.length === 0" class="empty-state">
+                  <i class="bi bi-inbox fs-2 text-muted"></i>
+                  <span class="small text-muted">Aucun retour partiel</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </ng-container>
 </div>

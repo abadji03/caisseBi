@@ -1,47 +1,81 @@
 <div class="container-fluid mt-4">
 
+  <!-- En-tête + portée d'affichage -->
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h5 class="mb-0 fw-bold"><i class="bi bi-boxes me-2"></i>Gestion des stocks</h5>
+    <span class="badge rounded-pill scope-badge px-3 py-2">
+      <i class="bi bi-shop me-1"></i>
+      @if (isAdmin) {
+        Tous les magasins de la structure
+      } @else {
+        {{ magasinCourantNom }}
+      }
+    </span>
+  </div>
+
   <!-- En haut de la page, à droite -->
   <div *ngIf="isAdmin || isGerant" class="d-flex justify-content-end align-items-center mb-3">
-    <!-- <h4>Gestion des stocks</h4> -->
     <button class="btn btn-info" (click)="openTransfertsModal()">
       <i class="bi bi-arrow-left-right"></i> Voir les transferts
     </button>
   </div>
+
   <!-- Cartes de statistiques globales -->
-  <div class="row mb-4" *ngIf="statsGlobales">
-    <div class="col-md-3">
-      <div class="card text-white bg-primary">
-        <div class="card-body">
-          <h6 class="card-title">Valeur totale du stock</h6>
-          <h3>{{ statsGlobales.valeurTotaleStock | number:'1.0-0' }} FCFA</h3>
-          <small>{{ statsGlobales.totalProduits }} produits</small>
+  <div class="row g-3 mb-4" *ngIf="statsGlobales">
+    <div class="col-xl-3 col-md-6">
+      <div class="stat-card">
+        <div class="stat-icon bg-primary-subtle text-primary">
+          <i class="bi bi-wallet2"></i>
+        </div>
+        <div class="stat-body">
+          <div class="stat-label">Valeur du stock</div>
+          <div class="stat-value">{{ statsGlobales.valeurTotaleStock | number:'1.0-0' }} <span class="stat-unit">F CFA</span></div>
+          <div class="stat-sub">{{ statsGlobales.totalProduits }} produit(s) référencé(s)</div>
         </div>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="card text-white bg-info">
-        <div class="card-body">
-          <h6 class="card-title">Quantité totale</h6>
-          <h3>{{ statsGlobales.quantiteTotale }}</h3>
-          <small> dont {{ statsGlobales.quantiteDisponibleTotale }} disponible</small>
+
+    <div class="col-xl-3 col-md-6">
+      <div class="stat-card">
+        <div class="stat-icon bg-info-subtle text-info">
+          <i class="bi bi-boxes"></i>
+        </div>
+        <div class="stat-body">
+          <div class="stat-label">Quantité totale</div>
+          <div class="stat-value">{{ statsGlobales.quantiteTotale | number:'1.0-0' }} <span class="stat-unit">unités</span></div>
+          <div class="stat-sub">
+            <span class="text-success"><i class="bi bi-check2"></i> {{ statsGlobales.quantiteDisponibleTotale | number }} dispo.</span>
+            • {{ statsGlobales.quantiteReserveeTotale | number }} réservé
+          </div>
         </div>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="card text-white bg-warning">
-        <div class="card-body">
-          <h6 class="card-title">Alertes</h6>
-          <h3>{{ statsGlobales.produitsEnAlerte }}</h3>
-          <small>Dont {{ statsGlobales.produitsCritiques }} critiques</small>
+
+    <div class="col-xl-3 col-md-6">
+      <div class="stat-card" [class.stat-alerte]="statsGlobales.produitsEnAlerte > 0">
+        <div class="stat-icon bg-warning-subtle text-warning">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        <div class="stat-body">
+          <div class="stat-label">Alertes stock</div>
+          <div class="stat-value">{{ statsGlobales.produitsEnAlerte }}</div>
+          <div class="stat-sub">
+            <span class="text-danger" *ngIf="statsGlobales.produitsCritiques > 0">dont {{ statsGlobales.produitsCritiques }} critiques</span>
+            <span *ngIf="statsGlobales.produitsCritiques === 0">aucun critique</span>
+          </div>
         </div>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="card text-white bg-danger">
-        <div class="card-body">
-          <h6 class="card-title">Périssables</h6>
-          <h3>{{ statsGlobales.produitsPerimes }} / {{ statsGlobales.produitsBientotPerimes }}</h3>
-          <small>Périmés / Bientôt périmés</small>
+
+    <div class="col-xl-3 col-md-6">
+      <div class="stat-card" [class.stat-danger]="statsGlobales.produitsPerimes > 0">
+        <div class="stat-icon bg-danger-subtle text-danger">
+          <i class="bi bi-calendar-x"></i>
+        </div>
+        <div class="stat-body">
+          <div class="stat-label">Périssables</div>
+          <div class="stat-value">{{ statsGlobales.produitsPerimes }} <span class="stat-unit">/ {{ statsGlobales.produitsBientotPerimes }}</span></div>
+          <div class="stat-sub">Périmés / Bientôt périmés (7 j)</div>
         </div>
       </div>
     </div>

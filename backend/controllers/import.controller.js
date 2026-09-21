@@ -1,6 +1,7 @@
-const logger = require('../services/logger.js');
+﻿const logger = require('../services/logger.js');
 // controllers/import.controller.js
 const importService = require('../services/import.service');
+const NotificationService = require('../services/notification.service');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
@@ -101,7 +102,21 @@ exports.importer = async (req, res) => {
       }
     });
     
-  } catch (error) {logger.error('import.controller', 'Erreur import:', error);
+    // Notification import termine
+    try {
+      await NotificationService.notifierImportTermine(
+        authUser.code_structure,
+        authUser.id,
+        typeImport,
+        results.importes || 0,
+        results.misAJour || 0,
+        results.erreurs?.length || 0
+      );
+    } catch (notifErr) {
+      logger.warn('import.controller', 'Notification import non envoyee:', notifErr.message);
+    }
+  } catch (error) {
+logger.error('import.controller', 'Erreur import:', error);
     res.status(500).json({ message: error.message });
   }
 };

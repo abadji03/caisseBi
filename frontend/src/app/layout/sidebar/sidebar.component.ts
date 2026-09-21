@@ -1,5 +1,5 @@
 import { Component, EventEmitter, inject, Input, OnDestroy, OnInit, Output } from '@angular/core';
-import { NavigationEnd, Router, RouterLink } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 //import { TitreService } from '../../services/titre.service';
 import { CommonModule } from '@angular/common';
 import { NavigationItem } from '../../modeles/user.model';
@@ -11,7 +11,7 @@ import { filter, finalize, Subject, takeUntil } from 'rxjs';
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, RouterLinkActive],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.css'
 })
@@ -177,6 +177,16 @@ toggleSubtitre(titre: string): void {
 
 isSubtitreOpen(titre: string): boolean {
     return this.openSubtitre === titre;
+  }
+
+  /**
+   * Indique si un groupe du menu contient la page actuellement affichée :
+   * sert à mettre en évidence le groupe parent dans la sidebar.
+   */
+  isGroupActive(item: NavigationItem): boolean {
+    const url = this.router.url.split('?')[0];
+    if (url === item.route) return true;
+    return (item.children || []).some(child => url.startsWith(child.route));
   }
 
 /* onSelect(item: SidebarItem): void {

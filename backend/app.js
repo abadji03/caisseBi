@@ -30,6 +30,9 @@ app.use(cors({
 // Servir les fichiers uploadés
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Servir les fichiers statiques (JS, CSS pour les templates PDF/EJS)
+app.use('/public', express.static(path.join(__dirname, 'public')));
+
 // Connexion à la base de données
 const db = require('./models');
 //const initAdmin = require('./controllers/initAdmin'); 
@@ -74,6 +77,20 @@ const syncDatabase = async () => {
     // En production, utiliser des migrations (sequelize-cli) à la place.
     if (process.env.NODE_ENV === 'development') {
       await db.sequelize.sync({ alter: true });
+      // Filet de sécurité : garantit que les tables ajoutées récemment existent
+      // (sync alter peut parfois ignorer une table manquante si une altération échoue avant)
+      const [tables] = await db.sequelize.query('SHOW TABLES');
+      const names = tables.map((t) => Object.values(t)[0].toLowerCase());
+      for (const modelName of Object.keys(db)) {
+        const model = db[modelName];
+        if (model && typeof model.getTableName === 'function' && typeof model.sync === 'function') {
+          const tableName = String(model.getTableName()).toLowerCase();
+          if (!names.includes(tableName)) {
+            logger.info('app', `🛠️ Table manquante détectée "${tableName}" → création...`);
+            await model.sync({ force: false });
+          }
+        }
+      }
     } else {
       // Vérifie juste la connexion sans toucher au schéma
       await db.sequelize.authenticate();
@@ -129,7 +146,8 @@ app.use('/api/rapport-financier', require('./routers/rapportFinancier.routes'));
 app.use('/api/rapport-stock', require('./routers/rapportsStocks.routes'));
 app.use('/api/logs', require('./routers/logger.routes'));
 app.use('/api/factures', require('./routers/facture.routes'));
-app.use('/api/imports', require('./routers/import.routes'));// Test route
+app.use('/api/imports', require('./routers/import.routes'));
+app.use('/api/notifications', require('./routers/notification.routes'));
 app.get('/', (req, res) => {
   res.send('API Gestion de caisse opérationnelle !');
 });
@@ -139,6 +157,9 @@ setupSwagger(app);
 
 // Nettoyage automatique des brouillons de caisse abandonnés
 require('./services/nettoyageBrouillons.service').demarrerPlanificateur();
+
+// Planificateur de notifications automatiques (stocks, péremptions, bons en attente...)
+require('./services/notification.scheduler').demarrerPlanificateur();
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

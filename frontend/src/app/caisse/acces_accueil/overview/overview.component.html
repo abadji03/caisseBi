@@ -1,626 +1,713 @@
-<div class="container-fluid" id="dashboard">
-  <!-- En-tête du tableau de bord -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0">
-      <i class="bi bi-speedometer2 me-2 text-primary"></i>
-      Tableau de Bord
-    </h2>
-    <div class="d-flex align-items-center gap-2">
-      <span class="text-muted">
+﻿<div class="container-fluid p-3 p-md-4" id="dashboard">
+
+  <!-- ── En-tête ────────────────────────────────────────────────── -->
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold mb-1">
+        <i class="bi bi-speedometer2 me-2 text-primary"></i>Tableau de Bord
+      </h2>
+      <span class="text-muted small">
         <i class="bi bi-calendar3 me-1"></i>
-        {{ dateGeneration | date: 'dd/MM/yyyy HH:mm' }}
+        Mis à jour le {{ dateGeneration | date: 'dd/MM/yyyy à HH:mm' }}
       </span>
-      <button class="btn btn-outline-primary" (click)="rafraichirDonnees()" [disabled]="isLoading">
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <span *ngIf="currentUser?.nom" class="badge bg-light text-dark border">
+        <i class="bi bi-person-fill me-1 text-primary"></i>{{ currentUser?.nom }}
+      </span>
+      <button class="btn btn-primary btn-sm"
+              (click)="rafraichirDonnees()"
+              [disabled]="isLoading">
         <i class="bi bi-arrow-clockwise me-1"></i>
-        Rafraîchir
+        {{ isLoading ? 'Chargement…' : 'Rafraîchir' }}
       </button>
     </div>
   </div>
 
-  <!-- Filtres communs -->
-  <div class="card p-3 mb-4 shadow-sm">
-    <h5 class="fw-bold mb-3"><i class="bi bi-funnel me-2"></i>Filtres</h5>
+  <!-- ── Filtres ─────────────────────────────────────────────────── -->
+  <div class="card filtres-card mb-4 p-3 shadow-sm">
+    <div class="d-flex align-items-center mb-2">
+      <i class="bi bi-funnel-fill text-primary me-2"></i>
+      <span class="fw-semibold">Filtres</span>
+    </div>
     <div class="row g-3">
-      <!-- Sélecteur de période -->
-      <div class="col-md-3">
-        <label for="periode" class="form-label fw-semibold">Période :</label>
-        <select
-          id="periode"
-          class="form-select"
-          [(ngModel)]="periodeSelectionnee"
-          (change)="onPeriodeChange()"
-          [disabled]="isLoading"
-        >
-          <option *ngFor="let periode of periodesDisponibles" [value]="periode.value">
-            {{ periode.label }}
-          </option>
+      <!-- Période -->
+      <div class="col-md-3 col-sm-6">
+        <label for="periode" class="form-label fw-semibold small">Période</label>
+        <select id="periode" class="form-select form-select-sm"
+                [(ngModel)]="periodeSelectionnee"
+                (change)="onPeriodeChange()"
+                [disabled]="isLoading">
+          <option *ngFor="let p of periodesDisponibles" [value]="p.value">{{ p.label }}</option>
         </select>
       </div>
 
       <!-- Date de référence -->
-      <div class="col-md-3" *ngIf="periodeSelectionnee !== 'personnalisee'">
-        <label for="dateReference" class="form-label fw-semibold">Date de référence :</label>
-        <input
-          type="date"
-          id="dateReference"
-          class="form-control"
-          [(ngModel)]="dateReference"
-          (change)="appliquerFiltres()"
-          [disabled]="isLoading"
-        />
+      <div class="col-md-3 col-sm-6" *ngIf="periodeSelectionnee !== 'personnalisee'">
+        <label for="dateRef" class="form-label fw-semibold small">Date de référence</label>
+        <input type="date" id="dateRef" class="form-control form-control-sm"
+               [(ngModel)]="dateReference"
+               (change)="appliquerFiltres()"
+               [disabled]="isLoading" />
       </div>
 
       <!-- Dates personnalisées -->
       <ng-container *ngIf="periodeSelectionnee === 'personnalisee'">
-        <div class="col-md-3">
-          <label for="dateDebut" class="form-label fw-semibold">Date début :</label>
-          <input
-            type="date"
-            id="dateDebut"
-            class="form-control"
-            [(ngModel)]="dateDebut"
-            (change)="appliquerFiltres()"
-            [disabled]="isLoading"
-          />
+        <div class="col-md-3 col-sm-6">
+          <label for="dateDebut" class="form-label fw-semibold small">Date début</label>
+          <input type="date" id="dateDebut" class="form-control form-control-sm"
+                 [(ngModel)]="dateDebut"
+                 (change)="appliquerFiltres()"
+                 [disabled]="isLoading" />
         </div>
-        <div class="col-md-3">
-          <label for="dateFin" class="form-label fw-semibold">Date fin :</label>
-          <input
-            type="date"
-            id="dateFin"
-            class="form-control"
-            [(ngModel)]="dateFin"
-            (change)="appliquerFiltres()"
-            [disabled]="isLoading"
-          />
+        <div class="col-md-3 col-sm-6">
+          <label for="dateFin" class="form-label fw-semibold small">Date fin</label>
+          <input type="date" id="dateFin" class="form-control form-control-sm"
+                 [(ngModel)]="dateFin"
+                 (change)="appliquerFiltres()"
+                 [disabled]="isLoading" />
         </div>
       </ng-container>
 
-      <!-- Filtre magasin -->
-      <div class="col-md-3" *ngIf="isAdmin">
-        <label for="magasin" class="form-label fw-semibold">Magasin :</label>
-        <select
-          id="magasin"
-          class="form-select"
-          [(ngModel)]="selectedMagasinId"
-          (change)="appliquerFiltres()"
-          [disabled]="isLoading"
-        >
+      <!-- Magasin (admin uniquement) -->
+      <div class="col-md-3 col-sm-6" *ngIf="isAdmin">
+        <label for="magasin" class="form-label fw-semibold small">Magasin</label>
+        <select id="magasin" class="form-select form-select-sm"
+                [(ngModel)]="selectedMagasinId"
+                (change)="appliquerFiltres()"
+                [disabled]="isLoading">
           <option [value]="-1">Tous les magasins</option>
-          <option *ngFor="let magasin of magasins" [value]="magasin.id">
-            {{ magasin.nom }}
-          </option>
+          <option *ngFor="let m of magasins" [value]="m.id">{{ m.nom }}</option>
         </select>
       </div>
+    </div>
+  </div>
 
-      <!-- Indicateur de chargement -->
-      <div class="col-12 mt-2" *ngIf="isLoading">
-        <div class="d-flex align-items-center">
-          <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
-            <span class="visually-hidden">Chargement...</span>
-          </div>
-          <span class="text-muted">Mise à jour des données...</span>
+  <!-- ── Chargement ──────────────────────────────────────────────── -->
+  <div *ngIf="isLoading" class="loading-overlay">
+    <div class="spinner-border text-primary" style="width:2.5rem;height:2.5rem;" role="status">
+      <span class="visually-hidden">Chargement…</span>
+    </div>
+    <span class="text-muted">Chargement des données…</span>
+  </div>
+
+  <!-- ── Erreur ───────────────────────────────────────────────────── -->
+  <div *ngIf="errorMessage && !isLoading" class="alert alert-danger d-flex align-items-center" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2 flex-shrink-0"></i>
+    <span class="flex-grow-1">{{ errorMessage }}</span>
+    <button type="button" class="btn-close ms-2" (click)="errorMessage = ''" aria-label="Fermer"></button>
+  </div>
+
+  <ng-container *ngIf="!isLoading">
+
+    <!-- ═══════════════════════════════════════════════════════════
+         SECTION 1 — PERFORMANCE COMMERCIALE (VENTES)
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="dashboard-section mb-4">
+      <div class="section-header">
+        <div class="section-icon bg-primary bg-opacity-10">
+          <i class="bi bi-cart-check text-primary"></i>
         </div>
+        <h4 class="fw-bold mb-0">Performance Commerciale</h4>
       </div>
-    </div>
-  </div>
 
-  <!-- Message d'erreur -->
-  <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
-    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-    {{ errorMessage }}
-    <button type="button" class="btn-close" (click)="errorMessage = ''"><i class="bi bi-x-circle me-2"></i></button>
-  </div>
-
-  <!-- === SECTION 1 : DONNÉES DE VENTE (EN HAUT) === -->
-  <div class="dashboard-section mb-4">
-    <div class="d-flex align-items-center mb-3">
-      <div class="bg-primary bg-opacity-10 p-2 rounded-circle me-2">
-        <i class="bi bi-cart-check text-primary fs-5"></i>
-      </div>
-      <h4 class="fw-bold mb-0">Performance Commerciale</h4>
-    </div>
-
-    <!-- KPI Ventes -->
-    <div class="row g-3 mb-4">
-      <div class="col-md-3 col-sm-6">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body">
-            <div class="d-flex align-items-center">
-              <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+      <!-- KPI Ventes -->
+      <div class="row g-3 mb-4">
+        <!-- Total ventes -->
+        <div class="col-xl-3 col-md-6">
+          <div class="kpi-card card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="kpi-icon-wrap bg-primary bg-opacity-10">
                 <i class="bi bi-cart-check text-primary fs-4"></i>
               </div>
-              <div>
-                <h6 class="text-muted mb-1">Total Ventes</h6>
-                <h3 class="fw-bold mb-0">{{ donneesVentes?.totalVentes || 0 | number }}</h3>
-                <small class="text-muted">{{ donneesVentes?.nbTransactions || 0 }} transactions</small>
+              <div class="flex-grow-1 min-w-0">
+                <p class="kpi-label mb-0">Total Ventes</p>
+                <p class="kpi-value mb-0">{{ donneesVentes?.totalVentes ?? 0 | number }}</p>
+                <p class="kpi-sub mb-0">{{ donneesVentes?.nbTransactions ?? 0 | number }} transactions</p>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="col-md-3 col-sm-6">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body">
-            <div class="d-flex align-items-center">
-              <div class="bg-success bg-opacity-10 p-3 rounded-circle me-3">
+        <!-- CA TTC -->
+        <div class="col-xl-3 col-md-6">
+          <div class="kpi-card card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="kpi-icon-wrap bg-success bg-opacity-10">
                 <i class="bi bi-cash-stack text-success fs-4"></i>
               </div>
-              <div>
-                <h6 class="text-muted mb-1">CA TTC</h6>
-                <h3 class="fw-bold mb-0">{{ donneesVentes?.caTTC || 0 | number }} F CFA</h3>
-                <small class="text-muted">{{ donneesVentes?.caHT || 0 | number }} F CFA HT</small>
+              <div class="flex-grow-1 min-w-0">
+                <p class="kpi-label mb-0">Chiffre d'Affaires TTC</p>
+                <p class="kpi-value mb-0 text-success">{{ donneesVentes?.caTTC ?? 0 | number }} F CFA</p>
+                <p class="kpi-sub mb-0">{{ donneesVentes?.caHT ?? 0 | number }} F CFA HT</p>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="col-md-3 col-sm-6">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body">
-            <div class="d-flex align-items-center">
-              <div class="bg-warning bg-opacity-10 p-3 rounded-circle me-3">
+        <!-- Marge -->
+        <div class="col-xl-3 col-md-6">
+          <div class="kpi-card card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="kpi-icon-wrap bg-warning bg-opacity-10">
                 <i class="bi bi-graph-up-arrow text-warning fs-4"></i>
               </div>
-              <div>
-                <h6 class="text-muted mb-1">Marge</h6>
-                <h3 class="fw-bold mb-0">{{ donneesVentes?.marge || 0 | number }} F CFA</h3>
-                <small class="text-muted">{{ donneesVentes?.tauxMarge || 0 | number }}%</small>
+              <div class="flex-grow-1 min-w-0">
+                <p class="kpi-label mb-0">Marge Brute</p>
+                <p class="kpi-value mb-0">{{ donneesVentes?.marge ?? 0 | number }} F CFA</p>
+                <p class="kpi-sub mb-0">Taux : {{ donneesVentes?.tauxMarge ?? 0 | number:'1.1-1' }}%</p>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="col-md-3 col-sm-6">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body">
-            <div class="d-flex align-items-center">
-              <div class="bg-info bg-opacity-10 p-3 rounded-circle me-3">
+        <!-- Ticket moyen -->
+        <div class="col-xl-3 col-md-6">
+          <div class="kpi-card card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="kpi-icon-wrap bg-info bg-opacity-10">
                 <i class="bi bi-receipt text-info fs-4"></i>
               </div>
-              <div>
-                <h6 class="text-muted mb-1">Ticket Moyen</h6>
-                <h3 class="fw-bold mb-0">{{ donneesVentes?.ticketMoyen || 0 | number }} F CFA</h3>
-                <!-- <small class="text-muted">{{ donneesVentes?.panierMoyen || 0 }} produits</small> -->
+              <div class="flex-grow-1 min-w-0">
+                <p class="kpi-label mb-0">Ticket Moyen</p>
+                <p class="kpi-value mb-0">{{ donneesVentes?.ticketMoyen ?? 0 | number }} F CFA</p>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Graphiques Ventes et Top Produits -->
-    <div class="row g-3">
-      <div class="col-md-8">
-        <div class="card shadow-sm">
-          <div class="card-header bg-light">
-            <h5 class="fw-bold mb-0"><i class="bi bi-graph-up me-2 text-primary"></i>Évolution des Ventes</h5>
-          </div>
-          <div class="card-body">
-            <div class="chart-container" style="position: relative; height: 250px;">
-              <canvas #evolutionVentesChart></canvas>
+      <!-- Graphiques ventes -->
+      <div class="row g-3">
+        <!-- Évolution CA -->
+        <div class="col-md-8">
+          <div class="card shadow-sm h-100">
+            <div class="card-header-custom d-flex align-items-center justify-content-between">
+              <h6 class="fw-bold mb-0">
+                <i class="bi bi-graph-up me-2 text-primary"></i>Évolution des Ventes
+              </h6>
+              <span class="badge bg-primary bg-opacity-10 text-primary small">CA (F CFA)</span>
             </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card shadow-sm h-100">
-          <div class="card-header bg-light">
-            <h5 class="fw-bold mb-0"><i class="bi bi-pie-chart me-2 text-primary"></i>Modes de Paiement</h5>
-          </div>
-          <div class="card-body">
-            <div class="chart-container" style="position: relative; height: 200px;">
-              <canvas #paiementsChart></canvas>
-            </div>
-            <!-- <div class="mt-3">
-              <div *ngFor="let mode of donneesVentes?.modesPaiement" class="d-flex justify-content-between small mb-1">
-                <span class="text-muted">{{ mode.mode }}({{ mode.occurrences }} occurences ):</span>
-                <span class="fw-semibold">{{ (mode.montantTotal/donneesVentes?.caTTC!) * 100| number:'1.0-1' }}%</span>
+            <div class="card-body">
+              <div *ngIf="donneesVentes?.evolutionParJour?.length; else noDataVentes"
+                   class="chart-wrapper" style="height:260px;">
+                <canvas #evolutionVentesChart></canvas>
               </div>
-            </div> -->
+              <ng-template #noDataVentes>
+                <div class="chart-placeholder">
+                  <i class="bi bi-bar-chart-line fs-2"></i>
+                  <span>Aucune donnée de vente sur la période</span>
+                </div>
+              </ng-template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modes de paiement -->
+        <div class="col-md-4">
+          <div class="card shadow-sm h-100">
+            <div class="card-header-custom">
+              <h6 class="fw-bold mb-0">
+                <i class="bi bi-pie-chart me-2 text-primary"></i>Modes de Paiement
+              </h6>
+            </div>
+            <div class="card-body d-flex flex-column">
+              <div *ngIf="donneesVentes?.modesPaiement?.length; else noDataPaiements"
+                   class="chart-wrapper" style="height:200px;">
+                <canvas #paiementsChart></canvas>
+              </div>
+              <ng-template #noDataPaiements>
+                <div class="chart-placeholder" style="height:200px;">
+                  <i class="bi bi-credit-card fs-2"></i>
+                  <span>Aucune donnée de paiement</span>
+                </div>
+              </ng-template>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Top 5 Produits -->
-    <div class="row mt-3">
-      <div class="col-12">
-        <div class="card shadow-sm">
-          <div class="card-header bg-light">
-            <h5 class="fw-bold mb-0"><i class="bi bi-trophy me-2 text-primary"></i>Top 5 Produits</h5>
-          </div>
-          <div class="card-body">
-            <div class="table-responsive">
-              <table class="table table-sm table-hover">
-                <thead>
-                  <tr>
-                    <th>Produit</th>
-                    <th class="text-end">Quantité</th>
-                    <th class="text-end">CA</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let produit of donneesVentes?.topProduits | slice:0:5">
-                    <td>{{ produit.produit.designation }}</td>
-                    <td class="text-end">{{ produit.quantite | number }}</td>
-                    <td class="text-end">{{ produit.ca | number }} F CFA</td>
-                  </tr>
-                </tbody>
-              </table>
+      <!-- Top 5 produits -->
+      <div class="row mt-3">
+        <div class="col-12">
+          <div class="card shadow-sm">
+            <div class="card-header-custom">
+              <h6 class="fw-bold mb-0"><i class="bi bi-trophy me-2 text-warning"></i>Top 5 Produits</h6>
+            </div>
+            <div class="card-body p-0">
+              <div *ngIf="donneesVentes?.topProduits?.length; else noTopProduits">
+                <div class="table-responsive">
+                  <table class="table data-table mb-0">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Produit</th>
+                        <th class="text-end">Quantité vendue</th>
+                        <th class="text-end">CA (F CFA)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let p of donneesVentes?.topProduits | slice:0:5; let i = index">
+                        <td><span class="badge bg-primary">{{ i + 1 }}</span></td>
+                        <td class="fw-semibold">{{ p.produit?.designation }}</td>
+                        <td class="text-end">{{ p.quantite | number }}</td>
+                        <td class="text-end fw-semibold text-success">{{ p.ca | number }} F CFA</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <ng-template #noTopProduits>
+                <div class="chart-placeholder" style="height:100px;">
+                  <i class="bi bi-box-seam fs-2"></i>
+                  <span>Aucun produit vendu sur la période</span>
+                </div>
+              </ng-template>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- === SECTION 2 : DONNÉES DE STOCK (AU MILIEU) === -->
-  <div class="dashboard-section mb-4">
-    <div class="d-flex align-items-center mb-3">
-      <div class="bg-success bg-opacity-10 p-2 rounded-circle me-2">
-        <i class="bi bi-boxes text-success fs-5"></i>
+    <!-- ═══════════════════════════════════════════════════════════
+         SECTION 2 — ÉTAT DES STOCKS
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="dashboard-section mb-4">
+      <div class="section-header">
+        <div class="section-icon bg-success bg-opacity-10">
+          <i class="bi bi-boxes text-success"></i>
+        </div>
+        <h4 class="fw-bold mb-0">État des Stocks</h4>
       </div>
-      <h4 class="fw-bold mb-0">État des Stocks</h4>
-    </div>
 
-    <!-- KPI Stocks -->
-    <div class="row g-3 mb-4">
-      <div class="col-md-3 col-sm-6">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body">
-            <div class="d-flex align-items-center">
-              <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+      <!-- KPI Stocks -->
+      <div class="row g-3 mb-4">
+        <!-- Total produits -->
+        <div class="col-xl-3 col-md-6">
+          <div class="kpi-card card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="kpi-icon-wrap bg-primary bg-opacity-10">
                 <i class="bi bi-box text-primary fs-4"></i>
               </div>
               <div>
-                <h6 class="text-muted mb-1">Total Produits</h6>
-                <h3 class="fw-bold mb-0">{{ donneesStock?.totalProduits || 0 | number }}</h3>
-                <small class="text-muted">{{ donneesStock?.produitsUniques || 0 }} sont uniques</small>
+                <p class="kpi-label mb-0">Produits en Stock</p>
+                <p class="kpi-value mb-0">{{ donneesStock?.produitsUniques ?? 0 | number }}</p>
+                <p class="kpi-sub mb-0">{{ donneesStock?.totalProduits ?? 0 | number }} entrées totales</p>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="col-md-3 col-sm-6">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body">
-            <div class="d-flex align-items-center">
-              <div class="bg-success bg-opacity-10 p-3 rounded-circle me-3">
+        <!-- Valeur stock -->
+        <div class="col-xl-3 col-md-6">
+          <div class="kpi-card card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="kpi-icon-wrap bg-success bg-opacity-10">
                 <i class="bi bi-cash-stack text-success fs-4"></i>
               </div>
               <div>
-                <h6 class="text-muted mb-1">Valeur vente Stock final</h6>
-                <h3 class="fw-bold mb-0">{{ donneesStock?.valeurStockFinalVente || 0 | number }} F CFA</h3>
-                <small class="text-muted">valeur intial: {{ donneesStock?.valeurStockInitialVente || 0 | number }} F CFA</small>
+                <p class="kpi-label mb-0">Valeur Stock (vente)</p>
+                <p class="kpi-value mb-0 text-success">{{ donneesStock?.valeurStockFinalVente ?? 0 | number }} F CFA</p>
+                <p class="kpi-sub mb-0">Achat : {{ donneesStock?.valeurStockFinal ?? 0 | number }} F CFA</p>
               </div>
             </div>
           </div>
         </div>
-      </div>
-      
 
-      <div class="col-md-3 col-sm-6">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body">
-            <div class="d-flex align-items-center">
-              <div class="bg-danger bg-opacity-10 p-3 rounded-circle me-3">
+        <!-- Alertes -->
+        <div class="col-xl-3 col-md-6">
+          <div class="kpi-card card h-100" [class.border-danger]="(donneesStock?.produitsRupture ?? 0) > 0">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="kpi-icon-wrap bg-danger bg-opacity-10">
                 <i class="bi bi-exclamation-triangle text-danger fs-4"></i>
               </div>
               <div>
-                <h6 class="text-muted mb-1">Alertes Stock</h6>
-                <h3 class="fw-bold mb-0 text-danger">{{ donneesStock?.produitsEnAlerte || 0 }}</h3>
-                <small class="text-muted">Produits en rupture: {{ donneesStock?.produitsRupture || 0 }}</small>
+                <p class="kpi-label mb-0">En Alerte</p>
+                <p class="kpi-value mb-0 text-danger">{{ donneesStock?.produitsEnAlerte ?? 0 | number }}</p>
+                <p class="kpi-sub mb-0">Ruptures : {{ donneesStock?.produitsRupture ?? 0 }}</p>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="col-md-3 col-sm-6">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body">
-            <div class="d-flex align-items-center">
-              <div class="bg-warning bg-opacity-10 p-3 rounded-circle me-3">
-                <i class="bi bi-arrow-repeat text-warning fs-4"></i>
+        <!-- Mouvements -->
+        <div class="col-xl-3 col-md-6">
+          <div class="kpi-card card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="kpi-icon-wrap bg-warning bg-opacity-10">
+                <i class="bi bi-arrow-left-right text-warning fs-4"></i>
               </div>
               <div>
-                <h6 class="text-muted mb-1">Mouvements</h6>
-                <h3 class="fw-bold mb-0">{{ donneesStock?.totalMouvements || 0 | number }}</h3>
-                <small class="text-muted">Entrées: {{ donneesStock?.totalEntrees || 0 }}</small>
+                <p class="kpi-label mb-0">Mouvements</p>
+                <p class="kpi-value mb-0">{{ donneesStock?.totalMouvements ?? 0 | number }}</p>
+                <p class="kpi-sub mb-0">
+                  ↑ {{ donneesStock?.totalEntrees ?? 0 }} entrée(s) &nbsp;
+                  ↓ {{ donneesStock?.totalSorties ?? 0 }} sortie(s)
+                </p>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Évolution du Stock et Alertes -->
-    <div class="row g-3">
-      <div class="col-md-7">
-        <div class="card shadow-sm">
-          <div class="card-header bg-light">
-            <h5 class="fw-bold mb-0"><i class="bi bi-graph-up me-2 text-success"></i>Évolution du Stock</h5>
+      <!-- Graphique + alertes -->
+      <div class="row g-3">
+        <!-- Évolution stock -->
+        <div class="col-md-7">
+          <div class="card shadow-sm h-100">
+            <div class="card-header-custom">
+              <h6 class="fw-bold mb-0">
+                <i class="bi bi-graph-up me-2 text-success"></i>Mouvements de Stock
+              </h6>
+            </div>
+            <div class="card-body">
+              <div *ngIf="donneesStock?.graphique?.evolution?.length; else noDataStock"
+                   class="chart-wrapper" style="height:220px;">
+                <canvas #stockEvolutionChart></canvas>
+              </div>
+              <ng-template #noDataStock>
+                <div class="chart-placeholder" style="height:220px;">
+                  <i class="bi bi-archive fs-2"></i>
+                  <span>Aucun mouvement de stock sur la période</span>
+                </div>
+              </ng-template>
+            </div>
           </div>
-          <div class="card-body">
-            <div class="chart-container" style="position: relative; height: 200px;">
-              <canvas #stockEvolutionChart></canvas>
+        </div>
+
+        <!-- Points d'attention -->
+        <div class="col-md-5">
+          <div class="card shadow-sm h-100">
+            <div class="card-header-custom">
+              <h6 class="fw-bold mb-0">
+                <i class="bi bi-exclamation-diamond me-2 text-warning"></i>Points d'Attention
+              </h6>
+            </div>
+            <div class="card-body py-2">
+              <div class="alert-item rupture" *ngIf="(donneesStock?.produitsRupture ?? 0) > 0">
+                <i class="bi bi-x-circle-fill flex-shrink-0"></i>
+                <span><strong>{{ donneesStock?.produitsRupture }}</strong> produit(s) en rupture</span>
+              </div>
+              <div class="alert-item alerte" *ngIf="(donneesStock?.produitsEnAlerte ?? 0) > 0">
+                <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
+                <span><strong>{{ donneesStock?.produitsEnAlerte }}</strong> sous seuil d'alerte</span>
+              </div>
+              <div class="alert-item reappro" *ngIf="(donneesStock?.produitsAReapprovisionner ?? 0) > 0">
+                <i class="bi bi-arrow-down-circle-fill flex-shrink-0"></i>
+                <span><strong>{{ donneesStock?.produitsAReapprovisionner }}</strong> à réapprovisionner</span>
+              </div>
+              <div class="alert-item" style="background:#fff3cd;color:#856404;" *ngIf="(donneesStock?.produitsEnSurStock ?? 0) > 0">
+                <i class="bi bi-box-arrow-up-fill flex-shrink-0"></i>
+                <span><strong>{{ donneesStock?.produitsEnSurStock }}</strong> en surstock</span>
+              </div>
+              <div class="alert-item" style="background:#e8f4ff;color:#0369a1;" *ngIf="(donneesStock?.produitsPerissable ?? 0) > 0">
+                <i class="bi bi-calendar-x-fill flex-shrink-0"></i>
+                <span><strong>{{ donneesStock?.produitsPerissable }}</strong> produit(s) périssables</span>
+              </div>
+              <div class="alert-item ok" *ngIf="(donneesStock?.produitsRupture ?? 0) === 0 && (donneesStock?.produitsEnAlerte ?? 0) === 0">
+                <i class="bi bi-check-circle-fill flex-shrink-0"></i>
+                <span>Aucune alerte stock</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-      <div class="col-md-5">
-        <div class="card shadow-sm h-100">
-          <div class="card-header bg-light">
-            <h5 class="fw-bold mb-0"><i class="bi bi-exclamation-diamond me-2 text-warning"></i>Points d'Attention</h5>
-          </div>
-          <div class="card-body">
-            <ul class="list-unstyled mb-0">
-              <li *ngIf="donneesStock?.produitsRupture" class="mb-2">
-                <i class="bi bi-x-circle-fill text-danger me-2"></i>
-                <strong>{{ donneesStock?.produitsRupture }}</strong> produit(s) en rupture
-              </li>
-              <li *ngIf="donneesStock?.produitsEnAlerte" class="mb-2">
-                <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>
-                <strong>{{ donneesStock?.produitsEnAlerte }}</strong> produit(s) sous seuil d'alerte
-              </li>
-              <li *ngIf="donneesStock?.produitsAReapprovisionner" class="mb-2">
-                <i class="bi bi-arrow-down-circle-fill text-info me-2"></i>
-                <strong>{{ donneesStock?.produitsAReapprovisionner }}</strong> à réapprovisionner
-              </li>
-              <li *ngIf="donneesStock?.produitsEnSurStock" class="mb-2">
-                <i class="bi bi-box-arrow-up-fill text-secondary me-2"></i>
-                <strong>{{ donneesStock?.produitsEnSurStock }}</strong> en surstock
-              </li>
-              <li *ngIf="donneesStock?.produitsPerissable" class="mb-2">
-                <i class="bi bi-calendar-x-fill text-primary me-2"></i>
-                <strong>{{ donneesStock?.produitsPerissable }}</strong> produits périssables
-              </li>
-              <li *ngIf="!donneesStock?.produitsRupture && !donneesStock?.produitsEnAlerte" class="text-muted">
-                <i class="bi bi-check-circle-fill text-success me-2"></i>
-                Aucune alerte stock
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Derniers mouvements -->
-    <div class="row mt-3">
-      <div class="col-12">
-        <div class="card shadow-sm">
-          <div class="card-header bg-light">
-            <h5 class="fw-bold mb-0"><i class="bi bi-arrow-left-right me-2 text-success"></i>Derniers Mouvements</h5>
-          </div>
-          <div class="card-body">
-            <div class="table-responsive">
-              <table class="table table-sm table-hover">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Produit</th>
-                    <th>Type</th>
-                    <th class="text-end">Quantité</th>
-                    <th>Magasin</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let mvt of donneesStock?.derniersMouvements | slice:0:5">
-                    <td>{{ mvt.dateMouvement | date:'dd/MM HH:mm' }}</td>
-                    <td>{{ mvt.produit }}</td>
-                    <td>
-                      <span class="badge" [ngClass]="{
-                        'bg-success': mvt.typeMouvement === 'Entrée',
-                        'bg-danger': mvt.typeMouvement === 'Sortie'
-                      }">{{ mvt.typeMouvement }}</span>
-                    </td>
-                    <td class="text-end">{{ mvt.quantite }}</td>
-                    <td>{{ mvt.magasin }}</td>
-                  </tr>
-                </tbody>
-              </table>
+      <!-- Derniers mouvements -->
+      <div class="row mt-3">
+        <div class="col-12">
+          <div class="card shadow-sm">
+            <div class="card-header-custom">
+              <h6 class="fw-bold mb-0"><i class="bi bi-arrow-left-right me-2 text-success"></i>Derniers Mouvements</h6>
+            </div>
+            <div class="card-body p-0">
+              <div *ngIf="donneesStock?.derniersMouvements?.length; else noMouvements">
+                <div class="table-responsive">
+                  <table class="table data-table mb-0">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Produit</th>
+                        <th>Type</th>
+                        <th class="text-end">Quantité</th>
+                        <th>Magasin</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let m of donneesStock?.derniersMouvements | slice:0:5">
+                        <td class="text-muted">{{ m.dateMouvement | date:'dd/MM HH:mm' }}</td>
+                        <td class="fw-semibold">{{ m.produit }}</td>
+                        <td>
+                          <span class="badge"
+                                [class.bg-success]="m.typeMouvement === 'Entrée'"
+                                [class.bg-danger]="m.typeMouvement === 'Sortie'">
+                            {{ m.typeMouvement }}
+                          </span>
+                        </td>
+                        <td class="text-end">{{ m.quantite | number }}</td>
+                        <td class="text-muted">{{ m.magasin }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <ng-template #noMouvements>
+                <div class="chart-placeholder" style="height:80px;">
+                  <span>Aucun mouvement récent</span>
+                </div>
+              </ng-template>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- === SECTION 3 : DONNÉES FINANCIÈRES (EN BAS) === -->
-  <div class="dashboard-section">
-    <div class="d-flex align-items-center mb-3">
-      <div class="bg-info bg-opacity-10 p-2 rounded-circle me-2">
-        <i class="bi bi-graph-up text-info fs-5"></i>
+    <!-- ═══════════════════════════════════════════════════════════
+         SECTION 3 — SITUATION FINANCIÈRE
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="dashboard-section mb-4">
+      <div class="section-header">
+        <div class="section-icon bg-info bg-opacity-10">
+          <i class="bi bi-graph-up text-info"></i>
+        </div>
+        <h4 class="fw-bold mb-0">Situation Financière</h4>
       </div>
-      <h4 class="fw-bold mb-0">Situation Financière</h4>
-    </div>
 
-    <!-- KPI Financiers -->
-    <div class="row g-3 mb-4">
-      <div class="col-md-3 col-sm-6">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body">
-            <div class="d-flex align-items-center">
-              <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+      <!-- KPI Financiers -->
+      <div class="row g-3 mb-4">
+        <!-- CA -->
+        <div class="col-xl-3 col-md-6">
+          <div class="kpi-card card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="kpi-icon-wrap bg-primary bg-opacity-10">
                 <i class="bi bi-currency-exchange text-primary fs-4"></i>
               </div>
               <div>
-                <h6 class="text-muted mb-1">Chiffre d'Affaires</h6>
-                <h3 class="fw-bold mb-0">{{ donneesFinancieres?.ca || 0 | number }} F</h3>
-                <small *ngIf="donneesFinancieres?.evolutionCA" 
-                       [ngClass]="{'text-success': donneesFinancieres?.evolutionCA?.tendance === 'hausse',
-                                  'text-danger': donneesFinancieres?.evolutionCA?.tendance === 'baisse'}">
-                  <i class="bi" [ngClass]="{
-                    'bi-arrow-up': donneesFinancieres?.evolutionCA?.tendance === 'hausse',
-                    'bi-arrow-down': donneesFinancieres?.evolutionCA?.tendance === 'baisse'
-                  }"></i>
-                  {{ donneesFinancieres?.evolutionCA?.pourcentage | number }}%
-                </small>
+                <p class="kpi-label mb-0">Chiffre d'Affaires</p>
+                <p class="kpi-value mb-0">{{ donneesFinancieres?.ca ?? 0 | number }} F CFA</p>
+                <span *ngIf="donneesFinancieres?.evolutionCA">
+                  <span class="variation-badge"
+                        [class.positive]="donneesFinancieres?.evolutionCA?.tendance === 'hausse'"
+                        [class.negative]="donneesFinancieres?.evolutionCA?.tendance === 'baisse'"
+                        [class.neutral]="donneesFinancieres?.evolutionCA?.tendance === 'stable'">
+                    <i class="bi"
+                       [class.bi-arrow-up]="donneesFinancieres?.evolutionCA?.tendance === 'hausse'"
+                       [class.bi-arrow-down]="donneesFinancieres?.evolutionCA?.tendance === 'baisse'"
+                       [class.bi-dash]="donneesFinancieres?.evolutionCA?.tendance === 'stable'"></i>
+                    {{ donneesFinancieres?.evolutionCA?.pourcentage ?? 0 | number:'1.0-0' }}%
+                  </span>
+                </span>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="col-md-3 col-sm-6">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body">
-            <div class="d-flex align-items-center">
-              <div class="bg-success bg-opacity-10 p-3 rounded-circle me-3">
-                <i class="bi bi-cash-stack text-success fs-4"></i>
+        <!-- Bénéfice Net -->
+        <div class="col-xl-3 col-md-6">
+          <div class="kpi-card card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="kpi-icon-wrap" [class.bg-success]="(donneesFinancieres?.beneficeNet ?? 0) >= 0"
+                   [class.bg-danger]="(donneesFinancieres?.beneficeNet ?? 0) < 0"
+                   style="opacity:0.15; position:absolute; width:52px; height:52px; border-radius:14px;">
+              </div>
+              <div class="kpi-icon-wrap" style="background:transparent;">
+                <i class="bi fs-4"
+                   [class.bi-graph-up-arrow]="(donneesFinancieres?.beneficeNet ?? 0) >= 0"
+                   [class.bi-graph-down-arrow]="(donneesFinancieres?.beneficeNet ?? 0) < 0"
+                   [class.text-success]="(donneesFinancieres?.beneficeNet ?? 0) >= 0"
+                   [class.text-danger]="(donneesFinancieres?.beneficeNet ?? 0) < 0"></i>
               </div>
               <div>
-                <h6 class="text-muted mb-1">Bénéfice Net</h6>
-                <h3 class="fw-bold mb-0" [ngClass]="{
-                  'text-success': (donneesFinancieres?.beneficeNet || 0) >= 0,
-                  'text-danger': (donneesFinancieres?.beneficeNet || 0) < 0
-                }">{{ donneesFinancieres?.beneficeNet || 0 | number }} F</h3>
-                <small>Marge: {{ donneesFinancieres?.tauxMarge || 0 | number }}%</small>
+                <p class="kpi-label mb-0">Bénéfice Net</p>
+                <p class="kpi-value mb-0"
+                   [class.text-success]="(donneesFinancieres?.beneficeNet ?? 0) >= 0"
+                   [class.text-danger]="(donneesFinancieres?.beneficeNet ?? 0) < 0">
+                  {{ donneesFinancieres?.beneficeNet ?? 0 | number }} F CFA
+                </p>
+                <p class="kpi-sub mb-0">Marge : {{ donneesFinancieres?.tauxMarge ?? 0 | number:'1.1-1' }}%</p>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="col-md-3 col-sm-6">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body">
-            <div class="d-flex align-items-center">
-              <div class="bg-danger bg-opacity-10 p-3 rounded-circle me-3">
+        <!-- Dépenses -->
+        <div class="col-xl-3 col-md-6">
+          <div class="kpi-card card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="kpi-icon-wrap bg-danger bg-opacity-10">
                 <i class="bi bi-arrow-down-circle text-danger fs-4"></i>
               </div>
               <div>
-                <h6 class="text-muted mb-1">Dépenses</h6>
-                <h3 class="fw-bold mb-0">{{ donneesFinancieres?.totalDepenses || 0 | number }} F</h3>
-                <small>{{ donneesFinancieres?.nbDepenses || 0 }} transactions</small>
+                <p class="kpi-label mb-0">Total Dépenses</p>
+                <p class="kpi-value mb-0 text-danger">{{ donneesFinancieres?.totalDepenses ?? 0 | number }} F CFA</p>
+                <p class="kpi-sub mb-0">{{ donneesFinancieres?.nbDepenses ?? 0 }} transaction(s)</p>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="col-md-3 col-sm-6">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body">
-            <div class="d-flex align-items-center">
-              <div class="bg-warning bg-opacity-10 p-3 rounded-circle me-3">
-                <i class="bi bi-wallet2 text-warning fs-4"></i>
+        <!-- Trésorerie -->
+        <div class="col-xl-3 col-md-6">
+          <div class="kpi-card card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="kpi-icon-wrap bg-info bg-opacity-10">
+                <i class="bi bi-bank text-info fs-4"></i>
               </div>
               <div>
-                <h6 class="text-muted mb-1">Trésorerie</h6>
-                <h3 class="fw-bold mb-0" [ngClass]="{
-                  'text-success': (donneesFinancieres?.soldeFinal || 0) >= 0,
-                  'text-danger': (donneesFinancieres?.soldeFinal || 0) < 0
-                }">{{ donneesFinancieres?.soldeFinal || 0 | number }} F</h3>
-                <small>Entrées: +{{ donneesFinancieres?.entrees || 0 | number }} F</small>
+                <p class="kpi-label mb-0">Solde Trésorerie</p>
+                <p class="kpi-value mb-0"
+                   [class.text-success]="(donneesFinancieres?.soldeFinal ?? 0) >= 0"
+                   [class.text-danger]="(donneesFinancieres?.soldeFinal ?? 0) < 0">
+                  {{ donneesFinancieres?.soldeFinal ?? 0 | number }} F CFA
+                </p>
+                <p class="kpi-sub mb-0">
+                  ↑ {{ donneesFinancieres?.entrees ?? 0 | number }} F CFA entrées
+                </p>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Graphiques Financiers -->
-    <div class="row g-3">
-      <div class="col-md-7">
-        <div class="card shadow-sm">
-          <div class="card-header bg-light">
-            <h5 class="fw-bold mb-0"><i class="bi bi-graph-up me-2 text-info"></i>Évolution Financière</h5>
-          </div>
-          <div class="card-body">
-            <div class="chart-container" style="position: relative; height: 250px;">
-              <canvas #evolutionFinanciereChart></canvas>
+      <!-- Graphiques financiers -->
+      <div class="row g-3">
+        <!-- Évolution financière -->
+        <div class="col-md-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-header-custom">
+              <h6 class="fw-bold mb-0">
+                <i class="bi bi-activity me-2 text-info"></i>Évolution Recettes / Dépenses
+              </h6>
+            </div>
+            <div class="card-body">
+              <div *ngIf="donneesFinancieres?.evolutionJournaliere?.length; else noDataFinance"
+                   class="chart-wrapper" style="height:220px;">
+                <canvas #evolutionFinanciereChart></canvas>
+              </div>
+              <ng-template #noDataFinance>
+                <div class="chart-placeholder" style="height:220px;">
+                  <i class="bi bi-clipboard-data fs-2"></i>
+                  <span>Aucune donnée financière sur la période</span>
+                </div>
+              </ng-template>
             </div>
           </div>
         </div>
-      </div>
-      <div class="col-md-5">
-        <div class="card shadow-sm h-100">
-          <div class="card-header bg-light">
-            <h5 class="fw-bold mb-0"><i class="bi bi-pie-chart me-2 text-info"></i>Répartition</h5>
-          </div>
-          <div class="card-body">
-            <div class="row">
-              <div class="col-6">
-                <h6 class="text-center text-muted mb-2">Dépenses</h6>
-                <div class="chart-container" style="position: relative; height: 150px;">
-                  <canvas #depensesChart></canvas>
+
+        <!-- Répartition dépenses/recettes -->
+        <div class="col-md-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-header-custom">
+              <h6 class="fw-bold mb-0">
+                <i class="bi bi-pie-chart me-2 text-info"></i>Répartition par Catégorie
+              </h6>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <!-- Dépenses -->
+                <div class="col-6">
+                  <h6 class="text-center text-muted small mb-2">Dépenses</h6>
+                  <div *ngIf="donneesFinancieres?.topDepenses?.length; else noDepChart"
+                       class="chart-wrapper" style="height:150px;">
+                    <canvas #depensesChart></canvas>
+                  </div>
+                  <ng-template #noDepChart>
+                    <div class="chart-placeholder" style="height:150px;">
+                      <span class="small">Aucune dépense</span>
+                    </div>
+                  </ng-template>
+                  <div class="mt-2">
+                    <div *ngFor="let c of donneesFinancieres?.topDepenses | slice:0:3"
+                         class="d-flex justify-content-between small mb-1">
+                      <span class="text-truncate me-1" style="max-width:100px;">{{ c.categorieName }}</span>
+                      <span class="fw-semibold text-danger">{{ c.pourcentage | number:'1.0-0' }}%</span>
+                    </div>
+                  </div>
                 </div>
-                <div class="mt-2">
-                  <div *ngFor="let cat of donneesFinancieres?.topDepenses | slice:0:2" class="d-flex justify-content-between small">
-                    <span>{{ cat.categorieName }}:</span>
-                    <span>{{ cat.pourcentage | number }}%</span>
+                <!-- Recettes -->
+                <div class="col-6">
+                  <h6 class="text-center text-muted small mb-2">Recettes</h6>
+                  <div *ngIf="donneesFinancieres?.topRecettes?.length; else noRecChart"
+                       class="chart-wrapper" style="height:150px;">
+                    <canvas #recettesChart></canvas>
+                  </div>
+                  <ng-template #noRecChart>
+                    <div class="chart-placeholder" style="height:150px;">
+                      <span class="small">Aucune recette</span>
+                    </div>
+                  </ng-template>
+                  <div class="mt-2">
+                    <div *ngFor="let c of donneesFinancieres?.topRecettes | slice:0:3"
+                         class="d-flex justify-content-between small mb-1">
+                      <span class="text-truncate me-1" style="max-width:100px;">{{ c.categorieName }}</span>
+                      <span class="fw-semibold text-success">{{ c.pourcentage | number:'1.0-0' }}%</span>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div class="col-6">
-                <h6 class="text-center text-muted mb-2">Recettes</h6>
-                <div class="chart-container" style="position: relative; height: 150px;">
-                  <canvas #recettesChart></canvas>
-                </div>
-                <div class="mt-2">
-                  <div *ngFor="let cat of donneesFinancieres?.topRecettes | slice:0:2" class="d-flex justify-content-between small">
-                    <span>{{ cat.categorieName }}:</span>
-                    <span>{{ cat.pourcentage | number }}%</span>
-                  </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dernières transactions -->
+      <div class="row mt-3">
+        <div class="col-12">
+          <div class="card shadow-sm">
+            <div class="card-header-custom">
+              <h6 class="fw-bold mb-0">
+                <i class="bi bi-receipt me-2 text-info"></i>Dernières Transactions Financières
+              </h6>
+            </div>
+            <div class="card-body p-0">
+              <div *ngIf="donneesFinancieres?.dernieresTransactions?.length; else noTransactions">
+                <div class="table-responsive">
+                  <table class="table data-table mb-0">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Catégorie</th>
+                        <th class="text-end">Montant (F CFA)</th>
+                        <th>Mode de paiement</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let t of donneesFinancieres?.dernieresTransactions | slice:0:5">
+                        <td class="text-muted">{{ t.date | date:'dd/MM HH:mm' }}</td>
+                        <td>
+                          <span class="badge"
+                                [class.bg-success]="t.type === 'recette'"
+                                [class.bg-danger]="t.type === 'depense'">
+                            {{ t.type === 'recette' ? 'Recette' : 'Dépense' }}
+                          </span>
+                        </td>
+                        <td>{{ t.Categorie?.name || 'Non classé' }}</td>
+                        <td class="text-end fw-semibold"
+                            [class.text-success]="t.type === 'recette'"
+                            [class.text-danger]="t.type === 'depense'">
+                          {{ t.montant | number }} F CFA
+                        </td>
+                        <td class="text-muted">{{ t.paymentMode || '—' }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
+              <ng-template #noTransactions>
+                <div class="chart-placeholder" style="height:80px;">
+                  <span>Aucune transaction récente</span>
+                </div>
+              </ng-template>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Dernières transactions financières -->
-    <div class="row mt-3">
-      <div class="col-12">
-        <div class="card shadow-sm">
-          <div class="card-header bg-light">
-            <h5 class="fw-bold mb-0"><i class="bi bi-receipt me-2 text-info"></i>Dernières Transactions</h5>
-          </div>
-          <div class="card-body">
-            <div class="table-responsive">
-              <table class="table table-sm table-hover">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Type</th>
-                    <th>Catégorie</th>
-                    <th class="text-end">Montant</th>
-                    <th>Mode de Paiement</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let trans of donneesFinancieres?.dernieresTransactions | slice:0:5">
-                    <td>{{ trans.date | date:'dd/MM HH:mm' }}</td>
-                    <td>
-                      <span class="badge" [ngClass]="{
-                        'bg-success': trans.type === 'recette',
-                        'bg-danger': trans.type === 'depense'
-                      }">{{ trans.type === 'recette' ? 'Recette' : 'Dépense' }}</span>
-                    </td>
-                    <td>{{ trans.categorie?.name || 'Non classé' }}</td>
-                    <td class="text-end" [ngClass]="{
-                      'text-success': trans.type === 'recette',
-                      'text-danger': trans.type === 'depense'
-                    }">{{ trans.montant | number }} F</td>
-                    <td>{{ trans.paymentMode }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  </ng-container>
 
-  <!-- Pied de page pour impression -->
+  <!-- Pied de page impression -->
   <div *ngIf="isPrinting" class="mt-4 text-center text-muted">
     <hr>
     <small>Rapport généré le {{ dateGeneration | date:'dd/MM/yyyy à HH:mm' }}</small>

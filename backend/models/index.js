@@ -78,6 +78,9 @@ db.MagasinClient = require('./magasinClient.model')(sequelize, Sequelize);
 
 db.Facture = require('./facture.model')(sequelize, Sequelize);
 
+// Notifications utilisateur
+db.Notification = require('./notification.model')(sequelize, Sequelize);
+
 /* Définition des relations entre les modèles */
 
 // ========== RELATIONS STRUCTURE ==========
@@ -558,6 +561,10 @@ db.Facture.belongsTo(db.Panier, { foreignKey: 'panierId' });
 
 /* db.Facture.hasMany(db.Paiement, { foreignKey: 'factureId' });
 db.Paiement.belongsTo(db.Facture, { foreignKey: 'factureId' }); */
+
+// ========== RELATIONS NOTIFICATION ==========
+db.Users.hasMany(db.Notification, { foreignKey: 'userId', as: 'notifications' });
+db.Notification.belongsTo(db.Users, { foreignKey: 'userId', as: 'user' });
 
 //Exportation de l'objet `db` contenant Sequelize, la connexion, et tous les modèles
 module.exports = db;

@@ -48,9 +48,10 @@ private http = inject(HttpClient);
   private async loadDefaultLogo(): Promise<void> {
     try {
       // Vous pouvez créer un logo par défaut ou utiliser une image dans assets
-      this.defaultLogo = await this.imageConverter.localImageToBase64('assets/avatar.jp');
+  // R8 FIX : extension correcte .jpg
+      this.defaultLogo = await this.imageConverter.localImageToBase64('assets/avatar.jpg');
     } catch (error) {
-      console.warn('Logo par défaut non chargé, utilisation texte Ã  la place',error);
+      console.warn('Logo par défaut non chargé, utilisation texte à la place',error);
       this.defaultLogo = '';
     }
   }
@@ -62,7 +63,7 @@ private http = inject(HttpClient);
   // Si pas de structure info, retourner un header minimal
   if (!this.structureInfo) {
     return {
-      text: 'ENTREPRISE NON CONFIGURÃ‰E',
+      text: 'ENTREPRISE NON CONFIGURÉE',
       style: 'header',
       alignment: 'center',
       margin: [0, 0, 0, 10]
@@ -175,9 +176,10 @@ private http = inject(HttpClient);
               alignment: 'left'
             }
           ] : []),
-          ...(this.structureInfo.registreCommerce ? [
+  // R2 FIX : supporter registreCommerce (camelCase API) ET registre_commerce (snake_case legacy)
+          ...(this.structureInfo.registreCommerce || (this.structureInfo as any).registre_commerce ? [
             { 
-              text: `RC: ${this.structureInfo.registreCommerce}`, 
+              text: `RC: ${this.structureInfo.registreCommerce || (this.structureInfo as any).registre_commerce}`, 
               style: 'subheader',
               alignment: 'left'
             }
@@ -274,13 +276,14 @@ private http = inject(HttpClient);
   };
 }
 
-  // Générer un ticket de vente
-  generateTicket(venteData: any): void {
+  // R7 FIX : méthode rendue async + await sur getHeader (était synchrone, retournait une Promise non résolue)
+  async generateTicket(venteData: any): Promise<void> {
+    const header = await this.getHeader(true);
     const docDefinition: TDocumentDefinitions = {
       pageSize: 'A7',
       pageMargins: [10, 10, 10, 10],
       content: [
-        this.getHeader(true),
+        header,
         { text: 'TICKET DE VENTE', style: 'title' },
         {
           columns: [
@@ -334,17 +337,17 @@ private http = inject(HttpClient);
               width: '50%',
               stack: [
                 { text: 'FACTURE', style: 'bold', margin: [0, 10, 0, 5] },
-                { text: `NÂº: ${factureData.numero}`, style: 'normal' },
+                { text: `Nº: ${factureData.numero}`, style: 'normal' },
                 { text: `Date: ${new Date(factureData.date).toLocaleDateString()}`, style: 'normal' },
-                { text: `Ã‰chéance: ${new Date(factureData.echeance).toLocaleDateString()}`, style: 'normal' }
+                { text: `Échéance: ${new Date(factureData.echeance).toLocaleDateString()}`, style: 'normal' }
               ]
             }
           ]
         },
-        { text: 'DÃ‰TAIL DES ARTICLES', style: 'bold', margin: [0, 20, 0, 10] },
+        { text: 'DÉTAIL DES ARTICLES', style: 'bold', margin: [0, 20, 0, 10] },
         this.generateDetailedArticlesTable(validatedArticles),
         this.generateTotals(factureData.totaux),
-        { text: 'Conditions de paiement: ' + (factureData.conditionsPaiement || 'Paiement Ã  réception'), style: 'normal', margin: [0, 20, 0, 0] },
+        { text: 'Conditions de paiement: ' + (factureData.conditionsPaiement || 'Paiement à réception'), style: 'normal', margin: [0, 20, 0, 0] },
         { text: 'Signature', style: 'bold', margin: [0, 40, 0, 0] }
       ],
       styles: this.getStyles()
@@ -353,7 +356,7 @@ private http = inject(HttpClient);
     pdfMake.createPdf(docDefinition).download(`facture-${factureData.numero}.pdf`);
   }
 
-// Mettre Ã  jour la méthode de génération du bon fournisseur
+// Mettre à jour la méthode de génération du bon fournisseur
 async generateBonFournisseur(bonData: any): Promise<void> {
   try {
     // Valider et sécuriser les données
@@ -391,7 +394,7 @@ async generateBonFournisseur(bonData: any): Promise<void> {
               width: '50%',
               stack: [
                 { text: bonData.titre, style: 'bold', margin: [0, 10, 0, 5] },
-                { text: `NÂº: ${bonData.numero || 'N/A'}`, style: 'normal' },
+                { text: `Nº: ${bonData.numero || 'N/A'}`, style: 'normal' },
                 { text: `Date: ${new Date(bonData.date || new Date()).toLocaleDateString()}`, style: 'normal' },
                 //{ text: `Livraison prévue: ${new Date().toLocaleDateString()}`, style: 'normal' } // Date fixe pour l'instant
                 { text: livraisonInfo, style: 'normal' },
@@ -402,7 +405,7 @@ async generateBonFournisseur(bonData: any): Promise<void> {
             }
           ]
         },
-        { text: 'DÃ‰TAIL DES ARTICLES', style: 'bold', margin: [0, 20, 0, 10] },
+        { text: 'DÉTAIL DES ARTICLES', style: 'bold', margin: [0, 20, 0, 10] },
         this.generateDetailedArticlesTable(validatedArticles),
         this.generateTotals(bonData.totaux || {}),
         ...(conditionsLivraison
@@ -428,7 +431,7 @@ async generateBonFournisseur(bonData: any): Promise<void> {
 private getDynamicConditions(type: string): string | null {
   switch (type) {
     case 'commande':
-      return 'Conditions : Livraison estimée sous 7 jours Ã  compter de la date du bon.';
+      return 'Conditions : Livraison estimée sous 7 jours à compter de la date du bon.';
     case 'livraison':
       return null; // pas de condition
     case 'retour':
@@ -484,13 +487,13 @@ private async generateBonFournisseurFallback(bonData: any): Promise<void> {
               width: '50%',
               stack: [
                 { text: 'BON DE COMMANDE', style: 'bold', margin: [0, 10, 0, 5] },
-                { text: `NÂº: ${bonData.numero || 'N/A'}`, style: 'normal' },
+                { text: `Nº: ${bonData.numero || 'N/A'}`, style: 'normal' },
                 { text: `Date: ${new Date(bonData.date || new Date()).toLocaleDateString()}`, style: 'normal' }
               ]
             }
           ]
         },
-        { text: 'DÃ‰TAIL DES ARTICLES', style: 'bold', margin: [0, 20, 0, 10] },
+        { text: 'DÉTAIL DES ARTICLES', style: 'bold', margin: [0, 20, 0, 10] },
         this.generateDetailedArticlesTable(validatedArticles),
         { text: `Total: ${this.safeNumber(bonData.totaux?.totalTTC)} F CFA`, style: 'total', margin: [0, 20, 0, 0] },
         { text: 'Signature', style: 'bold', margin: [0, 40, 0, 0] }
@@ -535,7 +538,7 @@ private validateFournisseurData(fournisseur: Fournisseur): any {
       header: header,
       footer: this.getFooter(),
       content: [
-        { text: 'RELEVÃ‰ FOURNISSEUR', style: 'title' },
+        { text: 'RELEVÉ FOURNISSEUR', style: 'title' },
         {
           columns: [
             {
@@ -551,7 +554,7 @@ private validateFournisseurData(fournisseur: Fournisseur): any {
             {
               width: '50%',
               stack: [
-                { text: 'RELEVÃ‰', style: 'bold', margin: [0, 10, 0, 5] },
+                { text: 'RELEVÉ', style: 'bold', margin: [0, 10, 0, 5] },
                 { text: `Période: ${releveData.periode}`, style: 'normal' },
                 { text: `Date d'édition: ${new Date().toLocaleDateString()}`, style: 'normal' },
                 { text: `Solde: ${releveData.solde} F CFA`, style: 'bold' }
@@ -559,7 +562,7 @@ private validateFournisseurData(fournisseur: Fournisseur): any {
             }
           ]
         },
-        { text: 'OPÃ‰RATIONS', style: 'bold', margin: [0, 20, 0, 10] },
+        { text: 'OPÉRATIONS', style: 'bold', margin: [0, 20, 0, 10] },
         this.generateOperationsTable(validatedOperations),
         this.generateSyntheseFournisseur(releveData.synthese)
       ],
@@ -694,7 +697,7 @@ private generateOperationsTable(operations: Operation[]): any {
               year: 'numeric',
               hour: '2-digit',
               minute: '2-digit'
-            }).replace(',', ' Ã ') : 'N/A'}`, 
+            }).replace(',', ' à ') : 'N/A'}`, 
           style:'normal', 
           alignment: 'left' 
         },        
@@ -784,7 +787,7 @@ private generateTotals(totaux: any): any {
     ]
   ];
 
-  // âœ… Condition ici
+  // ✅ Condition ici
   if (safeTotaux.avoir > 0) {
     body.push([
       { text: 'Avoir:', style: 'total' },
@@ -823,7 +826,7 @@ private generateTotals(totaux: any): any {
             { text: `${synthese.totalVersements} F CFA`, alignment: 'right', style: 'bold' }
           ],
           [
-            { text: 'Solde Ã  payer:', style: 'total' },
+            { text: 'Solde à payer:', style: 'total' },
             { text: `${synthese.solde} F CFA`, alignment: 'right', style: 'total' }
           ]
         ]
@@ -841,13 +844,13 @@ private validateArticlesData(articles: any[]): ArticlePanier[] {
   return articles
     .filter(article => article != null)
     .map(articleData => {
-      // Créer une instance de ArticlePanier Ã  partir des données
+      // Créer une instance de ArticlePanier à partir des données
       const articlePanier = new ArticlePanier({
         id: articleData.id,
         produitId: articleData.produitId,
         panierId: articleData.panierId,
         produit: articleData.produit || articleData.Produit,
-        prixUnitaire: this.safeNumber(articleData.prixUnitaire) || 0,
+        prixUnitaire: this.safeNumber(articleData.prixUnitaire ?? articleData.prixVenteUnitaire) || 0,
         quantite: this.safeNumber(articleData.quantite) || 0,
         prixVenteUnitaire: articleData.prixVenteUnitaire || 0,
         prixAchatUnitaire: articleData.prixAchatUnitaire || 0,
@@ -896,9 +899,13 @@ private safeNumber(value: any): number {
 
 // Générer un ticket de versement
 async generateTicketVersement(versementData: any): Promise<void> {
+  // FIX popup bloqué : ouvrir la fenêtre de façon SYNCHRONE (dans le geste
+  // utilisateur). Un window.open après un await est considéré comme popup
+  // non sollicité et bloqué par le navigateur.
+  const win = window.open('', '_blank');
   try {
-    
-    const header = await this.getHeader(false);
+    // R6 FIX : utiliser getHeader(true) — format compact pour page A5
+    const header = await this.getHeader(true);
     
     const docDefinition: TDocumentDefinitions = {
       pageSize: 'A5',
@@ -940,7 +947,7 @@ async generateTicketVersement(versementData: any): Promise<void> {
                 { text: new Date(versementData.date || new Date()).toLocaleTimeString(),style:'normal', alignment: 'right' }
               ],
               [
-                { text: 'NÂº de référence:', style: 'bold' },
+                { text: 'Nº de référence:', style: 'bold' },
                 { text: versementData.numeroReference || 'N/A',style:'normal', alignment: 'right' }
               ],
               [
@@ -1048,10 +1055,16 @@ async generateTicketVersement(versementData: any): Promise<void> {
       }
     };
 
-    pdfMake.createPdf(docDefinition).open();
+    if (win) {
+      pdfMake.createPdf(docDefinition).open({}, win);
+    } else {
+      // Fenêtre bloquée (contexte asynchrone) : téléchargement de secours.
+      pdfMake.createPdf(docDefinition).download(`ticket-versement-${Date.now()}.pdf`);
+    }
     
   } catch (error) {
     console.error('Erreur génération ticket versement:', error);
+    if (win) win.close();
     // Fallback simple
     this.generateTicketVersementFallback(versementData);
   }
@@ -1090,9 +1103,25 @@ private generateTicketVersementFallback(versementData: any): void {
 //...........................Méthodes pour la vente dans le composant Caisse......................
 
 /**
+ * Normalise les articles d'un panier selon la source de données :
+ *  - brouillon local : panier.articles (objet frontend) ;
+ *  - panier chargé de l'API : panier.ArticlePaniers (format Sequelize,
+ *    avec Produit inclus — cf. getPaniersAujourdhuiBis).
+ */
+private getArticlesForTicket(panier: any): any[] {
+  if (panier?.articles?.length) return panier.articles;
+  if (panier?.ArticlePaniers?.length) return panier.ArticlePaniers;
+  return [];
+}
+
+/**
  * Génère un ticket de caisse automatique (sans infos client)
  */
 async generateTicketCaisse(panier: any, agent?: any): Promise<void> {
+  // FIX popup bloqué : ouvrir la fenêtre de façon SYNCHRONE (dans le geste
+  // utilisateur). Un window.open après un await est considéré comme popup
+  // non sollicité et bloqué par le navigateur.
+  const win = window.open('', '_blank');
   try {
     const header = await this.getHeader(true);
     const currentDate = new Date();
@@ -1119,7 +1148,7 @@ async generateTicketCaisse(panier: any, agent?: any): Promise<void> {
         },
         {
           columns: [
-            { text: 'Ticket NÂº:', style: 'bold', width: 'auto' },
+            { text: 'Ticket Nº:', style: 'bold', width: 'auto' },
             { text: panier.id || 'N/A', style: 'normal', width: '*' }
           ]
         },
@@ -1133,9 +1162,9 @@ async generateTicketCaisse(panier: any, agent?: any): Promise<void> {
         // Ligne séparatrice
         //{ canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 1 }], margin: [0, 5, 0, 5] },
         { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 250, y2: 0, lineWidth: 1 }], margin: [0, 5, 0, 5] },
-        // Articles
+        // Articles (gère brouillon local `articles` et panier API `ArticlePaniers`)
         { text: 'Articles:', style: 'bold', margin: [0, 5, 0, 2] },
-this.generateDetailedTicketTable(panier.articles || []),
+this.generateDetailedTicketTable(this.getArticlesForTicket(panier)),
         
         // Totaux
         { text: 'Récapitulatif:', style: 'bold', margin: [0, 5, 0, 2] },
@@ -1192,11 +1221,18 @@ this.generateDetailedTicketTable(panier.articles || []),
       }
     };
 
-    // Ouvrir dans un nouvel onglet pour impression
-    pdfMake.createPdf(docDefinition).open();
+    if (win) {
+      // Ouvrir dans un nouvel onglet pour impression (fenêtre déjà ouverte)
+      pdfMake.createPdf(docDefinition).open({}, win);
+    } else {
+      // Fenêtre bloquée (appel asynchrone, hors geste utilisateur — ex. ticket
+      // auto après validation de vente) : on télécharge le PDF à la place.
+      pdfMake.createPdf(docDefinition).download(`ticket-caisse-${Date.now()}.pdf`);
+    }
     
   } catch (error) {
     console.error('Erreur génération ticket caisse:', error);
+    if (win) win.close();
     this.generateTicketCaisseFallback(panier);
   }
 }
@@ -1205,6 +1241,8 @@ this.generateDetailedTicketTable(panier.articles || []),
  * Génère un ticket de vente avec informations client
  */
 async generateTicketVente(panier: any, client: any, agent?: any): Promise<void> {
+  // FIX popup bloqué : ouvrir la fenêtre de façon SYNCHRONE (voir ci-dessus).
+  const win = window.open('', '_blank');
   try {
     const header = await this.getHeader(true);
     const currentDate = new Date();
@@ -1248,7 +1286,7 @@ async generateTicketVente(panier: any, client: any, agent?: any): Promise<void> 
         },
         {
           columns: [
-            { text: 'Ticket NÂº:', style: 'bold', width: 'auto' },
+            { text: 'Ticket Nº:', style: 'bold', width: 'auto' },
             { text: panier.id || 'N/A', style: 'normal', width: '*' }
           ]
         },
@@ -1257,11 +1295,11 @@ async generateTicketVente(panier: any, client: any, agent?: any): Promise<void> 
         { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 250, y2: 0, lineWidth: 1 }], margin: [0, 5, 0, 5] },
         
         // Articles détaillés
-        { text: 'DÃ‰TAIL DE LA VENTE', style: 'bold', margin: [0, 5, 0, 2] },
-this.generateDetailedTicketTable(panier.articles || []),
+        { text: 'DÉTAIL DE LA VENTE', style: 'bold', margin: [0, 5, 0, 2] },
+this.generateDetailedTicketTable(this.getArticlesForTicket(panier)),
         
         // Récapitulatif
-        { text: 'RÃ‰CAPITULATIF', style: 'bold', margin: [0, 5, 0, 2] },
+        { text: 'RÉCAPITULATIF', style: 'bold', margin: [0, 5, 0, 2] },
         {
           table: {
             widths: ['*', 'auto'],
@@ -1332,10 +1370,16 @@ this.generateDetailedTicketTable(panier.articles || []),
       }
     };
 
-    pdfMake.createPdf(docDefinition).open();
+    if (win) {
+      pdfMake.createPdf(docDefinition).open({}, win);
+    } else {
+      // Fenêtre bloquée (contexte asynchrone) : téléchargement de secours.
+      pdfMake.createPdf(docDefinition).download(`ticket-vente-${Date.now()}.pdf`);
+    }
     
   } catch (error) {
     console.error('Erreur génération ticket vente:', error);
+    if (win) win.close();
     this.generateTicketVenteFallback(panier, client);
   }
 }
@@ -1359,9 +1403,9 @@ private generateDetailedTicketTable(articles: any[]): any {
   
   validatedArticles.forEach(article => {
     tableBody.push([
-      { text: (article.produit?.designation || article.Produit?.designation || 'Article').substring(0, 20), fontSize: 7 },
+      { text: (article.produit?.designation || article.Produit?.designation || (article as any).designation || 'Article').substring(0, 20), fontSize: 7 },
       { text: `${article.quantite}`, fontSize: 7, alignment: 'center' },
-      { text: `${this.safeNumber(article.prixUnitaire)}`, fontSize: 7, alignment: 'right' },
+      { text: `${this.safeNumber(article.prixUnitaire ?? article.prixVenteUnitaire)}`, fontSize: 7, alignment: 'right' },
       { text: `${this.safeNumber(article.montantRemise)}`, fontSize: 7, alignment: 'right' },
       { text: `${this.safeNumber(article.montantTVA)}`, fontSize: 7, alignment: 'right' },
       { text: `${this.safeNumber(article.totalTTC)}`, fontSize: 7, alignment: 'right' }
@@ -1386,11 +1430,11 @@ private generateTicketCaisseFallback(panier: any): void {
     pageMargins: [5, 5, 5, 5],
     content: [
       { text: 'TICKET DE CAISSE', style: 'title', alignment: 'center' },
-      { text: `NÂº: ${panier.id || 'N/A'}`, alignment: 'center' },
+      { text: `Nº: ${panier.id || 'N/A'}`, alignment: 'center' },
       { text: `Date: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, fontSize: 8 },
       { text: '---', alignment: 'center', fontSize: 8 },
-      ...((panier.articles || []).map((article: any) => ({
-        text: `${article.quantite} x ${article.produit?.designation || 'Article'} = ${article.totalTTC || 0} F CFA`,
+      ...((this.getArticlesForTicket(panier)).map((article: any) => ({
+        text: `${article.quantite} x ${article.produit?.designation || article.Produit?.designation || 'Article'} = ${article.totalTTC || 0} F CFA`,
         fontSize: 8
       }))),
       { text: '---', alignment: 'center', fontSize: 8 },
@@ -1442,7 +1486,7 @@ async generateReleveClient(releveData: any): Promise<void> {
       header: header,
       footer: this.getFooter(),
       content: [
-        { text: 'RELEVÃ‰ CLIENT', style: 'title' },
+        { text: 'RELEVÉ CLIENT', style: 'title' },
         
         // Informations client
         {
@@ -1461,7 +1505,7 @@ async generateReleveClient(releveData: any): Promise<void> {
             {
               width: '50%',
               stack: [
-                { text: 'RELEVÃ‰', style: 'bold', margin: [0, 10, 0, 5] },
+                { text: 'RELEVÉ', style: 'bold', margin: [0, 10, 0, 5] },
                 { text: `Période: ${releveData.periode}`, style: 'normal' },
                 { text: `Date d'édition: ${currentDate.toLocaleDateString()}`, style: 'normal' },
                 { text: `Heure: ${currentDate.toLocaleTimeString()}`, style: 'normal' },
@@ -1471,7 +1515,7 @@ async generateReleveClient(releveData: any): Promise<void> {
           ]
         },
         
-        { text: 'OPÃ‰RATIONS', style: 'bold', margin: [0, 20, 0, 10] },
+        { text: 'OPÉRATIONS', style: 'bold', margin: [0, 20, 0, 10] },
         this.generateOperationsTableClient(releveData.operations),
         this.generateSyntheseClient(releveData.synthese),
         
@@ -1528,7 +1572,7 @@ private generateOperationsTableClient(operations: any[]): any {
                         year: 'numeric',
                         hour: '2-digit',
                         minute: '2-digit'
-                      }).replace(',', ' Ã ') : 'N/A';
+                      }).replace(',', ' à ') : 'N/A';
       const type = op.type || 'N/A';
       //const reference = op.numeroVersement || op?.Bon?.numero || op.id || 'N/A';
       const description = op.commentaire || op?.bon?.description || 'Opération';
@@ -1654,7 +1698,7 @@ async generateFactureClient(factureData: any): Promise<void> {
               width: '50%',
               stack: [
                 { text: 'FACTURE', style: 'bold', margin: [0, 10, 0, 5] },
-                { text: `NÂº: ${factureData.numero}`, style: 'normal' },
+                { text: `Nº: ${factureData.numero}`, style: 'normal' },
                 { text: `Date: ${new Date(factureData.date).toLocaleDateString()}`, style: 'normal' },
                 { text: `Date échéance: ${new Date(factureData.dateEcheance).toLocaleDateString()}`, style: 'normal' },
                 { text: `Réf bon: ${factureData.refBon || 'N/A'}`, style: 'normal' }
@@ -1663,7 +1707,7 @@ async generateFactureClient(factureData: any): Promise<void> {
           ]
         },
         
-        { text: 'DÃ‰TAIL DES ARTICLES', style: 'bold', margin: [0, 20, 0, 10] },
+        { text: 'DÉTAIL DES ARTICLES', style: 'bold', margin: [0, 20, 0, 10] },
         this.generateDetailedArticlesTable(factureData.articles),
         this.generateTotals(factureData.totaux),
         
@@ -1671,7 +1715,7 @@ async generateFactureClient(factureData: any): Promise<void> {
         {
           stack: [
             { text: 'Conditions de paiement:', style: 'bold', margin: [0, 10, 0, 5] },
-            { text: factureData.conditionsPaiement || 'Paiement Ã  réception de la facture', style: 'normal',alignment:'right' }
+            { text: factureData.conditionsPaiement || 'Paiement à réception de la facture', style: 'normal',alignment:'right' }
           ]
         },
         
@@ -1750,7 +1794,7 @@ async generateBonClient(bonData: any): Promise<void> {
               width: '50%',
               stack: [
                 { text: bonData.titre, style: 'bold', margin: [0, 10, 0, 5] },
-                { text: `NÂº: ${bonData.numero || 'N/A'}`, style: 'normal' },
+                { text: `Nº: ${bonData.numero || 'N/A'}`, style: 'normal' },
                 { text: `Date: ${new Date(bonData.date || new Date()).toLocaleDateString()}`, style: 'normal' },
                 //{ text: `Date livraison prévue: ${new Date(bonData.dateLivraisonPrevue || new Date()).toLocaleDateString()}`, style: 'normal' },
                 { text: livraisonInfo, style: 'normal' },
@@ -1762,7 +1806,7 @@ async generateBonClient(bonData: any): Promise<void> {
           ]
         },
         
-        { text: 'DÃ‰TAIL DES ARTICLES', style: 'bold', margin: [0, 20, 0, 10] },
+        { text: 'DÉTAIL DES ARTICLES', style: 'bold', margin: [0, 20, 0, 10] },
         this.generateDetailedArticlesTable(bonData.articles),
         this.generateTotals(bonData.totaux),
         ...(conditionsLivraison
@@ -1778,7 +1822,7 @@ async generateBonClient(bonData: any): Promise<void> {
         /* {
           stack: [
             { text: 'Conditions de livraison:', style: 'bold', margin: [0, 10, 0, 5] },
-            { text: bonData.conditionsLivraison || 'Livraison Ã  l\'adresse indiquée', style: 'normal' }
+            { text: bonData.conditionsLivraison || 'Livraison à l\\'adresse indiquée', style: 'normal' }
           ]
         },
         
@@ -1869,7 +1913,7 @@ async generateTicketVersementClient(versementData: any): Promise<void> {
                 { text: currentDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), style: 'normal', alignment: 'right' }
               ],
               [
-                { text: 'NÂº de quittance:', style: 'bold' },
+                { text: 'Nº de quittance:', style: 'bold' },
                 { text: versementData.numeroReference || `QUITT-${Date.now()}`,style: 'normal', alignment: 'right' }
               ],
               [
@@ -1963,7 +2007,7 @@ async generateTicketVersementClient(versementData: any): Promise<void> {
         
         // Pied de page
         { 
-          text: 'Cette quittance fait foi de règlement. Ã€ conserver précieusement.', 
+          text: 'Cette quittance fait foi de règlement. À conserver précieusement.', 
           style: 'subheader', 
           alignment: 'center',
           margin: [0, 20, 0, 0],
@@ -2405,7 +2449,7 @@ private getSectionIndicateurs(rapportData: any, colors: any): any {
 
   return {
     stack: [
-      { text: '1. SYNTHÃˆSE DES INDICATEURS CLÃ‰S', style: 'sectionTitle' },
+      { text: '1. SYNTHÈSE DES INDICATEURS CLÉS', style: 'sectionTitle' },
       
       // Cartes d'indicateurs
       {
@@ -2442,7 +2486,7 @@ private getSectionIndicateurs(rapportData: any, colors: any): any {
             width: '33%',
             stack: [
               {
-                text: 'DÃ‰PENSES TOTALES',
+                text: 'DÉPENSES TOTALES',
                 style: 'subsectionTitle',
                 alignment: 'center'
               },
@@ -2468,7 +2512,7 @@ private getSectionIndicateurs(rapportData: any, colors: any): any {
             width: '33%',
             stack: [
               {
-                text: 'BÃ‰NÃ‰FICE NET',
+                text: 'BÉNÉFICE NET',
                 style: 'subsectionTitle',
                 alignment: 'center'
               },
@@ -2500,7 +2544,7 @@ private getSectionIndicateurs(rapportData: any, colors: any): any {
               { text: 'Indicateur', style: 'tableHeader' },
               { text: 'Montant', style: 'tableHeader', alignment: 'right' },
               { text: 'Transactions', style: 'tableHeader', alignment: 'center' },
-              { text: 'Ã‰volution', style: 'tableHeader', alignment: 'center' }
+              { text: 'Évolution', style: 'tableHeader', alignment: 'center' }
             ],
             [
               'Chiffre d\'affaires',
@@ -2558,7 +2602,7 @@ private getSectionFluxTresorerie(rapportData: any, colors: any): any {
 
   return {
     stack: [
-      { text: '2. FLUX DE TRÃ‰SORERIE', style: 'sectionTitle' },
+      { text: '2. FLUX DE TRÉSORERIE', style: 'sectionTitle' },
       
       // Diagramme visuel (simulé avec des barres)
       {
@@ -2588,7 +2632,7 @@ private getSectionFluxTresorerie(rapportData: any, colors: any): any {
             width: '25%',
             stack: [
               {
-                text: 'ENTRÃ‰ES',
+                text: 'ENTRÉES',
                 style: 'subsectionTitle',
                 alignment: 'center',
                 color: colors.success
@@ -2704,7 +2748,7 @@ private getSectionFluxTresorerie(rapportData: any, colors: any): any {
 private getSectionRepartitionDepenses(rapportData: any, colors: any): any {
   const repartition = rapportData.repartitionDepenses;
   if (!repartition || !repartition.repartition?.length) {
-    return { text: '3. RÃ‰PARTITION DES DÃ‰PENSES\n\nAucune donnée disponible', style: 'sectionTitle' };
+    return { text: '3. RÉPARTITION DES DÉPENSES\n\nAucune donnée disponible', style: 'sectionTitle' };
   }
 
   const tableBody: any[] = [
@@ -2728,7 +2772,7 @@ private getSectionRepartitionDepenses(rapportData: any, colors: any): any {
 
   // Ligne total
   tableBody.push([
-    { text: 'TOTAL DÃ‰PENSES', style: 'totalRow' },
+    { text: 'TOTAL DÉPENSES', style: 'totalRow' },
     { text: this.formatCurrency(repartition.totalDepenses), alignment: 'right', style: 'totalRow' },
     { text: '100%', alignment: 'right', style: 'totalRow' },
     { text: repartition.repartition.reduce((sum: number, cat: any) => sum + (cat.occurrences || 0), 0), 
@@ -2737,7 +2781,7 @@ private getSectionRepartitionDepenses(rapportData: any, colors: any): any {
 
   return {
     stack: [
-      { text: '3. RÃ‰PARTITION DES DÃ‰PENSES', style: 'sectionTitle' },
+      { text: '3. RÉPARTITION DES DÉPENSES', style: 'sectionTitle' },
       
       // Graphique en barres (simulé)
       //this.createBarChart(repartition.repartition, 'montantTotal', colors),
@@ -3010,7 +3054,7 @@ private getSectionDetailsTransactions(rapportData: any, colors: any): any {
   const recettes = rapportData.recettesDetaillees?.recettes || [];
 
   if (depenses.length === 0 && recettes.length === 0) {
-    return { text: '7. DÃ‰TAILS DES TRANSACTIONS\n\nAucune transaction disponible', style: 'sectionTitle' };
+    return { text: '7. DÉTAILS DES TRANSACTIONS\n\nAucune transaction disponible', style: 'sectionTitle' };
   }
 
   const sections = [];
@@ -3018,8 +3062,8 @@ private getSectionDetailsTransactions(rapportData: any, colors: any): any {
   // Dépenses
   if (depenses.length > 0) {
     sections.push(
-      { text: '7.1. DÃ‰TAILS DES DÃ‰PENSES', style: 'subsectionTitle' },
-      this.createTransactionsTable(depenses, colors, 'DÃ‰PENSE'),
+      { text: '7.1. DÉTAILS DES DÉPENSES', style: 'subsectionTitle' },
+      this.createTransactionsTable(depenses, colors, 'DÉPENSE'),
       { text: '\n' }
     );
   }
@@ -3027,14 +3071,14 @@ private getSectionDetailsTransactions(rapportData: any, colors: any): any {
   // Recettes
   if (recettes.length > 0) {
     sections.push(
-      { text: '7.2. DÃ‰TAILS DES RECETTES', style: 'subsectionTitle' },
+      { text: '7.2. DÉTAILS DES RECETTES', style: 'subsectionTitle' },
       this.createTransactionsTable(recettes, colors, 'RECETTE')
     );
   }
 
   return {
     stack: [
-      { text: '7. DÃ‰TAILS DES TRANSACTIONS', style: 'sectionTitle' },
+      { text: '7. DÉTAILS DES TRANSACTIONS', style: 'sectionTitle' },
       ...sections
     ]
   };
@@ -3189,7 +3233,7 @@ private getEvolutionCell(evolution: any, colors: any): any {
 private getSoldeIndicator(solde: number, colors: any): any {
   const color = solde >= 0 ? colors.success : colors.danger;
   const symbol = solde >= 0 ? '+' : '-'; // Utilisez des symboles Unicode
-  const text = solde >= 0 ? 'POSITIF' : 'NÃ‰GATIF';
+  const text = solde >= 0 ? 'POSITIF' : 'NÉGATIF';
   
   return {
     text: `${symbol} ${text}`,
@@ -3307,7 +3351,7 @@ private getAnalyseRecettes(repartition: any): string {
     (prev.montantTotal > current.montantTotal) ? prev : current
   );
   
-  return `La source de revenus "${topCategory.categorieName}" génère ${topCategory.pourcentage.toFixed(1)}% du chiffre d'affaires. Cette concentration représente Ã  la fois une force et un risque qu'il convient de diversifier.`;
+  return `La source de revenus "${topCategory.categorieName}" génère ${topCategory.pourcentage.toFixed(1)}% du chiffre d'affaires. Cette concentration représente à la fois une force et un risque qu'il convient de diversifier.`;
 } */
 private getAnalyseDepenses(repartition: any): string {
   // CORRECTION : Comparer les valeurs numériques, pas les objets
@@ -3328,7 +3372,7 @@ private getAnalyseRecettes(repartition: any): string {
   
   if (!topCategory) return 'Aucune source de revenus disponible.';
   
-  return `La source de revenus "${topCategory.categorieName || 'Non classé'}" génère ${topCategory.pourcentage?.toFixed(1) || 0}% du chiffre d'affaires. Cette concentration représente Ã  la fois une force et un risque qu'il convient de diversifier.`;
+  return `La source de revenus "${topCategory.categorieName || 'Non classé'}" génère ${topCategory.pourcentage?.toFixed(1) || 0}% du chiffre d'affaires. Cette concentration représente à la fois une force et un risque qu'il convient de diversifier.`;
 }
 
 /* private getIconForPaymentMode(mode: string): string {
@@ -3367,7 +3411,7 @@ private getMostUsedPaymentMode(modes: any[]): string {
 }
 
 private createTransactionsTable(transactions: any[], colors: any, type: string): any {
-  const isDepense = type === 'DÃ‰PENSE';
+  const isDepense = type === 'DÉPENSE';
   
   const tableBody: any[] = [
     [
@@ -3379,7 +3423,7 @@ private createTransactionsTable(transactions: any[], colors: any, type: string):
     ]
   ];
 
-  // Limiter Ã  50 transactions pour éviter un PDF trop long
+  // Limiter à 50 transactions pour éviter un PDF trop long
   const limitedTransactions = transactions.slice(0, 50);
   
   limitedTransactions.forEach((transaction, _index) => {
@@ -3432,7 +3476,7 @@ private calculateEvolution(current: number, previous: number): number {
   const curr = this.safeNumber(current);
   const prev = this.safeNumber(previous);
 
-  // Cas 1 : tout est Ã  0
+  // Cas 1 : tout est à 0
   if (curr === 0 && prev === 0) {
     return 0;
   }
@@ -3470,7 +3514,7 @@ private getAnalyseTendances(comparatives: any, _colors: any): any {
       { text: 'Analyse des tendances :', style: 'subsectionTitle', margin: [0, 10, 0, 5] },
       {
         ul: [
-          `Le chiffre d'affaires a ${evolutionCA >= 0 ? 'augmenté' : 'diminué'} de ${Math.abs(evolutionCA).toFixed(1)}% par rapport Ã  la période précédente.`,
+          `Le chiffre d'affaires a ${evolutionCA >= 0 ? 'augmenté' : 'diminué'} de ${Math.abs(evolutionCA).toFixed(1)}% par rapport à la période précédente.`,
           `Le bénéfice net a ${evolutionBenefice >= 0 ? 'augmenté' : 'diminué'} de ${Math.abs(evolutionBenefice).toFixed(1)}%.`,
           evolutionCA > 0 && evolutionBenefice > 0 ? 
             'La performance est positive sur les deux indicateurs clés.' :
@@ -3525,7 +3569,7 @@ private getPointsAmelioration(indicateurs: any): any {
   }
   
   if (indicateurs.evolutionCA?.tendance === 'baisse') {
-    points.push('Déclin du chiffre d\'affaires Ã  investiguer');
+    points.push('Déclin du chiffre d\'affaires à  investiguer');
   }
   
   if (indicateurs.totalDepenses > indicateurs.chiffreAffaires * 0.7) {

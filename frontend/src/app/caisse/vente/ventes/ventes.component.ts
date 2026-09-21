@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, inject, OnChanges } from '@angular/core';
+﻿/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Chart, registerables } from 'chart.js';
@@ -29,7 +29,7 @@ interface PeriodeOption {
   templateUrl: './ventes.component.html',
   styleUrl: './ventes.component.css',
 })
-export class VentesComponent implements OnInit, OnDestroy,OnChanges {
+export class VentesComponent implements OnInit, OnDestroy {
    
   kpiData: KPICaissePeriode | null = null;
   paiementsData: EncaissementsResponse | null = null;
@@ -62,6 +62,9 @@ export class VentesComponent implements OnInit, OnDestroy,OnChanges {
   currentUser: User|null = null;
   magasinId : number | null = null;
   isAdmin = false;
+  isGerant = false;
+  // Caissier / Employé : uniquement ses propres ventes (pas de filtre agent)
+  isAgentRestreint = false;
   
   code_structure :string|null = null;
 
@@ -112,7 +115,11 @@ export class VentesComponent implements OnInit, OnDestroy,OnChanges {
       this.currentUser = user;
       this.code_structure = user?.code_structure || null;
       this.magasinId = user?.magasinId || null;
-      this.isAdmin = this.authService.hasRole('Administrateur');
+      this.isAdmin = this.authService.hasRole('Administrateur')
+        || this.authService.hasRole('Administrateur secondaire');
+      this.isGerant = this.authService.hasRole('Gérant');
+      this.isAgentRestreint = this.authService.hasRole('Caissier')
+        || this.authService.hasRole('Employé');
       
       if (this.code_structure) {
         this.loadUserAndStructure();
@@ -142,10 +149,7 @@ export class VentesComponent implements OnInit, OnDestroy,OnChanges {
     }
   }
 
-  ngOnChanges() {
-  this.showRepartitionComptes =
-    (this.paiementsData?.parCompte?.length || 0) > 1;
-}
+  // VE-1 FIX: ngOnChanges supprimé — aucun @Input() ne déclenche ce hook ici.
 
   /**
    * Charger l'utilisateur connecté et la structure
@@ -184,7 +188,14 @@ export class VentesComponent implements OnInit, OnDestroy,OnChanges {
       .subscribe({
         next: ([mgs, users]) => {
           this.magasins = mgs;
-          this.agents = users;
+          // Un Gérant ne filtre que par les agents de SON magasin ;
+          // un Admin voit tous les agents de la structure ;
+          // un Caissier/Employé ne doit pas filtrer par agent (stats propres).
+          if (this.isGerant && this.magasinId) {
+            this.agents = users.filter(a => Number(a['magasinId']) === Number(this.magasinId));
+          } else {
+            this.agents = users;
+          }
           
           // Déterminer le magasin de l'utilisateur (si non admin)
           if (!this.isAdmin && this.currentUser?.['magasinId']) {
@@ -249,6 +260,8 @@ export class VentesComponent implements OnInit, OnDestroy,OnChanges {
         this.avoirsData = avoirs as StatsAvoirs;
         this.caisseTheoriqueData = caisseTheorique as CaisseTheorique;
         this.loading = false;
+        // VE-1 FIX : showRepartitionComptes calculé ici (ngOnChanges ne s'exécutait jamais)
+        this.showRepartitionComptes = (this.paiementsData?.parCompte?.length || 0) > 1;
         
         // Initialiser les graphiques
         setTimeout(() => {
@@ -280,13 +293,13 @@ export class VentesComponent implements OnInit, OnDestroy,OnChanges {
 calculerPart(paiement: PaiementMode): string {
   if (!this.paiementsData?.parMethode?.length) return '0';
   const total = this.paiementsData.parMethode.reduce((sum, p) => sum +Number( p.total), 0);
-  return total > 0 ? ((paiement.total / total) * 100).toFixed(1) : '0';
+  return total > 0 ? ((Number(paiement.total) / total) * 100).toFixed(1) : '0'; // VE-1 FIX: Number() pour cohérence de type
 }
 
 calculerPartCompte(paiement: ComptePaiement): string {
   if (!this.paiementsData?.parCompte?.length) return '0';
   const total = this.paiementsData.parCompte.reduce((sum, p) => sum +Number( p.total), 0);
-  return total > 0 ? ((paiement.total / total) * 100).toFixed(1) : '0';
+  return total > 0 ? ((Number(paiement.total) / total) * 100).toFixed(1) : '0'; // VE-1 FIX: Number() pour cohérence de type
 }
 
 /**
@@ -334,8 +347,10 @@ calculerTotalPaiementsCompte(): number {
         this.caisseTheoriqueData = caisseTheorique as CaisseTheorique;
         this.comparatifData = comparatif as ComparatifCA;
         this.loading = false;
+        // VE-1 FIX : showRepartitionComptes calculé ici
+        this.showRepartitionComptes = (this.paiementsData?.parCompte?.length || 0) > 1;
         
-        console.log ('ComparatifData dans données période',this.comparatifData)
+        // comparatifData chargé (log de débogage supprimé)
         // Initialiser les graphiques
         setTimeout(() => {
           this.initialiserChartPaiements();
@@ -400,6 +415,15 @@ calculerTotalPaiementsCompte(): number {
    */
   get canSelectMagasin(): boolean {
     return this.isAdmin;
+  }
+
+  /**
+   * Filtre par agent : réservé aux Admins (tous agents) et au Gérant
+   * (agents de son magasin uniquement). Un Caissier/Employé voit
+   * uniquement ses propres ventes — pas de filtre agent.
+   */
+  get canSelectAgent(): boolean {
+    return this.isAdmin || this.isGerant;
   }
   /**
    * Charger le comparatif CA (seulement pour les périodes)
@@ -1014,23 +1038,30 @@ private initialiserChartCommandes(): void {
 }
 
 /**
- * Formater les données des commandes pour l'affichage
+ * Formater les données des commandes pour l'affichage.
+ * VE-1 FIX : converti en propriété calculée une seule fois (évite recalcul à chaque cycle CD).
+ * Appelée depuis chargerStatistiquesCommandes() après réception des données.
  */
 get donneesCommandesFormatees(): any {
   if (!this.donneesCommandes) return null;
 
+  // VE-1 FIX: tauxConversion/tauxAnnulation — sécurisation contre null/undefined
+  const tauxConv = this.donneesCommandes.tauxConversion;
+  const tauxAnn  = this.donneesCommandes.tauxAnnulation;
+
   return {
     resume: {
-      totalCommandesValidees: this.donneesCommandes.commandesValidees?.nombre || 0,
-      totalMontantValidees: this.formatMontant(this.donneesCommandes.commandesValidees?.montantTotal || 0),
-      totalCommandesLivrees: this.donneesCommandes.commandesLivrees?.nombre || 0,
-      totalMontantLivrees: this.formatMontant(this.donneesCommandes.commandesLivrees?.montantTotal || 0),
-      totalCommandesAnnulees: this.donneesCommandes.commandesAnnulees?.nombre || 0,
-      totalMontantAnnulees: this.formatMontant(this.donneesCommandes.commandesAnnulees?.montantTotal || 0),
+      totalCommandesValidees:  this.donneesCommandes.commandesValidees?.nombre  || 0,
+      totalMontantValidees:    this.formatMontant(this.donneesCommandes.commandesValidees?.montantTotal  || 0),
+      totalCommandesLivrees:   this.donneesCommandes.commandesLivrees?.nombre   || 0,
+      totalMontantLivrees:     this.formatMontant(this.donneesCommandes.commandesLivrees?.montantTotal   || 0),
+      totalCommandesAnnulees:  this.donneesCommandes.commandesAnnulees?.nombre  || 0,
+      totalMontantAnnulees:    this.formatMontant(this.donneesCommandes.commandesAnnulees?.montantTotal  || 0),
       totalCommandesRetournees: this.donneesCommandes.commandesRetournees?.nombreTotal || 0,
-      totalMontantRetournees: this.formatMontant(this.donneesCommandes.commandesRetournees?.montantTotal || 0),
-      tauxConversion: this.donneesCommandes.tauxConversion?.toFixed(1) + '%' || '0%',
-      tauxAnnulation: this.donneesCommandes.tauxAnnulation?.toFixed(1) + '%' || '0%'
+      totalMontantRetournees:  this.formatMontant(this.donneesCommandes.commandesRetournees?.montantTotal || 0),
+      // VE-1 FIX : null?.toFixed(1) retourne undefined, pas '0%'
+      tauxConversion: (tauxConv != null ? tauxConv.toFixed(1) : '0') + '%',
+      tauxAnnulation: (tauxAnn  != null ? tauxAnn.toFixed(1)  : '0') + '%',
     },
     detailsRetours: this.donneesCommandes.commandesRetournees?.details || []
   };

@@ -48,7 +48,8 @@ exports.getIndicateursStocks = async (req, res) => {
         // ✅ Gérant => uniquement son magasin
         if (isGerant && !isAdmin) {
         magasinIdFinal = authUser.magasinId;
-        }logger.log('rapportStock.controller', '📥 [Indicateurs Stocks] Requête reçue:', {
+        }
+logger.log('rapportStock.controller', '📥 [Indicateurs Stocks] Requête reçue:', {
             periode,
             fromDate,
             toDate,
@@ -74,7 +75,8 @@ exports.getIndicateursStocks = async (req, res) => {
             ...indicateurs
         });
 
-    } catch (error) {logger.error('rapportStock.controller', '❌ Erreur getIndicateursStocks:', error);
+    } catch (error) {
+logger.error('rapportStock.controller', '❌ Erreur getIndicateursStocks:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -138,10 +140,6 @@ exports.getStatsProduits = async (req, res) => {
 
         const { statsProduits, total } = await utilitaireRapport.calculerStatsProduits(filters);
 
-        // Pagination
-        const offset = (parseInt(page) - 1) * parseInt(limit);
-        const paginatedProduits = statsProduits.slice(offset, offset + parseInt(limit));
-
         return res.json({
             niveau: magasinId ? 'magasin' : 'structure',
             periode: periode || 'personnalisée',
@@ -149,11 +147,12 @@ exports.getStatsProduits = async (req, res) => {
             page: parseInt(page),
             totalPages: Math.ceil(total / parseInt(limit)),
             limit: parseInt(limit),
-            produits: paginatedProduits,
-            items: paginatedProduits 
+            produits: statsProduits,
+            items: statsProduits
         });
 
-    } catch (error) {logger.error('rapportStock.controller', '❌ Erreur getStatsProduits:', error);
+    } catch (error) {
+logger.error('rapportStock.controller', '❌ Erreur getStatsProduits:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -222,7 +221,8 @@ exports.getMouvementsPeriode = async (req, res) => {
             items: resultats.mouvements // Pour compatibilité avec pagination frontend
         });
 
-    } catch (error) {logger.error('rapportStock.controller', '❌ Erreur getMouvementsPeriode:', error);
+    } catch (error) {
+logger.error('rapportStock.controller', '❌ Erreur getMouvementsPeriode:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -282,7 +282,8 @@ exports.getStatsGraphiques = async (req, res) => {
             ...statsGraphiques
         });
 
-    } catch (error) {logger.error('rapportStock.controller', '❌ Erreur getStatsGraphiques:', error);
+    } catch (error) {
+logger.error('rapportStock.controller', '❌ Erreur getStatsGraphiques:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -360,7 +361,8 @@ exports.getProduitsSpecifiques = async (req, res) => {
             produitsRotationLente: produitsSpecifiques.produitsRotationLente.map(formaterProduit)
         });
 
-    } catch (error) {logger.error('rapportStock.controller', '❌ Erreur getProduitsSpecifiques:', error);
+    } catch (error) {
+logger.error('rapportStock.controller', '❌ Erreur getProduitsSpecifiques:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -417,7 +419,8 @@ exports.getRapportCompletStocks = async (req, res) => {
             page: pageProduits,
             limit,
             search
-        };logger.log('rapportStock.controller', '📥 [Rapport Complet Stocks] Génération...');
+        };
+logger.log('rapportStock.controller', '📥 [Rapport Complet Stocks] Génération...');
 
         // Exécuter toutes les requêtes en parallèle
         const [indicateurs, statsProduits, mouvements, graphiques, produitsSpecifiques] = await Promise.all([
@@ -464,7 +467,8 @@ exports.getRapportCompletStocks = async (req, res) => {
             }
         });
 
-    } catch (error) {logger.error('rapportStock.controller', '❌ Erreur getRapportCompletStocks:', error);
+    } catch (error) {
+logger.error('rapportStock.controller', '❌ Erreur getRapportCompletStocks:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -557,14 +561,63 @@ exports.exportDonneesStocks = async (req, res) => {
 
         if (format === 'json') {
             return res.json(exportData);
+        } else if (format === 'csv') {
+            // Génération d'un vrai CSV pour les produits et mouvements
+            const lignesCSV = [];
+
+            // En-tête produits
+            lignesCSV.push('=== PRODUITS ===');
+            lignesCSV.push([
+                'Produit', 'Catégorie', 'Prix Achat', 'Prix Vente',
+                'Stock Initial', 'Entrées', 'Sorties', 'Stock Final',
+                'Valeur Stock Final', 'Taux Rotation', 'Statut'
+            ].map(h => `"${h}"`).join(','));
+
+            (exportData.produits || []).forEach(p => {
+                lignesCSV.push([
+                    p.produit?.designation || '',
+                    p.produit?.categorie || '',
+                    p.prixAchat || 0,
+                    p.prixVente || 0,
+                    p.stockInitial || 0,
+                    p.entrees || 0,
+                    p.sorties || 0,
+                    p.stockFinal || 0,
+                    p.valeurStockFinal || 0,
+                    p.tauxRotation || 0,
+                    p.statut || ''
+                ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+            });
+
+            // En-tête mouvements
+            lignesCSV.push('');
+            lignesCSV.push('=== MOUVEMENTS ===');
+            lignesCSV.push([
+                'Date', 'Produit', 'Type', 'Quantité', 'Référence', 'Motif'
+            ].map(h => `"${h}"`).join(','));
+
+            (exportData.mouvements || []).forEach(m => {
+                lignesCSV.push([
+                    m.dateMouvement ? new Date(m.dateMouvement).toLocaleDateString('fr-FR') : '',
+                    m.produit?.designation || m.produitId || '',
+                    m.typeMouvement || '',
+                    m.quantite || 0,
+                    m.reference || '',
+                    m.motif || ''
+                ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+            });
+
+            const csvContent = '\uFEFF' + lignesCSV.join('\r\n'); // BOM UTF-8 pour Excel
+            const filename = `export-stocks-${new Date().toISOString().slice(0, 10)}.csv`;
+            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+            res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+            return res.send(csvContent);
         } else {
-            // Pour CSV, on peut retourner un format différent
-            res.setHeader('Content-Type', 'application/json');
-            res.setHeader('Content-Disposition', 'attachment; filename=export-stocks.json');
             return res.json(exportData);
         }
 
-    } catch (error) {logger.error('rapportStock.controller', '❌ Erreur exportDonneesStocks:', error);
+    } catch (error) {
+logger.error('rapportStock.controller', '❌ Erreur exportDonneesStocks:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -646,7 +699,8 @@ exports.genererRapportStockPDF = async (req, res) => {
             toDate,
             page: 1,
             limit: 50 // Limiter pour le PDF
-        };logger.log('rapportStock.controller', '📊 Génération PDF Rapport Stock du', debut, 'au', fin);
+        };
+logger.log('rapportStock.controller', '📊 Génération PDF Rapport Stock du', debut, 'au', fin);
 
         // Récupération des données
         const [
@@ -689,6 +743,7 @@ exports.genererRapportStockPDF = async (req, res) => {
             statut: statut || 'all',
             periodeAffichage,
             indicateursStocks: indicateurs,
+            indicateurs: indicateurs,
             produits: {
                 items: statsProduits.statsProduits || [],
                 total: statsProduits.total || 0
@@ -738,7 +793,8 @@ exports.genererRapportStockPDF = async (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename=rapport-stock-${Date.now()}.pdf`);
         res.send(pdf);
 
-    } catch (error) {logger.error('rapportStock.controller', '❌ Erreur génération PDF Rapport Stock:', error);
+    } catch (error) {
+logger.error('rapportStock.controller', '❌ Erreur génération PDF Rapport Stock:', error);
         res.status(500).json({ 
             error: 'Erreur lors de la génération du PDF',
             details: error.message 
@@ -833,7 +889,8 @@ exports.exportRapportStockExcel = async (req, res) => {
             toDate,
             page: 1,
             limit: 10000 // Pour l'export, on prend tout
-        };logger.log('rapportStock.controller', '📊 Export Excel Rapport Stock du', debut, 'au', fin);
+        };
+logger.log('rapportStock.controller', '📊 Export Excel Rapport Stock du', debut, 'au', fin);
 
         // Récupération des données
         const [
@@ -1043,7 +1100,8 @@ exports.exportRapportStockExcel = async (req, res) => {
         // Initialiser produitsSpecifiques à un objet vide si null
         const safeProduitsSpecifiques = produitsSpecifiques || {};
 
-        // Afficher toutes les propriétés disponibles pour déboguerlogger.log('rapportStock.controller', 'Propriétés disponibles dans produitsSpecifiques:', Object.keys(safeProduitsSpecifiques));
+        // Afficher toutes les propriétés disponibles pour déboguer
+logger.log('rapportStock.controller', 'Propriétés disponibles dans produitsSpecifiques:', Object.keys(safeProduitsSpecifiques));
 
         // Fonction utilitaire pour formater une ligne de produit
         function formatProduitRow(p) {
@@ -1249,7 +1307,8 @@ exports.exportRapportStockExcel = async (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename=rapport-stock-${Date.now()}.xlsx`);
         res.send(buffer);
 
-    } catch (error) {logger.error('rapportStock.controller', '❌ Erreur export Excel Rapport Stock:', error);
+    } catch (error) {
+logger.error('rapportStock.controller', '❌ Erreur export Excel Rapport Stock:', error);
         res.status(500).json({ 
             error: 'Erreur lors de l\'export Excel',
             details: error.message 

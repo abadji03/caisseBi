@@ -1,16 +1,216 @@
-.indicateurs .card-body i {
-  color: #007bff;
+/* ============================================================
+   OVERVIEW / TABLEAU DE BORD
+   ============================================================ */
+
+:host {
+  display: block;
+  background-color: #f0f4f8;
+  min-height: 100vh;
 }
 
-.indicateurs.card-body {
-  padding: 1.5rem;
+/* ── En-tête ─────────────────────────────────────────────── */
+.dashboard-header {
+  background: linear-gradient(135deg, #0d6efd 0%, #0099cc 100%);
+  color: #fff;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
 }
 
-.indicateurs .card-header {
-  font-weight: bold;
+/* ── Filtres ─────────────────────────────────────────────── */
+.filtres-card {
+  border-radius: 12px;
+  border: 1px solid #e0e9f5;
+  background: #fff;
 }
 
-.indicateurs .card-footer {
-  font-size: 0.8rem;
-  color: #999;
+/* ── Sections du dashboard ───────────────────────────────── */
+.dashboard-section {
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid #eaf0fb;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.section-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+/* ── Cartes KPI ──────────────────────────────────────────── */
+.kpi-card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.07);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
+}
+
+.kpi-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.kpi-card .card-body {
+  padding: 1.25rem;
+}
+
+.kpi-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.kpi-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 2px;
+}
+
+.kpi-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.kpi-sub {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+/* ── Variation indicateurs ───────────────────────────────── */
+.variation-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-top: 6px;
+}
+
+.variation-badge.positive { background: #d1fae5; color: #065f46; }
+.variation-badge.negative { background: #fee2e2; color: #991b1b; }
+.variation-badge.neutral  { background: #f3f4f6; color: #6b7280; }
+
+/* ── Graphiques ──────────────────────────────────────────── */
+.chart-wrapper {
+  position: relative;
+}
+
+.chart-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  background: #f8faff;
+  border: 2px dashed #d1d5db;
+  border-radius: 10px;
+  color: #9ca3af;
+  font-size: 13px;
+  gap: 8px;
+}
+
+/* ── Tables ──────────────────────────────────────────────── */
+.data-table th {
+  background-color: #f8faff;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 10px 12px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.data-table td {
+  font-size: 13px;
+  padding: 9px 12px;
+  vertical-align: middle;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table tbody tr:hover {
+  background-color: #f8faff;
+}
+
+/* ── Alertes stock ───────────────────────────────────────── */
+.alert-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.alert-item.rupture  { background: #fff0f0; color: #dc3545; }
+.alert-item.alerte   { background: #fffbe6; color: #d97706; }
+.alert-item.reappro  { background: #eff6ff; color: #2563eb; }
+.alert-item.surstock { background: #f3f4f6; color: #6b7280; }
+.alert-item.ok       { background: #f0fff4; color: #16a34a; }
+
+/* ── Section header cartes ───────────────────────────────── */
+.card-header-custom {
+  background: linear-gradient(90deg, #f8faff 0%, #f0f4f8 100%);
+  border-bottom: 1px solid #e9ecef;
+  padding: 12px 16px;
+  border-radius: 12px 12px 0 0;
+}
+
+/* ── Chargement ──────────────────────────────────────────── */
+.loading-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  flex-direction: column;
+  gap: 16px;
+  color: #6c757d;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .kpi-card { margin-bottom: 12px; }
+  .kpi-value { font-size: 1.15rem; }
+  .dashboard-section { padding: 14px; }
+}
+
+/* ── Animations ──────────────────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.dashboard-section,
+.kpi-card {
+  animation: fadeInUp 0.35s ease-out;
 }

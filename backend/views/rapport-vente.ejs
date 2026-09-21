@@ -1,11 +1,15 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rapport de Vente</title>
-    <!-- Ajout de Chart.js -->
+    <!-- Chart.js — bundle local injecté par le serveur (pas de dépendance CDN) -->
+    <% if (locals.chartjsBundle) { %>
+    <script><%-chartjsBundle%></script>
+    <% } else { %>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <% } %>
     <style>
         /* Styles généraux */
         @page {
@@ -498,7 +502,7 @@
         .cover-header {
             position: relative;
             height: 20px;
-            background: linear-gradient(90deg, #01060e, #081c29, #152d51);
+            background: linear-gradient(90deg, #065f46, #059669, #065f46);
             background-size: 200% 100%;
             animation: gradient 15s ease infinite;
         }
@@ -536,7 +540,7 @@
             width: 120px;
             height: 120px;
             margin: 0 auto;
-            background: linear-gradient(135deg, #010812, #031b2b);
+            background: linear-gradient(135deg, #059669, #065f46);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -559,7 +563,7 @@
         .cover-main-title {
             font-size: 42px;
             font-weight: 800;
-            color: #01040a;
+            color: #059669;
             letter-spacing: 4px;
             margin-bottom: 15px;
             text-transform: uppercase;
@@ -569,7 +573,7 @@
         .cover-title-underline {
             width: 150px;
             height: 4px;
-            background: linear-gradient(90deg, #010710, #00080c);
+            background: linear-gradient(90deg, #059669, #065f46);
             margin: 0 auto;
             border-radius: 2px;
         }
@@ -601,7 +605,7 @@
         .cover-info-value {
             font-size: 18px;
             font-weight: 600;
-            color: #01040a;
+            color: #059669;
         }
 
         .cover-details-section {
@@ -622,16 +626,16 @@
 
         .cover-details-left {
             background: linear-gradient(135deg, #f8f9fa, #ffffff);
-            border-right: 1px dashed #010915;
+            border-right: 1px dashed #059669;
         }
 
         .cover-details-title {
             font-size: 16px;
             font-weight: 600;
-            color: #01060e;
+            color: #059669;
             margin-bottom: 20px;
             padding-bottom: 10px;
-            border-bottom: 2px solid #010811;
+            border-bottom: 2px solid #059669;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
@@ -651,7 +655,7 @@
 
         .cover-badge {
             background: #e7f1ff;
-            color: #00040a;
+            color: #059669;
             padding: 3px 10px;
             border-radius: 20px;
             font-size: 12px;
@@ -691,7 +695,7 @@
 
         .cover-footer-band {
             height: 8px;
-            background: linear-gradient(90deg, #020914, #000b12, #010813);
+            background: linear-gradient(90deg, #065f46, #059669, #065f46);
             margin-top: 20px;
         }
 
@@ -876,7 +880,7 @@
                                 <div class="stat-content">
                                     <h5>Marge bénéficiaire</h5>
                                     <p class="stat-value"><%= margeBeneficiaire.toLocaleString('fr-FR') %> F CFA</p>
-                                    <small><%= ((margeBeneficiaire / chiffreAffairesHT) * 100).toFixed(2) %>%</small>
+                                    <small><%= (chiffreAffairesHT > 0 ? ((margeBeneficiaire / chiffreAffairesHT) * 100).toFixed(2) : '0.00') %>%</small>
                                 </div>
                             </div>
                         </div>
@@ -1683,6 +1687,63 @@
         });
     }
     <% } %>
+
+    <!-- OBSERVATIONS & RECOMMANDATIONS VENTES -->
+    <div class="container">
+    <div class="card mb-4">
+        <div class="card-header bg-dark">
+            <h3 class="fw-bold mb-0">&#128203; Observations &amp; Recommandations</h3>
+        </div>
+        <div class="card-body">
+            <%
+            const obsV = [];
+            const tv = totalVentes || 0;
+            const ca = chiffreAffairesTTC || 0;
+            const tm = ticketMoyen || 0;
+            const mb = margeBeneficiaire || 0;
+
+            if (tv === 0) {
+                obsV.push({ type: 'secondary', msg: '&#9898; Aucune vente enregistrée sur cette période.' });
+            } else {
+                obsV.push({ type: 'success', msg: '&#128994; ' + tv.toLocaleString('fr-FR') + ' vente(s) réalisée(s) pour un CA TTC de ' + ca.toLocaleString('fr-FR') + ' F CFA.' });
+            }
+
+            if (tm > 0 && tm < 5000) {
+                obsV.push({ type: 'warning', msg: '&#128993; Ticket moyen faible (' + tm.toLocaleString('fr-FR') + ' F CFA). Envisagez des actions de vente additionnelle.' });
+            }
+
+            const margePct = (chiffreAffairesHT || 0) > 0 ? ((mb / (chiffreAffairesHT || 1)) * 100) : 0;
+            if (margePct < 15 && tv > 0) {
+                obsV.push({ type: 'warning', msg: '&#128993; Marge bénéficiaire de ' + margePct.toFixed(1) + '% — en dessous du seuil recommandé de 15%.' });
+            } else if (margePct >= 15 && tv > 0) {
+                obsV.push({ type: 'success', msg: '&#128994; Marge bénéficiaire satisfaisante (' + margePct.toFixed(1) + '%).' });
+            }
+
+            if (obsV.length === 0) {
+                obsV.push({ type: 'success', msg: '&#128994; Performances de ventes satisfaisantes sur cette période.' });
+            }
+            %>
+            <% obsV.forEach(function(o) { %>
+            <div style="border-left: 4px solid <%= o.type === 'danger' ? '#dc3545' : (o.type === 'warning' ? '#ffc107' : (o.type === 'success' ? '#198754' : '#6c757d')) %>; padding: 10px 15px; margin-bottom: 10px; border-radius: 6px; background: <%= o.type === 'danger' ? '#fff5f5' : (o.type === 'warning' ? '#fffbe6' : (o.type === 'success' ? '#f0fff4' : '#f8f9fa')) %>;">
+                <%- o.msg %>
+            </div>
+            <% }); %>
+
+            <div class="mt-4" style="border: 1px dashed #ccc; border-radius: 6px; padding: 15px; min-height: 80px;">
+                <p class="text-muted" style="font-size: 12px; margin-bottom: 8px;">Commentaires du responsable :</p>
+                <div style="min-height: 60px;"></div>
+            </div>
+            <div class="rapport-footer mt-4">
+                <div>
+                    <p class="text-muted" style="font-size: 12px;">Généré le <%= new Date().toLocaleString('fr-FR') %></p>
+                    <p class="text-muted" style="font-size: 12px;">Par : <%= utilisateur ? utilisateur.nom : 'Système' %></p>
+                </div>
+                <div class="signature"><p>Visa du responsable</p><div class="signature-line"></div></div>
+            </div>
+        </div>
+    </div>
+    </div>
 </script>
 </body>
-</html>
+</html
+>

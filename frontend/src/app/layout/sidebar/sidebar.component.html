@@ -16,6 +16,7 @@
               class="accordion-button no-arrow"
               (click)="toggleSubtitre(item.label)"
               [attr.aria-expanded]="isSubtitreOpen(item.label)"
+              [class.active-parent]="isGroupActive(item)"
               [title]="item.label"
             >
               <i class="{{ item.icon }} me-2"></i>

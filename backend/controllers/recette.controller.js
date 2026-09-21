@@ -32,11 +32,13 @@ exports.createRecette = async (req, res) => {
       statutRecette,
       code_structure,
       date,
-    } = req.body;logger.log('recette.controller', 'Données recette reçu : ',req.body);
+    } = req.body;
+logger.log('recette.controller', 'Données recette reçu : ',req.body);
     let receipt = null;
     if (req.file) {
       receipt = BASE_URL + req.file.filename;
-    }logger.log('recette.controller', 'Début création recette');
+    }
+logger.log('recette.controller', 'Début création recette');
     const recette = await Recette.create({
       categoryId,
       montant,
@@ -49,7 +51,8 @@ exports.createRecette = async (req, res) => {
       agentId,
       code_structure,
       date,
-    });logger.log('recette.controller', 'Fin création recette',recette);
+    });
+logger.log('recette.controller', 'Fin création recette',recette);
 
         // ENREGISTRER L'HISTORIQUE DE CRÉATION
     await HistoriqueService.enregistrerAction(
@@ -130,7 +133,8 @@ exports.getByStructure = async (req, res) => {
     });
 
     res.json(recettes);
-  } catch (error) {logger.error('recette.controller', "Erreur récupération recettes:", error);
+  } catch (error) {
+logger.error('recette.controller', "Erreur récupération recettes:", error);
     res.status(500).json({
       message: "Erreur de récupération des recettes",
       error: error.message
@@ -154,8 +158,8 @@ exports.getByStructureBis = async (req, res) => {
       page = 1, 
       limit = 10, 
       search = '',
-      //startDate = '',
-      //endDate = '',
+      startDate = '',
+      endDate = '',
       categoryId = '',
       paymentMode = '',
       statut = ''
@@ -220,7 +224,7 @@ exports.getByStructureBis = async (req, res) => {
     }
 
     // 📅 FILTRE PAR PÉRIODE
-    /* if (startDate && endDate) {
+    if (startDate && endDate) {
       whereClause.date = {
         [Op.between]: [new Date(startDate), new Date(endDate)]
       };
@@ -229,7 +233,7 @@ exports.getByStructureBis = async (req, res) => {
     } else if (endDate) {
       whereClause.date = { [Op.lte]: new Date(endDate) };
     }
- */
+
     // 🏷️ FILTRE PAR CATÉGORIE
     if (categoryId) {
       whereClause.categoryId = categoryId;
@@ -376,7 +380,8 @@ exports.getByStructureBis = async (req, res) => {
     });
 
     // Calcul du nombre total de pages
-    const totalPages = Math.ceil(count / limitInt);logger.log('recette.controller', `📦 Recettes: ${count} trouvées, page ${page}/${totalPages}`);
+    const totalPages = Math.ceil(count / limitInt);
+logger.log('recette.controller', `📦 Recettes: ${count} trouvées, page ${page}/${totalPages}`);
 
     // Formater les statistiques
     const statistiques = {
@@ -385,12 +390,11 @@ exports.getByStructureBis = async (req, res) => {
         montantTotal: parseFloat(statsGlobales[0].montantTotal) || 0,
         montantMoyen: parseFloat(statsGlobales[0].montantMoyen) || 0,
         montantMax: parseFloat(statsGlobales[0].montantMax) || 0,
-        montantMin: parseFloat(statsGlobales[0].montantMin) || 0,
         
         repartitionParMode: {
           espece: parseFloat(statsGlobales[0].totalEspece) || 0,
           carte: parseFloat(statsGlobales[0].totalCarte) || 0,
-          orangeMoney: parseFloat(statsGlobales[0].totalMobileMoney) || 0,
+          orangeMoney: parseFloat(statsGlobales[0].totalOrangeeMoney) || 0,
           wave: parseFloat(statsGlobales[0].totalWave) || 0,
           virement: parseFloat(statsGlobales[0].totalVirement) || 0,
           cheque: parseFloat(statsGlobales[0].totalCheque) || 0,
@@ -457,15 +461,16 @@ exports.getByStructureBis = async (req, res) => {
       statistiques: statistiques,
       filtres: {
         search: search || null,
-        //startDate: startDate || null,
-        //endDate: endDate || null,
+        startDate: startDate || null,
+        endDate: endDate || null,
         categoryId: categoryId || null,
         paymentMode: paymentMode || null,
         statut: statut || null
       }
     });
 
-  } catch (error) {logger.error('recette.controller', "Erreur récupération recettes:", error);
+  } catch (error) {
+logger.error('recette.controller', "Erreur récupération recettes:", error);
     res.status(500).json({
       message: "Erreur de récupération des recettes",
       error: error.message
@@ -526,11 +531,23 @@ exports.deleteRecette = async (req, res) => {
 
 exports.findByPaiementId = async(req, res) => {
   try {
+    const authUser = req.user;
     const { paiementId } = req.params;
 
     const recette = await Recette.findOne({
       where: { paiementId },
     });
+
+    // Garde-fou anti-IDOR : un Caissier/Employé (sales.manage) ne peut
+    // consulter que la recette liée à SA propre vente.
+    if (recette && authUser) {
+      const nomRoles = (authUser.roles || []).map(r => r.nom);
+      const isRestreint = nomRoles.includes('Caissier') || nomRoles.includes('Employé');
+      if (isRestreint && recette.agentId != null &&
+          Number(recette.agentId) !== Number(authUser.id)) {
+        return res.status(403).json({ message: 'Accès interdit : cette recette ne vous appartient pas' });
+      }
+    }
 
     res.json(recette);
   } catch (error) {
@@ -553,6 +570,17 @@ exports.updateRecette = async (req, res) => {
     const recette = await Recette.findByPk(id);
     if (!recette) {
       return res.status(404).json({ message: 'Recette non trouvée' });
+    }
+
+    // Garde-fou anti-IDOR : un Caissier/Employé (sales.manage) ne peut
+    // modifier que la recette liée à SA propre vente (ex. annulation retour).
+    {
+      const nomRoles = (authUser.roles || []).map(r => r.nom);
+      const isRestreint = nomRoles.includes('Caissier') || nomRoles.includes('Employé');
+      if (isRestreint && recette.agentId != null &&
+          Number(recette.agentId) !== Number(authUser.id)) {
+        return res.status(403).json({ message: 'Accès interdit : cette recette ne vous appartient pas' });
+      }
     }
 
     // Sauvegarder l'ancien état pour l'historique

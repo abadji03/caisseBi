@@ -36,7 +36,7 @@ export const NAVIGATION_CONFIG: NavigationItem[] = [
     sousTitre: 'Gestion des ventes',
     roles: [...TOUS_SAUF_CAISSIER, CAISSIER],
     children: [
-      { label: 'Ventes', route: '/caisse-bi/ventes', titre: 'Ventes', sousTitre: 'Gestion des ventes', roles: TOUS_SAUF_CAISSIER },
+      { label: 'Ventes', route: '/caisse-bi/ventes', titre: 'Ventes', sousTitre: 'Gestion des ventes', roles: [...TOUS_SAUF_CAISSIER, CAISSIER] },
       { label: 'Caisse', route: '/caisse-bi/caisse', titre: 'Ventes', sousTitre: 'Gestion de la caisse', roles: [...GESTIONNAIRES, CAISSIER, EMPLOYE] },
       { label: 'Clients', route: '/caisse-bi/client', titre: 'Ventes', sousTitre: 'Gestion des clients', roles: [...GESTIONNAIRES, CAISSIER] },
     ],

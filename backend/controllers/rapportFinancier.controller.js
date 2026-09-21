@@ -1,7 +1,7 @@
-const db = require('../models');
+﻿const db = require('../models');
 const logger = require('../services/logger.js');
 const FonctionsUtilitaires = require('./utils/fonctionsUtilitaires');
-const { Op, fn, col } = db.Sequelize;
+const { Op, fn, col, literal } = db.Sequelize;
 const utilitaireRapport  = require('./utils/rapportFinancierUtilitaire');
 const ExcelJS = require('exceljs');
 const HistoriqueService = require('../services/historique.service'); 
@@ -229,124 +229,27 @@ exports.getIndicateursFinanciers = async (req, res) => {
  /** 
   * API pour la répartition des dépenses par catégorie
  */
- exports.getRepartitionDepenses = async (req, res) => {
+exports.getRepartitionDepenses = async (req, res) => {
     try {
         const authUser = req.user;
+        if (!authUser) return res.status(401).json({ message: "Non authentifié" });
 
-        if (!authUser) {
-        return res.status(401).json({ message: "Non authentifié" });
-        }
-        const {
-            magasinId,
-            agentId,
-            periode,
-            dateReference,
-            fromDate,
-            toDate
-        } = req.query;
-
+        const { magasinId, agentId, periode, dateReference, fromDate, toDate } = req.query;
         const code_structure = authUser.code_structure;
-
-        if (!code_structure) {
-            return res.status(400).json({
-                error: 'Le paramètre "code_structure" est requis'
-            });
-        }
-
-        const magasinIdFromQuery = magasinId ? parseInt(magasinId) : null;
-        const agentIdFromQuery = agentId ? parseInt(agentId) : null;
+        if (!code_structure) return res.status(400).json({ error: 'code_structure requis' });
 
         const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
         const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+        let magasinIdFinal = magasinId ? parseInt(magasinId) : null;
+        let agentIdFinal = agentId ? parseInt(agentId) : null;
+        if (isGerant && !isAdmin) magasinIdFinal = authUser.magasinId;
 
-        // magasin final
-        let magasinIdFinal = magasinIdFromQuery;
+        const filters = { code_structure, magasinId: magasinIdFinal, agentId: agentIdFinal, periode, dateReference, fromDate, toDate };
+        const result = await exports.getRepartitionDepensesData(filters);
 
-        // agent final
-        let agentIdFinal = agentIdFromQuery;
-
-        // ✅ Gérant => uniquement son magasin
-        if (isGerant && !isAdmin) {
-        magasinIdFinal = authUser.magasinId;
-        }
-
-        /* let dateCondition;
-        if (periode) {
-            const { debut, fin } = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
-            dateCondition = { [Op.between]: [debut, fin] };
-        } else if (fromDate && toDate) {
-            dateCondition = { [Op.between]: [fromDate, toDate] };
-        } else {
-            const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
-            dateCondition = { [Op.between]: [debutJournee, finJournee] };
-        } */
-
-        const whereDepenses = FonctionsUtilitaires.buildWhereFinance({
-            periode,
-            dateReference,
-            fromDate,
-            toDate,
-            code_structure,
-            magasinId: magasinIdFinal,
-            agentId: agentIdFinal,
-            type: 'DEPENSE'
-        });
-
-        // Récupérer les catégories de dépenses
-        const categories = await db.Categorie.findAll({
-            where: {
-                code_structure,
-                type: 'DEPENSE',
-                isActive: true
-            },
-            attributes: ['id', 'name', 'description']
-        });
-
-        // Pour chaque catégorie, calculer les statistiques
-        const repartition = await Promise.all(
-            categories.map(async (categorie) => {
-                const stats = await db.Depense.findOne({
-                    attributes: [
-                        [fn('SUM', col('montant')), 'montantTotal'],
-                        [fn('COUNT', col('id')), 'occurrences']
-                    ],
-                    where: {
-                        ...whereDepenses,
-                        categoryId: categorie.id,
-                        
-                    },
-                    raw: true
-                });
-
-                return {
-                    categorieId: categorie.id,
-                    categorieName: categorie.name,
-                    montantTotal: parseFloat(stats?.montantTotal || 0),
-                    occurrences: parseInt(stats?.occurrences || 0)
-                };
-            })
-        );
-
-        // Filtrer les catégories sans dépenses
-        const repartitionFiltree = repartition.filter(item => item.montantTotal > 0);
-
-        // Calculer le total des dépenses pour les pourcentages
-        const totalDepenses = repartitionFiltree.reduce((sum, item) => sum + item.montantTotal, 0);
-
-        // Ajouter les pourcentages
-        const repartitionAvecPourcentage = repartitionFiltree.map(item => ({
-            ...item,
-            pourcentage: totalDepenses > 0 ? (item.montantTotal / totalDepenses) * 100 : 0
-        }));
-
-        return res.json({
-            niveau: magasinId ? 'magasin' : 'structure',
-            periode: periode || 'personnalisée',
-            totalDepenses,
-            repartition: repartitionAvecPourcentage
-        });
-
-    } catch (error) {logger.error('rapportFinancier.controller', 'Erreur getRepartitionDepenses:', error);
+        return res.json({ niveau: magasinId ? 'magasin' : 'structure', periode: periode || 'personnalisée', ...result });
+    } catch (error) {
+        logger.error('rapportFinancier.controller', 'Erreur getRepartitionDepenses:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -357,128 +260,27 @@ exports.getIndicateursFinanciers = async (req, res) => {
 exports.getRepartitionRecettes = async (req, res) => {
     try {
         const authUser = req.user;
+        if (!authUser) return res.status(401).json({ message: "Non authentifié" });
 
-        if (!authUser) {
-        return res.status(401).json({ message: "Non authentifié" });
-        }
-        const {
-            magasinId,
-            agentId,
-            periode,
-            dateReference,
-            fromDate,
-            toDate
-        } = req.query;
-
+        const { magasinId, agentId, periode, dateReference, fromDate, toDate } = req.query;
         const code_structure = authUser.code_structure;
-
-        if (!code_structure) {
-            return res.status(400).json({
-                error: 'Le paramètre "code_structure" est requis'
-            });
-        }
-
-        const magasinIdFromQuery = magasinId ? parseInt(magasinId) : null;
-        const agentIdFromQuery = agentId ? parseInt(agentId) : null;
+        if (!code_structure) return res.status(400).json({ error: 'code_structure requis' });
 
         const isAdmin = authUser.roles?.some(r => r.nom === "Administrateur");
         const isGerant = authUser.roles?.some(r => r.nom === "Gérant");
+        let magasinIdFinal = magasinId ? parseInt(magasinId) : null;
+        let agentIdFinal = agentId ? parseInt(agentId) : null;
+        if (isGerant && !isAdmin) magasinIdFinal = authUser.magasinId;
 
-        // magasin final
-        let magasinIdFinal = magasinIdFromQuery;
+        const filters = { code_structure, magasinId: magasinIdFinal, agentId: agentIdFinal, periode, dateReference, fromDate, toDate };
+        const result = await exports.getRepartitionRecettesData(filters);
 
-        // agent final
-        let agentIdFinal = agentIdFromQuery;
-
-        // ✅ Gérant => uniquement son magasin
-        if (isGerant && !isAdmin) {
-        magasinIdFinal = authUser.magasinId;
-        }
-
-        /* let dateCondition;
-        if (periode) {
-            const { debut, fin } = FonctionsUtilitaires.getPeriodeDates(periode, dateReference);
-            dateCondition = { [Op.between]: [debut, fin] };
-        } else if (fromDate && toDate) {
-            dateCondition = { [Op.between]: [fromDate, toDate] };
-        } else {
-            const { debutJournee, finJournee } = FonctionsUtilitaires.getPeriodeJournee();
-            dateCondition = { [Op.between]: [debutJournee, finJournee] };
-        } */
-
-        const whereRecettes = FonctionsUtilitaires.buildWhereFinance({
-            periode,
-            dateReference,
-            fromDate,
-            toDate,
-            code_structure,
-            magasinId: magasinIdFinal,
-            agentId: agentIdFinal,
-            type: 'RECETTE'
-        });
-
-        // Récupérer les catégories de recettes
-        const categories = await db.Categorie.findAll({
-            where: {
-                code_structure,
-                type: 'RECETTE',
-                isActive: true
-            },
-            attributes: ['id', 'name', 'description']
-        });
-
-        // Pour chaque catégorie, calculer les statistiques
-        const repartition = await Promise.all(
-            categories.map(async (categorie) => {
-                const stats = await db.Recette.findOne({
-                    attributes: [
-                        [fn('SUM', col('montant')), 'montantTotal'],
-                        [fn('COUNT', col('id')), 'occurrences']
-                    ],
-                    where: {
-                        ...whereRecettes,
-                        categoryId: categorie.id,
-                        
-                    },
-                    raw: true
-                });
-
-                return {
-                    categorieId: categorie.id,
-                    categorieName: categorie.name,
-                    montantTotal: parseFloat(stats?.montantTotal || 0),
-                    occurrences: parseInt(stats?.occurrences || 0)
-                };
-            })
-        );
-
-        // Filtrer les catégories sans recettes
-        const repartitionFiltree = repartition.filter(item => item.montantTotal > 0);
-
-        // Calculer le total des recettes pour les pourcentages
-        const totalRecettes = repartitionFiltree.reduce((sum, item) => sum + item.montantTotal, 0);
-
-        // Ajouter les pourcentages
-        const repartitionAvecPourcentage = repartitionFiltree.map(item => ({
-            ...item,
-            pourcentage: totalRecettes > 0 ? (item.montantTotal / totalRecettes) * 100 : 0
-        }));
-
-        return res.json({
-            niveau: magasinId ? 'magasin' : 'structure',
-            periode: periode || 'personnalisée',
-            totalRecettes,
-            repartition: repartitionAvecPourcentage
-        });
-
-    } catch (error) {logger.error('rapportFinancier.controller', 'Erreur getRepartitionRecettes:', error);
+        return res.json({ niveau: magasinId ? 'magasin' : 'structure', periode: periode || 'personnalisée', ...result });
+    } catch (error) {
+        logger.error('rapportFinancier.controller', 'Erreur getRepartitionRecettes:', error);
         res.status(500).json({ error: error.message });
     }
 };
-
-/**
- * API pour les statistiques des modes de paiement
- */
 exports.getStatistiquesModesPaiement = async (req, res) => {
     try {
         const authUser = req.user;
@@ -1426,6 +1228,9 @@ exports.genererRapportPDF = async (req, res) => {
 /**
  * Récupère les données de répartition des dépenses
  */
+/**
+ * Récupère les données de répartition des dépenses — VERSION GROUP BY (remplace N+1 requêtes)
+ */
 exports.getRepartitionDepensesData = async (filters) => {
     try {
         const whereDepenses = FonctionsUtilitaires.buildWhereFinance({
@@ -1433,39 +1238,35 @@ exports.getRepartitionDepensesData = async (filters) => {
             type: 'DEPENSE'
         });
 
-        const categories = await db.Categorie.findAll({
-            where: {
-                code_structure: filters.code_structure,
-                type: 'DEPENSE',
-                isActive: true
-            },
-            attributes: ['id', 'name']
+        // Un seul GROUP BY au lieu d'une requête par catégorie
+        const repartitionBrute = await db.Depense.findAll({
+            attributes: [
+                'categoryId',
+                [fn('SUM', col('Depense.montant')), 'montantTotal'],
+                [fn('COUNT', col('Depense.id')), 'occurrences']
+            ],
+            include: [{
+                model: db.Categorie,
+                required: true,
+                attributes: ['name'],
+                where: { code_structure: filters.code_structure, type: 'DEPENSE' }
+            }],
+            where: whereDepenses,
+            group: ['categoryId', 'Categorie.id', 'Categorie.name'],
+            order: [[literal('montantTotal'), 'DESC']],
+            raw: true,
+            nest: true
         });
 
-        const repartition = await Promise.all(
-            categories.map(async (categorie) => {
-                const stats = await db.Depense.findOne({
-                    attributes: [
-                        [fn('SUM', col('montant')), 'montantTotal'],
-                        [fn('COUNT', col('id')), 'occurrences']
-                    ],
-                    where: {
-                        ...whereDepenses,
-                        categoryId: categorie.id
-                    },
-                    raw: true
-                });
+        const repartitionFiltree = repartitionBrute
+            .map(item => ({
+                categorieId: item.categoryId,
+                categorieName: item.Categorie?.name || 'Inconnue',
+                montantTotal: parseFloat(item.montantTotal || 0),
+                occurrences: parseInt(item.occurrences || 0)
+            }))
+            .filter(item => item.montantTotal > 0);
 
-                return {
-                    categorieId: categorie.id,
-                    categorieName: categorie.name,
-                    montantTotal: parseFloat(stats?.montantTotal || 0),
-                    occurrences: parseInt(stats?.occurrences || 0)
-                };
-            })
-        );
-
-        const repartitionFiltree = repartition.filter(item => item.montantTotal > 0);
         const totalDepenses = repartitionFiltree.reduce((sum, item) => sum + item.montantTotal, 0);
 
         const repartitionAvecPourcentage = repartitionFiltree.map(item => ({
@@ -1473,17 +1274,15 @@ exports.getRepartitionDepensesData = async (filters) => {
             pourcentage: totalDepenses > 0 ? (item.montantTotal / totalDepenses) * 100 : 0
         }));
 
-        return {
-            totalDepenses,
-            repartition: repartitionAvecPourcentage
-        };
-    } catch (error) {logger.error('rapportFinancier.controller', 'Erreur getRepartitionDepensesData:', error);
+        return { totalDepenses, repartition: repartitionAvecPourcentage };
+    } catch (error) {
+        logger.error('rapportFinancier.controller', 'Erreur getRepartitionDepensesData:', error);
         return { totalDepenses: 0, repartition: [] };
     }
 };
 
 /**
- * Récupère les données de répartition des recettes
+ * Récupère les données de répartition des recettes — VERSION GROUP BY (remplace N+1 requêtes)
  */
 exports.getRepartitionRecettesData = async (filters) => {
     try {
@@ -1492,39 +1291,35 @@ exports.getRepartitionRecettesData = async (filters) => {
             type: 'RECETTE'
         });
 
-        const categories = await db.Categorie.findAll({
-            where: {
-                code_structure: filters.code_structure,
-                type: 'RECETTE',
-                isActive: true
-            },
-            attributes: ['id', 'name']
+        // Un seul GROUP BY au lieu d'une requête par catégorie
+        const repartitionBrute = await db.Recette.findAll({
+            attributes: [
+                'categoryId',
+                [fn('SUM', col('Recette.montant')), 'montantTotal'],
+                [fn('COUNT', col('Recette.id')), 'occurrences']
+            ],
+            include: [{
+                model: db.Categorie,
+                required: true,
+                attributes: ['name'],
+                where: { code_structure: filters.code_structure, type: 'RECETTE' }
+            }],
+            where: whereRecettes,
+            group: ['categoryId', 'Categorie.id', 'Categorie.name'],
+            order: [[literal('montantTotal'), 'DESC']],
+            raw: true,
+            nest: true
         });
 
-        const repartition = await Promise.all(
-            categories.map(async (categorie) => {
-                const stats = await db.Recette.findOne({
-                    attributes: [
-                        [fn('SUM', col('montant')), 'montantTotal'],
-                        [fn('COUNT', col('id')), 'occurrences']
-                    ],
-                    where: {
-                        ...whereRecettes,
-                        categoryId: categorie.id
-                    },
-                    raw: true
-                });
+        const repartitionFiltree = repartitionBrute
+            .map(item => ({
+                categorieId: item.categoryId,
+                categorieName: item.Categorie?.name || 'Inconnue',
+                montantTotal: parseFloat(item.montantTotal || 0),
+                occurrences: parseInt(item.occurrences || 0)
+            }))
+            .filter(item => item.montantTotal > 0);
 
-                return {
-                    categorieId: categorie.id,
-                    categorieName: categorie.name,
-                    montantTotal: parseFloat(stats?.montantTotal || 0),
-                    occurrences: parseInt(stats?.occurrences || 0)
-                };
-            })
-        );
-
-        const repartitionFiltree = repartition.filter(item => item.montantTotal > 0);
         const totalRecettes = repartitionFiltree.reduce((sum, item) => sum + item.montantTotal, 0);
 
         const repartitionAvecPourcentage = repartitionFiltree.map(item => ({
@@ -1532,18 +1327,12 @@ exports.getRepartitionRecettesData = async (filters) => {
             pourcentage: totalRecettes > 0 ? (item.montantTotal / totalRecettes) * 100 : 0
         }));
 
-        return {
-            totalRecettes,
-            repartition: repartitionAvecPourcentage
-        };
-    } catch (error) {logger.error('rapportFinancier.controller', 'Erreur getRepartitionRecettesData:', error);
+        return { totalRecettes, repartition: repartitionAvecPourcentage };
+    } catch (error) {
+        logger.error('rapportFinancier.controller', 'Erreur getRepartitionRecettesData:', error);
         return { totalRecettes: 0, repartition: [] };
     }
 };
-
-/**
- * Récupère les statistiques des modes de paiement
- */
 exports.getStatistiquesModesPaiementData = async (filters) => {
     try {
         const whereRecettes = FonctionsUtilitaires.buildWhereFinance({
@@ -1815,35 +1604,72 @@ exports.getDonneesEvolutivesData = async (filters) => {
  */
 exports.getDonneesComparativesData = async (filters) => {
     try {
-        const { periode = 'mois', nombrePeriodes = 3 } = filters;
+        const { nombrePeriodes = 3 } = filters;
+        let { periode = 'mois' } = filters;
         const donneesPeriodes = [];
 
-        for (let i = nombrePeriodes - 1; i >= 0; i--) {
-            let periodeActuelle;
-            
-            if (i === 0) {
-                periodeActuelle = { debut: filters.fromDate, fin: filters.toDate };
-            } else {
-                const dateRef = new Date(filters.fromDate);
-                dateRef.setMonth(dateRef.getMonth() - i);
+        // BUG 8 FIX : Résoudre les dates si non fournies (ex: appel depuis genererRapportPDF avec periode seulement)
+        let fromDateBase = filters.fromDate;
+        let toDateBase = filters.toDate;
+
+        if (!fromDateBase || !toDateBase) {
+            if (periode && periode !== 'personnalisee') {
+                const dateRef = filters.dateReference ? new Date(filters.dateReference) : new Date();
                 const dates = FonctionsUtilitaires.getPeriodeDates(periode, dateRef);
-                periodeActuelle = { debut: dates.debut, fin: dates.fin };
+                fromDateBase = dates.debut;
+                toDateBase = dates.fin;
+            } else {
+                const now = new Date();
+                fromDateBase = FonctionsUtilitaires.normalizeDate(
+                    new Date(now.getFullYear(), now.getMonth(), 1), 'start'
+                );
+                toDateBase = FonctionsUtilitaires.normalizeDate(now, 'end');
+            }
+        }
+
+        // BUG 6 FIX : Ordre chronologique — P1 = période la plus ancienne, P_N = période actuelle
+        for (let i = 0; i < nombrePeriodes; i++) {
+            let periodeCourante;
+            const decalage = nombrePeriodes - 1 - i; // 0 pour la période actuelle
+
+            if (decalage === 0) {
+                periodeCourante = { debut: fromDateBase, fin: toDateBase };
+            } else if (filters.fromDate && filters.toDate) {
+                // Période personnalisée : décaler d'un multiple de la durée
+                const startDate = new Date(fromDateBase);
+                const endDate = new Date(toDateBase);
+                const dureePeriode = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+
+                const debut = new Date(startDate);
+                debut.setDate(startDate.getDate() - (dureePeriode * decalage));
+
+                const fin = new Date(startDate);
+                fin.setDate(startDate.getDate() - (dureePeriode * (decalage - 1)) - 1);
+
+                periodeCourante = { debut, fin };
+            } else {
+                // Période prédéfinie : reculer de N unités
+                const dateRef = new Date(toDateBase);
+                dateRef.setMonth(dateRef.getMonth() - decalage);
+                const dates = FonctionsUtilitaires.getPeriodeDates(periode, dateRef);
+                periodeCourante = { debut: dates.debut, fin: dates.fin };
             }
 
             const filtersPeriode = {
                 ...filters,
-                fromDate: periodeActuelle.debut,
-                toDate: periodeActuelle.fin
+                fromDate: periodeCourante.debut,
+                toDate: periodeCourante.fin
             };
 
             const indicateurs = await utilitaireRapport.calculerIndicateursPrincipaux(filtersPeriode);
             const fluxTresorerie = await utilitaireRapport.calculerFluxTresorerie(filtersPeriode);
 
+            const isActuelle = decalage === 0;
             donneesPeriodes.push({
                 periode: `P${i + 1}`,
-                libelle: i === 0 ? 'Période actuelle' : `Période -${i}`,
-                debut: periodeActuelle.debut,
-                fin: periodeActuelle.fin,
+                libelle: isActuelle ? 'Période actuelle' : `Période -${decalage}`,
+                debut: periodeCourante.debut,
+                fin: periodeCourante.fin,
                 ...indicateurs,
                 fluxTresorerie
             });
@@ -1854,7 +1680,7 @@ exports.getDonneesComparativesData = async (filters) => {
             nombrePeriodes,
             donneesPeriodes
         };
-    } catch (error) {logger.error('rapportFinancier.controller', 'Erreur getDonneesComparativesData:', error);
+    } catch (error) {logger.error('rapportFinancier.controller', 'Erreur getDonneesComparativesData:', error);
         return { periodeBase: 'mois', nombrePeriodes: 0, donneesPeriodes: [] };
     }
 };

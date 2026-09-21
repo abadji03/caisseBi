@@ -4,6 +4,7 @@ const FonctionsUtilitaires  = require('./fonctionsUtilitaires');
 const { Op, fn, col } = db.Sequelize;
 const path = require('path');
 const fs = require('fs').promises;
+const { findChromePath } = require('../../utils/chromeFinder');
 const ejs = require('ejs');
 
 // Fonction pour formater la période
@@ -30,27 +31,47 @@ const renderEjsTemplate = async (templateName, data) =>{
     
     // Chemin correct vers le dossier views à la racine du backend
     const viewsPath = path.join(backendRoot, 'views');
-    const templatePath = path.join(viewsPath, `${templateName}.ejs`);logger.log('rapportFinancierUtilitaire', '📁 Backend root:', backendRoot);logger.log('rapportFinancierUtilitaire', '📁 Views path:', viewsPath);logger.log('rapportFinancierUtilitaire', '📁 Template path:', templatePath);
+    const templatePath = path.join(viewsPath, `${templateName}.ejs`);
+
+    // Injecter Chart.js en bundle local (évite la dépendance CDN dans Puppeteer)
+    let chartjsBundle = '';
+    try {
+        const chartjsPath = path.join(backendRoot, 'public', 'js', 'chart.umd.min.js');
+        chartjsBundle = await fs.readFile(chartjsPath, 'utf-8');
+    } catch {
+        logger.log('rapportFinancierUtilitaire', '⚠️ chart.umd.min.js non trouvé — fallback CDN');
+    }
+
+    const enrichedData = { ...data, chartjsBundle };
+logger.log('rapportFinancierUtilitaire', '📁 Backend root:', backendRoot);
+logger.log('rapportFinancierUtilitaire', '📁 Views path:', viewsPath);
+logger.log('rapportFinancierUtilitaire', '📁 Template path:', templatePath);
     
     // Vérifier que le dossier views existe
     try {
-        await fs.access(viewsPath);logger.log('rapportFinancierUtilitaire', '✅ Dossier views trouvé');
-    } catch (error) {logger.log('rapportFinancierUtilitaire', error);
+        await fs.access(viewsPath);
+logger.log('rapportFinancierUtilitaire', '✅ Dossier views trouvé');
+    } catch (error) {
+logger.log('rapportFinancierUtilitaire', error);
         throw new Error(`Le dossier views n'existe pas: ${viewsPath}`);
     }
     
     // Vérifier que le template existe
     try {
-        await fs.access(templatePath);logger.log('rapportFinancierUtilitaire', '✅ Template trouvé');
-    } catch (error) {logger.log('rapportFinancierUtilitaire', error)
+        await fs.access(templatePath);
+logger.log('rapportFinancierUtilitaire', '✅ Template trouvé');
+    } catch (error) {
+logger.log('rapportFinancierUtilitaire', error)
         throw new Error(`Template ${templateName}.ejs non trouvé: ${templatePath}`);
     }
     
     return new Promise((resolve, reject) => {
-        ejs.renderFile(templatePath, data, { async: false }, (err, str) => {
-            if (err) {logger.error('rapportFinancierUtilitaire', '❌ Erreur rendu EJS:', err);
+        ejs.renderFile(templatePath, enrichedData, { async: false }, (err, str) => {
+            if (err) {
+logger.error('rapportFinancierUtilitaire', '❌ Erreur rendu EJS:', err);
                 reject(err);
-            } else {logger.log('rapportFinancierUtilitaire', '✅ Rendu EJS réussi');
+            } else {
+logger.log('rapportFinancierUtilitaire', '✅ Rendu EJS réussi');
                 resolve(str);
             }
         });
@@ -63,28 +84,8 @@ const generatePDF = async (html)=> {
     let browser = null;
     
     try {
-        // Chemin vers Chrome (à adapter selon votre système)
-        const chromePaths = [
-            //'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-            'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-            //'/usr/bin/google-chrome',
-            //'/usr/bin/chromium-browser',
-            //'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
-        ];
-
-        let executablePath = null;
-        for (const path of chromePaths) {
-            try {
-                await require('fs').promises.access(path);
-                executablePath = path;
-                break;
-            } catch (e) {logger.log('rapportFinancierUtilitaire', 'Erreur',e)
-            }
-        }
-
-        if (!executablePath) {
-            throw new Error('Chrome/Chromium non trouvé');
-        }
+        const executablePath = await findChromePath();
+        logger.log('rapportFinancierUtilitaire', '🌐 Chrome trouvé:', executablePath);
 
         browser = await puppeteer.launch({
             executablePath,
@@ -245,7 +246,6 @@ const calculerIndicateursPrincipaux = async (filters) => {
     const nbDepenses = parseInt(resultDepenses?.nbTransactions || 0);
 
     const beneficeNet = (chiffreAffaires + autresRecettes) - totalDepenses;
-    const soldeTresorerie = beneficeNet; // Pour simplifier, on utilise le bénéfice net comme solde
 
     return {
         chiffreAffaires,
@@ -254,8 +254,7 @@ const calculerIndicateursPrincipaux = async (filters) => {
         nbAutresRecettes,
         totalDepenses,
         nbDepenses,
-        beneficeNet,
-        soldeTresorerie
+        beneficeNet
     };
 };
 

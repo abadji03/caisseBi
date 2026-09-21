@@ -686,10 +686,10 @@ export class RapportsVentesComponent implements OnInit, OnDestroy,AfterViewInit 
   creerGraphiqueComparaison(): void {
     if (!this.comparaisonData) return;
 
-    /* if (this.comparaisonChart) {
+    if (this.comparaisonChart) {
       this.comparaisonChart.destroy();
       this.comparaisonChart = undefined;
-    } */
+    }
 
     const ctx = this.comparaisonChartRef?.nativeElement?.getContext('2d');
     if (!ctx) return;

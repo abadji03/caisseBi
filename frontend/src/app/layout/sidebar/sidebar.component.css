@@ -278,6 +278,38 @@
   box-shadow: 0 0 10px rgba(76, 201, 240, 0.8);
 }
 
+/* ── Sous-menu actif : mise en évidence renforcée ─────────────────── */
+.nav-link.active {
+  background: linear-gradient(90deg, rgba(76, 201, 240, 0.35), rgba(76, 201, 240, 0.08));
+  color: #4cc9f0 !important;
+  font-weight: 600;
+  border-left: 3px solid #4cc9f0;
+  box-shadow: inset 0 0 0 1px rgba(76, 201, 240, 0.25);
+}
+
+.nav-link.active::before {
+  background: #4cc9f0;
+  box-shadow: 0 0 10px rgba(76, 201, 240, 0.9);
+  width: 7px;
+  height: 7px;
+}
+
+/* Groupe parent dont un enfant est actif */
+.accordion-button.active-parent {
+  background: rgba(76, 201, 240, 0.15) !important;
+  color: #4cc9f0 !important;
+}
+
+.accordion-button.active-parent i {
+  color: #4cc9f0;
+  transform: scale(1.1);
+}
+
+.accordion-button.active-parent::before {
+  background: #4cc9f0;
+  box-shadow: 0 0 8px rgba(76, 201, 240, 0.6);
+}
+
 /* Collapsed state adjustments */
 .sidebar.collapsed .accordion-collapse {
   display: none !important;

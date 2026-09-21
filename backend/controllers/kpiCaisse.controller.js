@@ -1,4 +1,4 @@
-const db = require('../models');
+﻿const db = require('../models');
 const logger = require('../services/logger.js');
 const puppeteer = require('puppeteer-core');
 const FonctionsUtilitaires  = require('./utils/fonctionsUtilitaires');
@@ -8,6 +8,37 @@ const { Op, fn, col } = db.Sequelize;
 // Import ExcelJS
 const ExcelJS = require('exceljs');
 const HistoriqueService = require('../services/historique.service');
+const { findChromePath } = require('../utils/chromeFinder');
+
+/**
+ * Portée d'accès aux statistiques KPI (anti-IDOR), appliquée côté serveur :
+ *  - Administrateur / Administrateur secondaire / Administrateur Général :
+ *      toute la structure (magasinId/agentId libres) ;
+ *  - Gérant : forcé à SON magasin (peut filtrer par agent, mais uniquement
+ *      parmi les agents de son magasin) ;
+ *  - Caissier / Employé : forcé à SES propres ventes (agentId = authUser.id),
+ *      aucun agentId/magasinId issu du client n'est honoré.
+ * @param {object} authUser req.user (chargé par authenticateToken, avec roles)
+ * @param {object} query req.query du client
+ * @returns {object} { magasinId, agentId } corrigés selon le rôle
+ */
+const porteeStatsKPI = (authUser, query = {}) => {
+  const nomRoles = (authUser.roles || []).map(r => r.nom);
+  const isPrivilege =
+    nomRoles.includes('Administrateur') ||
+    nomRoles.includes('Administrateur secondaire') ||
+    nomRoles.includes('Administrateur Général');
+  const isGerant = nomRoles.includes('Gérant');
+  const isRestreint = nomRoles.includes('Caissier') || nomRoles.includes('Employé');
+
+  if (isRestreint) {
+    return { magasinId: authUser.magasinId || query.magasinId, agentId: authUser.id };
+  }
+  if (isGerant) {
+    return { magasinId: authUser.magasinId || query.magasinId, agentId: query.agentId };
+  }
+  return { magasinId: query.magasinId, agentId: query.agentId };
+};
 
 
 //..................................... API pour KPI journaliers................................
@@ -20,7 +51,7 @@ exports.getKpiCaisseJour = async (req, res) => {
       return res.status(401).json({ message: "Non authentifié" });
     }
     const code_structure = authUser.code_structure;
-    const { magasinId, agentId } = req.query;
+    const { magasinId, agentId } = porteeStatsKPI(authUser, req.query);
      // Validation
     if (!code_structure) {
       return res.status(400).json({ 
@@ -56,7 +87,8 @@ exports.getKpiCaisseJour = async (req, res) => {
       ecartCA: caVendu.totalVendu - caEncaisse.totalEncaisse
     });
 
-  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getKpiCaisseJour:', error);
+  } catch (error) {
+logger.error('kpiCaisse.controller', 'Erreur getKpiCaisseJour:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -69,7 +101,7 @@ exports.getEncaissementsParMode = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-    const { periode, dateReference, magasinId, agentId } = req.query;
+    const { periode, dateReference, magasinId, agentId } = { ...req.query, ...porteeStatsKPI(authUser, req.query) };
     const { fn, col, Op } = db.Sequelize;
     const code_structure = authUser.code_structure;
 
@@ -104,7 +136,7 @@ exports.getEncaissementsParMode = async (req, res) => {
     };
 
     /* ============================
-       1️⃣ Encaissements par MÉTHODE
+       1ï¸âƒ£ Encaissements par MÃ‰THODE
        ============================ */
     const paiementsParMethode = await db.Paiement.findAll({
       attributes: [
@@ -129,7 +161,7 @@ exports.getEncaissementsParMode = async (req, res) => {
     });
 
     /* ============================
-       2️⃣ Encaissements par COMPTE
+       2ï¸âƒ£ Encaissements par COMPTE
        ============================ */
     const paiementsParCompte = await db.Paiement.findAll({
       attributes: [
@@ -162,7 +194,8 @@ exports.getEncaissementsParMode = async (req, res) => {
       parCompte: paiementsParCompte
     });
 
-  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getEncaissementsParMode:', error);
+  } catch (error) {
+logger.error('kpiCaisse.controller', 'Erreur getEncaissementsParMode:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -176,7 +209,7 @@ exports.getStatsRemises = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-    const { periode, dateReference, magasinId, agentId } = req.query;
+    const { periode, dateReference, magasinId, agentId } = { ...req.query, ...porteeStatsKPI(authUser, req.query) };
     const { Op } = db.Sequelize;
     const code_structure = authUser.code_structure;
     // Validation : code_structure toujours requis
@@ -219,7 +252,8 @@ exports.getStatsRemises = async (req, res) => {
 
     return res.json(stats[0] || { totalRemise: 0, nombrePaniers: 0 });
 
-  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getStatsRemises:', error);
+  } catch (error) {
+logger.error('kpiCaisse.controller', 'Erreur getStatsRemises:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -233,7 +267,7 @@ exports.getAvoirs = async (req, res) => {
       return res.status(401).json({ message: "Non authentifié" });
     }
 
-    const { periode, dateReference, magasinId, agentId } = req.query;
+    const { periode, dateReference, magasinId, agentId } = { ...req.query, ...porteeStatsKPI(authUser, req.query) };
     const { Op, fn, col } = db.Sequelize;
 
     const code_structure = authUser.code_structure;
@@ -281,7 +315,8 @@ exports.getAvoirs = async (req, res) => {
       ...(result[0] || { montantAvoir: 0, nombreAvoirs: 0 })
     });
 
-  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getAvoirs:', error);
+  } catch (error) {
+logger.error('kpiCaisse.controller', 'Erreur getAvoirs:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -293,7 +328,7 @@ exports.getCaisseTheorique = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-    const { periode, dateReference, magasinId, agentId } = req.query;
+    const { periode, dateReference, magasinId, agentId } = { ...req.query, ...porteeStatsKPI(authUser, req.query) };
     const { Op } = db.Sequelize;
     const code_structure = authUser.code_structure;
 
@@ -342,7 +377,7 @@ exports.getCaisseTheorique = async (req, res) => {
     };
 
     // -------------------------
-    // REQUÊTE
+    // REQUÃŠTE
     // -------------------------
     const totalEspeces = await db.Paiement.sum('montant', {
       where: wherePaiement,
@@ -358,7 +393,8 @@ exports.getCaisseTheorique = async (req, res) => {
       niveau: magasinId ? 'magasin' : 'structure'
     });
 
-  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getCaisseTheorique:', error);
+  } catch (error) {
+logger.error('kpiCaisse.controller', 'Erreur getCaisseTheorique:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -371,7 +407,7 @@ exports.getStatsCaissePeriode = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-    const { periode, dateReference, magasinId, agentId } = req.query;
+    const { periode, dateReference, magasinId, agentId } = { ...req.query, ...porteeStatsKPI(authUser, req.query) };
     const code_structure = authUser.code_structure;
 
     if (!periode || !code_structure) {
@@ -406,7 +442,8 @@ exports.getStatsCaissePeriode = async (req, res) => {
       ecartCA: caVendu.totalVendu - caEncaisse.totalEncaisse
     });
 
-  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getStatsCaissePeriode:', error);
+  } catch (error) {
+logger.error('kpiCaisse.controller', 'Erreur getStatsCaissePeriode:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -426,7 +463,7 @@ exports.getStatsComparatives = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-    const { periode, dateReference, magasinId, agentId } = req.query;
+    const { periode, dateReference, magasinId, agentId } = { ...req.query, ...porteeStatsKPI(authUser, req.query) };
     const code_structure = authUser.code_structure;
     // ========================
     // Validation
@@ -518,13 +555,14 @@ exports.getStatsComparatives = async (req, res) => {
       }
     });
 
-  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getStatsComparatives:', error);
+  } catch (error) {
+logger.error('kpiCaisse.controller', 'Erreur getStatsComparatives:', error);
     res.status(500).json({ error: error.message });
   }
 };
 
 
-// CA par jour (VENDU + ENCAISSÉ)
+// CA par jour (VENDU + ENCAISSÃ‰)
 exports.getCAParJour = async (req, res) => {
   try {
     const authUser = req.user;
@@ -532,7 +570,7 @@ exports.getCAParJour = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-    const { periode, dateReference, magasinId, agentId } = req.query;
+    const { periode, dateReference, magasinId, agentId } = { ...req.query, ...porteeStatsKPI(authUser, req.query) };
     const { fn, col, Op } = db.Sequelize;
 
     const code_structure = authUser.code_structure;
@@ -548,37 +586,29 @@ exports.getCAParJour = async (req, res) => {
     const { debut, fin } = FonctionsUtilitaires.getPeriodeDates(periodToUse, dateReference);
 
     /* ============================
-       1️⃣ CA VENDU PAR JOUR
+       1ï¸âƒ£ CA VENDU PAR JOUR
        ============================ */
     const caVenduParJour = await db.Panier.findAll({
       attributes: [
-        [fn('DATE', col('Bon.date_bon')), 'date'],
+        [fn('DATE', col('Panier.date_creation')), 'date'],
         [fn('SUM', col('Panier.total_t_t_c')), 'total'],
         [fn('COUNT', col('Panier.id')), 'nombrePaniers']
       ],
-      include: [{
-        model: db.Bon,
-        required: true,
-        attributes: [],
-        where: {
-          code_structure,
-          typeEntite: { [Op.ne]: 'fournisseur' },
-          [Op.or]: [
-            { type: 'vente', statutBon: 'validé' },
-            { type: 'commande', statutBon: 'livré' }
-          ],
-          dateBon: { [Op.between]: [debut, fin] },
-          ...(magasinId && { magasinId }),
-          ...(agentId && { agentId })
-        }
-      }],
-      group: [fn('DATE', col('Bon.date_bon'))],
-      order: [[fn('DATE', col('Bon.date_bon')), 'ASC']],
+      where: {
+        code_structure,
+        typeEntite: { [Op.ne]: 'fournisseur' },
+        statut: { [Op.notIn]: kpiUtilitaires.STATUTS_EXCLUS },
+        dateCreation: { [Op.between]: [debut, fin] },
+        ...(magasinId && { magasinId }),
+        ...(agentId && { agentId })
+      },
+      group: [fn('DATE', col('Panier.date_creation'))],
+      order: [[fn('DATE', col('Panier.date_creation')), 'ASC']],
       raw: true
     });
 
     /* ============================
-       2️⃣ CA ENCAISSÉ PAR JOUR
+       2ï¸âƒ£ CA ENCAISSÃ‰ PAR JOUR
        ============================ */
     const caEncaisseParJour = await db.Paiement.findAll({
       attributes: [
@@ -608,7 +638,8 @@ exports.getCAParJour = async (req, res) => {
       caEncaisseParJour
     });
 
-  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getCAParJour:', error);
+  } catch (error) {
+logger.error('kpiCaisse.controller', 'Erreur getCAParJour:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -622,7 +653,7 @@ exports.getKpiCaisse = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-    const { periode, dateReference, magasinId, agentId } = req.query;
+    const { periode, dateReference, magasinId, agentId } = { ...req.query, ...porteeStatsKPI(authUser, req.query) };
     const code_structure = authUser.code_structure;
 
     if (!code_structure) {
@@ -662,7 +693,8 @@ exports.getKpiCaisse = async (req, res) => {
       ecartCA: caVendu.totalVendu - caEncaisse.totalEncaisse
     });
 
-  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getKpiCaisse:', error);
+  } catch (error) {
+logger.error('kpiCaisse.controller', 'Erreur getKpiCaisse:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -706,7 +738,8 @@ exports.compareMagasinVsStructure = async (req, res) => {
       partMagasin: Number(partMagasin.toFixed(2))
     });
 
-  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur compareMagasinVsStructure:', error);
+  } catch (error) {
+logger.error('kpiCaisse.controller', 'Erreur compareMagasinVsStructure:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -764,7 +797,8 @@ exports.getStatsStructureParMagasin = async (req, res) => {
       stats
     });
 
-  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getStatsStructureParMagasin:', error);
+  } catch (error) {
+logger.error('kpiCaisse.controller', 'Erreur getStatsStructureParMagasin:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -779,7 +813,7 @@ exports.getVentesCredit = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-    const { periode, dateReference, magasinId, agentId } = req.query;
+    const { periode, dateReference, magasinId, agentId } = { ...req.query, ...porteeStatsKPI(authUser, req.query) };
     //const { Op,fn,col } = db.Sequelize;
 
     const code_structure = authUser.code_structure;
@@ -852,7 +886,8 @@ exports.getVentesCredit = async (req, res) => {
       nombreBonsCredit: bonIds.length
     });
  */
-  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getVentesCredit:', error);
+  } catch (error) {
+logger.error('kpiCaisse.controller', 'Erreur getVentesCredit:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -865,7 +900,7 @@ exports.getAvances = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-    const { periode, dateReference, magasinId, agentId } = req.query;
+    const { periode, dateReference, magasinId, agentId } = { ...req.query, ...porteeStatsKPI(authUser, req.query) };
     //const { Op, fn, col } = db.Sequelize;
 
     const code_structure = authUser.code_structure;
@@ -940,7 +975,8 @@ exports.getAvances = async (req, res) => {
       moyenneAvance: parseFloat(data.moyenneAvance) || 0
     });
  */
-  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getAvances:', error);
+  } catch (error) {
+logger.error('kpiCaisse.controller', 'Erreur getAvances:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -1040,7 +1076,8 @@ exports.getAvances = async (req, res) => {
       details: retoursDetails
     });
 
-  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getVentesCreditAnnulees:', error);
+  } catch (error) {
+logger.error('kpiCaisse.controller', 'Erreur getVentesCreditAnnulees:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -1052,7 +1089,7 @@ exports.getVentesCreditAnnulees = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-    const { periode, dateReference, magasinId, agentId } = req.query;
+    const { periode, dateReference, magasinId, agentId } = { ...req.query, ...porteeStatsKPI(authUser, req.query) };
     //const { Op } = db.Sequelize;
     
     const code_structure = authUser.code_structure;
@@ -1067,7 +1104,8 @@ exports.getVentesCreditAnnulees = async (req, res) => {
     
     return res.json(data)
 
-  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getVentesCreditAnnulees:', error);
+  } catch (error) {
+logger.error('kpiCaisse.controller', 'Erreur getVentesCreditAnnulees:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -1080,7 +1118,7 @@ exports.getVentesCaisseAnnulees = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-    const { periode, dateReference, magasinId, agentId } = req.query;
+    const { periode, dateReference, magasinId, agentId } = { ...req.query, ...porteeStatsKPI(authUser, req.query) };
     //const { Op,fn, col } = db.Sequelize;
 
     const code_structure = authUser.code_structure;
@@ -1188,7 +1226,8 @@ exports.getVentesCaisseAnnulees = async (req, res) => {
  */
     return res.json(data);
 
-  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getVentesCaisseAnnulees:', error);
+  } catch (error) {
+logger.error('kpiCaisse.controller', 'Erreur getVentesCaisseAnnulees:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -1202,7 +1241,7 @@ exports.getToutesStatistiquesSpeciales = async (req, res) => {
       return res.status(401).json({ message: "Non authentifié" });
     }
 
-    const { periode, dateReference, magasinId, agentId } = req.query;
+    const { periode, dateReference, magasinId, agentId } = { ...req.query, ...porteeStatsKPI(authUser, req.query) };
 
     const code_structure = authUser.code_structure;
 
@@ -1212,7 +1251,7 @@ exports.getToutesStatistiquesSpeciales = async (req, res) => {
       });
     }
 
-    // Exécuter toutes les requêtes en parallèle
+    // Exécuter toutes les requÃªtes en parallèle
     const [
       avoirs,
       ventesCredit,
@@ -1286,7 +1325,8 @@ exports.getToutesStatistiquesSpeciales = async (req, res) => {
       }
     });
 
-  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getToutesStatistiquesSpeciales:', error);
+  } catch (error) {
+logger.error('kpiCaisse.controller', 'Erreur getToutesStatistiquesSpeciales:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -1301,7 +1341,7 @@ exports.getStatistiquesCommandes = async (req, res) => {
     if (!authUser) {
       return res.status(401).json({ message: "Non authentifié" });
     }
-    const { periode, dateReference, magasinId, agentId } = req.query;
+    const { periode, dateReference, magasinId, agentId } = { ...req.query, ...porteeStatsKPI(authUser, req.query) };
     const { Op, fn, col } = db.Sequelize;
 
     const code_structure = authUser.code_structure;
@@ -1512,7 +1552,8 @@ exports.getStatistiquesCommandes = async (req, res) => {
       dateFin: dateCondition[Op.between] ? dateCondition[Op.between][1] : null
     });
 
-  } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getStatistiquesCommandes:', error);
+  } catch (error) {
+logger.error('kpiCaisse.controller', 'Erreur getStatistiquesCommandes:', error);
     res.status(500).json({ 
       error: 'Erreur lors de la récupération des statistiques des commandes',
       details: error.message 
@@ -1586,7 +1627,8 @@ exports.getRapportVente = async (req, res) => {
             fin,
             magasinId: magasinIdFinal,
             agentId
-        };logger.log('kpiCaisse.controller', '📊 Génération rapport vente du', debut.toLocaleString(), 'au', fin.toLocaleString());
+        };
+logger.log('kpiCaisse.controller', 'ðŸ“Š Génération rapport vente du', debut.toLocaleString(), 'au', fin.toLocaleString());
 
         // Récupération des clients pour le mapping (optionnel)
         const clients = await db.Client.findAll({
@@ -1617,7 +1659,7 @@ exports.getRapportVente = async (req, res) => {
                 return { caVendu, caEncaisse };
             })(),
 
-            // Évolution des ventes par jour
+            // Ã‰volution des ventes par jour
             kpiUtilitaires.getEvolutionVentesParJour(params),
 
             // Top 10 produits
@@ -1730,7 +1772,9 @@ exports.getRapportVente = async (req, res) => {
                     offset,
                     limit: parseInt(limit),
                     distinct: true
-                });logger.log('kpiCaisse.controller', `📦 Détails ventes: ${count} ventes trouvées, page ${page}/${Math.ceil(count / parseInt(limit))}`) ;logger.log('kpiCaisse.controller', 'Premier objet:', Object.keys(rows[0] || {}));
+                });
+logger.log('kpiCaisse.controller', `ðŸ“¦ Détails ventes: ${count} ventes trouvées, page ${page}/${Math.ceil(count / parseInt(limit))}`) ;
+logger.log('kpiCaisse.controller', 'Premier objet:', Object.keys(rows[0] || {}));
                 return {
                     ventes: rows,
                     total: count,
@@ -1758,7 +1802,7 @@ exports.getRapportVente = async (req, res) => {
         const ticketMoyen = caData.caVendu.ticketMoyenVente;
         //const panierMoyen = caData.caVendu.panierMoyen || 0;
 
-        // Évolution par rapport à la période précédente
+        // Ã‰volution par rapport à la période précédente
         const periodePrecedente = FonctionsUtilitaires.getPeriodePrecedentePersonnalisee(debut, fin);
         const caPrecedent = await kpiUtilitaires.getCAVenduBaseData({
             ...params,
@@ -1770,16 +1814,16 @@ exports.getRapportVente = async (req, res) => {
             valeur: caPrecedent.totalVendu > 0 
                 ? Number(((chiffreAffairesTTC - caPrecedent.totalVendu) / caPrecedent.totalVendu * 100).toFixed(2))
                 : 0,
-            tendance: chiffreAffairesTTC > caPrecedent.totalVendu ? '↑' : 
-                     chiffreAffairesTTC < caPrecedent.totalVendu ? '↓' : '→'
+            tendance: chiffreAffairesTTC > caPrecedent.totalVendu ? 'â†‘' : 
+                     chiffreAffairesTTC < caPrecedent.totalVendu ? 'â†“' : 'â†’'
         };
 
         const evolutionVolume = {
             valeur: caPrecedent.nombrePaniers > 0
                 ? Number(((totalVentes - caPrecedent.nombrePaniers) / caPrecedent.nombrePaniers * 100).toFixed(2))
                 : 0,
-            tendance: totalVentes > caPrecedent.nombrePaniers ? '↑' : 
-                     totalVentes < caPrecedent.nombrePaniers ? '↓' : '→'
+            tendance: totalVentes > caPrecedent.nombrePaniers ? 'â†‘' : 
+                     totalVentes < caPrecedent.nombrePaniers ? 'â†“' : 'â†’'
         };
 
         // Formater les ventes pour le frontend
@@ -1809,7 +1853,8 @@ exports.getRapportVente = async (req, res) => {
                 montant: p.montant,
                 statut: p.statutPaiement
             })) : []
-        }));logger.log('kpiCaisse.controller', '📊 Performance vendeurs récupérée',performanceVendeurs);
+        }));
+logger.log('kpiCaisse.controller', 'ðŸ“Š Performance vendeurs récupérée',performanceVendeurs);
         // Formatage de la réponse
         return res.json({
             niveau: magasinIdFinal ? 'magasin' : 'structure',
@@ -1826,7 +1871,7 @@ exports.getRapportVente = async (req, res) => {
             ticketMoyen,
             //panierMoyen,
             
-            // Évolution
+            // Ã‰volution
             evolutionCA,
             evolutionVolume,
             
@@ -1847,7 +1892,8 @@ exports.getRapportVente = async (req, res) => {
             }
         });
 
-    } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getRapportVente:', error);
+    } catch (error) {
+logger.error('kpiCaisse.controller', 'Erreur getRapportVente:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -1999,7 +2045,8 @@ exports.getDetailsVendeur = async (req, res) => {
             ventes: ventesFormatted
         });
 
-    } catch (error) {logger.error('kpiCaisse.controller', 'Erreur getDetailsVendeur:', error);
+    } catch (error) {
+logger.error('kpiCaisse.controller', 'Erreur getDetailsVendeur:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -2090,7 +2137,8 @@ exports.getComparaison = async (req, res) => {
                         params.debut = debutJournee;
                         params.fin = finJournee;
                     }
-                }logger.log('kpiCaisse.controller', `🔍 Comparaison - Élément ${elementType}:`, params);
+                }
+logger.log('kpiCaisse.controller', `ðŸ” Comparaison - Ã‰lément ${elementType}:`, params);
 
                 const caVendu = await kpiUtilitaires.getCAVenduBaseData(params);
                 
@@ -2099,7 +2147,8 @@ exports.getComparaison = async (req, res) => {
                     ventes: caVendu.nombrePaniers || 0,
                     ticketMoyen: caVendu.ticketMoyenVente || 0
                 };
-            } catch (error) {logger.error('kpiCaisse.controller', `❌ Erreur pour l'élément ${elementType}:`, error);
+            } catch (error) {
+logger.error('kpiCaisse.controller', `âŒ Erreur pour l'élément ${elementType}:`, error);
                 return { ca: 0, ventes: 0, ticketMoyen: 0 };
             }
         };
@@ -2120,7 +2169,8 @@ exports.getComparaison = async (req, res) => {
             ticketMoyen2: data2.ticketMoyen
         });
 
-    } catch (error) {logger.error('kpiCaisse.controller', '❌ Erreur getComparaison:', error);
+    } catch (error) {
+logger.error('kpiCaisse.controller', 'âŒ Erreur getComparaison:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -2246,7 +2296,8 @@ exports.getOptionsComparaison = async (req, res) => {
 
         res.json(options);
 
-    } catch (error) {logger.error('kpiCaisse.controller', '❌ Erreur getOptionsComparaison:', error);
+    } catch (error) {
+logger.error('kpiCaisse.controller', 'âŒ Erreur getOptionsComparaison:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -2264,7 +2315,7 @@ exports.genererRapportPDF = async (req, res) => {
             return res.status(401).json({ message: "Non authentifié" });
         }
 
-        // Récupération des paramètres de la requête
+        // Récupération des paramètres de la requÃªte
         const {
             magasinId,
             agentId,
@@ -2329,14 +2380,15 @@ exports.genererRapportPDF = async (req, res) => {
             vendeurNom = vendeur ? vendeur.nom : null;
         }
 
-        // Paramètres pour les requêtes
+        // Paramètres pour les requÃªtes
         const params = {
             code_structure,
             debut,
             fin,
             magasinId: magasinIdFinal,
             agentId: agentId ? parseInt(agentId) : null
-        };logger.log('kpiCaisse.controller', '📊 Génération rapport PDF du', debut, 'au', fin);
+        };
+logger.log('kpiCaisse.controller', 'ðŸ“Š Génération rapport PDF du', debut, 'au', fin);
 
         // Récupération des données
         const [
@@ -2357,7 +2409,7 @@ exports.genererRapportPDF = async (req, res) => {
                 return { caVendu, caEncaisse };
             })(),
 
-            // Évolution des ventes par jour
+            // Ã‰volution des ventes par jour
             kpiUtilitaires.getEvolutionVentesParJour(params),
 
             // Top 10 produits
@@ -2500,8 +2552,10 @@ exports.genererRapportPDF = async (req, res) => {
                 // Sinon, on essaie de le parser
                 else {
                     parsedComparaisonData = JSON.parse(comparaisonData);
-                }logger.log('kpiCaisse.controller', '✅ Données comparaison parsées:', parsedComparaisonData);
-            } catch (e) {logger.error('kpiCaisse.controller', '❌ Erreur parsing comparaisonData:', e.message);
+                }
+logger.log('kpiCaisse.controller', 'âœ… Données comparaison parsées:', parsedComparaisonData);
+            } catch (e) {
+logger.error('kpiCaisse.controller', 'âŒ Erreur parsing comparaisonData:', e.message);
                 // Ne pas bloquer la génération du PDF, juste ignorer la comparaison
                 parsedComparaisonData = null;
             }
@@ -2514,8 +2568,9 @@ exports.genererRapportPDF = async (req, res) => {
                 } else {
                     parsedComparaisonLabels = JSON.parse(comparaisonLabels);
                 }
-            } catch (e) {logger.error('kpiCaisse.controller', '❌ Erreur parsing comparaisonLabels:', e.message);
-                parsedComparaisonLabels = ['Élément 1', 'Élément 2'];
+            } catch (e) {
+logger.error('kpiCaisse.controller', 'âŒ Erreur parsing comparaisonLabels:', e.message);
+                parsedComparaisonLabels = ['Ã‰lément 1', 'Ã‰lément 2'];
             }
         }
 
@@ -2548,7 +2603,7 @@ exports.genererRapportPDF = async (req, res) => {
                     limit: 50
                 }
             },
-            // AJOUTER LES DONNÉES DE COMPARAISON SI ELLES EXISTENT
+            // AJOUTER LES DONNÃ‰ES DE COMPARAISON SI ELLES EXISTENT
             comparaisonData: parsedComparaisonData,
             comparaisonLabels: parsedComparaisonLabels
         };
@@ -2603,7 +2658,8 @@ exports.genererRapportPDF = async (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename=rapport-vente-${Date.now()}.pdf`);
         res.send(pdf);
 
-    } catch (error) {logger.error('kpiCaisse.controller', '❌ Erreur génération PDF:', error);
+    } catch (error) {
+logger.error('kpiCaisse.controller', 'âŒ Erreur génération PDF:', error);
         // Enregistrer l'erreur dans l'historique
         if (req.user) {
             await HistoriqueService.enregistrerAction(
@@ -2648,29 +2704,7 @@ async function generatePDF(html) {
     let browser = null;
     
     try {
-        // Chemin vers Chrome (à adapter selon votre système)
-        const chromePaths = [
-            //'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', // Windows
-            'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe', // Windows 32-bit
-            //'/usr/bin/google-chrome', // Linux
-            //'/usr/bin/chromium-browser', // Linux
-            //'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' // Mac
-        ];
-
-        let executablePath = null;
-        for (const path of chromePaths) {
-            try {
-                await require('fs').promises.access(path);
-                executablePath = path;
-                break;
-            } catch (e) {
-                // Chemin non trouvélogger.log('kpiCaisse.controller', 'Chemin non trouvé',e);
-            }
-        }
-
-        if (!executablePath) {
-            throw new Error('Chrome/Chromium non trouvé');
-        }
+        const executablePath = await findChromePath();
 
         browser = await puppeteer.launch({
             executablePath,
@@ -2799,7 +2833,8 @@ exports.testRapportHTML = async (req, res) => {
         
         res.send(html);
 
-    } catch (error) {logger.error('kpiCaisse.controller', '❌ Erreur test HTML:', error);
+    } catch (error) {
+logger.error('kpiCaisse.controller', 'âŒ Erreur test HTML:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -2865,7 +2900,8 @@ exports.exportRapportExcel = async (req, res) => {
             fin,
             magasinId: magasinIdFinal,
             agentId: agentId ? parseInt(agentId) : null
-        };logger.log('kpiCaisse.controller', '📊 Génération Excel du', debut, 'au', fin);
+        };
+logger.log('kpiCaisse.controller', 'ðŸ“Š Génération Excel du', debut, 'au', fin);
 
         // Récupération des données (similaire au PDF mais sans limite)
         const [
@@ -3045,7 +3081,7 @@ exports.exportRapportExcel = async (req, res) => {
             alignment: { horizontal: 'center' }
         };
 
-        // ==================== FEUILLE RÉSUMÉ ====================
+        // ==================== FEUILLE RÃ‰SUMÃ‰ ====================
         const summarySheet = workbook.addWorksheet('Résumé');
 
         // Titre
@@ -3076,7 +3112,7 @@ exports.exportRapportExcel = async (req, res) => {
         summarySheet.addRow([]);
 
         // Indicateurs clés
-        summarySheet.addRow(['INDICATEURS CLÉS']).font = { bold: true, size: 14 };
+        summarySheet.addRow(['INDICATEURS CLÃ‰S']).font = { bold: true, size: 14 };
         summarySheet.addRow([]);
 
         const kpiHeaders = ['Indicateur', 'Valeur', 'Détail'];
@@ -3098,7 +3134,7 @@ exports.exportRapportExcel = async (req, res) => {
         // ==================== FEUILLE MODES DE PAIEMENT ====================
         const paymentSheet = workbook.addWorksheet('Modes de paiement');
         
-        paymentSheet.addRow(['RÉPARTITION DES MODES DE PAIEMENT']).font = { bold: true, size: 14 };
+        paymentSheet.addRow(['RÃ‰PARTITION DES MODES DE PAIEMENT']).font = { bold: true, size: 14 };
         paymentSheet.addRow([]);
 
         const paymentHeaders = ['Mode', 'Montant (F CFA)', 'Transactions', '%'];
@@ -3176,14 +3212,14 @@ exports.exportRapportExcel = async (req, res) => {
             ]);
         });
 
-        // ==================== FEUILLE DÉTAIL DES VENTES ====================
+        // ==================== FEUILLE DÃ‰TAIL DES VENTES ====================
         const detailsSheet = workbook.addWorksheet('Détail des ventes');
         
-        detailsSheet.addRow(['DÉTAIL DES TRANSACTIONS']).font = { bold: true, size: 14 };
+        detailsSheet.addRow(['DÃ‰TAIL DES TRANSACTIONS']).font = { bold: true, size: 14 };
         detailsSheet.addRow([]);
 
         const detailHeaders = [
-            'Date', 'N° Ticket', 'Client', 'Articles', 'Total TTC', 
+            'Date', 'NÂ° Ticket', 'Client', 'Articles', 'Total TTC', 
             'Mode paiement', 'Vendeur', 'Statut'
         ];
         detailsSheet.addRow(detailHeaders).eachCell(cell => cell.style = headerStyle);
@@ -3263,10 +3299,12 @@ exports.exportRapportExcel = async (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename=rapport-vente-${Date.now()}.xlsx`);
         res.send(buffer);
 
-    } catch (error) {logger.error('kpiCaisse.controller', '❌ Erreur export Excel:', error);
+    } catch (error) {
+logger.error('kpiCaisse.controller', 'âŒ Erreur export Excel:', error);
         res.status(500).json({ 
             error: 'Erreur lors de l\'export Excel',
             details: error.message 
         });
     }
 };
+

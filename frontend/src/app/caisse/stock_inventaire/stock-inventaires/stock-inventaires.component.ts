@@ -33,6 +33,8 @@ export class StockInventairesComponent implements OnInit, OnDestroy {
   isLoading = false;
   isAdmin = false;
   isGerant = false;
+  // Magasin de l'utilisateur connecté (portée d'affichage pour non-admins)
+  userMagasinId: number | null = null;
 
   // Pagination
   currentPage = 1;
@@ -115,6 +117,7 @@ export class StockInventairesComponent implements OnInit, OnDestroy {
       this.agentId = user.id || null;
       this.isAdmin = this.authService.hasRole('Administrateur') || this.authService.hasRole('Administrateur secondaire');
       this.isGerant = this.authService.hasRole('Gérant');
+      this.userMagasinId = user?.magasinId ? Number(user['magasinId']) : null;
     });
 
     this.loadData();
@@ -198,6 +201,14 @@ export class StockInventairesComponent implements OnInit, OnDestroy {
     this.selectedTri = 'produitDesignation_asc';
     this.currentPage = 1;
     this.loadData();
+  }
+
+  /**
+   * Nom du magasin de l'utilisateur connecté (pour le badge de portée).
+   */
+  get magasinCourantNom(): string {
+    if (this.isAdmin) return '';
+    return this.magasins.find(m => Number(m.id) === Number(this.userMagasinId))?.nom || 'Votre magasin';
   }
 
   getStatutBadgeClass(statut: string): string {

@@ -3,1356 +3,542 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rapport des Stocks</title>
-    
-    <!-- Chart.js pour les graphiques -->
+    <title>Rapport de Stock</title>
+    <!-- Chart.js — bundle local injecté par le serveur (pas de dépendance CDN) -->
+    <% if (locals.chartjsBundle) { %>
+    <script><%- chartjsBundle %></script>
+    <% } else { %>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    
+    <% } %>
     <style>
-        /* Styles généraux pour l'impression PDF */
-        @page {
-            size: A4;
-            margin: 2cm 1.5cm;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Helvetica', 'Arial', sans-serif;
-            line-height: 1.5;
-            color: #333;
-            background-color: #fff;
-            margin: 0;
-            padding: 0;
-            width: 100%;
-        }
-
-        .container {
-            max-width: 100%;
-            width: 100%;
-            margin: 0 auto;
-            background-color: #fff;
-            padding: 20px 25px;
-            border: none;
-            border-radius: 0;
-            box-sizing: border-box;
-        }
-
-        /* ============================================ */
-        /* PAGE DE GARDE                                */
-        /* ============================================ */
-        .cover-page {
-            position: relative;
-            width: 100%;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #ffffff 0%, #f5f7fa 100%);
-            display: flex;
-            flex-direction: column;
-            page-break-after: always;
-            break-after: page;
-        }
-
-        .cover-header {
-            position: relative;
-            height: 20px;
-            background: linear-gradient(90deg, #198754, #28a745, #198754);
-            background-size: 200% 100%;
-            animation: gradient 15s ease infinite;
-        }
-
-        .cover-ribbon {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 0;
-            height: 0;
-            border-style: solid;
-            border-width: 0 100px 100px 0;
-            border-color: transparent rgba(255,255,255,0.2) transparent transparent;
-        }
-
-        .cover-content {
-            flex: 1;
-            padding: 40px 50px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .cover-logo-container {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .cover-logo {
-            max-height: 100px;
-            max-width: 250px;
-            object-fit: contain;
-        }
-
-        .cover-logo-placeholder {
-            width: 120px;
-            height: 120px;
-            margin: 0 auto;
-            background: linear-gradient(135deg, #198754, #28a745);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 10px 30px rgba(25, 135, 84, 0.3);
-        }
-
-        .cover-logo-placeholder span {
-            color: white;
-            font-size: 48px;
-            font-weight: bold;
-            letter-spacing: 2px;
-        }
-
-        .cover-title-container {
-            text-align: center;
-            margin-bottom: 50px;
-        }
-
-        .cover-main-title {
-            font-size: 42px;
-            font-weight: 800;
-            color: #198754;
-            letter-spacing: 4px;
-            margin-bottom: 15px;
-            text-transform: uppercase;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .cover-title-underline {
-            width: 150px;
-            height: 4px;
-            background: linear-gradient(90deg, #198754, #28a745);
-            margin: 0 auto;
-            border-radius: 2px;
-        }
-
-        .cover-info-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            margin-bottom: 60px;
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
-            border: 1px solid rgba(25, 135, 84, 0.1);
-        }
-
-        .cover-info-item {
-            text-align: center;
-        }
-
-        .cover-info-label {
-            font-size: 12px;
-            text-transform: uppercase;
-            color: #6c757d;
-            letter-spacing: 1px;
-            margin-bottom: 8px;
-        }
-
-        .cover-info-value {
-            font-size: 18px;
-            font-weight: 600;
-            color: #198754;
-        }
-
-        .cover-details-section {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 50px;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
-            overflow: hidden;
-            border: 1px solid rgba(25, 135, 84, 0.1);
-        }
-
-        .cover-details-left, .cover-details-right {
-            padding: 25px;
-        }
-
-        .cover-details-left {
-            background: linear-gradient(135deg, #f8f9fa, #ffffff);
-            border-right: 1px dashed #198754;
-        }
-
-        .cover-details-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: #198754;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #198754;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .cover-details-content p {
-            margin-bottom: 12px;
-            font-size: 14px;
-            color: #495057;
-            line-height: 1.6;
-        }
-
-        .cover-details-content strong {
-            color: #212529;
-            min-width: 100px;
-            display: inline-block;
-        }
-
-        .cover-badge {
-            background: #e7f1ff;
-            color: #198754;
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-            display: inline-block;
-        }
-
-        .cover-footer {
-            margin-top: auto;
-            text-align: center;
-        }
-
-        .cover-confidential {
-            background: #212529;
-            color: white;
-            padding: 12px;
-            border-radius: 50px;
-            display: inline-flex;
-            align-items: center;
-            gap: 15px;
-            font-size: 12px;
-            font-weight: 500;
-            letter-spacing: 1px;
-            margin-bottom: 20px;
-        }
-
-        .cover-confidential-icon {
-            color: #ffc107;
-            font-size: 8px;
-        }
-
-        .cover-stamp {
-            color: #6c757d;
-            font-size: 11px;
-            font-style: italic;
-        }
-
-        .cover-footer-band {
-            height: 8px;
-            background: linear-gradient(90deg, #198754, #28a745, #198754);
-            margin-top: 20px;
-        }
-
-        @keyframes gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        .page-break {
-            page-break-after: always;
-            break-after: page;
-            height: 0;
-            visibility: hidden;
-        }
-
-        /* ============================================ */
-        /* STYLES COMMUNS                               */
-        /* ============================================ */
-        .row {
-            display: flex;
-            flex-wrap: wrap;
-            margin: 0 -10px;
-            width: 100%;
-        }
-
-        .col-md-3 {
-            flex: 0 0 25%;
-            max-width: 25%;
-            padding: 0 10px;
-            box-sizing: border-box;
-        }
-
-        .col-md-4 {
-            flex: 0 0 33.333%;
-            max-width: 33.333%;
-            padding: 0 10px;
-            box-sizing: border-box;
-        }
-
-        .col-md-6 {
-            flex: 0 0 50%;
-            max-width: 50%;
-            padding: 0 10px;
-            box-sizing: border-box;
-        }
-
-        .col-md-8 {
-            flex: 0 0 66.666%;
-            max-width: 66.666%;
-            padding: 0 10px;
-            box-sizing: border-box;
-        }
-
-        .col-md-12 {
-            flex: 0 0 100%;
-            max-width: 100%;
-            padding: 0 10px;
-            box-sizing: border-box;
-        }
-
-        .mb-5 { margin-bottom: 30px; }
-        .mb-4 { margin-bottom: 20px; }
-        .mb-3 { margin-bottom: 15px; }
-        .mt-4 { margin-top: 20px; }
-        .mt-5 { margin-top: 30px; }
-        .fw-bold { font-weight: bold; }
-        .text-center { text-align: center; }
-        .text-end { text-align: right; }
-        .text-success { color: #198754; }
-        .text-danger { color: #dc3545; }
-        .text-warning { color: #ffc107; }
-        .text-muted { color: #6c757d; }
-        .bg-light { background-color: #f8f9fa; }
-        .rounded { border-radius: 8px; }
-
-        h1 {
-            font-size: 28px;
-            color: #198754;
-            margin-bottom: 10px;
-        }
-
-        h3 {
-            font-size: 20px;
-            margin-bottom: 15px;
-        }
-
-        h4 {
-            font-size: 18px;
-            color: #6c757d;
-            font-weight: normal;
-        }
-
-        h5 {
-            font-size: 16px;
-        }
-
-        /* Cartes */
-        .card {
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            page-break-inside: avoid;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .card-header {
-            padding: 12px 20px;
-            background-color: #f8f9fa;
-            border-bottom: 1px solid #dee2e6;
-            border-radius: 8px 8px 0 0;
-        }
-
-        .card-header.bg-primary { background-color: #0d6efd; color: white; }
-        .card-header.bg-secondary { background-color: #6c757d; color: white; }
-        .card-header.bg-success { background-color: #198754; color: white; }
-        .card-header.bg-info { background-color: #0dcaf0; color: white; }
-        .card-header.bg-warning { background-color: #ffc107; color: #333; }
-        .card-header.bg-dark { background-color: #212529; color: white; }
-        .card-header.bg-purple { background-color: #6f42c1; color: white; }
-
-        .card-body {
-            padding: 20px;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        /* Indicateurs clés */
-        .stat-card {
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            height: 100%;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            width: 100%;
-        }
-
-        .stat-card-body {
-            padding: 15px;
-            display: flex;
-            align-items: center;
-        }
-
-        .stat-icon {
-            font-size: 32px;
-            margin-right: 15px;
-            flex-shrink: 0;
-        }
-
-        .stat-icon.primary { color: #0d6efd; }
-        .stat-icon.success { color: #198754; }
-        .stat-icon.warning { color: #ffc107; }
-        .stat-icon.info { color: #0dcaf0; }
-        .stat-icon.danger { color: #dc3545; }
-        .stat-icon.dark { color: #212529; }
-
-        .stat-content {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .stat-content h5 {
-            font-size: 14px;
-            color: #6c757d;
-            margin-bottom: 5px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .stat-content .stat-value {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 0;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .stat-content small {
-            font-size: 11px;
-            color: #6c757d;
-        }
-
-        /* Tableaux */
-        .table-responsive {
-            overflow-x: auto;
-            width: 100%;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-            table-layout: fixed;
-        }
-
-        table th, table td {
-            padding: 8px 5px;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
-
-        table thead th {
-            background-color: #f8f9fa;
-            font-weight: bold;
-            border-bottom: 2px solid #dee2e6;
-        }
-
-        table tbody td {
-            border-bottom: 1px solid #dee2e6;
-        }
-
-        table tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 3px 6px;
-            font-size: 10px;
-            font-weight: bold;
-            border-radius: 3px;
-            white-space: nowrap;
-        }
-
-        .bg-success { background-color: #198754; color: white; }
-        .bg-danger { background-color: #dc3545; color: white; }
-        .bg-warning { background-color: #ffc107; color: #333; }
-        .bg-info { background-color: #0dcaf0; color: white; }
-        .bg-secondary { background-color: #6c757d; color: white; }
-
-        /* Graphiques */
-        .chart-container {
-            position: relative;
-            height: 350px;
-            width: 100%;
-            margin-bottom: 20px;
-        }
-
-        .chart-container-sm {
-            height: 250px;
-            width: 100%;
-        }
-
-        canvas {
-            max-width: 100%;
-            height: auto !important;
-            width: 100% !important;
-        }
-
-        /* Listes */
-        .list-group {
-            list-style: none;
-        }
-
-        .list-group-item {
-            padding: 10px 15px;
-            border-bottom: 1px solid #dee2e6;
-        }
-
-        .list-group-item:last-child {
-            border-bottom: none;
-        }
-
-        .list-group-item i {
-            margin-right: 8px;
-        }
-
-        /* Pied de page */
-        .rapport-footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 2px solid #dee2e6;
-            display: flex;
-            justify-content: space-between;
-            font-size: 14px;
-        }
-
-        .signature {
-            text-align: right;
-        }
-
-        .signature p {
-            margin-bottom: 5px;
-        }
-
-        .signature-line {
-            margin-top: 40px;
-            width: 200px;
-            border-top: 1px solid #333;
-            display: inline-block;
-        }
-
-        .confidential {
-            text-align: center;
-            margin-top: 20px;
-            color: #6c757d;
-            font-size: 12px;
-        }
-
-        /* Sauts de page */
-        .keep-together {
-            page-break-inside: avoid;
-            break-inside: avoid;
-        }
-
+        @page { size: A4; margin: 2cm 1.5cm; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Helvetica', 'Arial', sans-serif; line-height: 1.5; color: #333; background: #fff; }
+        .container { max-width: 100%; margin: 0 auto; padding: 20px 25px; }
+
+        /* PAGE DE GARDE */
+        .cover-page { position: relative; width: 100%; min-height: 100vh; background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%); display: flex; flex-direction: column; page-break-after: always; break-after: page; }
+        .cover-header { height: 20px; background: linear-gradient(90deg, #065f46, #059669, #065f46); background-size: 200% 100%; }
+        .cover-footer-band { height: 8px; background: linear-gradient(90deg, #065f46, #059669, #065f46); margin-top: 20px; }
+        .cover-content { flex: 1; padding: 40px 50px; display: flex; flex-direction: column; }
+        .cover-logo-container { text-align: center; margin-bottom: 30px; }
+        .cover-logo { max-height: 100px; max-width: 250px; object-fit: contain; }
+        .cover-logo-placeholder { width: 120px; height: 120px; margin: 0 auto; background: linear-gradient(135deg, #059669, #065f46); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(5,150,105,0.3); }
+        .cover-logo-placeholder span { color: white; font-size: 48px; font-weight: bold; letter-spacing: 2px; }
+        .cover-title-container { text-align: center; margin-bottom: 50px; }
+        .cover-main-title { font-size: 42px; font-weight: 800; color: #059669; letter-spacing: 4px; margin-bottom: 15px; text-transform: uppercase; }
+        .cover-title-underline { width: 150px; height: 4px; background: linear-gradient(90deg, #059669, #065f46); margin: 0 auto; border-radius: 2px; }
+        .cover-info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 60px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); border: 1px solid rgba(5,150,105,0.15); }
+        .cover-info-item { text-align: center; }
+        .cover-info-label { font-size: 12px; text-transform: uppercase; color: #6c757d; letter-spacing: 1px; margin-bottom: 8px; }
+        .cover-info-value { font-size: 18px; font-weight: 600; color: #059669; }
+        .cover-details-section { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 50px; background: white; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid rgba(5,150,105,0.15); }
+        .cover-details-left, .cover-details-right { padding: 25px; }
+        .cover-details-left { background: linear-gradient(135deg, #f0fdf4, #ffffff); border-right: 1px dashed #059669; }
+        .cover-details-title { font-size: 16px; font-weight: 600; color: #059669; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #059669; text-transform: uppercase; letter-spacing: 1px; }
+        .cover-details-content p { margin-bottom: 12px; font-size: 14px; color: #495057; }
+        .cover-details-content strong { color: #212529; min-width: 100px; display: inline-block; }
+        .cover-badge { background: #d1fae5; color: #065f46; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+        .cover-footer { margin-top: auto; text-align: center; }
+        .cover-confidential { background: #212529; color: white; padding: 12px; border-radius: 50px; display: inline-flex; align-items: center; gap: 15px; font-size: 12px; font-weight: 500; letter-spacing: 1px; margin-bottom: 20px; }
+        .cover-stamp { color: #6c757d; font-size: 11px; font-style: italic; }
+
+        /* CARTES ET LAYOUT */
+        .page-break { page-break-after: always; break-after: page; height: 0; visibility: hidden; }
+        .row { display: flex; flex-wrap: wrap; margin: 0 -10px; }
+        .col-md-3 { flex: 0 0 25%; padding: 0 10px; }
+        .col-md-4 { flex: 0 0 33.333%; padding: 0 10px; }
+        .col-md-6 { flex: 0 0 50%; padding: 0 10px; }
+        .col-md-12 { flex: 0 0 100%; padding: 0 10px; }
+        .card { border: 1px solid #dee2e6; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); page-break-inside: avoid; break-inside: avoid; }
+        .card-header { padding: 12px 20px; background-color: #f8f9fa; border-bottom: 1px solid #dee2e6; border-radius: 8px 8px 0 0; }
+        .card-header.bg-success { background-color: #198754 !important; color: white; }
+        .card-header.bg-warning { background-color: #ffc107 !important; color: #333; }
+        .card-header.bg-danger  { background-color: #dc3545 !important; color: white; }
+        .card-header.bg-info    { background-color: #0dcaf0 !important; color: white; }
+        .card-header.bg-secondary { background-color: #6c757d !important; color: white; }
+        .card-header.bg-primary { background-color: #0d6efd !important; color: white; }
+        .card-header.bg-dark    { background-color: #212529 !important; color: white; }
+        .card-body { padding: 20px; }
+        .stat-card { border: 2px solid #dee2e6; border-radius: 8px; height: 100%; }
+        .stat-card-body { padding: 15px; display: flex; align-items: center; }
+        .stat-icon { font-size: 28px; margin-right: 12px; flex-shrink: 0; }
+        .stat-content h5 { font-size: 13px; color: #6c757d; margin-bottom: 4px; }
+        .stat-value { font-size: 20px; font-weight: bold; margin-bottom: 0; }
+        .stat-content small { font-size: 11px; color: #6c757d; }
+
+        /* TABLEAUX */
+        .table-responsive { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        table th { background-color: #f0fdf4; padding: 9px 10px; border-bottom: 2px solid #059669; text-align: left; color: #065f46; }
+        table td { padding: 8px 10px; border-bottom: 1px solid #dee2e6; }
+        table tbody tr:nth-child(even) { background-color: #f8f9fa; }
+        .badge { display: inline-block; padding: 3px 8px; font-size: 11px; font-weight: bold; border-radius: 4px; color: white; }
+        .bg-success { background-color: #198754 !important; }
+        .bg-danger  { background-color: #dc3545 !important; }
+        .bg-warning { background-color: #ffc107 !important; color: #333 !important; }
+        .bg-info    { background-color: #0dcaf0 !important; }
+        .bg-secondary { background-color: #6c757d !important; }
+
+        /* GRAPHIQUES */
+        .chart-container { position: relative; height: 350px; width: 100%; margin-bottom: 20px; }
+        .chart-container-sm { height: 260px; width: 100%; }
+        canvas { max-width: 100%; height: auto !important; width: 100% !important; }
+
+        /* UTILITAIRES */
+        .text-center { text-align: center; } .text-end { text-align: right; }
+        .text-success { color: #198754; } .text-danger { color: #dc3545; } .text-warning { color: #ffc107; } .text-muted { color: #6c757d; }
+        .fw-bold { font-weight: bold; } .mb-0 { margin-bottom: 0; } .mb-2 { margin-bottom: 10px; } .mb-3 { margin-bottom: 15px; } .mb-4 { margin-bottom: 20px; }
+        .mt-2 { margin-top: 10px; } .mt-3 { margin-top: 15px; } .mt-4 { margin-top: 20px; }
+        .p-3 { padding: 15px; } .border-success { border-color: #198754; } .border-warning { border-color: #ffc107; } .border-danger { border-color: #dc3545; }
+        h3 { font-size: 18px; margin-bottom: 10px; }
+        .rapport-footer { margin-top: 30px; padding-top: 20px; border-top: 2px solid #dee2e6; display: flex; justify-content: space-between; font-size: 14px; }
+        .signature { text-align: right; }
+        .signature-line { margin-top: 40px; width: 200px; border-top: 1px solid #333; display: inline-block; }
         @media print {
-            body { background: white; }
-            .container { max-width: 100%; padding: 10px; }
-            .card { page-break-inside: avoid; }
-            table { page-break-inside: auto; }
-            tr { page-break-inside: avoid; }
-            thead { display: table-header-group; }
-            tfoot { display: table-footer-group; }
+            body { background: white; padding: 0; margin: 0; }
+            .card { break-inside: avoid; }
+            .page-break { break-after: page; }
         }
     </style>
 </head>
 <body>
-    <!-- ============================================ -->
-    <!-- PAGE DE GARDE - Première page uniquement     -->
-    <!-- ============================================ -->
-    <div class="cover-page">
-        <div class="cover-header">
-            <div class="cover-ribbon"></div>
+
+<!-- ====== PAGE DE GARDE ====== -->
+<div class="cover-page">
+    <div class="cover-header"></div>
+    <div class="cover-content">
+        <div class="cover-logo-container">
+            <% if (locals.structure && structure.logo) { %>
+                <img src="<%= structure.logo %>" alt="Logo" class="cover-logo" />
+            <% } else { %>
+                <div class="cover-logo-placeholder">
+                    <span><%= structure ? structure.nom_structure.substring(0, 2).toUpperCase() : 'ST' %></span>
+                </div>
+            <% } %>
         </div>
-
-        <div class="cover-content">
-            <!-- Logo et titre principal -->
-            <div class="cover-logo-container">
-                <% if (locals.structure && structure.logo) { %>
-                    <img src="<%= structure.logo %>" alt="Logo <%= structure.nom_structure %>" class="cover-logo" />
-                <% } else { %>
-                    <div class="cover-logo-placeholder">
-                        <span><%= structure ? structure.nom_structure.substring(0, 2) : 'ST' %></span>
-                    </div>
-                <% } %>
+        <div class="cover-title-container">
+            <h1 class="cover-main-title">RAPPORT DE STOCK</h1>
+            <div class="cover-title-underline"></div>
+        </div>
+        <div class="cover-info-grid">
+            <div class="cover-info-item">
+                <div class="cover-info-label">Période</div>
+                <div class="cover-info-value"><%= locals.periodeAffichage || 'Sélectionnée' %></div>
             </div>
-
-            <div class="cover-title-container">
-                <h1 class="cover-main-title">RAPPORT DES STOCKS</h1>
-                <div class="cover-title-underline"></div>
+            <div class="cover-info-item">
+                <div class="cover-info-label">Date d'édition</div>
+                <div class="cover-info-value"><%= new Date().toLocaleDateString('fr-FR') %></div>
             </div>
-
-            <!-- Informations clés de la période -->
-            <div class="cover-info-grid">
-                <div class="cover-info-item">
-                    <div class="cover-info-label">Période</div>
-                    <div class="cover-info-value"><%= locals.periodeAffichage || 'Période sélectionnée' %></div>
-                </div>
-                
-                <div class="cover-info-item">
-                    <div class="cover-info-label">Date d'édition</div>
-                    <div class="cover-info-value"><%= new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) %></div>
-                </div>
-                
-                <div class="cover-info-item">
-                    <div class="cover-info-label">Heure</div>
-                    <div class="cover-info-value"><%= new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) %></div>
-                </div>
-                
-                <div class="cover-info-item">
-                    <div class="cover-info-label">Référence</div>
-                    <div class="cover-info-value">STK-<%= new Date().getFullYear() %>-<%= String(new Date().getMonth() + 1).padStart(2, '0') %><%= String(new Date().getDate()).padStart(2, '0') %></div>
+            <div class="cover-info-item">
+                <div class="cover-info-label">Heure</div>
+                <div class="cover-info-value"><%= new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) %></div>
+            </div>
+            <div class="cover-info-item">
+                <div class="cover-info-label">Référence</div>
+                <div class="cover-info-value">STK-<%= new Date().getFullYear() %>-<%= String(new Date().getMonth()+1).padStart(2,'0') %><%= String(new Date().getDate()).padStart(2,'0') %></div>
+            </div>
+        </div>
+        <div class="cover-details-section">
+            <div class="cover-details-left">
+                <h3 class="cover-details-title">Émetteur</h3>
+                <div class="cover-details-content">
+                    <p><strong><%= structure ? structure.nom_structure : 'Entreprise' %></strong></p>
+                    <p><%= structure ? structure.adresse : '' %></p>
+                    <p>Tél: <%= structure ? structure.telephone : '' %></p>
+                    <p>Email: <%= structure ? structure.email : '' %></p>
+                    <% if (structure && structure.numero_identification_fiscale) { %><p>NIF: <%= structure.numero_identification_fiscale %></p><% } %>
                 </div>
             </div>
-
-            <!-- Informations entreprise et filtres -->
-            <div class="cover-details-section">
-                <div class="cover-details-left">
-                    <h3 class="cover-details-title">Émetteur</h3>
-                    <div class="cover-details-content">
-                        <p><strong><%= structure ? structure.nom_structure : 'Entreprise' %></strong></p>
-                        <p><%= structure ? structure.adresse : 'Adresse' %></p>
-                        <p>Tél: <%= structure ? structure.telephone : '+221 77 123 45 67' %></p>
-                        <p>Email: <%= structure ? structure.email : 'contact@entreprise.com' %></p>
-                        <% if (structure && structure.numero_identification_fiscale) { %>
-                            <p>NIF: <%= structure.numero_identification_fiscale %></p>
-                        <% } %>
-                    </div>
-                </div>
-                
-                <div class="cover-details-right">
-                    <h3 class="cover-details-title">Filtres appliqués</h3>
-                    <div class="cover-details-content">
-                        <p><strong>Succursale:</strong> 
-                            <% if (locals.magasin && magasin !== -1) { %>
-                                <%= locals.magasinNom || 'Magasin sélectionné' %>
-                            <% } else { %>
-                                <span class="cover-badge">Tous les magasins</span>
-                            <% } %>
-                        </p>
-                        <p><strong>Catégorie:</strong> 
-                            <% if (locals.categorie && categorie !== 'all') { %>
-                                <%= locals.categorieNom || 'Catégorie sélectionnée' %>
-                            <% } else { %>
-                                <span class="cover-badge">Toutes les catégories</span>
-                            <% } %>
-                        </p>
-                        <p><strong>Statut:</strong> 
-                            <% if (locals.statut && statut !== 'all') { %>
-                                <%= statut %>
-                            <% } else { %>
-                                <span class="cover-badge">Tous les statuts</span>
-                            <% } %>
-                        </p>
-                        <p><strong>Responsable:</strong> <%= utilisateur ? utilisateur.nom : 'Responsable' %></p>
-                        <p><strong>Généré par:</strong> <%= utilisateur ? utilisateur.email : 'Système' %></p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Mention de confidentialité -->
-            <div class="cover-footer">
-                <div class="cover-confidential">
-                    <span class="cover-confidential-icon">⚫</span>
-                    <span>DOCUMENT CONFIDENTIEL - RÉSERVÉ À USAGE INTERNE</span>
-                    <span class="cover-confidential-icon">⚫</span>
-                </div>
-                <div class="cover-stamp">
-                    Structure: <%= structure ? structure.code_structure : 'N/A' %>
+            <div class="cover-details-right">
+                <h3 class="cover-details-title">Filtres appliqués</h3>
+                <div class="cover-details-content">
+                    <p><strong>Succursale:</strong>
+                        <% if (locals.magasinNom) { %><%= magasinNom %><% } else { %><span class="cover-badge">Toutes les succursales</span><% } %>
+                    </p>
+                    <% if (locals.categorieNom) { %><p><strong>Catégorie:</strong> <%= categorieNom %></p><% } %>
+                    <p><strong>Responsable:</strong> <%= utilisateur ? utilisateur.nom : 'Système' %></p>
+                    <p><strong>Généré par:</strong> <%= utilisateur ? utilisateur.email : 'Système' %></p>
                 </div>
             </div>
         </div>
-
-        <div class="cover-footer-band"></div>
+        <div class="cover-footer">
+            <div class="cover-confidential">
+                <span>⚫</span><span>DOCUMENT CONFIDENTIEL - RÉSERVÉ À USAGE INTERNE</span><span>⚫</span>
+            </div>
+            <div class="cover-stamp">Structure: <%= structure ? structure.code_structure : 'N/A' %></div>
+        </div>
     </div>
+    <div class="cover-footer-band"></div>
+</div>
 
-    <!-- Saut de page après la couverture -->
-    <div class="page-break"></div>
+<div class="page-break"></div>
 
-    <!-- ============================================ -->
-    <!-- DEUXIÈME PAGE - Indicateurs Clés             -->
-    <!-- ============================================ -->
-    <div class="container">
-        <!-- Section indicateurs statistiques -->
-        <div class="card mb-4">
-            <div class="card-header bg-primary">
-                <h3 class="fw-bold mb-0"><i class="bi bi-bar-chart me-2"></i>Indicateurs Clés</h3>
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <!-- Total Produits -->
-                    <div class="col-md-4 col-lg-3 mb-3">
-                        <div class="stat-card">
-                            <div class="stat-card-body">
-                                <div class="stat-icon info">📦</div>
-                                <div class="stat-content">
-                                    <h5>Produits en stock</h5>
-                                    <p class="stat-value"><%= indicateursStocks.totalProduits || 0 %></p>
-                                    <small><%= indicateursStocks.produitsNormaux || 0 %> Normaux • <%= indicateursStocks.produitsUniques || 0 %> uniques</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+<div class="container">
 
-                    <!-- Valeur Stock Initial -->
-                    <div class="col-md-4 col-lg-3 mb-3">
-                        <div class="stat-card">
-                            <div class="stat-card-body">
-                                <div class="stat-icon success">💰</div>
-                                <div class="stat-content">
-                                    <h5>Valeur achat Stock initial</h5>
-                                    <p class="stat-value"><%= (indicateursStocks.valeurStockInitial || 0).toLocaleString('fr-FR') %> F CFA</p>
-                                    <small>Valeur vente: <%= (indicateursStocks.valeurStockInitialVente || 0).toLocaleString('fr-FR') %> F CFA</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Valeur Stock Final -->
-                    <div class="col-md-4 col-lg-3 mb-3">
-                        <div class="stat-card">
-                            <div class="stat-card-body">
-                                <div class="stat-icon primary">📈</div>
-                                <div class="stat-content">
-                                    <h5>Valeur achat Stock Final</h5>
-                                    <p class="stat-value"><%= (indicateursStocks.valeurStockFinal || 0).toLocaleString('fr-FR') %> F CFA</p>
-                                    <small>Valeur vente: <%= (indicateursStocks.valeurStockFinalVente || 0).toLocaleString('fr-FR') %> F CFA</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Produits entrés/sortis -->
-                    <div class="col-md-4 col-lg-3 mb-3">
-                        <div class="stat-card">
-                            <div class="stat-card-body">
-                                <div class="stat-icon dark">🔄</div>
-                                <div class="stat-content">
-                                    <h5>Produits entrés/sortis</h5>
-                                    <p class="stat-value"><%= indicateursStocks.totalProduitsVendus || 0 %></p>
-                                    <small>Entrées: <%= indicateursStocks.totalEntrees || 0 %> • Sorties: <%= indicateursStocks.totalSorties || 0 %></small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Produits en Rupture -->
-                    <div class="col-md-4 col-lg-3 mb-3">
-                        <div class="stat-card">
-                            <div class="stat-card-body">
-                                <div class="stat-icon danger">⚠️</div>
-                                <div class="stat-content">
-                                    <h5>Produits en Rupture</h5>
-                                    <p class="stat-value"><%= indicateursStocks.produitsRupture || 0 %></p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Produits en Alerte -->
-                    <div class="col-md-4 col-lg-3 mb-3">
-                        <div class="stat-card">
-                            <div class="stat-card-body">
-                                <div class="stat-icon warning">⚠️</div>
-                                <div class="stat-content">
-                                    <h5>Produits en Alerte</h5>
-                                    <p class="stat-value"><%= indicateursStocks.produitsEnAlerte || 0 %></p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Produits à Réapprovisionner -->
-                    <div class="col-md-4 col-lg-3 mb-3">
-                        <div class="stat-card">
-                            <div class="stat-card-body">
-                                <div class="stat-icon warning">📦</div>
-                                <div class="stat-content">
-                                    <h5>À Réapprovisionner</h5>
-                                    <p class="stat-value"><%= indicateursStocks.produitsAReapprovisionner || 0 %></p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Produits en Surstock -->
-                    <div class="col-md-4 col-lg-3 mb-3">
-                        <div class="stat-card">
-                            <div class="stat-card-body">
-                                <div class="stat-icon dark">📤</div>
-                                <div class="stat-content">
-                                    <h5>Produits en Surstock</h5>
-                                    <p class="stat-value"><%= indicateursStocks.produitsEnSurStock || 0 %></p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Produits Périssables -->
-                    <div class="col-md-4 col-lg-3 mb-3">
-                        <div class="stat-card">
-                            <div class="stat-card-body">
-                                <div class="stat-icon primary">📅</div>
-                                <div class="stat-content">
-                                    <h5>Produits Périssables</h5>
-                                    <p class="stat-value"><%= indicateursStocks.produitsPerissable || 0 %></p>
-                                </div>
-                            </div>
+<!-- ====== INDICATEURS CLÉS ====== -->
+<div class="card mb-4">
+    <div class="card-header bg-success">
+        <h3 class="fw-bold mb-0">📦 Indicateurs Clés du Stock</h3>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <div class="stat-card border-success">
+                    <div class="stat-card-body">
+                        <span class="stat-icon">📦</span>
+                        <div class="stat-content">
+                            <h5>Produits en stock</h5>
+                            <div class="stat-value text-success"><%= (indicateurs?.produitsUniques || 0).toLocaleString('fr-FR') %></div>
+                            <small>Références distinctes</small>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Ligne d'évolution -->
-                <div class="row mt-3">
-                    <div class="col-md-6">
-                        <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
-                            <span><strong>Variation Stock:</strong></span>
-                            <span class="<%= (indicateursStocks.valeurStockFinal || 0) >= (indicateursStocks.valeurStockInitial || 0) ? 'text-success' : 'text-danger' %>">
-                                <%= (((indicateursStocks.valeurStockFinal || 0) - (indicateursStocks.valeurStockInitial || 0)) / (indicateursStocks.valeurStockInitial || 1) * 100).toFixed(2) %>%
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card border-success">
+                    <div class="stat-card-body">
+                        <span class="stat-icon">💰</span>
+                        <div class="stat-content">
+                            <h5>Valeur stock (achat)</h5>
+                            <div class="stat-value text-success"><%= (indicateurs?.valeurStockFinal || 0).toLocaleString('fr-FR') %> F</div>
+                            <small>Vente : <%= (indicateurs?.valeurStockFinalVente || 0).toLocaleString('fr-FR') %> F</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card border-danger">
+                    <div class="stat-card-body">
+                        <span class="stat-icon">🔴</span>
+                        <div class="stat-content">
+                            <h5>Ruptures de stock</h5>
+                            <div class="stat-value text-danger"><%= indicateurs?.produitsRupture || 0 %></div>
+                            <small><%= indicateurs?.produitsEnAlerte || 0 %> en alerte</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card border-warning">
+                    <div class="stat-card-body">
+                        <span class="stat-icon">📊</span>
+                        <div class="stat-content">
+                            <h5>Mouvements</h5>
+                            <div class="stat-value">E: <%= (indicateurs?.totalEntrees || 0).toLocaleString('fr-FR') %></div>
+                            <small>S: <%= (indicateurs?.totalSorties || 0).toLocaleString('fr-FR') %></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Ligne 2 -->
+        <div class="row mt-2">
+            <div class="col-md-3 mb-3">
+                <div class="stat-card">
+                    <div class="stat-card-body">
+                        <span class="stat-icon">🟡</span>
+                        <div class="stat-content">
+                            <h5>À réapprovisionner</h5>
+                            <div class="stat-value text-warning"><%= indicateurs?.produitsAReapprovisionner || 0 %></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card">
+                    <div class="stat-card-body">
+                        <span class="stat-icon">⬆️</span>
+                        <div class="stat-content">
+                            <h5>Surstock</h5>
+                            <div class="stat-value"><%= indicateurs?.produitsEnSurStock || 0 %></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card">
+                    <div class="stat-card-body">
+                        <span class="stat-icon">🌿</span>
+                        <div class="stat-content">
+                            <h5>Produits périssables</h5>
+                            <div class="stat-value"><%= indicateurs?.produitsPerissable || 0 %></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card border-success">
+                    <div class="stat-card-body">
+                        <span class="stat-icon">✅</span>
+                        <div class="stat-content">
+                            <h5>Stock normal</h5>
+                            <div class="stat-value text-success"><%= indicateurs?.produitsNormaux || 0 %></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ====== GRAPHIQUES ====== -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-info"><h3 class="fw-bold mb-0">Répartition par statut</h3></div>
+            <div class="card-body"><div class="chart-container-sm"><canvas id="statutChart"></canvas></div></div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-secondary"><h3 class="fw-bold mb-0">Top 10 produits (stock final)</h3></div>
+            <div class="card-body"><div class="chart-container-sm"><canvas id="topProduitsChart"></canvas></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- ====== PRODUITS EN ALERTE ====== -->
+<% if (produitsSpecifiques && (produitsSpecifiques.produitsRupture.length > 0 || produitsSpecifiques.produitsAlerte.length > 0)) { %>
+<div class="card mb-4">
+    <div class="card-header bg-danger"><h3 class="fw-bold mb-0">🚨 Produits en rupture et en alerte</h3></div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Produit</th>
+                        <th>Magasin</th>
+                        <th class="text-center">Quantité</th>
+                        <th class="text-center">Seuil alerte</th>
+                        <th class="text-center">Statut</th>
+                        <th>Péremption</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% [...(produitsSpecifiques.produitsRupture || []), ...(produitsSpecifiques.produitsAlerte || [])].slice(0,20).forEach(function(p) { %>
+                    <tr>
+                        <td class="fw-bold"><%= p.designation || 'Produit inconnu' %></td>
+                        <td><%= p.magasinId || '-' %></td>
+                        <td class="text-center <%= p.quantite <= 0 ? 'text-danger' : 'text-warning' %> fw-bold"><%= (p.quantite || 0).toFixed(2) %></td>
+                        <td class="text-center"><%= p.seuilAlerte || 5 %></td>
+                        <td class="text-center">
+                            <span class="badge <%= p.quantite <= 0 ? 'bg-danger' : 'bg-warning' %>">
+                                <%= p.quantite <= 0 ? 'Rupture' : 'Alerte' %>
                             </span>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
-                            <span><strong>Rotation Stock:</strong></span>
-                            <span class="text-info">
-                                <%= ((indicateursStocks.totalSorties || 0) / ((indicateursStocks.valeurStockInitial || 1) + (indicateursStocks.valeurStockFinal || 1)) * 2).toFixed(2) %>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                        </td>
+                        <td><%= p.datePeremption ? new Date(p.datePeremption).toLocaleDateString('fr-FR') : '-' %></td>
+                    </tr>
+                    <% }); %>
+                </tbody>
+            </table>
         </div>
+    </div>
+</div>
+<% } %>
 
-        <!-- Graphique d'évolution du stock -->
-        <div class="card mb-4">
-            <div class="card-header bg-secondary">
-                <h3 class="fw-bold mb-0">Évolution du Stock dans le Temps</h3>
-            </div>
-            <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="evolutionChart"></canvas>
-                </div>
-            </div>
+<!-- ====== TABLEAU DES PRODUITS ====== -->
+<div class="card mb-4">
+    <div class="card-header bg-success"><h3 class="fw-bold mb-0">📋 État des stocks par produit</h3></div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Produit</th>
+                        <th>Catégorie</th>
+                        <th class="text-end">Prix Achat</th>
+                        <th class="text-end">Stk. Initial</th>
+                        <th class="text-end">Entrées</th>
+                        <th class="text-end">Sorties</th>
+                        <th class="text-end">Stk. Final</th>
+                        <th class="text-end">Valeur</th>
+                        <th class="text-center">Statut</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (produits && produits.items && produits.items.length > 0) { %>
+                        <% produits.items.forEach(function(p) { %>
+                        <tr>
+                            <td class="fw-bold"><%= p.produit?.designation || 'Inconnu' %></td>
+                            <td><%= p.produit?.categorie || '-' %></td>
+                            <td class="text-end"><%= (p.prixAchat || 0).toLocaleString('fr-FR') %></td>
+                            <td class="text-end"><%= (p.stockInitial || 0).toFixed(2) %></td>
+                            <td class="text-end text-success"><%= (p.entrees || 0).toFixed(2) %></td>
+                            <td class="text-end text-danger"><%= (p.sorties || 0).toFixed(2) %></td>
+                            <td class="text-end fw-bold"><%= (p.stockFinal || 0).toFixed(2) %></td>
+                            <td class="text-end"><%= (p.valeurStockFinal || 0).toLocaleString('fr-FR') %> F</td>
+                            <td class="text-center">
+                                <span class="badge <%=
+                                    p.statut === 'En rupture' ? 'bg-danger' :
+                                    p.statut === 'En alerte' ? 'bg-warning' :
+                                    p.statut === 'En stock' ? 'bg-success' : 'bg-secondary'
+                                %>"><%= p.statut || 'N/A' %></span>
+                            </td>
+                        </tr>
+                        <% }); %>
+                    <% } else { %>
+                        <tr><td colspan="9" class="text-center text-muted" style="padding:20px;">Aucun produit sur cette période</td></tr>
+                    <% } %>
+                </tbody>
+            </table>
         </div>
+    </div>
+</div>
 
-        <!-- Analyse des stocks -->
-        <div class="row mb-4">
-            <!-- Répartition par catégorie -->
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-header bg-info">
-                        <h3 class="fw-bold mb-0">Répartition par Catégorie</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="chart-container-sm">
-                            <canvas id="repartitionChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Top produits les plus vendus -->
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-header bg-success">
-                        <h3 class="fw-bold mb-0">Top 10 Produits les Plus Vendus</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="chart-container-sm">
-                            <canvas id="topProduitsChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<!-- ====== MOUVEMENTS ====== -->
+<div class="card mb-4">
+    <div class="card-header bg-secondary"><h3 class="fw-bold mb-0">🔄 Mouvements de la période</h3></div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Produit</th>
+                        <th class="text-center">Type</th>
+                        <th class="text-end">Quantité</th>
+                        <th>Référence</th>
+                        <th>Motif</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (mouvements && mouvements.items && mouvements.items.length > 0) { %>
+                        <% mouvements.items.forEach(function(m) { %>
+                        <tr>
+                            <td><%= m.dateMouvement ? new Date(m.dateMouvement).toLocaleDateString('fr-FR') : '-' %></td>
+                            <td><%= m.produit?.designation || m.produitId || '-' %></td>
+                            <td class="text-center">
+                                <span class="badge <%= m.typeMouvement === 'Entrée' ? 'bg-success' : 'bg-danger' %>">
+                                    <%= m.typeMouvement || '-' %>
+                                </span>
+                            </td>
+                            <td class="text-end fw-bold"><%= (m.quantite || 0).toFixed(2) %></td>
+                            <td><%= m.reference || '-' %></td>
+                            <td><%= m.motif || '-' %></td>
+                        </tr>
+                        <% }); %>
+                    <% } else { %>
+                        <tr><td colspan="6" class="text-center text-muted" style="padding:20px;">Aucun mouvement sur cette période</td></tr>
+                    <% } %>
+                </tbody>
+            </table>
         </div>
+    </div>
+</div>
 
-        <!-- Liste des produits en stock -->
-        <div class="card mb-4">
-            <div class="card-header bg-dark text-white">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h3 class="fw-bold mb-0">Détail des Produits en Stock</h3>
-                    <span class="badge bg-light text-dark">
-                        Total: <%= produits ? produits.total || 0 : 0 %> produits
-                    </span>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>Produit</th>
-                                <th>Catégorie</th>
-                                <th>Unité</th>
-                                <th class="text-end">Prix Achat</th>
-                                <th class="text-end">Stock Initial</th>
-                                <th class="text-end">Entrées</th>
-                                <th class="text-end">Sorties</th>
-                                <th class="text-end">Stock Final</th>
-                                <th class="text-end">Taux Rotation</th>
-                                <th>Statut</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% if (produits && produits.items && produits.items.length > 0) { %>
-                                <% produits.items.slice(0, 20).forEach(function(produit) { %>
-                                    <tr>
-                                        <td><%= produit.produit.designation || 'N/A' %></td>
-                                        <td><%= produit.produit.categorie || 'Non catégorisé' %></td>
-                                        <td><%= produit.produit.unite || '-' %></td>
-                                        <td class="text-end"><%= (produit.prixAchat || 0).toLocaleString('fr-FR') %> F CFA</td>
-                                        <td class="text-end">
-                                            <%= produit.stockInitial || 0 %><br>
-                                            <small><%= (produit.valeurStockInitial || 0).toLocaleString('fr-FR') %></small>
-                                        </td>
-                                        <td class="text-end"><%= produit.entrees || 0 %></td>
-                                        <td class="text-end"><%= produit.sorties || 0 %></td>
-                                        <td class="text-end">
-                                            <%= produit.stockFinal || 0 %><br>
-                                            <small><%= (produit.valeurStockFinal || 0).toLocaleString('fr-FR') %></small>
-                                        </td>
-                                        <td class="text-end"><%= (produit.tauxRotation || 0).toFixed(2) %></td>
-                                        <td>
-                                            <span class="badge 
-                                                <%= produit.statut === 'En stock' ? 'bg-success' : 
-                                                   (produit.statut === 'En alerte' ? 'bg-warning' : 
-                                                   (produit.statut === 'En rupture' ? 'bg-danger' : 'bg-secondary')) %>">
-                                                <%= produit.statut || 'Inconnu' %>
-                                            </span>
-                                        </td>
-                                    </tr>
-                                <% }); %>
-                            <% } else { %>
-                                <tr>
-                                    <td colspan="11" class="text-center text-muted py-4">
-                                        Aucun produit trouvé pour les critères sélectionnés
-                                    </td>
-                                </tr>
-                            <% } %>
-                        </tbody>
-                    </table>
-                </div>
-                <% if (produits && produits.total > 20) { %>
-                <div class="d-flex justify-content-end mt-2">
-                    <small class="text-muted">Affichage des 20 premiers produits sur <%= produits.total %></small>
-                </div>
-                <% } %>
-            </div>
+<!-- ====== OBSERVATIONS & RECOMMANDATIONS ====== -->
+<div class="card mb-4">
+    <div class="card-header bg-dark"><h3 class="fw-bold mb-0">📋 Observations &amp; Recommandations</h3></div>
+    <div class="card-body">
+        <%
+        const obsS = [];
+        const ind = indicateurs || {};
+
+        if ((ind.produitsRupture || 0) > 0) {
+            obsS.push({ type: 'danger', msg: '🔴 ' + ind.produitsRupture + ' produit(s) en rupture de stock. Approvisionnement urgent requis.' });
+        }
+        if ((ind.produitsEnAlerte || 0) > 0) {
+            obsS.push({ type: 'warning', msg: '🟡 ' + ind.produitsEnAlerte + ' produit(s) en niveau d\'alerte. Planifiez un réapprovisionnement.' });
+        }
+        if ((ind.produitsAReapprovisionner || 0) > 0) {
+            obsS.push({ type: 'warning', msg: '🟡 ' + ind.produitsAReapprovisionner + ' produit(s) à réapprovisionner prochainement.' });
+        }
+        if ((ind.produitsEnSurStock || 0) > 0) {
+            obsS.push({ type: 'warning', msg: '🟡 ' + ind.produitsEnSurStock + ' produit(s) en surstock. Risque d\'immobilisation de capital.' });
+        }
+        if (produitsSpecifiques && (produitsSpecifiques.produitsPeremption || []).length > 0) {
+            obsS.push({ type: 'danger', msg: '🔴 ' + produitsSpecifiques.produitsPeremption.length + ' produit(s) périssables avec date de péremption proche. Écoulement prioritaire.' });
+        }
+        if ((ind.totalSorties || 0) === 0 && (ind.totalEntrees || 0) === 0) {
+            obsS.push({ type: 'secondary', msg: '⚪ Aucun mouvement de stock enregistré sur cette période.' });
+        }
+        if ((ind.produitsNormaux || 0) > 0 && (ind.produitsRupture || 0) === 0 && (ind.produitsEnAlerte || 0) === 0) {
+            obsS.push({ type: 'success', msg: '🟢 Stock globalement sain : ' + (ind.produitsNormaux || 0) + ' produit(s) à niveau normal.' });
+        }
+        if (obsS.length === 0) {
+            obsS.push({ type: 'success', msg: '🟢 Aucune anomalie détectée sur cette période.' });
+        }
+        %>
+        <% obsS.forEach(function(o) { %>
+        <div style="border-left: 4px solid <%= o.type === 'danger' ? '#dc3545' : (o.type === 'warning' ? '#ffc107' : (o.type === 'success' ? '#198754' : '#6c757d')) %>; padding: 10px 15px; margin-bottom: 10px; border-radius: 6px; background: <%= o.type === 'danger' ? '#fff5f5' : (o.type === 'warning' ? '#fffbe6' : (o.type === 'success' ? '#f0fff4' : '#f8f9fa')) %>;">
+            <%- o.msg %>
         </div>
+        <% }); %>
 
-        <!-- Liste des mouvements -->
-        <div class="card mb-4">
-            <div class="card-header bg-info text-white">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h3 class="fw-bold mb-0">Mouvements de Stock</h3>
-                    <span class="badge bg-light text-dark">
-                        Total: <%= mouvements ? mouvements.total || 0 : 0 %> mouvements
-                    </span>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>Référence</th>
-                                <th>Produit</th>
-                                <th>Magasin</th>
-                                <th>Type</th>
-                                <th class="text-end">Quantité</th>
-                                <th class="text-end">Prix Unitaire</th>
-                                <th class="text-end">Prix Total</th>
-                                <th>Date</th>
-                                <th>Description</th>
-                                <th>Responsable</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% if (mouvements && mouvements.items && mouvements.items.length > 0) { %>
-                                <% mouvements.items.slice(0, 20).forEach(function(mvt) { %>
-                                    <tr>
-                                        <td><%= mvt.ref || '-' %></td>
-                                        <td><%= mvt.produit || 'N/A' %></td>
-                                        <td><%= mvt.magasin || 'N/A' %></td>
-                                        <td>
-                                            <span class="badge <%= mvt.typeMouvement === 'Entrée' ? 'bg-success' : 'bg-danger' %>">
-                                                <%= mvt.typeMouvement || '-' %>
-                                            </span>
-                                        </td>
-                                        <td class="text-end"><%= mvt.quantite || 0 %></td>
-                                        <td class="text-end"><%= (mvt.prixUnitaire || 0).toLocaleString('fr-FR') %> F CFA</td>
-                                        <td class="text-end"><%= (mvt.prixTotal || 0).toLocaleString('fr-FR') %> F CFA</td>
-                                        <td><%= mvt.dateMouvement ? new Date(mvt.dateMouvement).toLocaleDateString('fr-FR') : '-' %></td>
-                                        <td><%= mvt.description || '-' %></td>
-                                        <td><%= mvt.acteur || '-' %></td>
-                                    </tr>
-                                <% }); %>
-                            <% } else { %>
-                                <tr>
-                                    <td colspan="10" class="text-center text-muted py-4">
-                                        Aucun mouvement trouvé pour la période
-                                    </td>
-                                </tr>
-                            <% } %>
-                        </tbody>
-                    </table>
-                </div>
-                <% if (mouvements && mouvements.total > 20) { %>
-                <div class="d-flex justify-content-end mt-2">
-                    <small class="text-muted">Affichage des 20 premiers mouvements sur <%= mouvements.total %></small>
-                </div>
-                <% } %>
-            </div>
+        <div class="mt-4" style="border: 1px dashed #ccc; border-radius: 6px; padding: 15px; min-height: 80px;">
+            <p class="text-muted" style="font-size: 12px; margin-bottom: 8px;">Commentaires du responsable :</p>
+            <div style="min-height: 60px;"></div>
         </div>
-
-        <!-- Observations et commentaires -->
-        <% if (produitsSpecifiques) { %>
-        <div class="card mb-4">
-            <div class="card-header bg-warning text-dark">
-                <h3 class="fw-bold mb-0">Observations et Recommandations</h3>
-            </div>
-            <div class="card-body">
-                <ul class="list-group">
-                    <!-- Produits en rupture -->
-                    <% if (produitsSpecifiques.produitsRupture && produitsSpecifiques.produitsRupture.length > 0) { %>
-                    <li class="list-group-item">
-                        <span style="color: #dc3545;">⚠️</span>
-                        <strong>Produits en rupture de stock :</strong>
-                        <% produitsSpecifiques.produitsRupture.slice(0, 5).forEach(function(p, index) { %>
-                            <%= p.designation || 'Produit' %><%= index < Math.min(produitsSpecifiques.produitsRupture.length, 5) - 1 ? ', ' : '' %>
-                        <% }); %>
-                        <% if (produitsSpecifiques.produitsRupture.length > 5) { %>
-                            et <%= produitsSpecifiques.produitsRupture.length - 5 %> autre(s)
-                        <% } %>
-                        . Pensez à les recommander rapidement.
-                    </li>
-                    <% } %>
-
-                    <!-- Produits en alerte -->
-                    <% if (produitsSpecifiques.produitsAlerte && produitsSpecifiques.produitsAlerte.length > 0) { %>
-                    <li class="list-group-item">
-                        <span style="color: #ffc107;">⚠️</span>
-                        <strong>Produits sous seuil d'alerte :</strong>
-                        <% produitsSpecifiques.produitsAlerte.slice(0, 5).forEach(function(p, index) { %>
-                            <%= p.designation || 'Produit' %><%= index < Math.min(produitsSpecifiques.produitsAlerte.length, 5) - 1 ? ', ' : '' %>
-                        <% }); %>
-                        <% if (produitsSpecifiques.produitsAlerte.length > 5) { %>
-                            et <%= produitsSpecifiques.produitsAlerte.length - 5 %> autre(s)
-                        <% } %>
-                        . Préparez un réapprovisionnement.
-                    </li>
-                    <% } %>
-
-                    <!-- Produits récemment ajoutés -->
-                    <% if (produitsSpecifiques.produitsRecents && produitsSpecifiques.produitsRecents.length > 0) { %>
-                    <li class="list-group-item">
-                        <span style="color: #198754;">⭐</span>
-                        <strong>Nouveaux produits :</strong>
-                        <% produitsSpecifiques.produitsRecents.slice(0, 5).forEach(function(p, index) { %>
-                            <%= p.designation || 'Produit' %><%= index < Math.min(produitsSpecifiques.produitsRecents.length, 5) - 1 ? ', ' : '' %>
-                        <% }); %>
-                        <% if (produitsSpecifiques.produitsRecents.length > 5) { %>
-                            et <%= produitsSpecifiques.produitsRecents.length - 5 %> autre(s)
-                        <% } %>
-                        . Surveillez leur performance.
-                    </li>
-                    <% } %>
-
-                    <!-- Produits à rotation lente -->
-                    <% if (produitsSpecifiques.produitsRotationLente && produitsSpecifiques.produitsRotationLente.length > 0) { %>
-                    <li class="list-group-item">
-                        <span style="color: #6c757d;">🐢</span>
-                        <strong>Produits à rotation lente :</strong>
-                        <% produitsSpecifiques.produitsRotationLente.slice(0, 5).forEach(function(p, index) { %>
-                            <%= p.designation || 'Produit' %><%= index < Math.min(produitsSpecifiques.produitsRotationLente.length, 5) - 1 ? ', ' : '' %>
-                        <% }); %>
-                        <% if (produitsSpecifiques.produitsRotationLente.length > 5) { %>
-                            et <%= produitsSpecifiques.produitsRotationLente.length - 5 %> autre(s)
-                        <% } %>
-                        . Envisagez des actions marketing ou un ajustement des commandes.
-                    </li>
-                    <% } %>
-
-                    <!-- Produits à réapprovisionner -->
-                    <% if (produitsSpecifiques.produitsAReapprovisionner && produitsSpecifiques.produitsAReapprovisionner.length > 0) { %>
-                    <li class="list-group-item">
-                        <span style="color: #ffc107;">📦</span>
-                        <strong>Produits à réapprovisionner :</strong>
-                        <% produitsSpecifiques.produitsAReapprovisionner.slice(0, 5).forEach(function(p, index) { %>
-                            <%= p.designation || 'Produit' %><%= index < Math.min(produitsSpecifiques.produitsAReapprovisionner.length, 5) - 1 ? ', ' : '' %>
-                        <% }); %>
-                        <% if (produitsSpecifiques.produitsAReapprovisionner.length > 5) { %>
-                            et <%= produitsSpecifiques.produitsAReapprovisionner.length - 5 %> autre(s)
-                        <% } %>
-                        .
-                    </li>
-                    <% } %>
-
-                    <!-- Produits en surstock -->
-                    <% if (produitsSpecifiques.produitsSurStock && produitsSpecifiques.produitsSurStock.length > 0) { %>
-                    <li class="list-group-item">
-                        <span style="color: #212529;">📤</span>
-                        <strong>Produits en surstock :</strong>
-                        <% produitsSpecifiques.produitsSurStock.slice(0, 5).forEach(function(p, index) { %>
-                            <%= p.designation || 'Produit' %><%= index < Math.min(produitsSpecifiques.produitsSurStock.length, 5) - 1 ? ', ' : '' %>
-                        <% }); %>
-                        <% if (produitsSpecifiques.produitsSurStock.length > 5) { %>
-                            et <%= produitsSpecifiques.produitsSurStock.length - 5 %> autre(s)
-                        <% } %>
-                        . Envisagez des promotions ou une réduction des commandes.
-                    </li>
-                    <% } %>
-
-                    <!-- Produits proches de péremption -->
-                    <% if (produitsSpecifiques.produitsPeremption && produitsSpecifiques.produitsPeremption.length > 0) { %>
-                    <li class="list-group-item">
-                        <span style="color: #0d6efd;">📅</span>
-                        <strong>Produits proches de péremption :</strong>
-                        <% produitsSpecifiques.produitsPeremption.slice(0, 5).forEach(function(p, index) { %>
-                            <%= p.designation || 'Produit' %><%= index < Math.min(produitsSpecifiques.produitsPeremption.length, 5) - 1 ? ', ' : '' %>
-                        <% }); %>
-                        <% if (produitsSpecifiques.produitsPeremption.length > 5) { %>
-                            et <%= produitsSpecifiques.produitsPeremption.length - 5 %> autre(s)
-                        <% } %>
-                        . Écoulez rapidement ces stocks.
-                    </li>
-                    <% } %>
-
-                    <!-- Aucune observation -->
-                    <!-- <% if (
-                        (!produitsSpecifiques.produitsRupture || produitsSpecifiques.produitsRupture.length === 0) &&
-                        (!produitsSpecifiques.produitsAlerte || produitsSpecifiques.produitsAlerte.length === 0) &&
-                        (!produitsSpecifiques.produitsAReapprovisionner || produitsSpecifiques.produitsAReapprovisionner.length === 0) &&
-                        (!produitsSpecifiques.produitsSurStock || produitsSpecifiques.produitsSurStock.length === 0) &&
-                        (!produitsSpecifiques.produitsPeremption || produitsSpecifiques.produitsPeremption.length === 0)
-                    ) { %>
-                    <li class="list-group-item">
-                        <span style="color: #198754;">✓</span>
-                        Aucune observation particulière. La gestion des stocks est optimale.
-                    </li>
-                    <% } %> -->
-                    <!-- Aucune observation -->
-                    <% if (
-                        (!produitsSpecifiques.produitsRupture || produitsSpecifiques.produitsRupture.length === 0) &&
-                        (!produitsSpecifiques.produitsAlerte || produitsSpecifiques.produitsAlerte.length === 0) &&
-                        (!produitsSpecifiques.produitsAReapprovisionner || produitsSpecifiques.produitsAReapprovisionner.length === 0) &&
-                        (!produitsSpecifiques.produitsSurStock || produitsSpecifiques.produitsSurStock.length === 0) &&
-                        (!produitsSpecifiques.produitsPeremption || produitsSpecifiques.produitsPeremption.length === 0) &&
-                        (!produitsSpecifiques.produitsRecents || produitsSpecifiques.produitsRecents.length === 0) &&
-                        (!produitsSpecifiques.produitsRotationLente || produitsSpecifiques.produitsRotationLente.length === 0)
-                    ) { %>
-                    <li class="list-group-item">
-                        <span style="color: #198754;">✓</span>
-                        Aucune observation particulière. La gestion des stocks est optimale.
-                    </li>
-                    <% } %>
-                </ul>
-            </div>
-        </div>
-        <% } %>
-
-        <!-- Pied de page -->
-        <div class="rapport-footer">
+        <div class="rapport-footer mt-4">
             <div>
-                <p><strong>Préparé par :</strong> Service Gestion des Stocks</p>
-                <p><strong>Date de génération :</strong> <%= new Date().toLocaleDateString('fr-FR') %> à <%= new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) %></p>
+                <p class="text-muted" style="font-size: 12px;">Généré le <%= new Date().toLocaleString('fr-FR') %></p>
+                <p class="text-muted" style="font-size: 12px;">Par : <%= utilisateur ? utilisateur.nom : 'Système' %></p>
             </div>
-            <div class="signature">
-                <p class="mb-4">_________________________</p>
-                <p><strong>Signature et cachet</strong></p>
-            </div>
-        </div>
-
-        <div class="confidential">
-            <small>
-                Rapport généré automatiquement | Structure: <%= structure ? structure.code_structure : 'N/A' %> |
-                Ce document est confidentiel et réservé à un usage interne
-            </small>
+            <div class="signature"><p>Visa du responsable</p><div class="signature-line"></div></div>
         </div>
     </div>
+</div>
 
-    <!-- Scripts pour les graphiques -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            try {
-                createAllCharts();
-            } catch (error) {
-                console.error('Erreur lors de la création des graphiques:', error);
+</div><!-- /container -->
+
+<script>
+(function() {
+    // Graphique répartition par statut
+    const statutCtx = document.getElementById('statutChart');
+    if (statutCtx) {
+        const ind = <%- JSON.stringify(indicateurs || {}) %>;
+        new Chart(statutCtx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Normal', 'En alerte', 'Rupture', 'Surstock', 'À réappro.'],
+                datasets: [{
+                    data: [
+                        ind.produitsNormaux || 0,
+                        ind.produitsEnAlerte || 0,
+                        ind.produitsRupture || 0,
+                        ind.produitsEnSurStock || 0,
+                        ind.produitsAReapprovisionner || 0
+                    ],
+                    backgroundColor: ['#198754','#ffc107','#dc3545','#0dcaf0','#fd7e14'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'right' } }
             }
         });
+    }
 
-        function createAllCharts() {
-            // Données passées par EJS
-            <% if (locals.graphiques) { %>
-                const evolutionData = <%- JSON.stringify(graphiques.evolution || []) %>;
-                const repartitionData = <%- JSON.stringify(graphiques.repartitionCategories || []) %>;
-                const topProduitsData = <%- JSON.stringify(graphiques.topProduits || []) %>;
-
-                // Graphique d'évolution
-                const evolutionCanvas = document.getElementById('evolutionChart');
-                if (evolutionCanvas && evolutionData.length > 0) {
-                    createEvolutionChart(evolutionCanvas, evolutionData);
-                }
-
-                // Graphique de répartition
-                const repartitionCanvas = document.getElementById('repartitionChart');
-                if (repartitionCanvas && repartitionData.length > 0) {
-                    createRepartitionChart(repartitionCanvas, repartitionData);
-                }
-
-                // Graphique des top produits
-                const topProduitsCanvas = document.getElementById('topProduitsChart');
-                if (topProduitsCanvas && topProduitsData.length > 0) {
-                    createTopProduitsChart(topProduitsCanvas, topProduitsData);
-                }
-            <% } %>
-        }
-
-        function createEvolutionChart(canvas, data) {
-            const ctx = canvas.getContext('2d');
-            
-            const labels = data.map(d => {
-                const date = new Date(d.date);
-                return `${date.getDate()}/${date.getMonth() + 1}`;
-            });
-
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Stock total',
-                            data: data.map(d => d.solde || 0),
-                            borderColor: 'rgb(75, 192, 192)',
-                            backgroundColor: 'rgba(75, 192, 192, 0.1)',
-                            tension: 0.3,
-                            fill: true,
-                        },
-                        {
-                            label: 'Entrées',
-                            data: data.map(d => d.entrees || 0),
-                            borderColor: 'rgb(54, 162, 235)',
-                            backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                            tension: 0.3,
-                            fill: true,
-                        },
-                        {
-                            label: 'Sorties',
-                            data: data.map(d => d.sorties || 0),
-                            borderColor: 'rgb(255, 99, 132)',
-                            backgroundColor: 'rgba(255, 99, 132, 0.1)',
-                            tension: 0.3,
-                            fill: true,
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: true, position: 'top' },
-                        tooltip: {
-                            callbacks: {
-                                label: (context) => `${context.dataset.label}: ${context.raw}`
-                            }
-                        }
-                    },
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
-                }
-            });
-        }
-
-        function createRepartitionChart(canvas, data) {
-            const ctx = canvas.getContext('2d');
-            
-            const couleurs = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'];
-
-            new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: data.map(r => r.categorie || 'Non catégorisé'),
-                    datasets: [{
-                        data: data.map(r => r.quantite || 0),
-                        backgroundColor: couleurs.slice(0, data.length),
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: true, position: 'right' },
-                        tooltip: {
-                            callbacks: {
-                                label: (context) => {
-                                    const value = context.raw;
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percent = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
-                                    return `${context.label}: ${value} (${percent}%)`;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        function createTopProduitsChart(canvas, data) {
-            const ctx = canvas.getContext('2d');
-            
-            new Chart(ctx, {
+    // Graphique top produits
+    const topCtx = document.getElementById('topProduitsChart');
+    if (topCtx) {
+        const produits = <%- JSON.stringify((produits && produits.items ? produits.items.slice(0,10) : [])) %>;
+        if (produits.length > 0) {
+            new Chart(topCtx.getContext('2d'), {
                 type: 'bar',
                 data: {
-                    labels: data.map(p => 
-                        p.designation && p.designation.length > 15 ? 
-                        p.designation.substring(0, 15) + '...' : 
-                        (p.designation || 'Produit')
-                    ),
+                    labels: produits.map(p => (p.produit?.designation || 'Inconnu').substring(0, 20)),
                     datasets: [{
-                        label: 'Quantité vendue',
-                        data: data.map(p => p.quantiteVendue || 0),
-                        backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
+                        label: 'Stock final',
+                        data: produits.map(p => p.stockFinal || 0),
+                        backgroundColor: produits.map(p =>
+                            p.statut === 'En rupture' ? 'rgba(220,53,69,0.7)' :
+                            p.statut === 'En alerte'  ? 'rgba(255,193,7,0.7)'  : 'rgba(25,135,84,0.7)'
+                        ),
                         borderWidth: 1
                     }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: true, position: 'top' },
-                        tooltip: {
-                            callbacks: {
-                                label: (context) => `Quantité: ${context.raw}`
-                            }
-                        }
-                    },
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
+                    responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+                    plugins: { legend: { display: false } },
+                    scales: { x: { beginAtZero: true } }
                 }
             });
         }
-    </script>
+    }
+})();
+</script>
 </body>
 </html>

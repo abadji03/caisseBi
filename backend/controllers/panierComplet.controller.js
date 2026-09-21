@@ -138,8 +138,11 @@ logger.log('panierComplet.controller', 'Données reçues pour création panier c
 
       // Validation
       const champsManquants = [];
+      // Les paniers de type "service" n'ont pas de lignes d'articles produits :
+      // un tableau d'articles vide est donc valide pour eux.
+      const panierSansArticles = panier?.typePanier === 'service';
       if (!panier) champsManquants.push('panier');
-      if (!articles) champsManquants.push('articles');
+      if ((!Array.isArray(articles) || articles.length === 0) && !panierSansArticles) champsManquants.push('articles');
       if (!code_structure) champsManquants.push('code_structure');
       if (!agentId) champsManquants.push('agentId');
       if (!typeEntite) champsManquants.push('typeEntite');

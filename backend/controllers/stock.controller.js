@@ -4,6 +4,7 @@ const { verifierAppartenanceStructure } = require('../services/verification.serv
 const Stock = db.Stock;
 const { safeNumber } = require('./bonComplet/statutManager')
 const HistoriqueService = require('../services/historique.service');
+const NotificationService = require('../services/notification.service');
 
 //const Produit = db.Produit;  // (si tu as besoin d'inclure les produits dans les requêtes)
 
@@ -234,13 +235,17 @@ exports.getStocksByStructureBis = async (req, res) => {
     // Clause WHERE pour les stocks
     let stockWhere = { code_structure };
 
-    // Filtrer par magasin selon le rôle
-    if (!isAdminStructure && (isGerant || isCaissier) && authUser.magasinId) {
-      stockWhere.magasinId = authUser.magasinId;
-    } /* else if (magasinId) {
-      stockWhere.magasinId = magasinId;
+    // Filtrer par magasin selon le rôle :
+    //  - Admin / Admin secondaire : tous les magasins de leur structure ;
+    //  - Gérant / Caissier / Employé : UNIQUEMENT leur magasin. Un utilisateur
+    //    restreint sans magasin associé n'a accès à aucun stock.
+    if (!isAdminStructure) {
+      if (authUser.magasinId) {
+        stockWhere.magasinId = authUser.magasinId;
+      } else {
+        return res.status(403).json({ message: "Aucun magasin associé à votre compte : accès au stock refusé" });
+      }
     }
- */
     // Récupérer tous les stocks avec leurs produits
     const stocks = await Stock.findAll({
       where: stockWhere,
@@ -368,7 +373,8 @@ exports.getStocksByStructureBis = async (req, res) => {
       }
     });
 
-  } catch (error) {logger.error('stock.controller', 'Erreur dashboard stock:', error);
+  } catch (error) {
+logger.error('stock.controller', 'Erreur dashboard stock:', error);
     res.status(500).json({ message: 'Erreur', error: error.message });
   }
 };
@@ -499,6 +505,21 @@ exports.adjustQuantiteTotale = async (req, res) => {
       }
     );
     res.json({ message: 'Quantité totale ajustée avec succès', stock });
+
+    // 🔔 NOTIFICATION : alerte si le nouveau niveau est critique
+    try {
+      const produit = stock.Produit || await db.Produit.findByPk(stock.produitId, { attributes: ['id', 'designation'] });
+      const magasin = stock.Magasin || await db.Magasin.findByPk(stock.magasinId, { attributes: ['id', 'nom'] });
+      if (nouvelleQuantite <= 0) {
+        await NotificationService.notifierRuptureStock(authUser.code_structure, produit, magasin);
+      } else if (nouvelleQuantite <= parseFloat(stock.seuilAlerte || 5)) {
+        await NotificationService.notifierAlerteStock(authUser.code_structure, produit, nouvelleQuantite, stock.seuilAlerte || 5, magasin);
+      } else if (nouvelleQuantite <= parseFloat(stock.seuilReapprovisionnement || 10)) {
+        await NotificationService.notifierReappro(authUser.code_structure, produit, nouvelleQuantite, stock.seuilReapprovisionnement || 10, magasin);
+      }
+    } catch (notifErr) {
+      logger.warn('stock.controller', '⚠️ Notification stock non envoyée:', notifErr.message);
+    }
   } catch (error) {
     res.status(500).json({ message: 'Erreur ajustement quantité totale', error });
   }

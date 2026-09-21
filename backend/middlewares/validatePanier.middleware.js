@@ -20,7 +20,10 @@ const validatePanier = (req, res, next) => {
   if (!typeEntite || !['client', 'fournisseur', 'autre'].includes(typeEntite)) {
     errors.push('Le champ "typeEntite" est requis (valeurs acceptées : client, fournisseur, autre)');
   }
-  if (!Array.isArray(articles) || articles.length === 0) {
+  // Un panier de type "service" n'a pas de lignes d'articles produits :
+  // un tableau d'articles vide est valide pour ce type.
+  const panierSansArticles = panier && typeof panier === 'object' && panier.typePanier === 'service';
+  if (!Array.isArray(articles) || (articles.length === 0 && !panierSansArticles)) {
     errors.push('Le champ "articles" est requis et doit être un tableau non vide');
   }
 

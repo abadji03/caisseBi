@@ -4,6 +4,7 @@ const FonctionsUtilitaires  = require('./fonctionsUtilitaires');
 const { Op, fn, col } = db.Sequelize;
 //const { safeNumber } = require('../bonComplet/statutManager');
 const path = require('path');
+const { findChromePath } = require('../../utils/chromeFinder');
 const fs = require('fs').promises;
 const ejs = require('ejs');
 
@@ -832,7 +833,8 @@ const calculerStatsProduits = async (filters) => {
 
         // Vérification de cohérence : quantiteInitiale + entrees - sorties devrait ≈ quantiteFinale
         const quantiteCalculee = quantiteInitiale + entrees - sorties;
-        if (Math.abs(quantiteCalculee - quantiteFinale) > 0.01) {logger.warn('rapportStockUtilitaire', `Incohérence pour produit ${produitId}:`, {
+        if (Math.abs(quantiteCalculee - quantiteFinale) > 0.01) {
+logger.warn('rapportStockUtilitaire', `Incohérence pour produit ${produitId}:`, {
                 quantiteInitiale,
                 entrees,
                 sorties,
@@ -889,18 +891,26 @@ const calculerStatsProduits = async (filters) => {
         });
     }
 
+    const total = statsProduits.length;
+
+    // Pagination appliquée dans l'utilitaire (évite le chargement en RAM total côté contrôleur)
+    const pageNum = parseInt(filters.page) || 1;
+    const limitNum = parseInt(filters.limit) || total;
+    const offset = (pageNum - 1) * limitNum;
+    const statsProduitsPagines = limitNum < total
+        ? statsProduits.slice(offset, offset + limitNum)
+        : statsProduits;
+
     return {
-        statsProduits,
-        total: statsProduits.length,
+        statsProduits: statsProduitsPagines,
+        total,
         periode: {
             dateDebut,
             dateFin
         }
     };
 };
-/**
- * Calculer les mouvements de la période
- */
+
 const calculerMouvementsPeriode = async (filters) => {
     const {
         code_structure,
@@ -1294,27 +1304,47 @@ const renderEjsTemplate = async (templateName, data) =>{
     
     // Chemin correct vers le dossier views à la racine du backend
     const viewsPath = path.join(backendRoot, 'views');
-    const templatePath = path.join(viewsPath, `${templateName}.ejs`);logger.log('rapportStockUtilitaire', '📁 Backend root:', backendRoot);logger.log('rapportStockUtilitaire', '📁 Views path:', viewsPath);logger.log('rapportStockUtilitaire', '📁 Template path:', templatePath);
+    const templatePath = path.join(viewsPath, `${templateName}.ejs`);
+
+    // Injecter Chart.js en bundle local (évite la dépendance CDN dans Puppeteer)
+    let chartjsBundle = '';
+    try {
+        const chartjsPath = path.join(backendRoot, 'public', 'js', 'chart.umd.min.js');
+        chartjsBundle = await fs.readFile(chartjsPath, 'utf-8');
+    } catch {
+        logger.log('rapportStockUtilitaire', '⚠️ chart.umd.min.js non trouvé — fallback CDN');
+    }
+
+    const enrichedData = { ...data, chartjsBundle };
+logger.log('rapportStockUtilitaire', '📁 Backend root:', backendRoot);
+logger.log('rapportStockUtilitaire', '📁 Views path:', viewsPath);
+logger.log('rapportStockUtilitaire', '📁 Template path:', templatePath);
     
     // Vérifier que le dossier views existe
     try {
-        await fs.access(viewsPath);logger.log('rapportStockUtilitaire', '✅ Dossier views trouvé');
-    } catch (error) {logger.log('rapportStockUtilitaire', error);
+        await fs.access(viewsPath);
+logger.log('rapportStockUtilitaire', '✅ Dossier views trouvé');
+    } catch (error) {
+logger.log('rapportStockUtilitaire', error);
         throw new Error(`Le dossier views n'existe pas: ${viewsPath}`);
     }
     
     // Vérifier que le template existe
     try {
-        await fs.access(templatePath);logger.log('rapportStockUtilitaire', '✅ Template trouvé');
-    } catch (error) {logger.log('rapportStockUtilitaire', error)
+        await fs.access(templatePath);
+logger.log('rapportStockUtilitaire', '✅ Template trouvé');
+    } catch (error) {
+logger.log('rapportStockUtilitaire', error)
         throw new Error(`Template ${templateName}.ejs non trouvé: ${templatePath}`);
     }
     
     return new Promise((resolve, reject) => {
-        ejs.renderFile(templatePath, data, { async: false }, (err, str) => {
-            if (err) {logger.error('rapportStockUtilitaire', '❌ Erreur rendu EJS:', err);
+        ejs.renderFile(templatePath, enrichedData, { async: false }, (err, str) => {
+            if (err) {
+logger.error('rapportStockUtilitaire', '❌ Erreur rendu EJS:', err);
                 reject(err);
-            } else {logger.log('rapportStockUtilitaire', '✅ Rendu EJS réussi');
+            } else {
+logger.log('rapportStockUtilitaire', '✅ Rendu EJS réussi');
                 resolve(str);
             }
         });
@@ -1327,28 +1357,8 @@ const generatePDF = async (html)=> {
     let browser = null;
     
     try {
-        // Chemin vers Chrome (à adapter selon votre système)
-        const chromePaths = [
-            //'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-            'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-            //'/usr/bin/google-chrome',
-            //'/usr/bin/chromium-browser',
-            //'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
-        ];
-
-        let executablePath = null;
-        for (const path of chromePaths) {
-            try {
-                await require('fs').promises.access(path);
-                executablePath = path;
-                break;
-            } catch (e) {logger.log('rapportStockUtilitaire', 'Erreur',e)
-            }
-        }
-
-        if (!executablePath) {
-            throw new Error('Chrome/Chromium non trouvé');
-        }
+        const executablePath = await findChromePath();
+        logger.log('rapportStockUtilitaire', '🌐 Chrome trouvé:', executablePath);
 
         browser = await puppeteer.launch({
             executablePath,

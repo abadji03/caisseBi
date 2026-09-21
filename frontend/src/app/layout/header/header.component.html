@@ -1,53 +1,78 @@
 <header class="header d-flex justify-content-between align-items-center">
-  <!-- <button class="menu-toggle" (click)="toggleSidebarMenu()">
-          <i class="bi bi-list"></i>
-  </button> -->
+
+  <!-- Titre de la page courante -->
   <div class="header-title">
     <small class="text-muted">{{ titre }}/</small>
     <span class="h4 ms-5 text-uppercase">{{ sousTitre }}</span>
   </div>
-  <div class="btn-group">
-    <div class="mt-0 py-3">
-      <i class="bi bi-bell position-relative icon-notification">
-        <span class="badge bg-danger position-absolute top-0 start-100 translate-middle">3</span>
-      </i>
-    </div>
-    <button class="btn dropdown-toggle d-flex align-items-center" id="idMenu" data-bs-toggle="dropdown">
 
-        <!-- Cas image -->
+  <!-- Zone droite : notifications + profil -->
+  <div class="header-actions d-flex align-items-center gap-2">
+
+    <!-- ── CLOCHE DE NOTIFICATION ────────────────────────────────────────── -->
+    <div class="notif-host">
+      <!-- Composant dropdown autonome -->
+      <app-notification-dropdown></app-notification-dropdown>
+
+      <!-- Badge sur la cloche (géré directement dans le composant dropdown) -->
+      <span
+        *ngIf="(count$ | async) as nb"
+        class="notif-badge"
+        [class.notif-badge--danger]="nb > 0"
+        [attr.aria-label]="nb + ' notification(s) non lue(s)'"
+      >
+        {{ nb > 99 ? '99+' : nb }}
+      </span>
+    </div>
+
+    <!-- ── PROFIL UTILISATEUR ─────────────────────────────────────────────── -->
+    <div class="dropdown">
+      <button
+        class="btn profile-btn dropdown-toggle d-flex align-items-center gap-2"
+        id="idMenu"
+        data-bs-toggle="dropdown"
+        aria-expanded="false"
+      >
+        <!-- Avatar photo -->
         <ng-container *ngIf="photoProfilUrl; else defaultAvatar">
           <img
             [src]="photoProfilUrl"
-            class="avatar img-fluid rounded-circle me-1"
+            class="avatar img-fluid rounded-circle"
             alt="Photo profil"
             width="30"
             height="30"
           />
         </ng-container>
 
-        <!-- Cas lettre -->
+        <!-- Avatar initiale -->
         <ng-template #defaultAvatar>
-          <div class="avatar-letter me-1">
-            {{ userName.charAt(0).toUpperCase() }}
-          </div>
+          <div class="avatar-letter">{{ userName.charAt(0).toUpperCase() }}</div>
         </ng-template>
 
-        <span class="text-dark ms-1">{{ userName }}</span>
+        <span class="user-name d-none d-md-inline">{{ userName }}</span>
       </button>
 
-    <ul class="dropdown-menu">
-      <!-- <li>
-        <button class="dropdown-item" routerLink="/user-login">
-          <i class="bi bi-person"></i> Profil
-        </button>
-      </li> -->
-      <!-- <li>
-        <button class="dropdown-item" routerLink="/user-account">
-          <i class="bi bi-gear"></i> Paramètres
-        </button>
-      </li> -->
-      <li><hr class="dropdown-divider" /></li>
-      <li><button class="dropdown-item" (click)="onLogout()">Déconnexion</button></li>
-    </ul>
+      <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+        <!-- Profil -->
+        <!-- <li>
+          <button class="dropdown-item" (click)="onProfile()">
+            <i class="bi bi-person me-2"></i>Mon profil
+          </button>
+        </li> -->
+        <!-- Paramètres -->
+        <!-- <li>
+          <button class="dropdown-item" (click)="onSettings()">
+            <i class="bi bi-gear me-2"></i>Paramètres
+          </button>
+        </li> -->
+        <li><hr class="dropdown-divider" /></li>
+        <li>
+          <button class="dropdown-item text-danger" (click)="onLogout()">
+            <i class="bi bi-box-arrow-right me-2"></i>Déconnexion
+          </button>
+        </li>
+      </ul>
+    </div>
   </div>
+
 </header>

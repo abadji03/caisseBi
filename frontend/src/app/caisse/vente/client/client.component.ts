@@ -772,16 +772,142 @@ export class ClientComponent implements OnInit, OnDestroy {
     this.toastr.warning(`La facturation d'un bon client n'est pas encore disponible dans cet écran`);
   }
   onImprimerBon(bon: Bon): void {
-    this.toastr.warning(`L'impression d'un bon n'est pas encore disponible dans cet écran`);
+    if (!bon) {
+      this.toastr.error('Aucun bon sélectionné');
+      return;
+    }
+    try {
+      const articlesFormates = (bon.Panier?.articles || []).map((article: any) => {
+        if (!article) return null;
+        const pu = parseFloat(article.prixUnitaire || 0);
+        const qty = parseFloat(article.quantite || 0);
+        return {
+          ...article,
+          produit: article.produit || article.Produit,
+          prixUnitaire: pu,
+          quantite: qty,
+          totalTTC: parseFloat(article.totalTTC || 0) || pu * qty,
+          montantRemise: parseFloat(article.montantRemise || 0),
+          montantTVA: parseFloat(article.montantTVA || 0),
+          totalHT: parseFloat(article.totalHT || 0)
+        };
+      }).filter((a: any) => a !== null);
+
+      const bonData = {
+        numero: bon.numero,
+        date: bon.dateBon,
+        client: this.selectedClient ? {
+          nomComplet: this.selectedClient.nomComplet,
+          adresse: this.selectedClient.adresse,
+          telephone: this.selectedClient.telephone,
+          email: this.selectedClient.email
+        } : { nomComplet: 'Client non spécifié', adresse: '', telephone: '', email: '' },
+        articles: articlesFormates,
+        totaux: {
+          sousTotal: parseFloat(bon.Panier?.totalHT as any || 0),
+          tauxTVA: parseFloat((bon.Panier as any)?.tauxTVA || 0),
+          montantTVA: parseFloat(bon.Panier?.tva as any || 0),
+          totalTTC: parseFloat(bon.Panier?.totalTTC as any || 0),
+          remise: parseFloat(bon.remise as any || 0),
+          avance: parseFloat(bon.avance as any || 0),
+          netAPayer: parseFloat(bon.resteAPayer as any || 0)
+        },
+        titre: `Bon de ${bon.type || 'Vente'} — Client`,
+        typeBon: bon.type,
+        statut: bon.statutBon,
+        commentaire: bon.description
+      };
+
+      this.pdfGenerator.generateBonFournisseur(bonData);
+      this.toastr.success('Ticket généré avec succès');
+    } catch (error) {
+      console.error('Erreur impression bon client:', error);
+      this.toastr.error('Erreur lors de la génération du bon');
+    }
   }
+
   onGenererTicketPaiementBon(bon: Bon): void {
-    this.toastr.warning(`La génération du ticket de paiement n'est pas encore disponible dans cet écran`);
+    if (!bon) {
+      this.toastr.error('Aucun bon sélectionné');
+      return;
+    }
+    const montantPaiement = parseFloat(bon.avance as any || bon.Panier?.totalTTC as any || 0);
+    const soldeActuel = this.getSoldeActuel();
+    const paiementData = {
+      client: this.selectedClient ? { nomComplet: this.selectedClient.nomComplet } : null,
+      date: bon.dateBon,
+      numeroReference: bon.numero,
+      moyenPaiement: (bon.Panier as any)?.Paiements?.[0]?.methodePaiement || 'Non spécifié',
+      montantVerse: montantPaiement,
+      soldePrecedent: soldeActuel + montantPaiement,
+      nouveauSolde: soldeActuel,
+      description: `Règlement bon ${bon.numero}`,
+      type: 'Paiement bon'
+    };
+    this.pdfGenerator.generateTicketVersementClient(paiementData);
+    this.toastr.success('Ticket de paiement généré');
   }
+
   onGenererTicketVersement(operation: Operation): void {
-    this.toastr.warning(`La génération du ticket de versement n'est pas encore disponible dans cet écran`);
+    if (!operation || operation.type !== 'VERSEMENT') {
+      this.toastr.warning('Cette opération ne correspond pas à un versement');
+      return;
+    }
+    const montantVerse = parseFloat((operation as any).montantPaye || 0);
+    const soldeActuel = this.getSoldeActuel();
+    const versementData = {
+      client: this.selectedClient ? { nomComplet: this.selectedClient.nomComplet } : null,
+      date: (operation as any).dateOperation,
+      numeroReference: (operation as any).numeroVersement,
+      moyenPaiement: (operation as any).moyenPaiement || 'Non spécifié',
+      montantVerse: montantVerse,
+      soldePrecedent: soldeActuel + montantVerse,
+      nouveauSolde: soldeActuel,
+      description: (operation as any).commentaire,
+      type: 'Versement',
+      agent: (operation as any).user?.nom
+    };
+    this.pdfGenerator.generateTicketVersementClient(versementData);
+    this.toastr.success('Ticket de versement généré');
   }
+
   onImprimerReleve(): void {
-    this.toastr.warning(`L'impression du relevé n'est pas encore disponible dans cet écran`);
+    if (!this.selectedClient) {
+      this.toastr.warning('Veuillez sélectionner un client');
+      return;
+    }
+    try {
+      const soldeActuel = this.getSoldeActuel();
+      const magasinNom = this.getNomMagasinSelectionne();
+      const releveData = {
+        client: {
+          nomComplet: this.selectedClient.nomComplet,
+          adresse: this.selectedClient.adresse || '',
+          telephone: this.selectedClient.telephone || '',
+          email: this.selectedClient.email || '',
+          plafond: (this.selectedClient as any).plafond || 0
+        },
+        periode: `Du ${this.startDate || '...'} au ${this.endDate || '...'}`,
+        magasin: magasinNom,
+        solde: soldeActuel,
+        operations: this.operations || [],
+        synthese: {
+          totalAchats: this.operations
+            .filter((o: any) => o.type === 'BON')
+            .reduce((sum: number, o: any) => sum + parseFloat(o.bon?.Panier?.totalTTC || 0), 0),
+          totalVersements: this.operations
+            .filter((o: any) => o.type === 'VERSEMENT')
+            .reduce((sum: number, o: any) => sum + parseFloat(o.montantPaye || 0), 0),
+          solde: soldeActuel,
+          avoir: 0
+        }
+      };
+      (this.pdfGenerator as any).generateReleveClient(releveData);
+      this.toastr.success('Relevé client généré');
+    } catch (error) {
+      console.error('Erreur impression relevé client:', error);
+      this.toastr.error('Erreur lors de la génération du relevé');
+    }
   }
 
   /** Change le statut d'un bon client via l'API et rafraîchit la liste. */

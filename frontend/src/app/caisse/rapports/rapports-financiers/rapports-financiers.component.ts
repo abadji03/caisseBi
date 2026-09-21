@@ -18,7 +18,7 @@ import { Magasin } from '../../../modeles/magasin.model';
 import { MaagasinsService } from '../../../services/maagasins.service';
 import { PdfMakerServiceService } from '../../../services/pdf-maker-service.service';
 import { StructureService } from '../../../services/structure.service';
-import { finalize, Subject, Subscription, takeUntil } from 'rxjs';
+import { finalize, forkJoin, Subject, Subscription, takeUntil } from 'rxjs';
 import { AuthService } from '../../../services/auth.service';
 import { ToastrService } from 'ngx-toastr';
 
@@ -161,43 +161,47 @@ export class RapportsFinanciersComponent implements OnInit, OnDestroy {
       evolution: this.rapportsService.getDonneesEvolutives({...filters, groupBy: 'jour'})
     };
 
-    Promise.all([
-      requests.indicateurs.toPromise(),
-      requests.repartitionDepenses.toPromise(),
-      requests.repartitionRecettes.toPromise(),
-      requests.modesPaiement.toPromise(),
-      requests.depenses.toPromise(),
-      requests.recettes.toPromise(),
-      requests.evolution.toPromise()
-    ]).then(([
-      indicateurs,
-      repartitionDepenses,
-      repartitionRecettes,
-      modesPaiement,
-      depenses,
-      recettes,
-      evolution
-    ]) => {
-      this.indicateursFinanciers = indicateurs || null;
-      this.repartitionDepenses = repartitionDepenses || null;
-      this.repartitionRecettes = repartitionRecettes || null;
-      this.modesPaiementStats = modesPaiement || null;
-      this.depensesDetaillees = depenses || null;
-      this.recettesDetaillees = recettes || null;
-      this.donneesEvolutives = evolution || null;
-      
-      this.isLoading = false;
-      this.cdr.detectChanges();
-      
-      setTimeout(() => {
-        this.mettreAJourGraphiques();
-      }, 100);
-      
-      this.chargerDonneesComparatives();
-      
-    }).catch(error => {
-      console.error('Erreur lors du chargement des données:', error);
-      this.isLoading = false;
+    forkJoin([
+      requests.indicateurs,
+      requests.repartitionDepenses,
+      requests.repartitionRecettes,
+      requests.modesPaiement,
+      requests.depenses,
+      requests.recettes,
+      requests.evolution
+    ]).pipe(
+      takeUntil(this.destroy$),
+      finalize(() => {
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      })
+    ).subscribe({
+      next: ([
+        indicateurs,
+        repartitionDepenses,
+        repartitionRecettes,
+        modesPaiement,
+        depenses,
+        recettes,
+        evolution
+      ]) => {
+        this.indicateursFinanciers = indicateurs || null;
+        this.repartitionDepenses = repartitionDepenses || null;
+        this.repartitionRecettes = repartitionRecettes || null;
+        this.modesPaiementStats = modesPaiement || null;
+        this.depensesDetaillees = depenses || null;
+        this.recettesDetaillees = recettes || null;
+        this.donneesEvolutives = evolution || null;
+
+        setTimeout(() => {
+          this.mettreAJourGraphiques();
+        }, 100);
+
+        this.chargerDonneesComparatives();
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des données:', error);
+      }
     });
   }
 
@@ -253,11 +257,6 @@ export class RapportsFinanciersComponent implements OnInit, OnDestroy {
       const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
       filters.fromDate = this.formatDate(firstDayOfMonth);
       filters.toDate = this.formatDate(today);
-    }
-
-    if (this.depensesDetaillees || this.recettesDetaillees) {
-      filters.page = this.currentPageDepenses;
-      filters.limit = this.pageSize;
     }
 
     if (this.searchTerm) {

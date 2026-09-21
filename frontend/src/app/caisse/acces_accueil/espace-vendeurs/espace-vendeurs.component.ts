@@ -10,6 +10,9 @@ import {
   RouterOutlet,
 } from '@angular/router';
 import { filter, Subject, takeUntil } from 'rxjs';
+import { CommonModule } from '@angular/common';
+import { NotificationDropdownComponent } from '../../../shared/notification-dropdown/notification-dropdown.component';
+import { NotificationService } from '../../../services/notification.service';
 
 // Enregistrer les éléments nécessaires dans Chart.js
 ChartJS.register(...registerables);
@@ -17,7 +20,7 @@ ChartJS.register(...registerables);
 @Component({
   selector: 'app-espace-vendeurs',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterModule, RouterOutlet, RouterLinkActive],
+  imports: [CommonModule, RouterLink, RouterModule, RouterOutlet, RouterLinkActive, NotificationDropdownComponent],
   templateUrl: './espace-vendeurs.component.html',
   styleUrl: './espace-vendeurs.component.css',
 })
@@ -30,13 +33,15 @@ export class EspaceVendeursComponent implements OnInit, OnDestroy {
 
   // Track the state of submenus
   private openSubMenu: string | null = null;
-  //activeSection: string = 'overview';  // Par défaut, la section "Vue d'ensemble" est active.
 
   currentMenu = 'Accueil';
   currentSubMenu = "Vue d'ensemble";
   fullTitle = '';
   private router = inject(Router);
   private destroy$ = new Subject<void>();
+
+  /** Badge dynamique de notifications */
+  readonly count$ = inject(NotificationService).count$;
 
   ngOnInit(): void {
     this.router.events

@@ -431,8 +431,8 @@ export class OverviewComponent implements OnInit, OnDestroy {
     this.stockEvolutionChart = undefined;
   }
 
-  // Vérifier les données
-  if (!this.donneesStock?.graphique?.evolution.length) {
+  // ✅ OV-1 FIX : accès optionnel sur .evolution pour éviter TypeError si evolution est undefined
+  if (!this.donneesStock?.graphique?.evolution?.length) {
     return;
   }
 

@@ -285,12 +285,14 @@
         </div>
 
         <div class="btn-group">
-          <div class="mt-0 py-3">
-            <i class="bi bi-bell position-relative icon-notification">
-              <span class="badge bg-danger position-absolute top-0 start-100 translate-middle"
-                >3</span
-              >
-            </i>
+          <!-- ── Notifications ────────────────────────────────────────────── -->
+          <div class="position-relative" style="display:inline-flex;align-items:center">
+            <app-notification-dropdown></app-notification-dropdown>
+            <span
+              *ngIf="(count$ | async) as nb"
+              class="badge bg-danger position-absolute"
+              style="top:-4px;right:-6px;font-size:10px;min-width:18px;height:18px;line-height:18px;padding:0 4px;border-radius:9px;pointer-events:none"
+            >{{ nb > 99 ? '99+' : nb }}</span>
           </div>
           <button class="btn dropdown-toggle" id="idMenu" data-bs-toggle="dropdown">
             <img

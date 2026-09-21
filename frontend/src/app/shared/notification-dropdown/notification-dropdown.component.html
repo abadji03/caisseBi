@@ -1,0 +1,122 @@
+<!-- Overlay transparent pour fermer le dropdown en cliquant ailleurs -->
+<div class="notif-overlay" *ngIf="isOpen" (click)="fermer()"></div>
+
+<div class="notif-wrapper">
+  <!-- ── Bouton cloche ──────────────────────────────────────────────────── -->
+  <button
+    class="notif-btn"
+    (click)="toggle()"
+    [class.active]="isOpen"
+    title="Notifications"
+    aria-label="Ouvrir les notifications"
+  >
+    <i class="bi bi-bell-fill notif-icon"></i>
+  </button>
+
+  <!-- ── Panneau dropdown ──────────────────────────────────────────────── -->
+  <div class="notif-panel" *ngIf="isOpen" role="dialog" aria-label="Notifications">
+
+    <!-- En-tête -->
+    <div class="notif-header">
+      <span class="notif-header-title">Notifications</span>
+      <div class="notif-header-actions">
+        <button
+          class="notif-action-btn"
+          (click)="toggleFiltreNonLues()"
+          [class.active]="nonLuesSeulment"
+          title="Afficher uniquement les non lues"
+        >
+          <i class="bi bi-funnel"></i>
+          {{ nonLuesSeulment ? 'Toutes' : 'Non lues' }}
+        </button>
+        <button
+          class="notif-action-btn"
+          (click)="marquerToutesLues()"
+          title="Tout marquer comme lu"
+        >
+          <i class="bi bi-check2-all"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Corps -->
+    <div class="notif-body">
+
+      <!-- Chargement -->
+      <div class="notif-loading" *ngIf="isLoading">
+        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+        <span>Chargement…</span>
+      </div>
+
+      <!-- Liste vide -->
+      <div class="notif-empty" *ngIf="!isLoading && !aDesNotifications">
+        <i class="bi bi-bell-slash fs-2 text-muted"></i>
+        <p class="text-muted mb-0">Aucune notification</p>
+      </div>
+
+      <!-- Liste des notifications -->
+      <ng-container *ngIf="!isLoading && aDesNotifications">
+        <div
+          *ngFor="let notif of notifications; trackBy: trackById"
+          class="notif-item"
+          [class.non-lue]="!notif.lu"
+          [ngClass]="'border-' + getPriority(notif.priorite)"
+          (click)="onOuvrir(notif)"
+          role="button"
+          tabindex="0"
+          (keydown.enter)="onOuvrir(notif)"
+        >
+          <!-- Icône -->
+          <div class="notif-item-icon" [ngClass]="'text-' + getPriority(notif.priorite)">
+            <i class="bi" [ngClass]="getIcon(notif.type)"></i>
+          </div>
+
+          <!-- Contenu -->
+          <div class="notif-item-content">
+            <div class="notif-item-titre">{{ notif.titre }}</div>
+            <div class="notif-item-message">{{ notif.message }}</div>
+            <div class="notif-item-meta">
+              <span class="notif-item-date">{{ formatDate(notif.createdAt) }}</span>
+              <span
+                class="badge ms-1 notif-priorite-badge"
+                [ngClass]="'bg-' + getPriority(notif.priorite)"
+                *ngIf="notif.priorite === 'critique'"
+              >
+                Critique
+              </span>
+            </div>
+          </div>
+
+          <!-- Indicateur non lu + bouton suppr -->
+          <div class="notif-item-actions">
+            <span class="notif-dot" *ngIf="!notif.lu" title="Non lue"></span>
+            <button
+              class="notif-delete-btn"
+              (click)="onSupprimer($event, notif)"
+              title="Supprimer"
+              aria-label="Supprimer cette notification"
+            >
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Charger plus -->
+        <button
+          class="notif-load-more"
+          *ngIf="aPlusDePage"
+          (click)="chargerPlus()"
+        >
+          Afficher plus…
+        </button>
+      </ng-container>
+    </div>
+
+    <!-- Pied -->
+    <div class="notif-footer">
+      <a routerLink="/caisse-bi/parametres" (click)="fermer()" class="notif-footer-link">
+        Gérer les notifications
+      </a>
+    </div>
+  </div>
+</div>
