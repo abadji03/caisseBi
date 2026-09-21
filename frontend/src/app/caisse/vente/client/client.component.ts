@@ -921,6 +921,10 @@ export class ClientComponent implements OnInit, OnDestroy {
           const index = this.bons.findIndex(b => b.id === bon.id);
           if (index !== -1) this.bons[index] = { ...this.bons[index], statutBon: nouveauStatut };
           this.loadBonsAvecPagination();
+          // FIX : recharger aussi les opérations et leur statut — les actions
+          // (livraison, retour, annulation) génèrent des opérations et
+          // changent le statut visible dans la liste sans recharger la page.
+          this.loadOperations();
         },
         error: (err) => {
           console.error('Erreur changement de statut:', err);
