@@ -18,6 +18,7 @@ import { BonsFilter, BonsService } from '../../../services/bons.service';
 import { ClientsFilter, ClientsService } from '../../../services/clients.service';
 import { MaagasinsService } from '../../../services/maagasins.service';
 import { OperationsService } from '../../../services/operations.service';
+import { FactureService } from '../../../services/facture.service';
 import { PaiementsFilter, PaiementsResponse, PaiementsService } from '../../../services/paiements.service';
 import { PaniersService } from '../../../services/paniers.service';
 import { PdfMakerServiceService } from '../../../services/pdf-maker-service.service';
@@ -169,6 +170,7 @@ export class ClientComponent implements OnInit, OnDestroy {
   private panierService = inject(PaniersService);
   private operationService = inject(OperationsService);
   private paiementService = inject(PaiementsService);
+  private factureService = inject(FactureService);
   private authService = inject(AuthService);
   private bonBrouillonService = inject(BonBrouillonService);
   private pdfGenerator = inject(PdfMakerServiceService);
@@ -769,7 +771,58 @@ export class ClientComponent implements OnInit, OnDestroy {
     this.changerStatutBonClient(bon, 'retourné');
   }
   onFacturerBon(bon: Bon): void {
-    this.toastr.warning(`La facturation d'un bon client n'est pas encore disponible dans cet écran`);
+    if (!bon) {
+      this.toastr.error('Aucun bon sélectionné');
+      return;
+    }
+    if (bon.statutBon === 'facturé') {
+      this.toastr.warning(`Le bon ${bon.numero} est déjà facturé`);
+      return;
+    }
+    if (bon.statutBon !== 'validé') {
+      this.toastr.warning(`Le bon ${bon.numero} doit être validé avant d'être facturé`);
+      return;
+    }
+    if (!confirm(`Facturer le bon numéro ${bon.numero} ?`)) return;
+
+    this.isLoadingBon = true;
+    this.factureService.createFactureCommande(bon.id!)
+      .pipe(takeUntil(this.destroy$), finalize(() => this.isLoadingBon = false))
+      .subscribe({
+        next: (response) => {
+          this.toastr.success(`Facture ${response.facture?.numero_facture || 'client'} créée avec succès`);
+          // Marquer le bon comme facturé puis rafraîchir bons + opérations + solde
+          this.bonService.updateStatutBon(bon.id!, 'facturé')
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+              next: () => {
+                this.loadBonsAvecPagination();
+                this.loadOperations();
+                // Rafraîchir le client (solde/dette après facturation)
+                if (this.selectedClient?.id) {
+                  this.clientService.getClientWithMagasins(this.selectedClient.id)
+                    .pipe(takeUntil(this.destroy$))
+                    .subscribe({
+                      next: (clientMaj) => {
+                        this.selectedClient = clientMaj;
+                        this.cdr.detectChanges();
+                      },
+                      error: (err) => console.error('Erreur rafraîchissement client:', err)
+                    });
+                }
+              },
+              error: (err) => {
+                console.error('Erreur mise à jour statut bon:', err);
+                this.loadBonsAvecPagination();
+                this.loadOperations();
+              }
+            });
+        },
+        error: (err) => {
+          console.error('Erreur facturation:', err);
+          this.toastr.error(err.error?.message || 'Erreur lors de la facturation du bon');
+        }
+      });
   }
   onImprimerBon(bon: Bon): void {
     if (!bon) {
@@ -882,6 +935,42 @@ export class ClientComponent implements OnInit, OnDestroy {
     try {
       const soldeActuel = this.getSoldeActuel();
       const magasinNom = this.getNomMagasinSelectionne();
+
+      // FIX : l'API opérations n'expose PAS d'objet `bon`/`Panier` — les
+      // montants sont portés par montantPaye + resteAPayer et les types
+      // réels sont VENTE / COMMANDE / RETOUR / VERSEMENT / REGLEMENT…
+      const ops = (this.operations || []) as any[];
+      const montantOp = (o: any) =>
+        (Number(o?.montantPaye) || 0) + (Number(o?.resteAPayer) || 0);
+      const fmt = (n: number) => n.toLocaleString('fr-FR');
+      const estTypeBon = (t: string) =>
+        ['VENTE', 'COMMANDE', 'LIVRAISON', 'BON', 'BON_LIVRAISON', 'BON_COMMANDE', 'TICKET_CAISSE'].includes(t);
+
+      const operationsFormatees = ops.map(op => ({
+        date: op.dateOperation,
+        type: op.type,
+        reference: op.numeroVersement || op.numeroBon || 'N/A',
+        montant: montantOp(op)
+      }));
+
+      const totalAchats = ops.filter(o => estTypeBon(o.type)).reduce((s, o) => s + montantOp(o), 0);
+      const totalVersements = ops
+        .filter(o => o.type === 'VERSEMENT' || o.type === 'REGLEMENT')
+        .reduce((s, o) => s + (Number(o.montantPaye) || 0), 0);
+      const totalRetours = ops.filter(o => o.type === 'RETOUR').reduce((s, o) => s + montantOp(o), 0);
+      const totalAvoirs = ops.filter(o => o.type === 'AVOIR').reduce((s, o) => s + montantOp(o), 0);
+      const commandes = ops.filter(o => o.type === 'COMMANDE');
+      const statutU = (o: any) => (o.statut || '').toUpperCase();
+      const totalCommandesLivrees = commandes
+        .filter(o => statutU(o) === 'LIVRÉ' || statutU(o) === 'LIVRE')
+        .reduce((s, o) => s + montantOp(o), 0);
+      const totalCommandesAnnulees = commandes
+        .filter(o => statutU(o) === 'ANNULÉ' || statutU(o) === 'ANNULE')
+        .reduce((s, o) => s + montantOp(o), 0);
+      const totalCommandesNonlivrees = commandes
+        .filter(o => !['LIVRÉ', 'LIVRE', 'ANNULÉ', 'ANNULE'].includes(statutU(o)))
+        .reduce((s, o) => s + montantOp(o), 0);
+
       const releveData = {
         client: {
           nomComplet: this.selectedClient.nomComplet,
@@ -893,16 +982,17 @@ export class ClientComponent implements OnInit, OnDestroy {
         periode: `Du ${this.startDate || '...'} au ${this.endDate || '...'}`,
         magasin: magasinNom,
         solde: soldeActuel,
-        operations: this.operations || [],
+        operations: operationsFormatees,
         synthese: {
-          totalAchats: this.operations
-            .filter((o: any) => o.type === 'BON')
-            .reduce((sum: number, o: any) => sum + parseFloat(o.bon?.Panier?.totalTTC || 0), 0),
-          totalVersements: this.operations
-            .filter((o: any) => o.type === 'VERSEMENT')
-            .reduce((sum: number, o: any) => sum + parseFloat(o.montantPaye || 0), 0),
-          solde: soldeActuel,
-          avoir: 0
+          totalAchats: fmt(totalAchats),
+          totalVersements: fmt(totalVersements),
+          totalRetours: fmt(totalRetours),
+          totalAvoirs: fmt(totalAvoirs),
+          totalCommandesLivrees: fmt(totalCommandesLivrees),
+          totalCommandesAnnulees: fmt(totalCommandesAnnulees),
+          totalCommandesNonlivrees: fmt(totalCommandesNonlivrees),
+          nouveauSolde: fmt(soldeActuel),
+          solde: fmt(soldeActuel)
         }
       };
       (this.pdfGenerator as any).generateReleveClient(releveData);

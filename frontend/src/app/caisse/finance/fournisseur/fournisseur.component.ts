@@ -1769,8 +1769,8 @@ onFacturerBon(bon: Bon): void {
         return {
           date: op.dateOperation,
           type: op.type || 'NON SPECIFIE',
-          reference: op.numeroVersement || op.bon?.numero || 'N/A',
-          montant: op.montantPaye || op.bon?.montantTotal ||0,
+          reference: op.numeroVersement || op.numeroBon || op.bon?.numero || 'N/A',
+          montant: this.montantOperation(op),
           // Inclure toutes les propriétés nécessaires
           ...op
         };
@@ -1859,28 +1859,37 @@ onFacturerBon(bon: Bon): void {
     return isNaN(num) ? 0 : num;
   }
 
+  /**
+   * Montant d'une opération = montantPaye + resteAPayer.
+   * Le payload de l'API opérations n'expose PAS d'objet `bon` : les montants
+   * des bons sont portés par ces deux champs de l'opération elle-même.
+   */
+  private montantOperation(op: any): number {
+    return this.safeNumber(op?.montantPaye) + this.safeNumber(op?.resteAPayer);
+  }
+
   private calculerTotalCommandes(): number {
     return this.filteredOperations
       .filter(op => op.type === 'COMMANDE')
-      .reduce((total, op) => total + (this.safeNumber(op.bon?.Panier?.totalTTC) || 0), 0);
+      .reduce((total, op) => total + this.montantOperation(op), 0);
   }
 
   private calculerTotalVersements(): number {
     return this.filteredOperations
-      .filter(op => op.type === 'VERSEMENT')
+      .filter(op => op.type === 'VERSEMENT' || op.type === 'REGLEMENT')
       .reduce((total, op) => total + (this.safeNumber(op.montantPaye) || 0), 0);
   }
 
   private calculerTotalRetours(): number {
     return this.filteredOperations
-      .filter(op => op.type === 'RETOUR' || op.bon?.statutBon === 'retourné' || op.bon?.statutBon === 'retourné partiellement')
-      .reduce((total, op) => total + (this.safeNumber(op.bon?.Panier?.totalTTC) || 0), 0);
+      .filter(op => op.type === 'RETOUR')
+      .reduce((total, op) => total + this.montantOperation(op), 0);
   }
 
   private calculerTotalLivraison(): number {
     return this.filteredOperations
-      .filter(op => op.type === 'LIVRAISON')
-      .reduce((total, op) => total + (this.safeNumber(op.bon?.Panier?.totalTTC) || 0), 0);
+      .filter(op => op.type === 'LIVRAISON' || op.type === 'BON_LIVRAISON')
+      .reduce((total, op) => total + this.montantOperation(op), 0);
   }
 
   /**

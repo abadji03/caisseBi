@@ -414,6 +414,11 @@ const getVentesCreditAnnuleesData = async ({ code_structure, periode, dateRefere
         'netAPayer',
         'montantAvoir'
       ],
+      include: [{
+        model: db.Panier,
+        attributes: ['id', 'totalTTC'],
+        required: false
+      }],
       where: {
         code_structure,
         typeEntite: 'client',
@@ -427,6 +432,9 @@ const getVentesCreditAnnuleesData = async ({ code_structure, periode, dateRefere
 
     /* =========================
        3️⃣ AGRÉGATION
+       NB : le montant du bon (netAPayer / montantAvoir) peut être à 0
+       quand le bon de retour est créé par le flux caisse — on retombe
+       alors sur le totalTTC du panier rattaché.
     ========================== */
     let totalMontantRetour = 0;
     let nombreRetoursTotaux = 0;
@@ -436,8 +444,8 @@ const getVentesCreditAnnuleesData = async ({ code_structure, periode, dateRefere
       const estPartiel = bon.statutBon === 'retourné partiellement';
 
       const montant = estPartiel
-        ? safeNumber(bon.montantAvoir)
-        : safeNumber(bon.netAPayer);
+        ? safeNumber(bon.montantAvoir) || safeNumber(bon.Panier?.totalTTC)
+        : safeNumber(bon.netAPayer) || safeNumber(bon.Panier?.totalTTC);
 
       totalMontantRetour += montant;
 
