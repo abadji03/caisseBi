@@ -141,6 +141,19 @@
                   placeholder="Montant du service"
                 />
               </div>
+              <div class="mb-3 col-md-8">
+                <label for="serviceDescription" class="form-label">
+                  Description du service <span class="text-muted small">(optionnel)</span>
+                </label>
+                <input 
+                  type="text" 
+                  id="serviceDescription" 
+                  class="form-control" 
+                  [(ngModel)]="serviceDescription"
+                  maxlength="200"
+                  placeholder="Ex : Réparation climatisation, Consultant 2h..."
+                />
+              </div>
               <!-- Mode de paiement -->
               <div class="col-md-4 mb-3">
                 <label for="modePaiement" class="form-label">

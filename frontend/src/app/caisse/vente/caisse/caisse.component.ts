@@ -66,6 +66,8 @@ export class CaisseComponent implements OnInit, OnDestroy {
 
   // Variables pour les services
   serviceMontant = 0;
+  // Description optionnelle du service vendu (propagée au paiement et à la recette)
+  serviceDescription = '';
   
 
   
@@ -403,7 +405,11 @@ export class CaisseComponent implements OnInit, OnDestroy {
       paiement: (this.serviceMontant ?? 0) > 0 ? new Paiement ({
         numero: this.generatedNumeroPaiement,
         methodePaiement: this.modePaiementSelectionne?.libelle || 'Espèce',
-        description: `Montant total vente service ou produit non enregistré ${this.panierData.id}`,
+        // Description enrichie si le champ optionnel est rempli : elle sera
+        // reprise automatiquement par la recette associée (createRecetteAvecCategorie).
+        description: this.serviceDescription?.trim()
+          ? `Vente service : ${this.serviceDescription.trim()} (panier ${this.panierData.id})`
+          : `Montant total vente service ou produit non enregistré ${this.panierData.id}`,
         typePaiement: 'autre',
       }) : undefined
     };
@@ -496,6 +502,7 @@ export class CaisseComponent implements OnInit, OnDestroy {
     this.textBoutonNewVente = 'Nouvelle vente';
     this.clientForm.reset();
     this.serviceMontant = 0;
+    this.serviceDescription = '';
     this.modePaiementSelectionne = null;
     this.modePaiementSelectionneProduit = null;
     this.generatedNumeroPaiement = this.generateNumero();
