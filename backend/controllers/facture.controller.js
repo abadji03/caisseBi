@@ -1285,7 +1285,7 @@ logger.error('facture.controller', 'Erreur insertion logo:', err.message);
 
         const designation = article.Produit?.designation || 'Produit sans nom';
         const quantite = parseFloat(article.quantite) || 0;
-        const prixUnitaire = parseFloat(article.prixUnitaire) || 0;
+        const prixUnitaire = parseFloat(article.prixUnitaire ?? article.prixVenteUnitaire) || 0;
         // R3 FIX : utiliser le totalTTC stocké sur l'article (inclut remise réelle)
         // Fallback sur quantite * prixUnitaire si totalTTC absent
         const total = parseFloat(article.totalTTC) > 0

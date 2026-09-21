@@ -1649,11 +1649,16 @@ onFacturerBon(bon: Bon): void {
       
 
       // Valider et formater les articles avec une meilleure gestion des nombres
-      const articlesFormates = (bon.Panier?.articles || []).map(article => {
+      // NB : les bons chargés de l'API exposent les lignes sous `ArticlePaniers`
+      // (et non `articles`) — d'où un tableau vide si on ne normalise pas.
+      const articlesBruts = bon.Panier?.articles?.length
+        ? bon.Panier.articles
+        : (bon.Panier?.ArticlePaniers || []);
+      const articlesFormates = (articlesBruts).map(article => {
         if (!article) return null;
         
         // Calculer les valeurs avec sécurité
-        const prixUnitaire = this.safeNumber(article.prixUnitaire || article.prixAchatUnitaire);
+        const prixUnitaire = this.safeNumber(article.prixUnitaire ?? article.prixVenteUnitaire ?? article.prixAchatUnitaire);
         const quantite = this.safeNumber(article.quantite);
         const total = prixUnitaire * quantite;
 

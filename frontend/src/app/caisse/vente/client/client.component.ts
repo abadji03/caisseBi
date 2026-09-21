@@ -777,9 +777,12 @@ export class ClientComponent implements OnInit, OnDestroy {
       return;
     }
     try {
-      const articlesFormates = (bon.Panier?.articles || []).map((article: any) => {
+      const articlesBruts = bon.Panier?.articles?.length
+        ? bon.Panier.articles
+        : (bon.Panier?.ArticlePaniers || []);
+      const articlesFormates = (articlesBruts).map((article: any) => {
         if (!article) return null;
-        const pu = parseFloat(article.prixUnitaire || 0);
+        const pu = parseFloat(article.prixUnitaire ?? article.prixVenteUnitaire ?? 0);
         const qty = parseFloat(article.quantite || 0);
         return {
           ...article,
